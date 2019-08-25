@@ -33,55 +33,7 @@ inline void update(
 
 template <>
 inline void update(
-    api::Side& result,
-    const core::json::value_t& value) {
-  result = api::to_enum<std::remove_reference<decltype(result)>::type>(
-      core::json::get<std::string_view>(value));
-}
-
-template <>
-inline void update(
-    api::OrderType& result,
-    const core::json::value_t& value) {
-  result = api::to_enum<std::remove_reference<decltype(result)>::type>(
-      core::json::get<std::string_view>(value));
-}
-
-template <>
-inline void update(
-    api::OrderStatus& result,
-    const core::json::value_t& value) {
-  result = api::to_enum<std::remove_reference<decltype(result)>::type>(
-      core::json::get<std::string_view>(value));
-}
-
-template <>
-inline void update(
-    api::TimeInForce& result,
-    const core::json::value_t& value) {
-  result = api::to_enum<std::remove_reference<decltype(result)>::type>(
-      core::json::get<std::string_view>(value));
-}
-
-template <>
-inline void update(
-    api::Reason& result,
-    const core::json::value_t& value) {
-  result = api::to_enum<std::remove_reference<decltype(result)>::type>(
-      core::json::get<std::string_view>(value));
-}
-
-template <>
-inline void update(
-    api::XStatus& result,
-    const core::json::value_t& value) {
-  result = api::to_enum<std::remove_reference<decltype(result)>::type>(
-      core::json::get<std::string_view>(value));
-}
-
-template <>
-inline void update(
-    api::StopType& result,
+    api::State& result,
     const core::json::value_t& value) {
   result = api::to_enum<std::remove_reference<decltype(result)>::type>(
       core::json::get<std::string_view>(value));

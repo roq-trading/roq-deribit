@@ -8,4 +8,5 @@ libroq_deribit_json_la_CPPFLAGS = \
 	$(LIBCONFIG_CFLAGS) \
 	$(ROQ_CFLAGS)
 libroq_deribit_json_la_SOURCES = \
+	ticker.cpp \
 	utils.cpp
