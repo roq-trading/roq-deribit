@@ -27,7 +27,22 @@ template <>
 inline void update(
     std::chrono::nanoseconds& result,
     const core::json::value_t& value) {
-  result = core::charconv::to_datetime(
+  result = std::chrono::milliseconds{core::json::get<uint64_t>(value)};
+}
+
+template <>
+inline void update(
+    api::Kind& result,
+    const core::json::value_t& value) {
+  result = api::to_enum<std::remove_reference<decltype(result)>::type>(
+      core::json::get<std::string_view>(value));
+}
+
+template <>
+inline void update(
+    api::OptionType& result,
+    const core::json::value_t& value) {
+  result = api::to_enum<std::remove_reference<decltype(result)>::type>(
       core::json::get<std::string_view>(value));
 }
 

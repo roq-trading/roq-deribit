@@ -28,4 +28,7 @@ roq_deribit_api2_test_CPPFLAGS = \
 	$(FMT_CFLAGS) \
 	$(DATE_CFLAGS)
 nodist_roq_deribit_api2_test_SOURCES = \
+	json_currencies.cpp \
+	json_instruments.cpp \
+	json_ticker.cpp \
 	main.cpp
