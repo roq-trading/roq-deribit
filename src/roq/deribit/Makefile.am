@@ -33,7 +33,6 @@ roq_deribit_api2_CPPFLAGS = \
 	$(ROQ_SERVER_CFLAGS)
 roq_deribit_api2_SOURCES = \
 	controller.cpp \
+	fix.cpp \
 	gateway.cpp \
-	rest.cpp \
-	websocket.cpp \
 	main.cpp

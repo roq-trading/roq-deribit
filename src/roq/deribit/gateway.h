@@ -12,8 +12,7 @@
 #include "roq/deribit/conf/config.h"
 
 #include "roq/deribit/controller.h"
-#include "roq/deribit/rest.h"
-#include "roq/deribit/websocket.h"
+#include "roq/deribit/fix.h"
 
 namespace roq {
 namespace deribit {
@@ -34,13 +33,6 @@ class Gateway final : public server::Handler {
 
   void write(Metrics& metrics) const override;
 
-  auto& rest() {
-    return _rest;
-  }
-  auto& websocket() {
-    return _websocket;
-  }
-
  protected:
   void run();
   void initialize_thread();
@@ -58,10 +50,8 @@ class Gateway final : public server::Handler {
   core::ssl::Connection _ssl_connection;
   core::event::BufferEvent _buffer_event;
   // ...
-  Rest _rest;
-  // ...
   Controller _controller;
-  WebSocket _websocket;
+  FIX _fix;
 };
 
 }  // namespace deribit

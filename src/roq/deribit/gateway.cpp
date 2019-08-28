@@ -10,18 +10,18 @@
 
 #include "roq/logging.h"
 
-#include "roq/deribit/websocket.h"
-
 namespace roq {
 namespace deribit {
 
 namespace {
 #if (1)
-static const char *REST_URI = "https://api-public.sandbox.pro.deribit.com";
-static const char *WS_URI = "wss://ws-feed-public.sandbox.pro.deribit.com";
+static const char *REST_URI = "https://test.deribit.com/api/v2";
+static const char *WS_URI = "wss://test.deribit.com/ws/api/v2";
+static const char *FIX_URI = "tcp://test.deribit.com:9881";
 #else
-static const char *REST_URI = "https://api.pro.deribit.com";
-static const char *WS_URI = "wss://ws-feed.pro.deribit.com";
+static const char *REST_URI = "https://deribit.com/api/v2";
+static const char *WS_URI = "wss://deribit.com/ws/api/v2";
+static const char *FIX_URI = "tcp://www.deribit.com:9881";
 #endif
 }  // namespace
 
@@ -33,9 +33,8 @@ Gateway::Gateway(
       _timer(_base, EV_PERSIST, [this]() { on_timer(); }),
       _ssl_connection(_ssl_context),
       _buffer_event(_base, _ssl_connection),
-      _rest(_ssl_context, _base, _dns_base, core::URI(REST_URI)),
       _controller(*this),
-      _websocket(_controller, _ssl_context, _base, _dns_base, core::URI(WS_URI)) {
+      _fix(_controller, _ssl_context, _base, _dns_base, core::URI(FIX_URI)) {
 }
 
 void Gateway::on(const StartEvent& event) {
@@ -78,7 +77,7 @@ void Gateway::run() {
     initialize_thread();
     _timer.add(std::chrono::milliseconds{100});
 
-    _websocket.start();  // FIXME(thraneh): move to Controller
+    _fix.start();  // FIXME(thraneh): move to Controller
 
     _base.loop(EVLOOP_NO_EXIT_ON_EMPTY);
   } catch (std::exception& e) {
