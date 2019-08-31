@@ -25,7 +25,9 @@ class FIX final {
       core::ssl::Context& ssl_context,
       core::event::Base& base,
       core::event::DNSBase& dns_base,
-      const core::URI& uri);
+      const core::URI& uri,
+      const std::string_view& access_key,
+      const std::string_view& access_secret);
 
   void start();
   void send(const std::string_view& message);
@@ -43,10 +45,13 @@ class FIX final {
   core::ssl::Connection _ssl_connection;
   core::event::DNSBase& _dns_base;
   const core::URI _uri;
+  const std::string _access_key;
+  const std::string _access_secret;
   core::event::Timer _timer;
   core::event::BufferEvent _buffer_event;
   core::event::Buffer _buffer;
   std::vector<std::byte> _decode_buffer;
+  uint64_t _msg_seq_num = 0;
 };
 
 }  // namespace deribit

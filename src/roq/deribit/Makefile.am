@@ -35,4 +35,5 @@ roq_deribit_api2_SOURCES = \
 	controller.cpp \
 	fix.cpp \
 	gateway.cpp \
+	random.cpp \
 	main.cpp
