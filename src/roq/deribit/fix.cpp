@@ -143,19 +143,25 @@ void FIX::process_data() {
     return;
   auto buffer = _buffer.pullup(length);
   auto bytes = core::fix::Reader::dispatch(
-      overloaded {
-        [](
-            const core::fix::header_t& header,
-            const core::fix::body_t& body) {
-          LOG(INFO) << fmt::format("msg_type={} msg_seq_num={}",
-              header.msg_type, header.msg_seq_num);
-          if (header.msg_type == core::fix::MsgType::LOGON) {
-            // for (auto [key, value] : body) { }
-          }
-        },
-        [](const core::fix::value_t& value) {
-          LOG(INFO) << "field=" << value.field << ", value=" << value.value;
-        },
+      [](const core::fix::header_t& header, const core::fix::body_t& body) {
+        LOG(INFO) << fmt::format("msg_type={} msg_seq_num={}",
+            header.msg_type, header.msg_seq_num);
+        switch (header.msg_type) {
+          case core::fix::MsgType::LOGON:
+            LOG(INFO) << "LOGON SUCCESS";
+            for (auto [tag, value] : body) {
+              LOG(INFO) << "tag=" << tag << ", value=" << value;
+            }
+            break;
+          case core::fix::MsgType::HEARTBEAT:
+            LOG(INFO) << "HEARTBEAT RECEIVED";
+            for (auto [tag, value] : body) {
+              LOG(INFO) << "tag=" << tag << ", value=" << value;
+            }
+            break;
+          default:
+            break;
+        }
       },
       buffer,
       length);
