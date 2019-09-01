@@ -148,14 +148,38 @@ void FIX::process_data() {
       [](const core::fix::header_t& header, const core::fix::body_t& body) {
         fix::Parser::dispatch(
             overloaded {
+              [](const fix::ExecutionReport& execution_report) {
+                LOG(INFO) << fmt::format("execution_report={}", execution_report);
+              },
+              [](const fix::Heartbeat& heartbeat) {
+                LOG(INFO) << fmt::format("heartbeat={}", heartbeat);
+              },
               [](const fix::Logon& logon) {
                 LOG(INFO) << fmt::format("logon={}", logon);
               },
               [](const fix::Logout& logout) {
                 LOG(INFO) << fmt::format("logout={}", logout);
               },
-              [](const fix::Heartbeat& heartbeat) {
-                LOG(INFO) << fmt::format("heartbeat={}", heartbeat);
+              [](const fix::MarketDataIncrementalRefresh& market_data_incremental_refresh) {
+                LOG(INFO) << fmt::format("market_data_incremental_refresh={}", market_data_incremental_refresh);
+              },
+              [](const fix::MarketDataRequestReject& market_data_request_reject) {
+                LOG(INFO) << fmt::format("market_data_request_reject={}", market_data_request_reject);
+              },
+              [](const fix::MarketDataSnapshotFullRefresh& market_data_snapshot_full_refresh) {
+                LOG(INFO) << fmt::format("market_data_snapshot_full_refresh={}", market_data_snapshot_full_refresh);
+              },
+              [](const fix::PositionReport& position_report) {
+                LOG(INFO) << fmt::format("position_report={}", position_report);
+              },
+              [](const fix::ResendRequest& resend_request) {
+                LOG(INFO) << fmt::format("resend_request={}", resend_request);
+              },
+              [](const fix::SecurityList& security_list) {
+                LOG(INFO) << fmt::format("security_list={}", security_list);
+              },
+              [](const fix::TestRequest& test_request) {
+                LOG(INFO) << fmt::format("test_request={}", test_request);
               },
             },
             header,
