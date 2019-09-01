@@ -21,6 +21,8 @@
 
 #include "roq/deribit/random.h"
 
+#include "roq/deribit/fix/parser.h"
+
 namespace roq {
 namespace deribit {
 
@@ -144,24 +146,20 @@ void FIX::process_data() {
   auto buffer = _buffer.pullup(length);
   auto bytes = core::fix::Reader::dispatch(
       [](const core::fix::header_t& header, const core::fix::body_t& body) {
-        LOG(INFO) << fmt::format("msg_type={} msg_seq_num={}",
-            header.msg_type, header.msg_seq_num);
-        switch (header.msg_type) {
-          case core::fix::MsgType::LOGON:
-            LOG(INFO) << "LOGON SUCCESS";
-            for (auto [tag, value] : body) {
-              LOG(INFO) << "tag=" << tag << ", value=" << value;
-            }
-            break;
-          case core::fix::MsgType::HEARTBEAT:
-            LOG(INFO) << "HEARTBEAT RECEIVED";
-            for (auto [tag, value] : body) {
-              LOG(INFO) << "tag=" << tag << ", value=" << value;
-            }
-            break;
-          default:
-            break;
-        }
+        fix::Parser::dispatch(
+            overloaded {
+              [](const fix::Logon& logon) {
+                LOG(INFO) << fmt::format("logon={}", logon);
+              },
+              [](const fix::Logout& logout) {
+                LOG(INFO) << fmt::format("logout={}", logout);
+              },
+              [](const fix::Heartbeat& heartbeat) {
+                LOG(INFO) << fmt::format("heartbeat={}", heartbeat);
+              },
+            },
+            header,
+            body);
       },
       buffer,
       length);

@@ -16,6 +16,7 @@ AC_CONFIG_FILES([
  src/roq/Makefile
  src/roq/deribit/Makefile
  src/roq/deribit/api/Makefile
+ src/roq/deribit/fix/Makefile
  src/roq/deribit/json/Makefile
  src/roq/deribit/conf/Makefile
  test/Makefile

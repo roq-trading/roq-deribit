@@ -1,9 +1,10 @@
-SUBDIRS = api json conf
+SUBDIRS = api fix json conf
 
 bin_PROGRAMS = roq-deribit-api2
 roq_deribit_api2_LDFLAGS = \
 	$(PTHREAD_CFLAGS) \
 	$(top_builddir)/src/roq/deribit/conf/libroq-deribit-conf.la \
+	$(top_builddir)/src/roq/deribit/fix/libroq-deribit-fix.la \
 	$(top_builddir)/src/roq/deribit/json/libroq-deribit-json.la \
 	$(top_builddir)/src/roq/deribit/api/libroq-deribit-api.la \
 	$(ROQ_SERVER_LIBS) \
