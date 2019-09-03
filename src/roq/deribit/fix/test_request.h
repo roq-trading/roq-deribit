@@ -13,9 +13,14 @@ namespace deribit {
 namespace fix {
 
 struct TestRequest final {
-  std::string_view text;
+  std::string_view test_req_id;
 
-  static void parse(TestRequest&, const core::fix::header_t&, const core::fix::body_t&);
+  static TestRequest parse(const core::fix::message_t& message);
+  static void parse(TestRequest&, const core::fix::message_t& message);
+
+  void parse(
+      core::fix::message_t::const_iterator&& iter,
+      const core::fix::message_t::const_iterator& end);
 };
 
 }  // namespace fix
@@ -33,8 +38,8 @@ struct fmt::formatter<roq::deribit::fix::TestRequest> {
     return format_to(
         ctx.begin(),
         "{{"
-        "text=\"{}\""
+        "test_req_id=\"{}\""
         "}}",
-        value.text);
+        value.test_req_id);
   }
 };

@@ -15,7 +15,12 @@ namespace fix {
 struct Logout final {
   std::string_view text;
 
-  static void parse(Logout&, const core::fix::header_t&, const core::fix::body_t&);
+  static Logout parse(const core::fix::message_t& message);
+  static void parse(Logout&, const core::fix::message_t& message);
+
+  void parse(
+      core::fix::message_t::const_iterator&& iter,
+      const core::fix::message_t::const_iterator& end);
 };
 
 }  // namespace fix

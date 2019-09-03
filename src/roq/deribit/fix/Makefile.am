@@ -8,8 +8,12 @@ libroq_deribit_fix_la_CPPFLAGS = \
 	$(LIBCONFIG_CFLAGS) \
 	$(ROQ_CFLAGS)
 libroq_deribit_fix_la_SOURCES = \
+	array.cpp \
+	buffer.cpp \
+	deribit.cpp \
 	execution_report.cpp \
 	heartbeat.cpp \
+	instrument.cpp \
 	logon.cpp \
 	logout.cpp \
 	market_data_incremental_refresh.cpp \

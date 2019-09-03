@@ -13,9 +13,15 @@ namespace deribit {
 namespace fix {
 
 struct ResendRequest final {
-  std::string_view text;
+  uint64_t begin_seq_no = 0;
+  uint64_t end_seq_no = 0;
 
-  static void parse(ResendRequest&, const core::fix::header_t&, const core::fix::body_t&);
+  static ResendRequest parse(const core::fix::message_t& message);
+  static void parse(ResendRequest&, const core::fix::message_t& message);
+
+  void parse(
+      core::fix::message_t::const_iterator&& iter,
+      const core::fix::message_t::const_iterator& end);
 };
 
 }  // namespace fix
@@ -33,8 +39,10 @@ struct fmt::formatter<roq::deribit::fix::ResendRequest> {
     return format_to(
         ctx.begin(),
         "{{"
-        "text=\"{}\""
+        "begin_seq_no={}, "
+        "end_seq_no={}, "
         "}}",
-        value.text);
+        value.begin_seq_no,
+        value.end_seq_no);
   }
 };

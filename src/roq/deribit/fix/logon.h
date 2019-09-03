@@ -18,7 +18,12 @@ struct Logon final {
   bool cancel_on_disconnect = false;
   bool use_wordsafe_tags = false;
 
-  static void parse(Logon&, const core::fix::header_t&, const core::fix::body_t&);
+  static Logon parse(const core::fix::message_t& message);
+  static void parse(Logon&, const core::fix::message_t& message);
+
+  void parse(
+      core::fix::message_t::const_iterator&& iter,
+      const core::fix::message_t::const_iterator& end);
 };
 
 }  // namespace fix
@@ -41,7 +46,7 @@ struct fmt::formatter<roq::deribit::fix::Logon> {
         "username=\"{}\", "
         "password=\"{}\", "
         "cancel_on_disconnect={}, "
-        "use_wordsafe_tag={}"
+        "use_wordsafe_tags={}"
         "}}",
         value.heart_bt_int,
         value.raw_data,

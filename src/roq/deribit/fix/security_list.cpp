@@ -4,20 +4,44 @@
 
 #include "roq/logging.h"
 
+#include "roq/deribit/fix/utils.h"
+
 namespace roq {
 namespace deribit {
 namespace fix {
 
+SecurityList SecurityList::parse(const core::fix::message_t& message) {
+  SecurityList result;
+  parse(result, message);
+  return result;
+}
+
 void SecurityList::parse(
     SecurityList& result,
-    const core::fix::header_t&,
-    const core::fix::body_t& object) {
+    const core::fix::message_t& message) {
   new (&result) std::remove_reference<decltype(result)>::type {};
-  for (auto [tag, value] : object) {
+  result.parse(message.begin(), message.end());
+}
+
+void SecurityList::parse(
+    core::fix::message_t::const_iterator&& iter,
+    const core::fix::message_t::const_iterator& end) {
+  for (; iter != end; ++iter) {
+    auto& [tag, value] = *iter;
     auto field = core::fix::parse_field(tag);
     switch (field) {
-      case core::fix::Field::TEXT:
-        result.text = value;
+      case core::fix::Field::NO_RELATED_SYM:
+        // update(security_request_result, value);
+        continue;
+      case core::fix::Field::SECURITY_REQ_ID:
+        update(security_req_id, value);
+        break;
+      case core::fix::Field::SECURITY_REQUEST_RESULT:
+        update(security_request_result, value);
+        break;
+      case core::fix::Field::SECURITY_RESPONSE_ID:
+        update(security_response_id, value);
+        break;
         break;
       default:
         LOG(WARNING) << fmt::format(

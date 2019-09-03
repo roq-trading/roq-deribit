@@ -13,6 +13,7 @@ check_PROGRAMS = roq-deribit-api2-test
 roq_deribit_api2_test_LDADD = \
 	libgtest.la \
 	$(top_builddir)/src/roq/deribit/conf/libroq-deribit-conf.la \
+	$(top_builddir)/src/roq/deribit/fix/libroq-deribit-fix.la \
 	$(top_builddir)/src/roq/deribit/json/libroq-deribit-json.la \
 	$(top_builddir)/src/roq/deribit/api/libroq-deribit-api.la \
 	$(DATE_LIBS) \
@@ -28,6 +29,9 @@ roq_deribit_api2_test_CPPFLAGS = \
 	$(FMT_CFLAGS) \
 	$(DATE_CFLAGS)
 nodist_roq_deribit_api2_test_SOURCES = \
+	fix_heartbeat.cpp \
+	fix_logon.cpp \
+	fix_logout.cpp \
 	json_currencies.cpp \
 	json_instruments.cpp \
 	json_ticker.cpp \

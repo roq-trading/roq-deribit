@@ -21,6 +21,7 @@
 
 #include "roq/deribit/random.h"
 
+#include "roq/deribit/fix/deribit.h"
 #include "roq/deribit/fix/parser.h"
 
 namespace roq {
@@ -31,7 +32,6 @@ constexpr auto PING_FREQUENCY = std::chrono::seconds{10};
 constexpr auto DECODE_BUFFER_SIZE = size_t{1048576};  // FIXME(thraneh): flag
 static std::random_device RANDOM_DEVICE;
 static std::uniform_int_distribution<uint32_t> DISTRIBUTION;
-constexpr uint32_t DERIBIT_FIX_FIELD_CANCEL_ON_DISCONNECT = 9001;
 constexpr const char *SENDER_COMP_ID = "ROQ_TRADING";
 constexpr const char *TARGET_COMP_ID = "DERIBITSERVER";
 }  // namespace
@@ -92,30 +92,7 @@ void FIX::on_read() {
 void FIX::on_error(int events) {
   if (events & BEV_EVENT_CONNECTED) {
     LOG(INFO) << "CONNECTED";
-
-    auto now = core::get_realtime_clock();
-
-    auto raw_data = Random::create_raw_data(now);
-    auto password = Random::create_password(raw_data, _access_secret);
-
-    char buffer[4096];
-    auto message = core::fix::Writer(
-        buffer,
-        std::size(buffer),
-        core::fix::MsgType::LOGON,
-        SENDER_COMP_ID,
-        TARGET_COMP_ID,
-        _msg_seq_num)
-      .write(core::fix::Field::HEART_BT_INT, uint16_t{10})
-      .write(core::fix::Field::RAW_DATA, raw_data)
-      .write(core::fix::Field::USERNAME, _access_key)
-      .write(core::fix::Field::PASSWORD, password)
-      .write(DERIBIT_FIX_FIELD_CANCEL_ON_DISCONNECT, true)
-      .finish();
-
-    core::print_memory(message);
-
-    _buffer_event.write(message);
+    send_logon();
   } else {
     _controller.on_ws_disconnect();
   }
@@ -145,7 +122,7 @@ void FIX::process_data() {
     return;
   auto buffer = _buffer.pullup(length);
   auto bytes = core::fix::Reader::dispatch(
-      [](const core::fix::header_t& header, const core::fix::body_t& body) {
+      [&](const core::fix::message_t& message) {
         fix::Parser::dispatch(
             overloaded {
               [](const fix::ExecutionReport& execution_report) {
@@ -154,8 +131,10 @@ void FIX::process_data() {
               [](const fix::Heartbeat& heartbeat) {
                 LOG(INFO) << fmt::format("heartbeat={}", heartbeat);
               },
-              [](const fix::Logon& logon) {
+              [&](const fix::Logon& logon) {
                 LOG(INFO) << fmt::format("logon={}", logon);
+                // send_security_list_request();
+                send_market_data_request();
               },
               [](const fix::Logout& logout) {
                 LOG(INFO) << fmt::format("logout={}", logout);
@@ -182,16 +161,82 @@ void FIX::process_data() {
                 LOG(INFO) << fmt::format("test_request={}", test_request);
               },
             },
-            header,
-            body);
+            message);
       },
       buffer,
       length);
   if (bytes > 0) {
-    core::print_memory(buffer, bytes);
-    core::print_memory_as_cpp_array(buffer, bytes);
+    // core::print_memory(buffer, bytes);
+    // core::print_memory_as_cpp_array(buffer, bytes);
     _buffer.drain(bytes);
   }
+}
+
+void FIX::send_logon() {
+  auto now = core::get_realtime_clock();
+  auto raw_data = Random::create_raw_data(now);
+  auto password = Random::create_password(raw_data, _access_secret);
+  char buffer[4096];
+  auto message = core::fix::Writer(
+      buffer,
+      std::size(buffer),
+      core::fix::MsgType::LOGON,
+      SENDER_COMP_ID,
+      TARGET_COMP_ID,
+      _msg_seq_num)
+    .write(core::fix::Field::HEART_BT_INT, uint16_t{10})
+    .write(core::fix::Field::RAW_DATA, raw_data)
+    .write(core::fix::Field::USERNAME, _access_key)
+    .write(core::fix::Field::PASSWORD, password)
+    .write(static_cast<uint32_t>(fix::Deribit::CANCEL_ON_DISCONNECT), true)
+    .finish();
+  // core::print_memory(message);  // DEBUG
+  _buffer_event.write(message);
+}
+
+void FIX::send_security_list_request() {
+  char buffer[4096];
+  auto message = core::fix::Writer(
+      buffer,
+      std::size(buffer),
+      core::fix::MsgType::SECURITY_LIST_REQUEST,
+      SENDER_COMP_ID,
+      TARGET_COMP_ID,
+      _msg_seq_num)
+    .write(core::fix::Field::SECURITY_REQ_ID, "123")  // TODO(thraneh): do we need a request id?
+    .write(
+        core::fix::Field::SECURITY_LIST_REQUEST_TYPE,
+        core::fix::SecurityListRequestType::ALL_SECURITIES)
+    .finish();
+  // core::print_memory(message);
+  _buffer_event.write(message);
+}
+
+void FIX::send_market_data_request() {
+  char buffer[4096];
+  auto message = core::fix::Writer(
+      buffer,
+      std::size(buffer),
+      core::fix::MsgType::MARKET_DATA_REQUEST,
+      SENDER_COMP_ID,
+      TARGET_COMP_ID,
+      _msg_seq_num)
+    .write(core::fix::Field::SYMBOL, "BTC-27SEP19")
+    .write(core::fix::Field::MD_REQ_ID, "123")  // TODO(thraneh): do we need a request id?
+    .write(
+        core::fix::Field::SUBSCRIPTION_REQUEST_TYPE,
+        core::fix::SubscriptionRequestType::SNAPSHOT_UPDATES)
+    .write(core::fix::Field::MARKET_DEPTH, uint8_t{20})
+    .write(core::fix::Field::MD_UPDATE_TYPE, core::fix::MDUpdateType::INCREMENTAL_REFRESH)
+    .write(static_cast<uint32_t>(fix::Deribit::TRADE_AMOUNT), uint32_t{0})
+    .write(static_cast<uint32_t>(fix::Deribit::SINCE_TIMESTAMP), uint32_t{0})
+    .write(core::fix::Field::NO_MD_ENTRY_TYPES, uint8_t{3})
+    .write(core::fix::Field::MD_ENTRY_TYPE, core::fix::MDEntryType::BID)
+    .write(core::fix::Field::MD_ENTRY_TYPE, core::fix::MDEntryType::OFFER)
+    .write(core::fix::Field::MD_ENTRY_TYPE, core::fix::MDEntryType::TRADE)
+    .finish();
+  // core::print_memory(message);
+  _buffer_event.write(message);
 }
 
 }  // namespace deribit

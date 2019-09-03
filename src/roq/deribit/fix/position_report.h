@@ -13,9 +13,17 @@ namespace deribit {
 namespace fix {
 
 struct PositionReport final {
-  std::string_view text;
+  std::string_view pos_maint_rpt_id;
+  std::string_view pos_req_id;
+  uint16_t pos_req_result = 0;  // TODO(thraneh): enum?
+  uint16_t pos_req_type = 0;  // TODO(thraneh): enum?
 
-  static void parse(PositionReport&, const core::fix::header_t&, const core::fix::body_t&);
+  static PositionReport parse(const core::fix::message_t& message);
+  static void parse(PositionReport&, const core::fix::message_t& message);
+
+  void parse(
+      core::fix::message_t::const_iterator&& iter,
+      const core::fix::message_t::const_iterator& end);
 };
 
 }  // namespace fix
@@ -33,8 +41,15 @@ struct fmt::formatter<roq::deribit::fix::PositionReport> {
     return format_to(
         ctx.begin(),
         "{{"
-        "text=\"{}\""
+        "pos_maint_rpt_id=\"{}\", "
+        "pos_req_id=\"{}\", "
+        "pos_req_result={}, "
+        "pos_req_type={}, "
+        "..."
         "}}",
-        value.text);
+          value.pos_maint_rpt_id,
+          value.pos_req_id,
+          value.pos_req_result,
+          value.pos_req_type);
   }
 };

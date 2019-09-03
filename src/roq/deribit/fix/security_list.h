@@ -8,14 +8,28 @@
 
 #include "roq/core/fix/reader.h"
 
+#include "roq/deribit/fix/instrument.h"
+
 namespace roq {
 namespace deribit {
 namespace fix {
 
 struct SecurityList final {
-  std::string_view text;
+  std::string_view security_req_id;
+  uint16_t security_request_result = 0;  // TODO(thraneh): enum?
+  std::string_view security_response_id;
 
-  static void parse(SecurityList&, const core::fix::header_t&, const core::fix::body_t&);
+  struct {
+    Instrument *items = nullptr;
+    size_t length = 0;
+  } instrument;  // Instrument
+
+  static SecurityList parse(const core::fix::message_t& message);
+  static void parse(SecurityList&, const core::fix::message_t& message);
+
+  void parse(
+      core::fix::message_t::const_iterator&& iter,
+      const core::fix::message_t::const_iterator& end);
 };
 
 }  // namespace fix
@@ -33,8 +47,17 @@ struct fmt::formatter<roq::deribit::fix::SecurityList> {
     return format_to(
         ctx.begin(),
         "{{"
-        "text=\"{}\""
+        "security_req_id=\"{}\", "
+        "security_request_result={}, "
+        "security_response_id=\"{}\", "
+        "instrument={}"
         "}}",
-        value.text);
+        value.security_req_id,
+        value.security_request_result,
+        value.security_response_id,
+        fmt::join(
+            value.instrument.items,
+            value.instrument.items + value.instrument.length,
+            ", "));
   }
 };

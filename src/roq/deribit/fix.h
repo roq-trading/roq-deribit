@@ -40,6 +40,10 @@ class FIX final {
 
   void process_data();
 
+  void send_logon();
+  void send_security_list_request();
+  void send_market_data_request();
+
  private:
   Controller& _controller;
   core::ssl::Connection _ssl_connection;

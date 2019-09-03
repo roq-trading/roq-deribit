@@ -2,11 +2,14 @@
 
 #pragma once
 
+#include <chrono>
 #include <stdexcept>
 #include <string_view>
 #include <type_traits>
 
 #include "roq/core/charconv/number.h"
+
+#include "roq/core/fix/common.h"
 
 namespace roq {
 namespace deribit {
@@ -35,21 +38,27 @@ inline void update(
 }
 
 template <typename T>
-typename std::enable_if<std::is_integral<T>::value, void>::type
+typename std::enable_if<
+    std::is_integral<T>::value || std::is_floating_point<T>::value,
+    void
+    >::type
 inline update(
     T& result,
     const std::string_view& value) {
   result = core::charconv::from_string<T>(value);
 }
 
-/*
-template <>
 inline void update(
     std::chrono::nanoseconds& result,
-    const core::fix::value_t& value) {
-  result = std::chrono::milliseconds{core::fix::get<uint64_t>(value)};
+    const std::string_view& value) {
+  // result = std::chrono::milliseconds{core::fix::get<uint64_t>(value)};
 }
-*/
+
+inline void update(
+    core::fix::MDEntryType& result,
+    const std::string_view& value) {
+  result = core::fix::parse_md_entry_type(value);
+}
 
 }  // namespace fix
 }  // namespace deribit

@@ -26,79 +26,56 @@ struct Parser final {
   template <typename H>
   static void dispatch(
       H&& handler,
-      const core::fix::header_t& header,
-      const core::fix::body_t& body) {
-    switch (header.msg_type) {
+      const core::fix::message_t& message) {
+    switch (message.header.msg_type) {
       case core::fix::MsgType::EXECUTION_REPORT: {
-        ExecutionReport result;
-        ExecutionReport::parse(result, header, body);
-        handler(result);
+        handler(ExecutionReport::parse(message));
         break;
       }
       case core::fix::MsgType::HEARTBEAT: {
-        Heartbeat result;
-        Heartbeat::parse(result, header, body);
-        handler(result);
+        handler(Heartbeat::parse(message));
         break;
       }
       case core::fix::MsgType::LOGON: {
-        Logon result;
-        Logon::parse(result, header, body);
-        handler(result);
+        handler(Logon::parse(message));
         break;
       }
       case core::fix::MsgType::LOGOUT: {
-        Logout result;
-        Logout::parse(result, header, body);
-        handler(result);
+        handler(Logout::parse(message));
         break;
       }
       case core::fix::MsgType::MARKET_DATA_INCREMENTAL_REFRESH: {
-        MarketDataIncrementalRefresh result;
-        MarketDataIncrementalRefresh::parse(result, header, body);
-        handler(result);
+        handler(MarketDataIncrementalRefresh::parse(message));
         break;
       }
       case core::fix::MsgType::MARKET_DATA_REQUEST_REJECT: {
-        MarketDataRequestReject result;
-        MarketDataRequestReject::parse(result, header, body);
-        handler(result);
+        handler(MarketDataRequestReject::parse(message));
         break;
       }
       case core::fix::MsgType::MARKET_DATA_SNAPSHOT_FULL_REFRESH: {
-        MarketDataSnapshotFullRefresh result;
-        MarketDataSnapshotFullRefresh::parse(result, header, body);
-        handler(result);
+        handler(MarketDataSnapshotFullRefresh::parse(message));
         break;
       }
       case core::fix::MsgType::POSITION_REPORT: {
-        PositionReport result;
-        PositionReport::parse(result, header, body);
-        handler(result);
+        handler(PositionReport::parse(message));
         break;
       }
       case core::fix::MsgType::RESEND_REQUEST: {
-        ResendRequest result;
-        ResendRequest::parse(result, header, body);
-        handler(result);
+        handler(ResendRequest::parse(message));
         break;
       }
       case core::fix::MsgType::SECURITY_LIST: {
-        SecurityList result;
-        SecurityList::parse(result, header, body);
-        handler(result);
+        handler(SecurityList::parse(message));
         break;
       }
       case core::fix::MsgType::TEST_REQUEST: {
-        TestRequest result;
-        TestRequest::parse(result, header, body);
-        handler(result);
+        handler(TestRequest::parse(message));
         break;
       }
       default: {
         LOG(WARNING) << fmt::format(
             "Unknown msg_type={}",
-            header.msg_type);
+            message.header.msg_type);
       }
     }
   }

@@ -13,9 +13,16 @@ namespace deribit {
 namespace fix {
 
 struct MarketDataRequestReject final {
+  std::string_view md_req_id;
+  char md_req_rej_reason = '.';  // TODO(thraneh): need enum
   std::string_view text;
 
-  static void parse(MarketDataRequestReject&, const core::fix::header_t&, const core::fix::body_t&);
+  static MarketDataRequestReject parse(const core::fix::message_t& message);
+  static void parse(MarketDataRequestReject&, const core::fix::message_t& message);
+
+  void parse(
+      core::fix::message_t::const_iterator&& iter,
+      const core::fix::message_t::const_iterator& end);
 };
 
 }  // namespace fix
@@ -33,8 +40,12 @@ struct fmt::formatter<roq::deribit::fix::MarketDataRequestReject> {
     return format_to(
         ctx.begin(),
         "{{"
+        "md_req_id=\"{}\", "
+        "md_req_rej_reason={}, "
         "text=\"{}\""
         "}}",
+        value.md_req_id,
+        value.md_req_rej_reason,
         value.text);
   }
 };
