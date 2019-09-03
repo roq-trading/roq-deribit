@@ -11,6 +11,8 @@
 
 #include "roq/core/fix/common.h"
 
+#include "roq/deribit/fix/deribit.h"
+
 namespace roq {
 namespace deribit {
 namespace fix {
@@ -61,27 +63,81 @@ inline void update(
 }
 
 inline void update(
+    core::fix::MDUpdateAction& result,
+    const std::string_view& value) {
+  result = core::fix::parse_md_update_action(value);
+}
+
+inline void update(
+    core::fix::MDUpdateType& result,
+    const std::string_view& value) {
+  result = core::fix::parse_md_update_type(value);
+}
+
+inline void update(
+    core::fix::MDReqRejReason& result,
+    const std::string_view& value) {
+  result = core::fix::parse_md_req_rej_reason(value);
+}
+
+inline void update(
     core::fix::OrdStatus& result,
     const std::string_view& value) {
-  // result = core::fix::parse_ord_status(value);
+  result = core::fix::parse_ord_status(value);
 }
 
 inline void update(
     core::fix::OrdType& result,
     const std::string_view& value) {
-  // result = core::fix::parse_ord_type(value);
+  result = core::fix::parse_ord_type(value);
 }
 
 inline void update(
     core::fix::QtyType& result,
     const std::string_view& value) {
-  // result = core::fix::parse_qty_type(value);
+  result = core::fix::parse_qty_type(value);
 }
 
 inline void update(
     core::fix::Side& result,
     const std::string_view& value) {
-  // result = core::fix::parse_side(value);
+  result = core::fix::parse_side(value);
+}
+
+inline void update(
+    core::fix::SecurityRequestResult& result,
+    const std::string_view& value) {
+  result = core::fix::parse_security_request_result(value);
+}
+
+inline void update(
+    core::fix::PosReqResult& result,
+    const std::string_view& value) {
+  result = core::fix::parse_pos_req_result(value);
+}
+
+inline void update(
+    core::fix::PosReqType& result,
+    const std::string_view& value) {
+  result = core::fix::parse_pos_req_type(value);
+}
+
+inline void update(
+    core::fix::PutOrCall& result,
+    const std::string_view& value) {
+  result = core::fix::parse_put_or_call(value);
+}
+
+inline void update(
+    core::fix::SettlType& result,
+    const std::string_view& value) {
+  result = core::fix::parse_settl_type(value);
+}
+
+inline void update(
+    AdvOrderType& result,
+    const std::string_view& value) {
+  result = parse_adv_order_type(value);
 }
 
 }  // namespace fix

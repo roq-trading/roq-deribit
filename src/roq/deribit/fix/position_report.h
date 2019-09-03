@@ -15,8 +15,8 @@ namespace fix {
 struct PositionReport final {
   std::string_view pos_maint_rpt_id;
   std::string_view pos_req_id;
-  uint16_t pos_req_result = 0;  // TODO(thraneh): enum?
-  uint16_t pos_req_type = 0;  // TODO(thraneh): enum?
+  core::fix::PosReqResult pos_req_result = core::fix::PosReqResult::UNKNOWN;
+  core::fix::PosReqType pos_req_type = core::fix::PosReqType::UNKNOWN;
 
   static PositionReport parse(const core::fix::message_t& message);
   static void parse(PositionReport&, const core::fix::message_t& message);

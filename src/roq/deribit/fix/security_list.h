@@ -16,7 +16,7 @@ namespace fix {
 
 struct SecurityList final {
   std::string_view security_req_id;
-  uint16_t security_request_result = 0;  // TODO(thraneh): enum?
+  core::fix::SecurityRequestResult security_request_result = core::fix::SecurityRequestResult::UNKNOWN;
   std::string_view security_response_id;
 
   struct {

@@ -11,6 +11,8 @@
 
 #include "roq/core/fix/reader.h"
 
+#include "roq/deribit/fix/deribit.h"
+
 namespace roq {
 namespace deribit {
 namespace fix {
@@ -20,7 +22,7 @@ struct ExecutionReport final {
   std::string_view cl_ord_id;
   double contract_multiplier = std::numeric_limits<double>::quiet_NaN();
   double cum_qty = std::numeric_limits<double>::quiet_NaN();
-  std::string_view exec_inst;  // TODO(thraneh): enum?
+  std::string_view exec_inst;  // TODO(thraneh): MultipleCharValue
   double leaves_qty = std::numeric_limits<double>::quiet_NaN();
   double max_show = std::numeric_limits<double>::quiet_NaN();
   std::string_view ord_rej_reason;  // TODO(thraneh): enum?
@@ -39,7 +41,7 @@ struct ExecutionReport final {
   std::chrono::nanoseconds transact_time;
   double volatility = std::numeric_limits<double>::quiet_NaN();
 
-  std::string_view deribit_adv_order_type;  // TODO(thraneh): enum?
+  AdvOrderType deribit_adv_order_type = AdvOrderType::UNKNOWN;
 
   static ExecutionReport parse(const core::fix::message_t& message);
   static void parse(ExecutionReport&, const core::fix::message_t& message);

@@ -18,21 +18,22 @@ namespace fix {
 struct Instrument final {
   std::string_view comm_currency;
   std::string_view currency;
-  int instrument_price_precision = 0;  // 2576
   std::chrono::nanoseconds issue_date;
   std::chrono::nanoseconds maturity_date;
   std::chrono::nanoseconds maturity_time;
   double min_price_increment = std::numeric_limits<double>::quiet_NaN();
   double min_trade_vol = std::numeric_limits<double>::quiet_NaN();
-  int put_or_call = 0;  // 201
+  core::fix::PutOrCall put_or_call = core::fix::PutOrCall::UNKNOWN;
   std::string_view security_desc;
-  std::string_view security_type;  // 167
+  std::string_view security_type;
   std::string_view settl_currency;
-  std::string_view settl_type;  // 63
+  core::fix::SettlType settl_type = core::fix::SettlType::UNKNOWN;
   std::string_view strike_currency;
   double strike_price = std::numeric_limits<double>::quiet_NaN();
   std::string_view symbol;
   std::string_view underlying_symbol;
+
+  uint8_t instrument_price_precision = 0;  // TODO(thraneh): deribit? tag=2576
 
   static Instrument parse(const core::fix::message_t& message);
   static void parse(Instrument&, const core::fix::message_t& message);
@@ -59,7 +60,6 @@ struct fmt::formatter<roq::deribit::fix::Instrument> {
         "{{"
         "comm_currency=\"{}\", "
         "currency=\"{}\", "
-        "instrument_price_precision={}, "
         "issue_date={}, "
         "maturity_date={}, "
         "maturity_time={}, "
@@ -69,11 +69,12 @@ struct fmt::formatter<roq::deribit::fix::Instrument> {
         "security_desc=\"{}\", "
         "security_type=\"{}\", "
         "settl_currency=\"{}\", "
-        "settl_type=\"{}\", "
+        "settl_type={}, "
         "strike_currency=\"{}\", "
         "strike_price={}, "
         "symbol=\"{}\", "
-        "underlying_symbol=\"{}\""
+        "underlying_symbol=\"{}\", "
+        "instrument_price_precision={}"
         "}}",
         value.comm_currency,
         value.currency,
@@ -91,6 +92,7 @@ struct fmt::formatter<roq::deribit::fix::Instrument> {
         value.strike_currency,
         value.strike_price,
         value.symbol,
-        value.underlying_symbol);
+        value.underlying_symbol,
+        value.instrument_price_precision);
   }
 };
