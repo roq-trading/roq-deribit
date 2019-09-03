@@ -60,6 +60,30 @@ inline void update(
   result = core::fix::parse_md_entry_type(value);
 }
 
+inline void update(
+    core::fix::OrdStatus& result,
+    const std::string_view& value) {
+  // result = core::fix::parse_ord_status(value);
+}
+
+inline void update(
+    core::fix::OrdType& result,
+    const std::string_view& value) {
+  // result = core::fix::parse_ord_type(value);
+}
+
+inline void update(
+    core::fix::QtyType& result,
+    const std::string_view& value) {
+  // result = core::fix::parse_qty_type(value);
+}
+
+inline void update(
+    core::fix::Side& result,
+    const std::string_view& value) {
+  // result = core::fix::parse_side(value);
+}
+
 }  // namespace fix
 }  // namespace deribit
 }  // namespace roq

@@ -2,8 +2,11 @@
 
 #pragma once
 
+#include <fmt/chrono.h>
 #include <fmt/format.h>
 
+#include <chrono>
+#include <limits>
 #include <string_view>
 
 #include "roq/core/fix/reader.h"
@@ -13,33 +16,30 @@ namespace deribit {
 namespace fix {
 
 struct ExecutionReport final {
+  double avg_px = std::numeric_limits<double>::quiet_NaN();
+  std::string_view cl_ord_id;
+  double contract_multiplier = std::numeric_limits<double>::quiet_NaN();
+  double cum_qty = std::numeric_limits<double>::quiet_NaN();
+  std::string_view exec_inst;  // TODO(thraneh): enum?
+  double leaves_qty = std::numeric_limits<double>::quiet_NaN();
+  double max_show = std::numeric_limits<double>::quiet_NaN();
+  std::string_view ord_rej_reason;  // TODO(thraneh): enum?
+  core::fix::OrdStatus ord_status = core::fix::OrdStatus::UNKNOWN;
+  core::fix::OrdType ord_type = core::fix::OrdType::UNKNOWN;
+  double order_qty = std::numeric_limits<double>::quiet_NaN();
+  std::string_view orig_cl_ord_id;
+  bool pegged_price = false;
+  double price = std::numeric_limits<double>::quiet_NaN();
+  core::fix::QtyType qty_type = core::fix::QtyType::UNKNOWN;
+  std::string_view security_exchange;
+  core::fix::Side side = core::fix::Side::UNKNOWN;
+  double stop_px = std::numeric_limits<double>::quiet_NaN();
+  std::string_view symbol;
   std::string_view text;
-/*
-1 ClOrdID Yes Deribit replaces this field with the own value assigned by the server (it is not the client id from New Order Single)
-41  OrigClOrdId Yes The original value assigned by the client in the New Order Single(D) message
-39  OrdStatus Yes 0 = New, 1 = Partially filled, 2 = Filled, 8 = Rejected
-54  Side  Yes 1 = Buy, 2 = Sell
-60  TransactTime  Yes Time the transaction represented by this Execution Report occurred. Fix timestamp.
-151 LeavesQty Yes Order quantity open for further execution (LeavesQty = OrderQty - CumQty) in Contract units corresponding to the ContractMultiplier in SecurityList
-14  CumQty  Yes Total executed quantity or 0.0 in Contract units corresponding to the ContractMultiplier in SecurityList
-38  OrderQty  Yes Order quantity in Contract units corresponding to the ContractMultiplier in SecurityList
-5127  ConditionTriggerMethod  No  Trigger for a stop order 1 = Mark Price, 2 = Last Price, 3 = corresponding Index Price
-40  OrdType Yes 1 = Market, 2 = Limit, 4 = Stop Limit, S = Stop Market
-44  Price No  Price, maybe be absent for Market and Stop Market orders
-18  ExecInst  No  Currently is used to mark POST ONLY orders: 6 = "Participate don't initiate", and REDUCE ONLY orders: E = " Do not increase - DNI"
-99  StopPx  No  Stop price for stop limit orders
-103 OrdRejReason  Yes 
-58  Text  No  Free format text string, usually exceptions
-207 SecurityExchange  No  "Deribit"
-55  Symbol  Yes Instrument symbol
-854 QtyType No  Type of quantity specified in a quantity. Currently only 1 - Contracts.
-231 ContractMultiplier  No  Specifies a multiply factor to convert from contracts to total units
-6 AvgPx No  Average execution price or 0.0 if not executed yet or rejected
-210 MaxShow No  Maximum quantity (e.g. number of shares) within an order to be shown to other customers
-100012  DeribitAdvOrderType No  if it is present then it denotes advanced order for options: 0 = Implied Volatility Order, 1 = USD Order
-1188  Volatility  No  volatility for Implied Volatility Orders (options orders with fixed volatility)
-839 PeggedPrice No
-*/
+  std::chrono::nanoseconds transact_time;
+  double volatility = std::numeric_limits<double>::quiet_NaN();
+
+  std::string_view deribit_adv_order_type;  // TODO(thraneh): enum?
 
   static ExecutionReport parse(const core::fix::message_t& message);
   static void parse(ExecutionReport&, const core::fix::message_t& message);
@@ -64,8 +64,53 @@ struct fmt::formatter<roq::deribit::fix::ExecutionReport> {
     return format_to(
         ctx.begin(),
         "{{"
-        "text=\"{}\""
+        "avg_px={}, "
+        "cl_ord_id=\"{}\", "
+        "contract_multiplier={}, "
+        "cum_qty={}, "
+        "exec_inst=\"{}\", "
+        "leaves_qty={}, "
+        "max_show={}, "
+        "ord_rej_reason={}, "
+        "ord_status={}, "
+        "ord_type={}, "
+        "order_qty={}, "
+        "orig_cl_ord_id=\"{}\", "
+        "pegged_price={}, "
+        "price={}, "
+        "qty_type={}, "
+        "security_exchange=\"{}\", "
+        "side={}, "
+        "stop_px={}, "
+        "symbol=\"{}\", "
+        "text={}, "
+        "stop_px={}, "
+        "transact_time={}, "
+        "volatility={}, "
+        "deribit_adv_order_type={}"
         "}}",
-        value.text);
+        value.avg_px,
+        value.cl_ord_id,
+        value.contract_multiplier,
+        value.cum_qty,
+        value.exec_inst,
+        value.leaves_qty,
+        value.max_show,
+        value.ord_rej_reason,
+        value.ord_status,
+        value.ord_type,
+        value.order_qty,
+        value.orig_cl_ord_id,
+        value.pegged_price,
+        value.price,
+        value.qty_type,
+        value.security_exchange,
+        value.side,
+        value.stop_px,
+        value.symbol,
+        value.text,
+        value.transact_time,
+        value.volatility,
+        value.deribit_adv_order_type);
   }
 };
