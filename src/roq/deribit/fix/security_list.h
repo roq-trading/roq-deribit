@@ -4,7 +4,9 @@
 
 #include <fmt/format.h>
 
+#include <cstddef>
 #include <string_view>
+#include <vector>
 
 #include "roq/core/fix/reader.h"
 
@@ -24,12 +26,19 @@ struct SecurityList final {
     size_t length = 0;
   } instrument;  // Instrument
 
-  static SecurityList parse(const core::fix::message_t& message);
-  static void parse(SecurityList&, const core::fix::message_t& message);
+  static SecurityList parse(
+      const core::fix::message_t& message,
+      std::vector<std::byte>& buffer);
+
+  static void parse(
+      SecurityList&,
+      const core::fix::message_t& message,
+      std::vector<std::byte>& buffer);
 
   void parse(
       core::fix::message_t::const_iterator&& iter,
-      const core::fix::message_t::const_iterator& end);
+      const core::fix::message_t::const_iterator& end,
+      std::vector<std::byte>& buffer);
 };
 
 }  // namespace fix

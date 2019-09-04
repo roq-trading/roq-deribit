@@ -4,6 +4,9 @@
 
 #include <fmt/format.h>
 
+#include <cstddef>
+#include <vector>
+
 #include "roq/logging.h"
 
 #include "roq/deribit/fix/execution_report.h"
@@ -26,7 +29,8 @@ struct Parser final {
   template <typename H>
   static void dispatch(
       H&& handler,
-      const core::fix::message_t& message) {
+      const core::fix::message_t& message,
+      std::vector<std::byte>& buffer) {
     switch (message.header.msg_type) {
       case core::fix::MsgType::EXECUTION_REPORT: {
         handler(ExecutionReport::parse(message));
@@ -45,7 +49,7 @@ struct Parser final {
         break;
       }
       case core::fix::MsgType::MARKET_DATA_INCREMENTAL_REFRESH: {
-        handler(MarketDataIncrementalRefresh::parse(message));
+        handler(MarketDataIncrementalRefresh::parse(message, buffer));
         break;
       }
       case core::fix::MsgType::MARKET_DATA_REQUEST_REJECT: {
@@ -53,11 +57,11 @@ struct Parser final {
         break;
       }
       case core::fix::MsgType::MARKET_DATA_SNAPSHOT_FULL_REFRESH: {
-        handler(MarketDataSnapshotFullRefresh::parse(message));
+        handler(MarketDataSnapshotFullRefresh::parse(message, buffer));
         break;
       }
       case core::fix::MsgType::POSITION_REPORT: {
-        handler(PositionReport::parse(message));
+        handler(PositionReport::parse(message, buffer));
         break;
       }
       case core::fix::MsgType::RESEND_REQUEST: {
@@ -65,7 +69,7 @@ struct Parser final {
         break;
       }
       case core::fix::MsgType::SECURITY_LIST: {
-        handler(SecurityList::parse(message));
+        handler(SecurityList::parse(message, buffer));
         break;
       }
       case core::fix::MsgType::TEST_REQUEST: {

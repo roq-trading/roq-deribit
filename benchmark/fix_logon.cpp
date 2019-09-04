@@ -92,7 +92,8 @@ void BM_fix_parser_dispatch_logon(benchmark::State& state) {
                 [](const fix::TestRequest& test_request) {
                 },
               },
-              message);
+              message,
+              buffer);
         },
         MESSAGE,
         std::size(MESSAGE));

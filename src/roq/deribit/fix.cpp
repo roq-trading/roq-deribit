@@ -161,7 +161,8 @@ void FIX::process_data() {
                 LOG(INFO) << fmt::format("test_request={}", test_request);
               },
             },
-            message);
+            message,
+            _decode_buffer);
       },
       buffer,
       length);

@@ -28,22 +28,25 @@ namespace fix {
 */
 
 MarketDataIncrementalRefresh MarketDataIncrementalRefresh::parse(
-    const core::fix::message_t& message) {
+    const core::fix::message_t& message,
+    std::vector<std::byte>& buffer) {
   MarketDataIncrementalRefresh result;
-  parse(result, message);
+  parse(result, message, buffer);
   return result;
 }
 
 void MarketDataIncrementalRefresh::parse(
     MarketDataIncrementalRefresh& result,
-    const core::fix::message_t& message) {
+    const core::fix::message_t& message,
+    std::vector<std::byte>& buffer) {
   new (&result) std::remove_reference<decltype(result)>::type {};
-  result.parse(message.begin(), message.end());
+  result.parse(message.begin(), message.end(), buffer);
 }
 
 void MarketDataIncrementalRefresh::parse(
     core::fix::message_t::const_iterator&& iter,
-    const core::fix::message_t::const_iterator& end) {
+    const core::fix::message_t::const_iterator& end,
+    std::vector<std::byte>& buffer) {
   for (; iter != end; ++iter) {
     auto& [tag, value] = *iter;
     auto field = core::fix::parse_field(tag);

@@ -6,8 +6,10 @@
 #include <fmt/format.h>
 
 #include <chrono>
+#include <cstddef>
 #include <limits>
 #include <string_view>
+#include <vector>
 
 #include "roq/core/fix/reader.h"
 
@@ -43,12 +45,19 @@ struct MarketDataIncrementalRefresh final {
 
   using MDIncGrp = std::remove_pointer<decltype(md_inc_grp.items)>::type;
 
-  static MarketDataIncrementalRefresh parse(const core::fix::message_t& message);
-  static void parse(MarketDataIncrementalRefresh&, const core::fix::message_t& message);
+  static MarketDataIncrementalRefresh parse(
+      const core::fix::message_t& message,
+      std::vector<std::byte>& buffer);
+
+  static void parse(
+      MarketDataIncrementalRefresh&,
+      const core::fix::message_t& message,
+      std::vector<std::byte>& buffer);
 
   void parse(
       core::fix::message_t::const_iterator&& iter,
-      const core::fix::message_t::const_iterator& end);
+      const core::fix::message_t::const_iterator& end,
+      std::vector<std::byte>& buffer);
 };
 
 }  // namespace fix
