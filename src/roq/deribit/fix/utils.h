@@ -10,6 +10,7 @@
 #include "roq/core/charconv/number.h"
 
 #include "roq/core/fix/common.h"
+#include "roq/core/fix/charconv.h"
 
 #include "roq/deribit/fix/deribit.h"
 
@@ -53,7 +54,7 @@ inline update(
 inline void update(
     std::chrono::nanoseconds& result,
     const std::string_view& value) {
-  // result = std::chrono::milliseconds{core::fix::get<uint64_t>(value)};
+  result = core::fix::parse_utc_timestamp(value);
 }
 
 inline void update(
