@@ -4,6 +4,8 @@
 
 #include "roq/logging.h"
 
+#include "roq/deribit/fix/array.h"
+#include "roq/deribit/fix/buffer.h"
 #include "roq/deribit/fix/utils.h"
 
 namespace roq {
@@ -30,13 +32,22 @@ void SecurityList::parse(
     core::fix::message_t::const_iterator&& iter,
     const core::fix::message_t::const_iterator& end,
     std::vector<std::byte>& buffer) {
-  for (; iter != end; ++iter) {
+  Buffer buffer_(buffer);
+  for (; iter != end;) {
     auto& [tag, value] = *iter;
     auto field = core::fix::parse_field(tag);
     switch (field) {
-      case core::fix::Field::NO_RELATED_SYM:
-        // update(security_request_result, value);
+      case core::fix::Field::NO_RELATED_SYM: {
+        auto length = core::charconv::from_string<uint32_t>(value);
+        ++iter;
+        Array array(buffer_, instruments);
+        for (uint32_t i = 0; i < length; ++i) {
+          auto& item = array.next();
+          item.parse(iter, end);
+          ++array;
+        }
         continue;
+      }
       case core::fix::Field::SECURITY_REQ_ID:
         update(security_req_id, value);
         break;
@@ -46,7 +57,6 @@ void SecurityList::parse(
       case core::fix::Field::SECURITY_RESPONSE_ID:
         update(security_response_id, value);
         break;
-        break;
       default:
         LOG(WARNING) << fmt::format(
             "Unknown field: tag={} field={} value=\"{}\"",
@@ -54,6 +64,7 @@ void SecurityList::parse(
             field,
             value);
     }
+    ++iter;
   }
 }
 

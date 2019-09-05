@@ -39,6 +39,7 @@ struct MarketDataIncrementalRefresh final {
       std::string_view order_id;
       std::string_view secondary_order_id;
       core::fix::Side side;
+      std::string_view text;
     } *items = nullptr;
     size_t length = 0;
   } md_inc_grp;  // MDIncGrp
@@ -86,7 +87,8 @@ struct fmt::formatter<roq::deribit::fix::MarketDataIncrementalRefresh::MDIncGrp>
         "ord_status={}, "
         "order_id=\"{}\", "
         "secondary_order_id=\"{}\", "
-        "side={}"
+        "side={}, "
+        "text=\"{}\""
         "}}",
         value.deribit_label,
         value.deribit_trade_id,
@@ -99,7 +101,8 @@ struct fmt::formatter<roq::deribit::fix::MarketDataIncrementalRefresh::MDIncGrp>
         value.ord_status,
         value.order_id,
         value.secondary_order_id,
-        value.side);
+        value.side,
+        value.text);
   }
 };
 

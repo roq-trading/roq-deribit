@@ -24,7 +24,7 @@ struct SecurityList final {
   struct {
     Instrument *items = nullptr;
     size_t length = 0;
-  } instrument;  // Instrument
+  } instruments;  // Instrument
 
   static SecurityList parse(
       const core::fix::message_t& message,
@@ -59,14 +59,14 @@ struct fmt::formatter<roq::deribit::fix::SecurityList> {
         "security_req_id=\"{}\", "
         "security_request_result={}, "
         "security_response_id=\"{}\", "
-        "instrument={}"
+        "instruments=[{}]"
         "}}",
         value.security_req_id,
         value.security_request_result,
         value.security_response_id,
         fmt::join(
-            value.instrument.items,
-            value.instrument.items + value.instrument.length,
+            value.instruments.items,
+            value.instruments.items + value.instruments.length,
             ", "));
   }
 };

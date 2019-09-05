@@ -133,7 +133,7 @@ void FIX::process_data() {
               },
               [&](const fix::Logon& logon) {
                 LOG(INFO) << fmt::format("logon={}", logon);
-                // send_security_list_request();
+                send_security_list_request();
                 send_market_data_request();
               },
               [](const fix::Logout& logout) {

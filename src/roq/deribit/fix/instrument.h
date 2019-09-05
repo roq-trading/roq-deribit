@@ -17,6 +17,7 @@ namespace fix {
 
 struct Instrument final {
   std::string_view comm_currency;
+  double contract_multiplier = std::numeric_limits<double>::quiet_NaN();
   std::string_view currency;
   std::chrono::nanoseconds issue_date;
   std::chrono::nanoseconds maturity_date;
@@ -39,7 +40,7 @@ struct Instrument final {
   static void parse(Instrument&, const core::fix::message_t& message);
 
   void parse(
-      core::fix::message_t::const_iterator&& iter,
+      core::fix::message_t::const_iterator& iter,
       const core::fix::message_t::const_iterator& end);
 };
 
@@ -59,6 +60,7 @@ struct fmt::formatter<roq::deribit::fix::Instrument> {
         ctx.begin(),
         "{{"
         "comm_currency=\"{}\", "
+        "contract_multiplier=\"{}\", "
         "currency=\"{}\", "
         "issue_date={}, "
         "maturity_date={}, "
@@ -77,8 +79,8 @@ struct fmt::formatter<roq::deribit::fix::Instrument> {
         "instrument_price_precision={}"
         "}}",
         value.comm_currency,
+        value.contract_multiplier,
         value.currency,
-        value.instrument_price_precision,
         value.issue_date,
         value.maturity_date,
         value.maturity_time,
