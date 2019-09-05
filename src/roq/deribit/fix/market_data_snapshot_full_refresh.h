@@ -28,8 +28,6 @@ struct MarketDataSnapshotFullRefresh final {
   std::string_view underlying_symbol;
   struct {
     struct {
-      std::string_view deribit_label;
-      uint64_t deribit_trade_id;
       std::chrono::nanoseconds md_entry_date;
       double md_entry_px = std::numeric_limits<double>::quiet_NaN();
       double md_entry_size = std::numeric_limits<double>::quiet_NaN();
@@ -39,6 +37,9 @@ struct MarketDataSnapshotFullRefresh final {
       std::string_view secondary_order_id;
       core::fix::Side side;
       std::string_view text;
+      // deribit specific
+      std::string_view deribit_label;
+      uint64_t deribit_trade_id;
     } *items = nullptr;
     size_t length = 0;
   } md_full_grp;  // MDFullGrp
@@ -75,8 +76,6 @@ struct fmt::formatter<roq::deribit::fix::MarketDataSnapshotFullRefresh::MDFullGr
     return format_to(
         ctx.begin(),
         "{{"
-        "deribit_label=\"{}\", "
-        "deribit_trade_id={}, "
         "md_entry_date={}, "
         "md_entry_px={}, "
         "md_entry_size={}, "
@@ -85,10 +84,10 @@ struct fmt::formatter<roq::deribit::fix::MarketDataSnapshotFullRefresh::MDFullGr
         "ord_status={}, "
         "secondary_order_id=\"{}\", "
         "side={}, "
-        "text=\"{}\""
+        "text=\"{}\", "
+        "deribit_label=\"{}\", "
+        "deribit_trade_id={}"
         "}}",
-        value.deribit_label,
-        value.deribit_trade_id,
         value.md_entry_date,
         value.md_entry_px,
         value.md_entry_size,
@@ -97,7 +96,9 @@ struct fmt::formatter<roq::deribit::fix::MarketDataSnapshotFullRefresh::MDFullGr
         value.ord_status,
         value.secondary_order_id,
         value.side,
-        value.text);
+        value.text,
+        value.deribit_label,
+        value.deribit_trade_id);
   }
 };
 

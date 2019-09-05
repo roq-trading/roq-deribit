@@ -14,29 +14,12 @@ namespace deribit {
 namespace fix {
 
 namespace {
-/*
-268 NoMDEntries int Yes Repeating group . Specifies the number of entries in the group.
-=>279 MDUpdateAction  Char  No  Type of Market Data update action. 0 = New, 1 = Change, 2 = Delete
-=>269 MDEntryType int No  0 = Bid (Bid side of the order book), 1 = Offer (Ask side of the order book), 2 = Trade (in case of request for info about recent trades)
-=>270 MDEntryPx Price No  Price of an entry
-=>271 MDEntrySize Qty No  Size of an entry
-=>272 MDEntryDate UTCTimestamp  No  The timestamp for trade
-=>100009  DeribitTradeId  int No  Id of the trade, in case of the request for trades
-=>54  Side  int No  Side of trade (1 = Buy, 2 = Sell)
-=>58  Text  String  No  The trade sequence number
-=>198 SecondaryOrderId  String  No  For trade – matching order id
-=>39  OrdStatus int No  For trade – order status (0 = New, 1 = Partially filled, 2 = Filled, 4 = Cancelled)
-=>100010  DeribitLabel  String  No  User defined 32 character label of the order, in case of the request for trades
-*/
 void parse_md_full(
     MarketDataSnapshotFullRefresh::MDFullGrp& result,
     core::fix::message_t::const_iterator& iter,
     const core::fix::message_t::const_iterator& end) {
-  fprintf(stderr, "md_full_grp\n");
   new (&result) std::remove_reference<decltype(result)>::type {};
   auto& [tag, value] = *iter;
-  fprintf(stderr, "lead: tag=%d\n",
-      static_cast<int>(tag));
   auto field = core::fix::parse_field(tag);
   if (field != core::fix::Field::MD_ENTRY_TYPE)
     throw std::runtime_error(
@@ -46,10 +29,6 @@ void parse_md_full(
   update(result.md_entry_type, value);
   for (++iter; iter != end; ++iter) {
     auto& [tag, value] = *iter;
-    fprintf(stderr, "iter: tag=%d value=\"%.*s\"\n",
-        static_cast<int>(tag),
-        static_cast<int>(value.length()),
-        value.data());
     try {
       auto field = core::fix::parse_field(tag);
       switch (field) {
@@ -84,16 +63,12 @@ void parse_md_full(
               update(result.deribit_trade_id, value);
               break;
             default:
-              fprintf(stderr, "stop: tag=%d\n",
-                  static_cast<int>(tag));
               return;
           }
       }
     } catch (std::exception& e) {
-      fprintf(stderr, "fail: tag=%d value=\"%.*s\"\n",
-          static_cast<int>(tag),
-          static_cast<int>(value.length()),
-          value.data());
+      LOG(WARNING) << fmt::format(
+          "Can't parse tag={} value=\"{}\"", tag, value);
       throw;
     }
   }

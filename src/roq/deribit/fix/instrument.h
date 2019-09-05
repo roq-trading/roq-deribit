@@ -33,7 +33,7 @@ struct Instrument final {
   double strike_price = std::numeric_limits<double>::quiet_NaN();
   std::string_view symbol;
   std::string_view underlying_symbol;
-
+  // deribit specific
   uint8_t instrument_price_precision = 0;  // TODO(thraneh): deribit? tag=2576
 
   static Instrument parse(const core::fix::message_t& message);

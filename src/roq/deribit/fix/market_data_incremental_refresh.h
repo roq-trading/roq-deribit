@@ -27,9 +27,6 @@ struct MarketDataIncrementalRefresh final {
 
   struct {
     struct {
-      std::string_view deribit_label;
-      uint64_t deribit_trade_id;
-      double index_price = std::numeric_limits<double>::quiet_NaN();
       std::chrono::nanoseconds md_entry_date;
       double md_entry_px = std::numeric_limits<double>::quiet_NaN();
       double md_entry_size = std::numeric_limits<double>::quiet_NaN();
@@ -40,6 +37,11 @@ struct MarketDataIncrementalRefresh final {
       std::string_view secondary_order_id;
       core::fix::Side side;
       std::string_view text;
+      // non-standard
+      double index_price = std::numeric_limits<double>::quiet_NaN();
+      // deribit specific
+      std::string_view deribit_label;
+      uint64_t deribit_trade_id;
     } *items = nullptr;
     size_t length = 0;
   } md_inc_grp;  // MDIncGrp
@@ -76,9 +78,6 @@ struct fmt::formatter<roq::deribit::fix::MarketDataIncrementalRefresh::MDIncGrp>
     return format_to(
         ctx.begin(),
         "{{"
-        "deribit_label=\"{}\", "
-        "deribit_trade_id={}, "
-        "index_price={}, "
         "md_entry_date={}, "
         "md_entry_px={}, "
         "md_entry_size={}, "
@@ -88,11 +87,11 @@ struct fmt::formatter<roq::deribit::fix::MarketDataIncrementalRefresh::MDIncGrp>
         "order_id=\"{}\", "
         "secondary_order_id=\"{}\", "
         "side={}, "
-        "text=\"{}\""
+        "text=\"{}\", "
+        "index_price={}, "
+        "deribit_label=\"{}\", "
+        "deribit_trade_id={}"
         "}}",
-        value.deribit_label,
-        value.deribit_trade_id,
-        value.index_price,
         value.md_entry_date,
         value.md_entry_px,
         value.md_entry_size,
@@ -102,7 +101,10 @@ struct fmt::formatter<roq::deribit::fix::MarketDataIncrementalRefresh::MDIncGrp>
         value.order_id,
         value.secondary_order_id,
         value.side,
-        value.text);
+        value.text,
+        value.index_price,
+        value.deribit_label,
+        value.deribit_trade_id);
   }
 };
 
