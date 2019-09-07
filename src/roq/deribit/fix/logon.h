@@ -15,8 +15,9 @@ struct Logon final {
   std::string_view raw_data;
   std::string_view username;
   std::string_view password;
-  bool cancel_on_disconnect = false;
-  bool use_wordsafe_tags = false;
+  // deribit specific
+  bool deribit_cancel_on_disconnect = false;
+  bool deribit_use_wordsafe_tags = false;
 
   static Logon parse(const core::fix::message_t& message);
   static void parse(Logon&, const core::fix::message_t& message);
@@ -45,14 +46,14 @@ struct fmt::formatter<roq::deribit::fix::Logon> {
         "raw_data=\"{}\", "
         "username=\"{}\", "
         "password=\"{}\", "
-        "cancel_on_disconnect={}, "
-        "use_wordsafe_tags={}"
+        "deribit_cancel_on_disconnect={}, "
+        "deribit_use_wordsafe_tags={}"
         "}}",
         value.heart_bt_int,
         value.raw_data,
         value.username,
         value.password,
-        value.cancel_on_disconnect,
-        value.use_wordsafe_tags);
+        value.deribit_cancel_on_disconnect,
+        value.deribit_use_wordsafe_tags);
   }
 };

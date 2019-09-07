@@ -4,6 +4,8 @@
 
 #include "roq/logging.h"
 
+#include "roq/core/fix/position_report.h"
+
 #include "roq/deribit/fix/utils.h"
 
 namespace roq {
@@ -50,6 +52,8 @@ void PositionReport::parse(
         update(pos_req_type, value);
         break;
       default:
+        if (core::fix::PositionReport::has_field(field))
+          break;
         LOG(WARNING) << fmt::format(
             "Unknown field: tag={} field={} value=\"{}\"",
             tag,

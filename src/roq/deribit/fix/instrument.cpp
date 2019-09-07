@@ -4,6 +4,8 @@
 
 #include "roq/logging.h"
 
+#include "roq/core/fix/instrument.h"
+
 #include "roq/deribit/fix/deribit.h"
 #include "roq/deribit/fix/utils.h"
 
@@ -92,8 +94,9 @@ void Instrument::parse(
         case core::fix::Field::UNDERLYING_SYMBOL:
           update(underlying_symbol, value);
           break;
-        // TODO(thraneh): add noop for the remaining FIX spec fields
         default:
+          if (core::fix::Instrument::has_field(field))
+            break;
           switch (static_cast<Deribit>(tag)) {
             case Deribit::INSTRUMENT_PRICE_PRECISION:
               update(instrument_price_precision, value);

@@ -1,0 +1,93 @@
+/* Copyright (c) 2017-2019, Hans Erik Thrane */
+
+#include "roq/deribit/fix/user_response.h"
+
+#include "roq/logging.h"
+
+#include "roq/core/fix/user_response.h"
+
+#include "roq/deribit/fix/utils.h"
+
+namespace roq {
+namespace deribit {
+namespace fix {
+
+UserResponse UserResponse::parse(const core::fix::message_t& message) {
+  UserResponse result;
+  parse(result, message);
+  return result;
+}
+
+void UserResponse::parse(
+    UserResponse& result,
+    const core::fix::message_t& message) {
+  new (&result) std::remove_reference<decltype(result)>::type {};
+  result.parse(message.begin(), message.end());
+}
+
+void UserResponse::parse(
+    core::fix::message_t::const_iterator&& iter,
+    const core::fix::message_t::const_iterator& end) {
+  for (; iter != end; ++iter) {
+    auto& [tag, value] = *iter;
+    try {
+      auto field = core::fix::parse_field(tag);
+      switch (field) {
+        case core::fix::Field::CURRENCY:
+          update(currency, value);
+          break;
+        case core::fix::Field::USERNAME:
+          update(username, value);
+          break;
+        case core::fix::Field::USER_REQUEST_ID:
+          update(user_request_id, value);
+          break;
+        case core::fix::Field::USER_STATUS:
+          update(user_status, value);
+          break;
+        default:
+          if (core::fix::UserResponse::has_field(field))
+            break;
+          switch (static_cast<Deribit>(tag)) {
+            case Deribit::MARGIN_BALANCE:
+              update(deribit_margin_balance, value);
+              break;
+            case Deribit::REALIZED_PL:
+              update(deribit_realized_pl, value);
+              break;
+            case Deribit::TOTAL_PL:
+              update(deribit_total_pl, value);
+              break;
+            case Deribit::UNREALIZED_PL:
+              update(deribit_unrealized_pl, value);
+              break;
+            case Deribit::USER_BALANCE:
+              update(deribit_user_balance, value);
+              break;
+            case Deribit::USER_EQUITY:
+              update(deribit_user_equity, value);
+              break;
+            case Deribit::USER_INITIAL_MARGIN:
+              update(deribit_user_initial_margin, value);
+              break;
+            case Deribit::USER_MAINTENANCE_MARGIN:
+              update(deribit_user_maintenance_margin, value);
+              break;
+            default:
+              throw std::runtime_error(
+                  fmt::format(
+                      "Unknown field: tag={} field={} value=\"{}\"",
+                      tag, field, value));
+          }
+      }
+    } catch (std::exception& e) {
+      LOG(WARNING) << fmt::format(
+          "Can't parse tag={} value=\"{}\"", tag, value);
+      throw;
+    }
+  }
+}
+
+}  // namespace fix
+}  // namespace deribit
+}  // namespace roq

@@ -4,6 +4,8 @@
 
 #include "roq/logging.h"
 
+#include "roq/core/fix/logon.h"
+
 #include "roq/deribit/fix/deribit.h"
 #include "roq/deribit/fix/utils.h"
 
@@ -30,38 +32,45 @@ void Logon::parse(
     const core::fix::message_t::const_iterator& end) {
   for (; iter != end; ++iter) {
     auto& [tag, value] = *iter;
-    auto field = core::fix::parse_field(tag);
-    switch (field) {
-      case core::fix::Field::HEART_BT_INT:
-        update(heart_bt_int, value);
-        break;
-      case core::fix::Field::RAW_DATA_LENGTH:
-        // not needed
-        break;
-      case core::fix::Field::RAW_DATA:
-        update(raw_data, value);
-        break;
-      case core::fix::Field::USERNAME:
-        update(username, value);
-        break;
-      case core::fix::Field::PASSWORD:
-        update(password, value);
-        break;
-      default:
-        switch (static_cast<Deribit>(tag)) {
-          case Deribit::CANCEL_ON_DISCONNECT:
-            update(cancel_on_disconnect, value);
+    try {
+      auto field = core::fix::parse_field(tag);
+      switch (field) {
+        case core::fix::Field::HEART_BT_INT:
+          update(heart_bt_int, value);
+          break;
+        case core::fix::Field::RAW_DATA_LENGTH:
+          // not needed
+          break;
+        case core::fix::Field::RAW_DATA:
+          update(raw_data, value);
+          break;
+        case core::fix::Field::USERNAME:
+          update(username, value);
+          break;
+        case core::fix::Field::PASSWORD:
+          update(password, value);
+          break;
+        default:
+          if (core::fix::Logon::has_field(field))
             break;
-          case Deribit::USE_WORDSAFE_TAGS:
-            update(use_wordsafe_tags, value);
-            break;
-          default:
-            LOG(WARNING) << fmt::format(
-                "Unknown field: tag={} field={} value=\"{}\"",
-                tag,
-                field,
-                value);
-        }
+          switch (static_cast<Deribit>(tag)) {
+            case Deribit::CANCEL_ON_DISCONNECT:
+              update(deribit_cancel_on_disconnect, value);
+              break;
+            case Deribit::USE_WORDSAFE_TAGS:
+              update(deribit_use_wordsafe_tags, value);
+              break;
+            default:
+              throw std::runtime_error(
+                  fmt::format(
+                      "Unknown field: tag={} field={} value=\"{}\"",
+                      tag, field, value));
+          }
+      }
+    } catch (std::exception& e) {
+      LOG(WARNING) << fmt::format(
+          "Can't parse tag={} value=\"{}\"", tag, value);
+      throw;
     }
   }
 }

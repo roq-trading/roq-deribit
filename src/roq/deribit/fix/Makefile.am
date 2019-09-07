@@ -24,4 +24,5 @@ libroq_deribit_fix_la_SOURCES = \
 	resend_request.cpp \
 	security_list.cpp \
 	test_request.cpp \
+	user_response.cpp \
 	utils.cpp

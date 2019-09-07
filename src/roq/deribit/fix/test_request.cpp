@@ -4,6 +4,8 @@
 
 #include "roq/logging.h"
 
+#include "roq/core/fix/test_request.h"
+
 #include "roq/deribit/fix/utils.h"
 
 namespace roq {
@@ -28,17 +30,24 @@ void TestRequest::parse(
     const core::fix::message_t::const_iterator& end) {
   for (; iter != end; ++iter) {
     auto& [tag, value] = *iter;
-    auto field = core::fix::parse_field(tag);
-    switch (field) {
-      case core::fix::Field::TEST_REQ_ID:
-        update(test_req_id, value);
-        break;
-      default:
-        LOG(WARNING) << fmt::format(
-            "Unknown field: tag={} field={} value=\"{}\"",
-            tag,
-            field,
-            value);
+    try {
+      auto field = core::fix::parse_field(tag);
+      switch (field) {
+        case core::fix::Field::TEST_REQ_ID:
+          update(test_req_id, value);
+          break;
+        default:
+          if (core::fix::TestRequest::has_field(field))
+            break;
+          throw std::runtime_error(
+              fmt::format(
+                  "Unknown field: tag={} field={} value=\"{}\"",
+                  tag, field, value));
+      }
+    } catch (std::exception& e) {
+      LOG(WARNING) << fmt::format(
+          "Can't parse tag={} value=\"{}\"", tag, value);
+      throw;
     }
   }
 }

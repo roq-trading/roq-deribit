@@ -51,8 +51,8 @@ TEST(fix_logon, parse_message) {
         EXPECT_EQ(result.raw_data, "1567361081237.a4eRAaHHZFio1qzVREsquVME0v1Mon1wtnxnERu7J0Y=");
         EXPECT_EQ(result.username, "5MP40u9h");
         EXPECT_EQ(result.password, "7WqHmj/pylNgnWj3V6bD0M9ULDdBh+i+Q5eZ6Z90Jzw=");
-        EXPECT_EQ(result.cancel_on_disconnect, true);
-        EXPECT_EQ(result.use_wordsafe_tags, false);
+        EXPECT_EQ(result.deribit_cancel_on_disconnect, true);
+        EXPECT_EQ(result.deribit_use_wordsafe_tags, false);
       },
       message,
       std::size(message));
