@@ -32,6 +32,7 @@ nodist_roq_deribit_api2_test_SOURCES = \
 	fix_heartbeat.cpp \
 	fix_logon.cpp \
 	fix_logout.cpp \
+	fix_market_data_incremental_refresh.cpp \
 	json_currencies.cpp \
 	json_instruments.cpp \
 	json_ticker.cpp \

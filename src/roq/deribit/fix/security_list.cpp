@@ -68,12 +68,12 @@ void SecurityList::parse(
                 "Unknown field: tag={} field={} value=\"{}\"",
                 tag, field, value);
       }
-      ++iter;
     } catch (std::exception& e) {
       LOG(WARNING) <<
         fmt::format("Can't parse tag={} value=\"{}\"", tag, value);
       throw;
     }
+    ++iter;
   }
 }
 

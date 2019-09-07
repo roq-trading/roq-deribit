@@ -21,4 +21,5 @@ roq_deribit_api2_benchmark_CPPFLAGS = \
 	$(DATE_CFLAGS)
 nodist_roq_deribit_api2_benchmark_SOURCES = \
 	fix_logon.cpp \
+	fix_market_data_incremental_refresh.cpp \
 	main.cpp

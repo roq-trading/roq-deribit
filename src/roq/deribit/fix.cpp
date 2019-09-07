@@ -117,59 +117,67 @@ void FIX::on_timer() {
 // fix:
 
 void FIX::process_data() {
-  auto length = _buffer.length();
-  if (length == 0)
-    return;
-  auto buffer = _buffer.pullup(length);
-  auto bytes = core::fix::Reader::dispatch(
-      [&](const core::fix::message_t& message) {
-        fix::Parser::dispatch(
-            overloaded {
-              [](const fix::ExecutionReport& execution_report) {
-                LOG(INFO) << fmt::format("execution_report={}", execution_report);
-              },
-              [](const fix::Heartbeat& heartbeat) {
-                LOG(INFO) << fmt::format("heartbeat={}", heartbeat);
-              },
-              [&](const fix::Logon& logon) {
-                LOG(INFO) << fmt::format("logon={}", logon);
-                send_security_list_request();
-                send_market_data_request();
-              },
-              [](const fix::Logout& logout) {
-                LOG(INFO) << fmt::format("logout={}", logout);
-              },
-              [](const fix::MarketDataIncrementalRefresh& market_data_incremental_refresh) {
-                LOG(INFO) << fmt::format("market_data_incremental_refresh={}", market_data_incremental_refresh);
-              },
-              [](const fix::MarketDataRequestReject& market_data_request_reject) {
-                LOG(INFO) << fmt::format("market_data_request_reject={}", market_data_request_reject);
-              },
-              [](const fix::MarketDataSnapshotFullRefresh& market_data_snapshot_full_refresh) {
-                LOG(INFO) << fmt::format("market_data_snapshot_full_refresh={}", market_data_snapshot_full_refresh);
-              },
-              [](const fix::PositionReport& position_report) {
-                LOG(INFO) << fmt::format("position_report={}", position_report);
-              },
-              [](const fix::ResendRequest& resend_request) {
-                LOG(INFO) << fmt::format("resend_request={}", resend_request);
-              },
-              [](const fix::SecurityList& security_list) {
-                LOG(INFO) << fmt::format("security_list={}", security_list);
-              },
-              [](const fix::TestRequest& test_request) {
-                LOG(INFO) << fmt::format("test_request={}", test_request);
-              },
-            },
-            message,
-            _decode_buffer);
-      },
-      buffer,
-      length);
-  if (bytes > 0) {
-    // core::print_memory(buffer, bytes);
-    // core::print_memory_as_cpp_array(buffer, bytes);
+  for (;;) {
+    auto length = _buffer.length();
+    if (length == 0)
+      return;
+    auto buffer = _buffer.pullup(length);
+    auto bytes = core::fix::Reader::dispatch(
+        [&](const core::fix::message_t& message) {
+          try {
+            fix::Parser::dispatch(
+                overloaded {
+                  [](const fix::ExecutionReport& execution_report) {
+                    LOG(INFO) << fmt::format("execution_report={}", execution_report);
+                  },
+                  [](const fix::Heartbeat& heartbeat) {
+                    LOG(INFO) << fmt::format("heartbeat={}", heartbeat);
+                  },
+                  [&](const fix::Logon& logon) {
+                    LOG(INFO) << fmt::format("logon={}", logon);
+                    send_security_list_request();
+                    send_market_data_request();
+                  },
+                  [](const fix::Logout& logout) {
+                    LOG(INFO) << fmt::format("logout={}", logout);
+                  },
+                  [](const fix::MarketDataIncrementalRefresh& market_data_incremental_refresh) {
+                    LOG(INFO) << fmt::format("market_data_incremental_refresh={}", market_data_incremental_refresh);
+                  },
+                  [](const fix::MarketDataRequestReject& market_data_request_reject) {
+                    LOG(INFO) << fmt::format("market_data_request_reject={}", market_data_request_reject);
+                  },
+                  [](const fix::MarketDataSnapshotFullRefresh& market_data_snapshot_full_refresh) {
+                    LOG(INFO) << fmt::format("market_data_snapshot_full_refresh={}", market_data_snapshot_full_refresh);
+                  },
+                  [](const fix::PositionReport& position_report) {
+                    LOG(INFO) << fmt::format("position_report={}", position_report);
+                  },
+                  [](const fix::ResendRequest& resend_request) {
+                    LOG(INFO) << fmt::format("resend_request={}", resend_request);
+                  },
+                  [](const fix::SecurityList& security_list) {
+                    LOG(INFO) << fmt::format("security_list={}", security_list);
+                  },
+                  [](const fix::TestRequest& test_request) {
+                    LOG(INFO) << fmt::format("test_request={}", test_request);
+                  },
+                },
+                message,
+                _decode_buffer);
+          } catch (std::exception& e) {
+            fprintf(stderr, "*** ERROR *** %s\n", e.what());
+            core::print_memory(buffer, length);
+            core::print_string_with_escapes(buffer, length);
+          }
+        },
+        buffer,
+        length);
+    if (bytes == 0)
+      return;
+    core::print_string_with_escapes(buffer, bytes);
     _buffer.drain(bytes);
+    LOG(INFO) << "buffer_length=" << _buffer.length();
   }
 }
 
