@@ -5,6 +5,7 @@
 #include "roq/logging.h"
 
 #include "roq/core/fix/logout.h"
+#include "roq/core/fix/utils.h"
 
 #include "roq/deribit/fix/utils.h"
 
@@ -34,7 +35,7 @@ void Logout::parse(
       auto field = core::fix::parse_field(tag);
       switch (field) {
         case core::fix::Field::TEXT:
-          update(text, value);
+          core::fix::update(text, value);
           break;
         default:
           if (core::fix::Logout::has_field(field))

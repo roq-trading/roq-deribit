@@ -5,6 +5,7 @@
 #include "roq/logging.h"
 
 #include "roq/core/fix/test_request.h"
+#include "roq/core/fix/utils.h"
 
 #include "roq/deribit/fix/utils.h"
 
@@ -34,7 +35,7 @@ void TestRequest::parse(
       auto field = core::fix::parse_field(tag);
       switch (field) {
         case core::fix::Field::TEST_REQ_ID:
-          update(test_req_id, value);
+          core::fix::update(test_req_id, value);
           break;
         default:
           if (core::fix::TestRequest::has_field(field))

@@ -5,6 +5,7 @@
 #include "roq/logging.h"
 
 #include "roq/core/fix/execution_report.h"
+#include "roq/core/fix/utils.h"
 
 #include "roq/deribit/fix/deribit.h"
 #include "roq/deribit/fix/utils.h"
@@ -36,70 +37,70 @@ void ExecutionReport::parse(
       auto field = core::fix::parse_field(tag);
       switch (field) {
         case core::fix::Field::AVG_PX:
-          update(avg_px, value);
+          core::fix::update(avg_px, value);
           break;
         case core::fix::Field::CL_ORD_ID:
-          update(cl_ord_id, value);
+          core::fix::update(cl_ord_id, value);
           break;
         case core::fix::Field::CONTRACT_MULTIPLIER:
-          update(contract_multiplier, value);
+          core::fix::update(contract_multiplier, value);
           break;
         case core::fix::Field::CUM_QTY:
-          update(cum_qty, value);
+          core::fix::update(cum_qty, value);
           break;
         case core::fix::Field::EXEC_INST:
-          update(exec_inst, value);
+          core::fix::update(exec_inst, value);
           break;
         case core::fix::Field::LEAVES_QTY:
-          update(leaves_qty, value);
+          core::fix::update(leaves_qty, value);
           break;
         case core::fix::Field::MAX_SHOW:
-          update(max_show, value);
+          core::fix::update(max_show, value);
           break;
         case core::fix::Field::ORD_REJ_REASON:
-          update(ord_rej_reason, value);
+          core::fix::update(ord_rej_reason, value);
           break;
         case core::fix::Field::ORD_STATUS:
-          update(ord_status, value);
+          core::fix::update(ord_status, value);
           break;
         case core::fix::Field::ORD_TYPE:
-          update(ord_type, value);
+          core::fix::update(ord_type, value);
           break;
         case core::fix::Field::ORDER_QTY:
-          update(order_qty, value);
+          core::fix::update(order_qty, value);
           break;
         case core::fix::Field::ORIG_CL_ORD_ID:
-          update(orig_cl_ord_id, value);
+          core::fix::update(orig_cl_ord_id, value);
           break;
         case core::fix::Field::PEGGED_PRICE:
-          update(pegged_price, value);
+          core::fix::update(pegged_price, value);
           break;
         case core::fix::Field::PRICE:
-          update(price, value);
+          core::fix::update(price, value);
           break;
         case core::fix::Field::QTY_TYPE:
-          update(qty_type, value);
+          core::fix::update(qty_type, value);
           break;
         case core::fix::Field::SECURITY_EXCHANGE:
-          update(security_exchange, value);
+          core::fix::update(security_exchange, value);
           break;
         case core::fix::Field::SIDE:
-          update(side, value);
+          core::fix::update(side, value);
           break;
         case core::fix::Field::STOP_PX:
-          update(stop_px, value);
+          core::fix::update(stop_px, value);
           break;
         case core::fix::Field::SYMBOL:
-          update(symbol, value);
+          core::fix::update(symbol, value);
           break;
         case core::fix::Field::TEXT:
-          update(text, value);
+          core::fix::update(text, value);
           break;
         case core::fix::Field::TRANSACT_TIME:
-          update(transact_time, value);
+          core::fix::update(transact_time, value);
           break;
         case core::fix::Field::VOLATILITY:
-          update(volatility, value);
+          core::fix::update(volatility, value);
           break;
         default:
           if (core::fix::ExecutionReport::has_field(field))

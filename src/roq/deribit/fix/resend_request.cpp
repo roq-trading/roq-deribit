@@ -5,6 +5,7 @@
 #include "roq/logging.h"
 
 #include "roq/core/fix/resend_request.h"
+#include "roq/core/fix/utils.h"
 
 #include "roq/deribit/fix/utils.h"
 
@@ -34,10 +35,10 @@ void ResendRequest::parse(
       auto field = core::fix::parse_field(tag);
       switch (field) {
         case core::fix::Field::BEGIN_SEQ_NO:
-          update(begin_seq_no, value);
+          core::fix::update(begin_seq_no, value);
           break;
         case core::fix::Field::END_SEQ_NO:
-          update(end_seq_no, value);
+          core::fix::update(end_seq_no, value);
           break;
         default:
           if (core::fix::ResendRequest::has_field(field))

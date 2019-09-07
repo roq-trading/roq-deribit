@@ -5,6 +5,7 @@
 #include "roq/logging.h"
 
 #include "roq/core/fix/logon.h"
+#include "roq/core/fix/utils.h"
 
 #include "roq/deribit/fix/deribit.h"
 #include "roq/deribit/fix/utils.h"
@@ -36,29 +37,29 @@ void Logon::parse(
       auto field = core::fix::parse_field(tag);
       switch (field) {
         case core::fix::Field::HEART_BT_INT:
-          update(heart_bt_int, value);
+          core::fix::update(heart_bt_int, value);
           break;
         case core::fix::Field::RAW_DATA_LENGTH:
           // not needed
           break;
         case core::fix::Field::RAW_DATA:
-          update(raw_data, value);
+          core::fix::update(raw_data, value);
           break;
         case core::fix::Field::USERNAME:
-          update(username, value);
+          core::fix::update(username, value);
           break;
         case core::fix::Field::PASSWORD:
-          update(password, value);
+          core::fix::update(password, value);
           break;
         default:
           if (core::fix::Logon::has_field(field))
             break;
           switch (static_cast<Deribit>(tag)) {
             case Deribit::CANCEL_ON_DISCONNECT:
-              update(deribit_cancel_on_disconnect, value);
+              core::fix::update(deribit_cancel_on_disconnect, value);
               break;
             case Deribit::USE_WORDSAFE_TAGS:
-              update(deribit_use_wordsafe_tags, value);
+              core::fix::update(deribit_use_wordsafe_tags, value);
               break;
             default:
               throw std::runtime_error(

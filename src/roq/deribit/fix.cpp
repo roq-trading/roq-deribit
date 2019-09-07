@@ -166,18 +166,18 @@ void FIX::process_data() {
                 message,
                 _decode_buffer);
           } catch (std::exception& e) {
-            fprintf(stderr, "*** ERROR *** %s\n", e.what());
-            core::print_memory(buffer, length);
-            core::print_string_with_escapes(buffer, length);
+            throw;
+            // fprintf(stderr, "*** ERROR *** %s\n", e.what());
+            // core::print_memory(buffer, length);
+            // core::print_string_with_escapes(buffer, length);
           }
         },
         buffer,
         length);
     if (bytes == 0)
       return;
-    core::print_string_with_escapes(buffer, bytes);
+    // core::print_string_with_escapes(buffer, bytes);
     _buffer.drain(bytes);
-    LOG(INFO) << "buffer_length=" << _buffer.length();
   }
 }
 

@@ -11,20 +11,17 @@ using namespace roq::deribit;  // NOLINT
 
 namespace {
 static const char *MESSAGE =
-  "8=FIX.4.4\0019=211\00135=A\00149=DERIBITSERVER\00156=ROQ_TRADI"
-  "NG\00134=1\00152=20190907-16:45:58.192\001108=10\00195=58\0019"
-  "6=1567874758168.y4/hA3i6qxm4yVL+3N7IrGcINVAFMLFhy4l7ATSehxc=\001"
-  "553=5MP40u9h\001554=j/tVe9IsQuc+RjegscnHcJ6czMVNM1+ib7vjbY3UV0"
-  "M=\0019001=Y\00110=115\001";
+    "8=FIX.4.4\0019=68\00135=0\00149=DERIBITSERVER\00156=ROQ_TRADIN"
+    "G\00134=22\00152=20190907-16:46:08.285\00110=085\001";
 }  // namespace
 
-void BM_fix_logon_parse_message(benchmark::State& state) {
+void BM_fix_heartbeat_parse_message(benchmark::State& state) {
   uint64_t processed = 0;
   for (auto _ : state) {
     auto bytes = core::fix::Reader::dispatch(
         [&](const core::fix::message_t& message) {
-          auto result = fix::Logon::parse(message);
-          if (result.heart_bt_int > 0)
+          auto heartbeat = fix::Heartbeat::parse(message);
+          if (heartbeat.test_req_id.empty())
             ++processed;
         },
         MESSAGE,
@@ -32,9 +29,9 @@ void BM_fix_logon_parse_message(benchmark::State& state) {
   }
 }
 
-BENCHMARK(BM_fix_logon_parse_message);
+BENCHMARK(BM_fix_heartbeat_parse_message);
 
-void BM_fix_parser_dispatch_logon(benchmark::State& state) {
+void BM_fix_parser_dispatch_heartbeat(benchmark::State& state) {
   std::vector<std::byte> buffer(8192);
   uint64_t processed = 0;
   for (auto _ : state) {
@@ -44,11 +41,11 @@ void BM_fix_parser_dispatch_logon(benchmark::State& state) {
               overloaded {
                 [](const fix::ExecutionReport& execution_report) {
                 },
-                [](const fix::Heartbeat& heartbeat) {
-                },
-                [&](const fix::Logon& logon) {
-                  if (logon.heart_bt_int > 0)
+                [&](const fix::Heartbeat& heartbeat) {
+                  if (heartbeat.test_req_id.empty())
                     ++processed;
+                },
+                [](const fix::Logon& logon) {
                 },
                 [](const fix::Logout& logout) {
                 },
@@ -75,4 +72,4 @@ void BM_fix_parser_dispatch_logon(benchmark::State& state) {
   }
 }
 
-BENCHMARK(BM_fix_parser_dispatch_logon);
+BENCHMARK(BM_fix_parser_dispatch_heartbeat);

@@ -6,6 +6,7 @@
 
 #include "roq/core/fix/market_data_incremental_refresh.h"
 #include "roq/core/fix/md_inc.h"
+#include "roq/core/fix/utils.h"
 
 #include "roq/deribit/fix/array.h"
 #include "roq/deribit/fix/buffer.h"
@@ -39,7 +40,7 @@ void parse_md_inc(
             field));
   }
   // fprintf(stderr, "*** NORMAL ***\n");
-  update(result.md_update_action, value);
+  core::fix::update(result.md_update_action, value);
   for (++iter; iter != end;) {
     auto& [tag, value] = *iter;
     // fprintf(stderr, "MDInc tag=%d\n", static_cast<int>(tag));
@@ -48,37 +49,37 @@ void parse_md_inc(
       switch (field) {
         // standard
         case core::fix::Field::MD_ENTRY_DATE:
-          update(result.md_entry_date, value);
+          core::fix::update(result.md_entry_date, value);
           break;
         case core::fix::Field::MD_ENTRY_PX:
-          update(result.md_entry_px, value);
+          core::fix::update(result.md_entry_px, value);
           break;
         case core::fix::Field::MD_ENTRY_SIZE:
-          update(result.md_entry_size, value);
+          core::fix::update(result.md_entry_size, value);
           break;
         case core::fix::Field::MD_ENTRY_TYPE:
-          update(result.md_entry_type, value);
+          core::fix::update(result.md_entry_type, value);
           break;
         case core::fix::Field::MD_UPDATE_ACTION:
           return;  // key
         case core::fix::Field::ORDER_ID:
-          update(result.order_id, value);
+          core::fix::update(result.order_id, value);
           break;
         case core::fix::Field::SECONDARY_ORDER_ID:
-          update(result.secondary_order_id, value);
+          core::fix::update(result.secondary_order_id, value);
           break;
         case core::fix::Field::TEXT:  // note! not documented [2019-09-05]
-          update(result.text, value);
+          core::fix::update(result.text, value);
           break;
         // non-standard
         case core::fix::Field::ORD_STATUS:
-          update(result.ord_status, value);
+          core::fix::update(result.ord_status, value);
           break;
         case core::fix::Field::PRICE:
-          update(result.index_price, value);
+          core::fix::update(result.index_price, value);
           break;
         case core::fix::Field::SIDE:
-          update(result.side, value);
+          core::fix::update(result.side, value);
           break;
         default:
           if (core::fix::MDInc::has_field(field))
@@ -86,13 +87,13 @@ void parse_md_inc(
           // deribit specific
           switch (static_cast<Deribit>(tag)) {
             case Deribit::LABEL:
-              update(result.deribit_label, value);
+              core::fix::update(result.deribit_label, value);
               break;
             case Deribit::LIQUIDATION:
-              update(result.deribit_liquidation, value);
+              core::fix::update(result.deribit_liquidation, value);
               break;
             case Deribit::TRADE_ID:
-              update(result.deribit_trade_id, value);
+              core::fix::update(result.deribit_trade_id, value);
               break;
             default:
               LOG(WARNING) <<
@@ -143,7 +144,7 @@ void MarketDataIncrementalRefresh::parse(
       switch (field) {
         // standard
         case core::fix::Field::MD_REQ_ID:
-          update(md_req_id, value);
+          core::fix::update(md_req_id, value);
           break;
         case core::fix::Field::NO_MD_ENTRIES: {
           // fprintf(stderr, "MDInc begin\n");
@@ -167,13 +168,13 @@ void MarketDataIncrementalRefresh::parse(
         }
         // non-standard
         case core::fix::Field::CONTRACT_MULTIPLIER:
-          update(contract_multiplier, value);
+          core::fix::update(contract_multiplier, value);
           break;
         case core::fix::Field::OPEN_INTEREST:
-          update(open_interest, value);
+          core::fix::update(open_interest, value);
           break;
         case core::fix::Field::SYMBOL:
-          update(symbol, value);
+          core::fix::update(symbol, value);
           break;
         default:
           if (core::fix::MarketDataIncrementalRefresh::has_field(field))
@@ -181,10 +182,10 @@ void MarketDataIncrementalRefresh::parse(
           // deribit specific
           switch (static_cast<Deribit>(tag)) {
             case Deribit::MARK_PRICE:
-              update(deribit_mark_price, value);
+              core::fix::update(deribit_mark_price, value);
               break;
             case Deribit::TRADE_VOLUME_24H:
-              update(deribit_trade_volume_24h, value);
+              core::fix::update(deribit_trade_volume_24h, value);
               break;
             default:
               LOG(WARNING) <<

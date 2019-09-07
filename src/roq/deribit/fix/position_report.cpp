@@ -5,6 +5,7 @@
 #include "roq/logging.h"
 
 #include "roq/core/fix/position_report.h"
+#include "roq/core/fix/utils.h"
 
 #include "roq/deribit/fix/utils.h"
 
@@ -40,16 +41,16 @@ void PositionReport::parse(
         // ...
         continue;
       case core::fix::Field::POS_MAINT_RPT_ID:
-        update(pos_maint_rpt_id, value);
+        core::fix::update(pos_maint_rpt_id, value);
         break;
       case core::fix::Field::POS_REQ_ID:
-        update(pos_req_id, value);
+        core::fix::update(pos_req_id, value);
         break;
       case core::fix::Field::POS_REQ_RESULT:
-        update(pos_req_result, value);
+        core::fix::update(pos_req_result, value);
         break;
       case core::fix::Field::POS_REQ_TYPE:
-        update(pos_req_type, value);
+        core::fix::update(pos_req_type, value);
         break;
       default:
         if (core::fix::PositionReport::has_field(field))

@@ -5,6 +5,7 @@
 #include "roq/logging.h"
 
 #include "roq/core/fix/user_response.h"
+#include "roq/core/fix/utils.h"
 
 #include "roq/deribit/fix/utils.h"
 
@@ -34,44 +35,44 @@ void UserResponse::parse(
       auto field = core::fix::parse_field(tag);
       switch (field) {
         case core::fix::Field::CURRENCY:
-          update(currency, value);
+          core::fix::update(currency, value);
           break;
         case core::fix::Field::USERNAME:
-          update(username, value);
+          core::fix::update(username, value);
           break;
         case core::fix::Field::USER_REQUEST_ID:
-          update(user_request_id, value);
+          core::fix::update(user_request_id, value);
           break;
         case core::fix::Field::USER_STATUS:
-          update(user_status, value);
+          core::fix::update(user_status, value);
           break;
         default:
           if (core::fix::UserResponse::has_field(field))
             break;
           switch (static_cast<Deribit>(tag)) {
             case Deribit::MARGIN_BALANCE:
-              update(deribit_margin_balance, value);
+              core::fix::update(deribit_margin_balance, value);
               break;
             case Deribit::REALIZED_PL:
-              update(deribit_realized_pl, value);
+              core::fix::update(deribit_realized_pl, value);
               break;
             case Deribit::TOTAL_PL:
-              update(deribit_total_pl, value);
+              core::fix::update(deribit_total_pl, value);
               break;
             case Deribit::UNREALIZED_PL:
-              update(deribit_unrealized_pl, value);
+              core::fix::update(deribit_unrealized_pl, value);
               break;
             case Deribit::USER_BALANCE:
-              update(deribit_user_balance, value);
+              core::fix::update(deribit_user_balance, value);
               break;
             case Deribit::USER_EQUITY:
-              update(deribit_user_equity, value);
+              core::fix::update(deribit_user_equity, value);
               break;
             case Deribit::USER_INITIAL_MARGIN:
-              update(deribit_user_initial_margin, value);
+              core::fix::update(deribit_user_initial_margin, value);
               break;
             case Deribit::USER_MAINTENANCE_MARGIN:
-              update(deribit_user_maintenance_margin, value);
+              core::fix::update(deribit_user_maintenance_margin, value);
               break;
             default:
               throw std::runtime_error(

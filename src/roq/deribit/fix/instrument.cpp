@@ -2,9 +2,12 @@
 
 #include "roq/deribit/fix/instrument.h"
 
-#include "roq/logging.h"
+#include <fmt/format.h>
+
+#include <stdexcept>
 
 #include "roq/core/fix/instrument.h"
+#include "roq/core/fix/utils.h"
 
 #include "roq/deribit/fix/deribit.h"
 #include "roq/deribit/fix/utils.h"
@@ -38,77 +41,73 @@ void Instrument::parse(
         fmt::format(
             "Expected tag 55 (SYMBOL), got {}",
             (*iter).first));
-  update(symbol, value);
+  core::fix::update(symbol, value);
   for (++iter; iter != end; ++iter) {
     auto& [tag, value] = *iter;
-    try {
-      auto field = core::fix::parse_field(tag);
-      switch (field) {
-        case core::fix::Field::COMM_CURRENCY:
-          update(comm_currency, value);
+    auto field = core::fix::parse_field(tag);
+    switch (field) {
+      case core::fix::Field::COMM_CURRENCY:
+        core::fix::update(comm_currency, value);
+        break;
+      case core::fix::Field::CONTRACT_MULTIPLIER:
+        core::fix::update(contract_multiplier, value);
+        break;
+      case core::fix::Field::CURRENCY:
+        core::fix::update(currency, value);
+        break;
+      case core::fix::Field::ISSUE_DATE:
+        core::fix::update(issue_date, value);
+        break;
+      case core::fix::Field::MATURITY_DATE:
+        core::fix::update(maturity_date, value);
+        break;
+      case core::fix::Field::MATURITY_TIME:
+        // FIXME(thraneh): TZTimeOnly "08:00:00+00:00"
+        // core::fix::update(maturity_time, value);
+        break;
+      case core::fix::Field::MIN_PRICE_INCREMENT:
+        core::fix::update(min_price_increment, value);
+        break;
+      case core::fix::Field::MIN_TRADE_VOL:
+        core::fix::update(min_trade_vol, value);
+        break;
+      case core::fix::Field::PUT_OR_CALL:
+        core::fix::update(put_or_call, value);
+        break;
+      case core::fix::Field::SECURITY_DESC:
+        core::fix::update(security_desc, value);
+        break;
+      case core::fix::Field::SECURITY_TYPE:
+        core::fix::update(security_type, value);
+        break;
+      case core::fix::Field::SETTL_CURRENCY:
+        // FIXME(thraneh): Deribit "[M|W][n]" = n x [months|weeks]
+        core::fix::update(settl_currency, value);
+        break;
+      case core::fix::Field::SETTL_TYPE:
+        core::fix::update(settl_type, value);
+        break;
+      case core::fix::Field::STRIKE_CURRENCY:
+        core::fix::update(strike_currency, value);
+        break;
+      case core::fix::Field::STRIKE_PRICE:
+        core::fix::update(strike_price, value);
+        break;
+      case core::fix::Field::SYMBOL:
+        return;  // key
+      case core::fix::Field::UNDERLYING_SYMBOL:
+        core::fix::update(underlying_symbol, value);
+        break;
+      default:
+        if (core::fix::Instrument::has_field(field))
           break;
-        case core::fix::Field::CONTRACT_MULTIPLIER:
-          update(contract_multiplier, value);
-          break;
-        case core::fix::Field::CURRENCY:
-          update(currency, value);
-          break;
-        case core::fix::Field::ISSUE_DATE:
-          update(issue_date, value);
-          break;
-        case core::fix::Field::MATURITY_DATE:
-          update(maturity_date, value);
-          break;
-        case core::fix::Field::MATURITY_TIME:
-          // FIXME(thraneh): TZTimeOnly "08:00:00+00:00"
-          // update(maturity_time, value);
-          break;
-        case core::fix::Field::MIN_PRICE_INCREMENT:
-          update(min_price_increment, value);
-          break;
-        case core::fix::Field::MIN_TRADE_VOL:
-          update(min_trade_vol, value);
-          break;
-        case core::fix::Field::PUT_OR_CALL:
-          update(put_or_call, value);
-          break;
-        case core::fix::Field::SECURITY_DESC:
-          update(security_desc, value);
-          break;
-        case core::fix::Field::SECURITY_TYPE:
-          update(security_type, value);
-          break;
-        case core::fix::Field::SETTL_CURRENCY:
-          // FIXME(thraneh): Deribit "[M|W][n]" = n x [months|weeks]
-          update(settl_currency, value);
-          break;
-        case core::fix::Field::SETTL_TYPE:
-          update(settl_type, value);
-          break;
-        case core::fix::Field::STRIKE_CURRENCY:
-          update(strike_currency, value);
-          break;
-        case core::fix::Field::STRIKE_PRICE:
-          update(strike_price, value);
-          break;
-        case core::fix::Field::UNDERLYING_SYMBOL:
-          update(underlying_symbol, value);
-          break;
-        default:
-          if (core::fix::Instrument::has_field(field))
+        switch (static_cast<Deribit>(tag)) {
+          case Deribit::INSTRUMENT_PRICE_PRECISION:
+            core::fix::update(instrument_price_precision, value);
             break;
-          switch (static_cast<Deribit>(tag)) {
-            case Deribit::INSTRUMENT_PRICE_PRECISION:
-              update(instrument_price_precision, value);
-              break;
-            default:
-              return;
-          }
-      }
-    } catch (std::exception& e) {
-      LOG(WARNING) << fmt::format(
-          "Can't parse tag={} value=\"{}\"", tag, value);
-      throw;
+          default:
+            return;
+        }
     }
   }
 }

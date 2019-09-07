@@ -5,6 +5,7 @@
 #include "roq/logging.h"
 
 #include "roq/core/fix/market_data_request_reject.h"
+#include "roq/core/fix/utils.h"
 
 #include "roq/deribit/fix/utils.h"
 
@@ -34,13 +35,13 @@ void MarketDataRequestReject::parse(
       auto field = core::fix::parse_field(tag);
       switch (field) {
         case core::fix::Field::MD_REQ_ID:
-          update(md_req_id, value);
+          core::fix::update(md_req_id, value);
           break;
         case core::fix::Field::MD_REQ_REJ_REASON:
-          update(md_req_rej_reason, value);
+          core::fix::update(md_req_rej_reason, value);
           break;
         case core::fix::Field::TEXT:
-          update(text, value);
+          core::fix::update(text, value);
           break;
         default:
           if (core::fix::MarketDataRequestReject::has_field(field))
