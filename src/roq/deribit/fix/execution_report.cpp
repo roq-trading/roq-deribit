@@ -51,6 +51,9 @@ void ExecutionReport::parse(
         case core::fix::Field::EXEC_INST:
           core::fix::update(exec_inst, value);
           break;
+        case core::fix::Field::EXEC_TYPE:
+          core::fix::update(exec_type, value);
+          break;
         case core::fix::Field::LEAVES_QTY:
           core::fix::update(leaves_qty, value);
           break;
@@ -65,6 +68,9 @@ void ExecutionReport::parse(
           break;
         case core::fix::Field::ORD_TYPE:
           core::fix::update(ord_type, value);
+          break;
+        case core::fix::Field::ORDER_ID:
+          core::fix::update(order_id, value);
           break;
         case core::fix::Field::ORDER_QTY:
           core::fix::update(order_qty, value);

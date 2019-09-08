@@ -21,7 +21,7 @@ struct PositionQty final {
   double short_qty = std::numeric_limits<double>::quiet_NaN();
   // non-standard
   double contract_multiplier = std::numeric_limits<double>::quiet_NaN();
-  std::string_view qty_type;  // FIXME(thraneh): qty type
+  core::fix::QtyType qty_type = core::fix::QtyType::UNKNOWN;
   std::string_view raw_data;  // TODO(thraneh): parse?
   double settl_price = std::numeric_limits<double>::quiet_NaN();
   core::fix::Side side = core::fix::Side::UNKNOWN;

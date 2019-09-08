@@ -11,22 +11,21 @@ using namespace roq::deribit;  // NOLINT
 
 namespace {
 static const char *MESSAGE =
-  "8=FIX.4.4\0019=230\00135=AP\00149=DERIBITSERVER\00156=ROQ_TRAD"
-  "ING\00134=4\00152=20190908-15:21:54.384\001721=2957706\001710="
-  "123\001724=0\001728=0\001702=1\001704=0\001705=0\00155=BTC-27S"
-  "EP19\001854=1\001231=10.0000\001883=10510.3400\001730=0.0000\001"
-  "95=11\00196=0.0;0.0;0.0\001100088=0.0000\001100089=0.00000000\001"
-  "10=169\001";
+  "8=FIX.4.4\0019=256\00135=8\00149=DERIBITSERVER\00156=ROQ_TRADI"
+  "NG\00134=2\00152=20190908-14:30:33.572\00137=2831577737\00111="
+  "2831577737\00141=123\001150=I\00139=0\00154=1\00160=20190908-1"
+  "4:30:33.572\001151=1\00114=0\00138=1\00140=2\00144=0.5000\0011"
+  "03=0\00158=success\001207=DERIBITSERVER\00155=BTC-27SEP19\0018"
+  "54=1\001231=10.0000\0016=0.000\001210=1\00110=070\001";
 }  // namespace
 
-void BM_fix_position_report_parse_message(benchmark::State& state) {
-  std::vector<std::byte> buffer(8192);
+void BM_fix_execution_report_parse_message(benchmark::State& state) {
   uint64_t processed = 0;
   for (auto _ : state) {
     auto bytes = core::fix::Reader::dispatch(
         [&](const core::fix::message_t& message) {
-          auto position_report = fix::PositionReport::parse(message, buffer);
-          if (!position_report.pos_req_id.empty())
+          auto result = fix::ExecutionReport::parse(message);
+          if (!result.order_id.empty())
             ++processed;
         },
         MESSAGE,
@@ -34,9 +33,9 @@ void BM_fix_position_report_parse_message(benchmark::State& state) {
   }
 }
 
-BENCHMARK(BM_fix_position_report_parse_message);
+BENCHMARK(BM_fix_execution_report_parse_message);
 
-void BM_fix_parser_dispatch_position_report(benchmark::State& state) {
+void BM_fix_parser_dispatch_execution_report(benchmark::State& state) {
   std::vector<std::byte> buffer(8192);
   uint64_t processed = 0;
   for (auto _ : state) {
@@ -44,7 +43,9 @@ void BM_fix_parser_dispatch_position_report(benchmark::State& state) {
         [&](const core::fix::message_t& message) {
           fix::Parser::dispatch(
               overloaded {
-                [](const fix::ExecutionReport& execution_report) {
+                [&](const fix::ExecutionReport& execution_report) {
+                  if (!execution_report.order_id.empty())
+                    ++processed;
                 },
                 [](const fix::Heartbeat& heartbeat) {
                 },
@@ -58,9 +59,7 @@ void BM_fix_parser_dispatch_position_report(benchmark::State& state) {
                 },
                 [](const fix::MarketDataSnapshotFullRefresh& market_data_snapshot_full_refresh) {
                 },
-                [&](const fix::PositionReport& position_report) {
-                  if (!position_report.pos_req_id.empty())
-                    ++processed;
+                [](const fix::PositionReport& position_report) {
                 },
                 [](const fix::Reject& reject) {
                 },
@@ -81,4 +80,4 @@ void BM_fix_parser_dispatch_position_report(benchmark::State& state) {
   }
 }
 
-BENCHMARK(BM_fix_parser_dispatch_position_report);
+BENCHMARK(BM_fix_parser_dispatch_execution_report);

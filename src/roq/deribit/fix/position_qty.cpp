@@ -58,6 +58,9 @@ void PositionQty::parse(
       case core::fix::Field::QTY_TYPE:
         core::fix::update(qty_type, value);
         break;
+      case core::fix::Field::RAW_DATA_LENGTH:
+        // nothing to do...
+        break;
       case core::fix::Field::RAW_DATA:
         core::fix::update(raw_data, value);
         break;

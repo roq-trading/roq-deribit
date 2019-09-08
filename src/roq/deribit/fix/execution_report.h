@@ -23,11 +23,13 @@ struct ExecutionReport final {
   double contract_multiplier = std::numeric_limits<double>::quiet_NaN();
   double cum_qty = std::numeric_limits<double>::quiet_NaN();
   std::string_view exec_inst;  // TODO(thraneh): MultipleCharValue
+  core::fix::ExecType exec_type = core::fix::ExecType::UNKNOWN;
   double leaves_qty = std::numeric_limits<double>::quiet_NaN();
   double max_show = std::numeric_limits<double>::quiet_NaN();
-  std::string_view ord_rej_reason;  // TODO(thraneh): enum?
+  core::fix::OrdRejReason ord_rej_reason;
   core::fix::OrdStatus ord_status = core::fix::OrdStatus::UNKNOWN;
   core::fix::OrdType ord_type = core::fix::OrdType::UNKNOWN;
+  std::string_view order_id;
   double order_qty = std::numeric_limits<double>::quiet_NaN();
   std::string_view orig_cl_ord_id;
   bool pegged_price = false;
@@ -71,11 +73,13 @@ struct fmt::formatter<roq::deribit::fix::ExecutionReport> {
         "contract_multiplier={}, "
         "cum_qty={}, "
         "exec_inst=\"{}\", "
+        "exec_type=\"{}\", "
         "leaves_qty={}, "
         "max_show={}, "
         "ord_rej_reason={}, "
         "ord_status={}, "
         "ord_type={}, "
+        "order_id={}, "
         "order_qty={}, "
         "orig_cl_ord_id=\"{}\", "
         "pegged_price={}, "
@@ -85,7 +89,7 @@ struct fmt::formatter<roq::deribit::fix::ExecutionReport> {
         "side={}, "
         "stop_px={}, "
         "symbol=\"{}\", "
-        "text={}, "
+        "text=\"{}\", "
         "stop_px={}, "
         "transact_time={}, "
         "volatility={}, "
@@ -96,11 +100,13 @@ struct fmt::formatter<roq::deribit::fix::ExecutionReport> {
         value.contract_multiplier,
         value.cum_qty,
         value.exec_inst,
+        value.exec_type,
         value.leaves_qty,
         value.max_show,
         value.ord_rej_reason,
         value.ord_status,
         value.ord_type,
+        value.order_id,
         value.order_qty,
         value.orig_cl_ord_id,
         value.pegged_price,
@@ -111,6 +117,7 @@ struct fmt::formatter<roq::deribit::fix::ExecutionReport> {
         value.stop_px,
         value.symbol,
         value.text,
+        value.stop_px,
         value.transact_time,
         value.volatility,
         value.deribit_adv_order_type);

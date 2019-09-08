@@ -20,6 +20,7 @@ roq_deribit_api2_benchmark_CPPFLAGS = \
 	$(FMT_CFLAGS) \
 	$(DATE_CFLAGS)
 nodist_roq_deribit_api2_benchmark_SOURCES = \
+	fix_execution_report.cpp \
 	fix_heartbeat.cpp \
 	fix_logon.cpp \
 	fix_logout.cpp \

@@ -30,6 +30,7 @@ roq_deribit_api2_test_CPPFLAGS = \
 	$(DATE_CFLAGS)
 nodist_roq_deribit_api2_test_SOURCES = \
 	fix_heartbeat.cpp \
+	fix_execution_report.cpp \
 	fix_logon.cpp \
 	fix_logout.cpp \
 	fix_market_data_incremental_refresh.cpp \

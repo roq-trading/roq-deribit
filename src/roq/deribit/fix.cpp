@@ -143,11 +143,11 @@ void FIX::process_data() {
                   },
                   [&](const fix::Logon& logon) {
                     LOG(INFO) << fmt::format("logon={}", logon);
-                    // send_security_list_request();
-                    // send_market_data_request("123", "BTC-27SEP19");
-                    // send_request_for_positions("123", core::fix::PosReqType::POSITIONS);
-                    // send_user_request("123");
-                    send_new_order_single();
+                    send_security_list_request();
+                    send_market_data_request("123", "BTC-27SEP19");
+                    send_request_for_positions("123", core::fix::PosReqType::POSITIONS);
+                    send_user_request("123");
+                    // send_new_order_single();
                   },
                   [](const fix::Logout& logout) {
                     LOG(INFO) << fmt::format("logout={}", logout);
@@ -186,17 +186,17 @@ void FIX::process_data() {
                 message,
                 _decode_buffer);
           } catch (std::exception& e) {
+            fprintf(stderr, "*** ERROR *** %s\n", e.what());
+            core::print_memory(buffer, length);
+            core::print_string_with_escapes(buffer, length);
             throw;
-            // fprintf(stderr, "*** ERROR *** %s\n", e.what());
-            // core::print_memory(buffer, length);
-            // core::print_string_with_escapes(buffer, length);
           }
         },
         buffer,
         length);
     if (bytes == 0)
       return;
-    core::print_string_with_escapes(buffer, bytes);
+    // core::print_string_with_escapes(buffer, bytes);
     _buffer.drain(bytes);
   }
 }
@@ -359,12 +359,11 @@ void FIX::send_new_order_single() {
       _msg_seq_num)
     .write(core::fix::Field::CL_ORD_ID, "123")
     .write(core::fix::Field::SIDE, core::fix::Side::BUY)
-    .write(core::fix::Field::ORDER_QTY, 1.0e-8)
+    .write(core::fix::Field::ORDER_QTY, 1.0)
     .write(core::fix::Field::PRICE, 1.0e-8)
-    .write(core::fix::Field::SYMBOL, "XXX")
-    .write(core::fix::Field::USERNAME, _access_key)  // ???
+    .write(core::fix::Field::SYMBOL, "BTC-27SEP19")
     .finish();
-  core::print_memory(message);
+  // core::print_memory(message);
   _buffer_event.write(message);
 }
 
