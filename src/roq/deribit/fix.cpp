@@ -16,6 +16,9 @@
 #include "roq/core/clock.h"
 #include "roq/core/debug.h"
 
+#include "roq/core/fix/logon.h"
+#include "roq/core/fix/market_data_request.h"
+#include "roq/core/fix/security_list_request.h"
 #include "roq/core/fix/reader.h"
 #include "roq/core/fix/writer.h"
 
@@ -186,10 +189,11 @@ void FIX::send_logon() {
   auto raw_data = Random::create_raw_data(now);
   auto password = Random::create_password(raw_data, _access_secret);
   char buffer[4096];
+  // auto message = core::fix::Writer<core::fix::Logon>(
   auto message = core::fix::Writer(
       buffer,
       std::size(buffer),
-      core::fix::MsgType::LOGON,
+      core::fix::Logon::msg_type,
       SENDER_COMP_ID,
       TARGET_COMP_ID,
       _msg_seq_num)
@@ -205,10 +209,11 @@ void FIX::send_logon() {
 
 void FIX::send_security_list_request() {
   char buffer[4096];
+  // auto message = core::fix::Writer<core::fix::SecurityListRequest>(
   auto message = core::fix::Writer(
       buffer,
       std::size(buffer),
-      core::fix::MsgType::SECURITY_LIST_REQUEST,
+      core::fix::SecurityListRequest::msg_type,
       SENDER_COMP_ID,
       TARGET_COMP_ID,
       _msg_seq_num)
@@ -223,10 +228,11 @@ void FIX::send_security_list_request() {
 
 void FIX::send_market_data_request() {
   char buffer[4096];
+  // auto message = core::fix::Writer<core::fix::MarketDataRequest>(
   auto message = core::fix::Writer(
       buffer,
       std::size(buffer),
-      core::fix::MsgType::MARKET_DATA_REQUEST,
+      core::fix::MarketDataRequest::msg_type,
       SENDER_COMP_ID,
       TARGET_COMP_ID,
       _msg_seq_num)
