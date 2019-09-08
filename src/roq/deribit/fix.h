@@ -13,6 +13,8 @@
 #include "roq/core/http/response.h"
 #include "roq/core/ws/decoder.h"
 
+#include "roq/core/fix/common.h"
+
 #include "roq/deribit/controller.h"
 
 namespace roq {
@@ -41,8 +43,17 @@ class FIX final {
   void process_data();
 
   void send_logon();
+  void send_heartbeat(const std::string_view& test_req_id);
+  void send_test_request(const std::string_view& test_req_id);
   void send_security_list_request();
-  void send_market_data_request();
+  void send_market_data_request(
+      const std::string_view& md_req_id,
+      const std::string_view& symbol);
+  void send_user_request(const std::string_view& user_request_id);
+  void send_request_for_positions(
+      const std::string_view& pos_req_id,
+      const core::fix::PosReqType& pos_req_type);
+  void send_new_order_single();
 
  private:
   Controller& _controller;

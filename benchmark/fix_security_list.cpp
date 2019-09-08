@@ -1266,6 +1266,8 @@ void BM_fix_parser_dispatch_security_list(benchmark::State& state) {
                 },
                 [](const fix::PositionReport& position_report) {
                 },
+                [](const fix::Reject& reject) {
+                },
                 [](const fix::ResendRequest& resend_request) {
                 },
                 [&](const fix::SecurityList& security_list) {
@@ -1273,6 +1275,8 @@ void BM_fix_parser_dispatch_security_list(benchmark::State& state) {
                     ++processed;
                 },
                 [](const fix::TestRequest& test_request) {
+                },
+                [](const fix::UserResponse& user_response) {
                 },
               },
               message,

@@ -10,6 +10,8 @@
 
 #include "roq/core/fix/reader.h"
 
+#include "roq/deribit/fix/position_qty.h"
+
 namespace roq {
 namespace deribit {
 namespace fix {
@@ -19,6 +21,11 @@ struct PositionReport final {
   std::string_view pos_req_id;
   core::fix::PosReqResult pos_req_result = core::fix::PosReqResult::UNKNOWN;
   core::fix::PosReqType pos_req_type = core::fix::PosReqType::UNKNOWN;
+
+  struct {
+    PositionQty *items = nullptr;
+    size_t length = 0;
+  } positions;  // PositionQty
 
   static PositionReport parse(
       const core::fix::message_t& message,
@@ -54,11 +61,15 @@ struct fmt::formatter<roq::deribit::fix::PositionReport> {
         "pos_req_id=\"{}\", "
         "pos_req_result={}, "
         "pos_req_type={}, "
-        "..."
+        "positions=[{}]"
         "}}",
-          value.pos_maint_rpt_id,
-          value.pos_req_id,
-          value.pos_req_result,
-          value.pos_req_type);
+        value.pos_maint_rpt_id,
+        value.pos_req_id,
+        value.pos_req_result,
+        value.pos_req_type,
+        fmt::join(
+            value.positions.items,
+            value.positions.items + value.positions.length,
+            ", "));
   }
 };

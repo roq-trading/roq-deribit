@@ -16,10 +16,15 @@
 #include "roq/core/clock.h"
 #include "roq/core/debug.h"
 
+#include "roq/core/fix/heartbeat.h"
 #include "roq/core/fix/logon.h"
+#include "roq/core/fix/new_order_single.h"
 #include "roq/core/fix/market_data_request.h"
 #include "roq/core/fix/security_list_request.h"
 #include "roq/core/fix/reader.h"
+#include "roq/core/fix/request_for_positions.h"
+#include "roq/core/fix/test_request.h"
+#include "roq/core/fix/user_request.h"
 #include "roq/core/fix/writer.h"
 
 #include "roq/deribit/random.h"
@@ -109,7 +114,7 @@ void FIX::on_timer() {
   _next_update = now + PING_FREQUENCY;
   switch (_state) {
     case State::UPGRADED:
-      send_ping();
+      send_test_request("anybody in there?");
       break;
     default:
       break;
@@ -138,11 +143,15 @@ void FIX::process_data() {
                   },
                   [&](const fix::Logon& logon) {
                     LOG(INFO) << fmt::format("logon={}", logon);
-                    send_security_list_request();
-                    send_market_data_request();
+                    // send_security_list_request();
+                    // send_market_data_request("123", "BTC-27SEP19");
+                    // send_request_for_positions("123", core::fix::PosReqType::POSITIONS);
+                    // send_user_request("123");
+                    send_new_order_single();
                   },
                   [](const fix::Logout& logout) {
                     LOG(INFO) << fmt::format("logout={}", logout);
+                    // TODO(thraneh): deal with this - how?
                   },
                   [](const fix::MarketDataIncrementalRefresh& market_data_incremental_refresh) {
                     LOG(INFO) << fmt::format("market_data_incremental_refresh={}", market_data_incremental_refresh);
@@ -156,14 +165,22 @@ void FIX::process_data() {
                   [](const fix::PositionReport& position_report) {
                     LOG(INFO) << fmt::format("position_report={}", position_report);
                   },
+                  [](const fix::Reject& reject) {
+                    LOG(INFO) << fmt::format("reject={}", reject);
+                  },
                   [](const fix::ResendRequest& resend_request) {
                     LOG(INFO) << fmt::format("resend_request={}", resend_request);
+                    // TODO(thraneh): send_reject
                   },
                   [](const fix::SecurityList& security_list) {
                     LOG(INFO) << fmt::format("security_list={}", security_list);
                   },
-                  [](const fix::TestRequest& test_request) {
+                  [&](const fix::TestRequest& test_request) {
                     LOG(INFO) << fmt::format("test_request={}", test_request);
+                    send_heartbeat(test_request.test_req_id);
+                  },
+                  [](const fix::UserResponse& user_response) {
+                    LOG(INFO) << fmt::format("user_response={}", user_response);
                   },
                 },
                 message,
@@ -179,7 +196,7 @@ void FIX::process_data() {
         length);
     if (bytes == 0)
       return;
-    // core::print_string_with_escapes(buffer, bytes);
+    core::print_string_with_escapes(buffer, bytes);
     _buffer.drain(bytes);
   }
 }
@@ -207,6 +224,38 @@ void FIX::send_logon() {
   _buffer_event.write(message);
 }
 
+void FIX::send_heartbeat(const std::string_view& test_req_id) {
+  char buffer[4096];
+  // auto message = core::fix::Writer<core::fix::Heartbeat>(
+  auto message = core::fix::Writer(
+      buffer,
+      std::size(buffer),
+      core::fix::Heartbeat::msg_type,
+      SENDER_COMP_ID,
+      TARGET_COMP_ID,
+      _msg_seq_num)
+    .write(core::fix::Field::TEST_REQ_ID, test_req_id)
+    .finish();
+  // core::print_memory(message);  // DEBUG
+  _buffer_event.write(message);
+}
+
+void FIX::send_test_request(const std::string_view& test_req_id) {
+  char buffer[4096];
+  // auto message = core::fix::Writer<core::fix::TestRequest>(
+  auto message = core::fix::Writer(
+      buffer,
+      std::size(buffer),
+      core::fix::TestRequest::msg_type,
+      SENDER_COMP_ID,
+      TARGET_COMP_ID,
+      _msg_seq_num)
+    .write(core::fix::Field::TEST_REQ_ID, test_req_id)
+    .finish();
+  // core::print_memory(message);  // DEBUG
+  _buffer_event.write(message);
+}
+
 void FIX::send_security_list_request() {
   char buffer[4096];
   // auto message = core::fix::Writer<core::fix::SecurityListRequest>(
@@ -226,7 +275,9 @@ void FIX::send_security_list_request() {
   _buffer_event.write(message);
 }
 
-void FIX::send_market_data_request() {
+void FIX::send_market_data_request(
+    const std::string_view& md_req_id,
+    const std::string_view& symbol) {
   char buffer[4096];
   // auto message = core::fix::Writer<core::fix::MarketDataRequest>(
   auto message = core::fix::Writer(
@@ -236,8 +287,8 @@ void FIX::send_market_data_request() {
       SENDER_COMP_ID,
       TARGET_COMP_ID,
       _msg_seq_num)
-    .write(core::fix::Field::SYMBOL, "BTC-27SEP19")
-    .write(core::fix::Field::MD_REQ_ID, "123")  // TODO(thraneh): do we need a request id?
+    .write(core::fix::Field::SYMBOL, symbol)
+    .write(core::fix::Field::MD_REQ_ID, md_req_id)
     .write(
         core::fix::Field::SUBSCRIPTION_REQUEST_TYPE,
         core::fix::SubscriptionRequestType::SNAPSHOT_UPDATES)
@@ -251,6 +302,69 @@ void FIX::send_market_data_request() {
     .write(core::fix::Field::MD_ENTRY_TYPE, core::fix::MDEntryType::TRADE)
     .finish();
   // core::print_memory(message);
+  _buffer_event.write(message);
+}
+
+void FIX::send_user_request(const std::string_view& user_request_id) {
+  char buffer[4096];
+  // auto message = core::fix::Writer<core::fix::UserRequest>(
+  auto message = core::fix::Writer(
+      buffer,
+      std::size(buffer),
+      core::fix::UserRequest::msg_type,
+      SENDER_COMP_ID,
+      TARGET_COMP_ID,
+      _msg_seq_num)
+    .write(core::fix::Field::USER_REQUEST_ID, user_request_id)
+    .write(
+        core::fix::Field::USER_REQUEST_TYPE,
+        core::fix::UserRequestType::REQUEST_INDIVIDUAL_USER_STATUS)
+    .write(core::fix::Field::USERNAME, _access_key)
+    .write(
+        core::fix::Field::SECURITY_LIST_REQUEST_TYPE,
+        core::fix::SecurityListRequestType::ALL_SECURITIES)
+    .finish();
+  // core::print_memory(message);
+  _buffer_event.write(message);
+}
+
+void FIX::send_request_for_positions(
+    const std::string_view& pos_req_id,
+    const core::fix::PosReqType& pos_req_type) {
+  char buffer[4096];
+  // auto message = core::fix::Writer<core::fix::RequestForPositions>(
+  auto message = core::fix::Writer(
+      buffer,
+      std::size(buffer),
+      core::fix::RequestForPositions::msg_type,
+      SENDER_COMP_ID,
+      TARGET_COMP_ID,
+      _msg_seq_num)
+    .write(core::fix::Field::POS_REQ_ID, pos_req_id)
+    .write(core::fix::Field::POS_REQ_TYPE, pos_req_type)
+    .finish();
+  // core::print_memory(message);
+  _buffer_event.write(message);
+}
+
+void FIX::send_new_order_single() {
+  char buffer[4096];
+  // auto message = core::fix::Writer<core::fix::RequestForPositions>(
+  auto message = core::fix::Writer(
+      buffer,
+      std::size(buffer),
+      core::fix::NewOrderSingle::msg_type,
+      SENDER_COMP_ID,
+      TARGET_COMP_ID,
+      _msg_seq_num)
+    .write(core::fix::Field::CL_ORD_ID, "123")
+    .write(core::fix::Field::SIDE, core::fix::Side::BUY)
+    .write(core::fix::Field::ORDER_QTY, 1.0e-8)
+    .write(core::fix::Field::PRICE, 1.0e-8)
+    .write(core::fix::Field::SYMBOL, "XXX")
+    .write(core::fix::Field::USERNAME, _access_key)  // ???
+    .finish();
+  core::print_memory(message);
   _buffer_event.write(message);
 }
 

@@ -17,9 +17,11 @@
 #include "roq/deribit/fix/market_data_request_reject.h"
 #include "roq/deribit/fix/market_data_snapshot_full_refresh.h"
 #include "roq/deribit/fix/position_report.h"
+#include "roq/deribit/fix/reject.h"
 #include "roq/deribit/fix/resend_request.h"
 #include "roq/deribit/fix/security_list.h"
 #include "roq/deribit/fix/test_request.h"
+#include "roq/deribit/fix/user_response.h"
 
 namespace roq {
 namespace deribit {
@@ -64,6 +66,10 @@ struct Parser final {
         handler(PositionReport::parse(message, buffer));
         break;
       }
+      case core::fix::MsgType::REJECT: {
+        handler(Reject::parse(message));
+        break;
+      }
       case core::fix::MsgType::RESEND_REQUEST: {
         handler(ResendRequest::parse(message));
         break;
@@ -74,6 +80,10 @@ struct Parser final {
       }
       case core::fix::MsgType::TEST_REQUEST: {
         handler(TestRequest::parse(message));
+        break;
+      }
+      case core::fix::MsgType::USER_RESPONSE: {
+        handler(UserResponse::parse(message));
         break;
       }
       default: {

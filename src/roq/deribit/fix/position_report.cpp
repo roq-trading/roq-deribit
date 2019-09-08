@@ -7,6 +7,8 @@
 #include "roq/core/fix/position_report.h"
 #include "roq/core/fix/utils.h"
 
+#include "roq/deribit/fix/array.h"
+#include "roq/deribit/fix/buffer.h"
 #include "roq/deribit/fix/utils.h"
 
 namespace roq {
@@ -33,13 +35,22 @@ void PositionReport::parse(
     core::fix::message_t::const_iterator&& iter,
     const core::fix::message_t::const_iterator& end,
     std::vector<std::byte>& buffer) {
-  for (; iter != end; ++iter) {
+  Buffer buffer_(buffer);
+  while (iter != end) {
     auto& [tag, value] = *iter;
     auto field = core::fix::parse_field(tag);
     switch (field) {
-      case core::fix::Field::NO_POSITIONS:
-        // ...
+      case core::fix::Field::NO_POSITIONS: {
+        auto length = core::charconv::from_string<uint32_t>(value);
+        ++iter;
+        Array array(buffer_, positions);
+        for (uint32_t i = 0; i < length; ++i) {
+          auto& item = array.next();
+          item.parse(iter, end);
+          ++array;
+        }
         continue;
+      }
       case core::fix::Field::POS_MAINT_RPT_ID:
         core::fix::update(pos_maint_rpt_id, value);
         break;
@@ -55,12 +66,12 @@ void PositionReport::parse(
       default:
         if (core::fix::PositionReport::has_field(field))
           break;
-        LOG(WARNING) << fmt::format(
-            "Unknown field: tag={} field={} value=\"{}\"",
-            tag,
-            field,
-            value);
+        throw std::runtime_error(
+            fmt::format(
+                "Unknown field: tag={} field={} value=\"{}\"",
+                tag, field, value));
     }
+    ++iter;
   }
 }
 

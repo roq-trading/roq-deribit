@@ -20,7 +20,9 @@ libroq_deribit_fix_la_SOURCES = \
 	market_data_request_reject.cpp \
 	market_data_snapshot_full_refresh.cpp \
 	parser.cpp \
+	position_qty.cpp \
 	position_report.cpp \
+	reject.cpp \
 	resend_request.cpp \
 	security_list.cpp \
 	test_request.cpp \

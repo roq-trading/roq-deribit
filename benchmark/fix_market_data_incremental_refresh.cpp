@@ -95,11 +95,15 @@ void BM_fix_parser_dispatch_market_data_increment_refresh(benchmark::State& stat
                 },
                 [](const fix::PositionReport& position_report) {
                 },
+                [](const fix::Reject& reject) {
+                },
                 [](const fix::ResendRequest& resend_request) {
                 },
                 [](const fix::SecurityList& security_list) {
                 },
                 [](const fix::TestRequest& test_request) {
+                },
+                [](const fix::UserResponse& user_response) {
                 },
               },
               message,

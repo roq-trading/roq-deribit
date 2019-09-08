@@ -38,7 +38,7 @@ void SecurityList::parse(
     const core::fix::message_t::const_iterator& end,
     std::vector<std::byte>& buffer) {
   Buffer buffer_(buffer);
-  for (; iter != end;) {
+  while (iter != end) {
     auto& [tag, value] = *iter;
     auto field = core::fix::parse_field(tag);
     switch (field) {

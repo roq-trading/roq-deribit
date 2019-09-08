@@ -17,7 +17,7 @@ struct UserResponse final {
   std::string_view currency;
   std::string_view username;
   std::string_view user_request_id;
-  std::string_view user_status;
+  core::fix::UserStatus user_status;
   // deribit specific
   double deribit_margin_balance = std::numeric_limits<double>::quiet_NaN();
   double deribit_realized_pl = std::numeric_limits<double>::quiet_NaN();
@@ -54,7 +54,7 @@ struct fmt::formatter<roq::deribit::fix::UserResponse> {
         "currency=\"{}\", "
         "username=\"{}\", "
         "user_request_id=\"{}\", "
-        "user_status=\"{}\", "
+        "user_status={}, "
         "deribit_margin_balance={}, "
         "deribit_realized_pl={}, "
         "deribit_total_pl={}, "
