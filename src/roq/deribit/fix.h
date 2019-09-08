@@ -53,7 +53,18 @@ class FIX final {
   void send_request_for_positions(
       const std::string_view& pos_req_id,
       const core::fix::PosReqType& pos_req_type);
-  void send_new_order_single();
+  void send_new_order_single(
+      const std::string_view& cl_ord_id,
+      const core::fix::Side& side,
+      double order_qty,
+      double price,
+      const std::string_view& symbol,
+      const core::fix::OrdType& ord_type,
+      const core::fix::TimeInForce& time_in_force,
+      const std::string_view& deribit_label);
+  void send_order_cancel_request(
+      const std::string_view& cl_ord_id,
+      const std::string_view& orig_cl_ord_id);
 
  private:
   Controller& _controller;

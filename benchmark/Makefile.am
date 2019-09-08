@@ -27,6 +27,7 @@ nodist_roq_deribit_api2_benchmark_SOURCES = \
 	fix_market_data_incremental_refresh.cpp \
 	fix_market_data_request_reject.cpp \
 	fix_market_data_snapshot_full_refresh.cpp \
+	fix_order_cancel_reject.cpp \
 	fix_position_report.cpp \
 	fix_reject.cpp \
 	fix_security_list.cpp \

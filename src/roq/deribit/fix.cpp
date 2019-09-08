@@ -20,6 +20,7 @@
 #include "roq/core/fix/logon.h"
 #include "roq/core/fix/new_order_single.h"
 #include "roq/core/fix/market_data_request.h"
+#include "roq/core/fix/order_cancel_request.h"
 #include "roq/core/fix/security_list_request.h"
 #include "roq/core/fix/reader.h"
 #include "roq/core/fix/request_for_positions.h"
@@ -147,7 +148,20 @@ void FIX::process_data() {
                     send_market_data_request("123", "BTC-27SEP19");
                     send_request_for_positions("123", core::fix::PosReqType::POSITIONS);
                     send_user_request("123");
-                    // send_new_order_single();
+                    /*
+                    send_new_order_single(
+                        "123",
+                        core::fix::Side::BUY,
+                        1.0,
+                        0.5,
+                        "BTC-27SEP19",
+                        core::fix::OrdType::LIMIT,
+                        core::fix::TimeInForce::IOC,
+                        "roq;123;345");
+                    send_order_cancel_request(
+                        "123",
+                        "345");
+                    */
                   },
                   [](const fix::Logout& logout) {
                     LOG(INFO) << fmt::format("logout={}", logout);
@@ -161,6 +175,9 @@ void FIX::process_data() {
                   },
                   [](const fix::MarketDataSnapshotFullRefresh& market_data_snapshot_full_refresh) {
                     LOG(INFO) << fmt::format("market_data_snapshot_full_refresh={}", market_data_snapshot_full_refresh);
+                  },
+                  [](const fix::OrderCancelReject& order_cancel_reject) {
+                    LOG(INFO) << fmt::format("order_cancel_reject={}", order_cancel_reject);
                   },
                   [](const fix::PositionReport& position_report) {
                     LOG(INFO) << fmt::format("position_report={}", position_report);
@@ -347,7 +364,15 @@ void FIX::send_request_for_positions(
   _buffer_event.write(message);
 }
 
-void FIX::send_new_order_single() {
+void FIX::send_new_order_single(
+    const std::string_view& cl_ord_id,
+    const core::fix::Side& side,
+    double order_qty,
+    double price,
+    const std::string_view& symbol,
+    const core::fix::OrdType& ord_type,
+    const core::fix::TimeInForce& time_in_force,
+    const std::string_view& deribit_label) {
   char buffer[4096];
   // auto message = core::fix::Writer<core::fix::RequestForPositions>(
   auto message = core::fix::Writer(
@@ -357,11 +382,33 @@ void FIX::send_new_order_single() {
       SENDER_COMP_ID,
       TARGET_COMP_ID,
       _msg_seq_num)
-    .write(core::fix::Field::CL_ORD_ID, "123")
-    .write(core::fix::Field::SIDE, core::fix::Side::BUY)
-    .write(core::fix::Field::ORDER_QTY, 1.0)
-    .write(core::fix::Field::PRICE, 1.0e-8)
-    .write(core::fix::Field::SYMBOL, "BTC-27SEP19")
+    .write(core::fix::Field::CL_ORD_ID, cl_ord_id)
+    .write(core::fix::Field::SIDE, side)
+    .write(core::fix::Field::ORDER_QTY, order_qty)
+    .write(core::fix::Field::PRICE, price)
+    .write(core::fix::Field::SYMBOL, symbol)
+    .write(core::fix::Field::ORD_TYPE, ord_type)
+    .write(core::fix::Field::TIME_IN_FORCE, time_in_force)
+    .write(static_cast<uint32_t>(fix::Deribit::LABEL), deribit_label)
+    .finish();
+  // core::print_memory(message);
+  _buffer_event.write(message);
+}
+
+void FIX::send_order_cancel_request(
+    const std::string_view& cl_ord_id,
+    const std::string_view& orig_cl_ord_id) {
+  char buffer[4096];
+  // auto message = core::fix::Writer<core::fix::RequestForPositions>(
+  auto message = core::fix::Writer(
+      buffer,
+      std::size(buffer),
+      core::fix::OrderCancelRequest::msg_type,
+      SENDER_COMP_ID,
+      TARGET_COMP_ID,
+      _msg_seq_num)
+    .write(core::fix::Field::CL_ORD_ID, cl_ord_id)
+    .write(core::fix::Field::ORIG_CL_ORD_ID, orig_cl_ord_id)
     .finish();
   // core::print_memory(message);
   _buffer_event.write(message);

@@ -58,6 +58,8 @@ void BM_fix_parser_dispatch_position_report(benchmark::State& state) {
                 },
                 [](const fix::MarketDataSnapshotFullRefresh& market_data_snapshot_full_refresh) {
                 },
+                [](const fix::OrderCancelReject& order_cancel_reject) {
+                },
                 [&](const fix::PositionReport& position_report) {
                   if (!position_report.pos_req_id.empty())
                     ++processed;

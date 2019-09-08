@@ -115,6 +115,9 @@ void ExecutionReport::parse(
             case Deribit::ADV_ORDER_TYPE:
               update(deribit_adv_order_type, value);
               break;
+            case Deribit::LABEL:
+              core::fix::update(deribit_label, value);
+              break;
             default:
               throw std::runtime_error(
                   fmt::format(

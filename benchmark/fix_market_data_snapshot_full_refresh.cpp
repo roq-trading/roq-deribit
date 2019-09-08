@@ -210,6 +210,8 @@ void BM_fix_parser_dispatch_market_data_snapshot_full_refresh(benchmark::State& 
                   if (market_data_snapshot_full_refresh.md_full_grp.length > 0)
                     ++processed;
                 },
+                [](const fix::OrderCancelReject& order_cancel_reject) {
+                },
                 [](const fix::PositionReport& position_report) {
                 },
                 [](const fix::Reject& reject) {

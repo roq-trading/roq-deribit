@@ -11,18 +11,18 @@ using namespace roq::deribit;  // NOLINT
 
 namespace {
 static const char *MESSAGE =
-  "8=FIX.4.4\0019=89\00135=0\00149=DERIBITSERVER\00156=ROQ_TRADIN"
-  "G\00134=2\00152=20190908-08:47:31.503\001112=anybody in there?"
-  "\00110=084\001";
+  "8=FIX.4.4\0019=99\00135=9\00149=DERIBITSERVER\00156=ROQ_TRADIN"
+  "G\00134=3\00152=20190908-17:39:23.573\00141=123\00111=345\0013"
+  "9=8\00158=not_found\00110=000\001";
 }  // namespace
 
-void BM_fix_heartbeat_parse_message(benchmark::State& state) {
+void BM_fix_order_cancel_reject_parse_message(benchmark::State& state) {
   uint64_t processed = 0;
   for (auto _ : state) {
     auto bytes = core::fix::Reader::dispatch(
         [&](const core::fix::message_t& message) {
-          auto heartbeat = fix::Heartbeat::parse(message);
-          if (heartbeat.test_req_id.empty())
+          auto result = fix::OrderCancelReject::parse(message);
+          if (!result.text.empty())
             ++processed;
         },
         MESSAGE,
@@ -30,9 +30,9 @@ void BM_fix_heartbeat_parse_message(benchmark::State& state) {
   }
 }
 
-BENCHMARK(BM_fix_heartbeat_parse_message);
+BENCHMARK(BM_fix_order_cancel_reject_parse_message);
 
-void BM_fix_parser_dispatch_heartbeat(benchmark::State& state) {
+void BM_fix_parser_dispatch_order_cancel_reject(benchmark::State& state) {
   std::vector<std::byte> buffer(8192);
   uint64_t processed = 0;
   for (auto _ : state) {
@@ -42,9 +42,7 @@ void BM_fix_parser_dispatch_heartbeat(benchmark::State& state) {
               overloaded {
                 [](const fix::ExecutionReport& execution_report) {
                 },
-                [&](const fix::Heartbeat& heartbeat) {
-                  if (heartbeat.test_req_id.empty())
-                    ++processed;
+                [](const fix::Heartbeat& heartbeat) {
                 },
                 [](const fix::Logon& logon) {
                 },
@@ -56,7 +54,9 @@ void BM_fix_parser_dispatch_heartbeat(benchmark::State& state) {
                 },
                 [](const fix::MarketDataSnapshotFullRefresh& market_data_snapshot_full_refresh) {
                 },
-                [](const fix::OrderCancelReject& order_cancel_reject) {
+                [&](const fix::OrderCancelReject& order_cancel_reject) {
+                  if (!order_cancel_reject.text.empty())
+                    ++processed;
                 },
                 [](const fix::PositionReport& position_report) {
                 },
@@ -79,4 +79,4 @@ void BM_fix_parser_dispatch_heartbeat(benchmark::State& state) {
   }
 }
 
-BENCHMARK(BM_fix_parser_dispatch_heartbeat);
+BENCHMARK(BM_fix_parser_dispatch_order_cancel_reject);

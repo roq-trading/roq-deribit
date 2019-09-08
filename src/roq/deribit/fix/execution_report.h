@@ -42,8 +42,9 @@ struct ExecutionReport final {
   std::string_view text;
   std::chrono::nanoseconds transact_time;
   double volatility = std::numeric_limits<double>::quiet_NaN();
-
+  // deribit specific
   AdvOrderType deribit_adv_order_type = AdvOrderType::UNKNOWN;
+  std::string_view deribit_label;
 
   static ExecutionReport parse(const core::fix::message_t& message);
   static void parse(ExecutionReport&, const core::fix::message_t& message);
@@ -93,7 +94,8 @@ struct fmt::formatter<roq::deribit::fix::ExecutionReport> {
         "stop_px={}, "
         "transact_time={}, "
         "volatility={}, "
-        "deribit_adv_order_type={}"
+        "deribit_adv_order_type={}, "
+        "deribit_label=\"{}\""
         "}}",
         value.avg_px,
         value.cl_ord_id,
@@ -120,6 +122,7 @@ struct fmt::formatter<roq::deribit::fix::ExecutionReport> {
         value.stop_px,
         value.transact_time,
         value.volatility,
-        value.deribit_adv_order_type);
+        value.deribit_adv_order_type,
+        value.deribit_label);
   }
 };

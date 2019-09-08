@@ -16,6 +16,7 @@
 #include "roq/deribit/fix/market_data_incremental_refresh.h"
 #include "roq/deribit/fix/market_data_request_reject.h"
 #include "roq/deribit/fix/market_data_snapshot_full_refresh.h"
+#include "roq/deribit/fix/order_cancel_reject.h"
 #include "roq/deribit/fix/position_report.h"
 #include "roq/deribit/fix/reject.h"
 #include "roq/deribit/fix/resend_request.h"
@@ -60,6 +61,10 @@ struct Parser final {
       }
       case core::fix::MsgType::MARKET_DATA_SNAPSHOT_FULL_REFRESH: {
         handler(MarketDataSnapshotFullRefresh::parse(message, buffer));
+        break;
+      }
+      case core::fix::MsgType::ORDER_CANCEL_REJECT: {
+        handler(OrderCancelReject::parse(message));
         break;
       }
       case core::fix::MsgType::POSITION_REPORT: {

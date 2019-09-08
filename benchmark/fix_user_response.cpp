@@ -56,6 +56,8 @@ void BM_fix_parser_dispatch_user_response(benchmark::State& state) {
                 },
                 [](const fix::MarketDataSnapshotFullRefresh& market_data_snapshot_full_refresh) {
                 },
+                [](const fix::OrderCancelReject& order_cancel_reject) {
+                },
                 [](const fix::PositionReport& position_report) {
                 },
                 [](const fix::Reject& reject) {
