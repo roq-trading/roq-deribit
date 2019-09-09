@@ -23,11 +23,9 @@ void parse_md_inc(
     core::fix::message_t::const_iterator& iter,
     const core::fix::message_t::const_iterator& end) {
   assert(iter != end);
-  // fprintf(stderr, "MDInc begin\n");
   new (&result) std::remove_reference<decltype(result)>::type {};
   // key
   auto& [tag, value] = *iter;
-  // fprintf(stderr, "key=%d\n", static_cast<int>(tag));
   auto field = core::fix::parse_field(tag);
   static_assert(core::fix::MDInc::key_field == core::fix::Field::MD_UPDATE_ACTION);
   if (field != core::fix::MDInc::key_field) {
@@ -39,46 +37,55 @@ void parse_md_inc(
             tag,
             field));
   }
-  // fprintf(stderr, "*** NORMAL ***\n");
   core::fix::update(result.md_update_action, value);
   for (++iter; iter != end;) {
     auto& [tag, value] = *iter;
-    // fprintf(stderr, "MDInc tag=%d\n", static_cast<int>(tag));
     try {
       auto field = core::fix::parse_field(tag);
       switch (field) {
         // standard
         case core::fix::Field::MD_ENTRY_DATE:
+          static_assert(core::fix::MDIncGrp::has_field(core::fix::Field::MD_ENTRY_DATE));
           core::fix::update(result.md_entry_date, value);
           break;
         case core::fix::Field::MD_ENTRY_PX:
+          static_assert(core::fix::MDIncGrp::has_field(core::fix::Field::MD_ENTRY_PX));
           core::fix::update(result.md_entry_px, value);
           break;
         case core::fix::Field::MD_ENTRY_SIZE:
+          static_assert(core::fix::MDIncGrp::has_field(core::fix::Field::MD_ENTRY_SIZE));
           core::fix::update(result.md_entry_size, value);
           break;
         case core::fix::Field::MD_ENTRY_TYPE:
+          static_assert(core::fix::MDIncGrp::has_field(core::fix::Field::MD_ENTRY_TYPE));
           core::fix::update(result.md_entry_type, value);
           break;
         case core::fix::Field::MD_UPDATE_ACTION:
+          static_assert(core::fix::MDIncGrp::has_field(core::fix::Field::MD_UPDATE_ACTION));
           return;  // key
         case core::fix::Field::ORDER_ID:
+          static_assert(core::fix::MDIncGrp::has_field(core::fix::Field::ORDER_ID));
           core::fix::update(result.order_id, value);
           break;
         case core::fix::Field::SECONDARY_ORDER_ID:
+          static_assert(core::fix::MDIncGrp::has_field(core::fix::Field::SECONDARY_ORDER_ID));
           core::fix::update(result.secondary_order_id, value);
           break;
         case core::fix::Field::TEXT:  // note! not documented [2019-09-05]
+          static_assert(core::fix::MDIncGrp::has_field(core::fix::Field::TEXT));
           core::fix::update(result.text, value);
           break;
         // non-standard
         case core::fix::Field::ORD_STATUS:
+          static_assert(!core::fix::MDIncGrp::has_field(core::fix::Field::ORD_STATUS));
           core::fix::update(result.ord_status, value);
           break;
         case core::fix::Field::PRICE:
+          static_assert(!core::fix::MDIncGrp::has_field(core::fix::Field::PRICE));
           core::fix::update(result.index_price, value);
           break;
         case core::fix::Field::SIDE:
+          static_assert(!core::fix::MDIncGrp::has_field(core::fix::Field::SIDE));
           core::fix::update(result.side, value);
           break;
         default:
@@ -110,7 +117,6 @@ void parse_md_inc(
     }
     ++iter;
   }
-  // fprintf(stderr, "MDInc done (finished)\n");
 }
 }  // namespace
 
@@ -136,23 +142,21 @@ void MarketDataIncrementalRefresh::parse(
     std::vector<std::byte>& buffer) {
   Buffer buffer_(buffer);
   while (iter != end) {
-    // fprintf(stderr, "MarketIncrementalRefresh begin\n");
     auto& [tag, value] = *iter;
-    // fprintf(stderr, "MarketIncrementalRefresh tag=%d\n", static_cast<int>(tag));
     try {
       auto field = core::fix::parse_field(tag);
       switch (field) {
         // standard
-        case core::fix::Field::MD_REQ_ID:
-          core::fix::update(md_req_id, value);
+        case core::fix::Field::CONTRACT_MULTIPLIER:
+          static_assert(core::fix::MarketDataIncrementalRefresh::has_field(core::fix::Field::CONTRACT_MULTIPLIER));
+          core::fix::update(contract_multiplier, value);
           break;
         case core::fix::Field::NO_MD_ENTRIES: {
-          // fprintf(stderr, "MDInc begin\n");
+          static_assert(core::fix::MarketDataIncrementalRefresh::has_field(core::fix::Field::NO_MD_ENTRIES));
           auto length = core::charconv::from_string<uint32_t>(value);
           ++iter;
           Array array(buffer_, md_inc_grp);
           for (uint32_t i = 0; i < length; ++i) {
-            // fprintf(stderr, "MDInc %d of %d\n", static_cast<int>(i), static_cast<int>(length));
             if (iter == end)
               throw std::runtime_error(
                   fmt::format("Unable to parse MDInc {} of {}",
@@ -161,20 +165,22 @@ void MarketDataIncrementalRefresh::parse(
             parse_md_inc(item, iter, end);
             ++array;
           }
-          // fprintf(stderr, "MDInc done (%d)\n", iter == end ? 1 : 0);
           if (md_inc_grp.length != length)
             throw std::runtime_error("Wrong length");
           continue;
         }
-        // non-standard
-        case core::fix::Field::CONTRACT_MULTIPLIER:
-          core::fix::update(contract_multiplier, value);
-          break;
-        case core::fix::Field::OPEN_INTEREST:
-          core::fix::update(open_interest, value);
+        case core::fix::Field::MD_REQ_ID:
+          static_assert(core::fix::MarketDataIncrementalRefresh::has_field(core::fix::Field::MD_REQ_ID));
+          core::fix::update(md_req_id, value);
           break;
         case core::fix::Field::SYMBOL:
+          static_assert(core::fix::MarketDataIncrementalRefresh::has_field(core::fix::Field::SYMBOL));
           core::fix::update(symbol, value);
+          break;
+        // non-standard
+        case core::fix::Field::OPEN_INTEREST:
+          static_assert(!core::fix::MarketDataIncrementalRefresh::has_field(core::fix::Field::OPEN_INTEREST));
+          core::fix::update(open_interest, value);
           break;
         default:
           if (core::fix::MarketDataIncrementalRefresh::has_field(field))

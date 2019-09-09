@@ -37,18 +37,23 @@ void Logon::parse(
       auto field = core::fix::parse_field(tag);
       switch (field) {
         case core::fix::Field::HEART_BT_INT:
+          static_assert(core::fix::Logon::has_field(core::fix::Field::HEART_BT_INT));
           core::fix::update(heart_bt_int, value);
           break;
         case core::fix::Field::RAW_DATA_LENGTH:
+          static_assert(core::fix::Logon::has_field(core::fix::Field::RAW_DATA_LENGTH));
           // not needed
           break;
         case core::fix::Field::RAW_DATA:
+          static_assert(core::fix::Logon::has_field(core::fix::Field::RAW_DATA));
           core::fix::update(raw_data, value);
           break;
         case core::fix::Field::USERNAME:
+          static_assert(core::fix::Logon::has_field(core::fix::Field::USERNAME));
           core::fix::update(username, value);
           break;
         case core::fix::Field::PASSWORD:
+          static_assert(core::fix::Logon::has_field(core::fix::Field::PASSWORD));
           core::fix::update(password, value);
           break;
         default:

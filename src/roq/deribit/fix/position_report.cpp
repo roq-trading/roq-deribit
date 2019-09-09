@@ -41,6 +41,7 @@ void PositionReport::parse(
     auto field = core::fix::parse_field(tag);
     switch (field) {
       case core::fix::Field::NO_POSITIONS: {
+        static_assert(core::fix::PositionReport::has_field(core::fix::Field::NO_POSITIONS));
         auto length = core::charconv::from_string<uint32_t>(value);
         ++iter;
         Array array(buffer_, positions);
@@ -52,15 +53,19 @@ void PositionReport::parse(
         continue;
       }
       case core::fix::Field::POS_MAINT_RPT_ID:
+        static_assert(core::fix::PositionReport::has_field(core::fix::Field::POS_MAINT_RPT_ID));
         core::fix::update(pos_maint_rpt_id, value);
         break;
       case core::fix::Field::POS_REQ_ID:
+        static_assert(core::fix::PositionReport::has_field(core::fix::Field::POS_REQ_ID));
         core::fix::update(pos_req_id, value);
         break;
       case core::fix::Field::POS_REQ_RESULT:
+        static_assert(core::fix::PositionReport::has_field(core::fix::Field::POS_REQ_RESULT));
         core::fix::update(pos_req_result, value);
         break;
       case core::fix::Field::POS_REQ_TYPE:
+        static_assert(core::fix::PositionReport::has_field(core::fix::Field::POS_REQ_TYPE));
         core::fix::update(pos_req_type, value);
         break;
       default:

@@ -47,11 +47,17 @@ struct fmt::formatter<roq::deribit::fix::OrderCancelReject> {
         "cl_ord_id=\"{}\", "
         "ord_status=\"{}\", "
         "orig_cl_ord_id=\"{}\", "
-        "text=\"{}\""
+        "text=\"{}\", "
+        // non-standard
+        "avg_px={}, "
+        "leaves_qty={}"
         "}}",
         value.cl_ord_id,
         value.ord_status,
         value.orig_cl_ord_id,
-        value.text);
+        value.text,
+        // non-standard
+        value.avg_px,
+        value.leaves_qty);
   }
 };

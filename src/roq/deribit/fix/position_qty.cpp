@@ -26,7 +26,6 @@ PositionQty PositionQty::parse(
 void PositionQty::parse(
     PositionQty& result,
     const core::fix::message_t& message) {
-  new (&result) std::remove_reference<decltype(result)>::type {};
   auto iter = message.begin();
   result.parse(iter, message.end());
 }
@@ -34,6 +33,7 @@ void PositionQty::parse(
 void PositionQty::parse(
     core::fix::message_t::const_iterator& iter,
     const core::fix::message_t::const_iterator& end) {
+  new (this) std::remove_reference<decltype(*this)>::type {};
   auto& [tag, value] = *iter;
   auto field = core::fix::parse_field(tag);
   if (field != core::fix::Field::LONG_QTY)
@@ -41,39 +41,50 @@ void PositionQty::parse(
         fmt::format(
             "Expected tag LONG_QTY, got {}",
             (*iter).first));
-  core::fix::update(symbol, value);
+  core::fix::update(long_qty, value);
   for (++iter; iter != end; ++iter) {
     auto& [tag, value] = *iter;
     auto field = core::fix::parse_field(tag);
     switch (field) {
       case core::fix::Field::LONG_QTY:
-        core::fix::update(long_qty, value);
+        static_assert(core::fix::PositionQty::has_field(core::fix::Field::LONG_QTY));
+        return;
         break;
       case core::fix::Field::SHORT_QTY:
+        static_assert(core::fix::PositionQty::has_field(core::fix::Field::SHORT_QTY));
         core::fix::update(short_qty, value);
         break;
+      // non-standard
       case core::fix::Field::CONTRACT_MULTIPLIER:
+        static_assert(!core::fix::PositionQty::has_field(core::fix::Field::CONTRACT_MULTIPLIER));
         core::fix::update(contract_multiplier, value);
         break;
       case core::fix::Field::QTY_TYPE:
+        static_assert(!core::fix::PositionQty::has_field(core::fix::Field::QTY_TYPE));
         core::fix::update(qty_type, value);
         break;
       case core::fix::Field::RAW_DATA_LENGTH:
+        static_assert(!core::fix::PositionQty::has_field(core::fix::Field::RAW_DATA_LENGTH));
         // nothing to do...
         break;
       case core::fix::Field::RAW_DATA:
+        static_assert(!core::fix::PositionQty::has_field(core::fix::Field::RAW_DATA));
         core::fix::update(raw_data, value);
         break;
       case core::fix::Field::SETTL_PRICE:
+        static_assert(!core::fix::PositionQty::has_field(core::fix::Field::SETTL_PRICE));
         core::fix::update(settl_price, value);
         break;
       case core::fix::Field::SIDE:
+        static_assert(!core::fix::PositionQty::has_field(core::fix::Field::SIDE));
         core::fix::update(side, value);
         break;
       case core::fix::Field::SYMBOL:
+        static_assert(!core::fix::PositionQty::has_field(core::fix::Field::SYMBOL));
         core::fix::update(symbol, value);
         break;
       case core::fix::Field::UNDERLYING_PRICE:
+        static_assert(!core::fix::PositionQty::has_field(core::fix::Field::UNDERLYING_PRICE));
         core::fix::update(underlying_price, value);
         break;
       default:

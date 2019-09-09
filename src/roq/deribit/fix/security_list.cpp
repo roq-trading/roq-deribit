@@ -43,6 +43,7 @@ void SecurityList::parse(
     auto field = core::fix::parse_field(tag);
     switch (field) {
       case core::fix::Field::NO_RELATED_SYM: {
+        static_assert(core::fix::SecurityList::has_field(core::fix::Field::NO_RELATED_SYM));
         auto length = core::charconv::from_string<uint32_t>(value);
         ++iter;
         Array array(buffer_, instruments);
@@ -54,12 +55,15 @@ void SecurityList::parse(
         continue;
       }
       case core::fix::Field::SECURITY_REQ_ID:
+        static_assert(core::fix::SecurityList::has_field(core::fix::Field::SECURITY_REQ_ID));
         core::fix::update(security_req_id, value);
         break;
       case core::fix::Field::SECURITY_REQUEST_RESULT:
+        static_assert(core::fix::SecurityList::has_field(core::fix::Field::SECURITY_REQUEST_RESULT));
         core::fix::update(security_request_result, value);
         break;
       case core::fix::Field::SECURITY_RESPONSE_ID:
+        static_assert(core::fix::SecurityList::has_field(core::fix::Field::SECURITY_RESPONSE_ID));
         core::fix::update(security_response_id, value);
         break;
       default:

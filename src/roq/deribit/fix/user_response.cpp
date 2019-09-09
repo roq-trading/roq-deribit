@@ -34,17 +34,22 @@ void UserResponse::parse(
     try {
       auto field = core::fix::parse_field(tag);
       switch (field) {
-        case core::fix::Field::CURRENCY:
-          core::fix::update(currency, value);
-          break;
         case core::fix::Field::USERNAME:
+          static_assert(core::fix::UserResponse::has_field(core::fix::Field::USERNAME));
           core::fix::update(username, value);
           break;
         case core::fix::Field::USER_REQUEST_ID:
+          static_assert(core::fix::UserResponse::has_field(core::fix::Field::USER_REQUEST_ID));
           core::fix::update(user_request_id, value);
           break;
         case core::fix::Field::USER_STATUS:
+          static_assert(core::fix::UserResponse::has_field(core::fix::Field::USER_STATUS));
           core::fix::update(user_status, value);
+          break;
+        // non-standard
+        case core::fix::Field::CURRENCY:
+          static_assert(!core::fix::UserResponse::has_field(core::fix::Field::CURRENCY));
+          core::fix::update(currency, value);
           break;
         default:
           if (core::fix::UserResponse::has_field(field))

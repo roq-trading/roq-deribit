@@ -26,7 +26,6 @@ Instrument Instrument::parse(
 void Instrument::parse(
     Instrument& result,
     const core::fix::message_t& message) {
-  new (&result) std::remove_reference<decltype(result)>::type {};
   auto iter = message.begin();
   result.parse(iter, message.end());
 }
@@ -34,6 +33,7 @@ void Instrument::parse(
 void Instrument::parse(
     core::fix::message_t::const_iterator& iter,
     const core::fix::message_t::const_iterator& end) {
+  new (this) std::remove_reference<decltype(*this)>::type {};
   auto& [tag, value] = *iter;
   auto field = core::fix::parse_field(tag);
   if (field != core::fix::Field::SYMBOL)
@@ -46,56 +46,73 @@ void Instrument::parse(
     auto& [tag, value] = *iter;
     auto field = core::fix::parse_field(tag);
     switch (field) {
-      case core::fix::Field::COMM_CURRENCY:
-        core::fix::update(comm_currency, value);
-        break;
       case core::fix::Field::CONTRACT_MULTIPLIER:
+        static_assert(core::fix::Instrument::has_field(core::fix::Field::CONTRACT_MULTIPLIER));
         core::fix::update(contract_multiplier, value);
         break;
-      case core::fix::Field::CURRENCY:
-        core::fix::update(currency, value);
-        break;
       case core::fix::Field::ISSUE_DATE:
+        static_assert(core::fix::Instrument::has_field(core::fix::Field::ISSUE_DATE));
         core::fix::update(issue_date, value);
         break;
       case core::fix::Field::MATURITY_DATE:
+        static_assert(core::fix::Instrument::has_field(core::fix::Field::MATURITY_DATE));
         core::fix::update(maturity_date, value);
         break;
       case core::fix::Field::MATURITY_TIME:
+        static_assert(core::fix::Instrument::has_field(core::fix::Field::MATURITY_TIME));
         // FIXME(thraneh): TZTimeOnly "08:00:00+00:00"
         // core::fix::update(maturity_time, value);
         break;
       case core::fix::Field::MIN_PRICE_INCREMENT:
+        static_assert(core::fix::Instrument::has_field(core::fix::Field::MIN_PRICE_INCREMENT));
         core::fix::update(min_price_increment, value);
         break;
-      case core::fix::Field::MIN_TRADE_VOL:
-        core::fix::update(min_trade_vol, value);
-        break;
       case core::fix::Field::PUT_OR_CALL:
+        static_assert(core::fix::Instrument::has_field(core::fix::Field::PUT_OR_CALL));
         core::fix::update(put_or_call, value);
         break;
       case core::fix::Field::SECURITY_DESC:
+        static_assert(core::fix::Instrument::has_field(core::fix::Field::SECURITY_DESC));
         core::fix::update(security_desc, value);
         break;
       case core::fix::Field::SECURITY_TYPE:
+        static_assert(core::fix::Instrument::has_field(core::fix::Field::SECURITY_TYPE));
         core::fix::update(security_type, value);
         break;
-      case core::fix::Field::SETTL_CURRENCY:
-        // FIXME(thraneh): Deribit "[M|W][n]" = n x [months|weeks]
-        core::fix::update(settl_currency, value);
-        break;
-      case core::fix::Field::SETTL_TYPE:
-        core::fix::update(settl_type, value);
-        break;
       case core::fix::Field::STRIKE_CURRENCY:
+        static_assert(core::fix::Instrument::has_field(core::fix::Field::STRIKE_CURRENCY));
         core::fix::update(strike_currency, value);
         break;
       case core::fix::Field::STRIKE_PRICE:
+        static_assert(core::fix::Instrument::has_field(core::fix::Field::STRIKE_PRICE));
         core::fix::update(strike_price, value);
         break;
       case core::fix::Field::SYMBOL:
+        static_assert(core::fix::Instrument::has_field(core::fix::Field::SYMBOL));
         return;  // key
+      // non-standard
+      case core::fix::Field::COMM_CURRENCY:
+        static_assert(!core::fix::Instrument::has_field(core::fix::Field::COMM_CURRENCY));
+        core::fix::update(comm_currency, value);
+        break;
+      case core::fix::Field::CURRENCY:
+        static_assert(!core::fix::Instrument::has_field(core::fix::Field::CURRENCY));
+        core::fix::update(currency, value);
+        break;
+      case core::fix::Field::MIN_TRADE_VOL:
+        static_assert(!core::fix::Instrument::has_field(core::fix::Field::MIN_TRADE_VOL));
+        core::fix::update(min_trade_vol, value);
+        break;
+      case core::fix::Field::SETTL_CURRENCY:
+        static_assert(!core::fix::Instrument::has_field(core::fix::Field::SETTL_CURRENCY));
+        core::fix::update(settl_currency, value);  // FIXME(thraneh): Deribit "[M|W][n]" = n x [months|weeks]
+        break;
+      case core::fix::Field::SETTL_TYPE:
+        static_assert(!core::fix::Instrument::has_field(core::fix::Field::SETTL_TYPE));
+        core::fix::update(settl_type, value);
+        break;
       case core::fix::Field::UNDERLYING_SYMBOL:
+        static_assert(!core::fix::Instrument::has_field(core::fix::Field::UNDERLYING_SYMBOL));
         core::fix::update(underlying_symbol, value);
         break;
       default:
@@ -103,7 +120,7 @@ void Instrument::parse(
           break;
         switch (static_cast<Deribit>(tag)) {
           case Deribit::INSTRUMENT_PRICE_PRECISION:
-            core::fix::update(instrument_price_precision, value);
+            core::fix::update(deribit_instrument_price_precision, value);
             break;
           default:
             return;

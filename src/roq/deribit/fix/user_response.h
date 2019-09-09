@@ -14,10 +14,11 @@ namespace deribit {
 namespace fix {
 
 struct UserResponse final {
-  std::string_view currency;
   std::string_view username;
   std::string_view user_request_id;
   core::fix::UserStatus user_status;
+  // non-standard
+  std::string_view currency;
   // deribit specific
   double deribit_margin_balance = std::numeric_limits<double>::quiet_NaN();
   double deribit_realized_pl = std::numeric_limits<double>::quiet_NaN();
@@ -51,10 +52,12 @@ struct fmt::formatter<roq::deribit::fix::UserResponse> {
     return format_to(
         ctx.begin(),
         "{{"
-        "currency=\"{}\", "
         "username=\"{}\", "
         "user_request_id=\"{}\", "
         "user_status={}, "
+        // non-standard
+        "currency=\"{}\", "
+        // deribit specific
         "deribit_margin_balance={}, "
         "deribit_realized_pl={}, "
         "deribit_total_pl={}, "
@@ -64,10 +67,12 @@ struct fmt::formatter<roq::deribit::fix::UserResponse> {
         "deribit_user_initial_margin={}, "
         "deribit_user_maintenance_margin={}"
         "}}",
-        value.currency,
         value.username,
         value.user_request_id,
         value.user_status,
+        // non-standard
+        value.currency,
+        // deribit specific
         value.deribit_margin_balance,
         value.deribit_realized_pl,
         value.deribit_total_pl,

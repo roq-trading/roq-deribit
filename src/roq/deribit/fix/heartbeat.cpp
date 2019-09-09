@@ -35,6 +35,7 @@ void Heartbeat::parse(
       auto field = core::fix::parse_field(tag);
       switch (field) {
         case core::fix::Field::TEST_REQ_ID:
+          static_assert(core::fix::Heartbeat::has_field(core::fix::Field::TEST_REQ_ID));
           core::fix::update(test_req_id, value);
           break;
         default:

@@ -16,25 +16,26 @@ namespace deribit {
 namespace fix {
 
 struct Instrument final {
-  std::string_view comm_currency;
   double contract_multiplier = std::numeric_limits<double>::quiet_NaN();
-  std::string_view currency;
   std::chrono::nanoseconds issue_date;
   std::chrono::nanoseconds maturity_date;
   std::chrono::nanoseconds maturity_time;
   double min_price_increment = std::numeric_limits<double>::quiet_NaN();
-  double min_trade_vol = std::numeric_limits<double>::quiet_NaN();
   core::fix::PutOrCall put_or_call = core::fix::PutOrCall::UNKNOWN;
   std::string_view security_desc;
   std::string_view security_type;
-  std::string_view settl_currency;
-  core::fix::SettlType settl_type = core::fix::SettlType::UNKNOWN;
   std::string_view strike_currency;
   double strike_price = std::numeric_limits<double>::quiet_NaN();
   std::string_view symbol;
+  // non-standard
+  std::string_view comm_currency;
+  std::string_view currency;
+  double min_trade_vol = std::numeric_limits<double>::quiet_NaN();
+  std::string_view settl_currency;
+  core::fix::SettlType settl_type = core::fix::SettlType::UNKNOWN;
   std::string_view underlying_symbol;
   // deribit specific
-  uint8_t instrument_price_precision = 0;  // TODO(thraneh): deribit? tag=2576
+  uint8_t deribit_instrument_price_precision = 0;
 
   static Instrument parse(const core::fix::message_t& message);
   static void parse(Instrument&, const core::fix::message_t& message);
@@ -59,42 +60,46 @@ struct fmt::formatter<roq::deribit::fix::Instrument> {
     return format_to(
         ctx.begin(),
         "{{"
-        "comm_currency=\"{}\", "
-        "contract_multiplier=\"{}\", "
-        "currency=\"{}\", "
+        "contract_multiplier={}, "
         "issue_date={}, "
         "maturity_date={}, "
         "maturity_time={}, "
         "min_price_increment={}, "
-        "min_trade_vol={}, "
         "put_or_call={}, "
         "security_desc=\"{}\", "
         "security_type=\"{}\", "
-        "settl_currency=\"{}\", "
-        "settl_type={}, "
         "strike_currency=\"{}\", "
         "strike_price={}, "
         "symbol=\"{}\", "
+        // non-standard
+        "comm_currency=\"{}\", "
+        "currency=\"{}\", "
+        "min_trade_vol={}, "
+        "settl_currency=\"{}\", "
+        "settl_type={}, "
         "underlying_symbol=\"{}\", "
-        "instrument_price_precision={}"
+        // deribit specific
+        "deribit_instrument_price_precision={}"
         "}}",
-        value.comm_currency,
         value.contract_multiplier,
-        value.currency,
         value.issue_date,
         value.maturity_date,
         value.maturity_time,
         value.min_price_increment,
-        value.min_trade_vol,
         value.put_or_call,
         value.security_desc,
         value.security_type,
-        value.settl_currency,
-        value.settl_type,
         value.strike_currency,
         value.strike_price,
         value.symbol,
+        // non-standard
+        value.comm_currency,
+        value.currency,
+        value.min_trade_vol,
+        value.settl_currency,
+        value.settl_type,
         value.underlying_symbol,
-        value.instrument_price_precision);
+        // deribit specific
+        value.deribit_instrument_price_precision);
   }
 };

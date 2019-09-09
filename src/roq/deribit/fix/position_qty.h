@@ -56,6 +56,7 @@ struct fmt::formatter<roq::deribit::fix::PositionQty> {
         "{{"
         "long_qty={}, "
         "short_qty={}, "
+        // non-standard
         "contract_multiplier={}, "
         "qty_type={}, "
         "raw_data=\"{}\", "
@@ -63,11 +64,13 @@ struct fmt::formatter<roq::deribit::fix::PositionQty> {
         "side={}, "
         "symbol=\"{}\", "
         "underlying_price={}, "
+        // deribit specific
         "deribit_liquidation_price={}, "
         "deribit_size_in_currency={}"
         "}}",
         value.long_qty,
         value.short_qty,
+        // non-standard
         value.contract_multiplier,
         value.qty_type,
         value.raw_data,
@@ -75,6 +78,7 @@ struct fmt::formatter<roq::deribit::fix::PositionQty> {
         value.side,
         value.symbol,
         value.underlying_price,
+        // deribit specific
         value.deribit_liquidation_price,
         value.deribit_size_in_currency);
   }

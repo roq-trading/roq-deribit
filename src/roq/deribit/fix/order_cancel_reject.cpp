@@ -37,22 +37,28 @@ void OrderCancelReject::parse(
       auto field = core::fix::parse_field(tag);
       switch (field) {
         case core::fix::Field::CL_ORD_ID:
+          static_assert(core::fix::OrderCancelReject::has_field(core::fix::Field::CL_ORD_ID));
           core::fix::update(cl_ord_id, value);
           break;
         case core::fix::Field::ORD_STATUS:
+          static_assert(core::fix::OrderCancelReject::has_field(core::fix::Field::ORD_STATUS));
           core::fix::update(ord_status, value);
           break;
         case core::fix::Field::ORIG_CL_ORD_ID:
+          static_assert(core::fix::OrderCancelReject::has_field(core::fix::Field::ORIG_CL_ORD_ID));
           core::fix::update(orig_cl_ord_id, value);
           break;
         case core::fix::Field::TEXT:
+          static_assert(core::fix::OrderCancelReject::has_field(core::fix::Field::TEXT));
           core::fix::update(text, value);
           break;
         // non-standard
         case core::fix::Field::AVG_PX:
+          static_assert(!core::fix::OrderCancelReject::has_field(core::fix::Field::AVG_PX));
           core::fix::update(avg_px, value);
           break;
         case core::fix::Field::LEAVES_QTY:
+          static_assert(!core::fix::OrderCancelReject::has_field(core::fix::Field::LEAVES_QTY));
           core::fix::update(leaves_qty, value);
           break;
         default:

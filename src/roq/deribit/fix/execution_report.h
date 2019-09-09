@@ -26,6 +26,7 @@ double contract_multiplier = std::numeric_limits<double>::quiet_NaN();
   std::string_view exec_inst;  // TODO(thraneh): MultipleCharValue
   core::fix::ExecType exec_type = core::fix::ExecType::UNKNOWN;
   double leaves_qty = std::numeric_limits<double>::quiet_NaN();
+  std::string_view mass_status_req_id;
   double max_show = std::numeric_limits<double>::quiet_NaN();
   core::fix::OrdRejReason ord_rej_reason;
   core::fix::OrdStatus ord_status = core::fix::OrdStatus::UNKNOWN;
@@ -41,14 +42,11 @@ double contract_multiplier = std::numeric_limits<double>::quiet_NaN();
   double stop_px = std::numeric_limits<double>::quiet_NaN();
   std::string_view symbol;
   std::string_view text;
+  uint32_t tot_num_reports = 0;
   std::chrono::nanoseconds transact_time;
   double volatility = std::numeric_limits<double>::quiet_NaN();
-
-  // non-standard?
-  std::string_view mass_status_req_id;
+  // non-standard
   core::fix::MassStatusReqType mass_status_req_type = core::fix::MassStatusReqType::UNKNOWN;
-  uint32_t tot_num_reports = 0;
-
   // deribit specific
   AdvOrderType deribit_adv_order_type = AdvOrderType::UNKNOWN;
   std::string_view deribit_label;
@@ -83,6 +81,7 @@ struct fmt::formatter<roq::deribit::fix::ExecutionReport> {
         "exec_inst=\"{}\", "
         "exec_type={}, "
         "leaves_qty={}, "
+        "mass_status_req_id=\"{}\", "
         "max_show={}, "
         "ord_rej_reason={}, "
         "ord_status={}, "
@@ -98,12 +97,12 @@ struct fmt::formatter<roq::deribit::fix::ExecutionReport> {
         "stop_px={}, "
         "symbol=\"{}\", "
         "text=\"{}\", "
-        "stop_px={}, "
+        "tot_num_reports={}, "
         "transact_time={}, "
         "volatility={}, "
-        "mass_status_req_id=\"{}\", "
+        // non-standard
         "mass_status_req_type={}, "
-        "tot_num_reports={}, "
+        // deribit specific
         "deribit_adv_order_type={}, "
         "deribit_label=\"{}\""
         "}}",
@@ -114,6 +113,7 @@ struct fmt::formatter<roq::deribit::fix::ExecutionReport> {
         value.exec_inst,
         value.exec_type,
         value.leaves_qty,
+        value.mass_status_req_id,
         value.max_show,
         value.ord_rej_reason,
         value.ord_status,
@@ -129,12 +129,12 @@ struct fmt::formatter<roq::deribit::fix::ExecutionReport> {
         value.stop_px,
         value.symbol,
         value.text,
-        value.stop_px,
+        value.tot_num_reports,
         value.transact_time,
         value.volatility,
-        value.mass_status_req_id,
+        // non-standard
         value.mass_status_req_type,
-        value.tot_num_reports,
+        // deribit specific
         value.deribit_adv_order_type,
         value.deribit_label);
   }

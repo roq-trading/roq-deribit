@@ -19,6 +19,7 @@ namespace fix {
 
 struct MarketDataSnapshotFullRefresh final {
   // standard
+  double contract_multiplier = std::numeric_limits<double>::quiet_NaN();
   std::string_view md_req_id;
   struct {
     struct {
@@ -40,9 +41,8 @@ struct MarketDataSnapshotFullRefresh final {
     } *items = nullptr;
     size_t length = 0;
   } md_full_grp;  // MDFullGrp
-  // non-standard
-  double contract_multiplier = std::numeric_limits<double>::quiet_NaN();
   std::string_view symbol;
+  // non-standard
   double open_interest = std::numeric_limits<double>::quiet_NaN();
   double underlying_px = std::numeric_limits<double>::quiet_NaN();
   std::string_view underlying_symbol;
@@ -121,26 +121,30 @@ struct fmt::formatter<roq::deribit::fix::MarketDataSnapshotFullRefresh> {
     return format_to(
         ctx.begin(),
         "{{"
+        "contract_multiplier={}, "
         "md_req_id=\"{}\", "
         "md_full_grp=[{}], "
-        "contract_multiplier={}, "
-        "open_interest={}, "
         "symbol=\"{}\", "
+        // non-standard
+        "open_interest={}, "
         "underlying_px={}, "
         "underlying_symbol=\"{}\", "
+        // deribit specific
         "deribit_mark_price={}, "
         "deribit_trade_volume_24h={}"
         "}}",
+        value.contract_multiplier,
         value.md_req_id,
         fmt::join(
             value.md_full_grp.items,
             value.md_full_grp.items + value.md_full_grp.length,
             ", "),
-        value.contract_multiplier,
-        value.open_interest,
         value.symbol,
+        // non-standard
+        value.open_interest,
         value.underlying_px,
         value.underlying_symbol,
+        // deribit specific
         value.deribit_mark_price,
         value.deribit_trade_volume_24h);
   }

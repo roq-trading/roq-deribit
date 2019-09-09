@@ -45,30 +45,39 @@ void parse_md_full(
       switch (field) {
         // standard
         case core::fix::Field::MD_ENTRY_DATE:
+          static_assert(core::fix::MDFullGrp::has_field(core::fix::Field::MD_ENTRY_DATE));
           core::fix::update(result.md_entry_date, value);
           break;
         case core::fix::Field::MD_ENTRY_PX:
+          static_assert(core::fix::MDFullGrp::has_field(core::fix::Field::MD_ENTRY_PX));
           core::fix::update(result.md_entry_px, value);
           break;
         case core::fix::Field::MD_ENTRY_SIZE:
+          static_assert(core::fix::MDFullGrp::has_field(core::fix::Field::MD_ENTRY_SIZE));
           core::fix::update(result.md_entry_size, value);
           break;
         case core::fix::Field::MD_ENTRY_TYPE:
+          static_assert(core::fix::MDFullGrp::has_field(core::fix::Field::MD_ENTRY_TYPE));
           // key
           return;
         case core::fix::Field::SECONDARY_ORDER_ID:
+          static_assert(core::fix::MDFullGrp::has_field(core::fix::Field::SECONDARY_ORDER_ID));
           core::fix::update(result.secondary_order_id, value);
           break;
         case core::fix::Field::TEXT:
+          static_assert(core::fix::MDFullGrp::has_field(core::fix::Field::TEXT));
           core::fix::update(result.text, value);
           break;
         // non-standard
         case core::fix::Field::MD_UPDATE_ACTION:
+          static_assert(!core::fix::MDFullGrp::has_field(core::fix::Field::MD_UPDATE_ACTION));
           return;
         case core::fix::Field::ORD_STATUS:
+          static_assert(!core::fix::MDFullGrp::has_field(core::fix::Field::ORD_STATUS));
           core::fix::update(result.ord_status, value);
           break;
         case core::fix::Field::SIDE:
+          static_assert(!core::fix::MDFullGrp::has_field(core::fix::Field::SIDE));
           core::fix::update(result.side, value);
           break;
         default:
@@ -130,10 +139,16 @@ void MarketDataSnapshotFullRefresh::parse(
       auto field = core::fix::parse_field(tag);
       switch (field) {
         // standard
+        case core::fix::Field::CONTRACT_MULTIPLIER:
+          static_assert(core::fix::MarketDataSnapshotFullRefresh::has_field(core::fix::Field::CONTRACT_MULTIPLIER));
+          core::fix::update(contract_multiplier, value);
+          break;
         case core::fix::Field::MD_REQ_ID:
+          static_assert(core::fix::MarketDataSnapshotFullRefresh::has_field(core::fix::Field::MD_REQ_ID));
           core::fix::update(md_req_id, value);
           break;
         case core::fix::Field::NO_MD_ENTRIES: {
+          static_assert(core::fix::MarketDataSnapshotFullRefresh::has_field(core::fix::Field::NO_MD_ENTRIES));
           auto length = core::charconv::from_string<uint32_t>(value);
           ++iter;
           Array array(buffer_, md_full_grp);
@@ -150,20 +165,21 @@ void MarketDataSnapshotFullRefresh::parse(
             throw std::runtime_error("Wrong length");
           continue;  // iterator has already been advanced
         }
-        // non-standard
-        case core::fix::Field::CONTRACT_MULTIPLIER:
-          core::fix::update(contract_multiplier, value);
-          break;
-        case core::fix::Field::OPEN_INTEREST:
-          core::fix::update(open_interest, value);
-          break;
         case core::fix::Field::SYMBOL:
+          static_assert(core::fix::MarketDataSnapshotFullRefresh::has_field(core::fix::Field::SYMBOL));
           core::fix::update(symbol, value);
           break;
+        // non-standard
+        case core::fix::Field::OPEN_INTEREST:
+          static_assert(!core::fix::MarketDataSnapshotFullRefresh::has_field(core::fix::Field::OPEN_INTEREST));
+          core::fix::update(open_interest, value);
+          break;
         case core::fix::Field::UNDERLYING_PX:
+          static_assert(!core::fix::MarketDataSnapshotFullRefresh::has_field(core::fix::Field::UNDERLYING_PX));
           core::fix::update(underlying_px, value);
           break;
         case core::fix::Field::UNDERLYING_SYMBOL:
+          static_assert(!core::fix::MarketDataSnapshotFullRefresh::has_field(core::fix::Field::UNDERLYING_SYMBOL));
           core::fix::update(underlying_symbol, value);
           break;
         default:

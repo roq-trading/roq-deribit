@@ -34,15 +34,19 @@ void Reject::parse(
       auto field = core::fix::parse_field(tag);
       switch (field) {
         case core::fix::Field::REF_SEQ_NUM:
+          static_assert(core::fix::Reject::has_field(core::fix::Field::REF_SEQ_NUM));
           core::fix::update(ref_seq_num, value);
           break;
         case core::fix::Field::REF_TAG_ID:
+          static_assert(core::fix::Reject::has_field(core::fix::Field::REF_TAG_ID));
           core::fix::update(ref_tag_id, value);
           break;
         case core::fix::Field::REF_MSG_TYPE:
+          static_assert(core::fix::Reject::has_field(core::fix::Field::REF_MSG_TYPE));
           core::fix::update(ref_msg_type, value);
           break;
         case core::fix::Field::TEXT:
+          static_assert(core::fix::Reject::has_field(core::fix::Field::TEXT));
           core::fix::update(text, value);
           break;
         default:

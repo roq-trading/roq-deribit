@@ -19,7 +19,9 @@ namespace fix {
 
 struct MarketDataIncrementalRefresh final {
   // standard
+  double contract_multiplier = std::numeric_limits<double>::quiet_NaN();
   std::string_view md_req_id;
+  std::string_view symbol;
   struct {
     struct {
       // standard
@@ -43,9 +45,7 @@ struct MarketDataIncrementalRefresh final {
     size_t length = 0;
   } md_inc_grp;  // MDIncGrp
   // non-standard
-  double contract_multiplier = std::numeric_limits<double>::quiet_NaN();
   double open_interest = std::numeric_limits<double>::quiet_NaN();
-  std::string_view symbol;
   // deribit specific
   double deribit_mark_price = std::numeric_limits<double>::quiet_NaN();
   double deribit_trade_volume_24h = std::numeric_limits<double>::quiet_NaN();
@@ -90,9 +90,11 @@ struct fmt::formatter<roq::deribit::fix::MarketDataIncrementalRefresh::MDIncGrp>
         "order_id=\"{}\", "
         "secondary_order_id=\"{}\", "
         "text=\"{}\", "
+        // non-standard
         "index_price={}, "
         "ord_status={}, "
         "side={}, "
+        // deribit specific
         "deribit_label=\"{}\", "
         "deribit_liquidation=\"{}\", "
         "deribit_trade_id={}"
@@ -105,9 +107,11 @@ struct fmt::formatter<roq::deribit::fix::MarketDataIncrementalRefresh::MDIncGrp>
         value.order_id,
         value.secondary_order_id,
         value.text,
+        // non-standard
         value.index_price,
         value.ord_status,
         value.side,
+        // deribit specific
         value.deribit_label,
         value.deribit_liquidation,
         value.deribit_trade_id);
@@ -125,22 +129,26 @@ struct fmt::formatter<roq::deribit::fix::MarketDataIncrementalRefresh> {
     return format_to(
         ctx.begin(),
         "{{"
-        "md_req_id=\"{}\", "
-        "md_inc_grp=[{}], "
         "contract_multiplier={}, "
-        "open_interest={}, "
+        "md_inc_grp=[{}], "
+        "md_req_id=\"{}\", "
         "symbol=\"{}\", "
+        // non-standard
+        "open_interest={}, "
+        // deribit specific
         "deribit_mark_price={}, "
         "deribit_trade_volume_24h={}"
         "}}",
-        value.md_req_id,
+        value.contract_multiplier,
         fmt::join(
             value.md_inc_grp.items,
             value.md_inc_grp.items + value.md_inc_grp.length,
             ", "),
-        value.contract_multiplier,
-        value.open_interest,
+        value.md_req_id,
         value.symbol,
+        // non-standard
+        value.open_interest,
+        // deribit specific
         value.deribit_mark_price,
         value.deribit_trade_volume_24h);
   }

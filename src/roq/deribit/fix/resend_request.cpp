@@ -35,9 +35,11 @@ void ResendRequest::parse(
       auto field = core::fix::parse_field(tag);
       switch (field) {
         case core::fix::Field::BEGIN_SEQ_NO:
+          static_assert(core::fix::ResendRequest::has_field(core::fix::Field::BEGIN_SEQ_NO));
           core::fix::update(begin_seq_no, value);
           break;
         case core::fix::Field::END_SEQ_NO:
+          static_assert(core::fix::ResendRequest::has_field(core::fix::Field::END_SEQ_NO));
           core::fix::update(end_seq_no, value);
           break;
         default:

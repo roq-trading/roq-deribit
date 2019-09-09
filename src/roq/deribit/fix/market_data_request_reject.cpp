@@ -35,12 +35,15 @@ void MarketDataRequestReject::parse(
       auto field = core::fix::parse_field(tag);
       switch (field) {
         case core::fix::Field::MD_REQ_ID:
+          static_assert(core::fix::MarketDataRequestReject::has_field(core::fix::Field::MD_REQ_ID));
           core::fix::update(md_req_id, value);
           break;
         case core::fix::Field::MD_REQ_REJ_REASON:
+          static_assert(core::fix::MarketDataRequestReject::has_field(core::fix::Field::MD_REQ_REJ_REASON));
           core::fix::update(md_req_rej_reason, value);
           break;
         case core::fix::Field::TEXT:
+          static_assert(core::fix::MarketDataRequestReject::has_field(core::fix::Field::TEXT));
           core::fix::update(text, value);
           break;
         default:

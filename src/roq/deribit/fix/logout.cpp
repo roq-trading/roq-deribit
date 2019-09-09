@@ -35,6 +35,7 @@ void Logout::parse(
       auto field = core::fix::parse_field(tag);
       switch (field) {
         case core::fix::Field::TEXT:
+          static_assert(core::fix::Logout::has_field(core::fix::Field::TEXT));
           core::fix::update(text, value);
           break;
         default:
