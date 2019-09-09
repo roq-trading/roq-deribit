@@ -108,6 +108,15 @@ void ExecutionReport::parse(
         case core::fix::Field::VOLATILITY:
           core::fix::update(volatility, value);
           break;
+        case core::fix::Field::MASS_STATUS_REQ_ID:
+          core::fix::update(mass_status_req_id, value);
+          break;
+        case core::fix::Field::MASS_STATUS_REQ_TYPE:
+          core::fix::update(mass_status_req_type, value);
+          break;
+        case core::fix::Field::TOT_NUM_REPORTS:
+          core::fix::update(tot_num_reports, value);
+          break;
         default:
           if (core::fix::ExecutionReport::has_field(field))
             break;

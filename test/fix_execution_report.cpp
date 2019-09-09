@@ -51,3 +51,25 @@ TEST(fix_execution_report, parse_message) {
   EXPECT_EQ(bytes, std::strlen(message));
   EXPECT_EQ(results, 1);
 }
+
+TEST(fix_execution_report, parse_order_mass_status) {
+  const char *message =
+    "8=FIX.4.4\0019=112\00135=8\00149=DERIBITSERVER\00156=ROQ_TRADI"
+    "NG\00134=4\00152=20190909-07:58:54.679\001584=roq-oms-005\0015"
+    "85=7\00158=total_reports\001911=1\00110=045\001";
+  int results = 0;
+  auto bytes = core::fix::Reader::dispatch(
+      [&](const core::fix::message_t& message) {
+        ++results;
+        EXPECT_EQ(message.header.msg_type, core::fix::MsgType::EXECUTION_REPORT);
+        auto result = fix::ExecutionReport::parse(message);
+        EXPECT_EQ(result.mass_status_req_id, "roq-oms-005");
+        EXPECT_EQ(result.mass_status_req_type, core::fix::MassStatusReqType::ORDERS);
+        EXPECT_EQ(result.tot_num_reports, uint32_t{1});
+        EXPECT_EQ(result.text, "total_reports");
+      },
+      message,
+      std::strlen(message));
+  EXPECT_EQ(bytes, std::strlen(message));
+  EXPECT_EQ(results, 1);
+}

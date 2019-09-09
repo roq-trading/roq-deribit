@@ -4,6 +4,8 @@
 
 #include <fmt/format.h>
 
+#include <limits>
+
 #include "roq/core/fix/reader.h"
 
 namespace roq {
@@ -15,6 +17,9 @@ struct OrderCancelReject final {
   core::fix::OrdStatus ord_status = core::fix::OrdStatus::UNKNOWN;
   std::string_view orig_cl_ord_id;
   std::string_view text;
+  // non-standard
+  double avg_px = std::numeric_limits<double>::quiet_NaN();
+  double leaves_qty = std::numeric_limits<double>::quiet_NaN();
 
   static OrderCancelReject parse(const core::fix::message_t& message);
   static void parse(OrderCancelReject&, const core::fix::message_t& message);
@@ -41,7 +46,7 @@ struct fmt::formatter<roq::deribit::fix::OrderCancelReject> {
         "{{"
         "cl_ord_id=\"{}\", "
         "ord_status=\"{}\", "
-        "orig_cl_ord_id={}, "
+        "orig_cl_ord_id=\"{}\", "
         "text=\"{}\""
         "}}",
         value.cl_ord_id,

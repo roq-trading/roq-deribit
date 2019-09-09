@@ -18,9 +18,10 @@ namespace deribit {
 namespace fix {
 
 struct ExecutionReport final {
+  // standard?
   double avg_px = std::numeric_limits<double>::quiet_NaN();
   std::string_view cl_ord_id;
-  double contract_multiplier = std::numeric_limits<double>::quiet_NaN();
+double contract_multiplier = std::numeric_limits<double>::quiet_NaN();
   double cum_qty = std::numeric_limits<double>::quiet_NaN();
   std::string_view exec_inst;  // TODO(thraneh): MultipleCharValue
   core::fix::ExecType exec_type = core::fix::ExecType::UNKNOWN;
@@ -42,6 +43,12 @@ struct ExecutionReport final {
   std::string_view text;
   std::chrono::nanoseconds transact_time;
   double volatility = std::numeric_limits<double>::quiet_NaN();
+
+  // non-standard?
+  std::string_view mass_status_req_id;
+  core::fix::MassStatusReqType mass_status_req_type = core::fix::MassStatusReqType::UNKNOWN;
+  uint32_t tot_num_reports = 0;
+
   // deribit specific
   AdvOrderType deribit_adv_order_type = AdvOrderType::UNKNOWN;
   std::string_view deribit_label;
@@ -74,13 +81,13 @@ struct fmt::formatter<roq::deribit::fix::ExecutionReport> {
         "contract_multiplier={}, "
         "cum_qty={}, "
         "exec_inst=\"{}\", "
-        "exec_type=\"{}\", "
+        "exec_type={}, "
         "leaves_qty={}, "
         "max_show={}, "
         "ord_rej_reason={}, "
         "ord_status={}, "
         "ord_type={}, "
-        "order_id={}, "
+        "order_id=\"{}\", "
         "order_qty={}, "
         "orig_cl_ord_id=\"{}\", "
         "pegged_price={}, "
@@ -94,6 +101,9 @@ struct fmt::formatter<roq::deribit::fix::ExecutionReport> {
         "stop_px={}, "
         "transact_time={}, "
         "volatility={}, "
+        "mass_status_req_id=\"{}\", "
+        "mass_status_req_type={}, "
+        "tot_num_reports={}, "
         "deribit_adv_order_type={}, "
         "deribit_label=\"{}\""
         "}}",
@@ -122,6 +132,9 @@ struct fmt::formatter<roq::deribit::fix::ExecutionReport> {
         value.stop_px,
         value.transact_time,
         value.volatility,
+        value.mass_status_req_id,
+        value.mass_status_req_type,
+        value.tot_num_reports,
         value.deribit_adv_order_type,
         value.deribit_label);
   }

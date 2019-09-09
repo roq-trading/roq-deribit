@@ -18,9 +18,13 @@
 
 #include "roq/core/fix/heartbeat.h"
 #include "roq/core/fix/logon.h"
+#include "roq/core/fix/logout.h"
 #include "roq/core/fix/new_order_single.h"
 #include "roq/core/fix/market_data_request.h"
+#include "roq/core/fix/order_cancel_replace_request.h"
 #include "roq/core/fix/order_cancel_request.h"
+#include "roq/core/fix/order_mass_status_request.h"
+#include "roq/core/fix/reject.h"
 #include "roq/core/fix/security_list_request.h"
 #include "roq/core/fix/reader.h"
 #include "roq/core/fix/request_for_positions.h"
@@ -43,6 +47,8 @@ static std::random_device RANDOM_DEVICE;
 static std::uniform_int_distribution<uint32_t> DISTRIBUTION;
 constexpr const char *SENDER_COMP_ID = "ROQ_TRADING";
 constexpr const char *TARGET_COMP_ID = "DERIBITSERVER";
+constexpr const char *SYMBOL = "BTC-27SEP19";
+constexpr bool CANCEL_ON_DISCONNECT = true;
 }  // namespace
 
 FIX::FIX(
@@ -101,26 +107,25 @@ void FIX::on_read() {
 void FIX::on_error(int events) {
   if (events & BEV_EVENT_CONNECTED) {
     LOG(INFO) << "CONNECTED";
-    send_logon();
+    send_logon(
+        PING_FREQUENCY.count(),
+        CANCEL_ON_DISCONNECT);
   } else {
     _controller.on_ws_disconnect();
   }
 }
 
 void FIX::on_timer() {
-  /*
   auto now = core::get_time();
   if (now < _next_update)
     return;
   _next_update = now + PING_FREQUENCY;
-  switch (_state) {
-    case State::UPGRADED:
-      send_test_request("anybody in there?");
-      break;
-    default:
-      break;
-  }
-  */
+  LOG(INFO) << "*** PING ***";
+  auto test_req_id = fmt::format(
+      "{}",
+      core::get_system_clock().count());
+  LOG(INFO) << "test_req_id=" << test_req_id;
+  send_test_request(test_req_id);
 }
 
 // fix:
@@ -136,68 +141,177 @@ void FIX::process_data() {
           try {
             fix::Parser::dispatch(
                 overloaded {
-                  [](const fix::ExecutionReport& execution_report) {
-                    LOG(INFO) << fmt::format("execution_report={}", execution_report);
+                  [&](const fix::ExecutionReport& execution_report) {
+                    LOG(INFO) << fmt::format(
+                        "execution_report={}, header={}",
+                        execution_report,
+                        message.header);
+                    switch (execution_report.exec_type) {
+                      case core::fix::ExecType::ORDER_STATUS:
+                        switch (execution_report.ord_status) {
+                          case core::fix::OrdStatus::NEW:
+                            if (execution_report.order_qty > 1.0) {
+                              send_order_cancel_replace_request(
+                                  execution_report.orig_cl_ord_id,
+                                  execution_report.cl_ord_id,
+                                  core::fix::Side::BUY,
+                                  1.0,
+                                  core::fix::OrdType::LIMIT,
+                                  1.0,
+                                  SYMBOL);
+                            } else {
+                              send_order_cancel_request(
+                                  execution_report.orig_cl_ord_id,
+                                  execution_report.cl_ord_id);
+                            }
+                            break;
+                          default:
+                            break;
+                        }
+                        break;
+                      default:
+                        break;
+                    }
                   },
-                  [](const fix::Heartbeat& heartbeat) {
-                    LOG(INFO) << fmt::format("heartbeat={}", heartbeat);
+                  [&](const fix::Heartbeat& heartbeat) {
+                    if (!heartbeat.test_req_id.empty()) {
+                      auto tmp = core::charconv::from_string<uint64_t>(
+                          heartbeat.test_req_id);
+                      std::chrono::nanoseconds send_time{tmp};
+                      auto latency = std::chrono::duration_cast<
+                        std::chrono::microseconds>(core::get_system_clock() - send_time);
+                      LOG(INFO) << fmt::format("*** LATENCY={} ***", latency);
+                    }
+                    LOG(INFO) << fmt::format(
+                        "heartbeat={}, header={}",
+                        heartbeat,
+                        message.header);
                   },
                   [&](const fix::Logon& logon) {
-                    LOG(INFO) << fmt::format("logon={}", logon);
-                    send_security_list_request();
-                    send_market_data_request("123", "BTC-27SEP19");
-                    send_request_for_positions("123", core::fix::PosReqType::POSITIONS);
-                    send_user_request("123");
-                    /*
+                    LOG(INFO) << fmt::format(
+                        "logon={}, header={}",
+                        logon,
+                        message.header);
+                    send_security_list_request("roq-sec-001");
+                    send_market_data_request("roq-mkt-002", SYMBOL);
+                    send_request_for_positions("roq-pos-003", core::fix::PosReqType::POSITIONS);
+                    send_user_request("roq-usr-004");
+                    send_order_mass_status_request(
+                        "roq-oms-005",
+                        core::fix::MassStatusReqType::ORDERS);
                     send_new_order_single(
-                        "123",
+                        "roq-ord-006",
                         core::fix::Side::BUY,
-                        1.0,
+                        2.0,
                         0.5,
-                        "BTC-27SEP19",
+                        SYMBOL,
                         core::fix::OrdType::LIMIT,
-                        core::fix::TimeInForce::IOC,
+                        core::fix::TimeInForce::GTC,
                         "roq;123;345");
-                    send_order_cancel_request(
-                        "123",
-                        "345");
-                    */
                   },
-                  [](const fix::Logout& logout) {
-                    LOG(INFO) << fmt::format("logout={}", logout);
+                  [&](const fix::Logout& logout) {
+                    LOG(INFO) << fmt::format(
+                        "logout={}, header={}",
+                        logout,
+                        message.header);
                     // TODO(thraneh): deal with this - how?
                   },
-                  [](const fix::MarketDataIncrementalRefresh& market_data_incremental_refresh) {
-                    LOG(INFO) << fmt::format("market_data_incremental_refresh={}", market_data_incremental_refresh);
+                  [&](const fix::MarketDataIncrementalRefresh& market_data_incremental_refresh) {
+                    /*
+                    bool found = false;
+                    for (size_t i = 0; i < market_data_incremental_refresh.md_inc_grp.length; ++i) {
+                      auto& item = market_data_incremental_refresh.md_inc_grp.items[i];
+                      switch (item.md_entry_type) {
+                        case core::fix::MDEntryType::BID:
+                        case core::fix::MDEntryType::OFFER:
+                          break;
+                        case core::fix::MDEntryType::TRADE:
+                          // md_entry_date=1568010009502000000ns,
+                          // md_entry_px=10398,
+                          // md_entry_size=165,
+                          // md_entry_type=TRADE,
+                          // md_update_action=NEW,
+                          // order_id="0",
+                          // secondary_order_id="0",
+                          // text="2971561",
+                          // index_price=10296.8,
+                          // ord_status=PARTIALLY_FILLED,
+                          // side=SELL,
+                          // deribit_label="",
+                          // deribit_liquidation="",
+                          // deribit_trade_id=18490039
+                          found = true;
+                          break;
+                        default:
+                          found = true;
+                      }
+                    }
+                    if (!found)
+                      return;
+                    */
+                    LOG(INFO) << fmt::format(
+                        "market_data_incremental_refresh={}, header={}",
+                        market_data_incremental_refresh,
+                        message.header);
                   },
-                  [](const fix::MarketDataRequestReject& market_data_request_reject) {
-                    LOG(INFO) << fmt::format("market_data_request_reject={}", market_data_request_reject);
+                  [&](const fix::MarketDataRequestReject& market_data_request_reject) {
+                    LOG(INFO) << fmt::format(
+                        "market_data_request_reject={}, header={}",
+                        market_data_request_reject,
+                        message.header);
                   },
-                  [](const fix::MarketDataSnapshotFullRefresh& market_data_snapshot_full_refresh) {
-                    LOG(INFO) << fmt::format("market_data_snapshot_full_refresh={}", market_data_snapshot_full_refresh);
+                  [&](const fix::MarketDataSnapshotFullRefresh& market_data_snapshot_full_refresh) {
+                    LOG(INFO) << fmt::format(
+                        "market_data_snapshot_full_refresh={}, header={}",
+                        market_data_snapshot_full_refresh,
+                        message.header);
                   },
-                  [](const fix::OrderCancelReject& order_cancel_reject) {
-                    LOG(INFO) << fmt::format("order_cancel_reject={}", order_cancel_reject);
+                  [&](const fix::OrderCancelReject& order_cancel_reject) {
+                    LOG(INFO) << fmt::format(
+                        "order_cancel_reject={}, header={}",
+                        order_cancel_reject,
+                        message.header);
                   },
-                  [](const fix::PositionReport& position_report) {
-                    LOG(INFO) << fmt::format("position_report={}", position_report);
+                  [&](const fix::PositionReport& position_report) {
+                    LOG(INFO) << fmt::format(
+                        "position_report={}, header={}",
+                        position_report,
+                        message.header);
                   },
-                  [](const fix::Reject& reject) {
-                    LOG(INFO) << fmt::format("reject={}", reject);
+                  [&](const fix::Reject& reject) {
+                    LOG(INFO) << fmt::format(
+                        "reject={}, header={}",
+                        reject,
+                        message.header);
                   },
-                  [](const fix::ResendRequest& resend_request) {
-                    LOG(INFO) << fmt::format("resend_request={}", resend_request);
-                    // TODO(thraneh): send_reject
+                  [&](const fix::ResendRequest& resend_request) {
+                    LOG(INFO) << fmt::format(
+                        "resend_request={}, header={}",
+                        resend_request,
+                        message.header);
+                    send_reject(
+                        message.header.msg_seq_num,
+                        message.header.msg_type,
+                        "resend_not_supported");
                   },
-                  [](const fix::SecurityList& security_list) {
-                    LOG(INFO) << fmt::format("security_list={}", security_list);
+                  [&](const fix::SecurityList& security_list) {
+                    LOG(INFO) << fmt::format(
+                        "security_list={}, header={}",
+                        security_list,
+                        message.header);
                   },
                   [&](const fix::TestRequest& test_request) {
-                    LOG(INFO) << fmt::format("test_request={}", test_request);
+                    LOG(INFO) << fmt::format(
+                        "test_request={}, header={}",
+                        test_request,
+                        message.header);
                     send_heartbeat(test_request.test_req_id);
                   },
-                  [](const fix::UserResponse& user_response) {
-                    LOG(INFO) << fmt::format("user_response={}", user_response);
+                  [&](const fix::UserResponse& user_response) {
+                    LOG(INFO) << fmt::format(
+                        "user_response={}, header={}",
+                        user_response,
+                        message.header);
                   },
                 },
                 message,
@@ -218,7 +332,35 @@ void FIX::process_data() {
   }
 }
 
-void FIX::send_logon() {
+void FIX::send_reject(
+    uint64_t ref_seq_num,
+    const std::string_view& ref_msg_type,
+    const std::string_view& text) {
+  char buffer[4096];
+  // auto message = core::fix::Writer<core::fix::Reject>(
+  auto message = core::fix::Writer(
+      buffer,
+      std::size(buffer),
+      core::fix::Reject::msg_type,
+      SENDER_COMP_ID,
+      TARGET_COMP_ID,
+      _msg_seq_num)
+    .write(core::fix::Field::REF_SEQ_NUM, ref_seq_num)
+    .write(core::fix::Field::REF_MSG_TYPE, ref_msg_type)
+    .write(core::fix::Field::TEXT, text)
+    .finish();
+  // core::print_memory(message);  // DEBUG
+  _buffer_event.write(message);
+}
+
+void FIX::send_reject(
+    uint64_t ref_seq_num,
+    const core::fix::MsgType& msg_type,
+    const std::string_view& text) {
+  send_reject(ref_seq_num, CodeNameMsgType(msg_type), text);
+}
+
+void FIX::send_logon(uint16_t heart_bt_int, bool cancel_on_disconnect) {
   auto now = core::get_realtime_clock();
   auto raw_data = Random::create_raw_data(now);
   auto password = Random::create_password(raw_data, _access_secret);
@@ -231,11 +373,29 @@ void FIX::send_logon() {
       SENDER_COMP_ID,
       TARGET_COMP_ID,
       _msg_seq_num)
-    .write(core::fix::Field::HEART_BT_INT, uint16_t{10})
+    .write(core::fix::Field::HEART_BT_INT, heart_bt_int)
     .write(core::fix::Field::RAW_DATA, raw_data)
     .write(core::fix::Field::USERNAME, _access_key)
     .write(core::fix::Field::PASSWORD, password)
-    .write(static_cast<uint32_t>(fix::Deribit::CANCEL_ON_DISCONNECT), true)
+    .write(
+        static_cast<uint32_t>(fix::Deribit::CANCEL_ON_DISCONNECT),
+        cancel_on_disconnect)
+    .finish();
+  // core::print_memory(message);  // DEBUG
+  _buffer_event.write(message);
+}
+
+void FIX::send_logout(const std::string_view& text) {
+  char buffer[4096];
+  // auto message = core::fix::Writer<core::fix::Logout>(
+  auto message = core::fix::Writer(
+      buffer,
+      std::size(buffer),
+      core::fix::Logout::msg_type,
+      SENDER_COMP_ID,
+      TARGET_COMP_ID,
+      _msg_seq_num)
+    .write(core::fix::Field::TEXT, text)
     .finish();
   // core::print_memory(message);  // DEBUG
   _buffer_event.write(message);
@@ -273,7 +433,8 @@ void FIX::send_test_request(const std::string_view& test_req_id) {
   _buffer_event.write(message);
 }
 
-void FIX::send_security_list_request() {
+void FIX::send_security_list_request(
+    const std::string_view& security_req_id) {
   char buffer[4096];
   // auto message = core::fix::Writer<core::fix::SecurityListRequest>(
   auto message = core::fix::Writer(
@@ -283,7 +444,7 @@ void FIX::send_security_list_request() {
       SENDER_COMP_ID,
       TARGET_COMP_ID,
       _msg_seq_num)
-    .write(core::fix::Field::SECURITY_REQ_ID, "123")  // TODO(thraneh): do we need a request id?
+    .write(core::fix::Field::SECURITY_REQ_ID, security_req_id)
     .write(
         core::fix::Field::SECURITY_LIST_REQUEST_TYPE,
         core::fix::SecurityListRequestType::ALL_SECURITIES)
@@ -364,6 +525,25 @@ void FIX::send_request_for_positions(
   _buffer_event.write(message);
 }
 
+void FIX::send_order_mass_status_request(
+    const std::string_view& mass_status_req_id,
+    const core::fix::MassStatusReqType& mass_status_req_type) {
+  char buffer[4096];
+  // auto message = core::fix::Writer<core::fix::RequestForPositions>(
+  auto message = core::fix::Writer(
+      buffer,
+      std::size(buffer),
+      core::fix::OrderMassStatusRequest::msg_type,
+      SENDER_COMP_ID,
+      TARGET_COMP_ID,
+      _msg_seq_num)
+    .write(core::fix::Field::MASS_STATUS_REQ_ID, mass_status_req_id)
+    .write(core::fix::Field::MASS_STATUS_REQ_TYPE, mass_status_req_type)
+    .finish();
+  // core::print_memory(message);
+  _buffer_event.write(message);
+}
+
 void FIX::send_new_order_single(
     const std::string_view& cl_ord_id,
     const core::fix::Side& side,
@@ -390,6 +570,37 @@ void FIX::send_new_order_single(
     .write(core::fix::Field::ORD_TYPE, ord_type)
     .write(core::fix::Field::TIME_IN_FORCE, time_in_force)
     .write(static_cast<uint32_t>(fix::Deribit::LABEL), deribit_label)
+    .finish();
+  // core::print_memory(message);
+  _buffer_event.write(message);
+}
+
+void FIX::send_order_cancel_replace_request(
+    const std::string_view& cl_ord_id,
+    const std::string_view& orig_cl_ord_id,
+    const core::fix::Side& side,
+    double order_qty,
+    const core::fix::OrdType& ord_type,
+    double price,
+    const std::string_view& symbol,
+    std::chrono::nanoseconds transact_time) {
+  char buffer[4096];
+  // auto message = core::fix::Writer<core::fix::RequestForPositions>(
+  auto message = core::fix::Writer(
+      buffer,
+      std::size(buffer),
+      core::fix::OrderCancelReplaceRequest::msg_type,
+      SENDER_COMP_ID,
+      TARGET_COMP_ID,
+      _msg_seq_num)
+    .write(core::fix::Field::CL_ORD_ID, cl_ord_id)
+    .write(core::fix::Field::ORIG_CL_ORD_ID, orig_cl_ord_id)
+    .write(core::fix::Field::TRANSACT_TIME, transact_time)
+    .write(core::fix::Field::SIDE, side)
+    .write(core::fix::Field::ORDER_QTY, order_qty)
+    .write(core::fix::Field::ORD_TYPE, ord_type)
+    .write(core::fix::Field::PRICE, price)
+    .write(core::fix::Field::SYMBOL, symbol)
     .finish();
   // core::print_memory(message);
   _buffer_event.write(message);

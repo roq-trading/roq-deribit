@@ -48,6 +48,13 @@ void OrderCancelReject::parse(
         case core::fix::Field::TEXT:
           core::fix::update(text, value);
           break;
+        // non-standard
+        case core::fix::Field::AVG_PX:
+          core::fix::update(avg_px, value);
+          break;
+        case core::fix::Field::LEAVES_QTY:
+          core::fix::update(leaves_qty, value);
+          break;
         default:
           if (core::fix::OrderCancelReject::has_field(field))
             break;

@@ -42,10 +42,20 @@ class FIX final {
 
   void process_data();
 
-  void send_logon();
+  void send_reject(
+      uint64_t ref_seq_num,
+      const std::string_view& ref_msg_type,
+      const std::string_view& text);
+  void send_reject(
+      uint64_t ref_seq_num,
+      const core::fix::MsgType& msg_type,
+      const std::string_view& text);
+  void send_logon(uint16_t heart_bt_int, bool cancel_on_disconnect);
+  void send_logout(const std::string_view& text);
   void send_heartbeat(const std::string_view& test_req_id);
   void send_test_request(const std::string_view& test_req_id);
-  void send_security_list_request();
+  void send_security_list_request(
+      const std::string_view& security_req_id);
   void send_market_data_request(
       const std::string_view& md_req_id,
       const std::string_view& symbol);
@@ -53,6 +63,9 @@ class FIX final {
   void send_request_for_positions(
       const std::string_view& pos_req_id,
       const core::fix::PosReqType& pos_req_type);
+  void send_order_mass_status_request(
+      const std::string_view& mass_status_req_id,
+      const core::fix::MassStatusReqType& mass_status_req_type);
   void send_new_order_single(
       const std::string_view& cl_ord_id,
       const core::fix::Side& side,
@@ -62,6 +75,15 @@ class FIX final {
       const core::fix::OrdType& ord_type,
       const core::fix::TimeInForce& time_in_force,
       const std::string_view& deribit_label);
+  void send_order_cancel_replace_request(
+      const std::string_view& cl_ord_id,
+      const std::string_view& orig_cl_ord_id,
+      const core::fix::Side& side,
+      double order_qty,
+      const core::fix::OrdType& ord_type,
+      double price,
+      const std::string_view& symbol,
+      std::chrono::nanoseconds transact_time = {});
   void send_order_cancel_request(
       const std::string_view& cl_ord_id,
       const std::string_view& orig_cl_ord_id);
@@ -78,6 +100,7 @@ class FIX final {
   core::event::Buffer _buffer;
   std::vector<std::byte> _decode_buffer;
   uint64_t _msg_seq_num = 0;
+  std::chrono::nanoseconds _next_update = {};
 };
 
 }  // namespace deribit
