@@ -43,8 +43,7 @@ namespace deribit {
 namespace {
 constexpr auto PING_FREQUENCY = std::chrono::seconds{10};
 constexpr auto DECODE_BUFFER_SIZE = size_t{1048576};  // FIXME(thraneh): flag
-static std::random_device RANDOM_DEVICE;
-static std::uniform_int_distribution<uint32_t> DISTRIBUTION;
+constexpr auto FIX_VERSION = core::fix::Version::FIX_44;
 constexpr const char *SENDER_COMP_ID = "ROQ_TRADING";
 constexpr const char *TARGET_COMP_ID = "DERIBITSERVER";
 constexpr const char *SYMBOL = "BTC-27SEP19";
@@ -341,6 +340,7 @@ void FIX::send_reject(
   auto message = core::fix::Writer(
       buffer,
       std::size(buffer),
+      FIX_VERSION,
       core::fix::Reject::msg_type,
       SENDER_COMP_ID,
       TARGET_COMP_ID,
@@ -369,6 +369,7 @@ void FIX::send_logon(uint16_t heart_bt_int, bool cancel_on_disconnect) {
   auto message = core::fix::Writer(
       buffer,
       std::size(buffer),
+      FIX_VERSION,
       core::fix::Logon::msg_type,
       SENDER_COMP_ID,
       TARGET_COMP_ID,
@@ -391,6 +392,7 @@ void FIX::send_logout(const std::string_view& text) {
   auto message = core::fix::Writer(
       buffer,
       std::size(buffer),
+      FIX_VERSION,
       core::fix::Logout::msg_type,
       SENDER_COMP_ID,
       TARGET_COMP_ID,
@@ -407,6 +409,7 @@ void FIX::send_heartbeat(const std::string_view& test_req_id) {
   auto message = core::fix::Writer(
       buffer,
       std::size(buffer),
+      FIX_VERSION,
       core::fix::Heartbeat::msg_type,
       SENDER_COMP_ID,
       TARGET_COMP_ID,
@@ -423,6 +426,7 @@ void FIX::send_test_request(const std::string_view& test_req_id) {
   auto message = core::fix::Writer(
       buffer,
       std::size(buffer),
+      FIX_VERSION,
       core::fix::TestRequest::msg_type,
       SENDER_COMP_ID,
       TARGET_COMP_ID,
@@ -440,6 +444,7 @@ void FIX::send_security_list_request(
   auto message = core::fix::Writer(
       buffer,
       std::size(buffer),
+      FIX_VERSION,
       core::fix::SecurityListRequest::msg_type,
       SENDER_COMP_ID,
       TARGET_COMP_ID,
@@ -461,6 +466,7 @@ void FIX::send_market_data_request(
   auto message = core::fix::Writer(
       buffer,
       std::size(buffer),
+      FIX_VERSION,
       core::fix::MarketDataRequest::msg_type,
       SENDER_COMP_ID,
       TARGET_COMP_ID,
@@ -489,6 +495,7 @@ void FIX::send_user_request(const std::string_view& user_request_id) {
   auto message = core::fix::Writer(
       buffer,
       std::size(buffer),
+      FIX_VERSION,
       core::fix::UserRequest::msg_type,
       SENDER_COMP_ID,
       TARGET_COMP_ID,
@@ -514,6 +521,7 @@ void FIX::send_request_for_positions(
   auto message = core::fix::Writer(
       buffer,
       std::size(buffer),
+      FIX_VERSION,
       core::fix::RequestForPositions::msg_type,
       SENDER_COMP_ID,
       TARGET_COMP_ID,
@@ -533,6 +541,7 @@ void FIX::send_order_mass_status_request(
   auto message = core::fix::Writer(
       buffer,
       std::size(buffer),
+      FIX_VERSION,
       core::fix::OrderMassStatusRequest::msg_type,
       SENDER_COMP_ID,
       TARGET_COMP_ID,
@@ -558,6 +567,7 @@ void FIX::send_new_order_single(
   auto message = core::fix::Writer(
       buffer,
       std::size(buffer),
+      FIX_VERSION,
       core::fix::NewOrderSingle::msg_type,
       SENDER_COMP_ID,
       TARGET_COMP_ID,
@@ -589,6 +599,7 @@ void FIX::send_order_cancel_replace_request(
   auto message = core::fix::Writer(
       buffer,
       std::size(buffer),
+      FIX_VERSION,
       core::fix::OrderCancelReplaceRequest::msg_type,
       SENDER_COMP_ID,
       TARGET_COMP_ID,
@@ -614,6 +625,7 @@ void FIX::send_order_cancel_request(
   auto message = core::fix::Writer(
       buffer,
       std::size(buffer),
+      FIX_VERSION,
       core::fix::OrderCancelRequest::msg_type,
       SENDER_COMP_ID,
       TARGET_COMP_ID,
