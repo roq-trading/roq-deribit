@@ -7,10 +7,10 @@ libgtest_la_CPPFLAGS = \
         -I$(top_srcdir)/third_party/googletest/googletest
 libgtest_la_LDFLAGS = -pthread
 
-TESTS = roq-deribit-api2-test
-check_PROGRAMS = roq-deribit-api2-test
+TESTS = roq-deribit-test
+check_PROGRAMS = roq-deribit-test
 
-roq_deribit_api2_test_LDADD = \
+roq_deribit_test_LDADD = \
 	libgtest.la \
 	$(top_builddir)/src/roq/deribit/conf/libroq-deribit-conf.la \
 	$(top_builddir)/src/roq/deribit/fix/libroq-deribit-fix.la \
@@ -21,14 +21,14 @@ roq_deribit_api2_test_LDADD = \
 	$(ROQ_API_LIBS) \
 	$(FMT_LIBS) \
 	$(DATE_LIBS)
-roq_deribit_api2_test_CPPFLAGS = \
+roq_deribit_test_CPPFLAGS = \
 	-I$(top_builddir)/src \
 	-I$(top_srcdir)/third_party/googletest/googletest/include \
 	$(ROQ_API_CFLAGS) \
 	$(ROQ_CORE_CFLAGS) \
 	$(FMT_CFLAGS) \
 	$(DATE_CFLAGS)
-nodist_roq_deribit_api2_test_SOURCES = \
+nodist_roq_deribit_test_SOURCES = \
 	fix_heartbeat.cpp \
 	fix_execution_report.cpp \
 	fix_logon.cpp \

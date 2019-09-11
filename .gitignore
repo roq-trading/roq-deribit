@@ -37,6 +37,6 @@ m4/
 
 *.con
 
-roq-deribit-api2
-roq-deribit-api2-benchmark
-roq-deribit-api2-test
+roq-deribit
+roq-deribit-benchmark
+roq-deribit-test

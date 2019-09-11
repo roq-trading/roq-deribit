@@ -1,7 +1,7 @@
 SUBDIRS = api fix json conf
 
-bin_PROGRAMS = roq-deribit-api2
-roq_deribit_api2_LDFLAGS = \
+bin_PROGRAMS = roq-deribit
+roq_deribit_LDFLAGS = \
 	$(PTHREAD_CFLAGS) \
 	$(top_builddir)/src/roq/deribit/conf/libroq-deribit-conf.la \
 	$(top_builddir)/src/roq/deribit/fix/libroq-deribit-fix.la \
@@ -20,7 +20,7 @@ roq_deribit_api2_LDFLAGS = \
 	$(PTHREAD_LIBS) \
 	$(RT_LIBS) \
 	$(GFLAGS_LIBS)
-roq_deribit_api2_CPPFLAGS = \
+roq_deribit_CPPFLAGS = \
 	-I$(top_srcdir)/src \
 	$(PTHREAD_CFLAGS) \
 	$(GFLAGS_CFLAGS) \
@@ -32,7 +32,7 @@ roq_deribit_api2_CPPFLAGS = \
 	$(ROQ_API_CFLAGS) \
 	$(ROQ_CORE_CFLAGS) \
 	$(ROQ_SERVER_CFLAGS)
-roq_deribit_api2_SOURCES = \
+roq_deribit_SOURCES = \
 	controller.cpp \
 	fix.cpp \
 	gateway.cpp \
