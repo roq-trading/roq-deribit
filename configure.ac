@@ -1,9 +1,9 @@
 AC_REVISION([m4_esyscmd_s([build-aux/git-version])])
 
-AC_INIT([roq-deribit-api2],
+AC_INIT([roq-deribit],
         m4_esyscmd_s([build-aux/git-version]),
         [thraneh@gmail.com],
-        [roq-deribit-api2])
+        [roq-deribit])
 
 AC_PREREQ([2.59])
 
@@ -21,7 +21,7 @@ AC_CONFIG_FILES([
  src/roq/deribit/conf/Makefile
  test/Makefile
 ])
-AC_CONFIG_FILES([roq-deribit-api2.pc])
+AC_CONFIG_FILES([roq-deribit.pc])
 
 AM_INIT_AUTOMAKE([-Wall -Werror foreign subdir-objects])
 

@@ -2,7 +2,7 @@
 {% set number = environ.get('GIT_DESCRIBE_NUMBER', 0) %}
 
 package:
-  name: roq-deribit-api2
+  name: roq-deribit
   version: {{ version }}
 
 source:
@@ -12,7 +12,7 @@ build:
   skip: True  # [win and osx]
   number: {{ number }}
   run_exports:
-    - {{ pin_subpackage('roq-deribit-api2', max_pin='x.x') }}
+    - {{ pin_subpackage('roq-deribit', max_pin='x.x') }}
 
 requirements:
   build:
@@ -37,4 +37,4 @@ about:
   license: Commercial
   license_family: PROPRIETARY
   license_file: LICENSE
-  summary: Roq Deribit/APIv2 Gateway
+  summary: Roq Deribit Gateway
