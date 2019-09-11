@@ -21,7 +21,7 @@ static const char *MESSAGE =
 void BM_fix_logon_parse_message(benchmark::State& state) {
   uint64_t processed = 0;
   for (auto _ : state) {
-    auto bytes = core::fix::Reader::dispatch(
+    auto bytes = core::fix::Reader<core::fix::Version::FIX_44>::dispatch(
         [&](const core::fix::message_t& message) {
           auto result = fix::Logon::parse(message);
           if (result.heart_bt_int > 0)
@@ -38,7 +38,7 @@ void BM_fix_parser_dispatch_logon(benchmark::State& state) {
   std::vector<std::byte> buffer(8192);
   uint64_t processed = 0;
   for (auto _ : state) {
-    auto bytes = core::fix::Reader::dispatch(
+    auto bytes = core::fix::Reader<core::fix::Version::FIX_44>::dispatch(
         [&](const core::fix::message_t& message) {
           fix::Parser::dispatch(
               overloaded {

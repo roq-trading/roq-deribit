@@ -19,7 +19,7 @@ TEST(fix_execution_report, parse_message) {
     "54=1\001231=10.0000\0016=0.000\001210=1\001100010=roq;123;345\001"
     "10=195\001";
   int results = 0;
-  auto bytes = core::fix::Reader::dispatch(
+  auto bytes = core::fix::Reader<core::fix::Version::FIX_44>::dispatch(
       [&](const core::fix::message_t& message) {
         ++results;
         EXPECT_EQ(message.header.msg_type, core::fix::MsgType::EXECUTION_REPORT);
@@ -58,7 +58,7 @@ TEST(fix_execution_report, parse_order_mass_status) {
     "NG\00134=4\00152=20190909-07:58:54.679\001584=roq-oms-005\0015"
     "85=7\00158=total_reports\001911=1\00110=045\001";
   int results = 0;
-  auto bytes = core::fix::Reader::dispatch(
+  auto bytes = core::fix::Reader<core::fix::Version::FIX_44>::dispatch(
       [&](const core::fix::message_t& message) {
         ++results;
         EXPECT_EQ(message.header.msg_type, core::fix::MsgType::EXECUTION_REPORT);

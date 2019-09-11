@@ -135,7 +135,7 @@ void FIX::process_data() {
     if (length == 0)
       return;
     auto buffer = _buffer.pullup(length);
-    auto bytes = core::fix::Reader::dispatch(
+    auto bytes = core::fix::Reader<FIX_VERSION>::dispatch(
         [&](const core::fix::message_t& message) {
           try {
             fix::Parser::dispatch(

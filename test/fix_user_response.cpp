@@ -17,7 +17,7 @@ TEST(fix_user_response, parse_message) {
     "3=0.0000\001100004=0.0000\001100005=0.0\001100006=0.0\00110001"
     "1=0.0\001100013=10.0\00110=004\001";
   int results = 0;
-  auto bytes = core::fix::Reader::dispatch(
+  auto bytes = core::fix::Reader<core::fix::Version::FIX_44>::dispatch(
       [&](const core::fix::message_t& message) {
         ++results;
         EXPECT_EQ(message.header.msg_type, core::fix::MsgType::USER_RESPONSE);

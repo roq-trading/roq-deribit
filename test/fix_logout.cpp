@@ -15,7 +15,7 @@ TEST(fix_logout, parse_message) {
     "G\00134=1\00152=20190907-16:56:43.398\00158=invalid_credential"
     "s\00110=166\001";
   int results = 0;
-  auto bytes = core::fix::Reader::dispatch(
+  auto bytes = core::fix::Reader<core::fix::Version::FIX_44>::dispatch(
       [&](const core::fix::message_t& message) {
         ++results;
         EXPECT_EQ(message.header.msg_type, core::fix::MsgType::LOGOUT);

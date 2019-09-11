@@ -18,7 +18,7 @@ TEST(fix_market_data_incremental_refresh, parse_message_1) {
     ".0000\001272=20190907-15:37:00.896\00110=241\001";
   std::vector<std::byte> buffer(4096);
   int results = 0;
-  auto bytes = core::fix::Reader::dispatch(
+  auto bytes = core::fix::Reader<core::fix::Version::FIX_44>::dispatch(
       [&](const core::fix::message_t& message) {
         ++results;
         EXPECT_EQ(message.header.msg_type, core::fix::MsgType::MARKET_DATA_INCREMENTAL_REFRESH);
@@ -58,7 +58,7 @@ TEST(fix_market_data_incremental_refresh, parse_message_2) {
     "58=2889358\00110=087\001";
   std::vector<std::byte> buffer(4096);
   int results = 0;
-  auto bytes = core::fix::Reader::dispatch(
+  auto bytes = core::fix::Reader<core::fix::Version::FIX_44>::dispatch(
       [&](const core::fix::message_t& message) {
         ++results;
         EXPECT_EQ(message.header.msg_type, core::fix::MsgType::MARKET_DATA_INCREMENTAL_REFRESH);

@@ -15,7 +15,7 @@ TEST(fix_heartbeat, parse_message) {
     "G\00134=2\00152=20190908-08:47:31.503\001112=anybody in there?"
     "\00110=084\001";
   int results = 0;
-  auto bytes = core::fix::Reader::dispatch(
+  auto bytes = core::fix::Reader<core::fix::Version::FIX_44>::dispatch(
       [&](const core::fix::message_t& message) {
         ++results;
         EXPECT_EQ(message.header.msg_type, core::fix::MsgType::HEARTBEAT);

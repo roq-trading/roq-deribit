@@ -19,7 +19,7 @@ TEST(fix_position_report, parse_message) {
     "10=169\001";
   std::vector<std::byte> buffer(1024 * 1024);
   int results = 0;
-  auto bytes = core::fix::Reader::dispatch(
+  auto bytes = core::fix::Reader<core::fix::Version::FIX_44>::dispatch(
       [&](const core::fix::message_t& message) {
         ++results;
         EXPECT_EQ(message.header.msg_type, core::fix::MsgType::POSITION_REPORT);

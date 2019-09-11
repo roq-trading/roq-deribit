@@ -15,7 +15,7 @@ TEST(fix_order_cancel_reject, parse_message) {
     "G\00134=3\00152=20190908-17:39:23.573\00141=123\00111=345\0013"
     "9=8\00158=not_found\00110=000\001";
   int results = 0;
-  auto bytes = core::fix::Reader::dispatch(
+  auto bytes = core::fix::Reader<core::fix::Version::FIX_44>::dispatch(
       [&](const core::fix::message_t& message) {
         ++results;
         EXPECT_EQ(message.header.msg_type, core::fix::MsgType::ORDER_CANCEL_REJECT);

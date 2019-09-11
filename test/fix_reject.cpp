@@ -15,7 +15,7 @@ TEST(fix_reject, parse_message) {
     "G\00134=5\00152=20190908-08:47:31.543\00145=5\001372=AN\00158="
     "not_implemented\00110=092\001";
   int results = 0;
-  auto bytes = core::fix::Reader::dispatch(
+  auto bytes = core::fix::Reader<core::fix::Version::FIX_44>::dispatch(
       [&](const core::fix::message_t& message) {
         ++results;
         EXPECT_EQ(message.header.msg_type, core::fix::MsgType::REJECT);

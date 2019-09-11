@@ -169,7 +169,7 @@ TEST(fix_market_data_snapshot_full_refresh, parse_message) {
     "0000\001272=20190907-17:49:56.053\00110=037\001";
   std::vector<std::byte> buffer(1024 * 1024);
   int results = 0;
-  auto bytes = core::fix::Reader::dispatch(
+  auto bytes = core::fix::Reader<core::fix::Version::FIX_44>::dispatch(
       [&](const core::fix::message_t& message) {
         ++results;
         EXPECT_EQ(message.header.msg_type, core::fix::MsgType::MARKET_DATA_SNAPSHOT_FULL_REFRESH);

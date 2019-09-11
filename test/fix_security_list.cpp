@@ -1228,7 +1228,7 @@ const char *message =
 TEST(fix_security_list, parse_message) {
   std::vector<std::byte> buffer(1024*1024);
   int results = 0;
-  auto bytes = core::fix::Reader::dispatch(
+  auto bytes = core::fix::Reader<core::fix::Version::FIX_44>::dispatch(
       [&](const core::fix::message_t& message) {
         fprintf(stderr, "HEADER\n");
         ++results;
