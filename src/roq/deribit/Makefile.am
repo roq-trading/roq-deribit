@@ -16,7 +16,7 @@ roq_deribit_LDFLAGS = \
 	$(LIBEVENT_LIBS) \
 	-levent_openssl \
 	$(OPENSSL_LIBS) \
-	-lcrypto \
+	$(CRYPTO_LIBS) \
 	$(PTHREAD_LIBS) \
 	$(RT_LIBS) \
 	$(GFLAGS_LIBS)

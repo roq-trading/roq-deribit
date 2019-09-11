@@ -12,7 +12,6 @@
 
 #include "roq/patterns.h"
 
-#include "roq/core/base64.h"
 #include "roq/core/clock.h"
 #include "roq/core/debug.h"
 
