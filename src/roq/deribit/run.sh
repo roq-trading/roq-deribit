@@ -10,7 +10,7 @@ fi
 
 CONFIG_DIR="$CWD/../../../share/"
 
-$PREFIX ./roq-deribit-api2 \
+$PREFIX ./roq-deribit \
 	--name "deribit" \
 	--config-directory "$CONFIG_DIR" \
 	--config-file master.conf \
