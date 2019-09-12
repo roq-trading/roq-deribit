@@ -212,7 +212,8 @@ void FIX::process_data() {
                         "logout={}, header={}",
                         logout,
                         message.header);
-                    // TODO(thraneh): deal with this - how?
+                    send_logout("i'm done");
+                    // TODO(thraneh): now what?
                   },
                   [&](const fix::MarketDataIncrementalRefresh& market_data_incremental_refresh) {
                     /*
