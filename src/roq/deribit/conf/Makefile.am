@@ -8,6 +8,4 @@ libroq_deribit_conf_la_CPPFLAGS = \
 	$(ROQ_CORE_CFLAGS) \
 	$(ROQ_CFLAGS)
 libroq_deribit_conf_la_SOURCES = \
-	account.cpp \
-	config.cpp \
-	connection.cpp
+	config.cpp

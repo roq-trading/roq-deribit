@@ -13,14 +13,7 @@ pkgconfig_DATA = @PACKAGE@.pc
 
 configdir=$(datadir)/roq/deribit
 config_DATA = \
-	share/accounts.conf \
-	share/fix_api.conf \
-	share/master.conf \
-	share/rest_api.conf \
-	share/symbols.conf \
-	share/users.conf \
-	share/variables.conf \
-	share/websocket_api.conf
+	share/config.toml
 
 .PHONY: lint
 

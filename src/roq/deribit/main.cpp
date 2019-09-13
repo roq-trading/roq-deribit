@@ -14,14 +14,13 @@
 DEFINE_string(listen, "", "bind address (path)");
 // DEFINE_validator(listen, ...);
 
-DEFINE_string(config_directory, "", "config directory (path)");
 DEFINE_string(config_file, "", "config file (path)");
-DEFINE_string(config_variables, "", "config variables (path)");
 
-DEFINE_string(simulation_file, "", "simulation file");
+DEFINE_string(ws_uri, "", "ws end-point (uri)");
+DEFINE_string(fix_uri, "", "fix end-point (uri)");
 
 namespace {
-constexpr const char *DESCRIPTION = "Roq (Gateway) Simulator";
+constexpr const char *DESCRIPTION = "Roq Deribit Gateway";
 }  // namespace
 
 namespace {
@@ -32,16 +31,15 @@ class Application final : public roq::Application {
  protected:
   int main(int argc, char **argv) override {
     LOG(INFO) << "Parse configuration";
-    roq::deribit::conf::Config config(
-        FLAGS_config_directory,
-        FLAGS_config_file,
-        FLAGS_config_variables);
+    roq::deribit::conf::Config config(FLAGS_config_file);
     VLOG(1) << "config=" << config;
     LOG(INFO) << "Starting the gateway";
     roq::server::Trading<roq::deribit::Gateway>(
         config,
         FLAGS_listen,
-        config).dispatch();
+        config,
+        roq::core::URI(FLAGS_ws_uri),
+        roq::core::URI(FLAGS_fix_uri)).dispatch();
     return EXIT_SUCCESS;
   }
 };

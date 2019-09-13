@@ -2,8 +2,6 @@
 
 #include "roq/deribit/gateway.h"
 
-// #include <cctz/time_zone.h>
-
 #include <iomanip>
 #include <string>
 #include <utility>
@@ -13,25 +11,11 @@
 namespace roq {
 namespace deribit {
 
-namespace {
-#if (1)
-static const char *REST_URI = "https://test.deribit.com/api/v2";
-static const char *WS_URI = "wss://test.deribit.com/ws/api/v2";
-static const char *FIX_URI = "tcp://test.deribit.com:9881";
-static const char *ACCESS_KEY = "5MP40u9h";
-static const char *ACCESS_SECRET = "8XC2sDXtrGFtVdOFKCU2eg3uE1oOntCoJCM3abpNBmI";
-#else
-static const char *REST_URI = "https://deribit.com/api/v2";
-static const char *WS_URI = "wss://deribit.com/ws/api/v2";
-static const char *FIX_URI = "tcp://www.deribit.com:9880";
-static const char *ACCESS_KEY = "2tZQEQRV";
-static const char *ACCESS_SECRET = "saQaP6WmDefitTmd6DcAqnhJFtpC9eubZ3bzYm21af4";
-#endif
-}  // namespace
-
 Gateway::Gateway(
     server::Dispatcher& dispatcher,
-    const conf::Config& config)
+    const conf::Config& config,
+    const core::URI& ws_uri,
+    const core::URI& fix_uri)
     : _dispatcher(dispatcher),
       _dns_base(_base, true),
       _timer(_base, EV_PERSIST, [this]() { on_timer(); }),
@@ -43,9 +27,9 @@ Gateway::Gateway(
           _ssl_context,
           _base,
           _dns_base,
-          core::URI(FIX_URI),
-          ACCESS_KEY,
-          ACCESS_SECRET) {
+          fix_uri,
+          config.get_access_key(),
+          config.get_access_secret()) {
 }
 
 void Gateway::on(const StartEvent& event) {

@@ -6,14 +6,12 @@
 
 #include <iostream>
 #include <string>
+#include <string_view>
 #include <unordered_map>
 #include <unordered_set>
 #include <vector>
 
 #include "roq/server.h"
-
-#include "roq/deribit/conf/account.h"
-#include "roq/deribit/conf/connection.h"
 
 namespace roq {
 namespace deribit {
@@ -23,28 +21,32 @@ class Config final
     : public server::Config,
       public server::ConfigReader::Handler {
  public:
-  Config(
-      const std::string& directory,
-      const std::string& file,
-      const std::string& variables);
+  Config(const std::string_view& path);
+
+  auto get_access_key() const {
+    if (accounts.size() != 1)
+      throw std::runtime_error("More accounts not yet supported");
+    return (*accounts.begin()).second.login;
+  }
+  auto get_access_secret() const {
+    if (accounts.size() != 1)
+      throw std::runtime_error("More accounts not yet supported");
+    return (*accounts.begin()).second.secret;
+  }
 
  protected:
   // server::Config
   void dispatch(server::Config::Handler& handler) const override;
 
   // server::ConfigReader::Handler
-  void on(const ucl::Ucl& ucl, roq::Account&& account) override;
-  void on(const ucl::Ucl& ucl, roq::User&& user) override;
-  void on(const ucl::Ucl& ucl, const std::string& key) override;
+  void operator()(Account&& account) override;
+  void operator()(User&& user) override;
+  void operator()(const std::string& key, const cpptoml::base& base) override;
 
  public:
-  // cctz::time_zone time_zone;
-  std::vector<roq::User> users;
+  std::vector<User> users;
   std::unordered_map<std::string, std::unordered_set<std::string> > symbols;
   std::unordered_map<std::string, Account> accounts;
-  Connection rest_api;
-  Connection websocket_api;
-  Connection fix_api;
 };
 /*
  * REST API

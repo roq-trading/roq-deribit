@@ -28,7 +28,6 @@ requirements:
     - roq-server =={{ version }}
     - roq-oss-date
     - roq-oss-http-parser
-    - roq-oss-libucl
     - roq-oss-benchmark
 
 about:

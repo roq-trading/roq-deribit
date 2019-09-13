@@ -6,6 +6,8 @@
 
 #include "roq/server.h"
 
+#include "roq/core/uri.h"
+
 #include "roq/core/ssl/ssl.h"
 #include "roq/core/event/event.h"
 
@@ -21,7 +23,9 @@ class Gateway final : public server::Handler {
  public:
   Gateway(
       server::Dispatcher& dispatcher,
-      const conf::Config& config);
+      const conf::Config& config,
+      const core::URI& ws_uri,
+      const core::URI& fix_uri);
 
   void on(const StartEvent& event) override;
   void on(const StopEvent& event) override;

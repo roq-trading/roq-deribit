@@ -1,0 +1,26 @@
+[order_templates]
+
+  [order_templates.default]
+  self_trade_prevention = 'D'
+
+[accounts]
+
+  [accounts.A1]
+  master = true
+  login = "2tZQEQRV"
+  secret = "saQaP6WmDefitTmd6DcAqnhJFtpC9eubZ3bzYm21af4"
+  symbols = [ "BTC-.*", "ETH-.*" ]
+
+[users]
+
+  [users.test]
+  password = "1234"
+  symbols = ".*"
+
+  [users.trader]
+  password = "secret"
+  accounts = [ "A1" ]
+  symbols = [ "BTC-\\d{2}\\D{3}\\d{2}" ]
+  monitor_period_secs = 60
+  ban_period_secs = 300
+  request_limit = 10

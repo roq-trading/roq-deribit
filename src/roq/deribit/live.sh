@@ -8,12 +8,15 @@ else
 	PREFIX=
 fi
 
-CONFIG_DIR="$CWD/../../../share/"
+CONFIG_FILE="$CWD/config/live.toml"
+
+WS_URI="wss://deribit.com/ws/api/v2"
+FIX_URI="tcp://www.deribit.com:9880"
 
 $PREFIX ./roq-deribit \
 	--name "deribit" \
-	--config-directory "$CONFIG_DIR" \
-	--config-file master.conf \
-	--config-variables variables.conf \
 	--metrics $CWD/metrics.sock \
+	--config-file "$CONFIG_FILE" \
+	--ws-uri "$WS_URI" \
+	--fix-uri "$FIX_URI" \
 	$@
