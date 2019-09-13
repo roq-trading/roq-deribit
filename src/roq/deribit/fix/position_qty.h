@@ -52,7 +52,7 @@ struct fmt::formatter<roq::deribit::fix::PositionQty> {
   template <typename C>
   auto format(const roq::deribit::fix::PositionQty& value, C& ctx) {
     return format_to(
-        ctx.begin(),
+        ctx.out(),
         "{{"
         "long_qty={}, "
         "short_qty={}, "

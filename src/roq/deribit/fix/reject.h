@@ -37,7 +37,7 @@ struct fmt::formatter<roq::deribit::fix::Reject> {
   template <typename C>
   auto format(const roq::deribit::fix::Reject& value, C& ctx) {
     return format_to(
-        ctx.begin(),
+        ctx.out(),
         "{{"
         "ref_seq_num={}, "
         "ref_tag_id={}, "

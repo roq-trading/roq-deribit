@@ -37,7 +37,7 @@ struct fmt::formatter<roq::deribit::fix::ResendRequest> {
   template <typename C>
   auto format(const roq::deribit::fix::ResendRequest& value, C& ctx) {
     return format_to(
-        ctx.begin(),
+        ctx.out(),
         "{{"
         "begin_seq_no={}, "
         "end_seq_no={}, "

@@ -58,7 +58,7 @@ struct fmt::formatter<roq::deribit::fix::Instrument> {
   template <typename C>
   auto format(const roq::deribit::fix::Instrument& value, C& ctx) {
     return format_to(
-        ctx.begin(),
+        ctx.out(),
         "{{"
         "contract_multiplier={}, "
         "issue_date={}, "

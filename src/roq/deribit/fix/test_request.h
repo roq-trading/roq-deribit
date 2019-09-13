@@ -36,7 +36,7 @@ struct fmt::formatter<roq::deribit::fix::TestRequest> {
   template <typename C>
   auto format(const roq::deribit::fix::TestRequest& value, C& ctx) {
     return format_to(
-        ctx.begin(),
+        ctx.out(),
         "{{"
         "test_req_id=\"{}\""
         "}}",

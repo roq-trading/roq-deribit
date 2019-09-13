@@ -40,7 +40,7 @@ struct fmt::formatter<roq::deribit::json::Currency> {
   template <typename C>
   auto format(const roq::deribit::json::Currency& value, C& ctx) {
     return format_to(
-        ctx.begin(),
+        ctx.out(),
         "{{"
         "coin_type=\"{}\", "
         "currency=\"{}\", "

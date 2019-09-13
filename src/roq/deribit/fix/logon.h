@@ -40,7 +40,7 @@ struct fmt::formatter<roq::deribit::fix::Logon> {
   template <typename C>
   auto format(const roq::deribit::fix::Logon& value, C& ctx) {
     return format_to(
-        ctx.begin(),
+        ctx.out(),
         "{{"
         "heart_bt_int={}, "
         "raw_data=\"{}\", "

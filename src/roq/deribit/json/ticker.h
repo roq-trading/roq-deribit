@@ -55,7 +55,7 @@ struct fmt::formatter<roq::deribit::json::Ticker> {
   template <typename C>
   auto format(const roq::deribit::json::Ticker& value, C& ctx) {
     return format_to(
-        ctx.begin(),
+        ctx.out(),
         "{{"
         "best_ask_amount={}, "
         "best_ask_price={}, "

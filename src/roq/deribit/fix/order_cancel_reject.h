@@ -42,7 +42,7 @@ struct fmt::formatter<roq::deribit::fix::OrderCancelReject> {
   template <typename C>
   auto format(const roq::deribit::fix::OrderCancelReject& value, C& ctx) {
     return format_to(
-        ctx.begin(),
+        ctx.out(),
         "{{"
         "cl_ord_id=\"{}\", "
         "ord_status=\"{}\", "

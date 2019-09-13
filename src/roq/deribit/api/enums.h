@@ -101,7 +101,7 @@ struct fmt::formatter<roq::deribit::api::Kind> {
   template <typename C>
   auto format(const roq::deribit::api::Kind& value, C& ctx) {
     return format_to(
-        ctx.begin(),
+        ctx.out(),
         "{}",
         roq::deribit::api::EnumNameKind(value));
   }
@@ -116,7 +116,7 @@ struct fmt::formatter<roq::deribit::api::OptionType> {
   template <typename C>
   auto format(const roq::deribit::api::OptionType& value, C& ctx) {
     return format_to(
-        ctx.begin(),
+        ctx.out(),
         "{}",
         roq::deribit::api::EnumNameOptionType(value));
   }
@@ -131,7 +131,7 @@ struct fmt::formatter<roq::deribit::api::State> {
   template <typename C>
   auto format(const roq::deribit::api::State& value, C& ctx) {
     return format_to(
-        ctx.begin(),
+        ctx.out(),
         "{}",
         roq::deribit::api::EnumNameState(value));
   }

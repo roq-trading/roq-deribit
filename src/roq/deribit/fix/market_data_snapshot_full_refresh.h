@@ -80,7 +80,7 @@ struct fmt::formatter<roq::deribit::fix::MarketDataSnapshotFullRefresh::MDFullGr
   template <typename C>
   auto format(const roq::deribit::fix::MarketDataSnapshotFullRefresh::MDFullGrp& value, C& ctx) {
     return format_to(
-        ctx.begin(),
+        ctx.out(),
         "{{"
         "md_entry_date={}, "
         "md_entry_px={}, "
@@ -119,7 +119,7 @@ struct fmt::formatter<roq::deribit::fix::MarketDataSnapshotFullRefresh> {
   template <typename C>
   auto format(const roq::deribit::fix::MarketDataSnapshotFullRefresh& value, C& ctx) {
     return format_to(
-        ctx.begin(),
+        ctx.out(),
         "{{"
         "contract_multiplier={}, "
         "md_req_id=\"{}\", "

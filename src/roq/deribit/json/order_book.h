@@ -62,7 +62,7 @@ struct fmt::formatter<roq::deribit::json::OrderBook> {
   template <typename C>
   auto format(const roq::deribit::json::OrderBook& value, C& ctx) {
     return format_to(
-        ctx.begin(),
+        ctx.out(),
         "{{"
         "ask_iv={}, "
         // asks

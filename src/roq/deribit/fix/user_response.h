@@ -50,7 +50,7 @@ struct fmt::formatter<roq::deribit::fix::UserResponse> {
   template <typename C>
   auto format(const roq::deribit::fix::UserResponse& value, C& ctx) {
     return format_to(
-        ctx.begin(),
+        ctx.out(),
         "{{"
         "username=\"{}\", "
         "user_request_id=\"{}\", "

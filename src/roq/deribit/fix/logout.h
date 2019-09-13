@@ -36,7 +36,7 @@ struct fmt::formatter<roq::deribit::fix::Logout> {
   template <typename C>
   auto format(const roq::deribit::fix::Logout& value, C& ctx) {
     return format_to(
-        ctx.begin(),
+        ctx.out(),
         "{{"
         "text=\"{}\""
         "}}",

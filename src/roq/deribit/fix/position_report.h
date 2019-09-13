@@ -55,7 +55,7 @@ struct fmt::formatter<roq::deribit::fix::PositionReport> {
   template <typename C>
   auto format(const roq::deribit::fix::PositionReport& value, C& ctx) {
     return format_to(
-        ctx.begin(),
+        ctx.out(),
         "{{"
         "pos_maint_rpt_id=\"{}\", "
         "pos_req_id=\"{}\", "

@@ -72,7 +72,7 @@ struct fmt::formatter<roq::deribit::fix::ExecutionReport> {
   template <typename C>
   auto format(const roq::deribit::fix::ExecutionReport& value, C& ctx) {
     return format_to(
-        ctx.begin(),
+        ctx.out(),
         "{{"
         "avg_px={}, "
         "cl_ord_id=\"{}\", "

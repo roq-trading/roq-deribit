@@ -34,7 +34,7 @@ struct fmt::formatter<roq::deribit::fix::Heartbeat> {
   template <typename C>
   auto format(const roq::deribit::fix::Heartbeat& value, C& ctx) {
     return format_to(
-        ctx.begin(),
+        ctx.out(),
         "{{"
         "test_req_id=\"{}\""
         "}}",

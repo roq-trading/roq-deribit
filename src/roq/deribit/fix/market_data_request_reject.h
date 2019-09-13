@@ -38,7 +38,7 @@ struct fmt::formatter<roq::deribit::fix::MarketDataRequestReject> {
   template <typename C>
   auto format(const roq::deribit::fix::MarketDataRequestReject& value, C& ctx) {
     return format_to(
-        ctx.begin(),
+        ctx.out(),
         "{{"
         "md_req_id=\"{}\", "
         "md_req_rej_reason={}, "

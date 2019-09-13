@@ -51,7 +51,7 @@ struct fmt::formatter<roq::deribit::json::Instrument> {
   template <typename C>
   auto format(const roq::deribit::json::Instrument& value, C& ctx) {
     return format_to(
-        ctx.begin(),
+        ctx.out(),
         "{{"
         "base_currency=\"{}\", "
         "contract_size={}, "
