@@ -21,7 +21,7 @@ static const char *MESSAGE =
 void BM_fix_logon_parse_message(benchmark::State& state) {
   uint64_t processed = 0;
   for (auto _ : state) {
-    auto bytes = core::fix::Reader<core::fix::Version::FIX_44>::dispatch(
+    core::fix::Reader<core::fix::Version::FIX_44>::dispatch(
         [&](const core::fix::message_t& message) {
           auto result = fix::Logon::parse(message);
           if (result.heart_bt_int > 0)
@@ -38,7 +38,7 @@ void BM_fix_parser_dispatch_logon(benchmark::State& state) {
   std::vector<std::byte> buffer(8192);
   uint64_t processed = 0;
   for (auto _ : state) {
-    auto bytes = core::fix::Reader<core::fix::Version::FIX_44>::dispatch(
+    core::fix::Reader<core::fix::Version::FIX_44>::dispatch(
         [&](const core::fix::message_t& message) {
           fix::Parser::dispatch(
               overloaded {
@@ -82,3 +82,25 @@ void BM_fix_parser_dispatch_logon(benchmark::State& state) {
 }
 
 BENCHMARK(BM_fix_parser_dispatch_logon);
+
+void BM_fix_logon_create_message(benchmark::State& state) {
+  core::utils::Buffer buffer(4096);
+  auto msg_seq_num = uint64_t{0};
+  auto sending_time = std::chrono::seconds{1568702810};
+  uint64_t processed = 0;
+  for (auto _ : state) {
+    auto message = fix::Logon::encode(
+        buffer,
+        msg_seq_num,
+        sending_time,
+        uint16_t{10},
+        "1567874758168.y4/hA3i6qxm4yVL+3N7IrGcINVAFMLFhy4l7ATSehxc=",
+        "5MP40u9h",
+        "j/tVe9IsQuc+RjegscnHcJ6czMVNM1+ib7vjbY3UV0M=",
+        true);
+    if (message.length())
+      ++processed;
+  }
+}
+
+BENCHMARK(BM_fix_logon_create_message);

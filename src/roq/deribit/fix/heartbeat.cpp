@@ -54,6 +54,23 @@ void Heartbeat::parse(
   }
 }
 
+core::utils::Message Heartbeat::encode(
+    core::utils::Buffer& buffer,
+    uint64_t& msg_seq_num,
+    std::chrono::nanoseconds sending_time,
+    const std::string_view& test_req_id) {
+  return core::fix::Writer(
+      buffer,
+      FIX_VERSION,
+      core::fix::Heartbeat::msg_type,
+      SENDER_COMP_ID,
+      TARGET_COMP_ID,
+      msg_seq_num,
+      sending_time)
+    .write(core::fix::Field::TEST_REQ_ID, test_req_id)
+    .finish();
+}
+
 }  // namespace fix
 }  // namespace deribit
 }  // namespace roq

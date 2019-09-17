@@ -1,0 +1,40 @@
+/* Copyright (c) 2017-2019, Hans Erik Thrane */
+
+#include <gtest/gtest.h>
+
+#include "roq/core/fix/reader.h"
+// #include "roq/core/debug.h"
+
+#include "roq/deribit/fix/new_order_single.h"
+
+using namespace roq;  // NOLINT
+using namespace roq::deribit;  // NOLINT
+
+TEST(fix_new_order_single, create_message) {
+  core::utils::Buffer buffer(4096);
+  auto msg_seq_num = uint64_t{0};
+  auto sending_time = std::chrono::seconds{1568702810};
+  auto message = fix::NewOrderSingle::encode(
+      buffer,
+      msg_seq_num,
+      sending_time,
+      "roq-ord-006",
+      core::fix::Side::BUY,
+      2.0,
+      0.5,
+      "BTC-27SEP19",
+      core::fix::OrdType::LIMIT,
+      core::fix::TimeInForce::GTC,
+      "roq;123;345");
+  // core::print_string_with_escapes(message.data(), message.length());
+  constexpr auto expected =
+    "8=FIX.4.4\0019=0000155\00135=D\00149=ROQ_TRADING\00156=DERIBIT"
+    "SERVER\00134=1\00152=20190917-06:46:50.000\00111=roq-ord-006\001"
+    "54=1\00138=2.000000\00144=0.500000\00155=BTC-27SEP19\00140=2\001"
+    "59=1\001100010=roq;123;345\00110=214\001";
+  ASSERT_EQ(message.length(), std::strlen(expected));
+  for (size_t i = 0; i < message.length(); ++i)
+    EXPECT_EQ(
+        static_cast<char>(message.data()[i]),
+        expected[i]);
+}

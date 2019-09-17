@@ -4,7 +4,13 @@
 
 #include <fmt/format.h>
 
+#include "roq/core/utils/message.h"
+
+#include "roq/core/fix/heartbeat.h"
 #include "roq/core/fix/reader.h"
+#include "roq/core/fix/writer.h"
+
+#include "roq/deribit/fix/deribit.h"
 
 namespace roq {
 namespace deribit {
@@ -19,6 +25,12 @@ struct Heartbeat final {
   void parse(
       core::fix::message_t::const_iterator&& iter,
       const core::fix::message_t::const_iterator& end);
+
+  static core::utils::Message encode(
+      core::utils::Buffer& buffer,
+      uint64_t& msg_seq_num,
+      std::chrono::nanoseconds sending_time,
+      const std::string_view& test_req_id);
 };
 
 }  // namespace fix

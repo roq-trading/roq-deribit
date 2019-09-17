@@ -5,6 +5,7 @@
 #include "roq/logging.h"
 
 #include "roq/core/fix/logon.h"
+#include "roq/core/fix/writer.h"
 #include "roq/core/fix/utils.h"
 
 #include "roq/deribit/fix/deribit.h"
@@ -79,6 +80,33 @@ void Logon::parse(
       throw;
     }
   }
+}
+
+core::utils::Message Logon::encode(
+    core::utils::Buffer& buffer,
+    uint64_t& msg_seq_num,
+    std::chrono::nanoseconds sending_time,
+    uint16_t heart_bt_int,
+    const std::string_view& raw_data,
+    const std::string_view& username,
+    const std::string_view& password,
+    bool cancel_on_disconnect) {
+  return core::fix::Writer(
+      buffer,
+      FIX_VERSION,
+      core::fix::Logon::msg_type,
+      SENDER_COMP_ID,
+      TARGET_COMP_ID,
+      msg_seq_num,
+      sending_time)
+    .write(core::fix::Field::HEART_BT_INT, heart_bt_int)
+    .write(core::fix::Field::RAW_DATA, raw_data)
+    .write(core::fix::Field::USERNAME, username)
+    .write(core::fix::Field::PASSWORD, password)
+    .write(
+        static_cast<uint32_t>(fix::Deribit::CANCEL_ON_DISCONNECT),
+        cancel_on_disconnect)
+    .finish();
 }
 
 }  // namespace fix

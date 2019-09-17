@@ -6,6 +6,7 @@
 
 #include "roq/core/fix/test_request.h"
 #include "roq/core/fix/utils.h"
+#include "roq/core/fix/writer.h"
 
 #include "roq/deribit/fix/utils.h"
 
@@ -52,6 +53,23 @@ void TestRequest::parse(
       throw;
     }
   }
+}
+
+core::utils::Message TestRequest::encode(
+    core::utils::Buffer& buffer,
+    uint64_t& msg_seq_num,
+    std::chrono::nanoseconds sending_time,
+    const std::string_view& test_req_id) {
+  return core::fix::Writer(
+      buffer,
+      FIX_VERSION,
+      core::fix::TestRequest::msg_type,
+      SENDER_COMP_ID,
+      TARGET_COMP_ID,
+      msg_seq_num,
+      sending_time)
+    .write(core::fix::Field::TEST_REQ_ID, test_req_id)
+    .finish();
 }
 
 }  // namespace fix

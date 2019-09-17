@@ -5,6 +5,7 @@
 #include "roq/logging.h"
 
 #include "roq/core/fix/logout.h"
+#include "roq/core/fix/writer.h"
 #include "roq/core/fix/utils.h"
 
 #include "roq/deribit/fix/utils.h"
@@ -52,6 +53,23 @@ void Logout::parse(
       throw;
     }
   }
+}
+
+core::utils::Message Logout::encode(
+    core::utils::Buffer& buffer,
+    uint64_t& msg_seq_num,
+    std::chrono::nanoseconds sending_time,
+    const std::string_view& text) {
+  return core::fix::Writer(
+      buffer,
+      FIX_VERSION,
+      core::fix::Logout::msg_type,
+      SENDER_COMP_ID,
+      TARGET_COMP_ID,
+      msg_seq_num,
+      sending_time)
+    .write(core::fix::Field::TEXT, text)
+    .finish();
 }
 
 }  // namespace fix

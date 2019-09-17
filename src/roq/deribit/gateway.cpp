@@ -2,10 +2,6 @@
 
 #include "roq/deribit/gateway.h"
 
-#include <iomanip>
-#include <string>
-#include <utility>
-
 #include "roq/logging.h"
 
 namespace roq {
@@ -21,15 +17,16 @@ Gateway::Gateway(
       _timer(_base, EV_PERSIST, [this]() { on_timer(); }),
       _ssl_connection(_ssl_context),
       _buffer_event(_base, _ssl_connection),
-      _controller(*this),
+      _controller(
+          *this,
+          config.get_access_key(),
+          config.get_access_secret()),
       _fix(
           _controller,
           _ssl_context,
           _base,
           _dns_base,
-          fix_uri,
-          config.get_access_key(),
-          config.get_access_secret()) {
+          fix_uri) {
 }
 
 void Gateway::on(const StartEvent& event) {

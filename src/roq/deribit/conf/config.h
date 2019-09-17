@@ -21,7 +21,7 @@ class Config final
     : public server::Config,
       public server::ConfigReader::Handler {
  public:
-  Config(const std::string_view& path);
+  explicit Config(const std::string_view& path);
 
   auto get_access_key() const {
     if (accounts.size() != 1)

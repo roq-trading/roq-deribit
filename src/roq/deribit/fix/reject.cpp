@@ -6,6 +6,9 @@
 
 #include "roq/core/fix/reject.h"
 #include "roq/core/fix/utils.h"
+#include "roq/core/fix/writer.h"
+
+#include "roq/deribit/fix/deribit.h"
 
 namespace roq {
 namespace deribit {
@@ -59,6 +62,27 @@ void Reject::parse(
       throw;
     }
   }
+}
+
+core::utils::Message Reject::encode(
+    core::utils::Buffer& buffer,
+    uint64_t& msg_seq_num,
+    std::chrono::nanoseconds sending_time,
+    uint64_t ref_seq_num,
+    const std::string_view& ref_msg_type,
+    const std::string_view& text) {
+  return core::fix::Writer(
+      buffer,
+      FIX_VERSION,
+      core::fix::Reject::msg_type,
+      SENDER_COMP_ID,
+      TARGET_COMP_ID,
+      msg_seq_num,
+      sending_time)
+    .write(core::fix::Field::REF_SEQ_NUM, ref_seq_num)
+    .write(core::fix::Field::REF_MSG_TYPE, ref_msg_type)
+    .write(core::fix::Field::TEXT, text)
+    .finish();
 }
 
 }  // namespace fix
