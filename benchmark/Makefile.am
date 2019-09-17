@@ -10,6 +10,7 @@ roq_deribit_benchmark_LDADD = \
 	$(ROQ_CORE_LIBS) \
 	$(FMT_LIBS) \
 	$(BENCHMARK_LIBS)  \
+	$(RT_LIBS) \
 	-lpthread
 roq_deribit_benchmark_CFLAGS = -pthread
 roq_deribit_benchmark_CPPFLAGS = \
