@@ -37,8 +37,11 @@ class Gateway final : public server::Handler {
 
   void write(Metrics& metrics) const override;
 
-  FIX& fix() {
+  auto& fix() {
     return _fix;
+  }
+  auto& dispatcher() {
+    return _dispatcher;
   }
 
  protected:
