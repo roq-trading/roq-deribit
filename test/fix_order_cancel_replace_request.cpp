@@ -14,17 +14,19 @@ TEST(fix_order_cancel_replace_request, create_message) {
   core::utils::Buffer buffer(4096);
   auto msg_seq_num = uint64_t{0};
   auto sending_time = std::chrono::seconds{1568702810};
-  auto message = fix::OrderCancelReplaceRequest::encode(
+  fix::OrderCancelReplaceRequest order_cancel_replace_request = {
+    .cl_ord_id = "123",
+    .orig_cl_ord_id = "123",
+    .side = core::fix::Side::BUY,
+    .order_qty = 1.0,
+    .ord_type = core::fix::OrdType::LIMIT,
+    .price = 1.0,
+    .symbol = "BTC-27SEP19",
+    .transact_time = sending_time,
+  };
+  auto message = order_cancel_replace_request.encode(
       buffer,
       msg_seq_num,
-      sending_time,
-      "123",
-      "123",
-      core::fix::Side::BUY,
-      1.0,
-      core::fix::OrdType::LIMIT,
-      1.0,
-      "BTC-27SEP19",
       sending_time);
   // core::print_string_with_escapes(message.data(), message.length());
   constexpr auto expected =

@@ -13,12 +13,14 @@ void BM_fix_order_cancel_request_create_message(benchmark::State& state) {
   auto sending_time = std::chrono::seconds{1568702810};
   uint64_t processed = 0;
   for (auto _ : state) {
-    auto message = fix::OrderCancelRequest::encode(
+    fix::OrderCancelRequest order_cancel_request = {
+      .cl_ord_id = "123",
+      .orig_cl_ord_id = "123",
+    };
+    auto message = order_cancel_request.encode(
         buffer,
         msg_seq_num,
-        sending_time,
-        "123",
-        "123");
+        sending_time);
     if (message.length())
       ++processed;
   }

@@ -15,12 +15,13 @@ namespace deribit {
 namespace fix {
 
 struct OrderCancelRequest final {
-  static core::utils::Message encode(
+  std::string_view cl_ord_id;
+  std::string_view orig_cl_ord_id;
+
+  core::utils::Message encode(
       core::utils::Buffer& buffer,
       uint64_t& msg_seq_num,
-      std::chrono::nanoseconds sending_time,
-      const std::string_view& cl_ord_id,
-      const std::string_view& orig_cl_ord_id);
+      std::chrono::nanoseconds sending_time) const;
 };
 
 }  // namespace fix

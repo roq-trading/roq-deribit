@@ -29,15 +29,10 @@ struct Logon final {
       core::fix::message_t::const_iterator&& iter,
       const core::fix::message_t::const_iterator& end);
 
-  static core::utils::Message encode(
+  core::utils::Message encode(
       core::utils::Buffer& buffer,
       uint64_t& msg_seq_num,
-      std::chrono::nanoseconds sending_time,
-      uint16_t heart_bt_int,
-      const std::string_view& raw_data,
-      const std::string_view& username,
-      const std::string_view& password,
-      bool cancel_on_disconnect);
+      std::chrono::nanoseconds sending_time) const;
 };
 
 }  // namespace fix

@@ -13,15 +13,7 @@ namespace fix {
 core::utils::Message NewOrderSingle::encode(
     core::utils::Buffer& buffer,
     uint64_t& msg_seq_num,
-    std::chrono::nanoseconds sending_time,
-    const std::string_view& cl_ord_id,
-    const core::fix::Side& side,
-    double order_qty,
-    double price,
-    const std::string_view& symbol,
-    const core::fix::OrdType& ord_type,
-    const core::fix::TimeInForce& time_in_force,
-    const std::string_view& deribit_label) {
+    std::chrono::nanoseconds sending_time) const {
   return core::fix::Writer(
       buffer,
       FIX_VERSION,

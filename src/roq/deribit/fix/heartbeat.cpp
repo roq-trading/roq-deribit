@@ -57,8 +57,7 @@ void Heartbeat::parse(
 core::utils::Message Heartbeat::encode(
     core::utils::Buffer& buffer,
     uint64_t& msg_seq_num,
-    std::chrono::nanoseconds sending_time,
-    const std::string_view& test_req_id) {
+    std::chrono::nanoseconds sending_time) const {
   return core::fix::Writer(
       buffer,
       FIX_VERSION,

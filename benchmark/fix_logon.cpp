@@ -89,15 +89,17 @@ void BM_fix_logon_create_message(benchmark::State& state) {
   auto sending_time = std::chrono::seconds{1568702810};
   uint64_t processed = 0;
   for (auto _ : state) {
-    auto message = fix::Logon::encode(
+    fix::Logon logon = {
+      .heart_bt_int = uint16_t{10},
+      .raw_data = "1567874758168.y4/hA3i6qxm4yVL+3N7IrGcINVAFMLFhy4l7ATSehxc=",
+      .username = "5MP40u9h",
+      .password = "j/tVe9IsQuc+RjegscnHcJ6czMVNM1+ib7vjbY3UV0M=",
+      .deribit_cancel_on_disconnect = true,
+    };
+    auto message = logon.encode(
         buffer,
         msg_seq_num,
-        sending_time,
-        uint16_t{10},
-        "1567874758168.y4/hA3i6qxm4yVL+3N7IrGcINVAFMLFhy4l7ATSehxc=",
-        "5MP40u9h",
-        "j/tVe9IsQuc+RjegscnHcJ6czMVNM1+ib7vjbY3UV0M=",
-        true);
+        sending_time);
     if (message.length())
       ++processed;
   }

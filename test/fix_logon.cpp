@@ -40,15 +40,17 @@ TEST(fix_logon, create_message) {
   core::utils::Buffer buffer(4096);
   auto msg_seq_num = uint64_t{0};
   auto sending_time = std::chrono::seconds{1568702810};
-  auto message = fix::Logon::encode(
+  fix::Logon logon = {
+    .heart_bt_int = uint16_t{10},
+    .raw_data = "1567874758168.y4/hA3i6qxm4yVL+3N7IrGcINVAFMLFhy4l7ATSehxc=",
+    .username = "5MP40u9h",
+    .password = "j/tVe9IsQuc+RjegscnHcJ6czMVNM1+ib7vjbY3UV0M=",
+    .deribit_cancel_on_disconnect = true,
+  };
+  auto message = logon.encode(
       buffer,
       msg_seq_num,
-      sending_time,
-      uint16_t{10},
-      "1567874758168.y4/hA3i6qxm4yVL+3N7IrGcINVAFMLFhy4l7ATSehxc=",
-      "5MP40u9h",
-      "j/tVe9IsQuc+RjegscnHcJ6czMVNM1+ib7vjbY3UV0M=",
-      true);
+      sending_time);
   // core::print_string_with_escapes(message.data(), message.length());
   constexpr auto expected =
     "8=FIX.4.4\0019=0000205\00135=A\00149=ROQ_TRADING\00156=DERIBIT"

@@ -67,10 +67,7 @@ void Reject::parse(
 core::utils::Message Reject::encode(
     core::utils::Buffer& buffer,
     uint64_t& msg_seq_num,
-    std::chrono::nanoseconds sending_time,
-    uint64_t ref_seq_num,
-    const std::string_view& ref_msg_type,
-    const std::string_view& text) {
+    std::chrono::nanoseconds sending_time) const {
   return core::fix::Writer(
       buffer,
       FIX_VERSION,

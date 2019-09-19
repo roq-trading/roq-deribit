@@ -7,38 +7,37 @@
 #include "roq/core/uri.h"
 #include "roq/core/ssl/ssl.h"
 #include "roq/core/event/event.h"
-
-#include "roq/deribit/controller.h"
+#include "roq/core/utils/message.h"
 
 namespace roq {
 namespace deribit {
 
+class Gateway;
+
 class FIX final {
  public:
   FIX(
-      Controller& controller,
+      Gateway& gateway,
       core::ssl::Context& ssl_context,
       core::event::Base& base,
       core::event::DNSBase& dns_base,
       const core::URI& uri);
 
   void start();
+
   void send(const core::utils::Message& message);
 
  private:
   void on_read();
   void on_error(int err);
 
-  void on_timer();
-
   void process_data();
 
  private:
-  Controller& _controller;
+  Gateway& _gateway;
   core::ssl::Connection _ssl_connection;
   core::event::DNSBase& _dns_base;
   const core::URI _uri;
-  core::event::Timer _timer;
   core::event::BufferEvent _buffer_event;
   core::event::Buffer _buffer;
   std::vector<std::byte> _decode_buffer;

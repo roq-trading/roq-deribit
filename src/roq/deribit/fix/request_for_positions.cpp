@@ -13,9 +13,7 @@ namespace fix {
 core::utils::Message RequestForPositions::encode(
     core::utils::Buffer& buffer,
     uint64_t& msg_seq_num,
-    std::chrono::nanoseconds sending_time,
-    const std::string_view& pos_req_id,
-    const core::fix::PosReqType& pos_req_type) {
+    std::chrono::nanoseconds sending_time) const {
   return core::fix::Writer(
       buffer,
       FIX_VERSION,

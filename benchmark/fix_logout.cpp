@@ -19,7 +19,7 @@ static const char *MESSAGE =
 void BM_fix_logout_parse_message(benchmark::State& state) {
   uint64_t processed = 0;
   for (auto _ : state) {
-    auto bytes = core::fix::Reader<core::fix::Version::FIX_44>::dispatch(
+    core::fix::Reader<core::fix::Version::FIX_44>::dispatch(
         [&](const core::fix::message_t& message) {
           auto logout = fix::Logout::parse(message);
           if (logout.text > 0)
@@ -36,7 +36,7 @@ void BM_fix_parser_dispatch_logout(benchmark::State& state) {
   std::vector<std::byte> buffer(8192);
   uint64_t processed = 0;
   for (auto _ : state) {
-    auto bytes = core::fix::Reader<core::fix::Version::FIX_44>::dispatch(
+    core::fix::Reader<core::fix::Version::FIX_44>::dispatch(
         [&](const core::fix::message_t& message) {
           fix::Parser::dispatch(
               overloaded {

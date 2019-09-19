@@ -4,6 +4,8 @@
 
 #include "roq/core/debug.h"
 
+#include "roq/deribit/gateway.h"
+
 #include "roq/deribit/fix/parser.h"
 
 namespace roq {
@@ -14,23 +16,21 @@ constexpr auto DECODE_BUFFER_SIZE = size_t{1048576};  // FIXME(thraneh): flag
 }  // namespace
 
 FIX::FIX(
-    Controller& controller,
+    Gateway& gateway,
     core::ssl::Context& ssl_context,
     core::event::Base& base,
     core::event::DNSBase& dns_base,
     const core::URI& uri)
-    : _controller(controller),
+    : _gateway(gateway),
       _ssl_connection(ssl_context),
       _dns_base(dns_base),
       _uri(uri),
-      _timer(base, EV_PERSIST, [this]() { on_timer(); }),
       _buffer_event(base),  //, _ssl_connection),
       _decode_buffer(DECODE_BUFFER_SIZE) {
   LOG_IF(FATAL, _uri.scheme.compare("tcp") != 0) <<
     "Expected URI scheme to be \"tcp\" (got \"" << _uri.scheme << "\")";
   int value = 1;
   setsockopt(_buffer_event.getfd(), IPPROTO_TCP, TCP_NODELAY, &value, sizeof(value));
-  _timer.add(std::chrono::seconds{1});
   _buffer_event.setcb(
       [this]() { on_read(); },
       [this](int events) { on_error(events); });
@@ -65,14 +65,10 @@ void FIX::on_read() {
 void FIX::on_error(int events) {
   if (events & BEV_EVENT_CONNECTED) {
     LOG(INFO) << "CONNECTED";
-    _controller.on_fix_connected();
+    _gateway.on_fix_connected();
   } else {
-    _controller.on_fix_disconnected();
+    _gateway.on_fix_disconnected();
   }
-}
-
-void FIX::on_timer() {
-  _controller.on_timer();
 }
 
 // fix:
@@ -88,7 +84,7 @@ void FIX::process_data() {
           try {
             fix::Parser::dispatch(
                 [&](const auto& event) {
-                  _controller(event, message.header.msg_seq_num);
+                  _gateway(event, message.header.msg_seq_num);
                 },
                 message,
                 _decode_buffer);

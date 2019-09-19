@@ -13,17 +13,19 @@ void BM_fix_order_cancel_replace_request_create_message(benchmark::State& state)
   auto sending_time = std::chrono::seconds{1568702810};
   uint64_t processed = 0;
   for (auto _ : state) {
-    auto message = fix::OrderCancelReplaceRequest::encode(
+    fix::OrderCancelReplaceRequest order_cancel_replace_request = {
+      .cl_ord_id = "123",
+      .orig_cl_ord_id = "123",
+      .side = core::fix::Side::BUY,
+      .order_qty = 1.0,
+      .ord_type = core::fix::OrdType::LIMIT,
+      .price = 1.0,
+      .symbol = "BTC-27SEP19",
+      .transact_time = sending_time,
+    };
+    auto message = order_cancel_replace_request.encode(
         buffer,
         msg_seq_num,
-        sending_time,
-        "123",
-        "123",
-        core::fix::Side::BUY,
-        1.0,
-        core::fix::OrdType::LIMIT,
-        1.0,
-        "BTC-27SEP19",
         sending_time);
     if (message.length())
       ++processed;

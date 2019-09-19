@@ -14,9 +14,7 @@ namespace fix {
 core::utils::Message SecurityListRequest::encode(
     core::utils::Buffer& buffer,
     uint64_t& msg_seq_num,
-    std::chrono::nanoseconds sending_time,
-    const std::string_view& security_req_id,
-    core::fix::SecurityListRequestType security_list_request_type) {
+    std::chrono::nanoseconds sending_time) const {
   return core::fix::Writer(
       buffer,
       FIX_VERSION,

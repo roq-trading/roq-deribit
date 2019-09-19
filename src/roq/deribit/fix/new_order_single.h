@@ -4,6 +4,8 @@
 
 #include <fmt/format.h>
 
+#include <limits>
+
 #include "roq/core/utils/message.h"
 
 #include "roq/core/fix/new_order_single.h"
@@ -15,18 +17,19 @@ namespace deribit {
 namespace fix {
 
 struct NewOrderSingle final {
-  static core::utils::Message encode(
+  std::string_view cl_ord_id;
+  core::fix::Side side = core::fix::Side::UNKNOWN;
+  double order_qty = std::numeric_limits<double>::quiet_NaN();
+  double price = std::numeric_limits<double>::quiet_NaN();
+  std::string_view symbol;
+  core::fix::OrdType ord_type = core::fix::OrdType::UNKNOWN;
+  core::fix::TimeInForce time_in_force = core::fix::TimeInForce::UNKNOWN;
+  std::string_view deribit_label;
+
+  core::utils::Message encode(
       core::utils::Buffer& buffer,
       uint64_t& msg_seq_num,
-      std::chrono::nanoseconds sending_time,
-      const std::string_view& cl_ord_id,
-      const core::fix::Side& side,
-      double order_qty,
-      double price,
-      const std::string_view& symbol,
-      const core::fix::OrdType& ord_type,
-      const core::fix::TimeInForce& time_in_force,
-      const std::string_view& deribit_label);
+      std::chrono::nanoseconds sending_time) const;
 };
 
 }  // namespace fix

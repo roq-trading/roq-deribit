@@ -33,7 +33,6 @@ roq_deribit_CPPFLAGS = \
 	$(ROQ_CORE_CFLAGS) \
 	$(ROQ_SERVER_CFLAGS)
 roq_deribit_SOURCES = \
-	controller.cpp \
 	fix.cpp \
 	gateway.cpp \
 	random.cpp \

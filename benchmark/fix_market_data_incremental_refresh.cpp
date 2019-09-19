@@ -39,10 +39,10 @@ void BM_fix_market_data_increment_refresh_parse_message_1(benchmark::State& stat
   std::vector<std::byte> buffer(4096);
   uint64_t processed = 0;
   for (auto _ : state) {
-    auto bytes = core::fix::Reader<core::fix::Version::FIX_44>::dispatch(
+    core::fix::Reader<core::fix::Version::FIX_44>::dispatch(
         [&](const core::fix::message_t& message) {
           auto result = fix::MarketDataIncrementalRefresh::parse(message, buffer);
-          // if (result.heart_bt_int > 0)
+          if (!result.md_req_id.empty())
             ++processed;
         },
         message_1,
@@ -56,10 +56,10 @@ void BM_fix_market_data_increment_refresh_parse_message_2(benchmark::State& stat
   std::vector<std::byte> buffer(4096);
   uint64_t processed = 0;
   for (auto _ : state) {
-    auto bytes = core::fix::Reader<core::fix::Version::FIX_44>::dispatch(
+    core::fix::Reader<core::fix::Version::FIX_44>::dispatch(
         [&](const core::fix::message_t& message) {
           auto result = fix::MarketDataIncrementalRefresh::parse(message, buffer);
-          // if (result.heart_bt_int > 0)
+          if (!result.md_req_id.empty())
             ++processed;
         },
         message_2,
@@ -73,7 +73,7 @@ void BM_fix_parser_dispatch_market_data_increment_refresh(benchmark::State& stat
   std::vector<std::byte> buffer(8192);
   uint64_t processed = 0;
   for (auto _ : state) {
-    auto bytes = core::fix::Reader<core::fix::Version::FIX_44>::dispatch(
+    core::fix::Reader<core::fix::Version::FIX_44>::dispatch(
         [&](const core::fix::message_t& message) {
           fix::Parser::dispatch(
               overloaded {

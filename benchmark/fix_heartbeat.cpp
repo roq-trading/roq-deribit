@@ -19,7 +19,7 @@ static const char *MESSAGE =
 void BM_fix_heartbeat_parse_message(benchmark::State& state) {
   uint64_t processed = 0;
   for (auto _ : state) {
-    auto bytes = core::fix::Reader<core::fix::Version::FIX_44>::dispatch(
+    core::fix::Reader<core::fix::Version::FIX_44>::dispatch(
         [&](const core::fix::message_t& message) {
           auto heartbeat = fix::Heartbeat::parse(message);
           if (heartbeat.test_req_id.empty())
@@ -36,7 +36,7 @@ void BM_fix_parser_dispatch_heartbeat(benchmark::State& state) {
   std::vector<std::byte> buffer(8192);
   uint64_t processed = 0;
   for (auto _ : state) {
-    auto bytes = core::fix::Reader<core::fix::Version::FIX_44>::dispatch(
+    core::fix::Reader<core::fix::Version::FIX_44>::dispatch(
         [&](const core::fix::message_t& message) {
           fix::Parser::dispatch(
               overloaded {

@@ -15,12 +15,13 @@ namespace deribit {
 namespace fix {
 
 struct MarketDataRequest final {
-  static core::utils::Message encode(
+  std::string_view md_req_id;
+  std::string_view symbol;
+
+  core::utils::Message encode(
       core::utils::Buffer& buffer,
       uint64_t& msg_seq_num,
-      std::chrono::nanoseconds sending_time,
-      const std::string_view& md_req_id,
-      const std::string_view& symbol);
+      std::chrono::nanoseconds sending_time) const;
 };
 
 }  // namespace fix
