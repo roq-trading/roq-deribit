@@ -53,13 +53,6 @@ class Gateway final : public server::Handler {
 
   void write(Metrics& metrics) const override;
 
-  auto& fix() {
-    return _fix;
-  }
-  auto& dispatcher() {
-    return _dispatcher;
-  }
-
  protected:
   void run();
   void initialize_thread();
