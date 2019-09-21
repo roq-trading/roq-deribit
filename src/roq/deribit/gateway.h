@@ -61,20 +61,53 @@ class Gateway final : public server::Handler {
  public:
   void on_fix_connected();
   void on_fix_disconnected();
-  void operator()(const fix::ExecutionReport& execution_report, uint64_t seq_num);
-  void operator()(const fix::Heartbeat& heartbeat, uint64_t seq_num);
-  void operator()(const fix::Logon& logon, uint64_t seq_num);
-  void operator()(const fix::Logout& logout, uint64_t seq_num);
-  void operator()(const fix::MarketDataIncrementalRefresh& market_data_incremental_refresh, uint64_t seq_num);
-  void operator()(const fix::MarketDataRequestReject& market_data_request_reject, uint64_t seq_num);
-  void operator()(const fix::MarketDataSnapshotFullRefresh& market_data_snapshot_full_refresh, uint64_t seq_num);
-  void operator()(const fix::OrderCancelReject& order_cancel_reject, uint64_t seq_num);
-  void operator()(const fix::PositionReport& position_report, uint64_t seq_num);
-  void operator()(const fix::Reject& reject, uint64_t seq_num);
-  void operator()(const fix::ResendRequest& resend_request, uint64_t seq_num);
-  void operator()(const fix::SecurityList& security_list, uint64_t seq_num);
-  void operator()(const fix::TestRequest& test_request, uint64_t seq_num);
-  void operator()(const fix::UserResponse& user_response, uint64_t seq_num);
+  void operator()(
+      const core::fix::header_t& header,
+      const fix::ExecutionReport& execution_report);
+  void operator()(
+      const core::fix::header_t& header,
+      const fix::Heartbeat& heartbeat);
+  void operator()(
+      const core::fix::header_t& header,
+      const fix::Logon& logon);
+  void operator()(
+      const core::fix::header_t& header,
+      const fix::Logout& logout);
+  void operator()(
+      const core::fix::header_t& header,
+      const fix::MarketDataIncrementalRefresh& market_data_incremental_refresh);
+  void operator()(
+      const core::fix::header_t& header,
+      const fix::MarketDataRequestReject& market_data_request_reject);
+  void operator()(
+      const core::fix::header_t& header,
+      const fix::MarketDataSnapshotFullRefresh& market_data_snapshot_full_refresh);
+  void operator()(
+      const core::fix::header_t& header,
+      const fix::OrderCancelReject& order_cancel_reject);
+  void operator()(
+      const core::fix::header_t& header,
+      const fix::PositionReport& position_report);
+  void operator()(
+      const core::fix::header_t& header,
+      const fix::Reject& reject);
+  void operator()(
+      const core::fix::header_t& header,
+      const fix::ResendRequest& resend_request);
+  void operator()(
+      const core::fix::header_t& header,
+      const fix::SecurityList& security_list);
+  void operator()(
+      const core::fix::header_t& header,
+      const fix::TestRequest& test_request);
+  void operator()(
+      const core::fix::header_t& header,
+      const fix::UserResponse& user_response);
+
+ private:
+  bool discard_symbol(const std::string_view& symbol);
+  void process(bool initialize = false);
+  void reset();
 
  private:
   template <typename T>
@@ -105,6 +138,7 @@ class Gateway final : public server::Handler {
         is_last);
   }
 
+ private:
   template <typename T>
   void send(const T& event) {
     send(event, core::get_realtime_clock());
@@ -128,19 +162,25 @@ class Gateway final : public server::Handler {
   core::event::Timer _timer;
   std::atomic<bool> _stop = {false};
   std::thread _thread;
-  // ...
-  core::ssl::Connection _ssl_connection;
-  core::event::BufferEvent _buffer_event;
-  // ...
-  FIX _fix;
-  // ...
   std::vector<std::byte> _decode_buffer;
   core::utils::Buffer _encode_buffer;
   std::chrono::nanoseconds _next_update = {};
   // fix:
+  FIX _fix;
   const std::string _access_key;
   const std::string _access_secret;
   uint64_t _msg_seq_num = 0;
+  std::chrono::nanoseconds _latency = {};
+  // gateway:
+  GatewayStatus _gateway_status = GatewayStatus::DISCONNECTED;
+  enum class Download {
+    NONE,
+    SECURITIES,
+    POSITIONS,
+    ORDERS,
+    USER,
+  } _download = Download::NONE;
+  uint32_t _download_execution_reports = 0;
 };
 
 }  // namespace deribit

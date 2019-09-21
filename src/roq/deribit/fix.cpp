@@ -38,10 +38,9 @@ FIX::FIX(
 }
 
 void FIX::start() {
-  VLOG(1) << "connect("
+  LOG(INFO) << "Connecting to "
     "host=\"" << _uri.host << "\", "
-    "port=" << _uri.get_port_with_default() <<
-    ")";
+    "port=" << _uri.get_port_with_default();
   _buffer_event.connect(
       _dns_base,
       AF_INET,
@@ -64,9 +63,10 @@ void FIX::on_read() {
 
 void FIX::on_error(int events) {
   if (events & BEV_EVENT_CONNECTED) {
-    LOG(INFO) << "CONNECTED";
+    LOG(INFO) << "Connected";
     _gateway.on_fix_connected();
   } else {
+    LOG(INFO) << "Disconnected";
     _gateway.on_fix_disconnected();
   }
 }
@@ -84,7 +84,7 @@ void FIX::process_data() {
           try {
             fix::Parser::dispatch(
                 [&](const auto& event) {
-                  _gateway(event, message.header.msg_seq_num);
+                  _gateway(message.header, event);
                 },
                 message,
                 _decode_buffer);

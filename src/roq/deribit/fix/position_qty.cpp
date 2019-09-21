@@ -36,19 +36,22 @@ void PositionQty::parse(
   new (this) std::remove_reference<decltype(*this)>::type {};
   auto& [tag, value] = *iter;
   auto field = core::fix::parse_field(tag);
-  if (field != core::fix::Field::LONG_QTY)
+  if (field != core::fix::Field::POS_TYPE)
     throw std::runtime_error(
         fmt::format(
-            "Expected tag LONG_QTY, got {}",
+            "Expected tag POS_TYPE, got {}",
             (*iter).first));
-  core::fix::update(long_qty, value);
+  core::fix::update(pos_type, value);
   for (++iter; iter != end; ++iter) {
     auto& [tag, value] = *iter;
     auto field = core::fix::parse_field(tag);
     switch (field) {
+      case core::fix::Field::POS_TYPE:
+        static_assert(core::fix::PositionQty::has_field(core::fix::Field::POS_TYPE));
+        return;
       case core::fix::Field::LONG_QTY:
         static_assert(core::fix::PositionQty::has_field(core::fix::Field::LONG_QTY));
-        return;
+        core::fix::update(long_qty, value);
         break;
       case core::fix::Field::SHORT_QTY:
         static_assert(core::fix::PositionQty::has_field(core::fix::Field::SHORT_QTY));

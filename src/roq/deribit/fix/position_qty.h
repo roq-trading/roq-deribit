@@ -17,6 +17,7 @@ namespace fix {
 
 struct PositionQty final {
   // standard
+  core::fix::PosType pos_type = core::fix::PosType::UNKNOWN;
   double long_qty = std::numeric_limits<double>::quiet_NaN();
   double short_qty = std::numeric_limits<double>::quiet_NaN();
   // non-standard
