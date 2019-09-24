@@ -3,7 +3,7 @@
 #include <gtest/gtest.h>
 
 #include "roq/core/fix/reader.h"
-// #include "roq/core/debug.h"
+#include "roq/core/debug.h"
 
 #include "roq/deribit/fix/order_cancel_replace_request.h"
 
@@ -30,10 +30,10 @@ TEST(fix_order_cancel_replace_request, create_message) {
       sending_time);
   // core::print_string_with_escapes(message.data(), message.length());
   constexpr auto expected =
-    "8=FIX.4.4\0019=0000155\00135=G\00149=ROQ_TRADING\00156=DERIBIT"
+    "8=FIX.4.4\0019=0000159\00135=G\00149=ROQ_TRADING\00156=DERIBIT"
     "SERVER\00134=1\00152=20190917-06:46:50.000\00111=123\00141=123"
-    "\00160=20190917-06:46:50.000\00154=1\00138=1.000000\00140=2\001"
-    "44=1.000000\00155=BTC-27SEP19\00110=186\001";
+    "\00160=20190917-06:46:50.000\00154=1\00138=1.00000000\00140=2\001"
+    "44=1.00000000\00155=BTC-27SEP19\00110=126\001";
   ASSERT_EQ(message.length(), std::strlen(expected));
   for (size_t i = 0; i < message.length(); ++i)
     EXPECT_EQ(

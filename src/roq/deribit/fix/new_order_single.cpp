@@ -10,6 +10,10 @@ namespace roq {
 namespace deribit {
 namespace fix {
 
+namespace {
+constexpr auto PRECISION = size_t{8};
+}  // namespace
+
 core::utils::Message NewOrderSingle::encode(
     core::utils::Buffer& buffer,
     uint64_t& msg_seq_num,
@@ -24,8 +28,8 @@ core::utils::Message NewOrderSingle::encode(
       sending_time)
     .write(core::fix::Field::CL_ORD_ID, cl_ord_id)
     .write(core::fix::Field::SIDE, side)
-    .write(core::fix::Field::ORDER_QTY, order_qty)
-    .write(core::fix::Field::PRICE, price)
+    .write(core::fix::Field::ORDER_QTY, order_qty, PRECISION)
+    .write(core::fix::Field::PRICE, price, PRECISION)
     .write(core::fix::Field::SYMBOL, symbol)
     .write(core::fix::Field::ORD_TYPE, ord_type)
     .write(core::fix::Field::TIME_IN_FORCE, time_in_force)
