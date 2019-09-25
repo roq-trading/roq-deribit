@@ -5,8 +5,6 @@
 #include "roq/application.h"
 #include "roq/logging.h"
 
-// #include "roq/core/server.h"
-
 #include "roq/deribit/conf/config.h"
 
 #include "roq/deribit/gateway.h"
@@ -16,7 +14,6 @@ DEFINE_string(listen, "", "bind address (path)");
 
 DEFINE_string(config_file, "", "config file (path)");
 
-DEFINE_string(ws_uri, "", "ws end-point (uri)");
 DEFINE_string(fix_uri, "", "fix end-point (uri)");
 
 namespace {
@@ -38,7 +35,6 @@ class Application final : public roq::Application {
         config,
         FLAGS_listen,
         config,
-        roq::core::URI(FLAGS_ws_uri),
         roq::core::URI(FLAGS_fix_uri)).dispatch();
     return EXIT_SUCCESS;
   }

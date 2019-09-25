@@ -41,7 +41,6 @@ constexpr auto MAX_DEPTH = size_t{256};
 Gateway::Gateway(
     server::Dispatcher& dispatcher,
     const conf::Config& config,
-    const core::URI& ws_uri,
     const core::URI& fix_uri)
     : _dispatcher(dispatcher),
       _dns_base(_base, true),

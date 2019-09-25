@@ -40,7 +40,6 @@ class Gateway final : public server::Handler {
   Gateway(
       server::Dispatcher& dispatcher,
       const conf::Config& config,
-      const core::URI& ws_uri,
       const core::URI& fix_uri);
 
   void on(const StartEvent& event) override;
