@@ -39,8 +39,7 @@ class Gateway final : public server::Handler {
  public:
   Gateway(
       server::Dispatcher& dispatcher,
-      const conf::Config& config,
-      const core::URI& fix_uri);
+      const conf::Config& config);
 
   void on(const StartEvent& event) override;
   void on(const StopEvent& event) override;

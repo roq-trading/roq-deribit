@@ -14,8 +14,6 @@ DEFINE_string(listen, "", "bind address (path)");
 
 DEFINE_string(config_file, "", "config file (path)");
 
-DEFINE_string(fix_uri, "", "fix end-point (uri)");
-
 namespace {
 constexpr const char *DESCRIPTION = "Roq Deribit Gateway";
 }  // namespace
@@ -34,8 +32,7 @@ class Application final : public roq::Application {
     roq::server::Trading<roq::deribit::Gateway>(
         config,
         FLAGS_listen,
-        config,
-        roq::core::URI(FLAGS_fix_uri)).dispatch();
+        config).dispatch();
     return EXIT_SUCCESS;
   }
 };

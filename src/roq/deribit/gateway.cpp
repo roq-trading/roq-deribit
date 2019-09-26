@@ -25,7 +25,12 @@
 #include "roq/deribit/fix/security_list_request.h"
 #include "roq/deribit/fix/user_request.h"
 
-DEFINE_int32(network_affinity, -1, "network affinity");
+DEFINE_string(fix_uri, "tcp://test.deribit.com:9881", "FIX end-point (URI)");
+DEFINE_uint64(ping_freq_secs, uint64_t{10}, "ping frequency (seconds)");
+DEFINE_string(exchange, "DERIBIT", "exchange identifier (string)");
+DEFINE_bool(cancel_on_disconnect, true, "cancel orders on disconnect? (bool)");
+
+DEFINE_int32(network_affinity, -1, "network (epoll) affinity");
 
 namespace roq {
 namespace deribit {
@@ -34,18 +39,14 @@ namespace {
 constexpr auto DECODE_BUFFER_SIZE = size_t{1048576};  // FIXME(thraneh): flag
 constexpr auto ENCODE_BUFFER_SIZE = size_t{4096};  // FIXME(thraneh): flag
 constexpr auto TIMER_FREQUENCY = std::chrono::milliseconds{100};
-constexpr auto PING_FREQUENCY = std::chrono::seconds{10};  // FIXME(thraneh): flag
-constexpr auto EXCHANGE = "DERIBIT";  // FIXME(thraneh): flag
 constexpr auto ACCOUNT = "A1";  // FIXME(thraneh): flag
 constexpr auto SYMBOL = "BTC-27SEP19";  // DEBUG
-constexpr auto CANCEL_ON_DISCONNECT = true;  // FIXME(thraneh): flag
 constexpr auto MAX_DEPTH = size_t{256};
 }  // namespace
 
 Gateway::Gateway(
     server::Dispatcher& dispatcher,
-    const conf::Config& config,
-    const core::URI& fix_uri)
+    const conf::Config& config)
     : _dispatcher(dispatcher),
       _dns_base(_base, true),
       _timer(_base, EV_PERSIST, [this]() { on_timer(); }),
@@ -57,7 +58,7 @@ Gateway::Gateway(
           _ssl_context,
           _base,
           _dns_base,
-          fix_uri),
+          core::URI(FLAGS_fix_uri)),
       _access_key(config.get_access_key()),
       _access_secret(config.get_access_secret()) {
 }
@@ -127,7 +128,7 @@ void Gateway::on_timer() {
   auto now = core::get_time();
   if (now < _next_update)
     return;
-  _next_update = now + PING_FREQUENCY;
+  _next_update = now + std::chrono::seconds{FLAGS_ping_freq_secs};
   switch (_gateway_status) {
     case GatewayStatus::DOWNLOADING:
     case GatewayStatus::READY: {
@@ -155,11 +156,11 @@ void Gateway::on_fix_connected() {
   auto raw_data = Random::create_raw_data(sending_time);
   auto password = Random::create_password(raw_data, _access_secret);
   fix::Logon logon = {
-    .heart_bt_int = PING_FREQUENCY.count(),
+    .heart_bt_int = static_cast<uint16_t>(FLAGS_ping_freq_secs),
     .raw_data = raw_data,
     .username = _access_key,
     .password = password,
-    .deribit_cancel_on_disconnect = CANCEL_ON_DISCONNECT,
+    .deribit_cancel_on_disconnect = FLAGS_cancel_on_disconnect,
   };
   send(logon, sending_time);
   _gateway_status = GatewayStatus::LOGIN_SENT;
@@ -350,7 +351,7 @@ void Gateway::operator()(
       }
       case core::fix::MDEntryType::TRADE: {
         TradeSummary trade_summary = {
-          .exchange = EXCHANGE,
+          .exchange = FLAGS_exchange,
           .symbol = market_data_incremental_refresh.symbol,
           .price = item.md_entry_px,
           .volume = item.md_entry_size,
@@ -368,7 +369,7 @@ void Gateway::operator()(
   }
   if (bid_length > 0 || ask_length > 0) {
     MarketByPrice market_by_price = {
-      .exchange = EXCHANGE,
+      .exchange = FLAGS_exchange,
       .symbol = market_data_incremental_refresh.symbol,
       .bid_length = bid_length,
       .bid = bid,
@@ -402,7 +403,7 @@ void Gateway::operator()(
   MBPUpdate bid[MAX_DEPTH];
   MBPUpdate ask[MAX_DEPTH];
   MarketByPrice market_by_price = {
-    .exchange = EXCHANGE,
+    .exchange = FLAGS_exchange,
     .symbol = market_data_snapshot_full_refresh.symbol,
     .bid_length = 0,
     .bid = bid,
@@ -498,7 +499,7 @@ void Gateway::operator()(
     if (discard_symbol(instrument.symbol))
       continue;
     ReferenceData reference_data = {
-      .exchange = EXCHANGE,
+      .exchange = FLAGS_exchange,
       .symbol = instrument.symbol,
       .tick_size = instrument.min_price_increment,
       .limit_up = std::numeric_limits<double>::quiet_NaN(),
@@ -507,7 +508,7 @@ void Gateway::operator()(
     };
     enqueue(reference_data, true);
     MarketStatus market_status = {
-      .exchange = EXCHANGE,
+      .exchange = FLAGS_exchange,
       .symbol = instrument.symbol,
       .trading_status = TradingStatus::OPEN,  // TODO(thraneh): no info from exch?
     };
