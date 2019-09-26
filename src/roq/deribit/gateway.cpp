@@ -2,6 +2,8 @@
 
 #include "roq/deribit/gateway.h"
 
+#include <gflags/gflags.h>
+
 #include <limits>
 
 #include "roq/logging.h"
@@ -22,6 +24,8 @@
 #include "roq/deribit/fix/request_for_positions.h"
 #include "roq/deribit/fix/security_list_request.h"
 #include "roq/deribit/fix/user_request.h"
+
+DEFINE_int32(network_affinity, -1, "network affinity");
 
 namespace roq {
 namespace deribit {
@@ -109,7 +113,10 @@ void Gateway::run() {
 }
 
 void Gateway::initialize_thread() {
-  // TODO(thraneh): affinity
+  if (FLAGS_network_affinity >= 0) {
+    LOG(INFO) << "Thread affinity " << FLAGS_network_affinity;
+    set_thread_affinity(FLAGS_network_affinity);
+  }
 }
 
 void Gateway::on_timer() {
