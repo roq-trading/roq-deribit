@@ -322,9 +322,6 @@ void Gateway::operator()(
       "header={}, market_data_incremental_refresh={}",
       header,
       market_data_incremental_refresh);
-  std::string FIXME_SYMBOL(
-      market_data_incremental_refresh.symbol.data(),
-      market_data_incremental_refresh.symbol.length());
   MBPUpdate bid[MAX_DEPTH];
   MBPUpdate ask[MAX_DEPTH];
   size_t bid_length = 0, ask_length = 0;
@@ -354,7 +351,7 @@ void Gateway::operator()(
       case core::fix::MDEntryType::TRADE: {
         TradeSummary trade_summary = {
           .exchange = EXCHANGE,
-          .symbol = FIXME_SYMBOL.c_str(),  // FIXME(thraneh): use string_view
+          .symbol = market_data_incremental_refresh.symbol,
           .price = item.md_entry_px,
           .volume = item.md_entry_size,
           .turnover = std::numeric_limits<double>::quiet_NaN(),
@@ -372,7 +369,7 @@ void Gateway::operator()(
   if (bid_length > 0 || ask_length > 0) {
     MarketByPrice market_by_price = {
       .exchange = EXCHANGE,
-      .symbol = FIXME_SYMBOL.c_str(),  // FIXME(thraneh): use string_view
+      .symbol = market_data_incremental_refresh.symbol,
       .bid_length = bid_length,
       .bid = bid,
       .ask_length = ask_length,
@@ -404,12 +401,9 @@ void Gateway::operator()(
       market_data_snapshot_full_refresh);
   MBPUpdate bid[MAX_DEPTH];
   MBPUpdate ask[MAX_DEPTH];
-  std::string FIXME_SYMBOL(
-      market_data_snapshot_full_refresh.symbol.data(),
-      market_data_snapshot_full_refresh.symbol.length());
   MarketByPrice market_by_price = {
     .exchange = EXCHANGE,
-    .symbol = FIXME_SYMBOL.c_str(),  // FIXME(thraneh): use string_view
+    .symbol = market_data_snapshot_full_refresh.symbol,
     .bid_length = 0,
     .bid = bid,
     .ask_length = 0,
@@ -503,10 +497,9 @@ void Gateway::operator()(
     auto& instrument = security_list.instruments.items[i];
     if (discard_symbol(instrument.symbol))
       continue;
-    std::string FIXME_SYMBOL(instrument.symbol.data(), instrument.symbol.length());
     ReferenceData reference_data = {
       .exchange = EXCHANGE,
-      .symbol = FIXME_SYMBOL.c_str(),  // FIXME(thraneh): use string_view
+      .symbol = instrument.symbol,
       .tick_size = instrument.min_price_increment,
       .limit_up = std::numeric_limits<double>::quiet_NaN(),
       .limit_down = std::numeric_limits<double>::quiet_NaN(),
@@ -515,14 +508,14 @@ void Gateway::operator()(
     enqueue(reference_data, true);
     MarketStatus market_status = {
       .exchange = EXCHANGE,
-      .symbol = FIXME_SYMBOL.c_str(),  // FIXME(thraneh): use string_view
+      .symbol = instrument.symbol,
       .trading_status = TradingStatus::OPEN,  // TODO(thraneh): no info from exch?
     };
     enqueue(market_status, true);
-    LOG(INFO) << fmt::format("Subscribe symbol=\"{}\"", FIXME_SYMBOL);
+    LOG(INFO) << fmt::format("Subscribe symbol=\"{}\"", instrument.symbol);
     fix::MarketDataRequest market_data_request = {
       .md_req_id = "roq-mkt-002",
-      .symbol = FIXME_SYMBOL,
+      .symbol = instrument.symbol,
     };
     send(market_data_request);
   }
