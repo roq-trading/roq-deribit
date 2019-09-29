@@ -41,14 +41,14 @@ void Heartbeat::parse(
           if (core::fix::Heartbeat::has_field(field))
             break;
           throw core::fix::InvalidField(
-              "MarketDataSnapshotFullRefresh: "
+              "Heartbeat: "
               "Unexpected field={}", tag);
       }
     } catch (core::fix::Exception&) {
       throw;
     } catch (std::runtime_error& e) {
       throw core::fix::ParseError(
-          "MarketDataIncrementalRefresh: "
+          "Heartbeat: "
           "Parse error: "
           "field={}, value=\"{}\", what=\"{}\"",
           tag, value, e.what());
