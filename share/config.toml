@@ -1,3 +1,9 @@
+symbols = [
+  ".*-PERPETUAL",
+  ".*-DERIBIT-INDEX",
+  ".*-\\d{2}\\D{3}\\d{2}",
+]
+
 [order_templates]
 
   [order_templates.default]
@@ -7,8 +13,8 @@
 
   [accounts.A1]
   master = true
-  login = "<api key>"
-  secret = "<secret>"
+  login = "YOUR_DERIBIT_LOGIN_GOES_HERE"
+  secret = "YOUR_DERIBIT_SECRET_GOES_HERE"
   symbols = [ "BTC-.*", "ETH-.*" ]
 
 [users]
