@@ -2,8 +2,7 @@
 
 #include "roq/deribit/fix/reject.h"
 
-#include "roq/logging.h"
-
+#include "roq/core/fix/exception.h"
 #include "roq/core/fix/reject.h"
 #include "roq/core/fix/utils.h"
 #include "roq/core/fix/writer.h"
@@ -55,11 +54,18 @@ void Reject::parse(
         default:
           if (core::fix::Reject::has_field(field))
             break;
+          throw core::fix::InvalidField(
+              "Reject: "
+              "Unexpected field={}", tag);
       }
-    } catch (std::exception& e) {
-      LOG(WARNING) << fmt::format(
-          "Can't parse tag={} value=\"{}\"", tag, value);
+    } catch (core::fix::Exception&) {
       throw;
+    } catch (std::runtime_error& e) {
+      throw core::fix::ParseError(
+          "Reject: "
+          "Parse error: "
+          "field={}, value=\"{}\", what=\"{}\"",
+          tag, value, e.what());
     }
   }
 }

@@ -2,8 +2,7 @@
 
 #include "roq/deribit/fix/execution_report.h"
 
-#include "roq/logging.h"
-
+#include "roq/core/fix/exception.h"
 #include "roq/core/fix/execution_report.h"
 #include "roq/core/fix/utils.h"
 
@@ -156,16 +155,19 @@ void ExecutionReport::parse(
               core::fix::update(deribit_label, value);
               break;
             default:
-              throw std::runtime_error(
-                  fmt::format(
-                      "Unknown field: tag={} field={} value=\"{}\"",
-                      tag, field, value));
+              throw core::fix::InvalidField(
+                  "ExecutionReport: "
+                  "Unexpected field={}", tag);
           }
       }
-    } catch (std::exception& e) {
-      LOG(WARNING) << fmt::format(
-          "Can't parse tag={} value=\"{}\"", tag, value);
+    } catch (core::fix::Exception&) {
       throw;
+    } catch (std::runtime_error& e) {
+      throw core::fix::ParseError(
+          "ExecutionReport: "
+          "Parse error: "
+          "field={}, value=\"{}\", what=\"{}\"",
+          tag, value, e.what());
     }
   }
 }

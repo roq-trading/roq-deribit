@@ -2,10 +2,7 @@
 
 #include "roq/deribit/fix/position_qty.h"
 
-#include <fmt/format.h>
-
-#include <stdexcept>
-
+#include "roq/core/fix/exception.h"
 #include "roq/core/fix/position_qty.h"
 #include "roq/core/fix/utils.h"
 
@@ -37,72 +34,83 @@ void PositionQty::parse(
   auto& [tag, value] = *iter;
   auto field = core::fix::parse_field(tag);
   if (field != core::fix::Field::POS_TYPE)
-    throw std::runtime_error(
-        fmt::format(
-            "Expected tag POS_TYPE, got {}",
-            (*iter).first));
+    throw core::fix::InvalidField(
+        "Instrument: "
+        "Unexpected first field={}", tag);
   core::fix::update(pos_type, value);
   for (++iter; iter != end; ++iter) {
     auto& [tag, value] = *iter;
     auto field = core::fix::parse_field(tag);
-    switch (field) {
-      case core::fix::Field::POS_TYPE:
-        static_assert(core::fix::PositionQty::has_field(core::fix::Field::POS_TYPE));
-        return;
-      case core::fix::Field::LONG_QTY:
-        static_assert(core::fix::PositionQty::has_field(core::fix::Field::LONG_QTY));
-        core::fix::update(long_qty, value);
-        break;
-      case core::fix::Field::SHORT_QTY:
-        static_assert(core::fix::PositionQty::has_field(core::fix::Field::SHORT_QTY));
-        core::fix::update(short_qty, value);
-        break;
-      // non-standard
-      case core::fix::Field::CONTRACT_MULTIPLIER:
-        static_assert(!core::fix::PositionQty::has_field(core::fix::Field::CONTRACT_MULTIPLIER));
-        core::fix::update(contract_multiplier, value);
-        break;
-      case core::fix::Field::QTY_TYPE:
-        static_assert(!core::fix::PositionQty::has_field(core::fix::Field::QTY_TYPE));
-        core::fix::update(qty_type, value);
-        break;
-      case core::fix::Field::RAW_DATA_LENGTH:
-        static_assert(!core::fix::PositionQty::has_field(core::fix::Field::RAW_DATA_LENGTH));
-        // nothing to do...
-        break;
-      case core::fix::Field::RAW_DATA:
-        static_assert(!core::fix::PositionQty::has_field(core::fix::Field::RAW_DATA));
-        core::fix::update(raw_data, value);
-        break;
-      case core::fix::Field::SETTL_PRICE:
-        static_assert(!core::fix::PositionQty::has_field(core::fix::Field::SETTL_PRICE));
-        core::fix::update(settl_price, value);
-        break;
-      case core::fix::Field::SIDE:
-        static_assert(!core::fix::PositionQty::has_field(core::fix::Field::SIDE));
-        core::fix::update(side, value);
-        break;
-      case core::fix::Field::SYMBOL:
-        static_assert(!core::fix::PositionQty::has_field(core::fix::Field::SYMBOL));
-        core::fix::update(symbol, value);
-        break;
-      case core::fix::Field::UNDERLYING_PRICE:
-        static_assert(!core::fix::PositionQty::has_field(core::fix::Field::UNDERLYING_PRICE));
-        core::fix::update(underlying_price, value);
-        break;
-      default:
-        if (core::fix::PositionQty::has_field(field))
+    try {
+      switch (field) {
+        // key
+        case core::fix::Field::POS_TYPE:
+          static_assert(core::fix::PositionQty::has_field(core::fix::Field::POS_TYPE));
+          return;  // break
+        // standard
+        case core::fix::Field::LONG_QTY:
+          static_assert(core::fix::PositionQty::has_field(core::fix::Field::LONG_QTY));
+          core::fix::update(long_qty, value);
           break;
-        switch (static_cast<Deribit>(tag)) {
-          case Deribit::LIQUIDATION_PRICE:
-            core::fix::update(deribit_liquidation_price, value);
+        case core::fix::Field::SHORT_QTY:
+          static_assert(core::fix::PositionQty::has_field(core::fix::Field::SHORT_QTY));
+          core::fix::update(short_qty, value);
+          break;
+        // non-standard
+        case core::fix::Field::CONTRACT_MULTIPLIER:
+          static_assert(!core::fix::PositionQty::has_field(core::fix::Field::CONTRACT_MULTIPLIER));
+          core::fix::update(contract_multiplier, value);
+          break;
+        case core::fix::Field::QTY_TYPE:
+          static_assert(!core::fix::PositionQty::has_field(core::fix::Field::QTY_TYPE));
+          core::fix::update(qty_type, value);
+          break;
+        case core::fix::Field::RAW_DATA_LENGTH:
+          static_assert(!core::fix::PositionQty::has_field(core::fix::Field::RAW_DATA_LENGTH));
+          // nothing to do...
+          break;
+        case core::fix::Field::RAW_DATA:
+          static_assert(!core::fix::PositionQty::has_field(core::fix::Field::RAW_DATA));
+          core::fix::update(raw_data, value);
+          break;
+        case core::fix::Field::SETTL_PRICE:
+          static_assert(!core::fix::PositionQty::has_field(core::fix::Field::SETTL_PRICE));
+          core::fix::update(settl_price, value);
+          break;
+        case core::fix::Field::SIDE:
+          static_assert(!core::fix::PositionQty::has_field(core::fix::Field::SIDE));
+          core::fix::update(side, value);
+          break;
+        case core::fix::Field::SYMBOL:
+          static_assert(!core::fix::PositionQty::has_field(core::fix::Field::SYMBOL));
+          core::fix::update(symbol, value);
+          break;
+        case core::fix::Field::UNDERLYING_PRICE:
+          static_assert(!core::fix::PositionQty::has_field(core::fix::Field::UNDERLYING_PRICE));
+          core::fix::update(underlying_price, value);
+          break;
+        default:
+          if (core::fix::PositionQty::has_field(field))
             break;
-          case Deribit::SIZE_IN_CURRENCY:
-            core::fix::update(deribit_size_in_currency, value);
-            break;
-          default:
-            return;
-        }
+          switch (static_cast<Deribit>(tag)) {
+            case Deribit::LIQUIDATION_PRICE:
+              core::fix::update(deribit_liquidation_price, value);
+              break;
+            case Deribit::SIZE_IN_CURRENCY:
+              core::fix::update(deribit_size_in_currency, value);
+              break;
+            default:
+              return;  // unknown field
+          }
+      }
+    } catch (core::fix::Exception&) {
+      throw;
+    } catch (std::runtime_error& e) {
+      throw core::fix::ParseError(
+          "PositionQty: "
+          "Parse error: "
+          "field={}, value=\"{}\", what=\"{}\"",
+          tag, value, e.what());
     }
   }
 }

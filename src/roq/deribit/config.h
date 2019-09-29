@@ -5,6 +5,7 @@
 #include <fmt/format.h>
 
 #include <iostream>
+#include <regex>
 #include <string>
 #include <string_view>
 #include <unordered_map>
@@ -15,7 +16,6 @@
 
 namespace roq {
 namespace deribit {
-namespace conf {
 
 class Config final
     : public server::Config,
@@ -39,40 +39,30 @@ class Config final
   void dispatch(server::Config::Handler& handler) const override;
 
   // server::ConfigReader::Handler
+  void operator()(server::Symbols&& symbols) override;
   void operator()(Account&& account) override;
   void operator()(User&& user) override;
   void operator()(const std::string& key, const cpptoml::base& base) override;
 
  public:
   std::vector<User> users;
-  std::unordered_map<std::string, std::unordered_set<std::string> > symbols;
+  std::vector<std::regex> symbols;
   std::unordered_map<std::string, Account> accounts;
 };
-/*
- * REST API
- * https://api-public.sandbox.pro.deribit.com
- *
- * Websocket Feed
- * wss://ws-feed-public.sandbox.pro.deribit.com
- *
- * FIX API
- * tcp+ssl://fix-public.sandbox.pro.deribit.com:4198
- */
 
 std::ostream& operator<<(std::ostream&, const Config&);
 
-}  // namespace conf
 }  // namespace deribit
 }  // namespace roq
 
 template <>
-struct fmt::formatter<roq::deribit::conf::Config> {
+struct fmt::formatter<roq::deribit::Config> {
   template <typename C>
   constexpr auto parse(C& ctx) {
     return ctx.begin();
   }
   template <typename C>
-  auto format(const roq::deribit::conf::Config& value, C& ctx) {
+  auto format(const roq::deribit::Config& value, C& ctx) {
     // FIXME(thraneh): proper
     return format_to(
         ctx.begin(),

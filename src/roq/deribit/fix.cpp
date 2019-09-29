@@ -50,6 +50,8 @@ void FIX::start() {
 
 void FIX::send(const core::utils::Message& message) {
   VLOG(4) << "send(length=" << message.length() << ")";
+  // core::print_memory(message.data(), message.length());
+  // core::print_string_with_escapes(message.data(), message.length());
   _buffer_event.write(message.data(), message.length());
   _buffer_event.flush(EV_WRITE, BEV_FLUSH);
 }
@@ -79,6 +81,7 @@ void FIX::process_data() {
     if (length == 0)
       return;
     auto buffer = _buffer.pullup(length);
+    // core::print_memory(buffer, length);
     auto bytes = core::fix::Reader<fix::FIX_VERSION>::dispatch(
         [&](const core::fix::message_t& message) {
           try {
@@ -100,6 +103,7 @@ void FIX::process_data() {
     if (bytes == 0)
       return;
     // core::print_string_with_escapes(buffer, bytes);
+    // core::print_memory(buffer, bytes);
     _buffer.drain(bytes);
   }
 }

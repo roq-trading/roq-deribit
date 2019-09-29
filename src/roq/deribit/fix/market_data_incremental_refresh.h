@@ -40,7 +40,7 @@ struct MarketDataIncrementalRefresh final {
       // deribit specific
       std::string_view deribit_label;
       std::string_view deribit_liquidation;
-      uint64_t deribit_trade_id;
+      std::string_view deribit_trade_id;
     } *items = nullptr;
     size_t length = 0;
   } md_inc_grp;  // MDIncGrp
@@ -97,7 +97,7 @@ struct fmt::formatter<roq::deribit::fix::MarketDataIncrementalRefresh::MDIncGrp>
         // deribit specific
         "deribit_label=\"{}\", "
         "deribit_liquidation=\"{}\", "
-        "deribit_trade_id={}"
+        "deribit_trade_id=\"{}\""
         "}}",
         value.md_entry_date,
         value.md_entry_px,

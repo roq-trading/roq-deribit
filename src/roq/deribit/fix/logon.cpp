@@ -2,8 +2,7 @@
 
 #include "roq/deribit/fix/logon.h"
 
-#include "roq/logging.h"
-
+#include "roq/core/fix/exception.h"
 #include "roq/core/fix/logon.h"
 #include "roq/core/fix/writer.h"
 #include "roq/core/fix/utils.h"
@@ -68,16 +67,19 @@ void Logon::parse(
               core::fix::update(deribit_use_wordsafe_tags, value);
               break;
             default:
-              throw std::runtime_error(
-                  fmt::format(
-                      "Unknown field: tag={} field={} value=\"{}\"",
-                      tag, field, value));
+              throw core::fix::InvalidField(
+                  "Logon: "
+                  "Unexpected field={}", tag);
           }
       }
-    } catch (std::exception& e) {
-      LOG(WARNING) << fmt::format(
-          "Can't parse tag={} value=\"{}\"", tag, value);
+    } catch (core::fix::Exception&) {
       throw;
+    } catch (std::runtime_error& e) {
+      throw core::fix::ParseError(
+          "Logon: "
+          "Parse error: "
+          "field={}, value=\"{}\", what=\"{}\"",
+          tag, value, e.what());
     }
   }
 }

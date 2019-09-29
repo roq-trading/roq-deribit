@@ -36,17 +36,17 @@ namespace roq {
 namespace deribit {
 
 namespace {
-constexpr auto DECODE_BUFFER_SIZE = size_t{1048576};  // FIXME(thraneh): flag
-constexpr auto ENCODE_BUFFER_SIZE = size_t{4096};  // FIXME(thraneh): flag
+constexpr auto DECODE_BUFFER_SIZE = size_t{1024 * 4096};  // FIXME(thraneh): flag
+constexpr auto ENCODE_BUFFER_SIZE = size_t{256 * 4096};  // FIXME(thraneh): flag
 constexpr auto TIMER_FREQUENCY = std::chrono::milliseconds{100};
 constexpr auto ACCOUNT = "A1";  // FIXME(thraneh): flag
-constexpr auto SYMBOL = "BTC-27SEP19";  // DEBUG
-constexpr auto MAX_DEPTH = size_t{256};
+// constexpr auto SYMBOL = "BTC-27DEC19";  // DEBUG
+constexpr auto MAX_DEPTH = size_t{65536};  // FIXME(thraneh): HACK !!!
 }  // namespace
 
 Gateway::Gateway(
     server::Dispatcher& dispatcher,
-    const conf::Config& config)
+    const Config& config)
     : _dispatcher(dispatcher),
       _dns_base(_base, true),
       _timer(_base, EV_PERSIST, [this]() { on_timer(); }),
@@ -60,7 +60,8 @@ Gateway::Gateway(
           _dns_base,
           core::URI(FLAGS_fix_uri)),
       _access_key(config.get_access_key()),
-      _access_secret(config.get_access_secret()) {
+      _access_secret(config.get_access_secret()),
+      _symbols(config.symbols) {
 }
 
 void Gateway::on(const StartEvent& event) {
@@ -151,7 +152,8 @@ void Gateway::on_timer() {
 
 void Gateway::on_fix_connected() {
   assert(_gateway_status == GatewayStatus::DISCONNECTED);
-  LOG(INFO) << "Sending FIX logon";
+  LOG(INFO) << fmt::format(
+      "[FIX] request logon (username=\"{}\")...", _access_key);
   auto sending_time = core::get_realtime_clock();
   auto raw_data = Random::create_raw_data(sending_time);
   auto password = Random::create_password(raw_data, _access_secret);
@@ -193,7 +195,7 @@ void Gateway::on_fix_disconnected() {
 void Gateway::operator()(
     const core::fix::header_t& header,
     const fix::ExecutionReport& execution_report) {
-  LOG(INFO) << fmt::format(
+  VLOG(1) << fmt::format(
       "header={}, execution_report={}",
       header,
       execution_report);
@@ -236,8 +238,16 @@ void Gateway::operator()(
   switch (execution_report.mass_status_req_type) {
     case core::fix::MassStatusReqType::ORDERS:
       _download_execution_reports = execution_report.tot_num_reports;
-      if (_download_execution_reports == 0)
+      if (_download_execution_reports == 0) {
+        LOG(INFO) << fmt::format(
+            "[FIX] download orders COMPLETED (len(orders)={})",
+          execution_report.tot_num_reports);
         process();
+      } else {
+        LOG(INFO) << fmt::format(
+            "[FIX] download orders IN PROGRESS (len(orders)={})",
+            execution_report.tot_num_reports);
+      }
       break;
     default:
       if (_download_execution_reports &&
@@ -249,30 +259,31 @@ void Gateway::operator()(
 void Gateway::operator()(
     const core::fix::header_t& header,
     const fix::Heartbeat& heartbeat) {
-  // note! *before* logging (avoid latency)
-  if (!heartbeat.test_req_id.empty()) {
-    auto now = core::get_system_clock();
-    auto send_time = core::charconv::from_string<uint64_t>(
-        heartbeat.test_req_id);
-    _latency = now - decltype(now){send_time};
-    VLOG(1) << fmt::format(
-        "Latency={}",
-        std::chrono::duration_cast<std::chrono::microseconds>(
-          _latency));
-  }
+  // note! get clock *before* any logging (avoid latency)
+  auto now = core::get_system_clock();
   VLOG(3) << fmt::format(
       "header={}, heartbeat={}",
       header,
       heartbeat);
+  if (heartbeat.test_req_id.empty() == false) {
+    auto send_time = core::charconv::from_string<uint64_t>(
+        heartbeat.test_req_id);
+    _latency = now - decltype(now){send_time};
+    VLOG(1) << fmt::format(
+        "[FIX] latency={}",
+        std::chrono::duration_cast<std::chrono::microseconds>(
+          _latency));
+  }
 }
 
 void Gateway::operator()(
     const core::fix::header_t& header,
     const fix::Logon& logon) {
-  LOG(INFO) << fmt::format(
+  VLOG(1) << fmt::format(
       "header={}, logon={}",
       header,
       logon);
+  LOG(INFO) << "[FIX] logon COMPLETED";
   process(true);
   /*
   // DEBUG
@@ -293,10 +304,13 @@ void Gateway::operator()(
 void Gateway::operator()(
     const core::fix::header_t& header,
     const fix::Logout& logout) {
-  LOG(INFO) << fmt::format(
+  VLOG(1) << fmt::format(
       "header={}, logout={}",
       header,
       logout);
+  LOG(WARNING) << fmt::format(
+      "[FIX] logout (text=\"{}\")",
+      logout.text);
   reset();
   MarketDataStatus market_data_status = {
     .status = _gateway_status,
@@ -312,13 +326,15 @@ void Gateway::operator()(
     .text = "i'm done",
   };
   send(response);
-  // TODO(thraneh): ...now what?
-  LOG(FATAL) << "Unexpected";
+  LOG(FATAL) << "Unexpected -- now what?";  // FIXME(thraneh): ...
 }
 
 void Gateway::operator()(
     const core::fix::header_t& header,
     const fix::MarketDataIncrementalRefresh& market_data_incremental_refresh) {
+  // TODO(thraneh): speak to Deribit ...
+  if (market_data_incremental_refresh.md_inc_grp.length == 0)
+    return;
   VLOG(3) << fmt::format(
       "header={}, market_data_incremental_refresh={}",
       header,
@@ -334,19 +350,23 @@ void Gateway::operator()(
       exchange_time_utc = item.md_entry_date;
     switch (item.md_entry_type) {
       case core::fix::MDEntryType::BID: {
-        new (&bid[bid_length++]) MBPUpdate {
+        new (&bid[bid_length]) MBPUpdate {
           .price = item.md_entry_px,
           .quantity = item.md_entry_size,
           .action = core::fix::map(item.md_update_action),
         };
+        LOG_IF(FATAL, ++bid_length >= std::size(bid)) <<
+          "Exceeding allocated space for bids";
         break;
       }
       case core::fix::MDEntryType::OFFER: {
-        new (&ask[ask_length++]) MBPUpdate {
+        new (&ask[ask_length]) MBPUpdate {
           .price = item.md_entry_px,
           .quantity = item.md_entry_size,
           .action = core::fix::map(item.md_update_action),
         };
+        LOG_IF(FATAL, ++ask_length >= std::size(ask)) <<
+          "Exceeding allocated space for asks";
         break;
       }
       case core::fix::MDEntryType::TRADE: {
@@ -362,8 +382,12 @@ void Gateway::operator()(
         enqueue(trade_summary, true);  // FIXME(thraneh): *not* always last
         break;
       }
+      case core::fix::MDEntryType::INDEX_VALUE:
+      case core::fix::MDEntryType::SETTLEMENT_PRICE:
+        // FIXME(thraneh): how to propagate these???
+        break;
       default:
-        LOG(WARNING) << fmt::format("Unsupported: {}", item);
+        LOG(WARNING) << fmt::format("[FIX] unsupported: {}", item);
         break;
     }
   }
@@ -385,12 +409,15 @@ void Gateway::operator()(
 void Gateway::operator()(
     const core::fix::header_t& header,
     const fix::MarketDataRequestReject& market_data_request_reject) {
-  LOG(WARNING) << fmt::format(
+  VLOG(1) << fmt::format(
       "header={}, market_data_request_reject={}",
       header,
       market_data_request_reject);
-  // TODO(thraneh): ...now what?
-  LOG(FATAL) << "Unexpected";
+  LOG(WARNING) << fmt::format(
+      "[FIX] market data request reject (reason={}, text=\"{}\")",
+      market_data_request_reject.md_req_rej_reason,
+      market_data_request_reject.text);
+  LOG(FATAL) << "Unexpected -- now what?";  // FIXME(thraneh): ...
 }
 
 void Gateway::operator()(
@@ -417,19 +444,23 @@ void Gateway::operator()(
     auto& item = md_full_grp.items[i];
     switch (item.md_entry_type) {
       case core::fix::MDEntryType::BID: {
-        new (&bid[market_by_price.bid_length++]) MBPUpdate {
+        new (&bid[market_by_price.bid_length]) MBPUpdate {
           .price = item.md_entry_px,
           .quantity = item.md_entry_size,
           .action = UpdateAction::NEW,
         };
+        LOG_IF(FATAL, ++market_by_price.bid_length >= std::size(bid)) <<
+          "Exceeding allocated space for bids";
         break;
       }
       case core::fix::MDEntryType::OFFER: {
-        new (&ask[market_by_price.ask_length++]) MBPUpdate {
+        new (&ask[market_by_price.ask_length]) MBPUpdate {
           .price = item.md_entry_px,
           .quantity = item.md_entry_size,
           .action = UpdateAction::NEW,
         };
+        LOG_IF(FATAL, ++market_by_price.ask_length >= std::size(ask)) <<
+          "Exceeding allocated space for asks";
         break;
       }
       default:
@@ -442,7 +473,7 @@ void Gateway::operator()(
 void Gateway::operator()(
     const core::fix::header_t& header,
     const fix::OrderCancelReject& order_cancel_reject) {
-  LOG(WARNING) << fmt::format(
+  VLOG(1) << fmt::format(
       "header={}, order_cancel_reject={}",
       header,
       order_cancel_reject);
@@ -452,10 +483,13 @@ void Gateway::operator()(
 void Gateway::operator()(
     const core::fix::header_t& header,
     const fix::PositionReport& position_report) {
-  LOG(INFO) << fmt::format(
+  VLOG(1) << fmt::format(
       "header={}, position_report={}",
       header,
       position_report);
+  LOG(INFO) << fmt::format(
+      "[FIX] download positions COMPLETED (len(positions)={})",
+      position_report.positions.length);
   // TODO(thraneh): forward to gateway
   process();
 }
@@ -463,18 +497,21 @@ void Gateway::operator()(
 void Gateway::operator()(
     const core::fix::header_t& header,
     const fix::Reject& reject) {
-  LOG(WARNING) << fmt::format(
+  VLOG(1) << fmt::format(
       "header={}, reject={}",
       header,
       reject);
-  // FIXME(thraneh): ...now what?
-  LOG(FATAL) << "Unexpected";
+  LOG(WARNING) << fmt::format(
+      "[FIX] reject (msg_type=\"{}\", text=\"{}\")",
+      reject.ref_msg_type,
+      reject.text);
+  LOG(FATAL) << "Unexpected -- now what?";  // FIXME(thraneh): ...
 }
 
 void Gateway::operator()(
     const core::fix::header_t& header,
     const fix::ResendRequest& resend_request) {
-  LOG(WARNING) << fmt::format(
+  VLOG(1) << fmt::format(
       "header={}, resend_request={}",
       header,
       resend_request);
@@ -494,6 +531,13 @@ void Gateway::operator()(
       "header={}, security_list={}",
       header,
       security_list);
+  LOG(INFO) << fmt::format(
+      "[FIX] download instruments COMPLETED (len(instruments)={})",
+      security_list.instruments.length);
+  if (security_list.instruments.length == 0)
+    return;
+  std::vector<std::string_view> symbols;
+  symbols.reserve(security_list.instruments.length);
   for (size_t i = 0; i < security_list.instruments.length; ++i) {
     auto& instrument = security_list.instruments.items[i];
     if (discard_symbol(instrument.symbol))
@@ -513,10 +557,16 @@ void Gateway::operator()(
       .trading_status = TradingStatus::OPEN,  // TODO(thraneh): no info from exch?
     };
     enqueue(market_status, true);
-    LOG(INFO) << fmt::format("Subscribe symbol=\"{}\"", instrument.symbol);
+    /*
+    if (symbols.size() > 9)  // 58
+      continue;
+    */
+    symbols.emplace_back(instrument.symbol);
+  }
+  if (symbols.empty() == false) {
     fix::MarketDataRequest market_data_request = {
       .md_req_id = "roq-mkt-002",
-      .symbol = instrument.symbol,
+      .symbols = symbols,
     };
     send(market_data_request);
   }
@@ -526,7 +576,7 @@ void Gateway::operator()(
 void Gateway::operator()(
     const core::fix::header_t& header,
     const fix::TestRequest& test_request) {
-  LOG(INFO) << fmt::format(
+  VLOG(1) << fmt::format(
       "header={}, test_request={}",
       header,
       test_request);
@@ -539,10 +589,11 @@ void Gateway::operator()(
 void Gateway::operator()(
     const core::fix::header_t& header,
     const fix::UserResponse& user_response) {
-  LOG(INFO) << fmt::format(
+  VLOG(1) << fmt::format(
       "header={}, user_response={}",
       header,
       user_response);
+  LOG(INFO) << "[FIX] download user COMPLETED";
   // TODO(thraneh): forward to gateway
   process();
 }
@@ -550,13 +601,19 @@ void Gateway::operator()(
 // UTILS:
 
 inline bool Gateway::discard_symbol(const std::string_view& symbol) {
-  return symbol.compare(SYMBOL) != 0;
+  for (auto& iter : _symbols)
+    if (std::regex_match(symbol.begin(), symbol.end(), iter)) {
+      return false;
+    }
+  VLOG(1) << fmt::format(
+      "Discard symbol=\"{}\" (reason: no regex match)", symbol);
+  return true;
 }
 
 void Gateway::process(bool initialize) {
   if (initialize) {
     assert(_download == Download::NONE);
-    LOG(INFO) << "Downloading:";
+    LOG(INFO) << "[FIX] download:";
     assert(_gateway_status == GatewayStatus::CONNECTED);
     _gateway_status = GatewayStatus::DOWNLOADING;
     MarketDataStatus market_data_status = {
@@ -568,7 +625,7 @@ void Gateway::process(bool initialize) {
       .status = _gateway_status,
     };
     enqueue(order_manager_status, true);
-    LOG(INFO) << "Download FIX securities";
+    LOG(INFO) << "[FIX] download instruments...";
     fix::SecurityListRequest security_list_request = {
       .security_req_id = "download_securities",
     };
@@ -580,7 +637,7 @@ void Gateway::process(bool initialize) {
         assert(false);
         break;
       case Download::SECURITIES: {
-        LOG(INFO) << "Download FIX positions";
+        LOG(INFO) << "[FIX] download positions...";
         fix::RequestForPositions request_for_positions = {
           .pos_req_id = "download_positions",
           .pos_req_type = core::fix::PosReqType::POSITIONS,
@@ -590,7 +647,7 @@ void Gateway::process(bool initialize) {
         break;
       }
       case Download::POSITIONS: {
-        LOG(INFO) << "Download FIX orders";
+        LOG(INFO) << "[FIX] download orders...";
         fix::OrderMassStatusRequest order_mass_status_request = {
           .mass_status_req_id = "download_orders",
           .mass_status_req_type = core::fix::MassStatusReqType::ORDERS,
@@ -600,7 +657,7 @@ void Gateway::process(bool initialize) {
         break;
       }
       case Download::ORDERS: {
-        LOG(INFO) << "Download FIX user";
+        LOG(INFO) << "[FIX] download user...";
         fix::UserRequest user_request = {
           .user_request_id = "download_user",
           .username = _access_key,
@@ -621,7 +678,7 @@ void Gateway::process(bool initialize) {
           .status = _gateway_status,
         };
         enqueue(order_manager_status, true);
-        LOG(INFO) << "Download has COMPLETED";
+        LOG(INFO) << "[FIX] download COMPLETED";
         _download = Download::NONE;
         break;
       };

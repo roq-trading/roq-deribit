@@ -2,8 +2,7 @@
 
 #include "roq/deribit/fix/resend_request.h"
 
-#include "roq/logging.h"
-
+#include "roq/core/fix/exception.h"
 #include "roq/core/fix/resend_request.h"
 #include "roq/core/fix/utils.h"
 
@@ -45,15 +44,18 @@ void ResendRequest::parse(
         default:
           if (core::fix::ResendRequest::has_field(field))
             break;
-          throw std::runtime_error(
-              fmt::format(
-                  "Unknown field: tag={} field={} value=\"{}\"",
-                  tag, field, value));
+          throw core::fix::InvalidField(
+              "ResendRequest: "
+              "Unexpected field={}", tag);
       }
-    } catch (std::exception& e) {
-      LOG(WARNING) << fmt::format(
-          "Can't parse tag={} value=\"{}\"", tag, value);
+    } catch (core::fix::Exception&) {
       throw;
+    } catch (std::runtime_error& e) {
+      throw core::fix::ParseError(
+          "ResendRequest: "
+          "Parse error: "
+          "field={}, value=\"{}\", what=\"{}\"",
+          tag, value, e.what());
     }
   }
 }

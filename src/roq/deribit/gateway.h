@@ -14,7 +14,7 @@
 #include "roq/core/ssl/ssl.h"
 #include "roq/core/event/event.h"
 
-#include "roq/deribit/conf/config.h"
+#include "roq/deribit/config.h"
 #include "roq/deribit/fix.h"
 
 #include "roq/deribit/fix/execution_report.h"
@@ -39,7 +39,7 @@ class Gateway final : public server::Handler {
  public:
   Gateway(
       server::Dispatcher& dispatcher,
-      const conf::Config& config);
+      const Config& config);
 
   void on(const StartEvent& event) override;
   void on(const StopEvent& event) override;
@@ -179,6 +179,8 @@ class Gateway final : public server::Handler {
     USER,
   } _download = Download::NONE;
   uint32_t _download_execution_reports = 0;
+  // ...
+  std::vector<std::regex> _symbols;
 };
 
 }  // namespace deribit

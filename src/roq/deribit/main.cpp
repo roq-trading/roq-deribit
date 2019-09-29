@@ -5,8 +5,7 @@
 #include "roq/application.h"
 #include "roq/logging.h"
 
-#include "roq/deribit/conf/config.h"
-
+#include "roq/deribit/config.h"
 #include "roq/deribit/gateway.h"
 
 DEFINE_string(listen, "", "bind address (path)");
@@ -26,7 +25,7 @@ class Application final : public roq::Application {
  protected:
   int main(int argc, char **argv) override {
     LOG(INFO) << "Parse configuration";
-    roq::deribit::conf::Config config(FLAGS_config_file);
+    roq::deribit::Config config(FLAGS_config_file);
     VLOG(1) << "config=" << config;
     LOG(INFO) << "Starting the gateway";
     roq::server::Trading<roq::deribit::Gateway>(

@@ -8,8 +8,6 @@
 #include <string_view>
 #include <vector>
 
-#include "roq/core/fix/reader.h"
-
 #include "roq/deribit/fix/instrument.h"
 
 namespace roq {

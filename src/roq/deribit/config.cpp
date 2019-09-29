@@ -1,6 +1,6 @@
 /* Copyright (c) 2017-2019, Hans Erik Thrane */
 
-#include "roq/deribit/conf/config.h"
+#include "roq/deribit/config.h"
 
 #include <utility>
 
@@ -9,7 +9,6 @@
 
 namespace roq {
 namespace deribit {
-namespace conf {
 
 Config::Config(const std::string_view& path) {
   server::ConfigReader::parse(*this, path);
@@ -20,6 +19,14 @@ void Config::dispatch(server::Config::Handler& handler) const {
     handler.on(iter.second);
   for (auto& user : users)
     handler.on(user);
+}
+
+void Config::operator()(server::Symbols&& symbols) {
+  for (auto& iter_1 : symbols.regex) {
+    for (auto& iter_2 : iter_1.second) {
+      (*this).symbols.emplace_back(std::regex(iter_2));
+    }
+  }
 }
 
 void Config::operator()(Account&& account) {
@@ -33,6 +40,7 @@ void Config::operator()(User&& user) {
 void Config::operator()(
     const std::string& key,
     const cpptoml::base& base) {
+  LOG(INFO) << "UNKNOWN KEY " << key;
 }
 
 std::ostream& operator<<(
@@ -40,11 +48,9 @@ std::ostream& operator<<(
     const Config& value) {
   return stream << "{"
     "users=" << join(value.users) << ", "
-    "symbols=" << join(value.symbols) << ", "
     "accounts=" << join(value.accounts) <<
     "}";
 }
 
-}  // namespace conf
 }  // namespace deribit
 }  // namespace roq
