@@ -7,6 +7,7 @@
 #include <limits>
 
 #include "roq/logging.h"
+#include "roq/stream.h"
 
 #include "roq/core/clock.h"
 
@@ -332,6 +333,8 @@ void Gateway::operator()(
 void Gateway::operator()(
     const core::fix::header_t& header,
     const fix::MarketDataIncrementalRefresh& market_data_incremental_refresh) {
+  assert(market_data_incremental_refresh.symbol.empty() == false);
+  assert(market_data_incremental_refresh.symbol.length() < 32);
   // TODO(thraneh): speak to Deribit ...
   if (market_data_incremental_refresh.md_inc_grp.length == 0)
     return;
@@ -339,9 +342,15 @@ void Gateway::operator()(
       "header={}, market_data_incremental_refresh={}",
       header,
       market_data_incremental_refresh);
+  /*
   MBPUpdate bid[MAX_DEPTH];
   MBPUpdate ask[MAX_DEPTH];
   size_t bid_length = 0, ask_length = 0;
+  */
+  std::vector<MBPUpdate> bid, ask;
+  bid.reserve(MAX_DEPTH);
+  ask.reserve(MAX_DEPTH);
+
   std::chrono::nanoseconds exchange_time_utc = {};
   auto& md_inc_grp = market_data_incremental_refresh.md_inc_grp;
   for (size_t i = 0; i < md_inc_grp.length; ++i) {
@@ -350,6 +359,8 @@ void Gateway::operator()(
       exchange_time_utc = item.md_entry_date;
     switch (item.md_entry_type) {
       case core::fix::MDEntryType::BID: {
+        /*
+        fprintf(stderr, "%d [%zu/%zu] BID: %zu/%zu\n", __LINE__, i, md_inc_grp.length, ask_length, std::size(ask));
         new (&bid[bid_length]) MBPUpdate {
           .price = item.md_entry_px,
           .quantity = item.md_entry_size,
@@ -357,9 +368,18 @@ void Gateway::operator()(
         };
         LOG_IF(FATAL, ++bid_length >= std::size(bid)) <<
           "Exceeding allocated space for bids";
+          */
+        bid.emplace_back(
+            MBPUpdate {
+              .price = item.md_entry_px,
+              .quantity = item.md_entry_size,
+              .action = core::fix::map(item.md_update_action),
+            });
         break;
       }
       case core::fix::MDEntryType::OFFER: {
+        /*
+        fprintf(stderr, "%d [%zu/%zu] ASK: %zu/%zu\n", __LINE__, i, md_inc_grp.length, ask_length, std::size(ask));
         new (&ask[ask_length]) MBPUpdate {
           .price = item.md_entry_px,
           .quantity = item.md_entry_size,
@@ -367,6 +387,13 @@ void Gateway::operator()(
         };
         LOG_IF(FATAL, ++ask_length >= std::size(ask)) <<
           "Exceeding allocated space for asks";
+        */
+        ask.emplace_back(
+            MBPUpdate {
+              .price = item.md_entry_px,
+              .quantity = item.md_entry_size,
+              .action = core::fix::map(item.md_update_action),
+            });
         break;
       }
       case core::fix::MDEntryType::TRADE: {
@@ -379,6 +406,7 @@ void Gateway::operator()(
           .side = core::fix::map(item.side),
           .exchange_time_utc = exchange_time_utc,
         };
+        // LOG(INFO) << "XXX=" << trade_summary;
         enqueue(trade_summary, true);  // FIXME(thraneh): *not* always last
         break;
       }
@@ -391,19 +419,20 @@ void Gateway::operator()(
         break;
     }
   }
-  if (bid_length > 0 || ask_length > 0) {
-    MarketByPrice market_by_price = {
-      .exchange = FLAGS_exchange,
-      .symbol = market_data_incremental_refresh.symbol,
-      .bid_length = bid_length,
-      .bid = bid,
-      .ask_length = ask_length,
-      .ask = ask,
-      .snapshot = false,
-      .exchange_time_utc = exchange_time_utc,
-    };
-    enqueue(market_by_price, true);
-  }
+  if (bid.empty() && ask.empty())
+    return;
+  MarketByPrice market_by_price = {
+    .exchange = FLAGS_exchange,
+    .symbol = market_data_incremental_refresh.symbol,
+    .bid_length = bid.size(),
+    .bid = bid.data(),
+    .ask_length = ask.size(),
+    .ask = ask.data(),
+    .snapshot = false,
+    .exchange_time_utc = exchange_time_utc,
+  };
+  // LOG(INFO) << "XXX=" << market_by_price;
+  enqueue(market_by_price, true);
 }
 
 void Gateway::operator()(
@@ -427,23 +456,21 @@ void Gateway::operator()(
       "header={}, market_data_snapshot_full_refresh={}",
       header,
       market_data_snapshot_full_refresh);
+  /*
   MBPUpdate bid[MAX_DEPTH];
   MBPUpdate ask[MAX_DEPTH];
-  MarketByPrice market_by_price = {
-    .exchange = FLAGS_exchange,
-    .symbol = market_data_snapshot_full_refresh.symbol,
-    .bid_length = 0,
-    .bid = bid,
-    .ask_length = 0,
-    .ask = ask,
-    .snapshot = true,
-    .exchange_time_utc = {},
-  };
+  */
+  std::vector<MBPUpdate> bid, ask;
+  bid.reserve(MAX_DEPTH);
+  ask.reserve(MAX_DEPTH);
+
   auto& md_full_grp = market_data_snapshot_full_refresh.md_full_grp;
   for (size_t i = 0; i < md_full_grp.length; ++i) {
     auto& item = md_full_grp.items[i];
     switch (item.md_entry_type) {
       case core::fix::MDEntryType::BID: {
+        /*
+        fprintf(stderr, "%d [%zu/%zu] BID: %zu/%zu\n", __LINE__, i, md_full_grp.length, market_by_price.bid_length, std::size(bid));
         new (&bid[market_by_price.bid_length]) MBPUpdate {
           .price = item.md_entry_px,
           .quantity = item.md_entry_size,
@@ -451,9 +478,18 @@ void Gateway::operator()(
         };
         LOG_IF(FATAL, ++market_by_price.bid_length >= std::size(bid)) <<
           "Exceeding allocated space for bids";
+          */
+        bid.emplace_back(
+            MBPUpdate {
+              .price = item.md_entry_px,
+              .quantity = item.md_entry_size,
+              .action = UpdateAction::NEW,
+            });
         break;
       }
       case core::fix::MDEntryType::OFFER: {
+        /*
+        fprintf(stderr, "%d [%zu/%zu] ASK: %zu/%zu\n", __LINE__, i, md_full_grp.length, market_by_price.ask_length, std::size(ask));
         new (&ask[market_by_price.ask_length]) MBPUpdate {
           .price = item.md_entry_px,
           .quantity = item.md_entry_size,
@@ -461,12 +497,29 @@ void Gateway::operator()(
         };
         LOG_IF(FATAL, ++market_by_price.ask_length >= std::size(ask)) <<
           "Exceeding allocated space for asks";
+          */
+        ask.emplace_back(
+            MBPUpdate {
+              .price = item.md_entry_px,
+              .quantity = item.md_entry_size,
+              .action = UpdateAction::NEW,
+            });
         break;
       }
       default:
         break;
     }
   }
+  MarketByPrice market_by_price = {
+    .exchange = FLAGS_exchange,
+    .symbol = market_data_snapshot_full_refresh.symbol,
+    .bid_length = bid.size(),
+    .bid = bid.data(),
+    .ask_length = ask.size(),
+    .ask = ask.data(),
+    .snapshot = true,
+    .exchange_time_utc = {},
+  };
   enqueue(market_by_price, true);
 }
 
@@ -614,7 +667,7 @@ void Gateway::process(bool initialize) {
   if (initialize) {
     assert(_download == Download::NONE);
     LOG(INFO) << "[FIX] download:";
-    assert(_gateway_status == GatewayStatus::CONNECTED);
+    assert(_gateway_status == GatewayStatus::LOGIN_SENT);
     _gateway_status = GatewayStatus::DOWNLOADING;
     MarketDataStatus market_data_status = {
       .status = _gateway_status,

@@ -39,6 +39,8 @@ class Buffer final : NonCopyable {
   void finalize(T& array) {
     assert(array.items != nullptr);
     commit(array.items + array.length);
+    if (array.length == 0)
+      array.items = nullptr;
   }
 
  protected:
@@ -56,9 +58,11 @@ class Buffer final : NonCopyable {
   auto commit(void *ptr) {
     auto offset = reinterpret_cast<std::byte *>(ptr) -
       _buffer.data();
+    /*
     assert(offset > 0);
     if (_buffer.size() < static_cast<size_t>(offset))
       throw std::range_error("not enough space");
+    */
     _next = static_cast<size_t>(offset);
   }
 

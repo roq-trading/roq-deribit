@@ -46,10 +46,18 @@ void PositionReport::parse(
           ++iter;
           Array array(buffer_, positions);
           for (uint32_t i = 0; i < length; ++i) {
+            if (iter == end)
+              throw core::fix::UnexpectedEndOfMessage(
+                  "PositionReport|PositionQty");
             auto& item = array.next();
             item.parse(iter, end);
             ++array;
           }
+          if (positions.length != length)
+            throw core::fix::InvalidGroupLength(
+                "PositionReport|PositionQty: "
+                "Invalid group length: parsed={}, expected={}",
+                positions.length, length);
           continue;
         }
         case core::fix::Field::POS_MAINT_RPT_ID:
