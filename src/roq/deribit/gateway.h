@@ -149,6 +149,7 @@ class Gateway final : public server::Handler {
         _encode_buffer,
         _msg_seq_num,
         sending_time);
+    // message.print();  // DEBUG
     _fix.send(message);
   }
 
@@ -181,6 +182,7 @@ class Gateway final : public server::Handler {
   uint32_t _download_execution_reports = 0;
   // ...
   std::vector<std::regex> _symbols;
+  std::vector<MBPUpdate> _bid, _ask;
 };
 
 }  // namespace deribit

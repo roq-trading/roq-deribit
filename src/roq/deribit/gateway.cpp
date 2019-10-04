@@ -62,7 +62,9 @@ Gateway::Gateway(
           core::URI(FLAGS_fix_uri)),
       _access_key(config.get_access_key()),
       _access_secret(config.get_access_secret()),
-      _symbols(config.symbols) {
+      _symbols(config.symbols),
+      _bid(MAX_DEPTH),
+      _ask(MAX_DEPTH) {
 }
 
 void Gateway::on(const StartEvent& event) {
@@ -335,22 +337,11 @@ void Gateway::operator()(
     const fix::MarketDataIncrementalRefresh& market_data_incremental_refresh) {
   assert(market_data_incremental_refresh.symbol.empty() == false);
   assert(market_data_incremental_refresh.symbol.length() < 32);
-  // TODO(thraneh): speak to Deribit ...
-  if (market_data_incremental_refresh.md_inc_grp.length == 0)
-    return;
   VLOG(3) << fmt::format(
       "header={}, market_data_incremental_refresh={}",
       header,
       market_data_incremental_refresh);
-  /*
-  MBPUpdate bid[MAX_DEPTH];
-  MBPUpdate ask[MAX_DEPTH];
   size_t bid_length = 0, ask_length = 0;
-  */
-  std::vector<MBPUpdate> bid, ask;
-  bid.reserve(MAX_DEPTH);
-  ask.reserve(MAX_DEPTH);
-
   std::chrono::nanoseconds exchange_time_utc = {};
   auto& md_inc_grp = market_data_incremental_refresh.md_inc_grp;
   for (size_t i = 0; i < md_inc_grp.length; ++i) {
@@ -359,41 +350,23 @@ void Gateway::operator()(
       exchange_time_utc = item.md_entry_date;
     switch (item.md_entry_type) {
       case core::fix::MDEntryType::BID: {
-        /*
-        fprintf(stderr, "%d [%zu/%zu] BID: %zu/%zu\n", __LINE__, i, md_inc_grp.length, ask_length, std::size(ask));
-        new (&bid[bid_length]) MBPUpdate {
+        new (&_bid[bid_length++]) MBPUpdate {
           .price = item.md_entry_px,
           .quantity = item.md_entry_size,
           .action = core::fix::map(item.md_update_action),
         };
-        LOG_IF(FATAL, ++bid_length >= std::size(bid)) <<
-          "Exceeding allocated space for bids";
-          */
-        bid.emplace_back(
-            MBPUpdate {
-              .price = item.md_entry_px,
-              .quantity = item.md_entry_size,
-              .action = core::fix::map(item.md_update_action),
-            });
+        if (bid_length >= MAX_DEPTH)
+          throw std::runtime_error("Not enough space for bids");
         break;
       }
       case core::fix::MDEntryType::OFFER: {
-        /*
-        fprintf(stderr, "%d [%zu/%zu] ASK: %zu/%zu\n", __LINE__, i, md_inc_grp.length, ask_length, std::size(ask));
-        new (&ask[ask_length]) MBPUpdate {
+        new (&_ask[ask_length++]) MBPUpdate {
           .price = item.md_entry_px,
           .quantity = item.md_entry_size,
           .action = core::fix::map(item.md_update_action),
         };
-        LOG_IF(FATAL, ++ask_length >= std::size(ask)) <<
-          "Exceeding allocated space for asks";
-        */
-        ask.emplace_back(
-            MBPUpdate {
-              .price = item.md_entry_px,
-              .quantity = item.md_entry_size,
-              .action = core::fix::map(item.md_update_action),
-            });
+        if (ask_length >= MAX_DEPTH)
+          throw std::runtime_error("Not enough space for asks");
         break;
       }
       case core::fix::MDEntryType::TRADE: {
@@ -419,15 +392,15 @@ void Gateway::operator()(
         break;
     }
   }
-  if (bid.empty() && ask.empty())
+  if (bid_length == 0 && ask_length == 0)
     return;
   MarketByPrice market_by_price = {
     .exchange = FLAGS_exchange,
     .symbol = market_data_incremental_refresh.symbol,
-    .bid_length = bid.size(),
-    .bid = bid.data(),
-    .ask_length = ask.size(),
-    .ask = ask.data(),
+    .bid_length = bid_length,
+    .bid = _bid.data(),
+    .ask_length = ask_length,
+    .ask = _ask.data(),
     .snapshot = false,
     .exchange_time_utc = exchange_time_utc,
   };
@@ -617,11 +590,22 @@ void Gateway::operator()(
     symbols.emplace_back(instrument.symbol);
   }
   if (symbols.empty() == false) {
+    // doesn't seem like they support multiple symbols...
+    /*
     fix::MarketDataRequest market_data_request = {
       .md_req_id = "roq-mkt-002",
       .symbols = symbols,
     };
     send(market_data_request);
+    */
+    for (auto& symbol : symbols) {
+      LOG(INFO) << "SUBSCRIBE " << symbol;
+      fix::MarketDataRequest market_data_request = {
+        .md_req_id = "roq-mkt-002",
+        .symbols = { symbol },
+      };
+      send(market_data_request);
+    }
   }
   process();
 }

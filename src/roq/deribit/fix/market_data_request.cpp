@@ -39,8 +39,8 @@ core::utils::Message MarketDataRequest::encode(
     .write(core::fix::Field::MD_ENTRY_TYPE, core::fix::MDEntryType::OFFER)
     .write(core::fix::Field::MD_ENTRY_TYPE, core::fix::MDEntryType::TRADE)
     .write(core::fix::Field::NO_RELATED_SYM, symbols.size());
-    for (auto& iter : symbols)
-      writer.write(core::fix::Field::SYMBOL, iter);
+  for (auto& iter : symbols)
+    writer.write(core::fix::Field::SYMBOL, iter);
   return writer.finish();
 }
 
