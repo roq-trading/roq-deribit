@@ -41,13 +41,13 @@ class Gateway final : public server::Handler {
       server::Dispatcher& dispatcher,
       const Config& config);
 
-  void on(const StartEvent& event) override;
-  void on(const StopEvent& event) override;
-  void on(const TimerEvent& event) override;
-  void on(const ConnectionStatusEvent& event) override;
-  void on(const CreateOrderEvent& event) override;
-  void on(const ModifyOrderEvent& event) override;
-  void on(const CancelOrderEvent& event) override;
+  void operator()(const StartEvent&) override;
+  void operator()(const StopEvent&) override;
+  void operator()(const TimerEvent&) override;
+  void operator()(const ConnectionStatusEvent&) override;
+  void operator()(const CreateOrderEvent&) override;
+  void operator()(const ModifyOrderEvent&) override;
+  void operator()(const CancelOrderEvent&) override;
 
   void write(Metrics& metrics) const override;
 

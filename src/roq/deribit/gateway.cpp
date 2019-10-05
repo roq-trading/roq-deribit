@@ -67,12 +67,12 @@ Gateway::Gateway(
       _ask(MAX_DEPTH) {
 }
 
-void Gateway::on(const StartEvent& event) {
+void Gateway::operator()(const StartEvent& event) {
   LOG(INFO) << "Starting the gateway event loop...";
   _thread = std::thread([this]() { run(); });
 }
 
-void Gateway::on(const StopEvent& event) {
+void Gateway::operator()(const StopEvent& event) {
   LOG(INFO) << "Stopping the gateway event loop...";
   _stop.store(true, std::memory_order_release);
   if (_thread.joinable())
@@ -80,21 +80,21 @@ void Gateway::on(const StopEvent& event) {
   LOG(INFO) << "The gateway event loop has stopped";
 }
 
-void Gateway::on(const TimerEvent& event) {
+void Gateway::operator()(const TimerEvent& event) {
 }
 
-void Gateway::on(const ConnectionStatusEvent& event) {
+void Gateway::operator()(const ConnectionStatusEvent& event) {
 }
 
-void Gateway::on(const CreateOrderEvent& event) {
+void Gateway::operator()(const CreateOrderEvent& event) {
   // TODO(thraneh): send ack saying we can't do this yet
 }
 
-void Gateway::on(const ModifyOrderEvent& event) {
+void Gateway::operator()(const ModifyOrderEvent& event) {
   // TODO(thraneh): send ack saying we can't do this yet
 }
 
-void Gateway::on(const CancelOrderEvent& event) {
+void Gateway::operator()(const CancelOrderEvent& event) {
   // TODO(thraneh): send ack saying we can't do this yet
 }
 
