@@ -3,6 +3,7 @@
 #include "roq/deribit/api/enums.h"
 
 #include "roq/api.h"
+#include "roq/builtins.h"
 
 namespace roq {
 namespace deribit {
@@ -10,7 +11,7 @@ namespace api {
 
 template <>
 api::Kind to_enum(const std::string_view& value) {
-  if (ROQ_UNLIKELY(value.empty()))
+  if (unlikely(value.empty()))
     return api::Kind::UNKNOWN;
   switch (value.data()[0]) {
     case 'f':
@@ -27,7 +28,7 @@ api::Kind to_enum(const std::string_view& value) {
 
 template <>
 api::OptionType to_enum(const std::string_view& value) {
-  if (ROQ_UNLIKELY(value.empty()))
+  if (unlikely(value.empty()))
     return api::OptionType::UNKNOWN;
   switch (value.data()[0]) {
     case 'c':
@@ -44,7 +45,7 @@ api::OptionType to_enum(const std::string_view& value) {
 
 template <>
 api::State to_enum(const std::string_view& value) {
-  if (ROQ_UNLIKELY(value.empty()))
+  if (unlikely(value.empty()))
     return api::State::UNKNOWN;
   switch (value.data()[0]) {
     case 'c':
