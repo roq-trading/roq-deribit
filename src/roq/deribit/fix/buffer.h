@@ -14,7 +14,7 @@ namespace roq {
 namespace deribit {
 namespace fix {
 
-class Buffer final : NonCopyable {
+class Buffer final {
  public:
   explicit Buffer(std::vector<std::byte>& buffer)
       : _buffer(buffer) {
@@ -69,6 +69,11 @@ class Buffer final : NonCopyable {
  private:
   std::vector<std::byte>& _buffer;
   size_t _next = 0;
+
+ private:
+  Buffer(Buffer&&) = delete;
+  Buffer(const Buffer&) = delete;
+  void operator=(const Buffer&) = delete;
 };
 
 }  // namespace fix
