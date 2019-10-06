@@ -2,6 +2,7 @@
 
 #pragma once
 
+#include <memory>
 #include <string>
 #include <thread>
 #include <vector>
@@ -176,7 +177,7 @@ class Gateway final : public server::Handler {
   uint64_t _msg_seq_num = 0;
   std::chrono::nanoseconds _latency = {};
   // gateway:
-  int _reconnect_countdown = 0;
+  int _fix_reconnect_countdown = 0;
   GatewayStatus _gateway_status = GatewayStatus::DISCONNECTED;
   enum class Download {
     NONE,

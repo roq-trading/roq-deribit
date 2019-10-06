@@ -27,8 +27,8 @@
 #include "roq/deribit/fix/user_request.h"
 
 DEFINE_string(fix_uri, "tcp://test.deribit.com:9881", "FIX end-point (URI)");
-DEFINE_uint64(ping_freq_secs, 10, "ping frequency (seconds)");
-DEFINE_string(exchange, "DERIBIT", "exchange identifier (string)");
+DEFINE_uint64(ping_freq_secs, 5, "ping frequency (seconds)");
+DEFINE_string(exchange, "deribit", "exchange identifier (string)");
 DEFINE_bool(cancel_on_disconnect, true, "cancel orders on disconnect? (bool)");
 
 DEFINE_int32(network_affinity, -1, "network (epoll) affinity");
@@ -38,7 +38,7 @@ DEFINE_uint32(max_depth, 65536, "maximum depth");
 DEFINE_uint32(encode_buffer_size, 1048576, "encode buffer size");
 DEFINE_uint32(decode_buffer_size, 1048576, "decode buffer size");
 
-DEFINE_uint64(reconnect_secs, 1, "time before reconnect (seconds)");
+DEFINE_uint64(reconnect_secs, 3, "time before reconnect (seconds)");
 
 // following options are work-arounds for weird behavior:
 
@@ -156,11 +156,25 @@ void Gateway::on_timer() {
     return;
   }
   auto now = core::get_time();
-  if (_next_update <= now) {
+  auto ping = _next_update <= now;
+  if (ping)
     _next_update = now + std::chrono::seconds{FLAGS_ping_freq_secs};
-    switch (_gateway_status) {
-      case GatewayStatus::DOWNLOADING:
-      case GatewayStatus::READY: {
+  switch (_gateway_status) {
+    case GatewayStatus::DISCONNECTED:
+      if (static_cast<bool>(_fix)) {
+        _fix.reset();
+        _fix_reconnect_countdown = get_reconnect_countdown();
+      } else {
+        if (_fix_reconnect_countdown > 0) {
+          --_fix_reconnect_countdown;
+        } else {
+          create_fix();
+        }
+      }
+      break;
+    case GatewayStatus::DOWNLOADING:
+    case GatewayStatus::READY: {
+      if (ping) {
         VLOG(4) << "Sending FIX TestRequest";
         auto test_req_id = fmt::format(  // FIXME(thraneh): use charconv
             "{}",
@@ -169,20 +183,18 @@ void Gateway::on_timer() {
           .test_req_id = test_req_id,
         };
         send(test_request);
-        break;
       }
-      default:
-        break;
+      break;
     }
-  }
-  if (static_cast<bool>(_fix) == false && _reconnect_countdown > 0) {
-    if (0 == --_reconnect_countdown)
-      create_fix();
+    default:
+      break;
   }
 }
 
+// FIX:
+
 void Gateway::create_fix() {
-  LOG(INFO) << "CONNECTING";
+  assert(_gateway_status == GatewayStatus::DISCONNECTED);
   assert(static_cast<bool>(_fix) == false);
   _fix = std::make_unique<FIX>(
       *this,
@@ -192,12 +204,20 @@ void Gateway::create_fix() {
       core::URI(FLAGS_fix_uri),
       FLAGS_decode_buffer_size);
   _fix->start();
+  _gateway_status = GatewayStatus::CONNECTING;
+  MarketDataStatus market_data_status = {
+    .status = _gateway_status,
+  };
+  enqueue(market_data_status, true);
+  OrderManagerStatus order_manager_status = {
+    .account = _account.c_str(),
+    .status = _gateway_status,
+  };
+  enqueue(order_manager_status, true);
 }
 
-// FIX:
-
 void Gateway::on_fix_connected() {
-  assert(_gateway_status == GatewayStatus::DISCONNECTED);
+  assert(_gateway_status == GatewayStatus::CONNECTING);
   LOG(INFO) << fmt::format(
       "[FIX] request logon (username=\"{}\")...", _access_key);
   auto sending_time = core::get_realtime_clock();
@@ -224,8 +244,6 @@ void Gateway::on_fix_connected() {
 }
 
 void Gateway::on_fix_disconnected() {
-  _fix.reset();
-  _reconnect_countdown = get_reconnect_countdown();
   reset();
   assert(_gateway_status != GatewayStatus::DISCONNECTED);
   _gateway_status = GatewayStatus::DISCONNECTED;
