@@ -148,6 +148,7 @@ class Gateway final : public server::Handler {
       const T& event,
       const std::chrono::nanoseconds sending_time) {
     assert(static_cast<bool>(_fix));  // a check missing somehwere else
+    if (static_cast<bool>(_fix) == false) return;  // FIXME(thraneh): DEBUG
     auto message = event.encode(
         _encode_buffer,
         _msg_seq_num,

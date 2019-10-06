@@ -51,6 +51,7 @@ namespace deribit {
 namespace {
 constexpr auto TIMER_FREQUENCY = std::chrono::milliseconds{100};
 constexpr auto LOGOUT_MESSAGE = "i'm done";
+constexpr auto RESEND_MESSAGE = "resend_not_supported";
 }  // namespace
 
 // utilities
@@ -417,7 +418,7 @@ void Gateway::operator()(
       case core::fix::MDEntryType::INDEX_VALUE:
       case core::fix::MDEntryType::SETTLEMENT_PRICE:
         // FIXME(thraneh): how to propagate these???
-        VLOG(1) << fmt::format("DROP: item={}", item);
+        VLOG(1) << fmt::format("[FIX] unsupported: {}", item);
         break;
       default:
         LOG(WARNING) << fmt::format("[FIX] unsupported: {}", item);
@@ -540,7 +541,7 @@ void Gateway::operator()(
     .ref_seq_num = header.msg_seq_num,
     .ref_tag_id = 0,
     .ref_msg_type = header.msg_type_raw,
-    .text = "resend_not_supported",
+    .text = RESEND_MESSAGE,
   };
   send(reject);
 }
