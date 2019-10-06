@@ -14,6 +14,12 @@ Config::Config(const std::string_view& path) {
   server::ConfigReader::parse(*this, path);
 }
 
+std::string Config::get_account() const {
+  if (accounts.size() != 1)
+    throw std::runtime_error("Only supporting 1 account");
+  return (*accounts.begin()).first;
+}
+
 void Config::dispatch(server::Config::Handler& handler) const {
   for (auto iter : accounts)
     handler.on(iter.second);

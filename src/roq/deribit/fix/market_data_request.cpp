@@ -17,6 +17,7 @@ core::utils::Message MarketDataRequest::encode(
     core::utils::Buffer& buffer,
     uint64_t& msg_seq_num,
     std::chrono::nanoseconds sending_time) const {
+  assert(symbols.empty() != symbol.empty());  // one or the other
   core::fix::Writer writer(
       buffer,
       FIX_VERSION,
@@ -37,10 +38,16 @@ core::utils::Message MarketDataRequest::encode(
     .write(core::fix::Field::NO_MD_ENTRY_TYPES, 3)
     .write(core::fix::Field::MD_ENTRY_TYPE, core::fix::MDEntryType::BID)
     .write(core::fix::Field::MD_ENTRY_TYPE, core::fix::MDEntryType::OFFER)
-    .write(core::fix::Field::MD_ENTRY_TYPE, core::fix::MDEntryType::TRADE)
-    .write(core::fix::Field::NO_RELATED_SYM, symbols.size());
-  for (auto& iter : symbols)
-    writer.write(core::fix::Field::SYMBOL, iter);
+    .write(core::fix::Field::MD_ENTRY_TYPE, core::fix::MDEntryType::TRADE);
+  if (symbols.empty()) {
+    writer
+      .write(core::fix::Field::NO_RELATED_SYM, size_t{1})
+      .write(core::fix::Field::SYMBOL, symbol);
+  } else {
+    writer.write(core::fix::Field::NO_RELATED_SYM, symbols.size());
+    for (auto& iter : symbols)
+      writer.write(core::fix::Field::SYMBOL, iter);
+  }
   return writer.finish();
 }
 

@@ -183,6 +183,7 @@ class Gateway final : public server::Handler {
   // ...
   std::vector<std::regex> _symbols;
   std::vector<MBPUpdate> _bid, _ask;
+  std::string _account;
 };
 
 }  // namespace deribit

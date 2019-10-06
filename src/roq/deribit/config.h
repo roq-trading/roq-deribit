@@ -23,6 +23,8 @@ class Config final
  public:
   explicit Config(const std::string_view& path);
 
+  std::string get_account() const;
+
   auto get_access_key() const {
     if (accounts.size() != 1)
       throw std::runtime_error("More accounts not yet supported");

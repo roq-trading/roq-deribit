@@ -21,7 +21,8 @@ class FIX final {
       core::ssl::Context& ssl_context,
       core::event::Base& base,
       core::event::DNSBase& dns_base,
-      const core::URI& uri);
+      const core::URI& uri,
+      size_t decode_buffer_size);
 
   void start();
 

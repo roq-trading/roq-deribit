@@ -17,7 +17,7 @@ namespace deribit {
 namespace {
 static std::random_device RANDOM_DEVICE;
 static std::uniform_int_distribution<uint32_t> DISTRIBUTION;
-constexpr size_t RANDOM_BYTES = 32;
+constexpr auto RANDOM_BYTES = size_t{32};
 }  // namespace
 
 std::string Random::create_raw_data(

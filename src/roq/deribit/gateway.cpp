@@ -33,16 +33,39 @@ DEFINE_bool(cancel_on_disconnect, true, "cancel orders on disconnect? (bool)");
 
 DEFINE_int32(network_affinity, -1, "network (epoll) affinity");
 
+DEFINE_uint32(max_depth, 65536, "maximum depth");
+
+DEFINE_uint32(encode_buffer_size, 1048576, "encode buffer size");
+DEFINE_uint32(decode_buffer_size, 1048576, "decode buffer size");
+
+// it seems as if they don't support batch...
+DEFINE_bool(batch_subscribe, false, "batch subscribe symbols? (bool)");
+
 namespace roq {
 namespace deribit {
 
 namespace {
-constexpr auto DECODE_BUFFER_SIZE = size_t{1024 * 4096};  // FIXME(thraneh): flag
-constexpr auto ENCODE_BUFFER_SIZE = size_t{256 * 4096};  // FIXME(thraneh): flag
 constexpr auto TIMER_FREQUENCY = std::chrono::milliseconds{100};
-constexpr auto ACCOUNT = "A1";  // FIXME(thraneh): flag
-// constexpr auto SYMBOL = "BTC-27DEC19";  // DEBUG
-constexpr auto MAX_DEPTH = size_t{65536};  // FIXME(thraneh): HACK !!!
+constexpr auto LOGOUT_MESSAGE = "i'm done";
+}  // namespace
+
+// utilities
+
+namespace {
+template <typename T, typename U>
+void mbp_update(
+    auto& data,
+    size_t& offset,
+    const T& item,
+    const U& action) {
+  new (&data[offset++]) MBPUpdate {
+    .price = item.md_entry_px,
+    .quantity = item.md_entry_size,
+    .action = action,
+  };
+  if (offset >= data.size())
+    throw std::runtime_error("Not enough space");
+}
 }  // namespace
 
 Gateway::Gateway(
@@ -51,20 +74,21 @@ Gateway::Gateway(
     : _dispatcher(dispatcher),
       _dns_base(_base, true),
       _timer(_base, EV_PERSIST, [this]() { on_timer(); }),
-      _decode_buffer(DECODE_BUFFER_SIZE),
-      _encode_buffer(ENCODE_BUFFER_SIZE),
-      // fix:
+      _decode_buffer(FLAGS_decode_buffer_size),
+      _encode_buffer(FLAGS_encode_buffer_size),
       _fix(
           *this,
           _ssl_context,
           _base,
           _dns_base,
-          core::URI(FLAGS_fix_uri)),
+          core::URI(FLAGS_fix_uri),
+          FLAGS_decode_buffer_size),
       _access_key(config.get_access_key()),
       _access_secret(config.get_access_secret()),
       _symbols(config.symbols),
-      _bid(MAX_DEPTH),
-      _ask(MAX_DEPTH) {
+      _bid(FLAGS_max_depth),
+      _ask(FLAGS_max_depth),
+      _account(config.get_account()) {
 }
 
 void Gateway::operator()(const StartEvent& event) {
@@ -174,7 +198,7 @@ void Gateway::on_fix_connected() {
   };
   enqueue(market_data_status, true);
   OrderManagerStatus order_manager_status = {
-    .account = ACCOUNT,
+    .account = _account.c_str(),
     .status = _gateway_status,
   };
   enqueue(order_manager_status, true);
@@ -189,7 +213,7 @@ void Gateway::on_fix_disconnected() {
   };
   enqueue(market_data_status, true);
   OrderManagerStatus order_manager_status = {
-    .account = ACCOUNT,
+    .account = _account.c_str(),
     .status = _gateway_status,
   };
   enqueue(order_manager_status, true);
@@ -320,13 +344,13 @@ void Gateway::operator()(
   };
   enqueue(market_data_status, true);
   OrderManagerStatus order_manager_status = {
-    .account = ACCOUNT,
+    .account = _account.c_str(),
     .status = GatewayStatus::LOGGED_OUT,
   };
   enqueue(order_manager_status, true);
   // note! mandated, must send a logout response
   fix::Logout response = {
-    .text = "i'm done",
+    .text = LOGOUT_MESSAGE,
   };
   send(response);
   LOG(FATAL) << "Unexpected -- now what?";  // FIXME(thraneh): ...
@@ -350,23 +374,11 @@ void Gateway::operator()(
       exchange_time_utc = item.md_entry_date;
     switch (item.md_entry_type) {
       case core::fix::MDEntryType::BID: {
-        new (&_bid[bid_length++]) MBPUpdate {
-          .price = item.md_entry_px,
-          .quantity = item.md_entry_size,
-          .action = core::fix::map(item.md_update_action),
-        };
-        if (bid_length >= MAX_DEPTH)
-          throw std::runtime_error("Not enough space for bids");
+        mbp_update(_bid, bid_length, item, core::fix::map(item.md_update_action));
         break;
       }
       case core::fix::MDEntryType::OFFER: {
-        new (&_ask[ask_length++]) MBPUpdate {
-          .price = item.md_entry_px,
-          .quantity = item.md_entry_size,
-          .action = core::fix::map(item.md_update_action),
-        };
-        if (ask_length >= MAX_DEPTH)
-          throw std::runtime_error("Not enough space for asks");
+        mbp_update(_ask, ask_length, item, core::fix::map(item.md_update_action));
         break;
       }
       case core::fix::MDEntryType::TRADE: {
@@ -379,33 +391,33 @@ void Gateway::operator()(
           .side = core::fix::map(item.side),
           .exchange_time_utc = exchange_time_utc,
         };
-        // LOG(INFO) << "XXX=" << trade_summary;
         enqueue(trade_summary, true);  // FIXME(thraneh): *not* always last
         break;
       }
       case core::fix::MDEntryType::INDEX_VALUE:
       case core::fix::MDEntryType::SETTLEMENT_PRICE:
         // FIXME(thraneh): how to propagate these???
+        VLOG(1) << fmt::format("DROP: item={}", item);
         break;
       default:
         LOG(WARNING) << fmt::format("[FIX] unsupported: {}", item);
         break;
     }
   }
-  if (bid_length == 0 && ask_length == 0)
-    return;
-  MarketByPrice market_by_price = {
-    .exchange = FLAGS_exchange,
-    .symbol = market_data_incremental_refresh.symbol,
-    .bid_length = bid_length,
-    .bid = _bid.data(),
-    .ask_length = ask_length,
-    .ask = _ask.data(),
-    .snapshot = false,
-    .exchange_time_utc = exchange_time_utc,
-  };
-  // LOG(INFO) << "XXX=" << market_by_price;
-  enqueue(market_by_price, true);
+  if (bid_length > 0 || ask_length > 0) {
+    MarketByPrice market_by_price = {
+      .exchange = FLAGS_exchange,
+      .symbol = market_data_incremental_refresh.symbol,
+      .bid_length = bid_length,
+      .bid = _bid.data(),
+      .ask_length = ask_length,
+      .ask = _ask.data(),
+      .snapshot = false,
+      .exchange_time_utc = exchange_time_utc,
+    };
+    // LOG(INFO) << "XXX=" << market_by_price;
+    enqueue(market_by_price, true);
+  }
 }
 
 void Gateway::operator()(
@@ -429,67 +441,31 @@ void Gateway::operator()(
       "header={}, market_data_snapshot_full_refresh={}",
       header,
       market_data_snapshot_full_refresh);
-  /*
-  MBPUpdate bid[MAX_DEPTH];
-  MBPUpdate ask[MAX_DEPTH];
-  */
-  std::vector<MBPUpdate> bid, ask;
-  bid.reserve(MAX_DEPTH);
-  ask.reserve(MAX_DEPTH);
-
+  size_t bid_length = 0, ask_length = 0;
   auto& md_full_grp = market_data_snapshot_full_refresh.md_full_grp;
   for (size_t i = 0; i < md_full_grp.length; ++i) {
     auto& item = md_full_grp.items[i];
     switch (item.md_entry_type) {
       case core::fix::MDEntryType::BID: {
-        /*
-        fprintf(stderr, "%d [%zu/%zu] BID: %zu/%zu\n", __LINE__, i, md_full_grp.length, market_by_price.bid_length, std::size(bid));
-        new (&bid[market_by_price.bid_length]) MBPUpdate {
-          .price = item.md_entry_px,
-          .quantity = item.md_entry_size,
-          .action = UpdateAction::NEW,
-        };
-        LOG_IF(FATAL, ++market_by_price.bid_length >= std::size(bid)) <<
-          "Exceeding allocated space for bids";
-          */
-        bid.emplace_back(
-            MBPUpdate {
-              .price = item.md_entry_px,
-              .quantity = item.md_entry_size,
-              .action = UpdateAction::NEW,
-            });
+        mbp_update(_bid, bid_length, item, UpdateAction::NEW);
         break;
       }
       case core::fix::MDEntryType::OFFER: {
-        /*
-        fprintf(stderr, "%d [%zu/%zu] ASK: %zu/%zu\n", __LINE__, i, md_full_grp.length, market_by_price.ask_length, std::size(ask));
-        new (&ask[market_by_price.ask_length]) MBPUpdate {
-          .price = item.md_entry_px,
-          .quantity = item.md_entry_size,
-          .action = UpdateAction::NEW,
-        };
-        LOG_IF(FATAL, ++market_by_price.ask_length >= std::size(ask)) <<
-          "Exceeding allocated space for asks";
-          */
-        ask.emplace_back(
-            MBPUpdate {
-              .price = item.md_entry_px,
-              .quantity = item.md_entry_size,
-              .action = UpdateAction::NEW,
-            });
+        mbp_update(_ask, ask_length, item, UpdateAction::NEW);
         break;
       }
       default:
         break;
     }
   }
+  if (bid_length == 0 && ask_length == 0) return;  // TODO(thraneh): check support
   MarketByPrice market_by_price = {
     .exchange = FLAGS_exchange,
     .symbol = market_data_snapshot_full_refresh.symbol,
-    .bid_length = bid.size(),
-    .bid = bid.data(),
-    .ask_length = ask.size(),
-    .ask = ask.data(),
+    .bid_length = bid_length,
+    .bid = _bid.data(),
+    .ask_length = ask_length,
+    .ask = _ask.data(),
     .snapshot = true,
     .exchange_time_utc = {},
   };
@@ -563,7 +539,7 @@ void Gateway::operator()(
   if (security_list.instruments.length == 0)
     return;
   std::vector<std::string_view> symbols;
-  symbols.reserve(security_list.instruments.length);
+  symbols.reserve(security_list.instruments.length);  // note! alloc
   for (size_t i = 0; i < security_list.instruments.length; ++i) {
     auto& instrument = security_list.instruments.items[i];
     if (discard_symbol(instrument.symbol))
@@ -577,34 +553,32 @@ void Gateway::operator()(
       .multiplier = instrument.contract_multiplier,
     };
     enqueue(reference_data, true);
+    // note! there is no exchange information about the trading status!
     MarketStatus market_status = {
       .exchange = FLAGS_exchange,
       .symbol = instrument.symbol,
-      .trading_status = TradingStatus::OPEN,  // TODO(thraneh): no info from exch?
+      .trading_status = TradingStatus::OPEN,  // TODO(thraneh): missing
     };
     enqueue(market_status, true);
-    /*
-    if (symbols.size() > 9)  // 58
-      continue;
-    */
     symbols.emplace_back(instrument.symbol);
   }
   if (symbols.empty() == false) {
-    // doesn't seem like they support multiple symbols...
-    /*
-    fix::MarketDataRequest market_data_request = {
-      .md_req_id = "roq-mkt-002",
-      .symbols = symbols,
-    };
-    send(market_data_request);
-    */
-    for (auto& symbol : symbols) {
-      LOG(INFO) << "SUBSCRIBE " << symbol;
+    if (FLAGS_batch_subscribe) {
       fix::MarketDataRequest market_data_request = {
         .md_req_id = "roq-mkt-002",
-        .symbols = { symbol },
+        .symbol = {},
+        .symbols = symbols,
       };
       send(market_data_request);
+    } else {
+      for (auto& symbol : symbols) {
+        fix::MarketDataRequest market_data_request = {
+          .md_req_id = "roq-mkt-002",
+          .symbol = symbol,
+          .symbols = {},
+        };
+        send(market_data_request);
+      }
     }
   }
   process();
@@ -658,7 +632,7 @@ void Gateway::process(bool initialize) {
     };
     enqueue(market_data_status, true);
     OrderManagerStatus order_manager_status = {
-      .account = ACCOUNT,
+      .account = _account.c_str(),
       .status = _gateway_status,
     };
     enqueue(order_manager_status, true);
@@ -711,7 +685,7 @@ void Gateway::process(bool initialize) {
         };
         enqueue(market_data_status, true);
         OrderManagerStatus order_manager_status = {
-          .account = ACCOUNT,
+          .account = _account.c_str(),
           .status = _gateway_status,
         };
         enqueue(order_manager_status, true);

@@ -11,22 +11,19 @@
 namespace roq {
 namespace deribit {
 
-namespace {
-constexpr auto DECODE_BUFFER_SIZE = size_t{1048576};  // FIXME(thraneh): flag
-}  // namespace
-
 FIX::FIX(
     Gateway& gateway,
     core::ssl::Context& ssl_context,
     core::event::Base& base,
     core::event::DNSBase& dns_base,
-    const core::URI& uri)
+    const core::URI& uri,
+    size_t decode_buffer_size)
     : _gateway(gateway),
       _ssl_connection(ssl_context),
       _dns_base(dns_base),
       _uri(uri),
       _buffer_event(base),  //, _ssl_connection),
-      _decode_buffer(DECODE_BUFFER_SIZE) {
+      _decode_buffer(decode_buffer_size) {
   LOG_IF(FATAL, _uri.scheme.compare("tcp") != 0) <<
     "Expected URI scheme to be \"tcp\" (got \"" << _uri.scheme << "\")";
   int value = 1;

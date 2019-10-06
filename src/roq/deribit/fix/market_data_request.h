@@ -19,6 +19,8 @@ namespace fix {
 
 struct MarketDataRequest final {
   std::string_view md_req_id;
+  // optional -- single or list
+  std::string_view symbol;
   std::vector<std::string_view> symbols;
 
   core::utils::Message encode(
