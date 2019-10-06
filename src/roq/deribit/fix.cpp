@@ -65,7 +65,7 @@ void FIX::on_error(int events) {
     LOG(INFO) << "Connected";
     _gateway.on_fix_connected();
   } else {
-    LOG(INFO) << "Disconnected";
+    LOG(WARNING) << "Disconnected";
     _gateway.on_fix_disconnected();
   }
 }

@@ -56,6 +56,8 @@ class Gateway final : public server::Handler {
   void initialize_thread();
   void on_timer();
 
+  void create_fix();
+
  public:
   void on_fix_connected();
   void on_fix_disconnected();
@@ -145,12 +147,13 @@ class Gateway final : public server::Handler {
   void send(
       const T& event,
       const std::chrono::nanoseconds sending_time) {
+    assert(static_cast<bool>(_fix));  // a check missing somehwere else
     auto message = event.encode(
         _encode_buffer,
         _msg_seq_num,
         sending_time);
     // message.print();  // DEBUG
-    _fix.send(message);
+    _fix->send(message);
   }
 
  private:
@@ -161,16 +164,16 @@ class Gateway final : public server::Handler {
   core::event::Timer _timer;
   std::atomic<bool> _stop = {false};
   std::thread _thread;
-  std::vector<std::byte> _decode_buffer;
   core::utils::Buffer _encode_buffer;
   std::chrono::nanoseconds _next_update = {};
   // fix:
-  FIX _fix;
+  std::unique_ptr<FIX> _fix;
   const std::string _access_key;
   const std::string _access_secret;
   uint64_t _msg_seq_num = 0;
   std::chrono::nanoseconds _latency = {};
   // gateway:
+  int _reconnect_countdown = 0;
   GatewayStatus _gateway_status = GatewayStatus::DISCONNECTED;
   enum class Download {
     NONE,

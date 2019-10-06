@@ -27,7 +27,7 @@
 #include "roq/deribit/fix/user_request.h"
 
 DEFINE_string(fix_uri, "tcp://test.deribit.com:9881", "FIX end-point (URI)");
-DEFINE_uint64(ping_freq_secs, uint64_t{10}, "ping frequency (seconds)");
+DEFINE_uint64(ping_freq_secs, 10, "ping frequency (seconds)");
 DEFINE_string(exchange, "DERIBIT", "exchange identifier (string)");
 DEFINE_bool(cancel_on_disconnect, true, "cancel orders on disconnect? (bool)");
 
@@ -38,7 +38,11 @@ DEFINE_uint32(max_depth, 65536, "maximum depth");
 DEFINE_uint32(encode_buffer_size, 1048576, "encode buffer size");
 DEFINE_uint32(decode_buffer_size, 1048576, "decode buffer size");
 
-// it seems as if they don't support batch...
+DEFINE_uint64(reconnect_secs, 1, "time before reconnect (seconds)");
+
+// following options are work-arounds for weird behavior:
+
+// - batch subscription doesn't seem to work (as of 2019-10-06)
 DEFINE_bool(batch_subscribe, false, "batch subscribe symbols? (bool)");
 
 namespace roq {
@@ -52,8 +56,13 @@ constexpr auto LOGOUT_MESSAGE = "i'm done";
 // utilities
 
 namespace {
+static inline int get_reconnect_countdown() {
+  // TODO(thraneh): use decltype(TIMER_FREQUENCY)
+  return std::chrono::duration_cast<std::chrono::milliseconds>(
+      std::chrono::seconds{FLAGS_reconnect_secs}) / TIMER_FREQUENCY;
+}
 template <typename T, typename U>
-void mbp_update(
+static inline void mbp_update(
     auto& data,
     size_t& offset,
     const T& item,
@@ -74,15 +83,7 @@ Gateway::Gateway(
     : _dispatcher(dispatcher),
       _dns_base(_base, true),
       _timer(_base, EV_PERSIST, [this]() { on_timer(); }),
-      _decode_buffer(FLAGS_decode_buffer_size),
       _encode_buffer(FLAGS_encode_buffer_size),
-      _fix(
-          *this,
-          _ssl_context,
-          _base,
-          _dns_base,
-          core::URI(FLAGS_fix_uri),
-          FLAGS_decode_buffer_size),
       _access_key(config.get_access_key()),
       _access_secret(config.get_access_secret()),
       _symbols(config.symbols),
@@ -131,7 +132,7 @@ void Gateway::run() {
   try {
     initialize_thread();
     _timer.add(TIMER_FREQUENCY);
-    _fix.start();
+    create_fix();
     _base.loop(EVLOOP_NO_EXIT_ON_EMPTY);
   } catch (std::exception& e) {
     LOG(FATAL) << "Unhandled exception, what=\"" << e.what() << "\"";
@@ -154,25 +155,42 @@ void Gateway::on_timer() {
     return;
   }
   auto now = core::get_time();
-  if (now < _next_update)
-    return;
-  _next_update = now + std::chrono::seconds{FLAGS_ping_freq_secs};
-  switch (_gateway_status) {
-    case GatewayStatus::DOWNLOADING:
-    case GatewayStatus::READY: {
-      VLOG(4) << "Sending FIX TestRequest";
-      auto test_req_id = fmt::format(
-          "{}",
-          core::get_system_clock().count());
-      fix::TestRequest test_request {
-        .test_req_id = test_req_id,
-      };
-      send(test_request);
-      break;
+  if (_next_update <= now) {
+    _next_update = now + std::chrono::seconds{FLAGS_ping_freq_secs};
+    switch (_gateway_status) {
+      case GatewayStatus::DOWNLOADING:
+      case GatewayStatus::READY: {
+        VLOG(4) << "Sending FIX TestRequest";
+        auto test_req_id = fmt::format(
+            "{}",
+            core::get_system_clock().count());
+        fix::TestRequest test_request {
+          .test_req_id = test_req_id,
+        };
+        send(test_request);
+        break;
+      }
+      default:
+        break;
     }
-    default:
-      break;
   }
+  if (static_cast<bool>(_fix) == false && _reconnect_countdown > 0) {
+    if (0 == --_reconnect_countdown)
+      create_fix();
+  }
+}
+
+void Gateway::create_fix() {
+  LOG(INFO) << "CONNECTING";
+  assert(static_cast<bool>(_fix) == false);
+  _fix = std::make_unique<FIX>(
+      *this,
+      _ssl_context,
+      _base,
+      _dns_base,
+      core::URI(FLAGS_fix_uri),
+      FLAGS_decode_buffer_size);
+  _fix->start();
 }
 
 // FIX:
@@ -205,6 +223,8 @@ void Gateway::on_fix_connected() {
 }
 
 void Gateway::on_fix_disconnected() {
+  _fix.reset();
+  _reconnect_countdown = get_reconnect_countdown();
   reset();
   assert(_gateway_status != GatewayStatus::DISCONNECTED);
   _gateway_status = GatewayStatus::DISCONNECTED;
@@ -415,7 +435,6 @@ void Gateway::operator()(
       .snapshot = false,
       .exchange_time_utc = exchange_time_utc,
     };
-    // LOG(INFO) << "XXX=" << market_by_price;
     enqueue(market_by_price, true);
   }
 }
@@ -458,7 +477,7 @@ void Gateway::operator()(
         break;
     }
   }
-  if (bid_length == 0 && ask_length == 0) return;  // TODO(thraneh): check support
+  if (bid_length == 0 && ask_length == 0) return;  // TODO(thraneh): check roq-server support
   MarketByPrice market_by_price = {
     .exchange = FLAGS_exchange,
     .symbol = market_data_snapshot_full_refresh.symbol,
