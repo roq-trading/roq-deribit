@@ -156,6 +156,8 @@ class Gateway final : public server::Handler {
     _fix->send(message);
   }
 
+  std::string get_next_request_id();
+
  private:
   server::Dispatcher& _dispatcher;
   core::ssl::Context _ssl_context;
@@ -183,6 +185,7 @@ class Gateway final : public server::Handler {
     USER,
   } _download = Download::NONE;
   uint32_t _download_execution_reports = 0;
+  uint32_t _request_id = 0;
   // ...
   std::vector<std::regex> _symbols;
   std::vector<MBPUpdate> _bid, _ask;

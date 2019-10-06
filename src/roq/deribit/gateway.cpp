@@ -161,7 +161,7 @@ void Gateway::on_timer() {
       case GatewayStatus::DOWNLOADING:
       case GatewayStatus::READY: {
         VLOG(4) << "Sending FIX TestRequest";
-        auto test_req_id = fmt::format(
+        auto test_req_id = fmt::format(  // FIXME(thraneh): use charconv
             "{}",
             core::get_system_clock().count());
         fix::TestRequest test_request {
@@ -432,7 +432,7 @@ void Gateway::operator()(
       .bid = _bid.data(),
       .ask_length = ask_length,
       .ask = _ask.data(),
-      .snapshot = false,
+      .snapshot = false,  // incremental
       .exchange_time_utc = exchange_time_utc,
     };
     enqueue(market_by_price, true);
@@ -485,7 +485,7 @@ void Gateway::operator()(
     .bid = _bid.data(),
     .ask_length = ask_length,
     .ask = _ask.data(),
-    .snapshot = true,
+    .snapshot = true,  // reset
     .exchange_time_utc = {},
   };
   enqueue(market_by_price, true);
@@ -583,16 +583,18 @@ void Gateway::operator()(
   }
   if (symbols.empty() == false) {
     if (FLAGS_batch_subscribe) {
+      auto md_req_id = get_next_request_id();
       fix::MarketDataRequest market_data_request = {
-        .md_req_id = "roq-mkt-002",
+        .md_req_id = md_req_id,
         .symbol = {},
         .symbols = symbols,
       };
       send(market_data_request);
     } else {
       for (auto& symbol : symbols) {
+        auto md_req_id = get_next_request_id();
         fix::MarketDataRequest market_data_request = {
-          .md_req_id = "roq-mkt-002",
+          .md_req_id = md_req_id,
           .symbol = symbol,
           .symbols = {},
         };
@@ -656,8 +658,9 @@ void Gateway::process(bool initialize) {
     };
     enqueue(order_manager_status, true);
     LOG(INFO) << "[FIX] download instruments...";
+    auto security_req_id = get_next_request_id();
     fix::SecurityListRequest security_list_request = {
-      .security_req_id = "download_securities",
+      .security_req_id = security_req_id,
     };
     send(security_list_request);
     _download = Download::SECURITIES;
@@ -668,8 +671,9 @@ void Gateway::process(bool initialize) {
         break;
       case Download::SECURITIES: {
         LOG(INFO) << "[FIX] download positions...";
+        auto pos_req_id = get_next_request_id();
         fix::RequestForPositions request_for_positions = {
-          .pos_req_id = "download_positions",
+          .pos_req_id = pos_req_id,
           .pos_req_type = core::fix::PosReqType::POSITIONS,
         };
         send(request_for_positions);
@@ -678,8 +682,9 @@ void Gateway::process(bool initialize) {
       }
       case Download::POSITIONS: {
         LOG(INFO) << "[FIX] download orders...";
+        auto mass_status_req_id = get_next_request_id();
         fix::OrderMassStatusRequest order_mass_status_request = {
-          .mass_status_req_id = "download_orders",
+          .mass_status_req_id = mass_status_req_id,
           .mass_status_req_type = core::fix::MassStatusReqType::ORDERS,
         };
         send(order_mass_status_request);
@@ -688,8 +693,9 @@ void Gateway::process(bool initialize) {
       }
       case Download::ORDERS: {
         LOG(INFO) << "[FIX] download user...";
+        auto user_request_id = get_next_request_id();
         fix::UserRequest user_request = {
-          .user_request_id = "download_user",
+          .user_request_id = user_request_id,
           .username = _access_key,
         };
         send(user_request);
@@ -718,6 +724,11 @@ void Gateway::process(bool initialize) {
 
 void Gateway::reset() {
   _download = Download::NONE;
+}
+
+std::string Gateway::get_next_request_id() {
+  return fmt::format(  // FIXME(thraneh): use charconv
+      "roq:{:09}", ++_request_id);
 }
 
 }  // namespace deribit
