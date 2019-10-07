@@ -190,7 +190,7 @@ class Gateway final : public server::Handler {
   uint64_t _msg_seq_num = 0;
   std::chrono::nanoseconds _latency = {};
   // gateway:
-  int _fix_reconnect_countdown = 0;
+  std::chrono::nanoseconds _fix_reconnect_time = {};
   GatewayStatus _gateway_status = GatewayStatus::DISCONNECTED;
   enum class Download {
     NONE,

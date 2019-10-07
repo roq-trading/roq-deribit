@@ -62,11 +62,6 @@ constexpr auto RESEND_MESSAGE = "resend_not_supported";
 // utilities
 
 namespace {
-static inline int get_reconnect_countdown() {
-  // TODO(thraneh): use decltype(TIMER_FREQUENCY)
-  return std::chrono::duration_cast<std::chrono::milliseconds>(
-      std::chrono::seconds{FLAGS_reconnect_secs}) / TIMER_FREQUENCY;
-}
 template <typename T, typename U>
 static inline void mbp_update(
     auto& data,
@@ -168,11 +163,12 @@ void Gateway::on_timer() {
     case GatewayStatus::DISCONNECTED:
       if (static_cast<bool>(_fix)) {
         _fix.reset();
-        _fix_reconnect_countdown = get_reconnect_countdown();
+        _fix_reconnect_time = now +
+          std::chrono::seconds{ FLAGS_reconnect_secs };
       } else {
-        if (_fix_reconnect_countdown > 0) {
-          --_fix_reconnect_countdown;
-        } else {
+        if (_fix_reconnect_time < now) {
+          assert(_fix_reconnect_time.count() > 0);
+          _fix_reconnect_time = {};
           create_fix();
         }
       }
