@@ -7,6 +7,7 @@
 #include <limits>
 
 #include "roq/logging.h"
+#include "roq/format.h"
 #include "roq/stream.h"
 
 #include "roq/core/clock.h"
@@ -26,7 +27,11 @@
 #include "roq/deribit/fix/security_list_request.h"
 #include "roq/deribit/fix/user_request.h"
 
-DEFINE_string(fix_uri, "tcp://test.deribit.com:9881", "FIX end-point (URI)");
+DEFINE_string(
+    fix_uri,
+    "tcp://test.deribit.com:9881",
+    "FIX end-point (URI)");
+
 DEFINE_uint64(ping_freq_secs, 5, "ping frequency (seconds)");
 DEFINE_string(exchange, "deribit", "exchange identifier (string)");
 DEFINE_bool(cancel_on_disconnect, true, "cancel orders on disconnect? (bool)");
@@ -623,6 +628,7 @@ void Gateway::update(GatewayStatus gateway_status) {
     .status = _gateway_status,
   };
   enqueue(order_manager_status, true);
+  LOG(INFO) << fmt::format("gateway_status={}", _gateway_status);
 }
 
 void Gateway::begin_download() {
@@ -721,7 +727,7 @@ void Gateway::subscribe_market_data() {
     LOG(WARNING) << "Can't subscribe market data, reason: NO SYMBOLS";
     return;
   }
-  LOG(INFO) << "Subscribe market data...";
+  LOG(INFO) << "Subscribe market data";
   auto md_req_id = get_next_request_id();
   if (FLAGS_batch_subscribe) {
     std::vector<std::string_view> symbols(_symbols.size());

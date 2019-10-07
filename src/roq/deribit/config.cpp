@@ -46,7 +46,7 @@ void Config::operator()(User&& user) {
 void Config::operator()(
     const std::string& key,
     const cpptoml::base&) {
-  LOG(INFO) << "UNKNOWN KEY " << key;
+  LOG(WARNING) << fmt::format("UNKNOWN KEY=\"{}\"", key);
 }
 
 std::ostream& operator<<(
