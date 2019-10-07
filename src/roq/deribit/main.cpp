@@ -23,7 +23,7 @@ class Application final : public roq::Application {
   using roq::Application::Application;
 
  protected:
-  int main(int argc, char **argv) override {
+  int main(int, char **) override {
     LOG(INFO) << "Parse configuration";
     roq::deribit::Config config(FLAGS_config_file);
     VLOG(1) << "config=" << config;

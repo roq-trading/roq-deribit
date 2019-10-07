@@ -107,7 +107,20 @@ class Gateway final : public server::Handler {
 
  private:
   bool discard_symbol(const std::string_view& symbol);
-  void process(bool initialize = false);
+
+  void update(GatewayStatus gateway_status);
+
+  void begin_download();
+
+  void check_download();
+
+  void download_securities();
+  void download_positions();
+  void download_orders();
+  void download_user();
+
+  void subscribe_market_data();
+
   void reset();
 
  private:
@@ -189,9 +202,10 @@ class Gateway final : public server::Handler {
   uint32_t _download_execution_reports = 0;
   uint32_t _request_id = 0;
   // ...
-  std::vector<std::regex> _symbols;
+  std::vector<std::regex> _symbols_regex;
   std::vector<MBPUpdate> _bid, _ask;
   std::string _account;
+  std::vector<std::string> _symbols;
 };
 
 }  // namespace deribit

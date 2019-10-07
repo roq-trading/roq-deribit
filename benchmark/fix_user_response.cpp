@@ -42,31 +42,31 @@ void BM_fix_parser_dispatch_user_response(benchmark::State& state) {
         [&](const core::fix::message_t& message) {
           fix::Parser::dispatch(
               overloaded {
-                [](const fix::ExecutionReport& execution_report) {
+                [](const fix::ExecutionReport&) {
                 },
-                [](const fix::Heartbeat& heartbeat) {
+                [](const fix::Heartbeat&) {
                 },
-                [](const fix::Logon& logon) {
+                [](const fix::Logon&) {
                 },
-                [](const fix::Logout& logout) {
+                [](const fix::Logout&) {
                 },
-                [](const fix::MarketDataIncrementalRefresh& market_data_incremental_refresh) {
+                [](const fix::MarketDataIncrementalRefresh&) {
                 },
-                [](const fix::MarketDataRequestReject& market_data_request_reject) {
+                [](const fix::MarketDataRequestReject&) {
                 },
-                [](const fix::MarketDataSnapshotFullRefresh& market_data_snapshot_full_refresh) {
+                [](const fix::MarketDataSnapshotFullRefresh&) {
                 },
-                [](const fix::OrderCancelReject& order_cancel_reject) {
+                [](const fix::OrderCancelReject&) {
                 },
-                [](const fix::PositionReport& position_report) {
+                [](const fix::PositionReport&) {
                 },
-                [](const fix::Reject& reject) {
+                [](const fix::Reject&) {
                 },
-                [](const fix::ResendRequest& resend_request) {
+                [](const fix::ResendRequest&) {
                 },
-                [](const fix::SecurityList& security_list) {
+                [](const fix::SecurityList&) {
                 },
-                [](const fix::TestRequest& test_request) {
+                [](const fix::TestRequest&) {
                 },
                 [&](const fix::UserResponse& user_response) {
                   if (!user_response.user_request_id.empty())

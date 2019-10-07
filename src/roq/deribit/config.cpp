@@ -45,7 +45,7 @@ void Config::operator()(User&& user) {
 
 void Config::operator()(
     const std::string& key,
-    const cpptoml::base& base) {
+    const cpptoml::base&) {
   LOG(INFO) << "UNKNOWN KEY " << key;
 }
 

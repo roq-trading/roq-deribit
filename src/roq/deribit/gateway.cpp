@@ -87,18 +87,18 @@ Gateway::Gateway(
       _encode_buffer(FLAGS_encode_buffer_size),
       _access_key(config.get_access_key()),
       _access_secret(config.get_access_secret()),
-      _symbols(config.symbols),
+      _symbols_regex(config.symbols),
       _bid(FLAGS_max_depth),
       _ask(FLAGS_max_depth),
       _account(config.get_account()) {
 }
 
-void Gateway::operator()(const StartEvent& event) {
+void Gateway::operator()(const StartEvent&) {
   LOG(INFO) << "Starting the gateway event loop...";
   _thread = std::thread([this]() { run(); });
 }
 
-void Gateway::operator()(const StopEvent& event) {
+void Gateway::operator()(const StopEvent&) {
   LOG(INFO) << "Stopping the gateway event loop...";
   _stop.store(true, std::memory_order_release);
   if (_thread.joinable())
@@ -106,25 +106,25 @@ void Gateway::operator()(const StopEvent& event) {
   LOG(INFO) << "The gateway event loop has stopped";
 }
 
-void Gateway::operator()(const TimerEvent& event) {
+void Gateway::operator()(const TimerEvent&) {
 }
 
-void Gateway::operator()(const ConnectionStatusEvent& event) {
+void Gateway::operator()(const ConnectionStatusEvent&) {
 }
 
-void Gateway::operator()(const CreateOrderEvent& event) {
+void Gateway::operator()(const CreateOrderEvent&) {
   // TODO(thraneh): send ack saying we can't do this yet
 }
 
-void Gateway::operator()(const ModifyOrderEvent& event) {
+void Gateway::operator()(const ModifyOrderEvent&) {
   // TODO(thraneh): send ack saying we can't do this yet
 }
 
-void Gateway::operator()(const CancelOrderEvent& event) {
+void Gateway::operator()(const CancelOrderEvent&) {
   // TODO(thraneh): send ack saying we can't do this yet
 }
 
-void Gateway::write(Metrics& metrics) const {
+void Gateway::write(Metrics&) const {
   // TODO(thraneh): _latency
 }
 
@@ -204,16 +204,7 @@ void Gateway::create_fix() {
       core::URI(FLAGS_fix_uri),
       FLAGS_decode_buffer_size);
   _fix->start();
-  _gateway_status = GatewayStatus::CONNECTING;
-  MarketDataStatus market_data_status = {
-    .status = _gateway_status,
-  };
-  enqueue(market_data_status, true);
-  OrderManagerStatus order_manager_status = {
-    .account = _account.c_str(),
-    .status = _gateway_status,
-  };
-  enqueue(order_manager_status, true);
+  update(GatewayStatus::CONNECTING);
 }
 
 void Gateway::on_fix_connected() {
@@ -231,42 +222,27 @@ void Gateway::on_fix_connected() {
     .deribit_cancel_on_disconnect = FLAGS_cancel_on_disconnect,
   };
   send(logon, sending_time);
-  _gateway_status = GatewayStatus::LOGIN_SENT;
-  MarketDataStatus market_data_status = {
-    .status = _gateway_status,
-  };
-  enqueue(market_data_status, true);
-  OrderManagerStatus order_manager_status = {
-    .account = _account.c_str(),
-    .status = _gateway_status,
-  };
-  enqueue(order_manager_status, true);
+  update(GatewayStatus::LOGIN_SENT);
 }
 
 void Gateway::on_fix_disconnected() {
-  reset();
   assert(_gateway_status != GatewayStatus::DISCONNECTED);
-  _gateway_status = GatewayStatus::DISCONNECTED;
-  MarketDataStatus market_data_status = {
-    .status = _gateway_status,
-  };
-  enqueue(market_data_status, true);
-  OrderManagerStatus order_manager_status = {
-    .account = _account.c_str(),
-    .status = _gateway_status,
-  };
-  enqueue(order_manager_status, true);
+  update(GatewayStatus::DISCONNECTED);
+  _download = Download::NONE;
+  reset();
 }
 
 void Gateway::operator()(
     const core::fix::header_t& header,
     const fix::ExecutionReport& execution_report) {
+  // FIXME(thraneh): something missing, we can't assert on _gateway_status
   VLOG(1) << fmt::format(
       "header={}, execution_report={}",
       header,
       execution_report);
   switch (execution_report.exec_type) {
     case core::fix::ExecType::ORDER_STATUS:
+      assert(_gateway_status == GatewayStatus::READY);
       // TODO(thraneh): forward to gateway
       /*
       // DEBUG
@@ -300,31 +276,29 @@ void Gateway::operator()(
     default:
       break;
   }
+
   // download?
   switch (execution_report.mass_status_req_type) {
     case core::fix::MassStatusReqType::ORDERS:
+      assert(_gateway_status == GatewayStatus::DOWNLOADING);
       _download_execution_reports = execution_report.tot_num_reports;
       if (_download_execution_reports == 0) {
-        LOG(INFO) << fmt::format(
-            "[FIX] download orders COMPLETED (len(orders)={})",
-          execution_report.tot_num_reports);
-        process();
+        check_download();
       } else {
-        LOG(INFO) << fmt::format(
-            "[FIX] download orders IN PROGRESS (len(orders)={})",
-            execution_report.tot_num_reports);
+        // wait for more execution reports...
       }
       break;
     default:
       if (_download_execution_reports &&
           0 == --_download_execution_reports)
-        process();
+        check_download();
   }
 }
 
 void Gateway::operator()(
     const core::fix::header_t& header,
     const fix::Heartbeat& heartbeat) {
+  assert(_gateway_status != GatewayStatus::DISCONNECTED);
   // note! get clock *before* any logging (avoid latency)
   auto now = core::get_system_clock();
   VLOG(3) << fmt::format(
@@ -345,12 +319,13 @@ void Gateway::operator()(
 void Gateway::operator()(
     const core::fix::header_t& header,
     const fix::Logon& logon) {
+  assert(_gateway_status == GatewayStatus::LOGIN_SENT);
   VLOG(1) << fmt::format(
       "header={}, logon={}",
       header,
       logon);
   LOG(INFO) << "[FIX] logon COMPLETED";
-  process(true);
+  begin_download();
   /*
   // DEBUG
   fix::NewOrderSingle new_order_single = {
@@ -370,6 +345,7 @@ void Gateway::operator()(
 void Gateway::operator()(
     const core::fix::header_t& header,
     const fix::Logout& logout) {
+  assert(_gateway_status == GatewayStatus::READY);
   VLOG(1) << fmt::format(
       "header={}, logout={}",
       header,
@@ -377,29 +353,20 @@ void Gateway::operator()(
   LOG(WARNING) << fmt::format(
       "[FIX] logout (text=\"{}\")",
       logout.text);
-  reset();
-  MarketDataStatus market_data_status = {
-    .status = _gateway_status,
-  };
-  enqueue(market_data_status, true);
-  OrderManagerStatus order_manager_status = {
-    .account = _account.c_str(),
-    .status = GatewayStatus::LOGGED_OUT,
-  };
-  enqueue(order_manager_status, true);
+  update(GatewayStatus::LOGGED_OUT);
   // note! mandated, must send a logout response
   fix::Logout response = {
     .text = LOGOUT_MESSAGE,
   };
   send(response);
+  reset();
   LOG(FATAL) << "Unexpected -- now what?";  // FIXME(thraneh): ...
 }
 
 void Gateway::operator()(
     const core::fix::header_t& header,
     const fix::MarketDataIncrementalRefresh& market_data_incremental_refresh) {
-  assert(market_data_incremental_refresh.symbol.empty() == false);
-  assert(market_data_incremental_refresh.symbol.length() < 32);
+  assert(_gateway_status == GatewayStatus::READY);
   VLOG(3) << fmt::format(
       "header={}, market_data_incremental_refresh={}",
       header,
@@ -461,6 +428,7 @@ void Gateway::operator()(
 void Gateway::operator()(
     const core::fix::header_t& header,
     const fix::MarketDataRequestReject& market_data_request_reject) {
+  assert(_gateway_status == GatewayStatus::READY);
   VLOG(1) << fmt::format(
       "header={}, market_data_request_reject={}",
       header,
@@ -475,10 +443,14 @@ void Gateway::operator()(
 void Gateway::operator()(
     const core::fix::header_t& header,
     const fix::MarketDataSnapshotFullRefresh& market_data_snapshot_full_refresh) {
+  assert(_gateway_status == GatewayStatus::READY);
   VLOG(3) << fmt::format(
       "header={}, market_data_snapshot_full_refresh={}",
       header,
       market_data_snapshot_full_refresh);
+  LOG(INFO) << fmt::format(
+      "Market data snapshot symbol=\"{}\"",
+      market_data_snapshot_full_refresh.symbol);
   size_t bid_length = 0, ask_length = 0;
   auto& md_full_grp = market_data_snapshot_full_refresh.md_full_grp;
   for (size_t i = 0; i < md_full_grp.length; ++i) {
@@ -513,6 +485,7 @@ void Gateway::operator()(
 void Gateway::operator()(
     const core::fix::header_t& header,
     const fix::OrderCancelReject& order_cancel_reject) {
+  assert(_gateway_status == GatewayStatus::READY);
   VLOG(1) << fmt::format(
       "header={}, order_cancel_reject={}",
       header,
@@ -523,20 +496,19 @@ void Gateway::operator()(
 void Gateway::operator()(
     const core::fix::header_t& header,
     const fix::PositionReport& position_report) {
+  assert(_gateway_status == GatewayStatus::DOWNLOADING);
   VLOG(1) << fmt::format(
       "header={}, position_report={}",
       header,
       position_report);
-  LOG(INFO) << fmt::format(
-      "[FIX] download positions COMPLETED (len(positions)={})",
-      position_report.positions.length);
   // TODO(thraneh): forward to gateway
-  process();
+  check_download();
 }
 
 void Gateway::operator()(
     const core::fix::header_t& header,
     const fix::Reject& reject) {
+  assert(_gateway_status != GatewayStatus::DISCONNECTED);
   VLOG(1) << fmt::format(
       "header={}, reject={}",
       header,
@@ -551,6 +523,7 @@ void Gateway::operator()(
 void Gateway::operator()(
     const core::fix::header_t& header,
     const fix::ResendRequest& resend_request) {
+  assert(_gateway_status != GatewayStatus::DISCONNECTED);
   VLOG(1) << fmt::format(
       "header={}, resend_request={}",
       header,
@@ -567,66 +540,44 @@ void Gateway::operator()(
 void Gateway::operator()(
     const core::fix::header_t& header,
     const fix::SecurityList& security_list) {
+  assert(_gateway_status == GatewayStatus::DOWNLOADING);
   VLOG(3) << fmt::format(
       "header={}, security_list={}",
       header,
       security_list);
-  LOG(INFO) << fmt::format(
-      "[FIX] download instruments COMPLETED (len(instruments)={})",
-      security_list.instruments.length);
-  if (security_list.instruments.length == 0)
-    return;
-  std::vector<std::string_view> symbols;
-  symbols.reserve(security_list.instruments.length);  // note! alloc
-  for (size_t i = 0; i < security_list.instruments.length; ++i) {
-    auto& instrument = security_list.instruments.items[i];
-    if (discard_symbol(instrument.symbol))
-      continue;
-    ReferenceData reference_data = {
-      .exchange = FLAGS_exchange,
-      .symbol = instrument.symbol,
-      .tick_size = instrument.min_price_increment,
-      .limit_up = std::numeric_limits<double>::quiet_NaN(),
-      .limit_down = std::numeric_limits<double>::quiet_NaN(),
-      .multiplier = instrument.contract_multiplier,
-    };
-    enqueue(reference_data, true);
-    // note! there is no exchange information about the trading status!
-    MarketStatus market_status = {
-      .exchange = FLAGS_exchange,
-      .symbol = instrument.symbol,
-      .trading_status = TradingStatus::OPEN,  // TODO(thraneh): missing
-    };
-    enqueue(market_status, true);
-    symbols.emplace_back(instrument.symbol);
-  }
-  if (symbols.empty() == false) {
-    if (FLAGS_batch_subscribe) {
-      auto md_req_id = get_next_request_id();
-      fix::MarketDataRequest market_data_request = {
-        .md_req_id = md_req_id,
-        .symbol = {},
-        .symbols = symbols,
+  if (security_list.instruments.length) {
+    assert(_symbols.empty());
+    _symbols.reserve(security_list.instruments.length);  // note! alloc
+    for (size_t i = 0; i < security_list.instruments.length; ++i) {
+      auto& instrument = security_list.instruments.items[i];
+      if (discard_symbol(instrument.symbol))
+        continue;
+      _symbols.emplace_back(instrument.symbol);
+      ReferenceData reference_data = {
+        .exchange = FLAGS_exchange,
+        .symbol = instrument.symbol,
+        .tick_size = instrument.min_price_increment,
+        .limit_up = std::numeric_limits<double>::quiet_NaN(),
+        .limit_down = std::numeric_limits<double>::quiet_NaN(),
+        .multiplier = instrument.contract_multiplier,
       };
-      send(market_data_request);
-    } else {
-      for (auto& symbol : symbols) {
-        auto md_req_id = get_next_request_id();
-        fix::MarketDataRequest market_data_request = {
-          .md_req_id = md_req_id,
-          .symbol = symbol,
-          .symbols = {},
-        };
-        send(market_data_request);
-      }
+      enqueue(reference_data, false);
+      // note! we receive no information about the trading status
+      MarketStatus market_status = {
+        .exchange = FLAGS_exchange,
+        .symbol = instrument.symbol,
+        .trading_status = TradingStatus::OPEN,  // TODO(thraneh): missing
+      };
+      enqueue(market_status, true);
     }
   }
-  process();
+  check_download();
 }
 
 void Gateway::operator()(
     const core::fix::header_t& header,
     const fix::TestRequest& test_request) {
+  assert(_gateway_status != GatewayStatus::DISCONNECTED);
   VLOG(1) << fmt::format(
       "header={}, test_request={}",
       header,
@@ -640,109 +591,159 @@ void Gateway::operator()(
 void Gateway::operator()(
     const core::fix::header_t& header,
     const fix::UserResponse& user_response) {
+  assert(_gateway_status == GatewayStatus::DOWNLOADING);
   VLOG(1) << fmt::format(
       "header={}, user_response={}",
       header,
       user_response);
-  LOG(INFO) << "[FIX] download user COMPLETED";
   // TODO(thraneh): forward to gateway
-  process();
+  check_download();
 }
 
 // UTILS:
 
 inline bool Gateway::discard_symbol(const std::string_view& symbol) {
-  for (auto& iter : _symbols)
-    if (std::regex_match(symbol.begin(), symbol.end(), iter)) {
+  for (auto& regex : _symbols_regex)
+    if (std::regex_match(symbol.begin(), symbol.end(), regex)) {
       return false;
     }
-  VLOG(1) << fmt::format(
+  VLOG(4) << fmt::format(
       "Discard symbol=\"{}\" (reason: no regex match)", symbol);
   return true;
 }
 
-void Gateway::process(bool initialize) {
-  if (initialize) {
-    assert(_download == Download::NONE);
-    LOG(INFO) << "[FIX] download:";
-    assert(_gateway_status == GatewayStatus::LOGIN_SENT);
-    _gateway_status = GatewayStatus::DOWNLOADING;
-    MarketDataStatus market_data_status = {
-      .status = _gateway_status,
+void Gateway::update(GatewayStatus gateway_status) {
+  _gateway_status = gateway_status;
+  MarketDataStatus market_data_status = {
+    .status = _gateway_status,
+  };
+  enqueue(market_data_status, false);
+  OrderManagerStatus order_manager_status = {
+    .account = _account.c_str(),
+    .status = _gateway_status,
+  };
+  enqueue(order_manager_status, true);
+}
+
+void Gateway::begin_download() {
+  assert(_download == Download::NONE);
+  assert(_gateway_status == GatewayStatus::LOGIN_SENT);
+  update(GatewayStatus::DOWNLOADING);
+  LOG(INFO) << "[FIX] download:";
+  download_securities();
+}
+
+void Gateway::check_download() {
+  assert(_download != Download::NONE);
+  assert(_gateway_status == GatewayStatus::DOWNLOADING);
+  switch (_download) {
+    case Download::NONE:
+      assert(false);
+      break;
+    case Download::SECURITIES:
+      LOG(INFO) << "[FIX] download securities COMPLETED";
+      download_positions();
+      break;
+    case Download::POSITIONS:
+      LOG(INFO) << "[FIX] download positions COMPLETED";
+      download_orders();
+      break;
+    case Download::ORDERS:
+      LOG(INFO) << "[FIX] download orders COMPLETED";
+      download_user();
+      break;
+    case Download::USER: {
+      LOG(INFO) << "[FIX] download user COMPLETED";
+      update(GatewayStatus::READY);
+      LOG(INFO) << "[FIX] download COMPLETED";
+      _download = Download::NONE;
+      subscribe_market_data();
+      break;
     };
-    enqueue(market_data_status, true);
-    OrderManagerStatus order_manager_status = {
-      .account = _account.c_str(),
-      .status = _gateway_status,
-    };
-    enqueue(order_manager_status, true);
-    LOG(INFO) << "[FIX] download instruments...";
-    auto security_req_id = get_next_request_id();
-    fix::SecurityListRequest security_list_request = {
-      .security_req_id = security_req_id,
-    };
-    send(security_list_request);
-    _download = Download::SECURITIES;
-  } else {
-    switch (_download) {
-      case Download::NONE:
-        assert(false);
-        break;
-      case Download::SECURITIES: {
-        LOG(INFO) << "[FIX] download positions...";
-        auto pos_req_id = get_next_request_id();
-        fix::RequestForPositions request_for_positions = {
-          .pos_req_id = pos_req_id,
-          .pos_req_type = core::fix::PosReqType::POSITIONS,
-        };
-        send(request_for_positions);
-        _download = Download::POSITIONS;
-        break;
-      }
-      case Download::POSITIONS: {
-        LOG(INFO) << "[FIX] download orders...";
-        auto mass_status_req_id = get_next_request_id();
-        fix::OrderMassStatusRequest order_mass_status_request = {
-          .mass_status_req_id = mass_status_req_id,
-          .mass_status_req_type = core::fix::MassStatusReqType::ORDERS,
-        };
-        send(order_mass_status_request);
-        _download = Download::ORDERS;
-        break;
-      }
-      case Download::ORDERS: {
-        LOG(INFO) << "[FIX] download user...";
-        auto user_request_id = get_next_request_id();
-        fix::UserRequest user_request = {
-          .user_request_id = user_request_id,
-          .username = _access_key,
-        };
-        send(user_request);
-        _download = Download::USER;
-        break;
-      }
-      case Download::USER: {
-        assert(_gateway_status == GatewayStatus::DOWNLOADING);
-        _gateway_status = GatewayStatus::READY;
-        MarketDataStatus market_data_status = {
-          .status = _gateway_status,
-        };
-        enqueue(market_data_status, true);
-        OrderManagerStatus order_manager_status = {
-          .account = _account.c_str(),
-          .status = _gateway_status,
-        };
-        enqueue(order_manager_status, true);
-        LOG(INFO) << "[FIX] download COMPLETED";
-        _download = Download::NONE;
-        break;
-      };
-    }
   }
+}
+
+void Gateway::download_securities() {
+  assert(_gateway_status == GatewayStatus::DOWNLOADING);
+  LOG(INFO) << "[FIX] download securities...";
+  auto security_req_id = get_next_request_id();
+  fix::SecurityListRequest security_list_request = {
+    .security_req_id = security_req_id,
+  };
+  send(security_list_request);
+  _download = Download::SECURITIES;
+}
+
+void Gateway::download_positions() {
+  assert(_gateway_status == GatewayStatus::DOWNLOADING);
+  LOG(INFO) << "[FIX] download positions...";
+  auto pos_req_id = get_next_request_id();
+  fix::RequestForPositions request_for_positions = {
+    .pos_req_id = pos_req_id,
+    .pos_req_type = core::fix::PosReqType::POSITIONS,
+  };
+  send(request_for_positions);
+  _download = Download::POSITIONS;
+}
+
+void Gateway::download_orders() {
+  assert(_gateway_status == GatewayStatus::DOWNLOADING);
+  LOG(INFO) << "[FIX] download orders...";
+  auto mass_status_req_id = get_next_request_id();
+  fix::OrderMassStatusRequest order_mass_status_request = {
+    .mass_status_req_id = mass_status_req_id,
+    .mass_status_req_type = core::fix::MassStatusReqType::ORDERS,
+  };
+  send(order_mass_status_request);
+  _download = Download::ORDERS;
+}
+
+void Gateway::download_user() {
+  assert(_gateway_status == GatewayStatus::DOWNLOADING);
+  LOG(INFO) << "[FIX] download user...";
+  auto user_request_id = get_next_request_id();
+  fix::UserRequest user_request = {
+    .user_request_id = user_request_id,
+    .username = _access_key,
+  };
+  send(user_request);
+  _download = Download::USER;
 }
 
 void Gateway::reset() {
   _download = Download::NONE;
+  _symbols.clear();
+}
+
+void Gateway::subscribe_market_data() {
+  assert(_gateway_status == GatewayStatus::READY);
+  if (_symbols.empty()) {
+    LOG(WARNING) << "Can't subscribe market data, reason: NO SYMBOLS";
+    return;
+  }
+  LOG(INFO) << "Subscribe market data...";
+  auto md_req_id = get_next_request_id();
+  if (FLAGS_batch_subscribe) {
+    std::vector<std::string_view> symbols(_symbols.size());
+    for (size_t i = 0; i < _symbols.size(); ++i)
+      symbols[i] = _symbols[i];
+    fix::MarketDataRequest market_data_request = {
+      .md_req_id = md_req_id,
+      .symbol = {},
+      .symbols = symbols,
+    };
+    send(market_data_request);
+  } else {
+    for (auto& symbol : _symbols) {
+      auto md_req_id = get_next_request_id();
+      fix::MarketDataRequest market_data_request = {
+        .md_req_id = md_req_id,
+        .symbol = symbol,
+        .symbols = {},
+      };
+      send(market_data_request);
+    }
+  }
 }
 
 std::string Gateway::get_next_request_id() {

@@ -173,7 +173,7 @@ TEST(fix_market_data_snapshot_full_refresh, parse_message) {
       [&](const core::fix::message_t& message) {
         ++results;
         EXPECT_EQ(message.header.msg_type, core::fix::MsgType::MARKET_DATA_SNAPSHOT_FULL_REFRESH);
-        auto market_data = fix::MarketDataSnapshotFullRefresh::parse(message, buffer);
+        /*auto market_data =*/ fix::MarketDataSnapshotFullRefresh::parse(message, buffer);
         /*
         EXPECT_EQ(result.heart_bt_int, uint32_t{10});
         EXPECT_EQ(result.raw_data, "1567874758168.y4/hA3i6qxm4yVL+3N7IrGcINVAFMLFhy4l7ATSehxc=");
