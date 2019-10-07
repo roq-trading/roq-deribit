@@ -50,6 +50,9 @@ DEFINE_uint64(reconnect_secs, 3, "time before reconnect (seconds)");
 // - batch subscription doesn't seem to work (as of 2019-10-06)
 DEFINE_bool(batch_subscribe, false, "batch subscribe symbols? (bool)");
 
+// external
+DECLARE_string(name);
+
 namespace roq {
 namespace deribit {
 
@@ -62,6 +65,13 @@ constexpr auto RESEND_MESSAGE = "resend_not_supported";
 // utilities
 
 namespace {
+static std::string create_latency_labels(
+    const std::string_view& connection) {
+  return fmt::format(
+      "source=\"{}\", connection=\"{}\"",
+      FLAGS_name,
+      connection);
+}
 template <typename T, typename U>
 static inline void mbp_update(
     auto& data,
@@ -90,7 +100,8 @@ Gateway::Gateway(
       _symbols_regex(config.symbols),
       _bid(FLAGS_max_depth),
       _ask(FLAGS_max_depth),
-      _account(config.get_account()) {
+      _account(config.get_account()),
+      _fix_latency("roq_latency", create_latency_labels("fix")) {
 }
 
 void Gateway::operator()(const StartEvent&) {
@@ -124,8 +135,8 @@ void Gateway::operator()(const CancelOrderEvent&) {
   // TODO(thraneh): send ack saying we can't do this yet
 }
 
-void Gateway::write(Metrics&) const {
-  // TODO(thraneh): _latency
+void Gateway::write(Metrics& metrics) const {
+  _fix_latency.write(metrics);
 }
 
 void Gateway::run() {
@@ -309,11 +320,11 @@ void Gateway::operator()(
   if (heartbeat.test_req_id.empty() == false) {
     auto send_time = core::charconv::from_string<uint64_t>(
         heartbeat.test_req_id);
-    _latency = now - decltype(now){send_time};
-    VLOG(1) << fmt::format(
-        "[FIX] latency={}",
-        std::chrono::duration_cast<std::chrono::microseconds>(
-          _latency));
+    auto latency =
+      std::chrono::duration_cast<std::chrono::microseconds>(
+          now - decltype(now){send_time}) / 2;  // 1-way
+    VLOG(1) << fmt::format("[FIX] latency={}", latency);
+    _fix_latency.update(latency.count());
   }
 }
 

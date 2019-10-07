@@ -188,7 +188,6 @@ class Gateway final : public server::Handler {
   const std::string _access_key;
   const std::string _access_secret;
   uint64_t _msg_seq_num = 0;
-  std::chrono::nanoseconds _latency = {};
   // gateway:
   std::chrono::nanoseconds _fix_reconnect_time = {};
   GatewayStatus _gateway_status = GatewayStatus::DISCONNECTED;
@@ -206,6 +205,15 @@ class Gateway final : public server::Handler {
   std::vector<MBPUpdate> _bid, _ask;
   std::string _account;
   std::vector<std::string> _symbols;
+  // ...
+  Histogram<
+    10,
+    100,
+    1000,
+    10000,
+    100000,
+    1000000
+    > _fix_latency;
 };
 
 }  // namespace deribit
