@@ -641,7 +641,7 @@ void Gateway::begin_download() {
   assert(_download == Download::NONE);
   assert(_gateway_status == GatewayStatus::LOGIN_SENT);
   update(GatewayStatus::DOWNLOADING);
-  LOG(INFO) << "[FIX] download:";
+  LOG(INFO) << "Download:";
   download_securities();
 }
 
@@ -653,21 +653,21 @@ void Gateway::check_download() {
       assert(false);
       break;
     case Download::SECURITIES:
-      LOG(INFO) << "[FIX] download securities COMPLETED";
+      LOG(INFO) << "Download securities COMPLETED";
       download_positions();
       break;
     case Download::POSITIONS:
-      LOG(INFO) << "[FIX] download positions COMPLETED";
+      LOG(INFO) << "Download positions COMPLETED";
       download_orders();
       break;
     case Download::ORDERS:
-      LOG(INFO) << "[FIX] download orders COMPLETED";
+      LOG(INFO) << "Download orders COMPLETED";
       download_user();
       break;
     case Download::USER: {
-      LOG(INFO) << "[FIX] download user COMPLETED";
+      LOG(INFO) << "Download user COMPLETED";
       update(GatewayStatus::READY);
-      LOG(INFO) << "[FIX] download COMPLETED";
+      LOG(INFO) << "Download COMPLETED";
       _download = Download::NONE;
       subscribe_market_data();
       break;
