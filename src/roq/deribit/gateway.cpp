@@ -370,8 +370,8 @@ void Gateway::operator()(
     .text = LOGOUT_MESSAGE,
   };
   send(response);
-  reset();
-  LOG(FATAL) << "Unexpected -- now what?";  // FIXME(thraneh): ...
+  LOG(INFO) << "FIX closing connection";
+  _fix->stop();
 }
 
 void Gateway::operator()(

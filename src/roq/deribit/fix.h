@@ -25,6 +25,7 @@ class FIX final {
       size_t decode_buffer_size);
 
   void start();
+  void stop();
 
   void send(const core::utils::Message& message);
 

@@ -45,6 +45,11 @@ void FIX::start() {
       _uri.get_port_with_default());
 }
 
+void FIX::stop() {
+  _buffer_event.flush(EV_WRITE, BEV_FINISHED);
+  _buffer_event.close();
+}
+
 void FIX::send(const core::utils::Message& message) {
   VLOG(4) << "send(length=" << message.length() << ")";
   // core::print_memory(message.data(), message.length());
