@@ -187,7 +187,7 @@ void Gateway::on_timer() {
     case GatewayStatus::DOWNLOADING:
     case GatewayStatus::READY: {
       if (ping) {
-        VLOG(4) << "Sending FIX TestRequest";
+        VLOG(4) << "FIX sending test request";
         auto test_req_id = fmt::format(  // FIXME(thraneh): use charconv
             "{}",
             core::get_system_clock().count());
@@ -222,7 +222,7 @@ void Gateway::create_fix() {
 void Gateway::on_fix_connected() {
   assert(_gateway_status == GatewayStatus::CONNECTING);
   LOG(INFO) << fmt::format(
-      "[FIX] request logon (username=\"{}\")...", _access_key);
+      "FIX sending logon request (username=\"{}\")...", _access_key);
   auto sending_time = core::get_realtime_clock();
   auto raw_data = Random::create_raw_data(sending_time);
   auto password = Random::create_password(raw_data, _access_secret);
@@ -249,7 +249,7 @@ void Gateway::operator()(
     const fix::ExecutionReport& execution_report) {
   // FIXME(thraneh): something missing, we can't assert on _gateway_status
   VLOG(1) << fmt::format(
-      "header={}, execution_report={}",
+      "FIX event(header={}, execution_report={})",
       header,
       execution_report);
   switch (execution_report.exec_type) {
@@ -314,7 +314,7 @@ void Gateway::operator()(
   // note! get clock *before* any logging (avoid latency)
   auto now = core::get_system_clock();
   VLOG(3) << fmt::format(
-      "header={}, heartbeat={}",
+      "FIX event(header={}, heartbeat={})",
       header,
       heartbeat);
   if (heartbeat.test_req_id.empty() == false) {
@@ -332,10 +332,10 @@ void Gateway::operator()(
     const fix::Logon& logon) {
   assert(_gateway_status == GatewayStatus::LOGIN_SENT);
   VLOG(1) << fmt::format(
-      "header={}, logon={}",
+      "FIX event(header={}, logon={})",
       header,
       logon);
-  LOG(INFO) << "[FIX] logon COMPLETED";
+  LOG(INFO) << "FIX logon COMPLETED";
   begin_download();
   /*
   // DEBUG
@@ -358,11 +358,11 @@ void Gateway::operator()(
     const fix::Logout& logout) {
   assert(_gateway_status == GatewayStatus::READY);
   VLOG(1) << fmt::format(
-      "header={}, logout={}",
+      "FIX event(header={}, logout={})",
       header,
       logout);
   LOG(WARNING) << fmt::format(
-      "[FIX] logout (text=\"{}\")",
+      "FIX logout (text=\"{}\")",
       logout.text);
   update(GatewayStatus::LOGGED_OUT);
   // note! mandated, must send a logout response
@@ -379,7 +379,7 @@ void Gateway::operator()(
     const fix::MarketDataIncrementalRefresh& market_data_incremental_refresh) {
   assert(_gateway_status == GatewayStatus::READY);
   VLOG(3) << fmt::format(
-      "header={}, market_data_incremental_refresh={}",
+      "FIX event(header={}, market_data_incremental_refresh={})",
       header,
       market_data_incremental_refresh);
   size_t bid_length = 0, ask_length = 0;
@@ -414,10 +414,10 @@ void Gateway::operator()(
       case core::fix::MDEntryType::INDEX_VALUE:
       case core::fix::MDEntryType::SETTLEMENT_PRICE:
         // FIXME(thraneh): how to propagate these???
-        VLOG(1) << fmt::format("[FIX] unsupported: {}", item);
+        VLOG(1) << fmt::format("FIX unsupported: {}", item);
         break;
       default:
-        LOG(WARNING) << fmt::format("[FIX] unsupported: {}", item);
+        LOG(WARNING) << fmt::format("FIX unsupported: {}", item);
         break;
     }
   }
@@ -441,11 +441,11 @@ void Gateway::operator()(
     const fix::MarketDataRequestReject& market_data_request_reject) {
   assert(_gateway_status == GatewayStatus::READY);
   VLOG(1) << fmt::format(
-      "header={}, market_data_request_reject={}",
+      "FIX event(header={}, market_data_request_reject={})",
       header,
       market_data_request_reject);
   LOG(WARNING) << fmt::format(
-      "[FIX] market data request reject (reason={}, text=\"{}\")",
+      "FIX market data request reject (reason={}, text=\"{}\")",
       market_data_request_reject.md_req_rej_reason,
       market_data_request_reject.text);
   LOG(FATAL) << "Unexpected -- now what?";  // FIXME(thraneh): ...
@@ -456,7 +456,7 @@ void Gateway::operator()(
     const fix::MarketDataSnapshotFullRefresh& market_data_snapshot_full_refresh) {
   assert(_gateway_status == GatewayStatus::READY);
   VLOG(3) << fmt::format(
-      "header={}, market_data_snapshot_full_refresh={}",
+      "FIX event(header={}, market_data_snapshot_full_refresh={})",
       header,
       market_data_snapshot_full_refresh);
   LOG(INFO) << fmt::format(
@@ -498,7 +498,7 @@ void Gateway::operator()(
     const fix::OrderCancelReject& order_cancel_reject) {
   assert(_gateway_status == GatewayStatus::READY);
   VLOG(1) << fmt::format(
-      "header={}, order_cancel_reject={}",
+      "FIX event(header={}, order_cancel_reject={})",
       header,
       order_cancel_reject);
   // TODO(thraneh): forward to gateway
@@ -509,7 +509,7 @@ void Gateway::operator()(
     const fix::PositionReport& position_report) {
   assert(_gateway_status == GatewayStatus::DOWNLOADING);
   VLOG(1) << fmt::format(
-      "header={}, position_report={}",
+      "FIX event(header={}, position_report={})",
       header,
       position_report);
   // TODO(thraneh): forward to gateway
@@ -521,11 +521,11 @@ void Gateway::operator()(
     const fix::Reject& reject) {
   assert(_gateway_status != GatewayStatus::DISCONNECTED);
   VLOG(1) << fmt::format(
-      "header={}, reject={}",
+      "FIX event(header={}, reject={})",
       header,
       reject);
   LOG(WARNING) << fmt::format(
-      "[FIX] reject (msg_type=\"{}\", text=\"{}\")",
+      "FIX reject (msg_type=\"{}\", text=\"{}\")",
       reject.ref_msg_type,
       reject.text);
   LOG(FATAL) << "Unexpected -- now what?";  // FIXME(thraneh): ...
@@ -536,7 +536,7 @@ void Gateway::operator()(
     const fix::ResendRequest& resend_request) {
   assert(_gateway_status != GatewayStatus::DISCONNECTED);
   VLOG(1) << fmt::format(
-      "header={}, resend_request={}",
+      "FIX event(header={}, resend_request={})",
       header,
       resend_request);
   fix::Reject reject = {
@@ -553,7 +553,7 @@ void Gateway::operator()(
     const fix::SecurityList& security_list) {
   assert(_gateway_status == GatewayStatus::DOWNLOADING);
   VLOG(3) << fmt::format(
-      "header={}, security_list={}",
+      "FIX event(header={}, security_list={})",
       header,
       security_list);
   if (security_list.instruments.length) {
@@ -590,7 +590,7 @@ void Gateway::operator()(
     const fix::TestRequest& test_request) {
   assert(_gateway_status != GatewayStatus::DISCONNECTED);
   VLOG(1) << fmt::format(
-      "header={}, test_request={}",
+      "FIX event(header={}, test_request={})",
       header,
       test_request);
   fix::Heartbeat heartbeat = {
@@ -604,7 +604,7 @@ void Gateway::operator()(
     const fix::UserResponse& user_response) {
   assert(_gateway_status == GatewayStatus::DOWNLOADING);
   VLOG(1) << fmt::format(
-      "header={}, user_response={}",
+      "FIX event(header={}, user_response={})",
       header,
       user_response);
   // TODO(thraneh): forward to gateway
