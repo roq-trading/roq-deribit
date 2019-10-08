@@ -321,9 +321,8 @@ void Gateway::operator()(
     auto send_time = core::charconv::from_string<uint64_t>(
         heartbeat.test_req_id);
     auto latency =
-      std::chrono::duration_cast<std::chrono::microseconds>(
+      std::chrono::duration_cast<std::chrono::nanoseconds>(
           now - decltype(now){send_time}) / 2;  // 1-way
-    VLOG(1) << fmt::format("[FIX] latency={}", latency);
     _fix_latency.update(latency.count());
   }
 }

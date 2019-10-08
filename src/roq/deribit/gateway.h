@@ -207,12 +207,12 @@ class Gateway final : public server::Handler {
   std::vector<std::string> _symbols;
   // ...
   Histogram<
-    10,
-    100,
-    1000,
-    10000,
+    10000,  // 10us
     100000,
-    1000000
+    1000000,  // 1ms
+    10000000,
+    100000000,
+    1000000000  // 1s
     > _fix_latency;
 };
 
