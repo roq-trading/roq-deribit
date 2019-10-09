@@ -75,17 +75,30 @@ static std::string create_latency_labels(
       FLAGS_name,
       connection);
 }
-template <typename T, typename U>
+template <typename T>
 static inline void mbp_update(
     auto& data,
     size_t& offset,
-    const T& item,
-    const U& action) {
+    const T& item) {
+  // validate
+  switch (item.md_update_action) {
+    case core::fix::MDUpdateAction::UNKNOWN:
+      break;
+    case core::fix::MDUpdateAction::NEW:
+    case core::fix::MDUpdateAction::CHANGE:
+      assert(std::fabs(item.md_entry_size) >= 1.0e-10);
+      break;
+    case core::fix::MDUpdateAction::DELETE:
+      assert(std::fabs(item.md_entry_size) < 1.0e-10);
+      break;
+    case core::fix::MDUpdateAction::DELETE_THRU:
+    case core::fix::MDUpdateAction::DELETE_FROM:
+      throw std::runtime_error("MDUpdateAction not supported");
+      break;
+  }
   new (&data[offset++]) MBPUpdate {
     .price = item.md_entry_px,
     .quantity = item.md_entry_size,
-    .action = action,
-    .index = 0,
   };
   if (offset >= data.size())
     throw std::runtime_error("Not enough space");
@@ -95,12 +108,14 @@ static inline void trade_update(
     auto& data,
     size_t& offset,
     const T& item) {
-  new (&data[offset++]) Trade {
+  auto& trade = data[offset++];
+  new (&trade) Trade {
+    .side = core::fix::map(item.side),
     .price = item.md_entry_px,
     .quantity = item.md_entry_size,
-    .side = core::fix::map(item.side),
-    .trade_id = 0,  // item.deribit_trade_id,
+    .trade_id = {},  // item.deribit_trade_id,
   };
+  item.deribit_trade_id.copy(trade.trade_id, sizeof(trade.trade_id));
   if (offset >= data.size())
     throw std::runtime_error("Not enough space");
 }
@@ -413,11 +428,11 @@ void Gateway::operator()(
       exchange_time_utc = item.md_entry_date;
     switch (item.md_entry_type) {
       case core::fix::MDEntryType::BID: {
-        mbp_update(_bid, bid_length, item, core::fix::map(item.md_update_action));
+        mbp_update(_bid, bid_length, item);
         break;
       }
       case core::fix::MDEntryType::OFFER: {
-        mbp_update(_ask, ask_length, item, core::fix::map(item.md_update_action));
+        mbp_update(_ask, ask_length, item);
         break;
       }
       case core::fix::MDEntryType::TRADE: {
@@ -491,11 +506,11 @@ void Gateway::operator()(
     auto& item = md_full_grp.items[i];
     switch (item.md_entry_type) {
       case core::fix::MDEntryType::BID: {
-        mbp_update(_bid, bid_length, item, UpdateAction::NEW);
+        mbp_update(_bid, bid_length, item);
         break;
       }
       case core::fix::MDEntryType::OFFER: {
-        mbp_update(_ask, ask_length, item, UpdateAction::NEW);
+        mbp_update(_ask, ask_length, item);
         break;
       }
       default:
