@@ -594,6 +594,7 @@ void Gateway::operator()(
         .limit_up = std::numeric_limits<double>::quiet_NaN(),
         .limit_down = std::numeric_limits<double>::quiet_NaN(),
         .multiplier = instrument.contract_multiplier,
+        .min_trade_vol = instrument.min_trade_vol,
       };
       enqueue(reference_data, false);
       // note! we receive no information about the trading status
