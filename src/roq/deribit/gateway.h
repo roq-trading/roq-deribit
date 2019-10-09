@@ -203,6 +203,7 @@ class Gateway final : public server::Handler {
   // ...
   std::vector<std::regex> _symbols_regex;
   std::vector<MBPUpdate> _bid, _ask;
+  std::vector<Trade> _trade;
   std::string _account;
   std::vector<std::string> _symbols;
   // ...

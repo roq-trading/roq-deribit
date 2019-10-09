@@ -36,9 +36,12 @@ DEFINE_uint64(ping_freq_secs, 5, "ping frequency (seconds)");
 DEFINE_string(exchange, "deribit", "exchange identifier (string)");
 DEFINE_bool(cancel_on_disconnect, true, "cancel orders on disconnect? (bool)");
 
+DEFINE_bool(silence_empty_messages, true, "silence empty messages? (bool)");
+
 DEFINE_int32(network_affinity, -1, "network (epoll) affinity");
 
-DEFINE_uint32(max_depth, 65536, "maximum depth");
+DEFINE_uint32(max_depth, 65536, "maximum depth for market by price");
+DEFINE_uint32(max_trades, 256, "maximum trades for trade summary");
 
 DEFINE_uint32(encode_buffer_size, 1048576, "encode buffer size");
 DEFINE_uint32(decode_buffer_size, 1048576, "decode buffer size");
@@ -82,6 +85,21 @@ static inline void mbp_update(
     .price = item.md_entry_px,
     .quantity = item.md_entry_size,
     .action = action,
+    .index = 0,
+  };
+  if (offset >= data.size())
+    throw std::runtime_error("Not enough space");
+}
+template <typename T>
+static inline void trade_update(
+    auto& data,
+    size_t& offset,
+    const T& item) {
+  new (&data[offset++]) Trade {
+    .price = item.md_entry_px,
+    .quantity = item.md_entry_size,
+    .side = core::fix::map(item.side),
+    .trade_id = 0,  // item.deribit_trade_id,
   };
   if (offset >= data.size())
     throw std::runtime_error("Not enough space");
@@ -100,6 +118,7 @@ Gateway::Gateway(
       _symbols_regex(config.symbols),
       _bid(FLAGS_max_depth),
       _ask(FLAGS_max_depth),
+      _trade(FLAGS_max_trades),
       _account(config.get_account()),
       _fix_latency("roq_latency", create_latency_labels("fix")) {
 }
@@ -378,11 +397,14 @@ void Gateway::operator()(
     const core::fix::header_t& header,
     const fix::MarketDataIncrementalRefresh& market_data_incremental_refresh) {
   assert(_gateway_status == GatewayStatus::READY);
+  if (unlikely(FLAGS_silence_empty_messages &&
+        market_data_incremental_refresh.md_inc_grp.length == 0))
+    return;
   VLOG(3) << fmt::format(
       "FIX event(header={}, market_data_incremental_refresh={})",
       header,
       market_data_incremental_refresh);
-  size_t bid_length = 0, ask_length = 0;
+  size_t bid_length = 0, ask_length = 0, trade_length = 0;
   std::chrono::nanoseconds exchange_time_utc = {};
   auto& md_inc_grp = market_data_incremental_refresh.md_inc_grp;
   for (size_t i = 0; i < md_inc_grp.length; ++i) {
@@ -399,16 +421,7 @@ void Gateway::operator()(
         break;
       }
       case core::fix::MDEntryType::TRADE: {
-        TradeSummary trade_summary = {
-          .exchange = FLAGS_exchange,
-          .symbol = market_data_incremental_refresh.symbol,
-          .price = item.md_entry_px,
-          .volume = item.md_entry_size,
-          .turnover = std::numeric_limits<double>::quiet_NaN(),
-          .side = core::fix::map(item.side),
-          .exchange_time_utc = exchange_time_utc,
-        };
-        enqueue(trade_summary, true);  // FIXME(thraneh): *not* always last
+        trade_update(_trade, trade_length, item);
         break;
       }
       case core::fix::MDEntryType::INDEX_VALUE:
@@ -433,6 +446,16 @@ void Gateway::operator()(
       .exchange_time_utc = exchange_time_utc,
     };
     enqueue(market_by_price, true);
+  }
+  if (trade_length > 0) {
+    TradeSummary trade_summary = {
+      .exchange = FLAGS_exchange,
+      .symbol = market_data_incremental_refresh.symbol,
+      .trade_length = trade_length,
+      .trade = _trade.data(),
+      .exchange_time_utc = exchange_time_utc,
+    };
+    enqueue(trade_summary, true);  // FIXME(thraneh): *not* always last
   }
 }
 
