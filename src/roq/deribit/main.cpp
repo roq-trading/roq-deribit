@@ -24,10 +24,10 @@ class Application final : public roq::Application {
 
  protected:
   int main(int, char **) override {
-    LOG(INFO) << "Parse configuration";
+    LOG(INFO)("Parse configuration");
     roq::deribit::Config config(FLAGS_config_file);
-    VLOG(1) << "config=" << config;
-    LOG(INFO) << "Starting the gateway";
+    VLOG(1)("config={}", config);
+    LOG(INFO)("Starting the gateway");
     roq::server::Trading<roq::deribit::Gateway>(
         config,
         FLAGS_listen,

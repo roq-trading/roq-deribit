@@ -24,8 +24,9 @@ FIX::FIX(
       _uri(uri),
       _buffer_event(base),  //, _ssl_connection),
       _decode_buffer(decode_buffer_size) {
-  LOG_IF(FATAL, _uri.scheme.compare("tcp") != 0) <<
-    "Expected URI scheme to be \"tcp\" (got \"" << _uri.scheme << "\")";
+  LOG_IF(FATAL, _uri.scheme.compare("tcp") != 0)(
+      "Expected URI scheme to be \"tcp\" (got \"{}\")",
+      _uri.scheme);
   int value = 1;
   setsockopt(_buffer_event.getfd(), IPPROTO_TCP, TCP_NODELAY, &value, sizeof(value));
   _buffer_event.setcb(
@@ -35,9 +36,9 @@ FIX::FIX(
 }
 
 void FIX::start() {
-  LOG(INFO) << "Connecting to "
-    "host=\"" << _uri.host << "\", "
-    "port=" << _uri.get_port_with_default();
+  LOG(INFO)(
+      "Connecting to host=\"{}\", port={}",
+      _uri.host, _uri.get_port_with_default());
   _buffer_event.connect(
       _dns_base,
       AF_INET,
@@ -51,7 +52,7 @@ void FIX::stop() {
 }
 
 void FIX::send(const core::utils::Message& message) {
-  VLOG(4) << "send(length=" << message.length() << ")";
+  VLOG(4)("send(length={})", message.length());
   // core::print_memory(message.data(), message.length());
   // core::print_string_with_escapes(message.data(), message.length());
   _buffer_event.write(message.data(), message.length());
@@ -67,10 +68,10 @@ void FIX::on_read() {
 
 void FIX::on_error(int events) {
   if (events & BEV_EVENT_CONNECTED) {
-    LOG(INFO) << "Connected";
+    LOG(INFO)("Connected");
     _gateway.on_fix_connected();
   } else {
-    LOG(WARNING) << "Disconnected";
+    LOG(WARNING)("Disconnected");
     _gateway.on_fix_disconnected();
   }
 }

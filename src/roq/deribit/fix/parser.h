@@ -92,7 +92,7 @@ struct Parser final {
         break;
       }
       default: {
-        LOG(WARNING) << fmt::format(
+        LOG(WARNING)(
             "Unknown msg_type={}",
             message.header.msg_type);
       }

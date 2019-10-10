@@ -5,7 +5,6 @@
 #include <utility>
 
 #include "roq/logging.h"
-#include "roq/stream.h"
 
 namespace roq {
 namespace deribit {
@@ -46,16 +45,7 @@ void Config::operator()(User&& user) {
 void Config::operator()(
     const std::string& key,
     const cpptoml::base&) {
-  LOG(WARNING) << fmt::format("UNKNOWN KEY=\"{}\"", key);
-}
-
-std::ostream& operator<<(
-    std::ostream& stream,
-    const Config& value) {
-  return stream << "{"
-    "users=" << join(value.users) << ", "
-    "accounts=" << join(value.accounts) <<
-    "}";
+  LOG(WARNING)("UNKNOWN KEY=\"{}\"", key);
 }
 
 }  // namespace deribit

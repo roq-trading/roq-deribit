@@ -12,6 +12,7 @@
 #include <unordered_set>
 #include <vector>
 
+#include "roq/format.h"
 #include "roq/server.h"
 
 namespace roq {
@@ -52,8 +53,6 @@ class Config final
   std::unordered_map<std::string, Account> accounts;
 };
 
-std::ostream& operator<<(std::ostream&, const Config&);
-
 }  // namespace deribit
 }  // namespace roq
 
@@ -67,8 +66,11 @@ struct fmt::formatter<roq::deribit::Config> {
   auto format(const roq::deribit::Config& value, C& ctx) {
     // FIXME(thraneh): proper
     return format_to(
-        ctx.begin(),
+        ctx.out(),
         "{{"
-        "}}");
+        "users=[{}], "
+        "accounts=..."
+        "}}",
+        fmt::join(value.users, ", "));
   }
 };

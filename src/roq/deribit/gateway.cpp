@@ -8,7 +8,6 @@
 
 #include "roq/logging.h"
 #include "roq/format.h"
-#include "roq/stream.h"
 
 #include "roq/core/clock.h"
 
@@ -139,16 +138,16 @@ Gateway::Gateway(
 }
 
 void Gateway::operator()(const StartEvent&) {
-  LOG(INFO) << "Starting the gateway event loop...";
+  LOG(INFO)("Starting the gateway event loop...");
   _thread = std::thread([this]() { run(); });
 }
 
 void Gateway::operator()(const StopEvent&) {
-  LOG(INFO) << "Stopping the gateway event loop...";
+  LOG(INFO)("Stopping the gateway event loop...");
   _stop.store(true, std::memory_order_release);
   if (_thread.joinable())
     _thread.join();
-  LOG(INFO) << "The gateway event loop has stopped";
+  LOG(INFO)("The gateway event loop has stopped");
 }
 
 void Gateway::operator()(const TimerEvent&) {
@@ -174,23 +173,23 @@ void Gateway::write(Metrics& metrics) const {
 }
 
 void Gateway::run() {
-  LOG(INFO) << "Gateway event loop has started";
+  LOG(INFO)("Gateway event loop has started");
   try {
     initialize_thread();
     _timer.add(TIMER_FREQUENCY);
     create_fix();
     _base.loop(EVLOOP_NO_EXIT_ON_EMPTY);
   } catch (std::exception& e) {
-    LOG(FATAL) << "Unhandled exception, what=\"" << e.what() << "\"";
+    LOG(FATAL)("Unhandled exception, what=\"{}\"", e.what());
   } catch (...) {
-    LOG(FATAL) << "Unhandled exception";
+    LOG(FATAL)("Unhandled exception");
   }
-  LOG(INFO) << "Gateway event loop has finished";
+  LOG(INFO)("Gateway event loop has finished");
 }
 
 void Gateway::initialize_thread() {
   if (FLAGS_network_affinity >= 0) {
-    LOG(INFO) << "Thread affinity " << FLAGS_network_affinity;
+    LOG(INFO)("Thread affinity {}", FLAGS_network_affinity);
     set_thread_affinity(FLAGS_network_affinity);
   }
 }
@@ -221,7 +220,7 @@ void Gateway::on_timer() {
     case GatewayStatus::DOWNLOADING:
     case GatewayStatus::READY: {
       if (ping) {
-        VLOG(4) << "FIX sending test request";
+        VLOG(4)("FIX sending test request");
         auto test_req_id = fmt::format(  // FIXME(thraneh): use charconv
             "{}",
             core::get_system_clock().count());
@@ -255,7 +254,7 @@ void Gateway::create_fix() {
 
 void Gateway::on_fix_connected() {
   assert(_gateway_status == GatewayStatus::CONNECTING);
-  LOG(INFO) << fmt::format(
+  LOG(INFO)(
       "FIX sending logon request (username=\"{}\")...", _access_key);
   auto sending_time = core::get_realtime_clock();
   auto raw_data = Random::create_raw_data(sending_time);
@@ -282,7 +281,7 @@ void Gateway::operator()(
     const core::fix::header_t& header,
     const fix::ExecutionReport& execution_report) {
   // FIXME(thraneh): something missing, we can't assert on _gateway_status
-  VLOG(1) << fmt::format(
+  VLOG(1)(
       "FIX event(header={}, execution_report={})",
       header,
       execution_report);
@@ -347,7 +346,7 @@ void Gateway::operator()(
   assert(_gateway_status != GatewayStatus::DISCONNECTED);
   // note! get clock *before* any logging (avoid latency)
   auto now = core::get_system_clock();
-  VLOG(3) << fmt::format(
+  VLOG(3)(
       "FIX event(header={}, heartbeat={})",
       header,
       heartbeat);
@@ -365,11 +364,11 @@ void Gateway::operator()(
     const core::fix::header_t& header,
     const fix::Logon& logon) {
   assert(_gateway_status == GatewayStatus::LOGIN_SENT);
-  VLOG(1) << fmt::format(
+  VLOG(1)(
       "FIX event(header={}, logon={})",
       header,
       logon);
-  LOG(INFO) << "FIX logon COMPLETED";
+  LOG(INFO)("FIX logon COMPLETED");
   begin_download();
   /*
   // DEBUG
@@ -391,11 +390,11 @@ void Gateway::operator()(
     const core::fix::header_t& header,
     const fix::Logout& logout) {
   assert(_gateway_status == GatewayStatus::READY);
-  VLOG(1) << fmt::format(
+  VLOG(1)(
       "FIX event(header={}, logout={})",
       header,
       logout);
-  LOG(WARNING) << fmt::format(
+  LOG(WARNING)(
       "FIX logout (text=\"{}\")",
       logout.text);
   update(GatewayStatus::LOGGED_OUT);
@@ -404,7 +403,7 @@ void Gateway::operator()(
     .text = LOGOUT_MESSAGE,
   };
   send(response);
-  LOG(INFO) << "FIX closing connection";
+  LOG(INFO)("FIX closing connection");
   _fix->stop();
 }
 
@@ -415,7 +414,7 @@ void Gateway::operator()(
   if (unlikely(FLAGS_silence_empty_messages &&
         market_data_incremental_refresh.md_inc_grp.length == 0))
     return;
-  VLOG(3) << fmt::format(
+  VLOG(3)(
       "FIX event(header={}, market_data_incremental_refresh={})",
       header,
       market_data_incremental_refresh);
@@ -442,10 +441,10 @@ void Gateway::operator()(
       case core::fix::MDEntryType::INDEX_VALUE:
       case core::fix::MDEntryType::SETTLEMENT_PRICE:
         // FIXME(thraneh): how to propagate these???
-        VLOG(1) << fmt::format("FIX unsupported: {}", item);
+        VLOG(1)("FIX unsupported: {}", item);
         break;
       default:
-        LOG(WARNING) << fmt::format("FIX unsupported: {}", item);
+        LOG(WARNING)("FIX unsupported: {}", item);
         break;
     }
   }
@@ -478,26 +477,26 @@ void Gateway::operator()(
     const core::fix::header_t& header,
     const fix::MarketDataRequestReject& market_data_request_reject) {
   assert(_gateway_status == GatewayStatus::READY);
-  VLOG(1) << fmt::format(
+  VLOG(1)(
       "FIX event(header={}, market_data_request_reject={})",
       header,
       market_data_request_reject);
-  LOG(WARNING) << fmt::format(
+  LOG(WARNING)(
       "FIX market data request reject (reason={}, text=\"{}\")",
       market_data_request_reject.md_req_rej_reason,
       market_data_request_reject.text);
-  LOG(FATAL) << "Unexpected -- now what?";  // FIXME(thraneh): ...
+  LOG(FATAL)("Unexpected -- now what?");  // FIXME(thraneh): ...
 }
 
 void Gateway::operator()(
     const core::fix::header_t& header,
     const fix::MarketDataSnapshotFullRefresh& market_data_snapshot_full_refresh) {
   assert(_gateway_status == GatewayStatus::READY);
-  VLOG(3) << fmt::format(
+  VLOG(3)(
       "FIX event(header={}, market_data_snapshot_full_refresh={})",
       header,
       market_data_snapshot_full_refresh);
-  LOG(INFO) << fmt::format(
+  LOG(INFO)(
       "Market data snapshot symbol=\"{}\"",
       market_data_snapshot_full_refresh.symbol);
   size_t bid_length = 0, ask_length = 0;
@@ -535,7 +534,7 @@ void Gateway::operator()(
     const core::fix::header_t& header,
     const fix::OrderCancelReject& order_cancel_reject) {
   assert(_gateway_status == GatewayStatus::READY);
-  VLOG(1) << fmt::format(
+  VLOG(1)(
       "FIX event(header={}, order_cancel_reject={})",
       header,
       order_cancel_reject);
@@ -546,7 +545,7 @@ void Gateway::operator()(
     const core::fix::header_t& header,
     const fix::PositionReport& position_report) {
   assert(_gateway_status == GatewayStatus::DOWNLOADING);
-  VLOG(1) << fmt::format(
+  VLOG(1)(
       "FIX event(header={}, position_report={})",
       header,
       position_report);
@@ -558,22 +557,22 @@ void Gateway::operator()(
     const core::fix::header_t& header,
     const fix::Reject& reject) {
   assert(_gateway_status != GatewayStatus::DISCONNECTED);
-  VLOG(1) << fmt::format(
+  VLOG(1)(
       "FIX event(header={}, reject={})",
       header,
       reject);
-  LOG(WARNING) << fmt::format(
+  LOG(WARNING)(
       "FIX reject (msg_type=\"{}\", text=\"{}\")",
       reject.ref_msg_type,
       reject.text);
-  LOG(FATAL) << "Unexpected -- now what?";  // FIXME(thraneh): ...
+  LOG(FATAL)("Unexpected -- now what?");  // FIXME(thraneh): ...
 }
 
 void Gateway::operator()(
     const core::fix::header_t& header,
     const fix::ResendRequest& resend_request) {
   assert(_gateway_status != GatewayStatus::DISCONNECTED);
-  VLOG(1) << fmt::format(
+  VLOG(1)(
       "FIX event(header={}, resend_request={})",
       header,
       resend_request);
@@ -590,7 +589,7 @@ void Gateway::operator()(
     const core::fix::header_t& header,
     const fix::SecurityList& security_list) {
   assert(_gateway_status == GatewayStatus::DOWNLOADING);
-  VLOG(3) << fmt::format(
+  VLOG(3)(
       "FIX event(header={}, security_list={})",
       header,
       security_list);
@@ -628,7 +627,7 @@ void Gateway::operator()(
     const core::fix::header_t& header,
     const fix::TestRequest& test_request) {
   assert(_gateway_status != GatewayStatus::DISCONNECTED);
-  VLOG(1) << fmt::format(
+  VLOG(1)(
       "FIX event(header={}, test_request={})",
       header,
       test_request);
@@ -642,7 +641,7 @@ void Gateway::operator()(
     const core::fix::header_t& header,
     const fix::UserResponse& user_response) {
   assert(_gateway_status == GatewayStatus::DOWNLOADING);
-  VLOG(1) << fmt::format(
+  VLOG(1)(
       "FIX event(header={}, user_response={})",
       header,
       user_response);
@@ -657,7 +656,7 @@ inline bool Gateway::discard_symbol(const std::string_view& symbol) {
     if (std::regex_match(symbol.begin(), symbol.end(), regex)) {
       return false;
     }
-  VLOG(4) << fmt::format(
+  VLOG(4)(
       "Discard symbol=\"{}\" (reason: no regex match)", symbol);
   return true;
 }
@@ -673,14 +672,14 @@ void Gateway::update(GatewayStatus gateway_status) {
     .status = _gateway_status,
   };
   enqueue(order_manager_status, true);
-  LOG(INFO) << fmt::format("gateway_status={}", _gateway_status);
+  LOG(INFO)("gateway_status={}", _gateway_status);
 }
 
 void Gateway::begin_download() {
   assert(_download == Download::NONE);
   assert(_gateway_status == GatewayStatus::LOGIN_SENT);
   update(GatewayStatus::DOWNLOADING);
-  LOG(INFO) << "Download:";
+  LOG(INFO)("Download:");
   download_securities();
 }
 
@@ -692,21 +691,21 @@ void Gateway::check_download() {
       assert(false);
       break;
     case Download::SECURITIES:
-      LOG(INFO) << "Download securities COMPLETED";
+      LOG(INFO)("Download securities COMPLETED");
       download_positions();
       break;
     case Download::POSITIONS:
-      LOG(INFO) << "Download positions COMPLETED";
+      LOG(INFO)("Download positions COMPLETED");
       download_orders();
       break;
     case Download::ORDERS:
-      LOG(INFO) << "Download orders COMPLETED";
+      LOG(INFO)("Download orders COMPLETED");
       download_user();
       break;
     case Download::USER: {
-      LOG(INFO) << "Download user COMPLETED";
+      LOG(INFO)("Download user COMPLETED");
       update(GatewayStatus::READY);
-      LOG(INFO) << "Download COMPLETED";
+      LOG(INFO)("Download COMPLETED");
       _download = Download::NONE;
       subscribe_market_data();
       break;
@@ -716,7 +715,7 @@ void Gateway::check_download() {
 
 void Gateway::download_securities() {
   assert(_gateway_status == GatewayStatus::DOWNLOADING);
-  LOG(INFO) << "[FIX] download securities...";
+  LOG(INFO)("[FIX] download securities...");
   auto security_req_id = get_next_request_id();
   fix::SecurityListRequest security_list_request = {
     .security_req_id = security_req_id,
@@ -727,7 +726,7 @@ void Gateway::download_securities() {
 
 void Gateway::download_positions() {
   assert(_gateway_status == GatewayStatus::DOWNLOADING);
-  LOG(INFO) << "[FIX] download positions...";
+  LOG(INFO)("[FIX] download positions...");
   auto pos_req_id = get_next_request_id();
   fix::RequestForPositions request_for_positions = {
     .pos_req_id = pos_req_id,
@@ -739,7 +738,7 @@ void Gateway::download_positions() {
 
 void Gateway::download_orders() {
   assert(_gateway_status == GatewayStatus::DOWNLOADING);
-  LOG(INFO) << "[FIX] download orders...";
+  LOG(INFO)("[FIX] download orders...");
   auto mass_status_req_id = get_next_request_id();
   fix::OrderMassStatusRequest order_mass_status_request = {
     .mass_status_req_id = mass_status_req_id,
@@ -751,7 +750,7 @@ void Gateway::download_orders() {
 
 void Gateway::download_user() {
   assert(_gateway_status == GatewayStatus::DOWNLOADING);
-  LOG(INFO) << "[FIX] download user...";
+  LOG(INFO)("[FIX] download user...");
   auto user_request_id = get_next_request_id();
   fix::UserRequest user_request = {
     .user_request_id = user_request_id,
@@ -769,10 +768,10 @@ void Gateway::reset() {
 void Gateway::subscribe_market_data() {
   assert(_gateway_status == GatewayStatus::READY);
   if (_symbols.empty()) {
-    LOG(WARNING) << "Can't subscribe market data, reason: NO SYMBOLS";
+    LOG(WARNING)("Can't subscribe market data, reason: NO SYMBOLS");
     return;
   }
-  LOG(INFO) << "Subscribe market data";
+  LOG(INFO)("Subscribe market data");
   auto md_req_id = get_next_request_id();
   if (FLAGS_batch_subscribe) {
     std::vector<std::string_view> symbols(_symbols.size());
