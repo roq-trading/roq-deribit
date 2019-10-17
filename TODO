@@ -1,0 +1,7 @@
+Didn't get Logon response... we need a timeout!
+
+Oct 11 12:09:02 vq_svr_01 roq-deribit.sh[23261]: I1011 12:09:02.579340 23288 fix.cpp:39] Connecting to host="test.deribit.com", port=9881
+Oct 11 12:09:02 vq_svr_01 roq-deribit.sh[23261]: I1011 12:09:02.579405 23288 gateway.cpp:675] gateway_status=CONNECTING
+Oct 11 12:09:02 vq_svr_01 roq-deribit.sh[23261]: I1011 12:09:02.612716 23288 fix.cpp:71] Connected
+Oct 11 12:09:02 vq_svr_01 roq-deribit.sh[23261]: I1011 12:09:02.612724 23288 gateway.cpp:257] FIX sending logon request (username="5MP40u9h")...
+Oct 11 12:09:02 vq_svr_01 roq-deribit.sh[23261]: I1011 12:09:02.612750 23288 gateway.cpp:675] gateway_status=LOGIN_SENT

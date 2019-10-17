@@ -62,8 +62,13 @@ void FIX::send(const core::utils::Message& message) {
 // bufferevent:
 
 void FIX::on_read() {
-  _buffer_event.read(_buffer);
-  process_data();
+  try {
+    _buffer_event.read(_buffer);
+    process_data();
+  } catch (std::exception& e) {
+    LOG(WARNING)("Exception: what=\"{}\"", e.what());
+    _buffer_event.close();
+  }
 }
 
 void FIX::on_error(int events) {
