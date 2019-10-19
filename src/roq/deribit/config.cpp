@@ -21,9 +21,9 @@ std::string Config::get_account() const {
 
 void Config::dispatch(server::Config::Handler& handler) const {
   for (auto iter : accounts)
-    handler.on(iter.second);
+    handler(iter.second);
   for (auto& user : users)
-    handler.on(user);
+    handler(user);
 }
 
 void Config::operator()(server::Symbols&& symbols) {

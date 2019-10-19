@@ -26,31 +26,44 @@
 #include "roq/deribit/fix/security_list_request.h"
 #include "roq/deribit/fix/user_request.h"
 
-DEFINE_string(
-    fix_uri,
-    "tcp://test.deribit.com:9881",
+DEFINE_string(fix_uri, "tcp://test.deribit.com:9881",
     "FIX end-point (URI)");
 
-DEFINE_uint64(ping_freq_secs, 5, "ping frequency (seconds)");
-DEFINE_string(exchange, "deribit", "exchange identifier (string)");
-DEFINE_bool(cancel_on_disconnect, true, "cancel orders on disconnect? (bool)");
+DEFINE_uint64(ping_freq_secs, 5,
+    "ping frequency (seconds)");
 
-DEFINE_bool(silence_empty_messages, true, "silence empty messages? (bool)");
+DEFINE_string(exchange, "deribit",
+    "exchange identifier (string)");
 
-DEFINE_int32(network_affinity, -1, "network (epoll) affinity");
+DEFINE_bool(cancel_on_disconnect, true,
+    "cancel orders on disconnect? (bool)");
 
-DEFINE_uint32(max_depth, 65536, "maximum depth for market by price");
-DEFINE_uint32(max_trades, 256, "maximum trades for trade summary");
+DEFINE_bool(silence_empty_messages, true,
+    "silence empty messages? (bool)");
 
-DEFINE_uint32(encode_buffer_size, 1048576, "encode buffer size");
-DEFINE_uint32(decode_buffer_size, 1048576, "decode buffer size");
+DEFINE_int32(network_affinity, -1,
+    "network (epoll) affinity");
 
-DEFINE_uint64(reconnect_secs, 3, "time before reconnect (seconds)");
+DEFINE_uint32(max_depth, 65536,
+    "maximum depth for market by price");
+
+DEFINE_uint32(max_trades, 256,
+    "maximum trades for trade summary");
+
+DEFINE_uint32(encode_buffer_size, 1048576,
+    "encode buffer size");
+
+DEFINE_uint32(decode_buffer_size, 1048576,
+    "decode buffer size");
+
+DEFINE_uint64(reconnect_secs, 3,
+    "time before reconnect (seconds)");
 
 // following options are work-arounds for weird behavior:
 
 // - batch subscription doesn't seem to work (as of 2019-10-06)
-DEFINE_bool(batch_subscribe, false, "batch subscribe symbols? (bool)");
+DEFINE_bool(batch_subscribe, false,
+    "batch subscribe symbols? (bool)");
 
 // external
 DECLARE_string(name);
@@ -112,7 +125,7 @@ static inline void trade_update(
     .side = core::fix::map(item.side),
     .price = item.md_entry_px,
     .quantity = item.md_entry_size,
-    .trade_id = {},  // item.deribit_trade_id,
+    .trade_id = {},  // must copy (see next)
   };
   item.deribit_trade_id.copy(trade.trade_id, sizeof(trade.trade_id));
   if (offset >= data.size())
