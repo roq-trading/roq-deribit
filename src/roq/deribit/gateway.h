@@ -44,7 +44,6 @@ class Gateway final : public server::Handler {
 
   void operator()(const StartEvent&) override;
   void operator()(const StopEvent&) override;
-  void operator()(const TimerEvent&) override;
   void operator()(const ConnectionStatusEvent&) override;
   void operator()(const CreateOrderEvent&) override;
   void operator()(const ModifyOrderEvent&) override;

@@ -131,6 +131,10 @@ static inline void trade_update(
   if (offset >= data.size())
     throw std::runtime_error("Not enough space");
 }
+static inline std::pair<uint32_t, uint32_t> parse_deribit_label(
+    const std::string_view&) {
+  return std::make_pair(uint32_t{0}, uint32_t{0});
+}
 }  // namespace
 
 Gateway::Gateway(
@@ -163,22 +167,86 @@ void Gateway::operator()(const StopEvent&) {
   LOG(INFO)("The gateway event loop has stopped");
 }
 
-void Gateway::operator()(const TimerEvent&) {
-}
-
 void Gateway::operator()(const ConnectionStatusEvent&) {
 }
 
-void Gateway::operator()(const CreateOrderEvent&) {
-  // TODO(thraneh): send ack saying we can't do this yet
+void Gateway::operator()(const CreateOrderEvent& event) {
+  auto& create_order = event.create_order;
+  // FIXME(thraneh): check ready-state
+  // validate
+  if (create_order.account.compare(_account) != 0)
+    throw std::runtime_error("Invalid account");
+  if (create_order.exchange.compare(FLAGS_exchange) != 0)
+    throw std::runtime_error("Invalid exchange");
+  if (create_order.position_effect != PositionEffect::UNDEFINED)
+    throw std::runtime_error("Invalid position effect");
+  if (create_order.order_template.empty() == false &&
+      create_order.order_template.compare("default") != 0)
+    throw std::runtime_error("Invalid order template");
+  // generate id's
+  std::string cl_ord_id = "roq-ord-006";  // FIXME(thraneh): implement
+  std::string deribit_label = "roq;123;345";  // FIXME(thraneh): implement
+  // create request
+  fix::NewOrderSingle new_order_single = {
+    .cl_ord_id = cl_ord_id,
+    .side = core::fix::map(create_order.side),
+    .order_qty = create_order.quantity,
+    .price = create_order.price,
+    .symbol = create_order.symbol,
+    .ord_type = core::fix::map(create_order.order_type),
+    .time_in_force = core::fix::map(create_order.time_in_force),
+    .deribit_label = deribit_label,
+  };
+  send(new_order_single);
 }
 
-void Gateway::operator()(const ModifyOrderEvent&) {
-  // TODO(thraneh): send ack saying we can't do this yet
+void Gateway::operator()(const ModifyOrderEvent& event) {
+  auto& modify_order = event.modify_order;
+  // FIXME(thraneh): check ready-state
+  // validate
+  if (modify_order.account.compare(_account) != 0)
+    throw std::runtime_error("Invalid account");
+  // cached id's
+  // TODO(thraneh): use modify_order.order_id to lookup cached state
+  std::string orig_cl_ord_id = "roq-ord-006";  // FIXME(thraneh): use cache (execution_report.cl_ord_id)
+  // generate id's
+  std::string cl_ord_id = "roq-ord-007";  // FIXME(thraneh): new? or use cached? (execution_report.orig_cl_ord_id)
+  // missing: (cache?)
+  auto side = Side::BUY;
+  auto order_type = OrderType::LIMIT;
+  std::string_view symbol = "BTC-XXX";
+  std::chrono::nanoseconds transact_time = {};  // FIXME(thraneh): use cached? (execution_report.transact_time,)
+  // create request
+  fix::OrderCancelReplaceRequest order_cancel_replace_request = {
+    .cl_ord_id = cl_ord_id,
+    .orig_cl_ord_id = orig_cl_ord_id,
+    .side = core::fix::map(side),
+    .order_qty = modify_order.quantity,
+    .ord_type = core::fix::map(order_type),
+    .price = modify_order.price,
+    .symbol = symbol,
+    .transact_time = transact_time,
+  };
+  send(order_cancel_replace_request);
 }
 
-void Gateway::operator()(const CancelOrderEvent&) {
-  // TODO(thraneh): send ack saying we can't do this yet
+void Gateway::operator()(const CancelOrderEvent& event) {
+  auto& cancel_order = event.cancel_order;
+  // FIXME(thraneh): check ready-state
+  // validate
+  if (cancel_order.account.compare(_account) != 0)
+    throw std::runtime_error("Invalid account");
+  // cached id's
+  // TODO(thraneh): use cancel_order.order_id to lookup cached state
+  std::string orig_cl_ord_id = "roq-ord-006";  // FIXME(thraneh): use cache (execution_report.cl_ord_id)
+  // generate id's
+  std::string cl_ord_id = "roq-ord-007";  // FIXME(thraneh): new? or use cached? (execution_report.orig_cl_ord_id)
+  // create request
+  fix::OrderCancelRequest order_cancel_request = {
+    .cl_ord_id = cl_ord_id,
+    .orig_cl_ord_id = orig_cl_ord_id,
+  };
+  send(order_cancel_request);
 }
 
 void Gateway::write(Metrics& metrics) const {
@@ -299,37 +367,27 @@ void Gateway::operator()(
       header,
       execution_report);
   switch (execution_report.exec_type) {
+    case core::fix::ExecType::PENDING_NEW:  // TODO(thraneh): does this exist?
+      assert(_gateway_status == GatewayStatus::READY);
+      // TODO(thraneh): CreateOrderAck
+      break;
+    /*
+    case core::fix::ExecType::PENDING_REPLACE:  // TODO(thraneh): does this exist?
+      assert(_gateway_status == GatewayStatus::READY);
+      // TODO(thraneh): ModifyOrderAck
+      break;
+    */
+    case core::fix::ExecType::PENDING_CANCEL:  // TODO(thraneh): does this exist?
+      assert(_gateway_status == GatewayStatus::READY);
+      // TODO(thraneh): CancelOrderAck
+      break;
     case core::fix::ExecType::ORDER_STATUS:
       assert(_gateway_status == GatewayStatus::READY);
-      // TODO(thraneh): forward to gateway
-      /*
-      // DEBUG
-      switch (execution_report.ord_status){
-        case core::fix::OrdStatus::NEW:
-          if (execution_report.order_qty > 1.0) {
-            fix::OrderCancelReplaceRequest order_cancel_replace_request = {
-              .cl_ord_id = execution_report.orig_cl_ord_id,  // TODO(thraneh): check order
-              .orig_cl_ord_id = execution_report.cl_ord_id,
-              .side = core::fix::Side::BUY,
-              .order_qty = 1.0,
-              .ord_type = core::fix::OrdType::LIMIT,
-              .price = 1.0,
-              .symbol = SYMBOL,
-              .transact_time = execution_report.transact_time,
-            };
-            send(order_cancel_replace_request);
-          } else {
-            fix::OrderCancelRequest order_cancel_request = {
-              .cl_ord_id = execution_report.orig_cl_ord_id,  // TODO(thraneh): check order
-              .orig_cl_ord_id = execution_report.cl_ord_id,
-            };
-            send(order_cancel_request);
-          }
-          break;
-        default:
-          break;
-      }
-      */
+      // TODO(thraneh): OrderUpdate
+      break;
+    case core::fix::ExecType::TRADE:  // TODO(thraneh): does this exist?
+      assert(_gateway_status == GatewayStatus::READY);
+      // TODO(thraneh): TradeUpdate
       break;
     default:
       break;
@@ -351,6 +409,34 @@ void Gateway::operator()(
           0 == --_download_execution_reports)
         check_download();
   }
+
+  if (unlikely(execution_report.deribit_label.empty())) {
+    LOG(WARNING)(
+        "ExecutionReport being dropped. Reason: "
+        "did not contain a deribit_label");
+    return;
+  }
+  auto [order_id, order_local_id] =
+    parse_deribit_label(execution_report.deribit_label);
+  // FIXME(thraneh): update cache
+  OrderUpdate order_update {
+    .account = _account,
+    .order_id = order_id,
+    .exchange = FLAGS_exchange,
+    .symbol = execution_report.symbol,
+    .order_status = core::fix::map(execution_report.ord_status),
+    .side = core::fix::map(execution_report.side),
+    .price = execution_report.price,
+    .remaining_quantity = execution_report.leaves_qty,
+    .traded_quantity = execution_report.cum_qty,
+    .position_effect = PositionEffect::UNDEFINED,
+    .order_template = "",
+    .insert_time_utc = {},
+    .cancel_time_utc = {},
+    .order_local_id = order_local_id,
+    .order_external_id = execution_report.cl_ord_id,
+  };
+  enqueue(order_update, true);
 }
 
 void Gateway::operator()(
@@ -383,20 +469,6 @@ void Gateway::operator()(
       logon);
   LOG(INFO)("FIX logon COMPLETED");
   begin_download();
-  /*
-  // DEBUG
-  fix::NewOrderSingle new_order_single = {
-    .cl_ord_id = "roq-ord-006",
-    .side = core::fix::Side::BUY,
-    .order_qty = 2.0,
-    .price = 0.5,
-    .symbol = SYMBOL,
-    .ord_type = core::fix::OrdType::LIMIT,
-    .time_in_force = core::fix::TimeInForce::GTC,
-    .deribit_label = "roq;123;345",
-  };
-  send(new_order_single);
-  */
 }
 
 void Gateway::operator()(
@@ -681,7 +753,7 @@ void Gateway::update(GatewayStatus gateway_status) {
   };
   enqueue(market_data_status, false);
   OrderManagerStatus order_manager_status = {
-    .account = _account.c_str(),
+    .account = _account,
     .status = _gateway_status,
   };
   enqueue(order_manager_status, true);

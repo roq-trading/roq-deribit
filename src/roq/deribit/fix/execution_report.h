@@ -21,7 +21,7 @@ struct ExecutionReport final {
   // standard?
   double avg_px = std::numeric_limits<double>::quiet_NaN();
   std::string_view cl_ord_id;
-double contract_multiplier = std::numeric_limits<double>::quiet_NaN();
+  double contract_multiplier = std::numeric_limits<double>::quiet_NaN();
   double cum_qty = std::numeric_limits<double>::quiet_NaN();
   std::string_view exec_inst;  // TODO(thraneh): MultipleCharValue
   core::fix::ExecType exec_type = core::fix::ExecType::UNKNOWN;
