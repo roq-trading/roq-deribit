@@ -49,7 +49,7 @@ class Gateway final : public server::Handler {
   void operator()(const ModifyOrderEvent&) override;
   void operator()(const CancelOrderEvent&) override;
 
-  void write(Metrics& metrics) const override;
+  void write(Metrics& metrics) override;
 
  protected:
   void run();

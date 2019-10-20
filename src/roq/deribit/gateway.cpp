@@ -249,7 +249,7 @@ void Gateway::operator()(const CancelOrderEvent& event) {
   send(order_cancel_request);
 }
 
-void Gateway::write(Metrics& metrics) const {
+void Gateway::write(Metrics& metrics) {
   _fix_latency.write(metrics);
 }
 
