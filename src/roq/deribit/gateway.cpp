@@ -259,7 +259,12 @@ void Gateway::run() {
     initialize_thread();
     _timer.add(TIMER_FREQUENCY);
     create_fix();
-    _base.loop(EVLOOP_NO_EXIT_ON_EMPTY);
+    // _base.loop(EVLOOP_NO_EXIT_ON_EMPTY);
+    for (;;) {
+      if (_stop.load(std::memory_order_relaxed))
+        return;
+      _base.loop(EVLOOP_NONBLOCK);
+    }
   } catch (std::exception& e) {
     LOG(FATAL)("Unhandled exception, what=\"{}\"", e.what());
   } catch (...) {
@@ -280,7 +285,7 @@ void Gateway::on_timer() {
     _base.loopbreak();
     return;
   }
-  auto now = core::get_time();
+  auto now = core::get_system_clock();
   auto ping = _next_update <= now;
   if (ping)
     _next_update = now + std::chrono::seconds{FLAGS_ping_freq_secs};
