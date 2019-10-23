@@ -221,6 +221,12 @@ class Gateway final : public server::Handler {
     100000000,
     1000000000  // 1s
     > _fix_latency;
+
+ public:
+	typedef Histogram<200, 500, 1000, 2000, 5000, 10000> histogram_t;
+
+ private:
+  histogram_t _market_data_incremental_refresh;
 };
 
 }  // namespace deribit

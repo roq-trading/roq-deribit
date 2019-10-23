@@ -13,6 +13,8 @@
 
 #include "roq/core/fix/utils.h"
 
+#include "roq/core/metrics/profile.h"
+
 #include "roq/deribit/random.h"
 
 #include "roq/deribit/fix/heartbeat.h"
@@ -83,6 +85,13 @@ static std::string create_latency_labels(
       FLAGS_name,
       connection);
 }
+static auto create_histogram(const std::string_view& function) {
+  auto labels = fmt::format(
+      "source=\"{}\", function=\"{}\"",
+      FLAGS_name,
+      function);
+  return Gateway::histogram_t("roq_profile", labels.c_str());
+}
 template <typename T>
 static inline void mbp_update(
     auto& data,
@@ -146,7 +155,9 @@ Gateway::Gateway(
       _ask(FLAGS_max_depth),
       _trade(FLAGS_max_trades),
       _account(config.get_account()),
-      _fix_latency("roq_latency", create_latency_labels("fix")) {
+      _fix_latency("roq_latency", create_latency_labels("fix")),
+      _market_data_incremental_refresh(
+          create_histogram("market_data_incremental_refresh")) {
 }
 
 void Gateway::operator()(const StartEvent&) {
@@ -281,7 +292,9 @@ void Gateway::operator()(const CancelOrderEvent& event) {
 }
 
 void Gateway::write(Metrics& metrics) {
-  _fix_latency.write(metrics);
+  metrics
+    .write(_fix_latency)
+    .write(_market_data_incremental_refresh);
 }
 
 // FIX:
@@ -466,67 +479,69 @@ void Gateway::operator()(
 void Gateway::operator()(
     const core::fix::header_t& header,
     const fix::MarketDataIncrementalRefresh& market_data_incremental_refresh) {
-  assert(_gateway_status == GatewayStatus::READY);
-  if (unlikely(FLAGS_silence_empty_messages &&
-        market_data_incremental_refresh.md_inc_grp.length == 0))
-    return;
-  VLOG(3)(
-      "FIX event(header={}, market_data_incremental_refresh={})",
-      header,
-      market_data_incremental_refresh);
-  size_t bid_length = 0, ask_length = 0, trade_length = 0;
-  std::chrono::nanoseconds exchange_time_utc = {};
-  auto& md_inc_grp = market_data_incremental_refresh.md_inc_grp;
-  for (size_t i = 0; i < md_inc_grp.length; ++i) {
-    auto& item = md_inc_grp.items[i];
-    if (item.md_entry_date > exchange_time_utc)
-      exchange_time_utc = item.md_entry_date;
-    switch (item.md_entry_type) {
-      case core::fix::MDEntryType::BID: {
-        mbp_update(_bid, bid_length, item);
-        break;
+  core::metrics::profile(_market_data_incremental_refresh, [&]() {
+    assert(_gateway_status == GatewayStatus::READY);
+    if (unlikely(FLAGS_silence_empty_messages &&
+          market_data_incremental_refresh.md_inc_grp.length == 0))
+      return;
+    VLOG(3)(
+        "FIX event(header={}, market_data_incremental_refresh={})",
+        header,
+        market_data_incremental_refresh);
+    size_t bid_length = 0, ask_length = 0, trade_length = 0;
+    std::chrono::nanoseconds exchange_time_utc = {};
+    auto& md_inc_grp = market_data_incremental_refresh.md_inc_grp;
+    for (size_t i = 0; i < md_inc_grp.length; ++i) {
+      auto& item = md_inc_grp.items[i];
+      if (item.md_entry_date > exchange_time_utc)
+        exchange_time_utc = item.md_entry_date;
+      switch (item.md_entry_type) {
+        case core::fix::MDEntryType::BID: {
+          mbp_update(_bid, bid_length, item);
+          break;
+        }
+        case core::fix::MDEntryType::OFFER: {
+          mbp_update(_ask, ask_length, item);
+          break;
+        }
+        case core::fix::MDEntryType::TRADE: {
+          trade_update(_trade, trade_length, item);
+          break;
+        }
+        case core::fix::MDEntryType::INDEX_VALUE:
+        case core::fix::MDEntryType::SETTLEMENT_PRICE:
+          // FIXME(thraneh): how to propagate these???
+          VLOG(1)("FIX unsupported: {}", item);
+          break;
+        default:
+          LOG(WARNING)("FIX unsupported: {}", item);
+          break;
       }
-      case core::fix::MDEntryType::OFFER: {
-        mbp_update(_ask, ask_length, item);
-        break;
-      }
-      case core::fix::MDEntryType::TRADE: {
-        trade_update(_trade, trade_length, item);
-        break;
-      }
-      case core::fix::MDEntryType::INDEX_VALUE:
-      case core::fix::MDEntryType::SETTLEMENT_PRICE:
-        // FIXME(thraneh): how to propagate these???
-        VLOG(1)("FIX unsupported: {}", item);
-        break;
-      default:
-        LOG(WARNING)("FIX unsupported: {}", item);
-        break;
     }
-  }
-  if (bid_length > 0 || ask_length > 0) {
-    MarketByPrice market_by_price = {
-      .exchange = FLAGS_exchange,
-      .symbol = market_data_incremental_refresh.symbol,
-      .bid_length = bid_length,
-      .bid = _bid.data(),
-      .ask_length = ask_length,
-      .ask = _ask.data(),
-      .snapshot = false,  // incremental
-      .exchange_time_utc = exchange_time_utc,
-    };
-    enqueue(market_by_price, true);
-  }
-  if (trade_length > 0) {
-    TradeSummary trade_summary = {
-      .exchange = FLAGS_exchange,
-      .symbol = market_data_incremental_refresh.symbol,
-      .trade_length = trade_length,
-      .trade = _trade.data(),
-      .exchange_time_utc = exchange_time_utc,
-    };
-    enqueue(trade_summary, true);  // FIXME(thraneh): *not* always last
-  }
+    if (bid_length > 0 || ask_length > 0) {
+      MarketByPrice market_by_price = {
+        .exchange = FLAGS_exchange,
+        .symbol = market_data_incremental_refresh.symbol,
+        .bid_length = bid_length,
+        .bid = _bid.data(),
+        .ask_length = ask_length,
+        .ask = _ask.data(),
+        .snapshot = false,  // incremental
+        .exchange_time_utc = exchange_time_utc,
+      };
+      enqueue(market_by_price, true);
+    }
+    if (trade_length > 0) {
+      TradeSummary trade_summary = {
+        .exchange = FLAGS_exchange,
+        .symbol = market_data_incremental_refresh.symbol,
+        .trade_length = trade_length,
+        .trade = _trade.data(),
+        .exchange_time_utc = exchange_time_utc,
+      };
+      enqueue(trade_summary, true);  // FIXME(thraneh): *not* always last
+    }
+  });
 }
 
 void Gateway::operator()(
