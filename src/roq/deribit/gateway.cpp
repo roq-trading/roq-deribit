@@ -41,9 +41,6 @@ DEFINE_bool(cancel_on_disconnect, true,
 DEFINE_bool(silence_empty_messages, true,
     "silence empty messages? (bool)");
 
-DEFINE_int32(network_affinity, -1,
-    "network (epoll) affinity");
-
 DEFINE_uint32(max_depth, 65536,
     "maximum depth for market by price");
 
@@ -56,7 +53,7 @@ DEFINE_uint32(encode_buffer_size, 1048576,
 DEFINE_uint32(decode_buffer_size, 1048576,
     "decode buffer size");
 
-DEFINE_uint64(reconnect_secs, 3,
+DEFINE_uint64(reconnect_secs, 10,
     "time before reconnect (seconds)");
 
 // following options are work-arounds for weird behavior:
@@ -72,7 +69,6 @@ namespace roq {
 namespace deribit {
 
 namespace {
-constexpr auto TIMER_FREQUENCY = std::chrono::milliseconds{100};
 constexpr auto LOGOUT_MESSAGE = "i'm done";
 constexpr auto RESEND_MESSAGE = "resend_not_supported";
 }  // namespace
@@ -125,7 +121,7 @@ static inline void trade_update(
     .side = core::fix::map(item.side),
     .price = item.md_entry_px,
     .quantity = item.md_entry_size,
-    .trade_id = {},  // must copy (see next)
+    .trade_id = {},  // copy string (following statement)
   };
   item.deribit_trade_id.copy(trade.trade_id, sizeof(trade.trade_id));
   if (offset >= data.size())
@@ -142,7 +138,6 @@ Gateway::Gateway(
     const Config& config)
     : _dispatcher(dispatcher),
       _dns_base(_base, true),
-      _timer(_base, EV_PERSIST, [this]() { on_timer(); }),
       _encode_buffer(FLAGS_encode_buffer_size),
       _access_key(config.get_access_key()),
       _access_secret(config.get_access_secret()),
@@ -155,16 +150,52 @@ Gateway::Gateway(
 }
 
 void Gateway::operator()(const StartEvent&) {
-  LOG(INFO)("Starting the gateway event loop...");
-  _thread = std::thread([this]() { run(); });
+  LOG(INFO)("Starting the gateway...");
+  create_fix();
 }
 
 void Gateway::operator()(const StopEvent&) {
-  LOG(INFO)("Stopping the gateway event loop...");
-  _stop.store(true, std::memory_order_release);
-  if (_thread.joinable())
-    _thread.join();
-  LOG(INFO)("The gateway event loop has stopped");
+  LOG(INFO)("Stopping the gateway...");
+  // FIXME(thraneh): send logout here...
+}
+
+void Gateway::operator()(const TimerEvent& event) {
+  auto now = event.now;
+  auto ping = _next_update <= now;
+  if (ping)
+    _next_update = now + std::chrono::seconds{FLAGS_ping_freq_secs};
+  switch (_gateway_status) {
+    case GatewayStatus::DISCONNECTED:
+      if (static_cast<bool>(_fix)) {
+        _fix.reset();
+        _fix_reconnect_time = now +
+          std::chrono::seconds{ FLAGS_reconnect_secs };
+      } else {
+        if (_fix_reconnect_time < now) {
+          assert(_fix_reconnect_time.count() > 0);
+          _fix_reconnect_time = {};
+          create_fix();
+        }
+      }
+      break;
+    case GatewayStatus::DOWNLOADING:
+    case GatewayStatus::READY: {
+      if (ping) {
+        VLOG(4)("FIX sending test request");
+        auto test_req_id = fmt::format(  // FIXME(thraneh): use charconv
+            "{}",
+            core::get_system_clock().count());
+        fix::TestRequest test_request {
+          .test_req_id = test_req_id,
+        };
+        send(test_request);
+      }
+      break;
+    }
+    default:
+      break;
+  }
+  _base.loop(EVLOOP_NONBLOCK);
 }
 
 void Gateway::operator()(const ConnectionStatusEvent&) {
@@ -251,75 +282,6 @@ void Gateway::operator()(const CancelOrderEvent& event) {
 
 void Gateway::write(Metrics& metrics) {
   _fix_latency.write(metrics);
-}
-
-void Gateway::run() {
-  LOG(INFO)("Gateway event loop has started");
-  try {
-    initialize_thread();
-    _timer.add(TIMER_FREQUENCY);
-    create_fix();
-    // _base.loop(EVLOOP_NO_EXIT_ON_EMPTY);
-    for (;;) {
-      if (_stop.load(std::memory_order_relaxed))
-        return;
-      _base.loop(EVLOOP_NONBLOCK);
-    }
-  } catch (std::exception& e) {
-    LOG(FATAL)("Unhandled exception, what=\"{}\"", e.what());
-  } catch (...) {
-    LOG(FATAL)("Unhandled exception");
-  }
-  LOG(INFO)("Gateway event loop has finished");
-}
-
-void Gateway::initialize_thread() {
-  if (FLAGS_network_affinity >= 0) {
-    LOG(INFO)("Thread affinity {}", FLAGS_network_affinity);
-    set_thread_affinity(FLAGS_network_affinity);
-  }
-}
-
-void Gateway::on_timer() {
-  if (_stop.load(std::memory_order_acquire)) {
-    _base.loopbreak();
-    return;
-  }
-  auto now = core::get_system_clock();
-  auto ping = _next_update <= now;
-  if (ping)
-    _next_update = now + std::chrono::seconds{FLAGS_ping_freq_secs};
-  switch (_gateway_status) {
-    case GatewayStatus::DISCONNECTED:
-      if (static_cast<bool>(_fix)) {
-        _fix.reset();
-        _fix_reconnect_time = now +
-          std::chrono::seconds{ FLAGS_reconnect_secs };
-      } else {
-        if (_fix_reconnect_time < now) {
-          assert(_fix_reconnect_time.count() > 0);
-          _fix_reconnect_time = {};
-          create_fix();
-        }
-      }
-      break;
-    case GatewayStatus::DOWNLOADING:
-    case GatewayStatus::READY: {
-      if (ping) {
-        VLOG(4)("FIX sending test request");
-        auto test_req_id = fmt::format(  // FIXME(thraneh): use charconv
-            "{}",
-            core::get_system_clock().count());
-        fix::TestRequest test_request {
-          .test_req_id = test_req_id,
-        };
-        send(test_request);
-      }
-      break;
-    }
-    default:
-      break;
-  }
 }
 
 // FIX:
@@ -441,7 +403,11 @@ void Gateway::operator()(
     .order_local_id = order_local_id,
     .order_external_id = execution_report.cl_ord_id,
   };
-  enqueue(order_update, true);
+
+  // TODO(thraneh): lookup user_id
+  auto user_id = uint8_t{0};  // FIXME(thraneh): how?
+
+  enqueue(user_id, order_update, true);
 }
 
 void Gateway::operator()(

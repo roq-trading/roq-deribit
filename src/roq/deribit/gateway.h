@@ -44,6 +44,7 @@ class Gateway final : public server::Handler {
 
   void operator()(const StartEvent&) override;
   void operator()(const StopEvent&) override;
+  void operator()(const TimerEvent&) override;
   void operator()(const ConnectionStatusEvent&) override;
   void operator()(const CreateOrderEvent&) override;
   void operator()(const ModifyOrderEvent&) override;
@@ -52,10 +53,6 @@ class Gateway final : public server::Handler {
   void write(Metrics& metrics) override;
 
  protected:
-  void run();
-  void initialize_thread();
-  void on_timer();
-
   void create_fix();
 
  public:
@@ -150,6 +147,19 @@ class Gateway final : public server::Handler {
         origin_create_time,
         is_last);
   }
+  template <typename T>
+  void enqueue(
+      uint8_t user_id,
+      const T& event,
+      bool is_last) {
+    auto now = core::get_system_clock();
+    _dispatcher.enqueue(
+        user_id,
+        event,
+        now,
+        now,
+        is_last);
+  }
 
  private:
   template <typename T>
@@ -177,9 +187,6 @@ class Gateway final : public server::Handler {
   core::ssl::Context _ssl_context;
   core::event::Base _base;
   core::event::DNSBase _dns_base;
-  core::event::Timer _timer;
-  std::atomic<bool> _stop = {false};
-  std::thread _thread;
   core::utils::Buffer _encode_buffer;
   std::chrono::nanoseconds _next_update = {};
   // fix:
