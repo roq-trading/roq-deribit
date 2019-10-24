@@ -71,8 +71,14 @@ namespace roq {
 namespace deribit {
 
 namespace {
-constexpr auto LOGOUT_MESSAGE = "i'm done";
-constexpr auto RESEND_MESSAGE = "resend_not_supported";
+constexpr std::string_view LOGOUT_RESPONSE("LOGOUT_RESPONSE");
+constexpr std::string_view RESEND_NOT_SUPPORTED("RESEND_NOT_SUPPORTED");
+constexpr std::string_view GATEWAY_NOT_READY("GATEWAY_NOT_READY");
+constexpr std::string_view INVALID_ACCOUNT("INVALID_ACCOUNT");
+constexpr std::string_view INVALID_EXCHANGE("INVALID_EXCHANGE");
+constexpr std::string_view INVALID_POSITION_EFFECT("INVALID_POSITION_EFFECT");
+constexpr std::string_view INVALID_ORDER_TEMPLATE("INVALID_ORDER_TEMPLATE");
+constexpr std::string_view NETWORK_ERROR("NETWORK_ERROR");
 }  // namespace
 
 // utilities
@@ -136,9 +142,9 @@ static inline void trade_update(
   if (offset >= data.size())
     throw std::runtime_error("Not enough space");
 }
-static inline std::pair<uint32_t, uint32_t> parse_deribit_label(
+static inline std::pair<std::string_view, uint32_t> parse_deribit_label(
     const std::string_view&) {
-  return std::make_pair(uint32_t{0}, uint32_t{0});
+  return std::make_pair(std::string_view(), uint32_t{0});
 }
 }  // namespace
 
@@ -213,33 +219,51 @@ void Gateway::operator()(const ConnectionStatusEvent&) {
 }
 
 void Gateway::operator()(const CreateOrderEvent& event) {
+  auto& message_info = event.message_info;
   auto& create_order = event.create_order;
-  // FIXME(thraneh): check ready-state
-  // validate
-  if (create_order.account.compare(_account) != 0)
-    throw std::runtime_error("Invalid account");
-  if (create_order.exchange.compare(FLAGS_exchange) != 0)
-    throw std::runtime_error("Invalid exchange");
-  if (create_order.position_effect != PositionEffect::UNDEFINED)
-    throw std::runtime_error("Invalid position effect");
-  if (create_order.order_template.empty() == false &&
-      create_order.order_template.compare("default") != 0)
-    throw std::runtime_error("Invalid order template");
-  // generate id's
-  std::string cl_ord_id = "roq-ord-006";  // FIXME(thraneh): implement
-  std::string deribit_label = "roq;123;345";  // FIXME(thraneh): implement
-  // create request
-  fix::NewOrderSingle new_order_single = {
-    .cl_ord_id = cl_ord_id,
-    .side = core::fix::map(create_order.side),
-    .order_qty = create_order.quantity,
-    .price = create_order.price,
-    .symbol = create_order.symbol,
-    .ord_type = core::fix::map(create_order.order_type),
-    .time_in_force = core::fix::map(create_order.time_in_force),
-    .deribit_label = deribit_label,
-  };
-  send(new_order_single);
+  if (_gateway_status == GatewayStatus::READY) {
+    // validate
+    if (unlikely(
+          create_order.account.compare(_account) != 0)) {
+      create_order_ack_failure(event, INVALID_ACCOUNT);
+    } else if (unlikely(
+          create_order.exchange.compare(FLAGS_exchange) != 0)) {
+      create_order_ack_failure(event, INVALID_EXCHANGE);
+    } else if (unlikely(
+          create_order.position_effect != PositionEffect::UNDEFINED)) {
+      create_order_ack_failure(event, INVALID_POSITION_EFFECT);
+    } else if (unlikely(
+          create_order.order_template.empty() == false &&
+          create_order.order_template.compare("default") != 0)) {
+      create_order_ack_failure(event, INVALID_ORDER_TEMPLATE);
+    } else {
+      // create id's
+      std::string cl_ord_id = create_request_id();
+      std::string deribit_label = create_deribit_label(
+          message_info.source,
+          create_order.order_id);
+      // create request
+      fix::NewOrderSingle new_order_single = {
+        .cl_ord_id = cl_ord_id,
+        .side = core::fix::map(create_order.side),
+        .order_qty = create_order.quantity,
+        .price = create_order.price,
+        .symbol = create_order.symbol,
+        .ord_type = core::fix::map(create_order.order_type),
+        .time_in_force = core::fix::map(create_order.time_in_force),
+        .deribit_label = deribit_label,
+      };
+      try {
+        send(new_order_single);
+        create_order_ack_success(event, cl_ord_id);
+      } catch (std::exception&) {
+        create_order_ack_failure(event, NETWORK_ERROR);
+        throw;
+      }
+    }
+  } else {
+    create_order_ack_failure(event, GATEWAY_NOT_READY);
+  }
 }
 
 void Gateway::operator()(const ModifyOrderEvent& event) {
@@ -396,8 +420,12 @@ void Gateway::operator()(
         "did not contain a deribit_label");
     return;
   }
+  /*
   auto [order_id, order_local_id] =
     parse_deribit_label(execution_report.deribit_label);
+    */
+  auto order_id = uint32_t{0};
+  auto order_local_id = uint32_t{0};
   // FIXME(thraneh): update cache
   OrderUpdate order_update {
     .account = _account,
@@ -469,7 +497,7 @@ void Gateway::operator()(
   update(GatewayStatus::LOGGED_OUT);
   // note! mandated, must send a logout response
   fix::Logout response = {
-    .text = LOGOUT_MESSAGE,
+    .text = LOGOUT_RESPONSE,
   };
   send(response);
   LOG(INFO)("FIX closing connection");
@@ -651,7 +679,7 @@ void Gateway::operator()(
     .ref_seq_num = header.msg_seq_num,
     .ref_tag_id = 0,
     .ref_msg_type = header.msg_type_raw,
-    .text = RESEND_MESSAGE,
+    .text = RESEND_NOT_SUPPORTED,
   };
   send(reject);
 }
@@ -787,7 +815,7 @@ void Gateway::check_download() {
 void Gateway::download_securities() {
   assert(_gateway_status == GatewayStatus::DOWNLOADING);
   LOG(INFO)("[FIX] download securities...");
-  auto security_req_id = get_next_request_id();
+  auto security_req_id = create_request_id();
   fix::SecurityListRequest security_list_request = {
     .security_req_id = security_req_id,
   };
@@ -798,7 +826,7 @@ void Gateway::download_securities() {
 void Gateway::download_positions() {
   assert(_gateway_status == GatewayStatus::DOWNLOADING);
   LOG(INFO)("[FIX] download positions...");
-  auto pos_req_id = get_next_request_id();
+  auto pos_req_id = create_request_id();
   fix::RequestForPositions request_for_positions = {
     .pos_req_id = pos_req_id,
     .pos_req_type = core::fix::PosReqType::POSITIONS,
@@ -810,7 +838,7 @@ void Gateway::download_positions() {
 void Gateway::download_orders() {
   assert(_gateway_status == GatewayStatus::DOWNLOADING);
   LOG(INFO)("[FIX] download orders...");
-  auto mass_status_req_id = get_next_request_id();
+  auto mass_status_req_id = create_request_id();
   fix::OrderMassStatusRequest order_mass_status_request = {
     .mass_status_req_id = mass_status_req_id,
     .mass_status_req_type = core::fix::MassStatusReqType::ORDERS,
@@ -822,7 +850,7 @@ void Gateway::download_orders() {
 void Gateway::download_user() {
   assert(_gateway_status == GatewayStatus::DOWNLOADING);
   LOG(INFO)("[FIX] download user...");
-  auto user_request_id = get_next_request_id();
+  auto user_request_id = create_request_id();
   fix::UserRequest user_request = {
     .user_request_id = user_request_id,
     .username = _access_key,
@@ -843,7 +871,7 @@ void Gateway::subscribe_market_data() {
     return;
   }
   LOG(INFO)("Subscribe market data");
-  auto md_req_id = get_next_request_id();
+  auto md_req_id = create_request_id();
   if (FLAGS_batch_subscribe) {
     std::vector<std::string_view> symbols(_symbols.size());
     for (size_t i = 0; i < _symbols.size(); ++i)
@@ -856,7 +884,7 @@ void Gateway::subscribe_market_data() {
     send(market_data_request);
   } else {
     for (auto& symbol : _symbols) {
-      auto md_req_id = get_next_request_id();
+      auto md_req_id = create_request_id();
       fix::MarketDataRequest market_data_request = {
         .md_req_id = md_req_id,
         .symbol = symbol,
@@ -867,9 +895,62 @@ void Gateway::subscribe_market_data() {
   }
 }
 
-std::string Gateway::get_next_request_id() {
+void Gateway::create_order_ack_success(
+    const CreateOrderEvent& event,
+    const std::string_view& order_external_id) {
+  auto& message_info = event.message_info;
+  auto& create_order = event.create_order;
+  CreateOrderAck create_order_ack {
+    .account = create_order.account,
+    .order_id = create_order.order_id,
+    .failure = false,
+    .reason = std::string_view(),
+    .order_local_id = _local_order_id,
+    .order_external_id = order_external_id,
+  };
+  _dispatcher.enqueue(
+      message_info.source,
+      create_order_ack,
+      message_info.source_receive_time,
+      message_info.origin_create_time,
+      true);
+}
+
+void Gateway::create_order_ack_failure(
+    const CreateOrderEvent& event,
+    const std::string_view& reason) {
+  auto& message_info = event.message_info;
+  auto& create_order = event.create_order;
+  CreateOrderAck create_order_ack {
+    .account = create_order.account,
+    .order_id = create_order.order_id,
+    .failure = true,
+    .reason = reason,
+    .order_local_id = 0,
+    .order_external_id = std::string_view(),
+  };
+  _dispatcher.enqueue(
+      message_info.source,
+      create_order_ack,
+      message_info.source_receive_time,
+      message_info.origin_create_time,
+      true);
+}
+
+std::string Gateway::create_request_id() {
   return fmt::format(  // FIXME(thraneh): use charconv
-      "roq:{:09}", ++_request_id);
+      "roq:{:09}",
+      ++_request_id);
+}
+
+std::string Gateway::create_deribit_label(
+    uint8_t user_id,
+    uint32_t user_order_id) {
+  return fmt::format(  // FIXME(thraneh): use charconv
+      "roq:{}:{}:{}",
+      ++_local_order_id,
+      user_id,
+      user_order_id);
 }
 
 }  // namespace deribit

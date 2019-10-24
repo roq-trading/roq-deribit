@@ -119,6 +119,14 @@ class Gateway final : public server::Handler {
 
   void reset();
 
+  void create_order_ack_success(
+      const CreateOrderEvent& event,
+      const std::string_view& order_external_id);
+
+  void create_order_ack_failure(
+      const CreateOrderEvent& event,
+      const std::string_view& reason);
+
  private:
   template <typename T>
   void enqueue(
@@ -180,7 +188,10 @@ class Gateway final : public server::Handler {
     _fix->send(message);
   }
 
-  std::string get_next_request_id();
+  std::string create_request_id();
+  std::string create_deribit_label(
+      uint8_t user_id,
+      uint32_t user_order_id);
 
  private:
   server::Dispatcher& _dispatcher;
@@ -227,6 +238,8 @@ class Gateway final : public server::Handler {
 
  private:
   histogram_t _market_data_incremental_refresh;
+
+  uint32_t _local_order_id = 0;  // TODO(thraneh): we need this extracted from the feed
 };
 
 }  // namespace deribit
