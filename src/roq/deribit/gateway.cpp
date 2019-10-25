@@ -5,6 +5,7 @@
 #include <gflags/gflags.h>
 
 #include <limits>
+#include <utility>
 
 #include "roq/logging.h"
 #include "roq/format.h"
@@ -79,6 +80,8 @@ constexpr std::string_view INVALID_EXCHANGE("INVALID_EXCHANGE");
 constexpr std::string_view INVALID_POSITION_EFFECT("INVALID_POSITION_EFFECT");
 constexpr std::string_view INVALID_ORDER_TEMPLATE("INVALID_ORDER_TEMPLATE");
 constexpr std::string_view NETWORK_ERROR("NETWORK_ERROR");
+constexpr std::string_view UNKNOWN_ORDER_ID("UNKNOWN_ORDER_ID");
+constexpr std::string_view UNKNOWN_EXCHANGE_ORDER_ID("UNKNOWN_EXCHANGE_ORDER_ID");
 }  // namespace
 
 // utilities
@@ -145,6 +148,12 @@ static inline void trade_update(
 static inline std::pair<std::string_view, uint32_t> parse_deribit_label(
     const std::string_view&) {
   return std::make_pair(std::string_view(), uint32_t{0});
+}
+static inline uint64_t merge_user_order_id(
+    uint8_t user_id,
+    uint32_t order_id) {
+  return (static_cast<uint64_t>(user_id) << 32) |
+    static_cast<uint64_t>(order_id);
 }
 }  // namespace
 
@@ -221,98 +230,151 @@ void Gateway::operator()(const ConnectionStatusEvent&) {
 void Gateway::operator()(const CreateOrderEvent& event) {
   auto& message_info = event.message_info;
   auto& create_order = event.create_order;
-  if (_gateway_status == GatewayStatus::READY) {
-    // validate
-    if (unlikely(
-          create_order.account.compare(_account) != 0)) {
-      create_order_ack_failure(event, INVALID_ACCOUNT);
-    } else if (unlikely(
-          create_order.exchange.compare(FLAGS_exchange) != 0)) {
-      create_order_ack_failure(event, INVALID_EXCHANGE);
-    } else if (unlikely(
-          create_order.position_effect != PositionEffect::UNDEFINED)) {
-      create_order_ack_failure(event, INVALID_POSITION_EFFECT);
-    } else if (unlikely(
-          create_order.order_template.empty() == false &&
-          create_order.order_template.compare("default") != 0)) {
-      create_order_ack_failure(event, INVALID_ORDER_TEMPLATE);
-    } else {
-      // create id's
-      std::string cl_ord_id = create_request_id();
-      std::string deribit_label = create_deribit_label(
-          message_info.source,
-          create_order.order_id);
-      // create request
-      fix::NewOrderSingle new_order_single = {
-        .cl_ord_id = cl_ord_id,
-        .side = core::fix::map(create_order.side),
-        .order_qty = create_order.quantity,
-        .price = create_order.price,
-        .symbol = create_order.symbol,
-        .ord_type = core::fix::map(create_order.order_type),
-        .time_in_force = core::fix::map(create_order.time_in_force),
-        .deribit_label = deribit_label,
-      };
-      try {
-        send(new_order_single);
-        create_order_ack_success(event, cl_ord_id);
-      } catch (std::exception&) {
-        create_order_ack_failure(event, NETWORK_ERROR);
-        throw;
-      }
-    }
-  } else {
+  if (unlikely(_gateway_status != GatewayStatus::READY)) {
     create_order_ack_failure(event, GATEWAY_NOT_READY);
+  } else if (unlikely(
+        create_order.account.compare(_account) != 0)) {
+    create_order_ack_failure(event, INVALID_ACCOUNT);
+  } else if (unlikely(
+        create_order.exchange.compare(FLAGS_exchange) != 0)) {
+    create_order_ack_failure(event, INVALID_EXCHANGE);
+  } else if (unlikely(
+        create_order.position_effect != PositionEffect::UNDEFINED)) {
+    create_order_ack_failure(event, INVALID_POSITION_EFFECT);
+  } else if (unlikely(
+        create_order.order_template.empty() == false &&
+        create_order.order_template.compare("default") != 0)) {
+    create_order_ack_failure(event, INVALID_ORDER_TEMPLATE);
+  } else {
+    // create id's
+    std::string cl_ord_id = create_request_id();
+    std::string deribit_label = create_deribit_label(
+        message_info.source,
+        create_order.order_id);
+    // create order mapping
+    auto user_order_id = merge_user_order_id(
+        message_info.source,
+        create_order.order_id);
+    _order_mapping.emplace(
+        user_order_id,
+        OrderMapping {
+          _local_order_id,
+          message_info.source,
+          create_order.order_id,
+          create_order.order_type,
+          create_order.side,
+          create_order.symbol
+        });
+    _order_lookup.emplace(cl_ord_id, user_order_id);
+    // create request
+    fix::NewOrderSingle new_order_single = {
+      .cl_ord_id = cl_ord_id,
+      .side = core::fix::map(create_order.side),
+      .order_qty = create_order.quantity,
+      .price = create_order.price,
+      .symbol = create_order.symbol,
+      .ord_type = core::fix::map(create_order.order_type),
+      .time_in_force = core::fix::map(create_order.time_in_force),
+      .deribit_label = deribit_label,
+    };
+    try {
+      send(new_order_single);
+      create_order_ack_success(event, cl_ord_id);
+    } catch (std::exception&) {
+      create_order_ack_failure(event, NETWORK_ERROR);
+      throw;
+    }
   }
 }
 
 void Gateway::operator()(const ModifyOrderEvent& event) {
+  auto& message_info = event.message_info;
   auto& modify_order = event.modify_order;
-  // FIXME(thraneh): check ready-state
-  // validate
-  if (modify_order.account.compare(_account) != 0)
-    throw std::runtime_error("Invalid account");
-  // cached id's
-  // TODO(thraneh): use modify_order.order_id to lookup cached state
-  std::string orig_cl_ord_id = "roq-ord-006";  // FIXME(thraneh): use cache (execution_report.cl_ord_id)
-  // generate id's
-  std::string cl_ord_id = "roq-ord-007";  // FIXME(thraneh): new? or use cached? (execution_report.orig_cl_ord_id)
-  // missing: (cache?)
-  auto side = Side::BUY;
-  auto order_type = OrderType::LIMIT;
-  std::string_view symbol = "BTC-XXX";
-  std::chrono::nanoseconds transact_time = {};  // FIXME(thraneh): use cached? (execution_report.transact_time,)
-  // create request
-  fix::OrderCancelReplaceRequest order_cancel_replace_request = {
-    .cl_ord_id = cl_ord_id,
-    .orig_cl_ord_id = orig_cl_ord_id,
-    .side = core::fix::map(side),
-    .order_qty = modify_order.quantity,
-    .ord_type = core::fix::map(order_type),
-    .price = modify_order.price,
-    .symbol = symbol,
-    .transact_time = transact_time,
-  };
-  send(order_cancel_replace_request);
+  if (unlikely(_gateway_status != GatewayStatus::READY)) {
+    modify_order_ack_failure(event, GATEWAY_NOT_READY);
+  } else if (unlikely(
+        modify_order.account.compare(_account) != 0)) {
+    modify_order_ack_failure(event, INVALID_ACCOUNT);
+  } else {
+    auto user_order_id = merge_user_order_id(
+        message_info.source,
+        modify_order.order_id);
+    auto iter = _order_mapping.find(user_order_id);
+    if (unlikely(iter == _order_mapping.end())) {
+      modify_order_ack_failure(event, UNKNOWN_ORDER_ID);
+    } else {
+      auto& order_mapping = (*iter).second;
+      if (unlikely(order_mapping.ready() == false)) {
+        modify_order_ack_failure(event, UNKNOWN_EXCHANGE_ORDER_ID);
+      } else {
+        // create id's
+        std::string cl_ord_id = create_request_id();
+        // create request
+        fix::OrderCancelReplaceRequest order_cancel_replace_request = {
+          .cl_ord_id = cl_ord_id,
+          .orig_cl_ord_id = order_mapping._cl_ord_id,
+          .side = core::fix::map(order_mapping._side),
+          .order_qty = modify_order.quantity,
+          .ord_type = core::fix::map(order_mapping._order_type),
+          .price = modify_order.price,
+          .symbol = order_mapping._symbol,
+          .transact_time = order_mapping._transact_time,
+        };
+        try {
+          send(order_cancel_replace_request);
+          modify_order_ack_success(
+              event,
+              order_mapping._local_order_id,
+              order_mapping._cl_ord_id);
+        } catch (std::exception&) {
+          modify_order_ack_failure(event, NETWORK_ERROR);
+          throw;
+        }
+      }
+    }
+  }
 }
 
 void Gateway::operator()(const CancelOrderEvent& event) {
+  auto& message_info = event.message_info;
   auto& cancel_order = event.cancel_order;
-  // FIXME(thraneh): check ready-state
-  // validate
-  if (cancel_order.account.compare(_account) != 0)
-    throw std::runtime_error("Invalid account");
-  // cached id's
-  // TODO(thraneh): use cancel_order.order_id to lookup cached state
-  std::string orig_cl_ord_id = "roq-ord-006";  // FIXME(thraneh): use cache (execution_report.cl_ord_id)
-  // generate id's
-  std::string cl_ord_id = "roq-ord-007";  // FIXME(thraneh): new? or use cached? (execution_report.orig_cl_ord_id)
-  // create request
-  fix::OrderCancelRequest order_cancel_request = {
-    .cl_ord_id = cl_ord_id,
-    .orig_cl_ord_id = orig_cl_ord_id,
-  };
-  send(order_cancel_request);
+  if (unlikely(_gateway_status != GatewayStatus::READY)) {
+    cancel_order_ack_failure(event, GATEWAY_NOT_READY);
+  } else if (unlikely(
+        cancel_order.account.compare(_account) != 0)) {
+    cancel_order_ack_failure(event, INVALID_ACCOUNT);
+  } else {
+    auto user_order_id = merge_user_order_id(
+        message_info.source,
+        cancel_order.order_id);
+    auto iter = _order_mapping.find(user_order_id);
+    if (unlikely(iter == _order_mapping.end())) {
+      cancel_order_ack_failure(event, UNKNOWN_ORDER_ID);
+    } else {
+      auto& order_mapping = (*iter).second;
+      if (unlikely(order_mapping.ready() == false)) {
+        cancel_order_ack_failure(event, UNKNOWN_EXCHANGE_ORDER_ID);
+      } else {
+        // create id's
+        std::string cl_ord_id = create_request_id();
+        // create request
+        fix::OrderCancelRequest order_cancel_request = {
+          .cl_ord_id = cl_ord_id,
+          .orig_cl_ord_id = order_mapping._cl_ord_id,
+        };
+        try {
+          send(order_cancel_request);
+          cancel_order_ack_success(
+              event,
+              order_mapping._local_order_id,
+              order_mapping._cl_ord_id);
+        } catch (std::exception&) {
+          cancel_order_ack_failure(event, NETWORK_ERROR);
+          throw;
+        }
+      }
+    }
+  }
 }
 
 void Gateway::write(Metrics& metrics) {
@@ -365,90 +427,106 @@ void Gateway::on_fix_disconnected() {
 void Gateway::operator()(
     const core::fix::header_t& header,
     const fix::ExecutionReport& execution_report) {
-  // FIXME(thraneh): something missing, we can't assert on _gateway_status
   VLOG(1)(
       "FIX event(header={}, execution_report={})",
       header,
       execution_report);
-  switch (execution_report.exec_type) {
-    case core::fix::ExecType::PENDING_NEW:  // TODO(thraneh): does this exist?
-      assert(_gateway_status == GatewayStatus::READY);
-      // TODO(thraneh): CreateOrderAck
-      break;
-    /*
-    case core::fix::ExecType::PENDING_REPLACE:  // TODO(thraneh): does this exist?
-      assert(_gateway_status == GatewayStatus::READY);
-      // TODO(thraneh): ModifyOrderAck
-      break;
-    */
-    case core::fix::ExecType::PENDING_CANCEL:  // TODO(thraneh): does this exist?
-      assert(_gateway_status == GatewayStatus::READY);
-      // TODO(thraneh): CancelOrderAck
-      break;
-    case core::fix::ExecType::ORDER_STATUS:
-      assert(_gateway_status == GatewayStatus::READY);
-      // TODO(thraneh): OrderUpdate
-      break;
-    case core::fix::ExecType::TRADE:  // TODO(thraneh): does this exist?
-      assert(_gateway_status == GatewayStatus::READY);
-      // TODO(thraneh): TradeUpdate
-      break;
-    default:
-      break;
-  }
-
-  // download?
-  switch (execution_report.mass_status_req_type) {
-    case core::fix::MassStatusReqType::ORDERS:
-      assert(_gateway_status == GatewayStatus::DOWNLOADING);
-      _download_execution_reports = execution_report.tot_num_reports;
-      if (_download_execution_reports == 0) {
-        check_download();
-      } else {
-        // wait for more execution reports...
-      }
-      break;
-    default:
-      if (_download_execution_reports &&
-          0 == --_download_execution_reports)
-        check_download();
-  }
-
-  if (unlikely(execution_report.deribit_label.empty())) {
-    LOG(WARNING)(
-        "ExecutionReport being dropped. Reason: "
-        "did not contain a deribit_label");
+  // response to order download?
+  if (unlikely(
+        execution_report.mass_status_req_type ==
+        core::fix::MassStatusReqType::ORDERS)) {
+    assert(_gateway_status == GatewayStatus::DOWNLOADING);
+    _download_execution_reports = execution_report.tot_num_reports;
+    if (_download_execution_reports == 0)
+      check_download();
     return;
   }
-  /*
-  auto [order_id, order_local_id] =
-    parse_deribit_label(execution_report.deribit_label);
-    */
-  auto order_id = uint32_t{0};
-  auto order_local_id = uint32_t{0};
-  // FIXME(thraneh): update cache
-  OrderUpdate order_update {
-    .account = _account,
-    .order_id = order_id,
-    .exchange = FLAGS_exchange,
-    .symbol = execution_report.symbol,
-    .order_status = core::fix::map(execution_report.ord_status),
-    .side = core::fix::map(execution_report.side),
-    .price = execution_report.price,
-    .remaining_quantity = execution_report.leaves_qty,
-    .traded_quantity = execution_report.cum_qty,
-    .position_effect = PositionEffect::UNDEFINED,
-    .order_template = "",
-    .insert_time_utc = {},
-    .cancel_time_utc = {},
-    .order_local_id = order_local_id,
-    .order_external_id = execution_report.cl_ord_id,
-  };
+  // lookup
+  auto iter = find_order_mapping(
+      execution_report.orig_cl_ord_id,
+      execution_report.deribit_label);
+  if (iter != _order_mapping.end()) {
+    auto& order_mapping = (*iter).second;
 
-  // TODO(thraneh): lookup user_id
-  auto user_id = uint8_t{0};  // FIXME(thraneh): how?
+    switch (execution_report.exec_type) {
+      case core::fix::ExecType::PENDING_NEW:  // TODO(thraneh): does this exist?
+        assert(_gateway_status == GatewayStatus::READY);
+        // TODO(thraneh): CreateOrderAck
+        break;
+      /*
+      case core::fix::ExecType::PENDING_REPLACE:  // TODO(thraneh): does this exist?
+        assert(_gateway_status == GatewayStatus::READY);
+        // TODO(thraneh): ModifyOrderAck
+        break;
+      */
+      case core::fix::ExecType::PENDING_CANCEL:  // TODO(thraneh): does this exist?
+        assert(_gateway_status == GatewayStatus::READY);
+        // TODO(thraneh): CancelOrderAck
+        break;
+      case core::fix::ExecType::ORDER_STATUS:
+        assert(_gateway_status == GatewayStatus::READY);
+        // TODO(thraneh): OrderUpdate
+        break;
+      case core::fix::ExecType::TRADE:  // TODO(thraneh): does this exist?
+        assert(_gateway_status == GatewayStatus::READY);
+        // TODO(thraneh): TradeUpdate
+        break;
+      default:
+        break;
+    }
 
-  enqueue(user_id, order_update, true);
+    // working variables
+    auto side = core::fix::map(execution_report.side);
+    // validate
+    bool failure = false;
+    if (unlikely(
+          execution_report.symbol.compare(order_mapping._symbol) != 0)) {
+      LOG(WARNING)(
+          "Wrong symbol, got \"{}\", expected \"{}\"",
+          execution_report.symbol,
+          order_mapping._symbol);
+      failure = true;
+    }
+    if (unlikely(side != order_mapping._side)) {
+      LOG(WARNING)(
+          "Wrong side, got {}, expected {}",
+          side,
+          order_mapping._side);
+      failure = true;
+    }
+    LOG_IF(FATAL, failure)("DEBUG: something is wrong");
+    // update
+    order_mapping.update_cl_ord_id(
+      execution_report.cl_ord_id,
+      execution_report.transact_time);
+    // create
+    OrderUpdate order_update {
+      .account = _account,
+      .order_id = order_mapping._order_id,
+      .exchange = FLAGS_exchange,
+      .symbol = execution_report.symbol,
+      .order_status = core::fix::map(execution_report.ord_status),
+      .side = side,
+      .price = execution_report.price,
+      .remaining_quantity = execution_report.leaves_qty,
+      .traded_quantity = execution_report.cum_qty,
+      .position_effect = PositionEffect::UNDEFINED,
+      .order_template = "",
+      .insert_time_utc = {},
+      .cancel_time_utc = {},
+      .order_local_id = order_mapping._local_order_id,
+      .order_external_id = execution_report.cl_ord_id,
+    };
+    enqueue(
+        order_mapping._user_id,
+        order_update,
+        true);
+  }
+  // check if download has finished
+  if (_download_execution_reports &&
+      0 == --_download_execution_reports) {
+    check_download();
+  }
 }
 
 void Gateway::operator()(
@@ -637,7 +715,7 @@ void Gateway::operator()(
       "FIX event(header={}, order_cancel_reject={})",
       header,
       order_cancel_reject);
-  // TODO(thraneh): forward to gateway
+  // FIXME(thraneh): forward to gateway -- OrderUpdate?
 }
 
 void Gateway::operator()(
@@ -937,6 +1015,97 @@ void Gateway::create_order_ack_failure(
       true);
 }
 
+void Gateway::modify_order_ack_success(
+    const ModifyOrderEvent& event,
+    uint32_t local_order_id,
+    const std::string_view& order_external_id) {
+  auto& message_info = event.message_info;
+  auto& modify_order = event.modify_order;
+  ModifyOrderAck modify_order_ack {
+    .account = modify_order.account,
+    .order_id = modify_order.order_id,
+    .failure = false,
+    .reason = std::string_view(),
+    .order_local_id = local_order_id,
+    .order_external_id = order_external_id,
+  };
+  _dispatcher.enqueue(
+      message_info.source,
+      modify_order_ack,
+      message_info.source_receive_time,
+      message_info.origin_create_time,
+      true);
+}
+
+void Gateway::modify_order_ack_failure(
+    const ModifyOrderEvent& event,
+    const std::string_view& reason,
+    uint32_t local_order_id,
+    const std::string_view& order_external_id) {
+  auto& message_info = event.message_info;
+  auto& modify_order = event.modify_order;
+  ModifyOrderAck modify_order_ack {
+    .account = modify_order.account,
+    .order_id = modify_order.order_id,
+    .failure = true,
+    .reason = reason,
+    .order_local_id = local_order_id,
+    .order_external_id = order_external_id,
+  };
+  _dispatcher.enqueue(
+      message_info.source,
+      modify_order_ack,
+      message_info.source_receive_time,
+      message_info.origin_create_time,
+      true);
+}
+
+void Gateway::cancel_order_ack_success(
+    const CancelOrderEvent& event,
+    uint32_t local_order_id,
+    const std::string_view& order_external_id) {
+  auto& message_info = event.message_info;
+  auto& cancel_order = event.cancel_order;
+  CancelOrderAck cancel_order_ack {
+    .account = cancel_order.account,
+    .order_id = cancel_order.order_id,
+    .failure = false,
+    .reason = std::string_view(),
+    .order_local_id = local_order_id,
+    .order_external_id = order_external_id,
+  };
+  _dispatcher.enqueue(
+      message_info.source,
+      cancel_order_ack,
+      message_info.source_receive_time,
+      message_info.origin_create_time,
+      true);
+}
+
+
+void Gateway::cancel_order_ack_failure(
+    const CancelOrderEvent& event,
+    const std::string_view& reason,
+    uint32_t local_order_id,
+    const std::string_view& order_external_id) {
+  auto& message_info = event.message_info;
+  auto& cancel_order = event.cancel_order;
+  CancelOrderAck cancel_order_ack {
+    .account = cancel_order.account,
+    .order_id = cancel_order.order_id,
+    .failure = true,
+    .reason = reason,
+    .order_local_id = local_order_id,
+    .order_external_id = order_external_id,
+  };
+  _dispatcher.enqueue(
+      message_info.source,
+      cancel_order_ack,
+      message_info.source_receive_time,
+      message_info.origin_create_time,
+      true);
+}
+
 std::string Gateway::create_request_id() {
   return fmt::format(  // FIXME(thraneh): use charconv
       "roq:{:09}",
@@ -951,6 +1120,28 @@ std::string Gateway::create_deribit_label(
       ++_local_order_id,
       user_id,
       user_order_id);
+}
+
+uint64_t Gateway::parse_deribit_label(
+    const std::string_view& deribit_label) {
+  return uint64_t{0};
+}
+
+std::unordered_map<uint64_t, OrderMapping>::iterator
+Gateway::find_order_mapping(
+    const std::string_view& orig_cl_ord_id,
+    const std::string_view& deribit_label) {
+  auto iter = _order_lookup.find(orig_cl_ord_id);
+  if (iter != _order_lookup.end())
+    return _order_mapping.find((*iter).second);
+  auto user_order_id = parse_deribit_label(deribit_label);
+  if (user_order_id)
+    return _order_mapping.find(user_order_id);
+  LOG(WARNING)(
+      "Unable to map order with orig_cl_ord_id={} and deribit_label={}",
+      orig_cl_ord_id,
+      deribit_label);
+  return _order_mapping.end();
 }
 
 }  // namespace deribit

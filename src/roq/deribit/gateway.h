@@ -5,18 +5,21 @@
 #include <memory>
 #include <string>
 #include <thread>
+#include <unordered_map>
 #include <vector>
 
 #include "roq/server.h"
 
 #include "roq/core/uri.h"
 #include "roq/core/clock.h"
+#include "roq/core/hash_map.h"
 #include "roq/core/utils/buffer.h"
 #include "roq/core/ssl/ssl.h"
 #include "roq/core/event/event.h"
 
 #include "roq/deribit/config.h"
 #include "roq/deribit/fix.h"
+#include "roq/deribit/order_mapping.h"
 
 #include "roq/deribit/fix/execution_report.h"
 #include "roq/deribit/fix/heartbeat.h"
@@ -127,6 +130,28 @@ class Gateway final : public server::Handler {
       const CreateOrderEvent& event,
       const std::string_view& reason);
 
+  void modify_order_ack_success(
+      const ModifyOrderEvent& event,
+      uint32_t local_order_id,
+      const std::string_view& order_external_id);
+
+  void modify_order_ack_failure(
+      const ModifyOrderEvent& event,
+      const std::string_view& reason,
+      uint32_t local_order_id = 0,
+      const std::string_view& order_external_id = std::string_view());
+
+  void cancel_order_ack_success(
+      const CancelOrderEvent& event,
+      uint32_t local_order_id,
+      const std::string_view& order_external_id);
+
+  void cancel_order_ack_failure(
+      const CancelOrderEvent& event,
+      const std::string_view& reason,
+      uint32_t local_order_id = 0,
+      const std::string_view& order_external_id = std::string_view());
+
  private:
   template <typename T>
   void enqueue(
@@ -234,12 +259,21 @@ class Gateway final : public server::Handler {
     > _fix_latency;
 
  public:
-	typedef Histogram<200, 500, 1000, 2000, 5000, 10000> histogram_t;
+  typedef Histogram<200, 500, 1000, 2000, 5000, 10000> histogram_t;
 
  private:
   histogram_t _market_data_incremental_refresh;
 
   uint32_t _local_order_id = 0;  // TODO(thraneh): we need this extracted from the feed
+
+  std::unordered_map<uint64_t, OrderMapping> _order_mapping;
+  core::hash_map<std::string, uint64_t> _order_lookup;
+
+  std::unordered_map<uint64_t, OrderMapping>::iterator
+  find_order_mapping(
+      const std::string_view& orig_cl_ord_id,
+      const std::string_view& deribit_label);
+  static uint64_t parse_deribit_label(const std::string_view& deribit_label);
 };
 
 }  // namespace deribit
