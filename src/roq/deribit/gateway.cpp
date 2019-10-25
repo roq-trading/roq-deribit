@@ -44,9 +44,6 @@ DEFINE_bool(cancel_on_disconnect, true,
 DEFINE_bool(silence_empty_messages, true,
     "silence empty messages? (bool)");
 
-DEFINE_uint32(max_depth, 65536,
-    "maximum depth for market by price");
-
 DEFINE_uint32(max_trades, 256,
     "maximum trades for trade summary");
 
@@ -67,6 +64,7 @@ DEFINE_bool(batch_subscribe, false,
 
 // external
 DECLARE_string(name);
+DECLARE_uint32(max_depth);
 
 namespace roq {
 namespace deribit {
