@@ -29,37 +29,47 @@
 #include "roq/deribit/fix/security_list_request.h"
 #include "roq/deribit/fix/user_request.h"
 
-DEFINE_string(fix_uri, "tcp://test.deribit.com:9881",
+DEFINE_string(fix_uri,
+    "tcp://test.deribit.com:9881",
     "FIX end-point (URI)");
 
-DEFINE_uint64(ping_freq_secs, 5,
+DEFINE_uint64(ping_freq_secs,
+    uint64_t{5},
     "ping frequency (seconds)");
 
-DEFINE_string(exchange, "deribit",
+DEFINE_string(exchange,
+    "deribit",
     "exchange identifier (string)");
 
-DEFINE_bool(cancel_on_disconnect, true,
+DEFINE_bool(cancel_on_disconnect,
+    true,
     "cancel orders on disconnect? (bool)");
 
-DEFINE_bool(silence_empty_messages, true,
+DEFINE_bool(silence_empty_messages,
+    true,
     "silence empty messages? (bool)");
 
-DEFINE_uint32(max_trades, 256,
+DEFINE_uint32(max_trades,
+    uint32_t{256},
     "maximum trades for trade summary");
 
-DEFINE_uint32(encode_buffer_size, 1048576,
+DEFINE_uint32(encode_buffer_size,
+    uint32_t{1048576},
     "encode buffer size");
 
-DEFINE_uint32(decode_buffer_size, 1048576,
+DEFINE_uint32(decode_buffer_size,
+    uint32_t{1048576},
     "decode buffer size");
 
-DEFINE_uint64(reconnect_secs, 10,
+DEFINE_uint64(reconnect_secs,
+    {10},
     "time before reconnect (seconds)");
 
 // following options are work-arounds for weird behavior:
 
 // - batch subscription doesn't seem to work (as of 2019-10-06)
-DEFINE_bool(batch_subscribe, false,
+DEFINE_bool(batch_subscribe,
+    false,
     "batch subscribe symbols? (bool)");
 
 // external
@@ -69,7 +79,7 @@ DECLARE_uint32(max_depth);
 namespace roq {
 namespace deribit {
 
-namespace {
+namespace {  // TODO(thraneh): move these to roq-server
 constexpr std::string_view LOGOUT_RESPONSE("LOGOUT_RESPONSE");
 constexpr std::string_view RESEND_NOT_SUPPORTED("RESEND_NOT_SUPPORTED");
 constexpr std::string_view GATEWAY_NOT_READY("GATEWAY_NOT_READY");
@@ -80,6 +90,7 @@ constexpr std::string_view INVALID_ORDER_TEMPLATE("INVALID_ORDER_TEMPLATE");
 constexpr std::string_view NETWORK_ERROR("NETWORK_ERROR");
 constexpr std::string_view UNKNOWN_ORDER_ID("UNKNOWN_ORDER_ID");
 constexpr std::string_view UNKNOWN_EXCHANGE_ORDER_ID("UNKNOWN_EXCHANGE_ORDER_ID");
+constexpr std::string_view MODIFY_ORDER_NOT_SUPPORTED("MODIFY_ORDER_NOT_SUPPORTED");
 }  // namespace
 
 // utilities
@@ -440,12 +451,15 @@ void Gateway::operator()(
     return;
   }
   // lookup
+  // FIXME(thraneh): *create* if doesn't exist...? only if deribit_label?
   auto iter = find_order_mapping(
       execution_report.orig_cl_ord_id,
       execution_report.deribit_label);
   if (iter != _order_mapping.end()) {
     auto& order_mapping = (*iter).second;
 
+    // TODO(thraneh): HOW DO WE DEAL WITH ALL THIS ???
+    //
     switch (execution_report.exec_type) {
       case core::fix::ExecType::PENDING_NEW:  // TODO(thraneh): does this exist?
         assert(_gateway_status == GatewayStatus::READY);
@@ -1079,7 +1093,6 @@ void Gateway::cancel_order_ack_success(
       message_info.origin_create_time,
       true);
 }
-
 
 void Gateway::cancel_order_ack_failure(
     const CancelOrderEvent& event,
