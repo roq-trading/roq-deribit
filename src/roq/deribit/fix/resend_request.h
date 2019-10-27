@@ -40,7 +40,7 @@ struct fmt::formatter<roq::deribit::fix::ResendRequest> {
         ctx.out(),
         "{{"
         "begin_seq_no={}, "
-        "end_seq_no={}, "
+        "end_seq_no={}"
         "}}",
         value.begin_seq_no,
         value.end_seq_no);

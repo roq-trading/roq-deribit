@@ -22,13 +22,11 @@ FIX::FIX(
       _ssl_connection(ssl_context),
       _dns_base(dns_base),
       _uri(uri),
-      _buffer_event(base),  //, _ssl_connection),
+      _buffer_event(base),
       _decode_buffer(decode_buffer_size) {
   LOG_IF(FATAL, _uri.scheme.compare("tcp") != 0)(
       "Expected URI scheme to be \"tcp\" (got \"{}\")",
       _uri.scheme);
-  int value = 1;
-  setsockopt(_buffer_event.getfd(), IPPROTO_TCP, TCP_NODELAY, &value, sizeof(value));
   _buffer_event.setcb(
       [this]() { on_read(); },
       [this](int events) { on_error(events); });
@@ -48,7 +46,7 @@ void FIX::start() {
 
 void FIX::stop() {
   _buffer_event.flush(EV_WRITE, BEV_FINISHED);
-  _buffer_event.close();
+  _buffer_event.shutdown(SHUT_RDWR);
 }
 
 void FIX::send(const core::utils::Message& message) {
@@ -66,14 +64,15 @@ void FIX::on_read() {
     _buffer_event.read(_buffer);
     process_data();
   } catch (std::exception& e) {
-    LOG(WARNING)("Exception: what=\"{}\"", e.what());
-    _buffer_event.close();
+    LOG(ERROR)("Exception: what=\"{}\"", e.what());
+    stop();
   }
 }
 
 void FIX::on_error(int events) {
   if (events & BEV_EVENT_CONNECTED) {
     LOG(INFO)("Connected");
+    _buffer_event.setsockopt(IPPROTO_TCP, TCP_NODELAY, int{1});
     _gateway.on_fix_connected();
   } else {
     LOG(WARNING)("Disconnected");

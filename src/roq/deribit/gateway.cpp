@@ -760,11 +760,11 @@ void Gateway::operator()(
 void Gateway::operator()(
     const core::fix::header_t& header,
     const fix::ResendRequest& resend_request) {
-  assert(_gateway_status != GatewayStatus::DISCONNECTED);
   VLOG(1)(
       "FIX event(header={}, resend_request={})",
       header,
       resend_request);
+  LOG(WARNING)("FIX resend request ({})", resend_request.end_seq_no);
   fix::Reject reject = {
     .ref_seq_num = header.msg_seq_num,
     .ref_tag_id = 0,
@@ -772,6 +772,7 @@ void Gateway::operator()(
     .text = RESEND_NOT_SUPPORTED,
   };
   send(reject);
+  _fix->stop();
 }
 
 void Gateway::operator()(
@@ -950,6 +951,7 @@ void Gateway::download_user() {
 }
 
 void Gateway::reset() {
+  _msg_seq_num = 0;
   _download = Download::NONE;
   _symbols.clear();
 }

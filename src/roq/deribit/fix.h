@@ -37,6 +37,7 @@ class FIX final {
 
  private:
   Gateway& _gateway;
+  core::ssl::Context _ssl_context;
   core::ssl::Connection _ssl_connection;
   core::event::DNSBase& _dns_base;
   const core::URI _uri;
