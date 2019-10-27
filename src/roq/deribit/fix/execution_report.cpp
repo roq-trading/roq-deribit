@@ -4,8 +4,11 @@
 
 #include "roq/core/fix/exception.h"
 #include "roq/core/fix/execution_report.h"
+#include "roq/core/fix/fills.h"
 #include "roq/core/fix/utils.h"
 
+#include "roq/deribit/fix/array.h"
+#include "roq/deribit/fix/buffer.h"
 #include "roq/deribit/fix/deribit.h"
 #include "roq/deribit/fix/utils.h"
 
@@ -13,24 +16,96 @@ namespace roq {
 namespace deribit {
 namespace fix {
 
+namespace {
+bool update_fills(
+    auto& result,
+    const auto& tag,
+    const auto& field,
+    const auto& value) {
+  try {
+    switch (field) {
+      // key
+      case core::fix::Field::FILL_EXEC_ID:
+        static_assert(core::fix::FillsGrp::has_field(core::fix::Field::FILL_EXEC_ID));
+        return false;  // break
+      // standard
+      case core::fix::Field::FILL_PX:
+        static_assert(core::fix::FillsGrp::has_field(core::fix::Field::FILL_PX));
+        core::fix::update(result.fill_px, value);
+        break;
+      case core::fix::Field::FILL_QTY:
+        static_assert(core::fix::FillsGrp::has_field(core::fix::Field::FILL_QTY));
+        core::fix::update(result.fill_qty, value);
+        break;
+      case core::fix::Field::FILL_LIQUIDITY_IND:
+        static_assert(core::fix::FillsGrp::has_field(core::fix::Field::FILL_LIQUIDITY_IND));
+        core::fix::update(result.fill_liquidity_ind, value);
+        break;
+      default:
+        if (core::fix::Fills::has_field(field))
+          break;
+        return false;
+    }
+    return true;
+  } catch (core::fix::Exception&) {
+    throw;
+  } catch (std::runtime_error& e) {
+    throw core::fix::ParseError(
+        "MarketDataIncrementalRefresh|MDIncGrp: "
+        "Parse error: "
+        "field={}, value=\"{}\", what=\"{}\"",
+        tag, value, e.what());
+  }
+}
+
+void parse_fills_grp(
+    ExecutionReport::FillsGrp& result,
+    core::fix::message_t::const_iterator& iter,
+    const core::fix::message_t::const_iterator& end) {
+  assert(iter != end);
+  new (&result) std::remove_reference<decltype(result)>::type {};
+  // key
+  auto& [tag, value] = *iter;
+  auto field = core::fix::parse_field(tag);
+  static_assert(core::fix::Fills::key_field == core::fix::Field::FILL_EXEC_ID);
+  if (field != core::fix::Fills::key_field)
+    throw core::fix::InvalidField(
+        "ExecutionReport|FillsGrp: "
+        "Unexpected first field={}", tag);
+  core::fix::update(result.fill_exec_id, value);
+  // remaining fields
+  for (++iter; iter != end; ++iter) {
+    auto& [tag, value] = *iter;
+    auto field = core::fix::parse_field(tag);
+    if (update_fills(result, tag, field, value) == false)
+      return;
+  }
+}
+}  // namespace
+
+
 ExecutionReport ExecutionReport::parse(
-    const core::fix::message_t& message) {
+    const core::fix::message_t& message,
+    std::vector<std::byte>& buffer) {
   ExecutionReport result;
-  parse(result, message);
+  parse(result, message, buffer);
   return result;
 }
 
 void ExecutionReport::parse(
     ExecutionReport& result,
-    const core::fix::message_t& message) {
+    const core::fix::message_t& message,
+    std::vector<std::byte>& buffer) {
   new (&result) std::remove_reference<decltype(result)>::type {};
-  result.parse(message.begin(), message.end());
+  result.parse(message.begin(), message.end(), buffer);
 }
 
 void ExecutionReport::parse(
     core::fix::message_t::const_iterator&& iter,
-    const core::fix::message_t::const_iterator& end) {
-  for (; iter != end; ++iter) {
+    const core::fix::message_t::const_iterator& end,
+    std::vector<std::byte>& buffer) {
+  Buffer buffer_(buffer);
+  while (iter != end) {
     auto& [tag, value] = *iter;
     try {
       auto field = core::fix::parse_field(tag);
@@ -42,6 +117,10 @@ void ExecutionReport::parse(
         case core::fix::Field::CL_ORD_ID:
           static_assert(core::fix::ExecutionReport::has_field(core::fix::Field::CL_ORD_ID));
           core::fix::update(cl_ord_id, value);
+          break;
+        case core::fix::Field::COMMISSION:
+          static_assert(core::fix::ExecutionReport::has_field(core::fix::Field::COMMISSION));
+          core::fix::update(commission, value);
           break;
         case core::fix::Field::CONTRACT_MULTIPLIER:
           static_assert(core::fix::ExecutionReport::has_field(core::fix::Field::CONTRACT_MULTIPLIER));
@@ -59,6 +138,14 @@ void ExecutionReport::parse(
           static_assert(core::fix::ExecutionReport::has_field(core::fix::Field::EXEC_TYPE));
           core::fix::update(exec_type, value);
           break;
+        case core::fix::Field::LAST_PX:
+          static_assert(core::fix::ExecutionReport::has_field(core::fix::Field::LAST_PX));
+          core::fix::update(last_px, value);
+          break;
+        case core::fix::Field::LAST_QTY:
+          static_assert(core::fix::ExecutionReport::has_field(core::fix::Field::LAST_QTY));
+          core::fix::update(last_qty, value);
+          break;
         case core::fix::Field::LEAVES_QTY:
           static_assert(core::fix::ExecutionReport::has_field(core::fix::Field::LEAVES_QTY));
           core::fix::update(leaves_qty, value);
@@ -71,6 +158,26 @@ void ExecutionReport::parse(
           static_assert(core::fix::ExecutionReport::has_field(core::fix::Field::MAX_SHOW));
           core::fix::update(max_show, value);
           break;
+        case core::fix::Field::NO_FILLS: {
+          static_assert(core::fix::ExecutionReport::has_field(core::fix::Field::NO_FILLS));
+          auto length = core::charconv::from_string<uint32_t>(value);
+          ++iter;
+          Array array(buffer_, fills_grp);
+          for (uint32_t i = 0; i < length; ++i) {
+            if (iter == end)
+              throw core::fix::UnexpectedEndOfMessage(
+                  "ExecutionReport|FillsGrp");
+            auto& item = array.next();
+            parse_fills_grp(item, iter, end);
+            ++array;
+          }
+          if (fills_grp.length != length)
+            throw core::fix::InvalidGroupLength(
+                "ExecutionReport|FillsGrp: "
+                "Invalid group length: parsed={}, expected={}",
+                fills_grp.length, length);
+          continue;
+        }
         case core::fix::Field::ORD_REJ_REASON:
           static_assert(core::fix::ExecutionReport::has_field(core::fix::Field::ORD_REJ_REASON));
           core::fix::update(ord_rej_reason, value);
@@ -169,6 +276,7 @@ void ExecutionReport::parse(
           "field={}, value=\"{}\", what=\"{}\"",
           tag, value, e.what());
     }
+    ++iter;
   }
 }
 

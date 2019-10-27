@@ -21,11 +21,12 @@ static const char *MESSAGE =
 }  // namespace
 
 void BM_fix_execution_report_parse_message(benchmark::State& state) {
+  std::vector<std::byte> buffer(8192);
   uint64_t processed = 0;
   for (auto _ : state) {
     core::fix::Reader<core::fix::Version::FIX_44>::dispatch(
         [&](const core::fix::message_t& message) {
-          auto result = fix::ExecutionReport::parse(message);
+          auto result = fix::ExecutionReport::parse(message, buffer);
           if (!result.order_id.empty())
             ++processed;
         },

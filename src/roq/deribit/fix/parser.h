@@ -36,7 +36,7 @@ struct Parser final {
       std::vector<std::byte>& buffer) {
     switch (message.header.msg_type) {
       case core::fix::MsgType::EXECUTION_REPORT: {
-        handler(ExecutionReport::parse(message));
+        handler(ExecutionReport::parse(message, buffer));
         break;
       }
       case core::fix::MsgType::HEARTBEAT: {

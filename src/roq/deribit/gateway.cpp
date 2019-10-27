@@ -91,6 +91,7 @@ constexpr std::string_view NETWORK_ERROR("NETWORK_ERROR");
 constexpr std::string_view UNKNOWN_ORDER_ID("UNKNOWN_ORDER_ID");
 constexpr std::string_view UNKNOWN_EXCHANGE_ORDER_ID("UNKNOWN_EXCHANGE_ORDER_ID");
 constexpr std::string_view MODIFY_ORDER_NOT_SUPPORTED("MODIFY_ORDER_NOT_SUPPORTED");
+constexpr std::string_view INVALID_ORDER_ID("INVALID_ORDER_ID");
 }  // namespace
 
 // utilities
@@ -255,43 +256,49 @@ void Gateway::operator()(const CreateOrderEvent& event) {
         create_order.order_template.compare("default") != 0)) {
     create_order_ack_failure(event, INVALID_ORDER_TEMPLATE);
   } else {
-    // create id's
-    std::string cl_ord_id = create_request_id();
-    std::string deribit_label = create_deribit_label(
-        message_info.source,
-        create_order.order_id);
-    // create order mapping
+    // user_order_id
     auto user_order_id = merge_user_order_id(
         message_info.source,
         create_order.order_id);
-    _order_mapping.emplace(
-        user_order_id,
-        OrderMapping {
-          _local_order_id,
+    if (unlikely(
+          _order_mapping.find(user_order_id) != _order_mapping.end())) {
+      create_order_ack_failure(event, INVALID_ORDER_ID);
+    } else {
+      // note! create_deribit_label will increase local_order_id
+      std::string deribit_label = create_deribit_label(
           message_info.source,
-          create_order.order_id,
-          create_order.order_type,
-          create_order.side,
-          create_order.symbol
-        });
-    _order_lookup.emplace(cl_ord_id, user_order_id);
-    // create request
-    fix::NewOrderSingle new_order_single = {
-      .cl_ord_id = cl_ord_id,
-      .side = core::fix::map(create_order.side),
-      .order_qty = create_order.quantity,
-      .price = create_order.price,
-      .symbol = create_order.symbol,
-      .ord_type = core::fix::map(create_order.order_type),
-      .time_in_force = core::fix::map(create_order.time_in_force),
-      .deribit_label = deribit_label,
-    };
-    try {
-      send(new_order_single);
-      create_order_ack_success(event, cl_ord_id);
-    } catch (std::exception&) {
-      create_order_ack_failure(event, NETWORK_ERROR);
-      throw;
+          create_order.order_id);
+      _order_mapping.emplace(
+          user_order_id,
+          OrderMapping {
+            _local_order_id,
+            message_info.source,
+            create_order.order_id,
+            create_order.order_type,
+            create_order.side,
+            create_order.symbol
+          });
+      // cl_ord_id
+      std::string cl_ord_id = create_request_id();
+      _order_lookup.emplace(cl_ord_id, user_order_id);
+      // create request
+      fix::NewOrderSingle new_order_single = {
+        .cl_ord_id = cl_ord_id,
+        .side = core::fix::map(create_order.side),
+        .order_qty = create_order.quantity,
+        .price = create_order.price,
+        .symbol = create_order.symbol,
+        .ord_type = core::fix::map(create_order.order_type),
+        .time_in_force = core::fix::map(create_order.time_in_force),
+        .deribit_label = deribit_label,
+      };
+      try {
+        send(new_order_single);
+        create_order_ack_success(event, cl_ord_id);
+      } catch (std::exception&) {
+        create_order_ack_failure(event, NETWORK_ERROR);
+        throw;
+      }
     }
   }
 }
@@ -450,90 +457,148 @@ void Gateway::operator()(
       check_download();
     return;
   }
-  // lookup
-  // FIXME(thraneh): *create* if doesn't exist...? only if deribit_label?
-  auto iter = find_order_mapping(
-      execution_report.orig_cl_ord_id,
-      execution_report.deribit_label);
-  if (iter != _order_mapping.end()) {
-    auto& order_mapping = (*iter).second;
 
-    // TODO(thraneh): HOW DO WE DEAL WITH ALL THIS ???
-    //
-    switch (execution_report.exec_type) {
-      case core::fix::ExecType::PENDING_NEW:  // TODO(thraneh): does this exist?
-        assert(_gateway_status == GatewayStatus::READY);
-        // TODO(thraneh): CreateOrderAck
-        break;
-      /*
-      case core::fix::ExecType::PENDING_REPLACE:  // TODO(thraneh): does this exist?
-        assert(_gateway_status == GatewayStatus::READY);
-        // TODO(thraneh): ModifyOrderAck
-        break;
-      */
-      case core::fix::ExecType::PENDING_CANCEL:  // TODO(thraneh): does this exist?
-        assert(_gateway_status == GatewayStatus::READY);
-        // TODO(thraneh): CancelOrderAck
-        break;
-      case core::fix::ExecType::ORDER_STATUS:
-        assert(_gateway_status == GatewayStatus::READY);
-        // TODO(thraneh): OrderUpdate
-        break;
-      case core::fix::ExecType::TRADE:  // TODO(thraneh): does this exist?
-        assert(_gateway_status == GatewayStatus::READY);
-        // TODO(thraneh): TradeUpdate
-        break;
-      default:
-        break;
-    }
+  LOG(INFO)("DEBUG: {}", execution_report);
 
-    // working variables
-    auto side = core::fix::map(execution_report.side);
-    // validate
-    bool failure = false;
-    if (unlikely(
-          execution_report.symbol.compare(order_mapping._symbol) != 0)) {
+  // assert(_gateway_status == GatewayStatus::READY);
+
+  uint64_t user_order_id = 0;
+
+  if (execution_report.exec_type == core::fix::ExecType::ORDER_STATUS &&
+      execution_report.ord_status == core::fix::OrdStatus::NEW) {
+    const auto& orig_cl_ord_id = execution_report.orig_cl_ord_id;
+    auto iter = _order_lookup.find(orig_cl_ord_id);
+    if (iter == _order_lookup.end()) {
       LOG(WARNING)(
-          "Wrong symbol, got \"{}\", expected \"{}\"",
-          execution_report.symbol,
-          order_mapping._symbol);
-      failure = true;
+          "Unable to find order_mapping for orig_cl_ord_id=\"{}\"",
+          orig_cl_ord_id);
+      return;
     }
-    if (unlikely(side != order_mapping._side)) {
+    user_order_id = (*iter).second;
+    // _order_lookup.erase(iter);
+    const auto& cl_ord_id = execution_report.cl_ord_id;
+    _order_lookup.emplace(std::string(cl_ord_id), user_order_id);
+  } else {
+    const auto& cl_ord_id = execution_report.cl_ord_id;
+    auto iter = _order_lookup.find(cl_ord_id);
+    if (iter == _order_lookup.end()) {
       LOG(WARNING)(
-          "Wrong side, got {}, expected {}",
-          side,
-          order_mapping._side);
-      failure = true;
+          "Unable to find order_mapping for cl_ord_id=\"{}\"",
+          cl_ord_id);
+      return;
     }
-    LOG_IF(FATAL, failure)("DEBUG: something is wrong");
-    // update
-    order_mapping.update_cl_ord_id(
-      execution_report.cl_ord_id,
-      execution_report.transact_time);
-    // create
-    OrderUpdate order_update {
-      .account = _account,
-      .order_id = order_mapping._order_id,
-      .exchange = FLAGS_exchange,
-      .symbol = execution_report.symbol,
-      .order_status = core::fix::map(execution_report.ord_status),
-      .side = side,
-      .price = execution_report.price,
-      .remaining_quantity = execution_report.leaves_qty,
-      .traded_quantity = execution_report.cum_qty,
-      .position_effect = PositionEffect::UNDEFINED,
-      .order_template = "",
-      .insert_time_utc = {},
-      .cancel_time_utc = {},
-      .order_local_id = order_mapping._local_order_id,
-      .order_external_id = execution_report.cl_ord_id,
-    };
-    enqueue(
-        order_mapping._user_id,
-        order_update,
-        true);
+    user_order_id = (*iter).second;
   }
+
+  auto iter = _order_mapping.find(user_order_id);
+  LOG_IF(FATAL, iter == _order_mapping.end())("Unexpected");
+  auto& order_mapping = (*iter).second;
+
+  if (order_mapping.validate(execution_report) == false) {
+    LOG(FATAL)("DEBUG: something is wrong");
+  }
+
+  switch (execution_report.exec_type) {
+    case core::fix::ExecType::ORDER_STATUS:
+      switch (execution_report.ord_status) {
+        case core::fix::OrdStatus::NEW: {
+          CreateOrderAck create_order_ack {
+            .account = _account,
+            .order_id = order_mapping._order_id,
+            .failure = false,
+            .reason = execution_report.text,
+            .order_local_id = order_mapping._local_order_id,
+            .order_external_id = execution_report.cl_ord_id,
+          };
+          enqueue(
+              order_mapping._user_id,
+              create_order_ack,
+              false);  // *not* last
+          [[ fallthrough ]];
+        }
+        case core::fix::OrdStatus::PARTIALLY_FILLED:
+          [[ fallthrough ]];
+        case core::fix::OrdStatus::FILLED:
+          [[ fallthrough ]];
+        case core::fix::OrdStatus::CANCELED: {
+          for (size_t i = 0; i < execution_report.fills_grp.length; ++i) {
+            const auto& fills = execution_report.fills_grp.items[i];
+            // TODO(thraneh): check if we need a fill_exec_id <-> local_trade_id map
+            TradeUpdate trade_update {
+              .account = _account,
+              .trade_id = ++_local_trade_id,
+              .order_id = order_mapping._order_id,
+              .exchange = FLAGS_exchange,
+              .symbol = execution_report.symbol,
+              .side = order_mapping._side,
+              .quantity = fills.fill_qty,
+              .price = fills.fill_px,
+              .position_effect = PositionEffect::UNDEFINED,
+              .order_template = std::string(),
+              .trade_time_utc = execution_report.transact_time,
+              .order_external_id = execution_report.cl_ord_id,
+              .trade_external_id = fills.fill_exec_id,
+            };
+            enqueue(
+                order_mapping._user_id,
+                trade_update,
+                false);
+          }
+          OrderUpdate order_update {
+            .account = _account,
+            .order_id = order_mapping._order_id,
+            .exchange = FLAGS_exchange,
+            .symbol = execution_report.symbol,
+            .order_status = core::fix::map(execution_report.ord_status),
+            .side = order_mapping._side,
+            .price = execution_report.price,
+            .remaining_quantity = execution_report.leaves_qty,
+            .traded_quantity = execution_report.cum_qty,
+            .position_effect = PositionEffect::UNDEFINED,
+            .order_template = std::string(),
+            .insert_time_utc = order_mapping._transact_time,
+            .cancel_time_utc = {},
+            .order_local_id = order_mapping._local_order_id,
+            .order_external_id = execution_report.cl_ord_id,
+          };
+          enqueue(
+              order_mapping._user_id,
+              order_update,
+              true);
+          break;
+        }
+        default:
+          assert(false);  // FIXME(thraneh): DEBUG
+          LOG(FATAL)("Unexpected");
+          break;
+      }
+      break;
+    case core::fix::ExecType::CANCELED: {
+      CancelOrderAck cancel_order_ack {
+        .account = _account,
+        .order_id = order_mapping._order_id,
+        .failure = false,
+        .reason = execution_report.text,
+        .order_local_id = order_mapping._local_order_id,
+        .order_external_id = execution_report.cl_ord_id,
+      };
+      enqueue(
+          order_mapping._user_id,
+          cancel_order_ack,
+          true);
+      break;
+    }
+    /*
+    case core::fix::ExecType::TRADE:  // TODO(thraneh): does this exist?
+      assert(_gateway_status == GatewayStatus::READY);
+      // TODO(thraneh): TradeUpdate
+      break;
+    */
+    default:
+      assert(false);  // FIXME(thraneh): DEBUG
+      break;
+  }
+
   // check if download has finished
   if (_download_execution_reports &&
       0 == --_download_execution_reports) {
@@ -1140,6 +1205,7 @@ uint64_t Gateway::parse_deribit_label(
   return uint64_t{0};
 }
 
+/*
 std::unordered_map<uint64_t, OrderMapping>::iterator
 Gateway::find_order_mapping(
     const std::string_view& orig_cl_ord_id,
@@ -1156,6 +1222,7 @@ Gateway::find_order_mapping(
       deribit_label);
   return _order_mapping.end();
 }
+*/
 
 }  // namespace deribit
 }  // namespace roq

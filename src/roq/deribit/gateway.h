@@ -267,13 +267,12 @@ class Gateway final : public server::Handler {
   uint32_t _local_order_id = 0;  // TODO(thraneh): we need this extracted from the feed
 
   std::unordered_map<uint64_t, OrderMapping> _order_mapping;
+
   core::hash_map<std::string, uint64_t> _order_lookup;
 
-  std::unordered_map<uint64_t, OrderMapping>::iterator
-  find_order_mapping(
-      const std::string_view& orig_cl_ord_id,
-      const std::string_view& deribit_label);
   static uint64_t parse_deribit_label(const std::string_view& deribit_label);
+
+  uint32_t _local_trade_id = 0;
 };
 
 }  // namespace deribit
