@@ -81,21 +81,6 @@ DECLARE_uint32(max_depth);
 namespace roq {
 namespace deribit {
 
-namespace {  // TODO(thraneh): move these to roq-server
-constexpr std::string_view LOGOUT_RESPONSE("LOGOUT_RESPONSE");
-constexpr std::string_view RESEND_NOT_SUPPORTED("RESEND_NOT_SUPPORTED");
-constexpr std::string_view GATEWAY_NOT_READY("GATEWAY_NOT_READY");
-constexpr std::string_view INVALID_ACCOUNT("INVALID_ACCOUNT");
-constexpr std::string_view INVALID_EXCHANGE("INVALID_EXCHANGE");
-constexpr std::string_view INVALID_POSITION_EFFECT("INVALID_POSITION_EFFECT");
-constexpr std::string_view INVALID_ORDER_TEMPLATE("INVALID_ORDER_TEMPLATE");
-constexpr std::string_view NETWORK_ERROR("NETWORK_ERROR");
-constexpr std::string_view UNKNOWN_ORDER_ID("UNKNOWN_ORDER_ID");
-constexpr std::string_view UNKNOWN_EXCHANGE_ORDER_ID("UNKNOWN_EXCHANGE_ORDER_ID");
-constexpr std::string_view MODIFY_ORDER_NOT_SUPPORTED("MODIFY_ORDER_NOT_SUPPORTED");
-constexpr std::string_view INVALID_ORDER_ID("INVALID_ORDER_ID");
-}  // namespace
-
 // utilities
 
 namespace {
@@ -333,10 +318,10 @@ void Gateway::operator()(const ModifyOrderEvent& event) {
         modify_order_ack_failure(event, UNKNOWN_EXCHANGE_ORDER_ID);
       } else {
         // note! create_request_id will increase request_id
-        std::string cl_ord_id = create_request_id();
+        auto request_id = create_request_id();
         // create request
         fix::OrderCancelReplaceRequest order_cancel_replace_request = {
-          .cl_ord_id = cl_ord_id,
+          .cl_ord_id = request_id,
           .orig_cl_ord_id = order_mapping.exchange_order_id(),
           .side = core::fix::map(order_mapping.side()),
           .order_qty = modify_order.quantity,
@@ -388,10 +373,10 @@ void Gateway::operator()(const CancelOrderEvent& event) {
         cancel_order_ack_failure(event, UNKNOWN_EXCHANGE_ORDER_ID);
       } else {
         // note! create_request_id will increase request_id
-        std::string cl_ord_id = create_request_id();
+        auto request_id = create_request_id();
         // create request
         fix::OrderCancelRequest order_cancel_request = {
-          .cl_ord_id = cl_ord_id,
+          .cl_ord_id = request_id,
           .orig_cl_ord_id = order_mapping.exchange_order_id(),
         };
         try {
@@ -515,7 +500,7 @@ void Gateway::operator()(
               .failure = true,
               .reason = execution_report.text,
               .gateway_order_id = order_mapping.gateway_order_id(),
-              .external_order_id = execution_report.cl_ord_id,
+              .external_order_id = order_mapping.exchange_order_id(),
             };
             enqueue(
                 order_mapping.user_id(),
@@ -532,7 +517,7 @@ void Gateway::operator()(
               .failure = true,
               .reason = execution_report.text,
               .gateway_order_id = order_mapping.gateway_order_id(),
-              .external_order_id = execution_report.cl_ord_id,
+              .external_order_id = order_mapping.exchange_order_id(),
             };
             enqueue(
                 order_mapping.user_id(),
@@ -549,7 +534,7 @@ void Gateway::operator()(
               .failure = true,
               .reason = execution_report.text,
               .gateway_order_id = order_mapping.gateway_order_id(),
-              .external_order_id = execution_report.cl_ord_id,
+              .external_order_id = order_mapping.exchange_order_id(),
             };
             enqueue(
                 order_mapping.user_id(),
@@ -574,7 +559,7 @@ void Gateway::operator()(
               .failure = false,
               .reason = execution_report.text,
               .gateway_order_id = order_mapping.gateway_order_id(),
-              .external_order_id = execution_report.cl_ord_id,
+              .external_order_id = order_mapping.exchange_order_id(),
             };
             enqueue(
                 order_mapping.user_id(),
@@ -604,7 +589,7 @@ void Gateway::operator()(
                   .failure = false,
                   .reason = execution_report.text,
                   .gateway_order_id = order_mapping.gateway_order_id(),
-                  .external_order_id = execution_report.cl_ord_id,
+                  .external_order_id = order_mapping.exchange_order_id(),
                 };
                 enqueue(
                     order_mapping.user_id(),
@@ -620,7 +605,7 @@ void Gateway::operator()(
                   .failure = false,
                   .reason = execution_report.text,
                   .gateway_order_id = order_mapping.gateway_order_id(),
-                  .external_order_id = execution_report.cl_ord_id,
+                  .external_order_id = order_mapping.exchange_order_id(),
                 };
                 enqueue(
                     order_mapping.user_id(),
@@ -659,7 +644,7 @@ void Gateway::operator()(
                 .update_time_utc = execution_report.transact_time,
                 .gateway_order_id = order_mapping.gateway_order_id(),
                 .gateway_trade_id = trade_id,
-                .external_order_id = execution_report.cl_ord_id,
+                .external_order_id = order_mapping.exchange_order_id(),
                 .external_trade_id = fills.fill_exec_id,
               };
               enqueue(
@@ -682,7 +667,7 @@ void Gateway::operator()(
               .create_time_utc = order_mapping.create_time(),
               .update_time_utc = order_mapping.update_time(),
               .gateway_order_id = order_mapping.gateway_order_id(),
-              .external_order_id = execution_report.cl_ord_id,
+              .external_order_id = order_mapping.exchange_order_id(),
             };
             enqueue(
                 order_mapping.user_id(),
@@ -1334,7 +1319,7 @@ Gateway::create_order_mapping(
         std::string(execution_report.cl_ord_id),
         key);
     return iter;
-  } catch (InvalidUserCustom&) {
+  } catch (core::oms::InvalidUserCustom&) {
     LOG(WARNING)("*** INVALID USER_CUSTOM ***");
     return _order_mapping.end();
   }

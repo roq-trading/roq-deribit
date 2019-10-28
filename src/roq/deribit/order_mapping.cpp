@@ -6,8 +6,6 @@
 
 #include "roq/logging.h"
 
-#include "roq/core/charconv/number.h"
-
 #include "roq/core/fix/utils.h"
 
 namespace roq {
@@ -19,41 +17,6 @@ inline void copy_to(const std::string_view& value, T& result) {
   result[value.copy(result, sizeof(result) - 1)] = '\0';
 }
 }  // namespace
-
-UserCustom::UserCustom(
-    uint8_t user_id,
-    uint32_t user_order_id,
-    uint32_t gateway_order_id)
-    : _user_id(user_id),
-      _user_order_id(user_order_id),
-      _gateway_order_id(gateway_order_id) {
-  auto key = (static_cast<uint64_t>(user_id) << 32) |
-    static_cast<uint64_t>(user_order_id);
-  auto text = fmt::format("ROQ:{}-{}", key, gateway_order_id);
-  copy_to(text, _text);
-}
-
-UserCustom::UserCustom(const std::string_view& text) {
-  if (text.size() > 4 &&
-      text.compare(0, 4, "ROQ:") == 0 &&
-      text.size() < 32) {
-    auto iter = text.begin() + 4,
-         end = text.end();
-    auto key = core::charconv::parse_number<uint64_t>(iter, end);
-    if (iter != end && (*iter) == '-') {
-      ++iter;
-      _gateway_order_id = core::charconv::parse_number<uint32_t>(
-          iter, end);
-      if (iter == end) {
-        _user_id = static_cast<uint8_t>(key >> 32);
-        _user_order_id = static_cast<uint32_t>(key);
-        copy_to(text, _text);
-        return;
-      }
-    }
-  }
-  throw InvalidUserCustom("Invalid UserCustom");
-}
 
 OrderMapping::OrderMapping(
     const MessageInfo& message_info,

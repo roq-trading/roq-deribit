@@ -4,53 +4,11 @@
 
 #include "roq/api.h"
 
+#include "roq/core/oms/user_custom.h"
 #include "roq/deribit/fix/execution_report.h"
 
 namespace roq {
 namespace deribit {
-
-class InvalidUserCustom final : public std::runtime_error {
- public:
-  using std::runtime_error::runtime_error;
-};
-
-struct UserCustom final {
-  UserCustom(
-      uint8_t user_id,
-      uint32_t user_order_id,
-      uint32_t gateway_order_id);
-
-  explicit UserCustom(const std::string_view& text);
-
-  inline auto user_id() const {
-    return _user_id;
-  }
-  inline auto user_order_id() const {
-    return _user_order_id;
-  }
-  inline auto gateway_order_id() const {
-    return _gateway_order_id;
-  }
-
-  inline std::string_view text() const {
-    return _text;
-  }
-
-  inline operator std::string_view() const {
-    return text();
-  }
-
-  inline auto key() const {
-    return (static_cast<uint64_t>(_user_id) << 32) |
-      static_cast<uint64_t>(_user_order_id);
-  }
-
- private:
-  uint8_t _user_id = 0;
-  uint32_t _user_order_id = 0;
-  uint32_t _gateway_order_id = 0;
-  char _text[32] = {};
-};
 
 struct OrderMapping final {
   OrderMapping(
@@ -127,7 +85,7 @@ struct OrderMapping final {
   void reset_request();
 
  private:
-  const UserCustom _user_custom;
+  const core::oms::UserCustom _user_custom;
   const OrderType _order_type;
   const Side _side;
   char _symbol[32] = {};  // note! *not* mutable
