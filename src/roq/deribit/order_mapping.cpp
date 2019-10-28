@@ -84,5 +84,21 @@ void OrderMapping::update_cl_ord_id(
   _transact_time = transact_time;
 }
 
+void OrderMapping::update_request(
+    uint32_t request_id,
+    Request request) {
+  assert(_request_id == uint32_t{0});
+  assert(_request == Request::NONE);
+  _request_id = request_id;
+  _request = request;
+}
+
+void OrderMapping::reset_request() {
+  assert(_request_id > uint32_t{0});
+  assert(_request != Request::NONE);
+  _request_id = uint32_t{0};
+  _request = Request::NONE;
+}
+
 }  // namespace deribit
 }  // namespace roq

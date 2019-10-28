@@ -124,7 +124,7 @@ class Gateway final : public server::Handler {
 
   void create_order_ack_success(
       const CreateOrderEvent& event,
-      const std::string_view& order_external_id);
+      const std::string_view& external_order_id);
 
   void create_order_ack_failure(
       const CreateOrderEvent& event,
@@ -133,24 +133,24 @@ class Gateway final : public server::Handler {
   void modify_order_ack_success(
       const ModifyOrderEvent& event,
       uint32_t local_order_id,
-      const std::string_view& order_external_id);
+      const std::string_view& external_order_id);
 
   void modify_order_ack_failure(
       const ModifyOrderEvent& event,
       const std::string_view& reason,
       uint32_t local_order_id = 0,
-      const std::string_view& order_external_id = std::string_view());
+      const std::string_view& external_order_id = std::string_view());
 
   void cancel_order_ack_success(
       const CancelOrderEvent& event,
       uint32_t local_order_id,
-      const std::string_view& order_external_id);
+      const std::string_view& external_order_id);
 
   void cancel_order_ack_failure(
       const CancelOrderEvent& event,
       const std::string_view& reason,
       uint32_t local_order_id = 0,
-      const std::string_view& order_external_id = std::string_view());
+      const std::string_view& external_order_id = std::string_view());
 
  private:
   template <typename T>

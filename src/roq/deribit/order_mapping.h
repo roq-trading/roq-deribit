@@ -28,6 +28,18 @@ struct OrderMapping final {
     return _transact_time.count() > 0;
   }
 
+  enum class Request {
+    NONE,
+    CREATE,
+    MODIFY,
+    CANCEL,
+  };
+
+  void update_request(
+      uint32_t request_id,
+      Request request);
+  void reset_request();
+
  public:
   const uint32_t _local_order_id;
   const uint8_t _user_id;
@@ -37,6 +49,9 @@ struct OrderMapping final {
   char _symbol[32] = {};  // note! *not* mutable
   char _cl_ord_id[32] = {};
   std::chrono::nanoseconds _transact_time = {};
+  // request
+  uint32_t _request_id = 0;
+  Request _request = Request::NONE;
 };
 
 }  // namespace deribit
