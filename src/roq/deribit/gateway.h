@@ -214,9 +214,6 @@ class Gateway final : public server::Handler {
   }
 
   std::string create_request_id();
-  std::string create_deribit_label(
-      uint8_t user_id,
-      uint32_t user_order_id);
 
  private:
   server::Dispatcher& _dispatcher;
@@ -264,15 +261,20 @@ class Gateway final : public server::Handler {
  private:
   histogram_t _market_data_incremental_refresh;
 
-  uint32_t _local_order_id = 0;  // TODO(thraneh): we need this extracted from the feed
+  uint32_t _local_order_id = 10000000;  // TODO(thraneh): we need this extracted from the feed
 
   std::unordered_map<uint64_t, OrderMapping> _order_mapping;
 
   core::hash_map<std::string, uint64_t> _order_lookup;
 
-  static uint64_t parse_deribit_label(const std::string_view& deribit_label);
+  uint32_t _local_trade_id = 20000000;
 
-  uint32_t _local_trade_id = 0;
+  decltype(_order_mapping)::iterator find_order_mapping(
+      const std::string_view& cl_ord_id,
+      const std::string_view& orig_cl_ord_id);
+
+  decltype(_order_mapping)::iterator create_order_mapping(
+      const fix::ExecutionReport& execution_report);
 };
 
 }  // namespace deribit
