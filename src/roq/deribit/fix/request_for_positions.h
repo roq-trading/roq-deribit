@@ -27,3 +27,22 @@ struct RequestForPositions final {
 }  // namespace fix
 }  // namespace deribit
 }  // namespace roq
+
+template <>
+struct fmt::formatter<roq::deribit::fix::RequestForPositions> {
+  template <typename C>
+  constexpr auto parse(C& ctx) {
+    return ctx.begin();
+  }
+  template <typename C>
+  auto format(const roq::deribit::fix::RequestForPositions& value, C& ctx) {
+    return format_to(
+        ctx.out(),
+        "{{"
+        "pos_req_id=\"{}\", "
+        "pos_req_type={}"
+        "}}",
+        value.pos_req_id,
+        value.pos_req_type);
+  }
+};

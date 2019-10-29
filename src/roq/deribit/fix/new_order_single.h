@@ -35,3 +35,34 @@ struct NewOrderSingle final {
 }  // namespace fix
 }  // namespace deribit
 }  // namespace roq
+
+template <>
+struct fmt::formatter<roq::deribit::fix::NewOrderSingle> {
+  template <typename C>
+  constexpr auto parse(C& ctx) {
+    return ctx.begin();
+  }
+  template <typename C>
+  auto format(const roq::deribit::fix::NewOrderSingle& value, C& ctx) {
+    return format_to(
+        ctx.out(),
+        "{{"
+        "cl_ord_id=\"{}\", "
+        "side={}, "
+        "order_qty={}, "
+        "price={}, "
+        "symbol=\"{}\", "
+        "ord_type={}, "
+        "time_in_force={}, "
+        "deribit_label=\"{}\""
+        "}}",
+        value.cl_ord_id,
+        value.side,
+        value.order_qty,
+        value.price,
+        value.symbol,
+        value.ord_type,
+        value.time_in_force,
+        value.deribit_label);
+  }
+};

@@ -27,3 +27,22 @@ struct UserRequest final {
 }  // namespace fix
 }  // namespace deribit
 }  // namespace roq
+
+template <>
+struct fmt::formatter<roq::deribit::fix::UserRequest> {
+  template <typename C>
+  constexpr auto parse(C& ctx) {
+    return ctx.begin();
+  }
+  template <typename C>
+  auto format(const roq::deribit::fix::UserRequest& value, C& ctx) {
+    return format_to(
+        ctx.out(),
+        "{{"
+        "user_request_id=\"{}\", "
+        "username={}"
+        "}}",
+        value.user_request_id,
+        value.username);
+  }
+};

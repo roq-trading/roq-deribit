@@ -196,22 +196,11 @@ class Gateway final : public server::Handler {
 
  private:
   template <typename T>
-  void send(const T& event) {
-    send(event, core::get_realtime_clock());
-  }
+  void send(const T& event);
   template <typename T>
   void send(
       const T& event,
-      const std::chrono::nanoseconds sending_time) {
-    assert(static_cast<bool>(_fix));  // a check missing somehwere else
-    if (static_cast<bool>(_fix) == false) return;  // FIXME(thraneh): DEBUG
-    auto message = event.encode(
-        _encode_buffer,
-        _msg_seq_num,
-        sending_time);
-    // message.print();  // DEBUG
-    _fix->send(message);
-  }
+      const std::chrono::nanoseconds sending_time);
 
   std::string create_request_id();
 

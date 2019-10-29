@@ -33,3 +33,35 @@ struct OrderCancelReplaceRequest final {
 }  // namespace fix
 }  // namespace deribit
 }  // namespace roq
+
+template <>
+struct fmt::formatter<roq::deribit::fix::OrderCancelReplaceRequest> {
+  template <typename C>
+  constexpr auto parse(C& ctx) {
+    return ctx.begin();
+  }
+  template <typename C>
+  auto format(const roq::deribit::fix::OrderCancelReplaceRequest& value, C& ctx) {
+    return format_to(
+        ctx.out(),
+        "{{"
+        "cl_ord_id=\"{}\", "
+        "orig_cl_ord_id=\"{}\", "
+        "side={}, "
+        "order_qty={}, "
+        "ord_type={}, "
+        "price={}, "
+        "symbol=\"{}\", "
+        "transact_time={}"
+        "}}",
+        value.cl_ord_id,
+        value.orig_cl_ord_id,
+        value.side,
+        value.order_qty,
+        value.ord_type,
+        value.price,
+        value.symbol,
+        value.symbol,
+        value.transact_time);
+  }
+};

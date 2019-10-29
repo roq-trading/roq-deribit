@@ -78,6 +78,8 @@ DEFINE_bool(batch_subscribe,
 DECLARE_string(name);
 DECLARE_uint32(max_depth);
 
+#define FIX_PREFIX "[FIX] "
+
 namespace roq {
 namespace deribit {
 
@@ -196,7 +198,7 @@ void Gateway::operator()(const TimerEvent& event) {
     case GatewayStatus::DOWNLOADING:
     case GatewayStatus::READY: {
       if (ping) {
-        VLOG(4)("FIX sending test request");
+        VLOG(4)(FIX_PREFIX "sending test request");
         auto test_req_id = fmt::format(  // FIXME(thraneh): use charconv
             "{}",
             core::get_system_clock().count());
@@ -409,8 +411,8 @@ void Gateway::create_fix() {
 
 void Gateway::on_fix_connected() {
   assert(_gateway_status == GatewayStatus::CONNECTING);
-  LOG(INFO)(
-      "FIX sending logon request (username=\"{}\")...", _access_key);
+  LOG(INFO)(FIX_PREFIX
+      "sending logon request (username=\"{}\")...", _access_key);
   auto sending_time = core::get_realtime_clock();
   auto raw_data = Random::create_raw_data(sending_time);
   auto password = Random::create_password(raw_data, _access_secret);
@@ -435,8 +437,8 @@ void Gateway::on_fix_disconnected() {
 void Gateway::operator()(
     const core::fix::header_t& header,
     const fix::ExecutionReport& execution_report) {
-  VLOG(1)(
-      "FIX event(header={}, execution_report={})",
+  VLOG(1)(FIX_PREFIX
+      "event(header={}, execution_report={})",
       header,
       execution_report);
   // response to order download?
@@ -449,10 +451,6 @@ void Gateway::operator()(
       check_download();
     return;
   }
-
-  LOG(INFO)("DEBUG: {}", execution_report);
-
-  // assert(_gateway_status == GatewayStatus::READY);
 
   // order mapping
   auto iter = find_order_mapping(
@@ -693,8 +691,8 @@ void Gateway::operator()(
   assert(_gateway_status != GatewayStatus::DISCONNECTED);
   // note! get clock *before* any logging (avoid latency)
   auto now = core::get_system_clock();
-  VLOG(3)(
-      "FIX event(header={}, heartbeat={})",
+  VLOG(3)(FIX_PREFIX
+      "event(header={}, heartbeat={})",
       header,
       heartbeat);
   if (heartbeat.test_req_id.empty() == false) {
@@ -711,11 +709,11 @@ void Gateway::operator()(
     const core::fix::header_t& header,
     const fix::Logon& logon) {
   assert(_gateway_status == GatewayStatus::LOGIN_SENT);
-  VLOG(1)(
-      "FIX event(header={}, logon={})",
+  VLOG(1)(FIX_PREFIX
+      "event(header={}, logon={})",
       header,
       logon);
-  LOG(INFO)("FIX logon COMPLETED");
+  LOG(INFO)(FIX_PREFIX "logon COMPLETED");
   begin_download();
 }
 
@@ -723,12 +721,12 @@ void Gateway::operator()(
     const core::fix::header_t& header,
     const fix::Logout& logout) {
   assert(_gateway_status == GatewayStatus::READY);
-  VLOG(1)(
-      "FIX event(header={}, logout={})",
+  VLOG(1)(FIX_PREFIX
+      "event(header={}, logout={})",
       header,
       logout);
-  LOG(WARNING)(
-      "FIX logout (text=\"{}\")",
+  LOG(WARNING)(FIX_PREFIX
+      "logout (text=\"{}\")",
       logout.text);
   update(GatewayStatus::LOGGED_OUT);
   // note! mandated, must send a logout response
@@ -736,7 +734,7 @@ void Gateway::operator()(
     .text = LOGOUT_RESPONSE,
   };
   send(response);
-  LOG(INFO)("FIX closing connection");
+  LOG(INFO)(FIX_PREFIX "closing connection");
   _fix->stop();
 }
 
@@ -748,8 +746,8 @@ void Gateway::operator()(
     if (unlikely(FLAGS_silence_empty_messages &&
           market_data_incremental_refresh.md_inc_grp.length == 0))
       return;
-    VLOG(3)(
-        "FIX event(header={}, market_data_incremental_refresh={})",
+    VLOG(3)(FIX_PREFIX
+        "event(header={}, market_data_incremental_refresh={})",
         header,
         market_data_incremental_refresh);
     size_t bid_length = 0, ask_length = 0, trade_length = 0;
@@ -775,10 +773,10 @@ void Gateway::operator()(
         case core::fix::MDEntryType::INDEX_VALUE:
         case core::fix::MDEntryType::SETTLEMENT_PRICE:
           // FIXME(thraneh): how to propagate these???
-          VLOG(1)("FIX unsupported: {}", item);
+          VLOG(4)(FIX_PREFIX "unsupported: {}", item);
           break;
         default:
-          LOG(WARNING)("FIX unsupported: {}", item);
+          LOG(WARNING)(FIX_PREFIX "unsupported: {}", item);
           break;
       }
     }
@@ -812,14 +810,10 @@ void Gateway::operator()(
     const core::fix::header_t& header,
     const fix::MarketDataRequestReject& market_data_request_reject) {
   assert(_gateway_status == GatewayStatus::READY);
-  VLOG(1)(
-      "FIX event(header={}, market_data_request_reject={})",
+  LOG(WARNING)(FIX_PREFIX
+      "event(header={}, market_data_request_reject={})",
       header,
       market_data_request_reject);
-  LOG(WARNING)(
-      "FIX market data request reject (reason={}, text=\"{}\")",
-      market_data_request_reject.md_req_rej_reason,
-      market_data_request_reject.text);
   LOG(FATAL)("Unexpected -- now what?");  // FIXME(thraneh): ...
 }
 
@@ -827,8 +821,8 @@ void Gateway::operator()(
     const core::fix::header_t& header,
     const fix::MarketDataSnapshotFullRefresh& market_data_snapshot_full_refresh) {
   assert(_gateway_status == GatewayStatus::READY);
-  VLOG(3)(
-      "FIX event(header={}, market_data_snapshot_full_refresh={})",
+  VLOG(3)(FIX_PREFIX
+      "event(header={}, market_data_snapshot_full_refresh={})",
       header,
       market_data_snapshot_full_refresh);
   LOG(INFO)(
@@ -851,7 +845,7 @@ void Gateway::operator()(
         break;
     }
   }
-  if (bid_length == 0 && ask_length == 0) return;  // TODO(thraneh): check roq-server support
+  // if (bid_length == 0 && ask_length == 0) return;  // TODO(thraneh): check roq-server support
   MarketByPrice market_by_price = {
     .exchange = FLAGS_exchange,
     .symbol = market_data_snapshot_full_refresh.symbol,
@@ -869,22 +863,98 @@ void Gateway::operator()(
     const core::fix::header_t& header,
     const fix::OrderCancelReject& order_cancel_reject) {
   assert(_gateway_status == GatewayStatus::READY);
-  VLOG(1)(
-      "FIX event(header={}, order_cancel_reject={})",
+  VLOG(1)(FIX_PREFIX
+      "event(header={}, order_cancel_reject={})",
       header,
       order_cancel_reject);
-  // FIXME(thraneh): forward to gateway -- OrderUpdate?
+  auto iter = find_order_mapping(
+      order_cancel_reject.cl_ord_id,
+      order_cancel_reject.orig_cl_ord_id);
+  if (iter == _order_mapping.end()) {
+    LOG(WARNING)("*** EXTERNAL ORDER ***");
+  } else {
+    auto& order_mapping = (*iter).second;
+    CancelOrderAck cancel_order_ack {
+      .account = _account,
+      .order_id = order_mapping.user_order_id(),
+      .failure = true,
+      .reason = order_cancel_reject.text,
+      .gateway_order_id = order_mapping.gateway_order_id(),
+      .external_order_id = order_mapping.exchange_order_id(),
+    };
+    auto now = core::get_system_clock();
+    _dispatcher.enqueue(
+        order_mapping.user_id(),
+        cancel_order_ack,
+        now,
+        now,
+        true);
+  }
 }
 
 void Gateway::operator()(
     const core::fix::header_t& header,
     const fix::PositionReport& position_report) {
   assert(_gateway_status == GatewayStatus::DOWNLOADING);
-  VLOG(1)(
-      "FIX event(header={}, position_report={})",
+  VLOG(2)(FIX_PREFIX
+      "event(header={}, position_report={})",
       header,
       position_report);
-  // TODO(thraneh): forward to gateway
+  switch (position_report.pos_req_result) {
+    case core::fix::PosReqResult::VALID:
+      switch (position_report.pos_req_type) {
+        case core::fix::PosReqType::POSITIONS: {
+          size_t position_count = 0;
+          for (size_t i = 0; i < position_report.positions.length; ++i) {
+            auto& position = position_report.positions.items[i];
+            PositionUpdate buy {
+              .account = _account,
+              .exchange = FLAGS_exchange,
+              .symbol = position.symbol,
+              .side = Side::BUY,
+              .last_trade_id = 0,
+              .position = position.long_qty,
+              .position_cost = 0.0,
+              .position_yesterday = 0.0,
+              .position_cost_yesterday = 0.0,
+            };
+            PositionUpdate sell {
+              .account = _account,
+              .exchange = FLAGS_exchange,
+              .symbol = position.symbol,
+              .side = Side::SELL,
+              .last_trade_id = 0,
+              .position = position.short_qty,
+              .position_cost = 0.0,
+              .position_yesterday = 0.0,
+              .position_cost_yesterday = 0.0,
+            };
+            enqueue(buy, false);
+            enqueue(sell, true);
+            ++position_count;
+          }
+          VLOG(1)(
+              "- positions: {} (/{})",
+              position_count,
+              position_report.positions.length);
+          break;
+        }
+        default:
+          assert(false);
+          LOG(WARNING)(
+              "Unexpected pos_req_type={}",
+              position_report.pos_req_type);
+          break;
+      }
+      break;
+    default:
+      assert(false);
+      LOG(WARNING)(
+          "Unexpected pos_req_result={}",
+          position_report.pos_req_result);
+      break;
+  }
+
   check_download();
 }
 
@@ -892,25 +962,20 @@ void Gateway::operator()(
     const core::fix::header_t& header,
     const fix::Reject& reject) {
   assert(_gateway_status != GatewayStatus::DISCONNECTED);
-  VLOG(1)(
-      "FIX event(header={}, reject={})",
+  LOG(WARNING)(FIX_PREFIX
+      "event(header={}, reject={})",
       header,
       reject);
-  LOG(WARNING)(
-      "FIX reject (msg_type=\"{}\", text=\"{}\")",
-      reject.ref_msg_type,
-      reject.text);
   LOG(FATAL)("Unexpected -- now what?");  // FIXME(thraneh): ...
 }
 
 void Gateway::operator()(
     const core::fix::header_t& header,
     const fix::ResendRequest& resend_request) {
-  VLOG(1)(
-      "FIX event(header={}, resend_request={})",
+  LOG(WARNING)(FIX_PREFIX
+      "event(header={}, resend_request={})",
       header,
       resend_request);
-  LOG(WARNING)("FIX resend request ({})", resend_request.end_seq_no);
   fix::Reject reject = {
     .ref_seq_num = header.msg_seq_num,
     .ref_tag_id = 0,
@@ -925,12 +990,13 @@ void Gateway::operator()(
     const core::fix::header_t& header,
     const fix::SecurityList& security_list) {
   assert(_gateway_status == GatewayStatus::DOWNLOADING);
-  VLOG(3)(
-      "FIX event(header={}, security_list={})",
+  VLOG(2)(FIX_PREFIX
+      "event(header={}, security_list={})",
       header,
       security_list);
   if (security_list.instruments.length) {
     assert(_symbols.empty());
+    size_t security_count = 0;
     _symbols.reserve(security_list.instruments.length);  // note! alloc
     for (size_t i = 0; i < security_list.instruments.length; ++i) {
       auto& instrument = security_list.instruments.items[i];
@@ -954,7 +1020,12 @@ void Gateway::operator()(
         .trading_status = TradingStatus::OPEN,  // TODO(thraneh): missing
       };
       enqueue(market_status, true);
+      ++security_count;
     }
+    VLOG(1)(
+        "- securities: {} (/{})",
+        security_count,
+        security_list.instruments.length);
   }
   check_download();
 }
@@ -963,8 +1034,8 @@ void Gateway::operator()(
     const core::fix::header_t& header,
     const fix::TestRequest& test_request) {
   assert(_gateway_status != GatewayStatus::DISCONNECTED);
-  VLOG(1)(
-      "FIX event(header={}, test_request={})",
+  VLOG(1)(FIX_PREFIX
+      "event(header={}, test_request={})",
       header,
       test_request);
   fix::Heartbeat heartbeat = {
@@ -977,8 +1048,8 @@ void Gateway::operator()(
     const core::fix::header_t& header,
     const fix::UserResponse& user_response) {
   assert(_gateway_status == GatewayStatus::DOWNLOADING);
-  VLOG(1)(
-      "FIX event(header={}, user_response={})",
+  VLOG(1)(FIX_PREFIX
+      "event(header={}, user_response={})",
       header,
       user_response);
   // TODO(thraneh): forward to gateway
@@ -1008,7 +1079,7 @@ void Gateway::update(GatewayStatus gateway_status) {
     .status = _gateway_status,
   };
   enqueue(order_manager_status, true);
-  LOG(INFO)("gateway_status={}", _gateway_status);
+  LOG(INFO)("Update: gateway_status={}", _gateway_status);
 }
 
 void Gateway::begin_download() {
@@ -1051,7 +1122,7 @@ void Gateway::check_download() {
 
 void Gateway::download_securities() {
   assert(_gateway_status == GatewayStatus::DOWNLOADING);
-  LOG(INFO)("[FIX] download securities...");
+  LOG(INFO)(FIX_PREFIX "download securities...");
   auto security_req_id = create_request_id();
   fix::SecurityListRequest security_list_request = {
     .security_req_id = security_req_id,
@@ -1062,7 +1133,7 @@ void Gateway::download_securities() {
 
 void Gateway::download_positions() {
   assert(_gateway_status == GatewayStatus::DOWNLOADING);
-  LOG(INFO)("[FIX] download positions...");
+  LOG(INFO)(FIX_PREFIX "download positions...");
   auto pos_req_id = create_request_id();
   fix::RequestForPositions request_for_positions = {
     .pos_req_id = pos_req_id,
@@ -1074,7 +1145,7 @@ void Gateway::download_positions() {
 
 void Gateway::download_orders() {
   assert(_gateway_status == GatewayStatus::DOWNLOADING);
-  LOG(INFO)("[FIX] download orders...");
+  LOG(INFO)(FIX_PREFIX "download orders...");
   auto mass_status_req_id = create_request_id();
   fix::OrderMassStatusRequest order_mass_status_request = {
     .mass_status_req_id = mass_status_req_id,
@@ -1086,7 +1157,7 @@ void Gateway::download_orders() {
 
 void Gateway::download_user() {
   assert(_gateway_status == GatewayStatus::DOWNLOADING);
-  LOG(INFO)("[FIX] download user...");
+  LOG(INFO)(FIX_PREFIX "download user...");
   auto user_request_id = create_request_id();
   fix::UserRequest user_request = {
     .user_request_id = user_request_id,
@@ -1309,6 +1380,26 @@ Gateway::create_order_mapping(
     LOG(WARNING)("*** INVALID USER_CUSTOM ***");
     return _order_mapping.end();
   }
+}
+
+template <typename T>
+inline void Gateway::send(const T& event) {
+  send(event, core::get_realtime_clock());
+}
+
+template <typename T>
+void Gateway::send(
+    const T& event,
+    const std::chrono::nanoseconds sending_time) {
+  VLOG(1)(FIX_PREFIX "event={}", event);
+  assert(static_cast<bool>(_fix));  // a check missing somehwere else
+  if (static_cast<bool>(_fix) == false) return;  // FIXME(thraneh): DEBUG
+  auto message = event.encode(
+      _encode_buffer,
+      _msg_seq_num,
+      sending_time);
+  // message.print();  // DEBUG
+  _fix->send(message);
 }
 
 }  // namespace deribit

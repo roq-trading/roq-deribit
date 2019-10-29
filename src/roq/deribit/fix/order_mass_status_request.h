@@ -27,3 +27,22 @@ struct OrderMassStatusRequest final {
 }  // namespace fix
 }  // namespace deribit
 }  // namespace roq
+
+template <>
+struct fmt::formatter<roq::deribit::fix::OrderMassStatusRequest> {
+  template <typename C>
+  constexpr auto parse(C& ctx) {
+    return ctx.begin();
+  }
+  template <typename C>
+  auto format(const roq::deribit::fix::OrderMassStatusRequest& value, C& ctx) {
+    return format_to(
+        ctx.out(),
+        "{{"
+        "mass_status_req_id=\"{}\", "
+        "mass_status_req_type={}"
+        "}}",
+        value.mass_status_req_id,
+        value.mass_status_req_type);
+  }
+};

@@ -32,3 +32,32 @@ struct MarketDataRequest final {
 }  // namespace fix
 }  // namespace deribit
 }  // namespace roq
+
+template <>
+struct fmt::formatter<roq::deribit::fix::MarketDataRequest> {
+  template <typename C>
+  constexpr auto parse(C& ctx) {
+    return ctx.begin();
+  }
+  template <typename C>
+  auto format(const roq::deribit::fix::MarketDataRequest& value, C& ctx) {
+    if (value.symbols.empty()) {
+      return format_to(
+          ctx.out(),
+          "{{"
+          "md_req_id=\"{}\", "
+          "symbol=\"{}\""
+          "}}",
+          value.md_req_id,
+          value.symbol);
+    }
+    return format_to(
+        ctx.out(),
+        "{{"
+        "md_req_id=\"{}\", "
+        "symbol=[\"{}\"]"
+        "}}",
+        value.md_req_id,
+        fmt::join(value.symbols, "\", \""));
+  }
+};

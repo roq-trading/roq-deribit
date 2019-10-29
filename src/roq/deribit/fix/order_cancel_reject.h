@@ -45,7 +45,7 @@ struct fmt::formatter<roq::deribit::fix::OrderCancelReject> {
         ctx.out(),
         "{{"
         "cl_ord_id=\"{}\", "
-        "ord_status=\"{}\", "
+        "ord_status={}, "
         "orig_cl_ord_id=\"{}\", "
         "text=\"{}\", "
         // non-standard
