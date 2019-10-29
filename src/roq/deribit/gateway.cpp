@@ -482,210 +482,211 @@ void Gateway::operator()(
     auto& order_mapping = (*iter).second;
 
     // FIXME(thraneh): DEBUG
-    if (order_mapping.validate(execution_report) == false) {
-      LOG(FATAL)("DEBUG: something is wrong");
-    }
+    if (unlikely(order_mapping.validate(execution_report) == false)) {
+      LOG(WARNING)("*** SOMETHING WRONG ***");
+    } else {
+      switch (execution_report.exec_type) {
 
-    switch (execution_report.exec_type) {
-
-      case core::fix::ExecType::REJECTED: {
-        switch (order_mapping.request()) {
-          case OrderMapping::Request::NONE:
-            // user override?
-            break;
-          case OrderMapping::Request::CREATE: {
-            CreateOrderAck create_order_ack {
-              .account = _account,
-              .order_id = order_mapping.user_order_id(),
-              .failure = true,
-              .reason = execution_report.text,
-              .gateway_order_id = order_mapping.gateway_order_id(),
-              .external_order_id = order_mapping.exchange_order_id(),
-            };
-            enqueue(
-                order_mapping.user_id(),
-                create_order_ack,
-                true);
-            order_mapping.reset_request();
-            break;
-          }
-          case OrderMapping::Request::MODIFY: {
-            // OrdStatus=FILLED
-            ModifyOrderAck modify_order_ack {
-              .account = _account,
-              .order_id = order_mapping.user_order_id(),
-              .failure = true,
-              .reason = execution_report.text,
-              .gateway_order_id = order_mapping.gateway_order_id(),
-              .external_order_id = order_mapping.exchange_order_id(),
-            };
-            enqueue(
-                order_mapping.user_id(),
-                modify_order_ack,
-                true);
-            order_mapping.reset_request();
-            break;
-          }
-          case OrderMapping::Request::CANCEL: {
-            // OrdStatus=FILLED
-            CancelOrderAck cancel_order_ack {
-              .account = _account,
-              .order_id = order_mapping.user_order_id(),
-              .failure = true,
-              .reason = execution_report.text,
-              .gateway_order_id = order_mapping.gateway_order_id(),
-              .external_order_id = order_mapping.exchange_order_id(),
-            };
-            enqueue(
-                order_mapping.user_id(),
-                cancel_order_ack,
-                true);
-            order_mapping.reset_request();
-            break;
-          }
-        }
-        break;
-      }
-
-      case core::fix::ExecType::CANCELED: {
-        switch (order_mapping.request()) {
-          case OrderMapping::Request::NONE:
-            // user override?
-            break;
-          case OrderMapping::Request::CANCEL: {
-            CancelOrderAck cancel_order_ack {
-              .account = _account,
-              .order_id = order_mapping.user_order_id(),
-              .failure = false,
-              .reason = execution_report.text,
-              .gateway_order_id = order_mapping.gateway_order_id(),
-              .external_order_id = order_mapping.exchange_order_id(),
-            };
-            enqueue(
-                order_mapping.user_id(),
-                cancel_order_ack,
-                true);
-            order_mapping.reset_request();
-            break;
-          }
-          default:
-            assert(false);
-            LOG(FATAL)("Unexpected request state");
-        }
-        break;
-      }
-
-      case core::fix::ExecType::ORDER_STATUS:
-        switch (execution_report.ord_status) {
-          case core::fix::OrdStatus::NEW: {
-            switch (order_mapping.request()) {
-              case OrderMapping::Request::NONE:
-                assert(_download == Download::ORDERS);
-                break;
-              case OrderMapping::Request::CREATE: {
-                CreateOrderAck create_order_ack {
-                  .account = _account,
-                  .order_id = order_mapping.user_order_id(),
-                  .failure = false,
-                  .reason = execution_report.text,
-                  .gateway_order_id = order_mapping.gateway_order_id(),
-                  .external_order_id = order_mapping.exchange_order_id(),
-                };
-                enqueue(
-                    order_mapping.user_id(),
-                    create_order_ack,
-                    false);  // *not* last
-                order_mapping.reset_request();
-                break;
-              }
-              case OrderMapping::Request::MODIFY: {
-                ModifyOrderAck modify_order_ack {
-                  .account = _account,
-                  .order_id = order_mapping.user_order_id(),
-                  .failure = false,
-                  .reason = execution_report.text,
-                  .gateway_order_id = order_mapping.gateway_order_id(),
-                  .external_order_id = order_mapping.exchange_order_id(),
-                };
-                enqueue(
-                    order_mapping.user_id(),
-                    modify_order_ack,
-                    false);  // *not* last
-                order_mapping.reset_request();
-                break;
-              }
-              default:
-                assert(false);
-                LOG(FATAL)("Unexpected request state");
-            }
-            [[ fallthrough ]];
-          }
-          case core::fix::OrdStatus::PARTIALLY_FILLED:
-            [[ fallthrough ]];
-          case core::fix::OrdStatus::FILLED:
-            [[ fallthrough ]];
-          case core::fix::OrdStatus::CANCELED: {
-            for (size_t i = 0; i < execution_report.fills_grp.length; ++i) {
-              const auto& fills = execution_report.fills_grp.items[i];
-              // TODO(thraneh): check if we need a fill_exec_id <-> local_trade_id map
-              auto trade_id = ++_local_trade_id;
-              TradeUpdate trade_update {
+        case core::fix::ExecType::REJECTED: {
+          switch (order_mapping.request()) {
+            case OrderMapping::Request::NONE:
+              // user override?
+              break;
+            case OrderMapping::Request::CREATE: {
+              CreateOrderAck create_order_ack {
                 .account = _account,
-                .trade_id = trade_id,
                 .order_id = order_mapping.user_order_id(),
-                .exchange = FLAGS_exchange,
-                .symbol = execution_report.symbol,
-                .side = order_mapping.side(),
-                .quantity = fills.fill_qty,
-                .price = fills.fill_px,
-                .position_effect = PositionEffect::UNDEFINED,
-                .order_template = std::string(),
-                .create_time_utc = execution_report.transact_time,
-                .update_time_utc = execution_report.transact_time,
+                .failure = true,
+                .reason = execution_report.text,
                 .gateway_order_id = order_mapping.gateway_order_id(),
-                .gateway_trade_id = trade_id,
                 .external_order_id = order_mapping.exchange_order_id(),
-                .external_trade_id = fills.fill_exec_id,
               };
               enqueue(
                   order_mapping.user_id(),
-                  trade_update,
-                  false);
+                  create_order_ack,
+                  true);
+              order_mapping.reset_request();
+              break;
             }
-            OrderUpdate order_update {
-              .account = _account,
-              .order_id = order_mapping.user_order_id(),
-              .exchange = FLAGS_exchange,
-              .symbol = execution_report.symbol,
-              .order_status = core::fix::map(execution_report.ord_status),
-              .side = order_mapping.side(),
-              .price = execution_report.price,
-              .remaining_quantity = execution_report.leaves_qty,
-              .traded_quantity = execution_report.cum_qty,
-              .position_effect = PositionEffect::UNDEFINED,
-              .order_template = std::string(),
-              .create_time_utc = order_mapping.create_time(),
-              .update_time_utc = order_mapping.update_time(),
-              .gateway_order_id = order_mapping.gateway_order_id(),
-              .external_order_id = order_mapping.exchange_order_id(),
-            };
-            enqueue(
-                order_mapping.user_id(),
-                order_update,
-                true);
-            break;
+            case OrderMapping::Request::MODIFY: {
+              // OrdStatus=FILLED
+              ModifyOrderAck modify_order_ack {
+                .account = _account,
+                .order_id = order_mapping.user_order_id(),
+                .failure = true,
+                .reason = execution_report.text,
+                .gateway_order_id = order_mapping.gateway_order_id(),
+                .external_order_id = order_mapping.exchange_order_id(),
+              };
+              enqueue(
+                  order_mapping.user_id(),
+                  modify_order_ack,
+                  true);
+              order_mapping.reset_request();
+              break;
+            }
+            case OrderMapping::Request::CANCEL: {
+              // OrdStatus=FILLED
+              CancelOrderAck cancel_order_ack {
+                .account = _account,
+                .order_id = order_mapping.user_order_id(),
+                .failure = true,
+                .reason = execution_report.text,
+                .gateway_order_id = order_mapping.gateway_order_id(),
+                .external_order_id = order_mapping.exchange_order_id(),
+              };
+              enqueue(
+                  order_mapping.user_id(),
+                  cancel_order_ack,
+                  true);
+              order_mapping.reset_request();
+              break;
+            }
           }
-          default:
-            assert(false);  // FIXME(thraneh): DEBUG
-            LOG(FATAL)("Unexpected");
-            break;
+          break;
         }
-        break;
+
+        case core::fix::ExecType::CANCELED: {
+          switch (order_mapping.request()) {
+            case OrderMapping::Request::NONE:
+              // user override?
+              break;
+            case OrderMapping::Request::CANCEL: {
+              CancelOrderAck cancel_order_ack {
+                .account = _account,
+                .order_id = order_mapping.user_order_id(),
+                .failure = false,
+                .reason = execution_report.text,
+                .gateway_order_id = order_mapping.gateway_order_id(),
+                .external_order_id = order_mapping.exchange_order_id(),
+              };
+              enqueue(
+                  order_mapping.user_id(),
+                  cancel_order_ack,
+                  true);
+              order_mapping.reset_request();
+              break;
+            }
+            default:
+              assert(false);
+              LOG(WARNING)("*** UNEXPECTED REQUEST STATE ***");
+          }
+          break;
+        }
+
+        case core::fix::ExecType::ORDER_STATUS:
+          switch (execution_report.ord_status) {
+            case core::fix::OrdStatus::NEW: {
+              switch (order_mapping.request()) {
+                case OrderMapping::Request::NONE:
+                  assert(_download == Download::ORDERS);
+                  break;
+                case OrderMapping::Request::CREATE: {
+                  CreateOrderAck create_order_ack {
+                    .account = _account,
+                    .order_id = order_mapping.user_order_id(),
+                    .failure = false,
+                    .reason = execution_report.text,
+                    .gateway_order_id = order_mapping.gateway_order_id(),
+                    .external_order_id = order_mapping.exchange_order_id(),
+                  };
+                  enqueue(
+                      order_mapping.user_id(),
+                      create_order_ack,
+                      false);  // *not* last
+                  order_mapping.reset_request();
+                  break;
+                }
+                case OrderMapping::Request::MODIFY: {
+                  ModifyOrderAck modify_order_ack {
+                    .account = _account,
+                    .order_id = order_mapping.user_order_id(),
+                    .failure = false,
+                    .reason = execution_report.text,
+                    .gateway_order_id = order_mapping.gateway_order_id(),
+                    .external_order_id = order_mapping.exchange_order_id(),
+                  };
+                  enqueue(
+                      order_mapping.user_id(),
+                      modify_order_ack,
+                      false);  // *not* last
+                  order_mapping.reset_request();
+                  break;
+                }
+                default:
+                  assert(false);
+                  LOG(WARNING)("*** UNEXPECTED REQUEST STATE ***");
+              }
+              [[ fallthrough ]];
+            }
+            case core::fix::OrdStatus::PARTIALLY_FILLED:
+              [[ fallthrough ]];
+            case core::fix::OrdStatus::FILLED:
+              [[ fallthrough ]];
+            case core::fix::OrdStatus::CANCELED: {
+              for (size_t i = 0; i < execution_report.fills_grp.length; ++i) {
+                const auto& fills = execution_report.fills_grp.items[i];
+                // TODO(thraneh): check if we need a fill_exec_id <-> local_trade_id map
+                auto trade_id = ++_local_trade_id;
+                TradeUpdate trade_update {
+                  .account = _account,
+                  .trade_id = trade_id,
+                  .order_id = order_mapping.user_order_id(),
+                  .exchange = FLAGS_exchange,
+                  .symbol = execution_report.symbol,
+                  .side = order_mapping.side(),
+                  .quantity = fills.fill_qty,
+                  .price = fills.fill_px,
+                  .position_effect = PositionEffect::UNDEFINED,
+                  .order_template = std::string(),
+                  .create_time_utc = execution_report.transact_time,
+                  .update_time_utc = execution_report.transact_time,
+                  .gateway_order_id = order_mapping.gateway_order_id(),
+                  .gateway_trade_id = trade_id,
+                  .external_order_id = order_mapping.exchange_order_id(),
+                  .external_trade_id = fills.fill_exec_id,
+                };
+                enqueue(
+                    order_mapping.user_id(),
+                    trade_update,
+                    false);
+              }
+              OrderUpdate order_update {
+                .account = _account,
+                .order_id = order_mapping.user_order_id(),
+                .exchange = FLAGS_exchange,
+                .symbol = execution_report.symbol,
+                .order_status = core::fix::map(execution_report.ord_status),
+                .side = order_mapping.side(),
+                .price = execution_report.price,
+                .remaining_quantity = execution_report.leaves_qty,
+                .traded_quantity = execution_report.cum_qty,
+                .position_effect = PositionEffect::UNDEFINED,
+                .order_template = std::string(),
+                .create_time_utc = order_mapping.create_time(),
+                .update_time_utc = order_mapping.update_time(),
+                .gateway_order_id = order_mapping.gateway_order_id(),
+                .external_order_id = order_mapping.exchange_order_id(),
+              };
+              enqueue(
+                  order_mapping.user_id(),
+                  order_update,
+                  true);
+              break;
+            }
+            default:
+              assert(false);  // FIXME(thraneh): DEBUG
+              LOG(WARNING)("*** UNEXPECTED ORD_STATUS ***");
+              break;
+          }
+          break;
 
 
-      default:
-        assert(false);  // FIXME(thraneh): DEBUG
-        break;
+        default:
+          assert(false);  // FIXME(thraneh): DEBUG
+          LOG(WARNING)("*** UNEXPECTED EXEC_TYPE ***");
+          break;
+      }
     }
 
   } else {

@@ -8,10 +8,14 @@
 #include "roq/deribit/config.h"
 #include "roq/deribit/gateway.h"
 
-DEFINE_string(listen, "", "bind address (path)");
+DEFINE_string(listen,
+    "",
+    "bind address (path)");
 // DEFINE_validator(listen, ...);
 
-DEFINE_string(config_file, "", "config file (path)");
+DEFINE_string(config_file,
+    "",
+    "config file (path)");
 
 namespace {
 constexpr const char *DESCRIPTION = "Roq Deribit Gateway";
