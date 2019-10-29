@@ -204,6 +204,8 @@ class Gateway final : public server::Handler {
 
   std::string create_request_id();
 
+  void check(const core::fix::header_t& header);
+
  private:
   server::Dispatcher& _dispatcher;
   core::ssl::Context _ssl_context;
@@ -249,6 +251,8 @@ class Gateway final : public server::Handler {
 
  private:
   histogram_t _market_data_incremental_refresh;
+
+  uint64_t _their_msg_seq_num = 0;
 
   uint32_t _local_order_id = 10000000;  // TODO(thraneh): we need this extracted from the feed
 

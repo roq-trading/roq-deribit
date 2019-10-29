@@ -86,6 +86,7 @@ namespace deribit {
 // utilities
 
 namespace {
+constexpr auto TOLERANCE = double{1.0e-10};
 static std::string create_latency_labels(
     const std::string_view& connection) {
   return fmt::format(
@@ -111,10 +112,10 @@ static inline void mbp_update(
       break;
     case core::fix::MDUpdateAction::NEW:
     case core::fix::MDUpdateAction::CHANGE:
-      assert(std::fabs(item.md_entry_size) >= 1.0e-10);
+      assert(std::fabs(item.md_entry_size) >= TOLERANCE);
       break;
     case core::fix::MDUpdateAction::DELETE:
-      assert(std::fabs(item.md_entry_size) < 1.0e-10);
+      assert(std::fabs(item.md_entry_size) < TOLERANCE);
       break;
     case core::fix::MDUpdateAction::DELETE_THRU:
     case core::fix::MDUpdateAction::DELETE_FROM:
@@ -441,6 +442,7 @@ void Gateway::operator()(
       "event(header={}, execution_report={})",
       header,
       execution_report);
+  check(header);
   // response to order download?
   if (unlikely(
         execution_report.mass_status_req_type ==
@@ -688,13 +690,14 @@ void Gateway::operator()(
 void Gateway::operator()(
     const core::fix::header_t& header,
     const fix::Heartbeat& heartbeat) {
-  assert(_gateway_status != GatewayStatus::DISCONNECTED);
   // note! get clock *before* any logging (avoid latency)
   auto now = core::get_system_clock();
   VLOG(3)(FIX_PREFIX
       "event(header={}, heartbeat={})",
       header,
       heartbeat);
+  check(header);
+  assert(_gateway_status != GatewayStatus::DISCONNECTED);
   if (heartbeat.test_req_id.empty() == false) {
     auto send_time = core::charconv::from_string<uint64_t>(
         heartbeat.test_req_id);
@@ -708,11 +711,12 @@ void Gateway::operator()(
 void Gateway::operator()(
     const core::fix::header_t& header,
     const fix::Logon& logon) {
-  assert(_gateway_status == GatewayStatus::LOGIN_SENT);
   VLOG(1)(FIX_PREFIX
       "event(header={}, logon={})",
       header,
       logon);
+  check(header);
+  assert(_gateway_status == GatewayStatus::LOGIN_SENT);
   LOG(INFO)(FIX_PREFIX "logon COMPLETED");
   begin_download();
 }
@@ -720,14 +724,12 @@ void Gateway::operator()(
 void Gateway::operator()(
     const core::fix::header_t& header,
     const fix::Logout& logout) {
-  assert(_gateway_status == GatewayStatus::READY);
-  VLOG(1)(FIX_PREFIX
+  LOG(WARNING)(FIX_PREFIX
       "event(header={}, logout={})",
       header,
       logout);
-  LOG(WARNING)(FIX_PREFIX
-      "logout (text=\"{}\")",
-      logout.text);
+  check(header);
+  assert(_gateway_status == GatewayStatus::READY);
   update(GatewayStatus::LOGGED_OUT);
   // note! mandated, must send a logout response
   fix::Logout response = {
@@ -742,14 +744,17 @@ void Gateway::operator()(
     const core::fix::header_t& header,
     const fix::MarketDataIncrementalRefresh& market_data_incremental_refresh) {
   core::metrics::profile(_market_data_incremental_refresh, [&]() {
-    assert(_gateway_status == GatewayStatus::READY);
-    if (unlikely(FLAGS_silence_empty_messages &&
-          market_data_incremental_refresh.md_inc_grp.length == 0))
-      return;
     VLOG(3)(FIX_PREFIX
         "event(header={}, market_data_incremental_refresh={})",
         header,
         market_data_incremental_refresh);
+    check(header);
+    assert(_gateway_status == GatewayStatus::READY);
+    // weirdness -- told them and they would investigate
+    if (unlikely(FLAGS_silence_empty_messages &&
+          market_data_incremental_refresh.md_inc_grp.length == 0))
+      return;
+
     size_t bid_length = 0, ask_length = 0, trade_length = 0;
     std::chrono::nanoseconds exchange_time_utc = {};
     auto& md_inc_grp = market_data_incremental_refresh.md_inc_grp;
@@ -809,22 +814,24 @@ void Gateway::operator()(
 void Gateway::operator()(
     const core::fix::header_t& header,
     const fix::MarketDataRequestReject& market_data_request_reject) {
-  assert(_gateway_status == GatewayStatus::READY);
   LOG(WARNING)(FIX_PREFIX
       "event(header={}, market_data_request_reject={})",
       header,
       market_data_request_reject);
+  check(header);
+  assert(_gateway_status == GatewayStatus::READY);
   LOG(FATAL)("Unexpected -- now what?");  // FIXME(thraneh): ...
 }
 
 void Gateway::operator()(
     const core::fix::header_t& header,
     const fix::MarketDataSnapshotFullRefresh& market_data_snapshot_full_refresh) {
-  assert(_gateway_status == GatewayStatus::READY);
   VLOG(3)(FIX_PREFIX
       "event(header={}, market_data_snapshot_full_refresh={})",
       header,
       market_data_snapshot_full_refresh);
+  check(header);
+  assert(_gateway_status == GatewayStatus::READY);
   LOG(INFO)(
       "Market data snapshot symbol=\"{}\"",
       market_data_snapshot_full_refresh.symbol);
@@ -862,11 +869,12 @@ void Gateway::operator()(
 void Gateway::operator()(
     const core::fix::header_t& header,
     const fix::OrderCancelReject& order_cancel_reject) {
-  assert(_gateway_status == GatewayStatus::READY);
   VLOG(1)(FIX_PREFIX
       "event(header={}, order_cancel_reject={})",
       header,
       order_cancel_reject);
+  check(header);
+  assert(_gateway_status == GatewayStatus::READY);
   auto iter = find_order_mapping(
       order_cancel_reject.cl_ord_id,
       order_cancel_reject.orig_cl_ord_id);
@@ -874,32 +882,41 @@ void Gateway::operator()(
     LOG(WARNING)("*** EXTERNAL ORDER ***");
   } else {
     auto& order_mapping = (*iter).second;
-    CancelOrderAck cancel_order_ack {
-      .account = _account,
-      .order_id = order_mapping.user_order_id(),
-      .failure = true,
-      .reason = order_cancel_reject.text,
-      .gateway_order_id = order_mapping.gateway_order_id(),
-      .external_order_id = order_mapping.exchange_order_id(),
-    };
-    auto now = core::get_system_clock();
-    _dispatcher.enqueue(
-        order_mapping.user_id(),
-        cancel_order_ack,
-        now,
-        now,
-        true);
+    switch (order_mapping.request()) {
+      case OrderMapping::Request::NONE:
+        break;
+      case OrderMapping::Request::CANCEL: {
+        CancelOrderAck cancel_order_ack {
+          .account = _account,
+          .order_id = order_mapping.user_order_id(),
+          .failure = true,
+          .reason = order_cancel_reject.text,
+          .gateway_order_id = order_mapping.gateway_order_id(),
+          .external_order_id = order_mapping.exchange_order_id(),
+        };
+        auto now = core::get_system_clock();
+        enqueue(
+            order_mapping.user_id(),
+            cancel_order_ack,
+            true);
+        break;
+      }
+      default:
+        assert(false);
+        LOG(WARNING)("*** UNEXPECTED REQUEST STATE ***");
+    }
   }
 }
 
 void Gateway::operator()(
     const core::fix::header_t& header,
     const fix::PositionReport& position_report) {
-  assert(_gateway_status == GatewayStatus::DOWNLOADING);
   VLOG(2)(FIX_PREFIX
       "event(header={}, position_report={})",
       header,
       position_report);
+  check(header);
+  assert(_gateway_status == GatewayStatus::DOWNLOADING);
   switch (position_report.pos_req_result) {
     case core::fix::PosReqResult::VALID:
       switch (position_report.pos_req_type) {
@@ -961,12 +978,14 @@ void Gateway::operator()(
 void Gateway::operator()(
     const core::fix::header_t& header,
     const fix::Reject& reject) {
-  assert(_gateway_status != GatewayStatus::DISCONNECTED);
   LOG(WARNING)(FIX_PREFIX
       "event(header={}, reject={})",
       header,
       reject);
-  LOG(FATAL)("Unexpected -- now what?");  // FIXME(thraneh): ...
+  check(header);
+  assert(_gateway_status != GatewayStatus::DISCONNECTED);
+  LOG(INFO)(FIX_PREFIX "closing connection");
+  _fix->stop();
 }
 
 void Gateway::operator()(
@@ -976,6 +995,7 @@ void Gateway::operator()(
       "event(header={}, resend_request={})",
       header,
       resend_request);
+  check(header);
   fix::Reject reject = {
     .ref_seq_num = header.msg_seq_num,
     .ref_tag_id = 0,
@@ -983,17 +1003,19 @@ void Gateway::operator()(
     .text = RESEND_NOT_SUPPORTED,
   };
   send(reject);
+  LOG(INFO)(FIX_PREFIX "closing connection");
   _fix->stop();
 }
 
 void Gateway::operator()(
     const core::fix::header_t& header,
     const fix::SecurityList& security_list) {
-  assert(_gateway_status == GatewayStatus::DOWNLOADING);
   VLOG(2)(FIX_PREFIX
       "event(header={}, security_list={})",
       header,
       security_list);
+  check(header);
+  assert(_gateway_status == GatewayStatus::DOWNLOADING);
   if (security_list.instruments.length) {
     assert(_symbols.empty());
     size_t security_count = 0;
@@ -1033,11 +1055,12 @@ void Gateway::operator()(
 void Gateway::operator()(
     const core::fix::header_t& header,
     const fix::TestRequest& test_request) {
-  assert(_gateway_status != GatewayStatus::DISCONNECTED);
   VLOG(1)(FIX_PREFIX
       "event(header={}, test_request={})",
       header,
       test_request);
+  check(header);
+  assert(_gateway_status != GatewayStatus::DISCONNECTED);
   fix::Heartbeat heartbeat = {
     .test_req_id = test_request.test_req_id,
   };
@@ -1047,11 +1070,12 @@ void Gateway::operator()(
 void Gateway::operator()(
     const core::fix::header_t& header,
     const fix::UserResponse& user_response) {
-  assert(_gateway_status == GatewayStatus::DOWNLOADING);
   VLOG(1)(FIX_PREFIX
       "event(header={}, user_response={})",
       header,
       user_response);
+  check(header);
+  assert(_gateway_status == GatewayStatus::DOWNLOADING);
   // TODO(thraneh): forward to gateway
   check_download();
 }
@@ -1171,6 +1195,7 @@ void Gateway::reset() {
   _msg_seq_num = 0;
   _download = Download::NONE;
   _symbols.clear();
+  _their_msg_seq_num = 0;
 }
 
 void Gateway::subscribe_market_data() {
@@ -1400,6 +1425,27 @@ void Gateway::send(
       sending_time);
   // message.print();  // DEBUG
   _fix->send(message);
+}
+
+void Gateway::check(const core::fix::header_t& header) {
+  auto current = header.msg_seq_num;
+  auto expected = _their_msg_seq_num + 1;
+  if (unlikely(current != expected)) {
+    if (expected < current) {
+      LOG(WARNING)(FIX_PREFIX
+          "*** SEQUENCE GAP *** current={} previous={} distance={}",
+          current,
+          _their_msg_seq_num,
+          current - _their_msg_seq_num);
+    } else {
+      LOG(WARNING)(FIX_PREFIX
+          "*** SEQUENCE REPLAY *** current={} previous={} distance={}",
+          current,
+          _their_msg_seq_num,
+          _their_msg_seq_num - current);
+    }
+  }
+  _their_msg_seq_num = current;
 }
 
 }  // namespace deribit
