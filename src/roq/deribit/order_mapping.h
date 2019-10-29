@@ -65,6 +65,11 @@ struct OrderMapping final {
     return _create_time.count() > 0;
   }
 
+  // static
+
+  static inline auto key(uint8_t user_id, uint32_t user_order_id) {
+    return core::oms::UserCustom::key(user_id, user_order_id);
+  }
   // ...
 
   enum class Request {
@@ -79,7 +84,7 @@ struct OrderMapping final {
   }
 
   void update_request(
-      uint32_t request_id,
+      const std::string_view& request_id,
       Request request);
 
   void reset_request();
@@ -93,7 +98,7 @@ struct OrderMapping final {
   std::chrono::nanoseconds _create_time = {};
   std::chrono::nanoseconds _update_time = {};
   // request
-  uint32_t _request_id = 0;
+  char _request_id[32] = {};
   Request _request = Request::NONE;
 };
 

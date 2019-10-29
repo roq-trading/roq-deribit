@@ -142,18 +142,6 @@ static inline void trade_update(
   if (offset >= data.size())
     throw std::runtime_error("Not enough space");
 }
-static inline uint64_t merge_user_order_id(
-    uint8_t user_id,
-    uint32_t order_id) {
-  return (static_cast<uint64_t>(user_id) << 32) |
-    static_cast<uint64_t>(order_id);
-}
-static inline std::pair<uint8_t, uint32_t> split_user_order_id(
-    uint64_t user_order_id) {
-  return std::make_pair(
-      static_cast<uint8_t>(user_order_id >> 32),
-      static_cast<uint32_t>(user_order_id));
-}
 }  // namespace
 
 Gateway::Gateway(
@@ -287,7 +275,7 @@ void Gateway::operator()(const CreateOrderEvent& event) {
         throw;
       }
       (*iter).second.update_request(
-          _request_id,
+          request_id,
           OrderMapping::Request::CREATE);
     }
   }
@@ -304,10 +292,10 @@ void Gateway::operator()(const ModifyOrderEvent& event) {
     // error: invalid account name
     modify_order_ack_failure(event, INVALID_ACCOUNT);
   } else {
-    auto user_order_id = merge_user_order_id(
+    auto key = OrderMapping::key(
         message_info.source,
         modify_order.order_id);
-    auto iter = _order_mapping.find(user_order_id);
+    auto iter = _order_mapping.find(key);
     if (unlikely(iter == _order_mapping.end())) {
       // error: invalid order id (not in cache)
       modify_order_ack_failure(event, UNKNOWN_ORDER_ID);
@@ -341,7 +329,7 @@ void Gateway::operator()(const ModifyOrderEvent& event) {
           throw;
         }
         order_mapping.update_request(
-            _request_id,
+            request_id,
             OrderMapping::Request::MODIFY);
       }
     }
@@ -359,10 +347,10 @@ void Gateway::operator()(const CancelOrderEvent& event) {
     // error: invalid account name
     cancel_order_ack_failure(event, INVALID_ACCOUNT);
   } else {
-    auto user_order_id = merge_user_order_id(
+    auto key = OrderMapping::key(
         message_info.source,
         cancel_order.order_id);
-    auto iter = _order_mapping.find(user_order_id);
+    auto iter = _order_mapping.find(key);
     if (unlikely(iter == _order_mapping.end())) {
       // error: invalid order id (not in cache)
       cancel_order_ack_failure(event, UNKNOWN_ORDER_ID);
@@ -390,7 +378,7 @@ void Gateway::operator()(const CancelOrderEvent& event) {
           throw;
         }
         order_mapping.update_request(
-            _request_id,
+            request_id,
             OrderMapping::Request::CANCEL);
       }
     }
@@ -486,7 +474,6 @@ void Gateway::operator()(
       LOG(WARNING)("*** SOMETHING WRONG ***");
     } else {
       switch (execution_report.exec_type) {
-
         case core::fix::ExecType::REJECTED: {
           switch (order_mapping.request()) {
             case OrderMapping::Request::NONE:
@@ -1295,11 +1282,9 @@ Gateway::find_order_mapping(
       return _order_mapping.end();
     } else {
       // replace orig_cl_ord_id with cl_ord_id
-      auto user_order_id = (*iter).second;
+      auto key = (*iter).second;
       _order_lookup.erase(iter);
-      iter = _order_lookup.emplace(
-          std::string(cl_ord_id),
-          user_order_id).first;
+      iter = _order_lookup.emplace(std::string(cl_ord_id), key).first;
     }
   }
   return _order_mapping.find((*iter).second);

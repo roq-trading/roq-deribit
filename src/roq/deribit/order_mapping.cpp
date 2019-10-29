@@ -89,18 +89,18 @@ bool OrderMapping::validate(
 // ...
 
 void OrderMapping::update_request(
-    uint32_t request_id,
+    const std::string_view& request_id,
     Request request) {
-  assert(_request_id == uint32_t{0});
+  assert(_request_id[0] == '\0');
   assert(_request == Request::NONE);
-  _request_id = request_id;
+  copy_to(request_id, _request_id);
   _request = request;
 }
 
 void OrderMapping::reset_request() {
-  assert(_request_id > uint32_t{0});
+  assert(_request_id[0] != '\0');
   assert(_request != Request::NONE);
-  _request_id = uint32_t{0};
+  _request_id[0] = '\0';
   _request = Request::NONE;
 }
 
