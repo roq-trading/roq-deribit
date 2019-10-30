@@ -247,7 +247,7 @@ class Gateway final : public server::Handler {
     > _fix_latency;
 
  public:
-  typedef Histogram<200, 500, 1000, 2000, 5000, 10000> histogram_t;
+  typedef Histogram<500, 1000, 2000, 5000, 10000, 20000> histogram_t;
 
  private:
   histogram_t _market_data_incremental_refresh;
