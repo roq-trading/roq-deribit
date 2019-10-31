@@ -1024,7 +1024,6 @@ void Gateway::operator()(
     _symbols.reserve(security_list.instruments.length);  // note! alloc
     for (size_t i = 0; i < security_list.instruments.length; ++i) {
       auto& instrument = security_list.instruments.items[i];
-      LOG(INFO)("instrument={}", instrument);
       if (discard_symbol(instrument.symbol))
         continue;
       _symbols.emplace_back(instrument.symbol);
