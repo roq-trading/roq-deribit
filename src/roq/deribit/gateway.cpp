@@ -30,6 +30,7 @@
 #include "roq/deribit/fix/request_for_positions.h"
 #include "roq/deribit/fix/security_list_request.h"
 #include "roq/deribit/fix/user_request.h"
+#include "roq/deribit/fix/utils.h"
 
 DEFINE_string(fix_uri,
     "tcp://test.deribit.com:9881",
@@ -652,6 +653,7 @@ void Gateway::operator()(
                 .order_template = std::string(),
                 .create_time_utc = order_mapping.create_time(),
                 .update_time_utc = order_mapping.update_time(),
+                .commissions = execution_report.commission,
                 .gateway_order_id = order_mapping.gateway_order_id(),
                 .external_order_id = order_mapping.exchange_order_id(),
               };
@@ -1022,17 +1024,25 @@ void Gateway::operator()(
     _symbols.reserve(security_list.instruments.length);  // note! alloc
     for (size_t i = 0; i < security_list.instruments.length; ++i) {
       auto& instrument = security_list.instruments.items[i];
+      LOG(INFO)("instrument={}", instrument);
       if (discard_symbol(instrument.symbol))
         continue;
       _symbols.emplace_back(instrument.symbol);
       ReferenceData reference_data = {
         .exchange = FLAGS_exchange,
         .symbol = instrument.symbol,
+        .security_type = fix::map_security_type(instrument.security_type),
+        .currency = instrument.currency,
+        .settlement_currency = instrument.settl_currency,
+        .commission_currency = instrument.comm_currency,
         .tick_size = instrument.min_price_increment,
         .limit_up = std::numeric_limits<double>::quiet_NaN(),
         .limit_down = std::numeric_limits<double>::quiet_NaN(),
         .multiplier = instrument.contract_multiplier,
         .min_trade_vol = instrument.min_trade_vol,
+        .option_type = core::fix::map(instrument.put_or_call),
+        .strike_currency = instrument.strike_currency,
+        .strike_price = instrument.strike_price,
       };
       enqueue(reference_data, false);
       // note! we receive no information about the trading status

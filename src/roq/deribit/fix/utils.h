@@ -4,6 +4,8 @@
 
 #include <string_view>
 
+#include "roq/api.h"
+
 #include "roq/deribit/fix/deribit.h"
 
 namespace roq {
@@ -15,6 +17,8 @@ inline void update(
     const std::string_view& value) {
   result = parse_adv_order_type(value);
 }
+
+SecurityType map_security_type(const std::string_view& value);
 
 }  // namespace fix
 }  // namespace deribit

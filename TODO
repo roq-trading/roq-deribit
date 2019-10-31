@@ -1,3 +1,11 @@
+WS
+Subscribe to funds
+https://docs.deribit.com/v2/#user-portfolio-currency
+
+
+
+
+
 Didn't get Logon response... we need a timeout!
 
 Oct 11 12:09:02 vq_svr_01 roq-deribit.sh[23261]: I1011 12:09:02.579340 23288 fix.cpp:39] Connecting to host="test.deribit.com", port=9881
