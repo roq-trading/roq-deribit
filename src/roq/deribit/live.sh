@@ -22,5 +22,5 @@ $PREFIX ./roq-deribit \
 	--config-file "$CONFIG_FILE" \
 	--fix-uri "$FIX_URI" \
 	--listen "$CWD/$NAME.sock" \
-	--metrics "$CWD/$NAME_metrics.sock" \
+	--metrics "$CWD/${NAME}_metrics.sock" \
 	$@

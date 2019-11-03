@@ -22,7 +22,7 @@ $PREFIX ./roq-deribit \
 	--config-file "$CONFIG_FILE" \
 	--fix-uri "$FIX_URI" \
 	--listen "$CWD/$NAME.sock" \
-	--metrics "$CWD/$NAME_metrics.sock" \
+	--metrics "$CWD/${NAME}_metrics.sock" \
 	--inter-thread-queue-size 65536 \
 	--inter-process-queue-size 262144 \
 	--broadcast-queue-size 262144 \

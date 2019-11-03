@@ -45,7 +45,9 @@ class Config final
   void operator()(server::Symbols&& symbols) override;
   void operator()(Account&& account) override;
   void operator()(User&& user) override;
-  void operator()(const std::string& key, const cpptoml::base& base) override;
+  void operator()(
+      const std::string_view& key,
+      const cpptoml::base& base) override;
 
  public:
   std::vector<User> users;

@@ -43,7 +43,7 @@ void Config::operator()(User&& user) {
 }
 
 void Config::operator()(
-    const std::string& key,
+    const std::string_view& key,
     const cpptoml::base&) {
   LOG(WARNING)("UNKNOWN KEY=\"{}\"", key);
 }

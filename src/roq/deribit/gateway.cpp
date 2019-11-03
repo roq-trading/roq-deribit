@@ -87,6 +87,8 @@ namespace deribit {
 // utilities
 
 namespace {
+constexpr std::string_view LOGOUT_RESPONSE("LOGOUT_RESPONSE");
+constexpr std::string_view RESEND_NOT_SUPPORTED("RESEND_NOT_SUPPORTED");
 constexpr auto TOLERANCE = double{1.0e-10};
 static std::string create_latency_labels(
     const std::string_view& connection) {
@@ -225,24 +227,44 @@ void Gateway::operator()(const CreateOrderEvent& event) {
   auto& create_order = event.create_order;
   if (unlikely(_gateway_status != GatewayStatus::READY)) {
     // error: gateway is not in a ready state
-    create_order_ack_failure(event, GATEWAY_NOT_READY);
+    create_order_ack_failure(
+        event,
+        RequestStatus::REJECTED,
+        Origin::GATEWAY,
+        Error::GATEWAY_NOT_READY);
   } else if (unlikely(
         create_order.account.compare(_account) != 0)) {
     // error: invalid account name
-    create_order_ack_failure(event, INVALID_ACCOUNT);
+    create_order_ack_failure(
+        event,
+        RequestStatus::REJECTED,
+        Origin::GATEWAY,
+        Error::INVALID_ACCOUNT);
   } else if (unlikely(
         create_order.exchange.compare(FLAGS_exchange) != 0)) {
     // error: invalid exchange name
-    create_order_ack_failure(event, INVALID_EXCHANGE);
+    create_order_ack_failure(
+        event,
+        RequestStatus::REJECTED,
+        Origin::GATEWAY,
+        Error::INVALID_EXCHANGE);
   } else if (unlikely(
         create_order.position_effect != PositionEffect::UNDEFINED)) {
     // error: position effect is not supported
-    create_order_ack_failure(event, INVALID_POSITION_EFFECT);
+    create_order_ack_failure(
+        event,
+        RequestStatus::REJECTED,
+        Origin::GATEWAY,
+        Error::INVALID_POSITION_EFFECT);
   } else if (unlikely(
         create_order.order_template.empty() == false &&
         create_order.order_template.compare("default") != 0)) {
     // error: invalid order template
-    create_order_ack_failure(event, INVALID_ORDER_TEMPLATE);
+    create_order_ack_failure(
+        event,
+        RequestStatus::REJECTED,
+        Origin::GATEWAY,
+        Error::INVALID_ORDER_TEMPLATE);
   } else {
     // TODO(thraneh): check against max_order_id before continuing
     auto gateway_order_id = ++_local_order_id;
@@ -253,7 +275,11 @@ void Gateway::operator()(const CreateOrderEvent& event) {
     auto key = order_mapping.key();
     if (unlikely(_order_mapping.find(key) != _order_mapping.end())) {
       // error: order id has been recycled
-      create_order_ack_failure(event, INVALID_ORDER_ID);
+      create_order_ack_failure(
+          event,
+          RequestStatus::REJECTED,
+          Origin::GATEWAY,
+          Error::INVALID_ORDER_ID);
     } else {
       auto request_id = create_request_id();
       auto iter = _order_mapping.emplace(
@@ -273,9 +299,17 @@ void Gateway::operator()(const CreateOrderEvent& event) {
       };
       try {
         send(new_order_single);
-        create_order_ack_success(event, request_id);
+        create_order_ack_success(
+            event,
+            RequestStatus::FORWARDED,
+            Origin::GATEWAY,
+            request_id);
       } catch (std::exception&) {
-        create_order_ack_failure(event, NETWORK_ERROR);
+        create_order_ack_failure(
+            event,
+            RequestStatus::REJECTED,
+            Origin::GATEWAY,
+            Error::NETWORK_ERROR);
         throw;
       }
       (*iter).second.update_request(
@@ -290,11 +324,19 @@ void Gateway::operator()(const ModifyOrderEvent& event) {
   auto& modify_order = event.modify_order;
   if (unlikely(_gateway_status != GatewayStatus::READY)) {
     // error: gateway is not in a ready state
-    modify_order_ack_failure(event, GATEWAY_NOT_READY);
+    modify_order_ack_failure(
+        event,
+        RequestStatus::REJECTED,
+        Origin::GATEWAY,
+        Error::GATEWAY_NOT_READY);
   } else if (unlikely(
         modify_order.account.compare(_account) != 0)) {
     // error: invalid account name
-    modify_order_ack_failure(event, INVALID_ACCOUNT);
+    modify_order_ack_failure(
+        event,
+        RequestStatus::REJECTED,
+        Origin::GATEWAY,
+        Error::INVALID_ACCOUNT);
   } else {
     auto key = OrderMapping::key(
         message_info.source,
@@ -302,12 +344,20 @@ void Gateway::operator()(const ModifyOrderEvent& event) {
     auto iter = _order_mapping.find(key);
     if (unlikely(iter == _order_mapping.end())) {
       // error: invalid order id (not in cache)
-      modify_order_ack_failure(event, UNKNOWN_ORDER_ID);
+      modify_order_ack_failure(
+          event,
+          RequestStatus::REJECTED,
+          Origin::GATEWAY,
+          Error::UNKNOWN_ORDER_ID);
     } else {
       auto& order_mapping = (*iter).second;
       if (unlikely(order_mapping.ready() == false)) {
         // error: exchange has not confirmed order insertion
-        modify_order_ack_failure(event, UNKNOWN_EXCHANGE_ORDER_ID);
+        modify_order_ack_failure(
+            event,
+            RequestStatus::REJECTED,
+            Origin::GATEWAY,
+            Error::UNKNOWN_EXCHANGE_ORDER_ID);
       } else {
         // note! create_request_id will increase request_id
         auto request_id = create_request_id();
@@ -326,10 +376,16 @@ void Gateway::operator()(const ModifyOrderEvent& event) {
           send(order_cancel_replace_request);
           modify_order_ack_success(
               event,
+              RequestStatus::FORWARDED,
+              Origin::GATEWAY,
               order_mapping.gateway_order_id(),
               order_mapping.exchange_order_id());
         } catch (std::exception&) {
-          modify_order_ack_failure(event, NETWORK_ERROR);
+          modify_order_ack_failure(
+              event,
+              RequestStatus::REJECTED,
+              Origin::GATEWAY,
+              Error::NETWORK_ERROR);
           throw;
         }
         order_mapping.update_request(
@@ -345,11 +401,19 @@ void Gateway::operator()(const CancelOrderEvent& event) {
   auto& cancel_order = event.cancel_order;
   if (unlikely(_gateway_status != GatewayStatus::READY)) {
     // error: gateway is not in a ready state
-    cancel_order_ack_failure(event, GATEWAY_NOT_READY);
+    cancel_order_ack_failure(
+        event,
+        RequestStatus::REJECTED,
+        Origin::GATEWAY,
+        Error::GATEWAY_NOT_READY);
   } else if (unlikely(
         cancel_order.account.compare(_account) != 0)) {
     // error: invalid account name
-    cancel_order_ack_failure(event, INVALID_ACCOUNT);
+    cancel_order_ack_failure(
+        event,
+        RequestStatus::REJECTED,
+        Origin::GATEWAY,
+        Error::INVALID_ACCOUNT);
   } else {
     auto key = OrderMapping::key(
         message_info.source,
@@ -357,12 +421,20 @@ void Gateway::operator()(const CancelOrderEvent& event) {
     auto iter = _order_mapping.find(key);
     if (unlikely(iter == _order_mapping.end())) {
       // error: invalid order id (not in cache)
-      cancel_order_ack_failure(event, UNKNOWN_ORDER_ID);
+      cancel_order_ack_failure(
+          event,
+          RequestStatus::REJECTED,
+          Origin::GATEWAY,
+          Error::UNKNOWN_ORDER_ID);
     } else {
       auto& order_mapping = (*iter).second;
       if (unlikely(order_mapping.ready() == false)) {
         // error: exchange has not confirmed order insertion
-        cancel_order_ack_failure(event, UNKNOWN_EXCHANGE_ORDER_ID);
+        cancel_order_ack_failure(
+            event,
+            RequestStatus::REJECTED,
+            Origin::GATEWAY,
+            Error::UNKNOWN_EXCHANGE_ORDER_ID);
       } else {
         // note! create_request_id will increase request_id
         auto request_id = create_request_id();
@@ -375,10 +447,16 @@ void Gateway::operator()(const CancelOrderEvent& event) {
           send(order_cancel_request);
           cancel_order_ack_success(
               event,
+              RequestStatus::FORWARDED,
+              Origin::GATEWAY,
               order_mapping.gateway_order_id(),
               order_mapping.exchange_order_id());
         } catch (std::exception&) {
-          cancel_order_ack_failure(event, NETWORK_ERROR);
+          cancel_order_ack_failure(
+              event,
+              RequestStatus::REJECTED,
+              Origin::GATEWAY,
+              Error::NETWORK_ERROR);
           throw;
         }
         order_mapping.update_request(
@@ -481,51 +559,60 @@ void Gateway::operator()(
               // user override?
               break;
             case OrderMapping::Request::CREATE: {
-              CreateOrderAck create_order_ack {
+              OrderAck order_ack {
                 .account = _account,
                 .order_id = order_mapping.user_order_id(),
-                .failure = true,
-                .reason = execution_report.text,
+                .type = RequestType::CREATE_ORDER,
+                .status = RequestStatus::REJECTED,
+                .origin = Origin::EXCHANGE,
+                .error = Error::UNKNOWN,
+                .text = execution_report.text,
                 .gateway_order_id = order_mapping.gateway_order_id(),
                 .external_order_id = order_mapping.exchange_order_id(),
               };
               enqueue(
                   order_mapping.user_id(),
-                  create_order_ack,
+                  order_ack,
                   true);
               order_mapping.reset_request();
               break;
             }
             case OrderMapping::Request::MODIFY: {
               // OrdStatus=FILLED
-              ModifyOrderAck modify_order_ack {
+              OrderAck order_ack {
                 .account = _account,
                 .order_id = order_mapping.user_order_id(),
-                .failure = true,
-                .reason = execution_report.text,
+                .type = RequestType::MODIFY_ORDER,
+                .status = RequestStatus::REJECTED,
+                .origin = Origin::EXCHANGE,
+                .error = Error::UNKNOWN,
+                .text = execution_report.text,
                 .gateway_order_id = order_mapping.gateway_order_id(),
                 .external_order_id = order_mapping.exchange_order_id(),
               };
               enqueue(
                   order_mapping.user_id(),
-                  modify_order_ack,
+                  order_ack,
                   true);
               order_mapping.reset_request();
               break;
             }
             case OrderMapping::Request::CANCEL: {
               // OrdStatus=FILLED
-              CancelOrderAck cancel_order_ack {
+              OrderAck order_ack {
                 .account = _account,
                 .order_id = order_mapping.user_order_id(),
-                .failure = true,
-                .reason = execution_report.text,
+                .type = RequestType::CANCEL_ORDER,
+                .status = RequestStatus::ACCEPTED,
+                .origin = Origin::EXCHANGE,
+                .error = Error::UNKNOWN,
+                .text = execution_report.text,
                 .gateway_order_id = order_mapping.gateway_order_id(),
                 .external_order_id = order_mapping.exchange_order_id(),
               };
               enqueue(
                   order_mapping.user_id(),
-                  cancel_order_ack,
+                  order_ack,
                   true);
               order_mapping.reset_request();
               break;
@@ -540,17 +627,20 @@ void Gateway::operator()(
               // user override?
               break;
             case OrderMapping::Request::CANCEL: {
-              CancelOrderAck cancel_order_ack {
+              OrderAck order_ack {
                 .account = _account,
                 .order_id = order_mapping.user_order_id(),
-                .failure = false,
-                .reason = execution_report.text,
+                .type = RequestType::CANCEL_ORDER,
+                .status = RequestStatus::ACCEPTED,
+                .origin = Origin::EXCHANGE,
+                .error = Error::UNKNOWN,
+                .text = execution_report.text,
                 .gateway_order_id = order_mapping.gateway_order_id(),
                 .external_order_id = order_mapping.exchange_order_id(),
               };
               enqueue(
                   order_mapping.user_id(),
-                  cancel_order_ack,
+                  order_ack,
                   true);
               order_mapping.reset_request();
               break;
@@ -570,33 +660,39 @@ void Gateway::operator()(
                   assert(_download == Download::ORDERS);
                   break;
                 case OrderMapping::Request::CREATE: {
-                  CreateOrderAck create_order_ack {
+                  OrderAck order_ack {
                     .account = _account,
                     .order_id = order_mapping.user_order_id(),
-                    .failure = false,
-                    .reason = execution_report.text,
+                    .type = RequestType::CREATE_ORDER,
+                    .status = RequestStatus::ACCEPTED,
+                    .origin = Origin::EXCHANGE,
+                    .error = Error::UNKNOWN,
+                    .text = execution_report.text,
                     .gateway_order_id = order_mapping.gateway_order_id(),
                     .external_order_id = order_mapping.exchange_order_id(),
                   };
                   enqueue(
                       order_mapping.user_id(),
-                      create_order_ack,
+                      order_ack,
                       false);  // *not* last
                   order_mapping.reset_request();
                   break;
                 }
                 case OrderMapping::Request::MODIFY: {
-                  ModifyOrderAck modify_order_ack {
+                  OrderAck order_ack {
                     .account = _account,
                     .order_id = order_mapping.user_order_id(),
-                    .failure = false,
-                    .reason = execution_report.text,
+                    .type = RequestType::MODIFY_ORDER,
+                    .status = RequestStatus::ACCEPTED,
+                    .origin = Origin::EXCHANGE,
+                    .error = Error::UNKNOWN,
+                    .text = execution_report.text,
                     .gateway_order_id = order_mapping.gateway_order_id(),
                     .external_order_id = order_mapping.exchange_order_id(),
                   };
                   enqueue(
                       order_mapping.user_id(),
-                      modify_order_ack,
+                      order_ack,
                       false);  // *not* last
                   order_mapping.reset_request();
                   break;
@@ -888,18 +984,21 @@ void Gateway::operator()(
       case OrderMapping::Request::NONE:
         break;
       case OrderMapping::Request::CANCEL: {
-        CancelOrderAck cancel_order_ack {
+        OrderAck order_ack {
           .account = _account,
           .order_id = order_mapping.user_order_id(),
-          .failure = true,
-          .reason = order_cancel_reject.text,
+          .type = RequestType::CANCEL_ORDER,
+          .status = RequestStatus::REJECTED,
+          .origin = Origin::EXCHANGE,
+          .error = Error::UNKNOWN,
+          .text = order_cancel_reject.text,
           .gateway_order_id = order_mapping.gateway_order_id(),
           .external_order_id = order_mapping.exchange_order_id(),
         };
         auto now = core::get_system_clock();
         enqueue(
             order_mapping.user_id(),
-            cancel_order_ack,
+            order_ack,
             true);
         break;
       }
@@ -931,8 +1030,8 @@ void Gateway::operator()(
               .exchange = FLAGS_exchange,
               .symbol = position.symbol,
               .side = Side::BUY,
-              .last_trade_id = 0,
               .position = position.long_qty,
+              .last_trade_id = 0,
               .position_cost = 0.0,
               .position_yesterday = 0.0,
               .position_cost_yesterday = 0.0,
@@ -942,8 +1041,8 @@ void Gateway::operator()(
               .exchange = FLAGS_exchange,
               .symbol = position.symbol,
               .side = Side::SELL,
-              .last_trade_id = 0,
               .position = position.short_qty,
+              .last_trade_id = 0,
               .position_cost = 0.0,
               .position_yesterday = 0.0,
               .position_cost_yesterday = 0.0,
@@ -986,8 +1085,34 @@ void Gateway::operator()(
       reject);
   check(header);
   assert(_gateway_status != GatewayStatus::DISCONNECTED);
-  LOG(INFO)(FIX_PREFIX "closing connection");
-  _fix->stop();
+  auto request_id = fmt::format(  // FIXME(thraneh): this is *wrong*
+      "roq:{:06}", reject.ref_seq_num);
+  // FIXME(thraneh): this lookup doesn't *just* manage cl_ord_id
+  auto iter = find_order_mapping(request_id, std::string_view());
+  if (iter != _order_mapping.end())  {
+    auto& order_mapping = (*iter).second;
+    OrderAck order_ack {
+      .account = _account,
+      .order_id = order_mapping.user_order_id(),
+      .type = RequestType::CREATE_ORDER,  // FIXME(thraneh): from order_mapping
+      .status = RequestStatus::REJECTED,
+      .origin = Origin::EXCHANGE,
+      .error = Error::UNKNOWN,
+      .text = reject.text,
+      .gateway_order_id = order_mapping.gateway_order_id(),
+      .external_order_id = order_mapping.exchange_order_id(),
+    };
+    auto now = core::get_system_clock();
+    _dispatcher.enqueue(
+        order_mapping.user_id(),
+        order_ack,
+        now,
+        now,
+        true);
+  } else {
+    LOG(INFO)(FIX_PREFIX "closing connection");
+    _fix->stop();
+  }
 }
 
 void Gateway::operator()(
@@ -1240,20 +1365,25 @@ void Gateway::subscribe_market_data() {
 
 void Gateway::create_order_ack_success(
     const CreateOrderEvent& event,
+    RequestStatus status,
+    Origin origin,
     const std::string_view& external_order_id) {
   auto& message_info = event.message_info;
   auto& create_order = event.create_order;
-  CreateOrderAck create_order_ack {
+  OrderAck order_ack {
     .account = create_order.account,
     .order_id = create_order.order_id,
-    .failure = false,
-    .reason = std::string_view(),
+    .type = RequestType::CREATE_ORDER,
+    .status = status,
+    .origin = origin,
+    .error = Error::NONE,
+    .text = std::string_view(),
     .gateway_order_id = _local_order_id,
     .external_order_id = external_order_id,
   };
   _dispatcher.enqueue(
       message_info.source,
-      create_order_ack,
+      order_ack,
       message_info.source_receive_time,
       message_info.origin_create_time,
       true);
@@ -1261,20 +1391,25 @@ void Gateway::create_order_ack_success(
 
 void Gateway::create_order_ack_failure(
     const CreateOrderEvent& event,
-    const std::string_view& reason) {
+    RequestStatus status,
+    Origin origin,
+    Error error) {
   auto& message_info = event.message_info;
   auto& create_order = event.create_order;
-  CreateOrderAck create_order_ack {
+  OrderAck order_ack {
     .account = create_order.account,
     .order_id = create_order.order_id,
-    .failure = true,
-    .reason = reason,
+    .type = RequestType::CREATE_ORDER,
+    .status = status,
+    .origin = origin,
+    .error = error,
+    .text = std::string_view(),
     .gateway_order_id = 0,
     .external_order_id = std::string_view(),
   };
   _dispatcher.enqueue(
       message_info.source,
-      create_order_ack,
+      order_ack,
       message_info.source_receive_time,
       message_info.origin_create_time,
       true);
@@ -1282,21 +1417,26 @@ void Gateway::create_order_ack_failure(
 
 void Gateway::modify_order_ack_success(
     const ModifyOrderEvent& event,
+    RequestStatus status,
+    Origin origin,
     uint32_t local_order_id,
     const std::string_view& external_order_id) {
   auto& message_info = event.message_info;
   auto& modify_order = event.modify_order;
-  ModifyOrderAck modify_order_ack {
+  OrderAck order_ack {
     .account = modify_order.account,
     .order_id = modify_order.order_id,
-    .failure = false,
-    .reason = std::string_view(),
+    .type = RequestType::MODIFY_ORDER,
+    .status = status,
+    .origin = origin,
+    .error = Error::NONE,
+    .text = std::string_view(),
     .gateway_order_id = local_order_id,
     .external_order_id = external_order_id,
   };
   _dispatcher.enqueue(
       message_info.source,
-      modify_order_ack,
+      order_ack,
       message_info.source_receive_time,
       message_info.origin_create_time,
       true);
@@ -1304,22 +1444,27 @@ void Gateway::modify_order_ack_success(
 
 void Gateway::modify_order_ack_failure(
     const ModifyOrderEvent& event,
-    const std::string_view& reason,
+    RequestStatus status,
+    Origin origin,
+    Error error,
     uint32_t local_order_id,
     const std::string_view& external_order_id) {
   auto& message_info = event.message_info;
   auto& modify_order = event.modify_order;
-  ModifyOrderAck modify_order_ack {
+  OrderAck order_ack {
     .account = modify_order.account,
     .order_id = modify_order.order_id,
-    .failure = true,
-    .reason = reason,
+    .type = RequestType::MODIFY_ORDER,
+    .status = status,
+    .origin = origin,
+    .error = error,
+    .text = std::string_view(),
     .gateway_order_id = local_order_id,
     .external_order_id = external_order_id,
   };
   _dispatcher.enqueue(
       message_info.source,
-      modify_order_ack,
+      order_ack,
       message_info.source_receive_time,
       message_info.origin_create_time,
       true);
@@ -1327,21 +1472,26 @@ void Gateway::modify_order_ack_failure(
 
 void Gateway::cancel_order_ack_success(
     const CancelOrderEvent& event,
+    RequestStatus status,
+    Origin origin,
     uint32_t local_order_id,
     const std::string_view& external_order_id) {
   auto& message_info = event.message_info;
   auto& cancel_order = event.cancel_order;
-  CancelOrderAck cancel_order_ack {
+  OrderAck order_ack {
     .account = cancel_order.account,
     .order_id = cancel_order.order_id,
-    .failure = false,
-    .reason = std::string_view(),
+    .type = RequestType::CANCEL_ORDER,
+    .status = status,
+    .origin = origin,
+    .error = Error::NONE,
+    .text = std::string_view(),
     .gateway_order_id = local_order_id,
     .external_order_id = external_order_id,
   };
   _dispatcher.enqueue(
       message_info.source,
-      cancel_order_ack,
+      order_ack,
       message_info.source_receive_time,
       message_info.origin_create_time,
       true);
@@ -1349,22 +1499,27 @@ void Gateway::cancel_order_ack_success(
 
 void Gateway::cancel_order_ack_failure(
     const CancelOrderEvent& event,
-    const std::string_view& reason,
+    RequestStatus status,
+    Origin origin,
+    Error error,
     uint32_t local_order_id,
     const std::string_view& external_order_id) {
   auto& message_info = event.message_info;
   auto& cancel_order = event.cancel_order;
-  CancelOrderAck cancel_order_ack {
+  OrderAck order_ack {
     .account = cancel_order.account,
     .order_id = cancel_order.order_id,
-    .failure = true,
-    .reason = reason,
+    .type = RequestType::CANCEL_ORDER,
+    .status = status,
+    .origin = origin,
+    .error = error,
+    .text = std::string_view(),
     .gateway_order_id = local_order_id,
     .external_order_id = external_order_id,
   };
   _dispatcher.enqueue(
       message_info.source,
-      cancel_order_ack,
+      order_ack,
       message_info.source_receive_time,
       message_info.origin_create_time,
       true);
