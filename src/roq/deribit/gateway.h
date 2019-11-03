@@ -124,42 +124,42 @@ class Gateway final : public server::Handler {
 
   void create_order_ack_success(
       const CreateOrderEvent& event,
-      RequestStatus status,
       Origin origin,
+      RequestStatus status,
       const std::string_view& external_order_id);
 
   void create_order_ack_failure(
       const CreateOrderEvent& event,
-      RequestStatus status,
       Origin origin,
+      RequestStatus status,
       Error error);
 
   void modify_order_ack_success(
       const ModifyOrderEvent& event,
-      RequestStatus status,
       Origin origin,
+      RequestStatus status,
       uint32_t local_order_id,
       const std::string_view& external_order_id);
 
   void modify_order_ack_failure(
       const ModifyOrderEvent& event,
-      RequestStatus status,
       Origin origin,
+      RequestStatus status,
       Error error,
       uint32_t local_order_id = 0,
       const std::string_view& external_order_id = std::string_view());
 
   void cancel_order_ack_success(
       const CancelOrderEvent& event,
-      RequestStatus status,
       Origin origin,
+      RequestStatus status,
       uint32_t local_order_id,
       const std::string_view& external_order_id);
 
   void cancel_order_ack_failure(
       const CancelOrderEvent& event,
-      RequestStatus status,
       Origin origin,
+      RequestStatus status,
       Error error,
       uint32_t local_order_id = 0,
       const std::string_view& external_order_id = std::string_view());

@@ -229,32 +229,32 @@ void Gateway::operator()(const CreateOrderEvent& event) {
     // error: gateway is not in a ready state
     create_order_ack_failure(
         event,
-        RequestStatus::REJECTED,
         Origin::GATEWAY,
+        RequestStatus::REJECTED,
         Error::GATEWAY_NOT_READY);
   } else if (unlikely(
         create_order.account.compare(_account) != 0)) {
     // error: invalid account name
     create_order_ack_failure(
         event,
-        RequestStatus::REJECTED,
         Origin::GATEWAY,
+        RequestStatus::REJECTED,
         Error::INVALID_ACCOUNT);
   } else if (unlikely(
         create_order.exchange.compare(FLAGS_exchange) != 0)) {
     // error: invalid exchange name
     create_order_ack_failure(
         event,
-        RequestStatus::REJECTED,
         Origin::GATEWAY,
+        RequestStatus::REJECTED,
         Error::INVALID_EXCHANGE);
   } else if (unlikely(
         create_order.position_effect != PositionEffect::UNDEFINED)) {
     // error: position effect is not supported
     create_order_ack_failure(
         event,
-        RequestStatus::REJECTED,
         Origin::GATEWAY,
+        RequestStatus::REJECTED,
         Error::INVALID_POSITION_EFFECT);
   } else if (unlikely(
         create_order.order_template.empty() == false &&
@@ -262,8 +262,8 @@ void Gateway::operator()(const CreateOrderEvent& event) {
     // error: invalid order template
     create_order_ack_failure(
         event,
-        RequestStatus::REJECTED,
         Origin::GATEWAY,
+        RequestStatus::REJECTED,
         Error::INVALID_ORDER_TEMPLATE);
   } else {
     // TODO(thraneh): check against max_order_id before continuing
@@ -277,8 +277,8 @@ void Gateway::operator()(const CreateOrderEvent& event) {
       // error: order id has been recycled
       create_order_ack_failure(
           event,
-          RequestStatus::REJECTED,
           Origin::GATEWAY,
+          RequestStatus::REJECTED,
           Error::INVALID_ORDER_ID);
     } else {
       auto request_id = create_request_id();
@@ -301,14 +301,14 @@ void Gateway::operator()(const CreateOrderEvent& event) {
         send(new_order_single);
         create_order_ack_success(
             event,
-            RequestStatus::FORWARDED,
             Origin::GATEWAY,
+            RequestStatus::FORWARDED,
             request_id);
       } catch (std::exception&) {
         create_order_ack_failure(
             event,
-            RequestStatus::REJECTED,
             Origin::GATEWAY,
+            RequestStatus::REJECTED,
             Error::NETWORK_ERROR);
         throw;
       }
@@ -326,16 +326,16 @@ void Gateway::operator()(const ModifyOrderEvent& event) {
     // error: gateway is not in a ready state
     modify_order_ack_failure(
         event,
-        RequestStatus::REJECTED,
         Origin::GATEWAY,
+        RequestStatus::REJECTED,
         Error::GATEWAY_NOT_READY);
   } else if (unlikely(
         modify_order.account.compare(_account) != 0)) {
     // error: invalid account name
     modify_order_ack_failure(
         event,
-        RequestStatus::REJECTED,
         Origin::GATEWAY,
+        RequestStatus::REJECTED,
         Error::INVALID_ACCOUNT);
   } else {
     auto key = OrderMapping::key(
@@ -346,8 +346,8 @@ void Gateway::operator()(const ModifyOrderEvent& event) {
       // error: invalid order id (not in cache)
       modify_order_ack_failure(
           event,
-          RequestStatus::REJECTED,
           Origin::GATEWAY,
+          RequestStatus::REJECTED,
           Error::UNKNOWN_ORDER_ID);
     } else {
       auto& order_mapping = (*iter).second;
@@ -355,8 +355,8 @@ void Gateway::operator()(const ModifyOrderEvent& event) {
         // error: exchange has not confirmed order insertion
         modify_order_ack_failure(
             event,
-            RequestStatus::REJECTED,
             Origin::GATEWAY,
+            RequestStatus::REJECTED,
             Error::UNKNOWN_EXCHANGE_ORDER_ID);
       } else {
         // note! create_request_id will increase request_id
@@ -376,15 +376,15 @@ void Gateway::operator()(const ModifyOrderEvent& event) {
           send(order_cancel_replace_request);
           modify_order_ack_success(
               event,
-              RequestStatus::FORWARDED,
               Origin::GATEWAY,
+              RequestStatus::FORWARDED,
               order_mapping.gateway_order_id(),
               order_mapping.exchange_order_id());
         } catch (std::exception&) {
           modify_order_ack_failure(
               event,
-              RequestStatus::REJECTED,
               Origin::GATEWAY,
+              RequestStatus::REJECTED,
               Error::NETWORK_ERROR);
           throw;
         }
@@ -403,16 +403,16 @@ void Gateway::operator()(const CancelOrderEvent& event) {
     // error: gateway is not in a ready state
     cancel_order_ack_failure(
         event,
-        RequestStatus::REJECTED,
         Origin::GATEWAY,
+        RequestStatus::REJECTED,
         Error::GATEWAY_NOT_READY);
   } else if (unlikely(
         cancel_order.account.compare(_account) != 0)) {
     // error: invalid account name
     cancel_order_ack_failure(
         event,
-        RequestStatus::REJECTED,
         Origin::GATEWAY,
+        RequestStatus::REJECTED,
         Error::INVALID_ACCOUNT);
   } else {
     auto key = OrderMapping::key(
@@ -423,8 +423,8 @@ void Gateway::operator()(const CancelOrderEvent& event) {
       // error: invalid order id (not in cache)
       cancel_order_ack_failure(
           event,
-          RequestStatus::REJECTED,
           Origin::GATEWAY,
+          RequestStatus::REJECTED,
           Error::UNKNOWN_ORDER_ID);
     } else {
       auto& order_mapping = (*iter).second;
@@ -432,8 +432,8 @@ void Gateway::operator()(const CancelOrderEvent& event) {
         // error: exchange has not confirmed order insertion
         cancel_order_ack_failure(
             event,
-            RequestStatus::REJECTED,
             Origin::GATEWAY,
+            RequestStatus::REJECTED,
             Error::UNKNOWN_EXCHANGE_ORDER_ID);
       } else {
         // note! create_request_id will increase request_id
@@ -447,15 +447,15 @@ void Gateway::operator()(const CancelOrderEvent& event) {
           send(order_cancel_request);
           cancel_order_ack_success(
               event,
-              RequestStatus::FORWARDED,
               Origin::GATEWAY,
+              RequestStatus::FORWARDED,
               order_mapping.gateway_order_id(),
               order_mapping.exchange_order_id());
         } catch (std::exception&) {
           cancel_order_ack_failure(
               event,
-              RequestStatus::REJECTED,
               Origin::GATEWAY,
+              RequestStatus::REJECTED,
               Error::NETWORK_ERROR);
           throw;
         }
@@ -563,8 +563,8 @@ void Gateway::operator()(
                 .account = _account,
                 .order_id = order_mapping.user_order_id(),
                 .type = RequestType::CREATE_ORDER,
-                .status = RequestStatus::REJECTED,
                 .origin = Origin::EXCHANGE,
+                .status = RequestStatus::REJECTED,
                 .error = Error::UNKNOWN,
                 .text = execution_report.text,
                 .gateway_order_id = order_mapping.gateway_order_id(),
@@ -583,8 +583,8 @@ void Gateway::operator()(
                 .account = _account,
                 .order_id = order_mapping.user_order_id(),
                 .type = RequestType::MODIFY_ORDER,
-                .status = RequestStatus::REJECTED,
                 .origin = Origin::EXCHANGE,
+                .status = RequestStatus::REJECTED,
                 .error = Error::UNKNOWN,
                 .text = execution_report.text,
                 .gateway_order_id = order_mapping.gateway_order_id(),
@@ -603,8 +603,8 @@ void Gateway::operator()(
                 .account = _account,
                 .order_id = order_mapping.user_order_id(),
                 .type = RequestType::CANCEL_ORDER,
-                .status = RequestStatus::ACCEPTED,
                 .origin = Origin::EXCHANGE,
+                .status = RequestStatus::ACCEPTED,
                 .error = Error::UNKNOWN,
                 .text = execution_report.text,
                 .gateway_order_id = order_mapping.gateway_order_id(),
@@ -631,8 +631,8 @@ void Gateway::operator()(
                 .account = _account,
                 .order_id = order_mapping.user_order_id(),
                 .type = RequestType::CANCEL_ORDER,
-                .status = RequestStatus::ACCEPTED,
                 .origin = Origin::EXCHANGE,
+                .status = RequestStatus::ACCEPTED,
                 .error = Error::UNKNOWN,
                 .text = execution_report.text,
                 .gateway_order_id = order_mapping.gateway_order_id(),
@@ -664,8 +664,8 @@ void Gateway::operator()(
                     .account = _account,
                     .order_id = order_mapping.user_order_id(),
                     .type = RequestType::CREATE_ORDER,
-                    .status = RequestStatus::ACCEPTED,
                     .origin = Origin::EXCHANGE,
+                    .status = RequestStatus::ACCEPTED,
                     .error = Error::UNKNOWN,
                     .text = execution_report.text,
                     .gateway_order_id = order_mapping.gateway_order_id(),
@@ -683,8 +683,8 @@ void Gateway::operator()(
                     .account = _account,
                     .order_id = order_mapping.user_order_id(),
                     .type = RequestType::MODIFY_ORDER,
-                    .status = RequestStatus::ACCEPTED,
                     .origin = Origin::EXCHANGE,
+                    .status = RequestStatus::ACCEPTED,
                     .error = Error::UNKNOWN,
                     .text = execution_report.text,
                     .gateway_order_id = order_mapping.gateway_order_id(),
@@ -988,8 +988,8 @@ void Gateway::operator()(
           .account = _account,
           .order_id = order_mapping.user_order_id(),
           .type = RequestType::CANCEL_ORDER,
-          .status = RequestStatus::REJECTED,
           .origin = Origin::EXCHANGE,
+          .status = RequestStatus::REJECTED,
           .error = Error::UNKNOWN,
           .text = order_cancel_reject.text,
           .gateway_order_id = order_mapping.gateway_order_id(),
@@ -1095,8 +1095,8 @@ void Gateway::operator()(
       .account = _account,
       .order_id = order_mapping.user_order_id(),
       .type = RequestType::CREATE_ORDER,  // FIXME(thraneh): from order_mapping
-      .status = RequestStatus::REJECTED,
       .origin = Origin::EXCHANGE,
+      .status = RequestStatus::REJECTED,
       .error = Error::UNKNOWN,
       .text = reject.text,
       .gateway_order_id = order_mapping.gateway_order_id(),
@@ -1365,8 +1365,8 @@ void Gateway::subscribe_market_data() {
 
 void Gateway::create_order_ack_success(
     const CreateOrderEvent& event,
-    RequestStatus status,
     Origin origin,
+    RequestStatus status,
     const std::string_view& external_order_id) {
   auto& message_info = event.message_info;
   auto& create_order = event.create_order;
@@ -1374,8 +1374,8 @@ void Gateway::create_order_ack_success(
     .account = create_order.account,
     .order_id = create_order.order_id,
     .type = RequestType::CREATE_ORDER,
-    .status = status,
     .origin = origin,
+    .status = status,
     .error = Error::NONE,
     .text = std::string_view(),
     .gateway_order_id = _local_order_id,
@@ -1391,8 +1391,8 @@ void Gateway::create_order_ack_success(
 
 void Gateway::create_order_ack_failure(
     const CreateOrderEvent& event,
-    RequestStatus status,
     Origin origin,
+    RequestStatus status,
     Error error) {
   auto& message_info = event.message_info;
   auto& create_order = event.create_order;
@@ -1400,8 +1400,8 @@ void Gateway::create_order_ack_failure(
     .account = create_order.account,
     .order_id = create_order.order_id,
     .type = RequestType::CREATE_ORDER,
-    .status = status,
     .origin = origin,
+    .status = status,
     .error = error,
     .text = std::string_view(),
     .gateway_order_id = 0,
@@ -1417,8 +1417,8 @@ void Gateway::create_order_ack_failure(
 
 void Gateway::modify_order_ack_success(
     const ModifyOrderEvent& event,
-    RequestStatus status,
     Origin origin,
+    RequestStatus status,
     uint32_t local_order_id,
     const std::string_view& external_order_id) {
   auto& message_info = event.message_info;
@@ -1427,8 +1427,8 @@ void Gateway::modify_order_ack_success(
     .account = modify_order.account,
     .order_id = modify_order.order_id,
     .type = RequestType::MODIFY_ORDER,
-    .status = status,
     .origin = origin,
+    .status = status,
     .error = Error::NONE,
     .text = std::string_view(),
     .gateway_order_id = local_order_id,
@@ -1444,8 +1444,8 @@ void Gateway::modify_order_ack_success(
 
 void Gateway::modify_order_ack_failure(
     const ModifyOrderEvent& event,
-    RequestStatus status,
     Origin origin,
+    RequestStatus status,
     Error error,
     uint32_t local_order_id,
     const std::string_view& external_order_id) {
@@ -1455,8 +1455,8 @@ void Gateway::modify_order_ack_failure(
     .account = modify_order.account,
     .order_id = modify_order.order_id,
     .type = RequestType::MODIFY_ORDER,
-    .status = status,
     .origin = origin,
+    .status = status,
     .error = error,
     .text = std::string_view(),
     .gateway_order_id = local_order_id,
@@ -1472,8 +1472,8 @@ void Gateway::modify_order_ack_failure(
 
 void Gateway::cancel_order_ack_success(
     const CancelOrderEvent& event,
-    RequestStatus status,
     Origin origin,
+    RequestStatus status,
     uint32_t local_order_id,
     const std::string_view& external_order_id) {
   auto& message_info = event.message_info;
@@ -1482,8 +1482,8 @@ void Gateway::cancel_order_ack_success(
     .account = cancel_order.account,
     .order_id = cancel_order.order_id,
     .type = RequestType::CANCEL_ORDER,
-    .status = status,
     .origin = origin,
+    .status = status,
     .error = Error::NONE,
     .text = std::string_view(),
     .gateway_order_id = local_order_id,
@@ -1499,8 +1499,8 @@ void Gateway::cancel_order_ack_success(
 
 void Gateway::cancel_order_ack_failure(
     const CancelOrderEvent& event,
-    RequestStatus status,
     Origin origin,
+    RequestStatus status,
     Error error,
     uint32_t local_order_id,
     const std::string_view& external_order_id) {
@@ -1510,8 +1510,8 @@ void Gateway::cancel_order_ack_failure(
     .account = cancel_order.account,
     .order_id = cancel_order.order_id,
     .type = RequestType::CANCEL_ORDER,
-    .status = status,
     .origin = origin,
+    .status = status,
     .error = error,
     .text = std::string_view(),
     .gateway_order_id = local_order_id,
