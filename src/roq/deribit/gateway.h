@@ -62,47 +62,47 @@ class Gateway final : public server::Handler {
   void on_fix_connected();
   void on_fix_disconnected();
   void operator()(
-      const core::fix::header_t& header,
-      const fix::ExecutionReport& execution_report);
+      const core::fix::header_t&,
+      const fix::ExecutionReport&);
   void operator()(
-      const core::fix::header_t& header,
-      const fix::Heartbeat& heartbeat);
+      const core::fix::header_t&,
+      const fix::Heartbeat&);
   void operator()(
-      const core::fix::header_t& header,
-      const fix::Logon& logon);
+      const core::fix::header_t&,
+      const fix::Logon&);
   void operator()(
-      const core::fix::header_t& header,
-      const fix::Logout& logout);
+      const core::fix::header_t&,
+      const fix::Logout&);
   void operator()(
-      const core::fix::header_t& header,
-      const fix::MarketDataIncrementalRefresh& market_data_incremental_refresh);
+      const core::fix::header_t&,
+      const fix::MarketDataIncrementalRefresh&);
   void operator()(
-      const core::fix::header_t& header,
-      const fix::MarketDataRequestReject& market_data_request_reject);
+      const core::fix::header_t&,
+      const fix::MarketDataRequestReject&);
   void operator()(
-      const core::fix::header_t& header,
-      const fix::MarketDataSnapshotFullRefresh& market_data_snapshot_full_refresh);
+      const core::fix::header_t&,
+      const fix::MarketDataSnapshotFullRefresh&);
   void operator()(
-      const core::fix::header_t& header,
-      const fix::OrderCancelReject& order_cancel_reject);
+      const core::fix::header_t&,
+      const fix::OrderCancelReject&);
   void operator()(
-      const core::fix::header_t& header,
-      const fix::PositionReport& position_report);
+      const core::fix::header_t&,
+      const fix::PositionReport&);
   void operator()(
-      const core::fix::header_t& header,
-      const fix::Reject& reject);
+      const core::fix::header_t&,
+      const fix::Reject&);
   void operator()(
-      const core::fix::header_t& header,
-      const fix::ResendRequest& resend_request);
+      const core::fix::header_t&,
+      const fix::ResendRequest&);
   void operator()(
-      const core::fix::header_t& header,
-      const fix::SecurityList& security_list);
+      const core::fix::header_t&,
+      const fix::SecurityList&);
   void operator()(
-      const core::fix::header_t& header,
-      const fix::TestRequest& test_request);
+      const core::fix::header_t&,
+      const fix::TestRequest&);
   void operator()(
-      const core::fix::header_t& header,
-      const fix::UserResponse& user_response);
+      const core::fix::header_t&,
+      const fix::UserResponse&);
 
  private:
   bool discard_symbol(const std::string_view& symbol);
@@ -121,48 +121,6 @@ class Gateway final : public server::Handler {
   void subscribe_market_data();
 
   void reset();
-
-  void create_order_ack_success(
-      const CreateOrderEvent& event,
-      Origin origin,
-      RequestStatus status,
-      const std::string_view& external_order_id);
-
-  void create_order_ack_failure(
-      const CreateOrderEvent& event,
-      Origin origin,
-      RequestStatus status,
-      Error error);
-
-  void modify_order_ack_success(
-      const ModifyOrderEvent& event,
-      Origin origin,
-      RequestStatus status,
-      uint32_t local_order_id,
-      const std::string_view& external_order_id);
-
-  void modify_order_ack_failure(
-      const ModifyOrderEvent& event,
-      Origin origin,
-      RequestStatus status,
-      Error error,
-      uint32_t local_order_id = 0,
-      const std::string_view& external_order_id = std::string_view());
-
-  void cancel_order_ack_success(
-      const CancelOrderEvent& event,
-      Origin origin,
-      RequestStatus status,
-      uint32_t local_order_id,
-      const std::string_view& external_order_id);
-
-  void cancel_order_ack_failure(
-      const CancelOrderEvent& event,
-      Origin origin,
-      RequestStatus status,
-      Error error,
-      uint32_t local_order_id = 0,
-      const std::string_view& external_order_id = std::string_view());
 
  private:
   template <typename T>
@@ -217,6 +175,13 @@ class Gateway final : public server::Handler {
   std::string create_request_id();
 
   void check(const core::fix::header_t& header);
+
+  inline auto create_order_id() {
+    return ++_local_order_id;
+  }
+  inline auto create_trade_id() {
+    return ++_local_trade_id;
+  }
 
  private:
   server::Dispatcher& _dispatcher;

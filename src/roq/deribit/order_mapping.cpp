@@ -90,18 +90,18 @@ bool OrderMapping::validate(
 
 void OrderMapping::update_request(
     const std::string_view& request_id,
-    Request request) {
+    RequestType request) {
   assert(_request_id[0] == '\0');
-  assert(_request == Request::NONE);
+  assert(_request == RequestType::UNDEFINED);
   copy_to(request_id, _request_id);
   _request = request;
 }
 
 void OrderMapping::reset_request() {
   assert(_request_id[0] != '\0');
-  assert(_request != Request::NONE);
+  assert(_request != RequestType::UNDEFINED);
   _request_id[0] = '\0';
-  _request = Request::NONE;
+  _request = RequestType::UNDEFINED;
 }
 
 }  // namespace deribit

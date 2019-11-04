@@ -225,69 +225,43 @@ void Gateway::operator()(const ConnectionStatusEvent&) {
 void Gateway::operator()(const CreateOrderEvent& event) {
   auto& message_info = event.message_info;
   auto& create_order = event.create_order;
+  constexpr auto type = RequestType::CREATE_ORDER;
+  constexpr auto origin = Origin::GATEWAY;
+  auto error = Error::NONE;
+  decltype(OrderAck::gateway_order_id) gateway_order_id = {};
   if (unlikely(_gateway_status != GatewayStatus::READY)) {
-    // error: gateway is not in a ready state
-    create_order_ack_failure(
-        event,
-        Origin::GATEWAY,
-        RequestStatus::REJECTED,
-        Error::GATEWAY_NOT_READY);
+    error = Error::GATEWAY_NOT_READY;
   } else if (unlikely(
         create_order.account.compare(_account) != 0)) {
-    // error: invalid account name
-    create_order_ack_failure(
-        event,
-        Origin::GATEWAY,
-        RequestStatus::REJECTED,
-        Error::INVALID_ACCOUNT);
+    error = Error::INVALID_ACCOUNT;
   } else if (unlikely(
         create_order.exchange.compare(FLAGS_exchange) != 0)) {
-    // error: invalid exchange name
-    create_order_ack_failure(
-        event,
-        Origin::GATEWAY,
-        RequestStatus::REJECTED,
-        Error::INVALID_EXCHANGE);
+    error = Error::INVALID_EXCHANGE;
   } else if (unlikely(
         create_order.position_effect != PositionEffect::UNDEFINED)) {
-    // error: position effect is not supported
-    create_order_ack_failure(
-        event,
-        Origin::GATEWAY,
-        RequestStatus::REJECTED,
-        Error::INVALID_POSITION_EFFECT);
+    error = Error::INVALID_POSITION_EFFECT;
   } else if (unlikely(
         create_order.order_template.empty() == false &&
         create_order.order_template.compare("default") != 0)) {
-    // error: invalid order template
-    create_order_ack_failure(
-        event,
-        Origin::GATEWAY,
-        RequestStatus::REJECTED,
-        Error::INVALID_ORDER_TEMPLATE);
+    error = Error::INVALID_ORDER_TEMPLATE;
   } else {
     // TODO(thraneh): check against max_order_id before continuing
-    auto gateway_order_id = ++_local_order_id;
+    gateway_order_id = create_order_id();
     OrderMapping order_mapping(
         message_info,
         create_order,
         gateway_order_id);
     auto key = order_mapping.key();
     if (unlikely(_order_mapping.find(key) != _order_mapping.end())) {
-      // error: order id has been recycled
-      create_order_ack_failure(
-          event,
-          Origin::GATEWAY,
-          RequestStatus::REJECTED,
-          Error::INVALID_ORDER_ID);
+      error = Error::INVALID_ORDER_ID;
     } else {
       auto request_id = create_request_id();
       auto iter = _order_mapping.emplace(
           key,
           std::move(order_mapping)).first;
+      auto& order_mapping = (*iter).second;
       _order_lookup.emplace(request_id, key);
-      // create request
-      fix::NewOrderSingle new_order_single = {
+      fix::NewOrderSingle request {
         .cl_ord_id = request_id,
         .side = core::fix::map(create_order.side),
         .order_qty = create_order.quantity,
@@ -298,71 +272,64 @@ void Gateway::operator()(const CreateOrderEvent& event) {
         .deribit_label = (*iter).second.user_custom(),
       };
       try {
-        send(new_order_single);
-        create_order_ack_success(
-            event,
-            Origin::GATEWAY,
-            RequestStatus::FORWARDED,
-            request_id);
-      } catch (std::exception&) {
-        create_order_ack_failure(
-            event,
-            Origin::GATEWAY,
-            RequestStatus::REJECTED,
-            Error::NETWORK_ERROR);
-        throw;
+        send(request);
+        order_mapping.update_request(request_id, type);
+      } catch (std::exception& e) {
+        LOG(WARNING)("Exception: what=\"{}\"", e.what());
+        error = Error::NETWORK_ERROR;
       }
-      (*iter).second.update_request(
-          request_id,
-          OrderMapping::Request::CREATE);
     }
   }
+  OrderAck order_ack {
+    .account = create_order.account,
+    .order_id = create_order.order_id,
+    .type = type,
+    .origin = origin,
+    .status = (error == Error::NONE)
+      ? RequestStatus::FORWARDED
+      : RequestStatus::REJECTED,
+    .error = error,
+    .text = std::string_view(),
+    .gateway_order_id = gateway_order_id,
+    .external_order_id = std::string_view(),
+  };
+  _dispatcher.enqueue(
+      message_info.source,
+      order_ack,
+      message_info.source_receive_time,
+      message_info.origin_create_time,
+      true);
 }
 
 void Gateway::operator()(const ModifyOrderEvent& event) {
   auto& message_info = event.message_info;
   auto& modify_order = event.modify_order;
+  constexpr auto type = RequestType::MODIFY_ORDER;
+  constexpr auto origin = Origin::GATEWAY;
+  auto error = Error::NONE;
+  decltype(OrderAck::gateway_order_id) gateway_order_id = {};
+  decltype(OrderAck::external_order_id) external_order_id = {};
   if (unlikely(_gateway_status != GatewayStatus::READY)) {
-    // error: gateway is not in a ready state
-    modify_order_ack_failure(
-        event,
-        Origin::GATEWAY,
-        RequestStatus::REJECTED,
-        Error::GATEWAY_NOT_READY);
+    error = Error::GATEWAY_NOT_READY;
   } else if (unlikely(
         modify_order.account.compare(_account) != 0)) {
-    // error: invalid account name
-    modify_order_ack_failure(
-        event,
-        Origin::GATEWAY,
-        RequestStatus::REJECTED,
-        Error::INVALID_ACCOUNT);
+    error = Error::INVALID_ACCOUNT;
   } else {
     auto key = OrderMapping::key(
         message_info.source,
         modify_order.order_id);
     auto iter = _order_mapping.find(key);
     if (unlikely(iter == _order_mapping.end())) {
-      // error: invalid order id (not in cache)
-      modify_order_ack_failure(
-          event,
-          Origin::GATEWAY,
-          RequestStatus::REJECTED,
-          Error::UNKNOWN_ORDER_ID);
+      error = Error::UNKNOWN_ORDER_ID;
     } else {
       auto& order_mapping = (*iter).second;
+      gateway_order_id = order_mapping.gateway_order_id();
+      external_order_id = order_mapping.exchange_order_id();
       if (unlikely(order_mapping.ready() == false)) {
-        // error: exchange has not confirmed order insertion
-        modify_order_ack_failure(
-            event,
-            Origin::GATEWAY,
-            RequestStatus::REJECTED,
-            Error::UNKNOWN_EXCHANGE_ORDER_ID);
+        error = Error::UNKNOWN_EXCHANGE_ORDER_ID;
       } else {
-        // note! create_request_id will increase request_id
         auto request_id = create_request_id();
-        // create request
-        fix::OrderCancelReplaceRequest order_cancel_replace_request = {
+        fix::OrderCancelReplaceRequest request {
           .cl_ord_id = request_id,
           .orig_cl_ord_id = order_mapping.exchange_order_id(),
           .side = core::fix::map(order_mapping.side()),
@@ -373,98 +340,97 @@ void Gateway::operator()(const ModifyOrderEvent& event) {
           .transact_time = order_mapping.update_time(),
         };
         try {
-          send(order_cancel_replace_request);
-          modify_order_ack_success(
-              event,
-              Origin::GATEWAY,
-              RequestStatus::FORWARDED,
-              order_mapping.gateway_order_id(),
-              order_mapping.exchange_order_id());
-        } catch (std::exception&) {
-          modify_order_ack_failure(
-              event,
-              Origin::GATEWAY,
-              RequestStatus::REJECTED,
-              Error::NETWORK_ERROR);
-          throw;
+          send(request);
+          order_mapping.update_request(request_id, type);
+        } catch (std::exception& e) {
+          LOG(WARNING)("Exception: what=\"{}\"", e.what());
+          error = Error::NETWORK_ERROR;
         }
-        order_mapping.update_request(
-            request_id,
-            OrderMapping::Request::MODIFY);
       }
     }
   }
+  OrderAck order_ack {
+    .account = modify_order.account,
+    .order_id = modify_order.order_id,
+    .type = type,
+    .origin = origin,
+    .status = (error == Error::NONE)
+      ? RequestStatus::FORWARDED
+      : RequestStatus::REJECTED,
+    .error = error,
+    .text = std::string_view(),
+    .gateway_order_id = gateway_order_id,
+    .external_order_id = external_order_id,
+  };
+  _dispatcher.enqueue(
+      message_info.source,
+      order_ack,
+      message_info.source_receive_time,
+      message_info.origin_create_time,
+      true);
 }
 
 void Gateway::operator()(const CancelOrderEvent& event) {
   auto& message_info = event.message_info;
   auto& cancel_order = event.cancel_order;
+  constexpr auto type = RequestType::CANCEL_ORDER;
+  constexpr auto origin = Origin::GATEWAY;
+  auto error = Error::NONE;
+  decltype(OrderAck::gateway_order_id) gateway_order_id = {};
+  decltype(OrderAck::external_order_id) external_order_id = {};
   if (unlikely(_gateway_status != GatewayStatus::READY)) {
-    // error: gateway is not in a ready state
-    cancel_order_ack_failure(
-        event,
-        Origin::GATEWAY,
-        RequestStatus::REJECTED,
-        Error::GATEWAY_NOT_READY);
+    error = Error::GATEWAY_NOT_READY;
   } else if (unlikely(
         cancel_order.account.compare(_account) != 0)) {
-    // error: invalid account name
-    cancel_order_ack_failure(
-        event,
-        Origin::GATEWAY,
-        RequestStatus::REJECTED,
-        Error::INVALID_ACCOUNT);
+    error = Error::INVALID_ACCOUNT;
   } else {
     auto key = OrderMapping::key(
         message_info.source,
         cancel_order.order_id);
     auto iter = _order_mapping.find(key);
     if (unlikely(iter == _order_mapping.end())) {
-      // error: invalid order id (not in cache)
-      cancel_order_ack_failure(
-          event,
-          Origin::GATEWAY,
-          RequestStatus::REJECTED,
-          Error::UNKNOWN_ORDER_ID);
+      error = Error::UNKNOWN_ORDER_ID;
     } else {
       auto& order_mapping = (*iter).second;
+      gateway_order_id = order_mapping.gateway_order_id();
+      external_order_id = order_mapping.exchange_order_id();
       if (unlikely(order_mapping.ready() == false)) {
-        // error: exchange has not confirmed order insertion
-        cancel_order_ack_failure(
-            event,
-            Origin::GATEWAY,
-            RequestStatus::REJECTED,
-            Error::UNKNOWN_EXCHANGE_ORDER_ID);
+        error = Error::UNKNOWN_EXCHANGE_ORDER_ID;
       } else {
-        // note! create_request_id will increase request_id
         auto request_id = create_request_id();
-        // create request
-        fix::OrderCancelRequest order_cancel_request = {
+        fix::OrderCancelRequest request {
           .cl_ord_id = request_id,
           .orig_cl_ord_id = order_mapping.exchange_order_id(),
         };
         try {
-          send(order_cancel_request);
-          cancel_order_ack_success(
-              event,
-              Origin::GATEWAY,
-              RequestStatus::FORWARDED,
-              order_mapping.gateway_order_id(),
-              order_mapping.exchange_order_id());
-        } catch (std::exception&) {
-          cancel_order_ack_failure(
-              event,
-              Origin::GATEWAY,
-              RequestStatus::REJECTED,
-              Error::NETWORK_ERROR);
-          throw;
+          send(request);
+          order_mapping.update_request(request_id, type);
+        } catch (std::exception& e) {
+          LOG(WARNING)("Exception: what=\"{}\"", e.what());
+          error = Error::NETWORK_ERROR;
         }
-        order_mapping.update_request(
-            request_id,
-            OrderMapping::Request::CANCEL);
       }
     }
   }
+  OrderAck order_ack {
+    .account = cancel_order.account,
+    .order_id = cancel_order.order_id,
+    .type = type,
+    .origin = origin,
+    .status = (error == Error::NONE)
+      ? RequestStatus::FORWARDED
+      : RequestStatus::REJECTED,
+    .error = error,
+    .text = std::string_view(),
+    .gateway_order_id = gateway_order_id,
+    .external_order_id = external_order_id,
+  };
+  _dispatcher.enqueue(
+      message_info.source,
+      order_ack,
+      message_info.source_receive_time,
+      message_info.origin_create_time,
+      true);
 }
 
 void Gateway::write(Metrics& metrics) {
@@ -522,15 +488,17 @@ void Gateway::operator()(
       header,
       execution_report);
   check(header);
-  // response to order download?
-  if (unlikely(
-        execution_report.mass_status_req_type ==
-        core::fix::MassStatusReqType::ORDERS)) {
-    assert(_gateway_status == GatewayStatus::DOWNLOADING);
-    _download_execution_reports = execution_report.tot_num_reports;
-    if (_download_execution_reports == 0)
-      check_download();
-    return;
+
+  // download begin?
+  switch (execution_report.mass_status_req_type) {
+    case core::fix::MassStatusReqType::ORDERS:
+      assert(_gateway_status == GatewayStatus::DOWNLOADING);
+      _download_execution_reports = execution_report.tot_num_reports;
+      if (_download_execution_reports == 0)
+        check_download();
+      return;
+    default:
+      break;
   }
 
   // order mapping
@@ -544,233 +512,165 @@ void Gateway::operator()(
       iter = create_order_mapping(execution_report);
     }
   }
-
   if (iter != _order_mapping.end()) {
     auto& order_mapping = (*iter).second;
 
     // FIXME(thraneh): DEBUG
-    if (unlikely(order_mapping.validate(execution_report) == false)) {
+    if (unlikely(
+          order_mapping.validate(execution_report) == false)) {
       LOG(WARNING)("*** SOMETHING WRONG ***");
     } else {
+      constexpr auto origin = Origin::EXCHANGE;
+      auto status = RequestStatus::UNDEFINED;
+      auto error = fix::map_error(execution_report.text);
+      bool order_update = true;
       switch (execution_report.exec_type) {
         case core::fix::ExecType::REJECTED: {
           switch (order_mapping.request()) {
-            case OrderMapping::Request::NONE:
-              // user override?
+            case RequestType::UNDEFINED:
+              LOG(WARNING)("*** EXTERNAL ACTION ***");
               break;
-            case OrderMapping::Request::CREATE: {
-              OrderAck order_ack {
-                .account = _account,
-                .order_id = order_mapping.user_order_id(),
-                .type = RequestType::CREATE_ORDER,
-                .origin = Origin::EXCHANGE,
-                .status = RequestStatus::REJECTED,
-                .error = Error::UNKNOWN,
-                .text = execution_report.text,
-                .gateway_order_id = order_mapping.gateway_order_id(),
-                .external_order_id = order_mapping.exchange_order_id(),
-              };
-              enqueue(
-                  order_mapping.user_id(),
-                  order_ack,
-                  true);
-              order_mapping.reset_request();
+            case RequestType::CREATE_ORDER:
+              order_update = false;
+              [[ fallthrough ]];
+            case RequestType::MODIFY_ORDER:
+            case RequestType::CANCEL_ORDER:
+              status = RequestStatus::REJECTED;
               break;
-            }
-            case OrderMapping::Request::MODIFY: {
-              // OrdStatus=FILLED
-              OrderAck order_ack {
-                .account = _account,
-                .order_id = order_mapping.user_order_id(),
-                .type = RequestType::MODIFY_ORDER,
-                .origin = Origin::EXCHANGE,
-                .status = RequestStatus::REJECTED,
-                .error = Error::UNKNOWN,
-                .text = execution_report.text,
-                .gateway_order_id = order_mapping.gateway_order_id(),
-                .external_order_id = order_mapping.exchange_order_id(),
-              };
-              enqueue(
-                  order_mapping.user_id(),
-                  order_ack,
-                  true);
-              order_mapping.reset_request();
-              break;
-            }
-            case OrderMapping::Request::CANCEL: {
-              // OrdStatus=FILLED
-              OrderAck order_ack {
-                .account = _account,
-                .order_id = order_mapping.user_order_id(),
-                .type = RequestType::CANCEL_ORDER,
-                .origin = Origin::EXCHANGE,
-                .status = RequestStatus::ACCEPTED,
-                .error = Error::UNKNOWN,
-                .text = execution_report.text,
-                .gateway_order_id = order_mapping.gateway_order_id(),
-                .external_order_id = order_mapping.exchange_order_id(),
-              };
-              enqueue(
-                  order_mapping.user_id(),
-                  order_ack,
-                  true);
-              order_mapping.reset_request();
-              break;
-            }
           }
           break;
         }
-
         case core::fix::ExecType::CANCELED: {
           switch (order_mapping.request()) {
-            case OrderMapping::Request::NONE:
-              // user override?
+            case RequestType::UNDEFINED:
+              LOG(WARNING)("*** EXTERNAL ACTION ***");
               break;
-            case OrderMapping::Request::CANCEL: {
-              OrderAck order_ack {
-                .account = _account,
-                .order_id = order_mapping.user_order_id(),
-                .type = RequestType::CANCEL_ORDER,
-                .origin = Origin::EXCHANGE,
-                .status = RequestStatus::ACCEPTED,
-                .error = Error::UNKNOWN,
-                .text = execution_report.text,
-                .gateway_order_id = order_mapping.gateway_order_id(),
-                .external_order_id = order_mapping.exchange_order_id(),
-              };
-              enqueue(
-                  order_mapping.user_id(),
-                  order_ack,
-                  true);
-              order_mapping.reset_request();
+            case RequestType::CREATE_ORDER:
+            case RequestType::MODIFY_ORDER:
+              LOG(FATAL)("DEBUG: UNEXPECTED");
               break;
-            }
-            default:
-              assert(false);
-              LOG(WARNING)("*** UNEXPECTED REQUEST STATE ***");
+            case RequestType::CANCEL_ORDER:
+              status = RequestStatus::ACCEPTED;
+              order_update = false;
+              break;
           }
           break;
         }
-
         case core::fix::ExecType::ORDER_STATUS:
           switch (execution_report.ord_status) {
             case core::fix::OrdStatus::NEW: {
               switch (order_mapping.request()) {
-                case OrderMapping::Request::NONE:
-                  assert(_download == Download::ORDERS);
+                case RequestType::UNDEFINED:
+                  switch (_download) {
+                    case Download::NONE:
+                      LOG(WARNING)("*** EXTERNAL ACTION ***");
+                      break;
+                    case Download::ORDERS:
+                      break;
+                    default:
+                      LOG(FATAL)("DEBUG: UNEXPECTED");
+                  }
                   break;
-                case OrderMapping::Request::CREATE: {
-                  OrderAck order_ack {
-                    .account = _account,
-                    .order_id = order_mapping.user_order_id(),
-                    .type = RequestType::CREATE_ORDER,
-                    .origin = Origin::EXCHANGE,
-                    .status = RequestStatus::ACCEPTED,
-                    .error = Error::UNKNOWN,
-                    .text = execution_report.text,
-                    .gateway_order_id = order_mapping.gateway_order_id(),
-                    .external_order_id = order_mapping.exchange_order_id(),
-                  };
-                  enqueue(
-                      order_mapping.user_id(),
-                      order_ack,
-                      false);  // *not* last
-                  order_mapping.reset_request();
+                case RequestType::CREATE_ORDER:
+                case RequestType::MODIFY_ORDER:
+                  status = RequestStatus::ACCEPTED;
                   break;
-                }
-                case OrderMapping::Request::MODIFY: {
-                  OrderAck order_ack {
-                    .account = _account,
-                    .order_id = order_mapping.user_order_id(),
-                    .type = RequestType::MODIFY_ORDER,
-                    .origin = Origin::EXCHANGE,
-                    .status = RequestStatus::ACCEPTED,
-                    .error = Error::UNKNOWN,
-                    .text = execution_report.text,
-                    .gateway_order_id = order_mapping.gateway_order_id(),
-                    .external_order_id = order_mapping.exchange_order_id(),
-                  };
-                  enqueue(
-                      order_mapping.user_id(),
-                      order_ack,
-                      false);  // *not* last
-                  order_mapping.reset_request();
+                case RequestType::CANCEL_ORDER:
+                  LOG(FATAL)("DEBUG: UNEXPECTED");
                   break;
-                }
-                default:
-                  assert(false);
-                  LOG(WARNING)("*** UNEXPECTED REQUEST STATE ***");
               }
-              [[ fallthrough ]];
-            }
-            case core::fix::OrdStatus::PARTIALLY_FILLED:
-              [[ fallthrough ]];
-            case core::fix::OrdStatus::FILLED:
-              [[ fallthrough ]];
-            case core::fix::OrdStatus::CANCELED: {
-              for (size_t i = 0; i < execution_report.fills_grp.length; ++i) {
-                const auto& fills = execution_report.fills_grp.items[i];
-                // TODO(thraneh): check if we need a fill_exec_id <-> local_trade_id map
-                auto trade_id = ++_local_trade_id;
-                TradeUpdate trade_update {
-                  .account = _account,
-                  .trade_id = trade_id,
-                  .order_id = order_mapping.user_order_id(),
-                  .exchange = FLAGS_exchange,
-                  .symbol = execution_report.symbol,
-                  .side = order_mapping.side(),
-                  .quantity = fills.fill_qty,
-                  .price = fills.fill_px,
-                  .position_effect = PositionEffect::UNDEFINED,
-                  .order_template = std::string(),
-                  .create_time_utc = execution_report.transact_time,
-                  .update_time_utc = execution_report.transact_time,
-                  .gateway_order_id = order_mapping.gateway_order_id(),
-                  .gateway_trade_id = trade_id,
-                  .external_order_id = order_mapping.exchange_order_id(),
-                  .external_trade_id = fills.fill_exec_id,
-                };
-                enqueue(
-                    order_mapping.user_id(),
-                    trade_update,
-                    false);
-              }
-              OrderUpdate order_update {
-                .account = _account,
-                .order_id = order_mapping.user_order_id(),
-                .exchange = FLAGS_exchange,
-                .symbol = execution_report.symbol,
-                .order_status = core::fix::map(execution_report.ord_status),
-                .side = order_mapping.side(),
-                .price = execution_report.price,
-                .remaining_quantity = execution_report.leaves_qty,
-                .traded_quantity = execution_report.cum_qty,
-                .position_effect = PositionEffect::UNDEFINED,
-                .order_template = std::string(),
-                .create_time_utc = order_mapping.create_time(),
-                .update_time_utc = order_mapping.update_time(),
-                .commissions = execution_report.commission,
-                .gateway_order_id = order_mapping.gateway_order_id(),
-                .external_order_id = order_mapping.exchange_order_id(),
-              };
-              enqueue(
-                  order_mapping.user_id(),
-                  order_update,
-                  true);
               break;
             }
+            case core::fix::OrdStatus::PARTIALLY_FILLED:
+            case core::fix::OrdStatus::FILLED:
+              break;
+            case core::fix::OrdStatus::CANCELED:
+              // TODO(thraneh): how to signal external action
+              // -- we need to add an "expectation" into order_mapping?
+              break;
             default:
-              assert(false);  // FIXME(thraneh): DEBUG
-              LOG(WARNING)("*** UNEXPECTED ORD_STATUS ***");
+              LOG(FATAL)("DEBUG: UNEXPECTED");
               break;
           }
           break;
-
-
         default:
-          assert(false);  // FIXME(thraneh): DEBUG
-          LOG(WARNING)("*** UNEXPECTED EXEC_TYPE ***");
+          LOG(FATAL)("DEBUG: UNEXPECTED");
           break;
+      }
+      if (status != RequestStatus::UNDEFINED) {
+        OrderAck order_ack {
+          .account = _account,
+          .order_id = order_mapping.user_order_id(),
+          .type = order_mapping.request(),
+          .origin = origin,
+          .status = (error == Error::NONE)
+            ? RequestStatus::ACCEPTED
+            : RequestStatus::REJECTED,
+          .error = error,
+          .text = execution_report.text,
+          .gateway_order_id = order_mapping.gateway_order_id(),
+          .external_order_id = order_mapping.exchange_order_id(),
+        };
+        enqueue(
+            order_mapping.user_id(),
+            order_ack,
+            order_update == false);  // only "last" if no order_update
+        order_mapping.reset_request();
+      }
+      if (order_update) {
+        for (size_t i = 0; i < execution_report.fills_grp.length; ++i) {
+          const auto& fills = execution_report.fills_grp.items[i];
+          // TODO(thraneh): map fill_exec_id <-> local_trade_id ???
+          auto trade_id = create_trade_id();
+          TradeUpdate trade_update {
+            .account = _account,
+            .trade_id = trade_id,
+            .order_id = order_mapping.user_order_id(),
+            .exchange = FLAGS_exchange,
+            .symbol = execution_report.symbol,
+            .side = order_mapping.side(),
+            .quantity = fills.fill_qty,
+            .price = fills.fill_px,
+            .position_effect = PositionEffect::UNDEFINED,
+            .order_template = std::string(),
+            .create_time_utc = execution_report.transact_time,
+            .update_time_utc = execution_report.transact_time,
+            .gateway_order_id = order_mapping.gateway_order_id(),
+            .gateway_trade_id = trade_id,
+            .external_order_id = order_mapping.exchange_order_id(),
+            .external_trade_id = fills.fill_exec_id,
+          };
+          enqueue(
+              order_mapping.user_id(),
+              trade_update,
+              false);
+        }
+        OrderUpdate order_update {
+          .account = _account,
+          .order_id = order_mapping.user_order_id(),
+          .exchange = FLAGS_exchange,
+          .symbol = execution_report.symbol,
+          .order_status = core::fix::map(execution_report.ord_status),
+          .side = order_mapping.side(),
+          .price = execution_report.price,
+          .remaining_quantity = execution_report.leaves_qty,
+          .traded_quantity = execution_report.cum_qty,
+          .position_effect = PositionEffect::UNDEFINED,
+          .order_template = std::string(),
+          .create_time_utc = order_mapping.create_time(),
+          .update_time_utc = order_mapping.update_time(),
+          .commissions = execution_report.commission,
+          .gateway_order_id = order_mapping.gateway_order_id(),
+          .external_order_id = order_mapping.exchange_order_id(),
+        };
+        enqueue(
+            order_mapping.user_id(),
+            order_update,
+            true);
+
+      } else {
+        LOG_IF(FATAL, execution_report.fills_grp.length > 0)(
+            "DEBUG: UNEXPECTED");
       }
     }
 
@@ -778,7 +678,7 @@ void Gateway::operator()(
     // TODO(thraneh): process fills? --> maintain positions
   }
 
-  // check if download has finished
+  // download end?
   if (_download_execution_reports &&
       0 == --_download_execution_reports) {
     check_download();
@@ -980,31 +880,38 @@ void Gateway::operator()(
     LOG(WARNING)("*** EXTERNAL ORDER ***");
   } else {
     auto& order_mapping = (*iter).second;
+    constexpr auto origin = Origin::EXCHANGE;
+    auto status = RequestStatus::UNDEFINED;
+    auto error = fix::map_error(order_cancel_reject.text);
     switch (order_mapping.request()) {
-      case OrderMapping::Request::NONE:
+      case RequestType::UNDEFINED:
+        LOG(WARNING)("*** EXTERNAL ACTION ***");
         break;
-      case OrderMapping::Request::CANCEL: {
-        OrderAck order_ack {
-          .account = _account,
-          .order_id = order_mapping.user_order_id(),
-          .type = RequestType::CANCEL_ORDER,
-          .origin = Origin::EXCHANGE,
-          .status = RequestStatus::REJECTED,
-          .error = Error::UNKNOWN,
-          .text = order_cancel_reject.text,
-          .gateway_order_id = order_mapping.gateway_order_id(),
-          .external_order_id = order_mapping.exchange_order_id(),
-        };
-        auto now = core::get_system_clock();
-        enqueue(
-            order_mapping.user_id(),
-            order_ack,
-            true);
+      case RequestType::CREATE_ORDER:
+      case RequestType::MODIFY_ORDER:
+        LOG(FATAL)("DEBUG: UNEXPECTED");
         break;
-      }
-      default:
-        assert(false);
-        LOG(WARNING)("*** UNEXPECTED REQUEST STATE ***");
+      case RequestType::CANCEL_ORDER:
+        status = RequestStatus::REJECTED;
+        break;
+    }
+    if (status != RequestStatus::UNDEFINED) {
+      OrderAck order_ack {
+        .account = _account,
+        .order_id = order_mapping.user_order_id(),
+        .type = order_mapping.request(),
+        .origin = origin,
+        .status = status,
+        .error = error,
+        .text = order_cancel_reject.text,
+        .gateway_order_id = order_mapping.gateway_order_id(),
+        .external_order_id = order_mapping.exchange_order_id(),
+      };
+      enqueue(
+          order_mapping.user_id(),
+          order_ack,
+          true);
+      order_mapping.reset_request();
     }
   }
 }
@@ -1058,18 +965,12 @@ void Gateway::operator()(
           break;
         }
         default:
-          assert(false);
-          LOG(WARNING)(
-              "Unexpected pos_req_type={}",
-              position_report.pos_req_type);
+          LOG(FATAL)("DEBUG: UNEXPECTED");
           break;
       }
       break;
     default:
-      assert(false);
-      LOG(WARNING)(
-          "Unexpected pos_req_result={}",
-          position_report.pos_req_result);
+      LOG(FATAL)("DEBUG: UNEXPECTED");
       break;
   }
 
@@ -1085,19 +986,21 @@ void Gateway::operator()(
       reject);
   check(header);
   assert(_gateway_status != GatewayStatus::DISCONNECTED);
+
   auto request_id = fmt::format(  // FIXME(thraneh): this is *wrong*
       "roq:{:06}", reject.ref_seq_num);
   // FIXME(thraneh): this lookup doesn't *just* manage cl_ord_id
   auto iter = find_order_mapping(request_id, std::string_view());
   if (iter != _order_mapping.end())  {
     auto& order_mapping = (*iter).second;
+    auto error = fix::map_error(reject.text);
     OrderAck order_ack {
       .account = _account,
       .order_id = order_mapping.user_order_id(),
       .type = RequestType::CREATE_ORDER,  // FIXME(thraneh): from order_mapping
       .origin = Origin::EXCHANGE,
       .status = RequestStatus::REJECTED,
-      .error = Error::UNKNOWN,
+      .error = error,
       .text = reject.text,
       .gateway_order_id = order_mapping.gateway_order_id(),
       .external_order_id = order_mapping.exchange_order_id(),
@@ -1361,168 +1264,6 @@ void Gateway::subscribe_market_data() {
       send(market_data_request);
     }
   }
-}
-
-void Gateway::create_order_ack_success(
-    const CreateOrderEvent& event,
-    Origin origin,
-    RequestStatus status,
-    const std::string_view& external_order_id) {
-  auto& message_info = event.message_info;
-  auto& create_order = event.create_order;
-  OrderAck order_ack {
-    .account = create_order.account,
-    .order_id = create_order.order_id,
-    .type = RequestType::CREATE_ORDER,
-    .origin = origin,
-    .status = status,
-    .error = Error::NONE,
-    .text = std::string_view(),
-    .gateway_order_id = _local_order_id,
-    .external_order_id = external_order_id,
-  };
-  _dispatcher.enqueue(
-      message_info.source,
-      order_ack,
-      message_info.source_receive_time,
-      message_info.origin_create_time,
-      true);
-}
-
-void Gateway::create_order_ack_failure(
-    const CreateOrderEvent& event,
-    Origin origin,
-    RequestStatus status,
-    Error error) {
-  auto& message_info = event.message_info;
-  auto& create_order = event.create_order;
-  OrderAck order_ack {
-    .account = create_order.account,
-    .order_id = create_order.order_id,
-    .type = RequestType::CREATE_ORDER,
-    .origin = origin,
-    .status = status,
-    .error = error,
-    .text = std::string_view(),
-    .gateway_order_id = 0,
-    .external_order_id = std::string_view(),
-  };
-  _dispatcher.enqueue(
-      message_info.source,
-      order_ack,
-      message_info.source_receive_time,
-      message_info.origin_create_time,
-      true);
-}
-
-void Gateway::modify_order_ack_success(
-    const ModifyOrderEvent& event,
-    Origin origin,
-    RequestStatus status,
-    uint32_t local_order_id,
-    const std::string_view& external_order_id) {
-  auto& message_info = event.message_info;
-  auto& modify_order = event.modify_order;
-  OrderAck order_ack {
-    .account = modify_order.account,
-    .order_id = modify_order.order_id,
-    .type = RequestType::MODIFY_ORDER,
-    .origin = origin,
-    .status = status,
-    .error = Error::NONE,
-    .text = std::string_view(),
-    .gateway_order_id = local_order_id,
-    .external_order_id = external_order_id,
-  };
-  _dispatcher.enqueue(
-      message_info.source,
-      order_ack,
-      message_info.source_receive_time,
-      message_info.origin_create_time,
-      true);
-}
-
-void Gateway::modify_order_ack_failure(
-    const ModifyOrderEvent& event,
-    Origin origin,
-    RequestStatus status,
-    Error error,
-    uint32_t local_order_id,
-    const std::string_view& external_order_id) {
-  auto& message_info = event.message_info;
-  auto& modify_order = event.modify_order;
-  OrderAck order_ack {
-    .account = modify_order.account,
-    .order_id = modify_order.order_id,
-    .type = RequestType::MODIFY_ORDER,
-    .origin = origin,
-    .status = status,
-    .error = error,
-    .text = std::string_view(),
-    .gateway_order_id = local_order_id,
-    .external_order_id = external_order_id,
-  };
-  _dispatcher.enqueue(
-      message_info.source,
-      order_ack,
-      message_info.source_receive_time,
-      message_info.origin_create_time,
-      true);
-}
-
-void Gateway::cancel_order_ack_success(
-    const CancelOrderEvent& event,
-    Origin origin,
-    RequestStatus status,
-    uint32_t local_order_id,
-    const std::string_view& external_order_id) {
-  auto& message_info = event.message_info;
-  auto& cancel_order = event.cancel_order;
-  OrderAck order_ack {
-    .account = cancel_order.account,
-    .order_id = cancel_order.order_id,
-    .type = RequestType::CANCEL_ORDER,
-    .origin = origin,
-    .status = status,
-    .error = Error::NONE,
-    .text = std::string_view(),
-    .gateway_order_id = local_order_id,
-    .external_order_id = external_order_id,
-  };
-  _dispatcher.enqueue(
-      message_info.source,
-      order_ack,
-      message_info.source_receive_time,
-      message_info.origin_create_time,
-      true);
-}
-
-void Gateway::cancel_order_ack_failure(
-    const CancelOrderEvent& event,
-    Origin origin,
-    RequestStatus status,
-    Error error,
-    uint32_t local_order_id,
-    const std::string_view& external_order_id) {
-  auto& message_info = event.message_info;
-  auto& cancel_order = event.cancel_order;
-  OrderAck order_ack {
-    .account = cancel_order.account,
-    .order_id = cancel_order.order_id,
-    .type = RequestType::CANCEL_ORDER,
-    .origin = origin,
-    .status = status,
-    .error = error,
-    .text = std::string_view(),
-    .gateway_order_id = local_order_id,
-    .external_order_id = external_order_id,
-  };
-  _dispatcher.enqueue(
-      message_info.source,
-      order_ack,
-      message_info.source_receive_time,
-      message_info.origin_create_time,
-      true);
 }
 
 std::string Gateway::create_request_id() {

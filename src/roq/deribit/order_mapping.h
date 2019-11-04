@@ -72,20 +72,13 @@ struct OrderMapping final {
   }
   // ...
 
-  enum class Request {
-    NONE,
-    CREATE,
-    MODIFY,
-    CANCEL,
-  };
-
   auto request() const {
     return _request;
   }
 
   void update_request(
       const std::string_view& request_id,
-      Request request);
+      RequestType request);
 
   void reset_request();
 
@@ -99,7 +92,7 @@ struct OrderMapping final {
   std::chrono::nanoseconds _update_time = {};
   // request
   char _request_id[32] = {};
-  Request _request = Request::NONE;
+  RequestType _request = RequestType::UNDEFINED;
 };
 
 }  // namespace deribit
