@@ -229,6 +229,7 @@ void Gateway::operator()(const CreateOrderEvent& event) {
   constexpr auto origin = Origin::GATEWAY;
   auto error = Error::NONE;
   decltype(OrderAck::gateway_order_id) gateway_order_id = {};
+  std::string request_id;
   if (unlikely(_gateway_status != GatewayStatus::READY)) {
     error = Error::GATEWAY_NOT_READY;
   } else if (unlikely(
@@ -255,7 +256,7 @@ void Gateway::operator()(const CreateOrderEvent& event) {
     if (unlikely(_order_mapping.find(key) != _order_mapping.end())) {
       error = Error::INVALID_ORDER_ID;
     } else {
-      auto request_id = create_request_id();
+      request_id = create_request_id();
       auto iter = _order_mapping.emplace(
           key,
           std::move(order_mapping)).first;
@@ -292,6 +293,7 @@ void Gateway::operator()(const CreateOrderEvent& event) {
     .text = std::string_view(),
     .gateway_order_id = gateway_order_id,
     .external_order_id = std::string_view(),
+    .request_id = request_id,
   };
   _dispatcher.enqueue(
       message_info.source,
@@ -309,6 +311,7 @@ void Gateway::operator()(const ModifyOrderEvent& event) {
   auto error = Error::NONE;
   decltype(OrderAck::gateway_order_id) gateway_order_id = {};
   decltype(OrderAck::external_order_id) external_order_id = {};
+  std::string request_id;
   if (unlikely(_gateway_status != GatewayStatus::READY)) {
     error = Error::GATEWAY_NOT_READY;
   } else if (unlikely(
@@ -328,7 +331,7 @@ void Gateway::operator()(const ModifyOrderEvent& event) {
       if (unlikely(order_mapping.ready() == false)) {
         error = Error::UNKNOWN_EXCHANGE_ORDER_ID;
       } else {
-        auto request_id = create_request_id();
+        request_id = create_request_id();
         fix::OrderCancelReplaceRequest request {
           .cl_ord_id = request_id,
           .orig_cl_ord_id = order_mapping.exchange_order_id(),
@@ -361,6 +364,7 @@ void Gateway::operator()(const ModifyOrderEvent& event) {
     .text = std::string_view(),
     .gateway_order_id = gateway_order_id,
     .external_order_id = external_order_id,
+    .request_id = request_id,
   };
   _dispatcher.enqueue(
       message_info.source,
@@ -378,6 +382,7 @@ void Gateway::operator()(const CancelOrderEvent& event) {
   auto error = Error::NONE;
   decltype(OrderAck::gateway_order_id) gateway_order_id = {};
   decltype(OrderAck::external_order_id) external_order_id = {};
+  std::string request_id;
   if (unlikely(_gateway_status != GatewayStatus::READY)) {
     error = Error::GATEWAY_NOT_READY;
   } else if (unlikely(
@@ -397,7 +402,7 @@ void Gateway::operator()(const CancelOrderEvent& event) {
       if (unlikely(order_mapping.ready() == false)) {
         error = Error::UNKNOWN_EXCHANGE_ORDER_ID;
       } else {
-        auto request_id = create_request_id();
+        request_id = create_request_id();
         fix::OrderCancelRequest request {
           .cl_ord_id = request_id,
           .orig_cl_ord_id = order_mapping.exchange_order_id(),
@@ -424,6 +429,7 @@ void Gateway::operator()(const CancelOrderEvent& event) {
     .text = std::string_view(),
     .gateway_order_id = gateway_order_id,
     .external_order_id = external_order_id,
+    .request_id = request_id,
   };
   _dispatcher.enqueue(
       message_info.source,
@@ -610,6 +616,7 @@ void Gateway::operator()(
           .text = execution_report.text,
           .gateway_order_id = order_mapping.gateway_order_id(),
           .external_order_id = order_mapping.exchange_order_id(),
+          .request_id = execution_report.orig_cl_ord_id,
         };
         enqueue(
             order_mapping.user_id(),
@@ -906,6 +913,7 @@ void Gateway::operator()(
         .text = order_cancel_reject.text,
         .gateway_order_id = order_mapping.gateway_order_id(),
         .external_order_id = order_mapping.exchange_order_id(),
+        .request_id = order_cancel_reject.orig_cl_ord_id,
       };
       enqueue(
           order_mapping.user_id(),
@@ -1004,6 +1012,7 @@ void Gateway::operator()(
       .text = reject.text,
       .gateway_order_id = order_mapping.gateway_order_id(),
       .external_order_id = order_mapping.exchange_order_id(),
+      .request_id = request_id,
     };
     auto now = core::get_system_clock();
     _dispatcher.enqueue(
@@ -1268,7 +1277,7 @@ void Gateway::subscribe_market_data() {
 
 std::string Gateway::create_request_id() {
   return fmt::format(  // FIXME(thraneh): use charconv
-      "ROQ:{:06}",
+      "roq:{:06}",
       ++_request_id);
 }
 
