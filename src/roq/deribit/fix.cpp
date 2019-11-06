@@ -2,6 +2,8 @@
 
 #include "roq/deribit/fix.h"
 
+#include <netinet/tcp.h>
+
 #include "roq/core/debug.h"
 
 #include "roq/deribit/gateway.h"
