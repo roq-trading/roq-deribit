@@ -32,6 +32,10 @@
 #include "roq/deribit/fix/user_request.h"
 #include "roq/deribit/fix/utils.h"
 
+DEFINE_string(ws_uri,
+    "wss://test.deribit.com/ws/api/v2";
+    "WebSocket end-point (URI)");
+
 DEFINE_string(fix_uri,
     "tcp://test.deribit.com:9881",
     "FIX end-point (URI)");
