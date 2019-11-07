@@ -26,4 +26,5 @@ $PREFIX ./roq-deribit \
 	--inter-thread-queue-size 65536 \
 	--inter-process-queue-size 262144 \
 	--broadcast-queue-size 262144 \
+	--event-log-dir "." \
 	$@

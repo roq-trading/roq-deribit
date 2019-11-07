@@ -40,3 +40,5 @@ m4/
 roq-deribit
 roq-deribit-benchmark
 roq-deribit-test
+
+*.roq
