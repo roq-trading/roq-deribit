@@ -33,7 +33,7 @@
 #include "roq/deribit/fix/utils.h"
 
 DEFINE_string(ws_uri,
-    "wss://test.deribit.com/ws/api/v2";
+    "wss://test.deribit.com/ws/api/v2",
     "WebSocket end-point (URI)");
 
 DEFINE_string(fix_uri,
