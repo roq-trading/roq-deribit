@@ -18,7 +18,7 @@ FIX_URI="tcp://$URI:9881"
 # WS_URI="wss://$URI/ws/api/v2"
 
 $PREFIX ./roq-deribit \
-	--name "$NAME" \
+	--name "deribit" \
 	--config-file "$CONFIG_FILE" \
 	--fix-uri "$FIX_URI" \
 	--listen "$CWD/$NAME.sock" \
