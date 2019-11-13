@@ -661,7 +661,7 @@ void Gateway::operator()(
           .order_id = order_mapping.user_order_id(),
           .exchange = FLAGS_exchange,
           .symbol = execution_report.symbol,
-          .order_status = core::fix::map(execution_report.ord_status),
+          .status = core::fix::map(execution_report.ord_status),
           .side = order_mapping.side(),
           .price = execution_report.price,
           .remaining_quantity = execution_report.leaves_qty,

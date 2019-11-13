@@ -25,6 +25,7 @@ requirements:
   host:
     - roq-api =={{ version }}
     - roq-core =={{ version }}
+    - roq-client =={{ version }}
     - roq-server =={{ version }}
     - roq-oss-date
     - roq-oss-http-parser

@@ -18,6 +18,7 @@ AC_CONFIG_FILES([
  src/roq/deribit/api/Makefile
  src/roq/deribit/fix/Makefile
  src/roq/deribit/json/Makefile
+ src/roq/validate/Makefile
  test/Makefile
 ])
 AC_CONFIG_FILES([roq-deribit.pc])
@@ -47,6 +48,7 @@ ROQ_CHECK_OPENSSL
 PKG_CHECK_MODULES([ROQ_API], [roq-api])
 PKG_CHECK_MODULES([ROQ_CORE], [roq-core])
 PKG_CHECK_MODULES([ROQ_SERVER], [roq-server])
+PKG_CHECK_MODULES([ROQ_CLIENT], [roq-client])
 
 AC_ARG_ENABLE([benchmark],
 	      AS_HELP_STRING([--enable-benchmark], [Enable benchmark]),
