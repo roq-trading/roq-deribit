@@ -2,7 +2,6 @@ symbols = [
   ".*-PERPETUAL",
   ".*-DERIBIT-INDEX",
   ".*-\\d{2}\\D{3}\\d{2}",
-  ".*-\\d{2}\\D{3}\\d{2}-\\d+-[CP]",
 ]
 
 [order_templates]

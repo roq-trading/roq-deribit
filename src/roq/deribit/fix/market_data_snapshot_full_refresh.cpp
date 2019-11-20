@@ -200,6 +200,9 @@ void MarketDataSnapshotFullRefresh::parse(
             case Deribit::TRADE_VOLUME_24H:
               core::fix::update(deribit_trade_volume_24h, value);
               break;
+            case Deribit::TODO_1:
+            case Deribit::TODO_2:
+              break;
             default:
               throw core::fix::InvalidField(
                   "MarketDataSnapshotFullRefresh: "
