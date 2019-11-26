@@ -75,7 +75,7 @@ DEFINE_uint64(reconnect_secs,
 
 // - batch subscription doesn't seem to work (as of 2019-10-06)
 DEFINE_bool(batch_subscribe,
-    true,
+    false,
     "batch subscribe symbols? (bool)");
 
 DEFINE_uint32(max_batch_size,
