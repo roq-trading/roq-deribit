@@ -64,7 +64,7 @@ DEFINE_uint32(encode_buffer_size,
     "encode buffer size");
 
 DEFINE_uint32(decode_buffer_size,
-    uint32_t{1048576},
+    uint32_t{10485760},
     "decode buffer size");
 
 DEFINE_uint64(reconnect_secs,
