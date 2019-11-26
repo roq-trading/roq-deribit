@@ -31,6 +31,7 @@ core::utils::Message UserRequest::encode(
     .write(
         core::fix::Field::SECURITY_LIST_REQUEST_TYPE,
         core::fix::SecurityListRequestType::ALL_SECURITIES)
+    .write(core::fix::Field::CURRENCY, currency)
     .finish();
 }
 

@@ -28,6 +28,12 @@ void Logon::parse(
   result.parse(message.begin(), message.end());
 }
 
+namespace {
+constexpr bool has_field(const core::fix::Field& field) {
+  return core::fix::Logon::has_field(field);
+}
+}  // namespace
+
 void Logon::parse(
     core::fix::message_t::const_iterator&& iter,
     const core::fix::message_t::const_iterator& end) {
@@ -37,27 +43,27 @@ void Logon::parse(
       auto field = core::fix::parse_field(tag);
       switch (field) {
         case core::fix::Field::HEART_BT_INT:
-          static_assert(core::fix::Logon::has_field(core::fix::Field::HEART_BT_INT));
+          static_assert(has_field(core::fix::Field::HEART_BT_INT));
           core::fix::update(heart_bt_int, value);
           break;
         case core::fix::Field::RAW_DATA_LENGTH:
-          static_assert(core::fix::Logon::has_field(core::fix::Field::RAW_DATA_LENGTH));
+          static_assert(has_field(core::fix::Field::RAW_DATA_LENGTH));
           // not needed
           break;
         case core::fix::Field::RAW_DATA:
-          static_assert(core::fix::Logon::has_field(core::fix::Field::RAW_DATA));
+          static_assert(has_field(core::fix::Field::RAW_DATA));
           core::fix::update(raw_data, value);
           break;
         case core::fix::Field::USERNAME:
-          static_assert(core::fix::Logon::has_field(core::fix::Field::USERNAME));
+          static_assert(has_field(core::fix::Field::USERNAME));
           core::fix::update(username, value);
           break;
         case core::fix::Field::PASSWORD:
-          static_assert(core::fix::Logon::has_field(core::fix::Field::PASSWORD));
+          static_assert(has_field(core::fix::Field::PASSWORD));
           core::fix::update(password, value);
           break;
         default:
-          if (core::fix::Logon::has_field(field))
+          if (has_field(field))
             break;
           switch (static_cast<Deribit>(tag)) {
             case Deribit::CANCEL_ON_DISCONNECT:
@@ -67,19 +73,13 @@ void Logon::parse(
               core::fix::update(deribit_use_wordsafe_tags, value);
               break;
             default:
-              throw core::fix::InvalidField(
-                  "Logon: "
-                  "Unexpected field={}", tag);
+              throw core::fix::InvalidField(tag, value);
           }
       }
     } catch (core::fix::Exception&) {
       throw;
     } catch (std::runtime_error& e) {
-      throw core::fix::ParseError(
-          "Logon: "
-          "Parse error: "
-          "field={}, value=\"{}\", what=\"{}\"",
-          tag, value, e.what());
+      throw core::fix::ParseError(tag, value, e);
     }
   }
 }

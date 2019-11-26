@@ -18,12 +18,13 @@ TEST(fix_position_report, parse_message) {
     "00\001730=0.0000\00195=11\00196=0.0;0.0;0.0\001100088=0.0000\001"
     "100089=0.00000000\00110=026\001";
   std::vector<std::byte> buffer(1024 * 1024);
+  core::fix::Buffer decode_buffer(buffer);
   int results = 0;
   auto bytes = core::fix::Reader<core::fix::Version::FIX_44>::dispatch(
       [&](const core::fix::message_t& message) {
         ++results;
         EXPECT_EQ(message.header.msg_type, core::fix::MsgType::POSITION_REPORT);
-        auto position_report = fix::PositionReport::parse(message, buffer);
+        auto position_report = fix::PositionReport::parse(message, decode_buffer);
         EXPECT_EQ(position_report.pos_maint_rpt_id, "3221109");
         EXPECT_EQ(position_report.pos_req_id, "roq-pos-003");
         EXPECT_EQ(position_report.pos_req_type, core::fix::PosReqType::POSITIONS);

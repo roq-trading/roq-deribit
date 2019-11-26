@@ -26,6 +26,12 @@ void Logout::parse(
   result.parse(message.begin(), message.end());
 }
 
+namespace {
+constexpr bool has_field(const core::fix::Field& field) {
+  return core::fix::Logout::has_field(field);
+}
+}  // namespace
+
 void Logout::parse(
     core::fix::message_t::const_iterator&& iter,
     const core::fix::message_t::const_iterator& end) {
@@ -35,24 +41,18 @@ void Logout::parse(
       auto field = core::fix::parse_field(tag);
       switch (field) {
         case core::fix::Field::TEXT:
-          static_assert(core::fix::Logout::has_field(core::fix::Field::TEXT));
+          static_assert(has_field(core::fix::Field::TEXT));
           core::fix::update(text, value);
           break;
         default:
-          if (core::fix::Logout::has_field(field))
+          if (has_field(field))
             break;
-          throw core::fix::InvalidField(
-              "Logout: "
-              "Unexpected field={}", tag);
+          throw core::fix::InvalidField(tag, value);
       }
     } catch (core::fix::Exception&) {
       throw;
     } catch (std::runtime_error& e) {
-      throw core::fix::ParseError(
-          "Logout: "
-          "Parse error: "
-          "field={}, value=\"{}\", what=\"{}\"",
-          tag, value, e.what());
+      throw core::fix::ParseError(tag, value, e);
     }
   }
 }

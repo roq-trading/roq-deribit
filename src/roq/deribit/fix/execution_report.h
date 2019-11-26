@@ -9,8 +9,8 @@
 #include <cstddef>
 #include <limits>
 #include <string_view>
-#include <vector>
 
+#include "roq/core/fix/buffer.h"
 #include "roq/core/fix/reader.h"
 
 #include "roq/deribit/fix/deribit.h"
@@ -70,17 +70,17 @@ struct ExecutionReport final {
 
   static ExecutionReport parse(
       const core::fix::message_t& message,
-      std::vector<std::byte>& buffer);
+      core::fix::Buffer& buffer);
 
   static void parse(
       ExecutionReport&,
       const core::fix::message_t& message,
-      std::vector<std::byte>& buffer);
+      core::fix::Buffer& buffer);
 
   void parse(
       core::fix::message_t::const_iterator&& iter,
       const core::fix::message_t::const_iterator& end,
-      std::vector<std::byte>& buffer);
+      core::fix::Buffer& buffer);
 };
 
 }  // namespace fix

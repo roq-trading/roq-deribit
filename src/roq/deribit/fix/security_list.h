@@ -6,7 +6,8 @@
 
 #include <cstddef>
 #include <string_view>
-#include <vector>
+
+#include "roq/core/fix/buffer.h"
 
 #include "roq/deribit/fix/instrument.h"
 
@@ -26,17 +27,17 @@ struct SecurityList final {
 
   static SecurityList parse(
       const core::fix::message_t& message,
-      std::vector<std::byte>& buffer);
+      core::fix::Buffer& buffer);
 
   static void parse(
       SecurityList&,
       const core::fix::message_t& message,
-      std::vector<std::byte>& buffer);
+      core::fix::Buffer& buffer);
 
   void parse(
       core::fix::message_t::const_iterator&& iter,
       const core::fix::message_t::const_iterator& end,
-      std::vector<std::byte>& buffer);
+      core::fix::Buffer& buffer);
 };
 
 }  // namespace fix

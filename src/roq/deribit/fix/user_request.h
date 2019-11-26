@@ -17,6 +17,7 @@ namespace fix {
 struct UserRequest final {
   std::string_view user_request_id;
   std::string_view username;
+  std::string_view currency;
 
   core::utils::Message encode(
       core::utils::Buffer& buffer,
@@ -40,9 +41,11 @@ struct fmt::formatter<roq::deribit::fix::UserRequest> {
         ctx.out(),
         "{{"
         "user_request_id=\"{}\", "
-        "username={}"
+        "username={}, "
+        "currency=\"{}\""
         "}}",
         value.user_request_id,
-        value.username);
+        value.username,
+        value.currency);
   }
 };

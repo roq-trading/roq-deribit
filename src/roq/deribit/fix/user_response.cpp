@@ -25,6 +25,12 @@ void UserResponse::parse(
   result.parse(message.begin(), message.end());
 }
 
+namespace {
+constexpr bool has_field(const core::fix::Field& field) {
+  return core::fix::UserResponse::has_field(field);
+}
+}  // namespace
+
 void UserResponse::parse(
     core::fix::message_t::const_iterator&& iter,
     const core::fix::message_t::const_iterator& end) {
@@ -34,24 +40,24 @@ void UserResponse::parse(
       auto field = core::fix::parse_field(tag);
       switch (field) {
         case core::fix::Field::USERNAME:
-          static_assert(core::fix::UserResponse::has_field(core::fix::Field::USERNAME));
+          static_assert(has_field(core::fix::Field::USERNAME));
           core::fix::update(username, value);
           break;
         case core::fix::Field::USER_REQUEST_ID:
-          static_assert(core::fix::UserResponse::has_field(core::fix::Field::USER_REQUEST_ID));
+          static_assert(has_field(core::fix::Field::USER_REQUEST_ID));
           core::fix::update(user_request_id, value);
           break;
         case core::fix::Field::USER_STATUS:
-          static_assert(core::fix::UserResponse::has_field(core::fix::Field::USER_STATUS));
+          static_assert(has_field(core::fix::Field::USER_STATUS));
           core::fix::update(user_status, value);
           break;
         // non-standard
         case core::fix::Field::CURRENCY:
-          static_assert(!core::fix::UserResponse::has_field(core::fix::Field::CURRENCY));
+          static_assert(!has_field(core::fix::Field::CURRENCY));
           core::fix::update(currency, value);
           break;
         default:
-          if (core::fix::UserResponse::has_field(field))
+          if (has_field(field))
             break;
           switch (static_cast<Deribit>(tag)) {
             case Deribit::MARGIN_BALANCE:
@@ -79,19 +85,13 @@ void UserResponse::parse(
               core::fix::update(deribit_user_maintenance_margin, value);
               break;
             default:
-              throw core::fix::InvalidField(
-                  "UserResponse: "
-                  "Unexpected field={}", tag);
+              throw core::fix::InvalidField(tag, value);
           }
       }
     } catch (core::fix::Exception&) {
       throw;
     } catch (std::runtime_error& e) {
-      throw core::fix::ParseError(
-          "UserResponse: "
-          "Parse error: "
-          "field={}, value=\"{}\", what=\"{}\"",
-          tag, value, e.what());
+      throw core::fix::ParseError(tag, value, e);
     }
   }
 }

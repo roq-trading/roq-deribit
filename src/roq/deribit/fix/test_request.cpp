@@ -26,6 +26,12 @@ void TestRequest::parse(
   result.parse(message.begin(), message.end());
 }
 
+namespace {
+constexpr bool has_field(const core::fix::Field& field) {
+  return core::fix::TestRequest::has_field(field);
+}
+}  // namespace
+
 void TestRequest::parse(
     core::fix::message_t::const_iterator&& iter,
     const core::fix::message_t::const_iterator& end) {
@@ -35,24 +41,18 @@ void TestRequest::parse(
       auto field = core::fix::parse_field(tag);
       switch (field) {
         case core::fix::Field::TEST_REQ_ID:
-          static_assert(core::fix::TestRequest::has_field(core::fix::Field::TEST_REQ_ID));
+          static_assert(has_field(core::fix::Field::TEST_REQ_ID));
           core::fix::update(test_req_id, value);
           break;
         default:
           if (core::fix::TestRequest::has_field(field))
             break;
-          throw core::fix::InvalidField(
-              "TestRequest: "
-              "Unexpected field={}", tag);
+          throw core::fix::InvalidField(tag, value);
       }
     } catch (core::fix::Exception&) {
       throw;
     } catch (std::runtime_error& e) {
-      throw core::fix::ParseError(
-          "TestRequest: "
-          "Parse error: "
-          "field={}, value=\"{}\", what=\"{}\"",
-          tag, value, e.what());
+      throw core::fix::ParseError(tag, value, e);
     }
   }
 }

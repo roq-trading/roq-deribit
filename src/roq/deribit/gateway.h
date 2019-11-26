@@ -13,6 +13,7 @@
 #include "roq/core/uri.h"
 #include "roq/core/clock.h"
 #include "roq/core/hash_map.h"
+#include "roq/core/hash_set.h"
 #include "roq/core/utils/buffer.h"
 #include "roq/core/ssl/ssl.h"
 #include "roq/core/event/event.h"
@@ -207,6 +208,7 @@ class Gateway final : public server::Handler {
   } _download = Download::NONE;
   uint32_t _download_execution_reports = 0;
   uint32_t _request_id = 0;
+  uint32_t _download_users = 0;
   // ...
   std::vector<std::regex> _symbols_regex;
   std::vector<MBPUpdate> _bid, _ask;
@@ -245,6 +247,8 @@ class Gateway final : public server::Handler {
 
   decltype(_order_mapping)::iterator create_order_mapping(
       const fix::ExecutionReport& execution_report);
+
+  core::hash_set<std::string> _currencies;
 };
 
 }  // namespace deribit

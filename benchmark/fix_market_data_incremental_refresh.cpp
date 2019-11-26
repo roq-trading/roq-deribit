@@ -36,12 +36,13 @@ const char* message_2 =
 }  // namespace
 
 void BM_fix_market_data_increment_refresh_parse_message_1(benchmark::State& state) {
-  std::vector<std::byte> buffer(4096);
+  std::vector<std::byte> buffer(8192);
   uint64_t processed = 0;
   for (auto _ : state) {
+    core::fix::Buffer decode_buffer(buffer);
     core::fix::Reader<core::fix::Version::FIX_44>::dispatch(
         [&](const core::fix::message_t& message) {
-          auto result = fix::MarketDataIncrementalRefresh::parse(message, buffer);
+          auto result = fix::MarketDataIncrementalRefresh::parse(message, decode_buffer);
           if (!result.md_req_id.empty())
             ++processed;
         },
@@ -53,12 +54,13 @@ void BM_fix_market_data_increment_refresh_parse_message_1(benchmark::State& stat
 BENCHMARK(BM_fix_market_data_increment_refresh_parse_message_1);
 
 void BM_fix_market_data_increment_refresh_parse_message_2(benchmark::State& state) {
-  std::vector<std::byte> buffer(4096);
+  std::vector<std::byte> buffer(8192);
   uint64_t processed = 0;
   for (auto _ : state) {
+    core::fix::Buffer decode_buffer(buffer);
     core::fix::Reader<core::fix::Version::FIX_44>::dispatch(
         [&](const core::fix::message_t& message) {
-          auto result = fix::MarketDataIncrementalRefresh::parse(message, buffer);
+          auto result = fix::MarketDataIncrementalRefresh::parse(message, decode_buffer);
           if (!result.md_req_id.empty())
             ++processed;
         },
@@ -73,6 +75,7 @@ void BM_fix_parser_dispatch_market_data_increment_refresh(benchmark::State& stat
   std::vector<std::byte> buffer(8192);
   uint64_t processed = 0;
   for (auto _ : state) {
+    core::fix::Buffer decode_buffer(buffer);
     core::fix::Reader<core::fix::Version::FIX_44>::dispatch(
         [&](const core::fix::message_t& message) {
           fix::Parser::dispatch(
@@ -109,7 +112,7 @@ void BM_fix_parser_dispatch_market_data_increment_refresh(benchmark::State& stat
                 },
               },
               message,
-              buffer);
+              decode_buffer);
         },
         message_1,
         std::strlen(message_1));

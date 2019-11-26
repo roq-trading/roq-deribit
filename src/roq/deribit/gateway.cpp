@@ -10,9 +10,8 @@
 #include "roq/logging.h"
 #include "roq/format.h"
 
+#include "roq/core/charconv.h"
 #include "roq/core/clock.h"
-
-#include "roq/core/charconv/number.h"
 
 #include "roq/core/fix/utils.h"
 
@@ -76,8 +75,12 @@ DEFINE_uint64(reconnect_secs,
 
 // - batch subscription doesn't seem to work (as of 2019-10-06)
 DEFINE_bool(batch_subscribe,
-    false,
+    true,
     "batch subscribe symbols? (bool)");
+
+DEFINE_uint32(max_batch_size,
+    56,
+    "max batch size");
 
 // external
 DECLARE_string(name);
@@ -708,8 +711,7 @@ void Gateway::operator()(
   check(header);
   assert(_gateway_status != GatewayStatus::DISCONNECTED);
   if (heartbeat.test_req_id.empty() == false) {
-    auto send_time = core::charconv::from_string<uint64_t>(
-        heartbeat.test_req_id);
+    auto send_time = core::from_chars<uint64_t>(heartbeat.test_req_id);
     auto latency =
       std::chrono::duration_cast<std::chrono::nanoseconds>(
           now - decltype(now){send_time}) / 2;  // 1-way
@@ -1059,12 +1061,18 @@ void Gateway::operator()(
       security_list);
   check(header);
   assert(_gateway_status == GatewayStatus::DOWNLOADING);
+  _currencies.clear();
   if (security_list.instruments.length) {
     assert(_symbols.empty());
     size_t security_count = 0;
     _symbols.reserve(security_list.instruments.length);  // note! alloc
     for (size_t i = 0; i < security_list.instruments.length; ++i) {
       auto& instrument = security_list.instruments.items[i];
+      // note!
+      //   USD will cause a Reject
+      //   using commission currency because it requires funding
+      if (instrument.comm_currency.empty() == false)
+        _currencies.emplace(instrument.comm_currency);
       if (discard_symbol(instrument.symbol))
         continue;
       _symbols.emplace_back(instrument.symbol);
@@ -1125,9 +1133,17 @@ void Gateway::operator()(
       header,
       user_response);
   check(header);
-  assert(_gateway_status == GatewayStatus::DOWNLOADING);
-  // TODO(thraneh): forward to gateway
-  check_download();
+  FundsUpdate funds_update {
+    .account = _account,
+    .currency = user_response.currency,
+    .balance = user_response.deribit_user_balance,
+    .hold = double{0.0},
+  };
+  enqueue(funds_update, true);
+  if (_download == Download::USER) {
+    if (_download_users && 0 == --_download_users)
+      check_download();
+  }
 }
 
 // UTILS:
@@ -1233,11 +1249,17 @@ void Gateway::download_user() {
   assert(_gateway_status == GatewayStatus::DOWNLOADING);
   LOG(INFO)(FIX_PREFIX "download user...");
   auto user_request_id = create_request_id();
-  fix::UserRequest user_request = {
-    .user_request_id = user_request_id,
-    .username = _access_key,
-  };
-  send(user_request);
+  // FIXME(thraneh): documentation refers to SecurityList
+  assert(_currencies.empty() == false);
+  _download_users = _currencies.size();
+  for (auto& currency : _currencies) {
+    fix::UserRequest user_request_btc = {
+      .user_request_id = user_request_id,
+      .username = _access_key,
+      .currency = static_cast<std::string_view>(currency),
+    };
+    send(user_request_btc);
+  }
   _download = Download::USER;
 }
 
@@ -1256,16 +1278,30 @@ void Gateway::subscribe_market_data() {
   }
   LOG(INFO)("Subscribe market data");
   auto md_req_id = create_request_id();
+  // FIXME(thraneh): simplify this
   if (FLAGS_batch_subscribe) {
-    std::vector<std::string_view> symbols(_symbols.size());
-    for (size_t i = 0; i < _symbols.size(); ++i)
-      symbols[i] = _symbols[i];
-    fix::MarketDataRequest market_data_request = {
-      .md_req_id = md_req_id,
-      .symbol = {},
-      .symbols = symbols,
-    };
-    send(market_data_request);
+    std::vector<std::string_view> symbols(FLAGS_max_batch_size);
+    size_t j = 0;
+    for (size_t i = 0; i < _symbols.size(); ++i) {
+      symbols[j++] = _symbols[i];
+      if (j == symbols.size()) {
+        fix::MarketDataRequest market_data_request = {
+          .md_req_id = md_req_id,
+          .symbol = {},
+          .symbols = symbols,
+        };
+        send(market_data_request);
+        j = 0;
+      }
+    }
+    if (j > 0) {
+      fix::MarketDataRequest market_data_request = {
+        .md_req_id = md_req_id,
+        .symbol = {},
+        .symbols = symbols,
+      };
+      send(market_data_request);
+    }
   } else {
     for (auto& symbol : _symbols) {
       auto md_req_id = create_request_id();

@@ -27,6 +27,12 @@ void OrderCancelReject::parse(
   result.parse(message.begin(), message.end());
 }
 
+namespace {
+constexpr bool has_field(const core::fix::Field& field) {
+  return core::fix::OrderCancelReject::has_field(field);
+}
+}  // namespace
+
 void OrderCancelReject::parse(
     core::fix::message_t::const_iterator&& iter,
     const core::fix::message_t::const_iterator& end) {
@@ -36,45 +42,39 @@ void OrderCancelReject::parse(
       auto field = core::fix::parse_field(tag);
       switch (field) {
         case core::fix::Field::CL_ORD_ID:
-          static_assert(core::fix::OrderCancelReject::has_field(core::fix::Field::CL_ORD_ID));
+          static_assert(has_field(core::fix::Field::CL_ORD_ID));
           core::fix::update(cl_ord_id, value);
           break;
         case core::fix::Field::ORD_STATUS:
-          static_assert(core::fix::OrderCancelReject::has_field(core::fix::Field::ORD_STATUS));
+          static_assert(has_field(core::fix::Field::ORD_STATUS));
           core::fix::update(ord_status, value);
           break;
         case core::fix::Field::ORIG_CL_ORD_ID:
-          static_assert(core::fix::OrderCancelReject::has_field(core::fix::Field::ORIG_CL_ORD_ID));
+          static_assert(has_field(core::fix::Field::ORIG_CL_ORD_ID));
           core::fix::update(orig_cl_ord_id, value);
           break;
         case core::fix::Field::TEXT:
-          static_assert(core::fix::OrderCancelReject::has_field(core::fix::Field::TEXT));
+          static_assert(has_field(core::fix::Field::TEXT));
           core::fix::update(text, value);
           break;
         // non-standard
         case core::fix::Field::AVG_PX:
-          static_assert(!core::fix::OrderCancelReject::has_field(core::fix::Field::AVG_PX));
+          static_assert(!has_field(core::fix::Field::AVG_PX));
           core::fix::update(avg_px, value);
           break;
         case core::fix::Field::LEAVES_QTY:
-          static_assert(!core::fix::OrderCancelReject::has_field(core::fix::Field::LEAVES_QTY));
+          static_assert(!has_field(core::fix::Field::LEAVES_QTY));
           core::fix::update(leaves_qty, value);
           break;
         default:
-          if (core::fix::OrderCancelReject::has_field(field))
+          if (has_field(field))
             break;
-          throw core::fix::InvalidField(
-              "OrderCancelReject: "
-              "Unexpected field={}", tag);
+          throw core::fix::InvalidField(tag, value);
       }
     } catch (core::fix::Exception&) {
       throw;
     } catch (std::runtime_error& e) {
-      throw core::fix::ParseError(
-          "OrderCancelReject: "
-          "Parse error: "
-          "field={}, value=\"{}\", what=\"{}\"",
-          tag, value, e.what());
+      throw core::fix::ParseError(tag, value, e);
     }
   }
 }

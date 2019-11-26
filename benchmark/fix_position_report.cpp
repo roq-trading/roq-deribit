@@ -23,9 +23,10 @@ void BM_fix_position_report_parse_message(benchmark::State& state) {
   std::vector<std::byte> buffer(8192);
   uint64_t processed = 0;
   for (auto _ : state) {
+    core::fix::Buffer decode_buffer(buffer);
     core::fix::Reader<core::fix::Version::FIX_44>::dispatch(
         [&](const core::fix::message_t& message) {
-          auto position_report = fix::PositionReport::parse(message, buffer);
+          auto position_report = fix::PositionReport::parse(message, decode_buffer);
           if (!position_report.pos_req_id.empty())
             ++processed;
         },
@@ -40,6 +41,7 @@ void BM_fix_parser_dispatch_position_report(benchmark::State& state) {
   std::vector<std::byte> buffer(8192);
   uint64_t processed = 0;
   for (auto _ : state) {
+    core::fix::Buffer decode_buffer(buffer);
     core::fix::Reader<core::fix::Version::FIX_44>::dispatch(
         [&](const core::fix::message_t& message) {
           fix::Parser::dispatch(
@@ -76,7 +78,7 @@ void BM_fix_parser_dispatch_position_report(benchmark::State& state) {
                 },
               },
               message,
-              buffer);
+              decode_buffer);
         },
         MESSAGE,
         std::strlen(MESSAGE));

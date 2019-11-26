@@ -36,6 +36,7 @@ void BM_fix_parser_dispatch_market_data_request_reject(benchmark::State& state) 
   std::vector<std::byte> buffer(8192);
   uint64_t processed = 0;
   for (auto _ : state) {
+    core::fix::Buffer decode_buffer(buffer);
     core::fix::Reader<core::fix::Version::FIX_44>::dispatch(
         [&](const core::fix::message_t& message) {
           fix::Parser::dispatch(
@@ -72,7 +73,7 @@ void BM_fix_parser_dispatch_market_data_request_reject(benchmark::State& state) 
                 },
               },
               message,
-              buffer);
+              decode_buffer);
         },
         MESSAGE,
         std::strlen(MESSAGE));

@@ -9,6 +9,8 @@
 
 #include "roq/logging.h"
 
+#include "roq/core/fix/buffer.h"
+
 #include "roq/deribit/fix/execution_report.h"
 #include "roq/deribit/fix/heartbeat.h"
 #include "roq/deribit/fix/logon.h"
@@ -33,7 +35,7 @@ struct Parser final {
   static void dispatch(
       H&& handler,
       const core::fix::message_t& message,
-      std::vector<std::byte>& buffer) {
+      core::fix::Buffer& buffer) {
     switch (message.header.msg_type) {
       case core::fix::MsgType::EXECUTION_REPORT: {
         handler(ExecutionReport::parse(message, buffer));

@@ -27,6 +27,12 @@ void Reject::parse(
   result.parse(message.begin(), message.end());
 }
 
+namespace {
+constexpr bool has_field(const core::fix::Field& field) {
+  return core::fix::Reject::has_field(field);
+}
+}  // namespace
+
 void Reject::parse(
     core::fix::message_t::const_iterator&& iter,
     const core::fix::message_t::const_iterator& end) {
@@ -36,36 +42,30 @@ void Reject::parse(
       auto field = core::fix::parse_field(tag);
       switch (field) {
         case core::fix::Field::REF_SEQ_NUM:
-          static_assert(core::fix::Reject::has_field(core::fix::Field::REF_SEQ_NUM));
+          static_assert(has_field(core::fix::Field::REF_SEQ_NUM));
           core::fix::update(ref_seq_num, value);
           break;
         case core::fix::Field::REF_TAG_ID:
-          static_assert(core::fix::Reject::has_field(core::fix::Field::REF_TAG_ID));
+          static_assert(has_field(core::fix::Field::REF_TAG_ID));
           core::fix::update(ref_tag_id, value);
           break;
         case core::fix::Field::REF_MSG_TYPE:
-          static_assert(core::fix::Reject::has_field(core::fix::Field::REF_MSG_TYPE));
+          static_assert(has_field(core::fix::Field::REF_MSG_TYPE));
           core::fix::update(ref_msg_type, value);
           break;
         case core::fix::Field::TEXT:
-          static_assert(core::fix::Reject::has_field(core::fix::Field::TEXT));
+          static_assert(has_field(core::fix::Field::TEXT));
           core::fix::update(text, value);
           break;
         default:
-          if (core::fix::Reject::has_field(field))
+          if (has_field(field))
             break;
-          throw core::fix::InvalidField(
-              "Reject: "
-              "Unexpected field={}", tag);
+          throw core::fix::InvalidField(tag, value);
       }
     } catch (core::fix::Exception&) {
       throw;
     } catch (std::runtime_error& e) {
-      throw core::fix::ParseError(
-          "Reject: "
-          "Parse error: "
-          "field={}, value=\"{}\", what=\"{}\"",
-          tag, value, e.what());
+      throw core::fix::ParseError(tag, value, e);
     }
   }
 }

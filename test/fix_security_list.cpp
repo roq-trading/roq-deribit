@@ -1227,13 +1227,14 @@ const char *message =
 
 TEST(fix_security_list, parse_message) {
   std::vector<std::byte> buffer(1024*1024);
+  core::fix::Buffer decode_buffer(buffer);
   int results = 0;
   auto bytes = core::fix::Reader<core::fix::Version::FIX_44>::dispatch(
       [&](const core::fix::message_t& message) {
         fprintf(stderr, "HEADER\n");
         ++results;
         EXPECT_EQ(message.header.msg_type, core::fix::MsgType::SECURITY_LIST);
-        /*auto security_list =*/ fix::SecurityList::parse(message, buffer);
+        /*auto security_list =*/ fix::SecurityList::parse(message, decode_buffer);
         /*
         EXPECT_EQ(security_list.heart_bt_int, uint32_t{10});
         EXPECT_EQ(security_list.raw_data, "1567874758168.y4/hA3i6qxm4yVL+3N7IrGcINVAFMLFhy4l7ATSehxc=");

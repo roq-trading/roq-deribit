@@ -48,18 +48,12 @@ void MarketDataRequestReject::parse(
         default:
           if (core::fix::MarketDataRequestReject::has_field(field))
             break;
-          throw core::fix::InvalidField(
-              "MarketDataRequestReject: "
-              "Unexpected field={}", tag);
+          throw core::fix::InvalidField(tag, value);
       }
     } catch (core::fix::Exception&) {
       throw;
     } catch (std::runtime_error& e) {
-      throw core::fix::ParseError(
-          "MarketDataRequestReject: "
-          "Parse error: "
-          "field={}, value=\"{}\", what=\"{}\"",
-          tag, value, e.what());
+      throw core::fix::ParseError(tag, value, e);
     }
   }
 }

@@ -1229,9 +1229,10 @@ void BM_fix_security_list_parse_message(benchmark::State& state) {
   std::vector<std::byte> buffer(1024 * 1024);
   uint64_t processed = 0;
   for (auto _ : state) {
+    core::fix::Buffer decode_buffer(buffer);
     core::fix::Reader<core::fix::Version::FIX_44>::dispatch(
         [&](const core::fix::message_t& message) {
-          auto security_list = fix::SecurityList::parse(message, buffer);
+          auto security_list = fix::SecurityList::parse(message, decode_buffer);
           if (security_list.instruments.length > 0)
             ++processed;
         },
@@ -1246,6 +1247,7 @@ void BM_fix_parser_dispatch_security_list(benchmark::State& state) {
   std::vector<std::byte> buffer(1024 * 1024);
   uint64_t processed = 0;
   for (auto _ : state) {
+    core::fix::Buffer decode_buffer(buffer);
     core::fix::Reader<core::fix::Version::FIX_44>::dispatch(
         [&](const core::fix::message_t& message) {
           fix::Parser::dispatch(
@@ -1282,7 +1284,7 @@ void BM_fix_parser_dispatch_security_list(benchmark::State& state) {
                 },
               },
               message,
-              buffer);
+              decode_buffer);
         },
         MESSAGE,
         std::strlen(MESSAGE));

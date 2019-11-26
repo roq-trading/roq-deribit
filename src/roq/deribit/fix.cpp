@@ -2,13 +2,20 @@
 
 #include "roq/deribit/fix.h"
 
+#include <gflags/gflags.h>
+
 #include <netinet/tcp.h>
 
 #include "roq/core/debug.h"
+#include "roq/core/fix/exception.h"
 
 #include "roq/deribit/gateway.h"
 
 #include "roq/deribit/fix/parser.h"
+
+DEFINE_bool(log_fix,
+    false,
+    "log fix messages?");
 
 namespace roq {
 namespace deribit {
@@ -54,7 +61,6 @@ void FIX::stop() {
 void FIX::send(const core::utils::Message& message) {
   VLOG(4)("send(length={})", message.length());
   // core::print_memory(message.data(), message.length());
-  // core::print_string_with_escapes(message.data(), message.length());
   _buffer_event.write(message.data(), message.length());
   _buffer_event.flush(EV_WRITE, BEV_FLUSH);
 }
@@ -90,18 +96,17 @@ void FIX::process_data() {
     if (length == 0)
       return;
     auto buffer = _buffer.pullup(length);
-    // core::print_memory(buffer, length);
     auto bytes = core::fix::Reader<fix::FIX_VERSION>::dispatch(
         [&](const core::fix::message_t& message) {
           try {
+            core::fix::Buffer decode_buffer(_decode_buffer);
             fix::Parser::dispatch(
                 [&](const auto& event) {
                   _gateway(message.header, event);
                 },
                 message,
-                _decode_buffer);
-          } catch (std::exception& e) {
-            fprintf(stderr, "*** ERROR *** %s\n", e.what());
+                decode_buffer);
+          } catch (std::exception&) {
             core::print_memory(buffer, length);
             core::print_string_with_escapes(buffer, length);
             throw;
@@ -111,8 +116,8 @@ void FIX::process_data() {
         length);
     if (bytes == 0)
       return;
-    // core::print_string_with_escapes(buffer, bytes);
-    // core::print_memory(buffer, bytes);
+    if (FLAGS_log_fix)
+      core::print_string_with_escapes(buffer, bytes);
     _buffer.drain(bytes);
   }
 }

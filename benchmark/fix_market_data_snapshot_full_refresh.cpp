@@ -173,9 +173,10 @@ void BM_fix_market_data_snapshot_full_refresh_parse_message(benchmark::State& st
   std::vector<std::byte> buffer(1024 * 1024);
   uint64_t processed = 0;
   for (auto _ : state) {
+    core::fix::Buffer decode_buffer(buffer);
     core::fix::Reader<core::fix::Version::FIX_44>::dispatch(
         [&](const core::fix::message_t& message) {
-          auto market_data = fix::MarketDataSnapshotFullRefresh::parse(message, buffer);
+          auto market_data = fix::MarketDataSnapshotFullRefresh::parse(message, decode_buffer);
           if (market_data.md_full_grp.length > 0)
             ++processed;
         },
@@ -190,6 +191,7 @@ void BM_fix_parser_dispatch_market_data_snapshot_full_refresh(benchmark::State& 
   std::vector<std::byte> buffer(1024 * 1024);
   uint64_t processed = 0;
   for (auto _ : state) {
+    core::fix::Buffer decode_buffer(buffer);
     core::fix::Reader<core::fix::Version::FIX_44>::dispatch(
         [&](const core::fix::message_t& message) {
           fix::Parser::dispatch(
@@ -226,7 +228,7 @@ void BM_fix_parser_dispatch_market_data_snapshot_full_refresh(benchmark::State& 
                 },
               },
               message,
-              buffer);
+              decode_buffer);
         },
         MESSAGE,
         std::strlen(MESSAGE));
