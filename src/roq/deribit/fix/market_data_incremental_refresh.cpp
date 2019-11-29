@@ -129,7 +129,7 @@ void parse_md_inc(
 MarketDataIncrementalRefresh MarketDataIncrementalRefresh::parse(
     const core::fix::message_t& message,
     core::fix::Buffer& buffer) {
-  MarketDataIncrementalRefresh result;
+  MarketDataIncrementalRefresh result;  // FIXME(thraneh): 2x init?
   parse(result, message, buffer);
   return result;
 }
