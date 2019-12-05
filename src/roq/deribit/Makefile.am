@@ -9,6 +9,7 @@ roq_deribit_LDFLAGS = \
 	$(ROQ_SERVER_LIBS) \
 	$(ROQ_CORE_LIBS) \
 	$(ROQ_API_LIBS) \
+	$(BROTLI_LIBS) \
 	$(HTTP_PARSER_LIBS) \
 	$(FMT_LIBS) \
 	$(LIBUCL_LIBS) \
@@ -29,6 +30,7 @@ roq_deribit_CPPFLAGS = \
 	$(LIBUCL_CFLAGS) \
 	$(FMT_CFLAGS) \
 	$(HTTP_PARSER_CFLAGS) \
+	$(BROTLI_CFLAGS) \
 	$(ROQ_API_CFLAGS) \
 	$(ROQ_CORE_CFLAGS) \
 	$(ROQ_SERVER_CFLAGS)
