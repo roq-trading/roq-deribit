@@ -800,10 +800,14 @@ void Gateway::operator()(
       MarketByPrice market_by_price = {
         .exchange = FLAGS_exchange,
         .symbol = market_data_incremental_refresh.symbol,
-        .bid_length = bid_length,
-        .bid = _bid.data(),
-        .ask_length = ask_length,
-        .ask = _ask.data(),
+        .bids = {
+          .items = _bid.data(),
+          .length = bid_length,
+        },
+        .asks = {
+          .items = _ask.data(),
+          .length = ask_length,
+        },
         .snapshot = false,  // incremental
         .exchange_time_utc = exchange_time_utc,
       };
@@ -813,8 +817,10 @@ void Gateway::operator()(
       TradeSummary trade_summary = {
         .exchange = FLAGS_exchange,
         .symbol = market_data_incremental_refresh.symbol,
-        .trade_length = trade_length,
-        .trade = _trade.data(),
+        .trades = {
+          .items = _trade.data(),
+          .length = trade_length,
+        },
         .exchange_time_utc = exchange_time_utc,
       };
       enqueue(trade_summary, true);  // FIXME(thraneh): *not* always last
@@ -867,10 +873,14 @@ void Gateway::operator()(
   MarketByPrice market_by_price = {
     .exchange = FLAGS_exchange,
     .symbol = market_data_snapshot_full_refresh.symbol,
-    .bid_length = bid_length,
-    .bid = _bid.data(),
-    .ask_length = ask_length,
-    .ask = _ask.data(),
+    .bids = {
+      .items = _bid.data(),
+      .length = bid_length,
+    },
+    .asks = {
+      .items = _ask.data(),
+      .length = ask_length,
+    },
     .snapshot = true,  // reset
     .exchange_time_utc = {},
   };
