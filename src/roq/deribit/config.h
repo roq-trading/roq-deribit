@@ -47,7 +47,7 @@ class Config final
   void operator()(User&& user) override;
   void operator()(
       const std::string_view& key,
-      const cpptoml::base& base) override;
+      cpptoml::base& base) override;
 
  public:
   std::vector<User> users;
