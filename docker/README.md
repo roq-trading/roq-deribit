@@ -1,6 +1,6 @@
 # Coinbase
 
-Copyright (c) 2017-2019, Hans Erik Thrane
+Copyright (c) 2017-2020, Hans Erik Thrane
 All rights reserved.
 
 THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
@@ -17,4 +17,4 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 # Description
 
-The Coinbase gateway ...
+The Deribit gateway ...
