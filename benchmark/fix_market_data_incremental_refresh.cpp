@@ -36,7 +36,7 @@ const char* message_2 =
 }  // namespace
 
 void BM_fix_market_data_increment_refresh_parse_message_1(benchmark::State& state) {
-  std::vector<std::byte> buffer(8192);
+  core::utils::Buffer buffer(8192);
   uint64_t processed = 0;
   for (auto _ : state) {
     core::fix::Buffer decode_buffer(buffer);
@@ -54,7 +54,7 @@ void BM_fix_market_data_increment_refresh_parse_message_1(benchmark::State& stat
 BENCHMARK(BM_fix_market_data_increment_refresh_parse_message_1);
 
 void BM_fix_market_data_increment_refresh_parse_message_2(benchmark::State& state) {
-  std::vector<std::byte> buffer(8192);
+  core::utils::Buffer buffer(8192);
   uint64_t processed = 0;
   for (auto _ : state) {
     core::fix::Buffer decode_buffer(buffer);
@@ -72,7 +72,7 @@ void BM_fix_market_data_increment_refresh_parse_message_2(benchmark::State& stat
 BENCHMARK(BM_fix_market_data_increment_refresh_parse_message_2);
 
 void BM_fix_parser_dispatch_market_data_increment_refresh(benchmark::State& state) {
-  std::vector<std::byte> buffer(8192);
+  core::utils::Buffer buffer(8192);
   uint64_t processed = 0;
   for (auto _ : state) {
     core::fix::Buffer decode_buffer(buffer);

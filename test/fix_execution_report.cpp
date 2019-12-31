@@ -18,7 +18,7 @@ TEST(fix_execution_report, parse_message) {
     "03=0\00158=success\001207=DERIBITSERVER\00155=BTC-27SEP19\0018"
     "54=1\001231=10.0000\0016=0.000\001210=1\001100010=roq;123;345\001"
     "10=195\001";
-  std::vector<std::byte> buffer(4096);
+  core::utils::Buffer buffer(4096);
   core::fix::Buffer decode_buffer(buffer);
   int results = 0;
   auto bytes = core::fix::Reader<core::fix::Version::FIX_44>::dispatch(
@@ -59,7 +59,7 @@ TEST(fix_execution_report, parse_order_mass_status) {
     "8=FIX.4.4\0019=112\00135=8\00149=DERIBITSERVER\00156=ROQ_TRADI"
     "NG\00134=4\00152=20190909-07:58:54.679\001584=roq-oms-005\0015"
     "85=7\00158=total_reports\001911=1\00110=045\001";
-  std::vector<std::byte> buffer(4096);
+  core::utils::Buffer buffer(4096);
   core::fix::Buffer decode_buffer(buffer);
   int results = 0;
   auto bytes = core::fix::Reader<core::fix::Version::FIX_44>::dispatch(
@@ -89,7 +89,7 @@ TEST(fix_execution_report, parse_fill) {
     "=9593.504\001210=1\001100010=roq:1:1:1000\00132=1.0000\00131=9"
     "593.5000\0011362=1\0011363=BTC-27DEC19#2350428\0011364=9593.50"
     "00\0011365=1.0000\0011443=1\00110=177\001";
-  std::vector<std::byte> buffer(4096);
+  core::utils::Buffer buffer(4096);
   core::fix::Buffer decode_buffer(buffer);
   int results = 0;
   auto bytes = core::fix::Reader<core::fix::Version::FIX_44>::dispatch(

@@ -33,7 +33,7 @@ void BM_fix_logout_parse_message(benchmark::State& state) {
 BENCHMARK(BM_fix_logout_parse_message);
 
 void BM_fix_parser_dispatch_logout(benchmark::State& state) {
-  std::vector<std::byte> buffer(8192);
+  core::utils::Buffer buffer(8192);
   uint64_t processed = 0;
   for (auto _ : state) {
     core::fix::Buffer decode_buffer(buffer);

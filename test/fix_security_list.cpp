@@ -1226,7 +1226,7 @@ const char *message =
 }  // namespace
 
 TEST(fix_security_list, parse_message) {
-  std::vector<std::byte> buffer(1024*1024);
+  core::utils::Buffer buffer(1024 * 1024);
   core::fix::Buffer decode_buffer(buffer);
   int results = 0;
   auto bytes = core::fix::Reader<core::fix::Version::FIX_44>::dispatch(

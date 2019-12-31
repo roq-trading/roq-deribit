@@ -20,7 +20,7 @@ static const char *MESSAGE =
 }  // namespace
 
 void BM_fix_position_report_parse_message(benchmark::State& state) {
-  std::vector<std::byte> buffer(8192);
+  core::utils::Buffer buffer(8192);
   uint64_t processed = 0;
   for (auto _ : state) {
     core::fix::Buffer decode_buffer(buffer);
@@ -38,7 +38,7 @@ void BM_fix_position_report_parse_message(benchmark::State& state) {
 BENCHMARK(BM_fix_position_report_parse_message);
 
 void BM_fix_parser_dispatch_position_report(benchmark::State& state) {
-  std::vector<std::byte> buffer(8192);
+  core::utils::Buffer buffer(8192);
   uint64_t processed = 0;
   for (auto _ : state) {
     core::fix::Buffer decode_buffer(buffer);

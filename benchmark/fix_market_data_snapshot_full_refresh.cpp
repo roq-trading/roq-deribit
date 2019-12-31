@@ -170,7 +170,7 @@ static const char *MESSAGE =
 }  // namespace
 
 void BM_fix_market_data_snapshot_full_refresh_parse_message(benchmark::State& state) {
-  std::vector<std::byte> buffer(1024 * 1024);
+  core::utils::Buffer buffer(1024 * 1024);
   uint64_t processed = 0;
   for (auto _ : state) {
     core::fix::Buffer decode_buffer(buffer);
@@ -188,7 +188,7 @@ void BM_fix_market_data_snapshot_full_refresh_parse_message(benchmark::State& st
 BENCHMARK(BM_fix_market_data_snapshot_full_refresh_parse_message);
 
 void BM_fix_parser_dispatch_market_data_snapshot_full_refresh(benchmark::State& state) {
-  std::vector<std::byte> buffer(1024 * 1024);
+  core::utils::Buffer buffer(1024 * 1024);
   uint64_t processed = 0;
   for (auto _ : state) {
     core::fix::Buffer decode_buffer(buffer);

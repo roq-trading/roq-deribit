@@ -43,7 +43,7 @@ class FIX final {
   const core::URI _uri;
   core::event::BufferEvent _buffer_event;
   core::event::Buffer _buffer;
-  std::vector<std::byte> _decode_buffer;
+  core::utils::Buffer _decode_buffer;
 };
 
 }  // namespace deribit
