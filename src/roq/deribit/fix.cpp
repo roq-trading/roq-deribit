@@ -2,20 +2,15 @@
 
 #include "roq/deribit/fix.h"
 
-#include <gflags/gflags.h>
-
 #include <netinet/tcp.h>
 
 #include "roq/core/debug.h"
 #include "roq/core/fix/exception.h"
 
 #include "roq/deribit/gateway.h"
+#include "roq/deribit/options.h"
 
 #include "roq/deribit/fix/parser.h"
-
-DEFINE_bool(log_fix,
-    false,
-    "log fix messages?");
 
 namespace roq {
 namespace deribit {

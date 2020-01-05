@@ -2,8 +2,6 @@
 
 #include "roq/deribit/gateway.h"
 
-#include <gflags/gflags.h>
-
 #include <limits>
 #include <utility>
 
@@ -18,6 +16,7 @@
 #include "roq/core/metrics/profile.h"
 
 #include "roq/deribit/random.h"
+#include "roq/deribit/options.h"
 
 #include "roq/deribit/fix/heartbeat.h"
 #include "roq/deribit/fix/logon.h"
@@ -30,61 +29,6 @@
 #include "roq/deribit/fix/security_list_request.h"
 #include "roq/deribit/fix/user_request.h"
 #include "roq/deribit/fix/utils.h"
-
-DEFINE_string(ws_uri,
-    "wss://test.deribit.com/ws/api/v2",
-    "WebSocket end-point (URI)");
-
-DEFINE_string(fix_uri,
-    "tcp://test.deribit.com:9881",
-    "FIX end-point (URI)");
-
-DEFINE_uint64(ping_freq_secs,
-    uint64_t{5},
-    "ping frequency (seconds)");
-
-DEFINE_string(exchange,
-    "deribit",
-    "exchange identifier (string)");
-
-DEFINE_bool(cancel_on_disconnect,
-    true,
-    "cancel orders on disconnect? (bool)");
-
-DEFINE_bool(silence_empty_messages,
-    true,
-    "silence empty messages? (bool)");
-
-DEFINE_uint32(max_trades,
-    uint32_t{256},
-    "maximum trades for trade summary");
-
-DEFINE_uint32(encode_buffer_size,
-    uint32_t{1048576},
-    "encode buffer size");
-
-DEFINE_uint32(decode_buffer_size,
-    uint32_t{10485760},
-    "decode buffer size");
-
-DEFINE_uint64(reconnect_secs,
-    {10},
-    "time before reconnect (seconds)");
-
-// following options are work-arounds for weird behavior:
-
-// - batch subscription doesn't seem to work (as of 2019-10-06)
-DEFINE_bool(batch_subscribe,
-    false,
-    "batch subscribe symbols? (bool)");
-
-DEFINE_uint32(max_batch_size,
-    56,
-    "max batch size");
-
-// external
-DECLARE_string(name);
-DECLARE_uint32(max_depth);
 
 #define FIX_PREFIX "[FIX] "
 
@@ -109,7 +53,7 @@ static auto create_histogram(const std::string_view& function) {
       "source=\"{}\", function=\"{}\"",
       FLAGS_name,
       function);
-  return Gateway::histogram_t("roq_profile", labels.c_str());
+  return InternalLatency("roq_profile", labels.c_str());
 }
 template <typename T>
 static inline void mbp_update(
@@ -446,7 +390,7 @@ void Gateway::operator()(const CancelOrderEvent& event) {
       true);
 }
 
-void Gateway::write(Metrics& metrics) {
+void Gateway::operator()(Metrics& metrics) {
   metrics
     .write(_fix_latency)
     .write(_market_data_incremental_refresh);

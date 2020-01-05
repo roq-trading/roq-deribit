@@ -56,7 +56,7 @@ class Gateway final : public server::Handler {
   void operator()(const ModifyOrderEvent&) override;
   void operator()(const CancelOrderEvent&) override;
 
-  void write(Metrics& metrics) override;
+  void operator()(Metrics& metrics) override;
 
  protected:
   void create_fix();
@@ -218,20 +218,10 @@ class Gateway final : public server::Handler {
   std::string _account;
   std::vector<std::string> _symbols;
   // ...
-  Histogram<
-    10000,  // 10us
-    100000,
-    1000000,  // 1ms
-    10000000,
-    100000000,
-    1000000000  // 1s
-    > _fix_latency;
-
- public:
-  typedef Histogram<500, 1000, 2000, 5000, 10000, 20000> histogram_t;
+  ExternalLatency _fix_latency;
 
  private:
-  histogram_t _market_data_incremental_refresh;
+  InternalLatency _market_data_incremental_refresh;
 
   uint64_t _their_msg_seq_num = 0;
 
