@@ -16,7 +16,9 @@
 #include "roq/core/hash_set.h"
 #include "roq/core/utils/buffer.h"
 #include "roq/core/ssl/ssl.h"
-#include "roq/core/event/event.h"
+
+#include "roq/core/event/base.h"
+#include "roq/core/event/dns_base.h"
 
 #include "roq/deribit/config.h"
 #include "roq/deribit/fix.h"

@@ -6,7 +6,12 @@
 
 #include "roq/core/uri.h"
 #include "roq/core/ssl/ssl.h"
-#include "roq/core/event/event.h"
+
+#include "roq/core/event/base.h"
+#include "roq/core/event/buffer.h"
+#include "roq/core/event/buffer_event.h"
+#include "roq/core/event/dns_base.h"
+
 #include "roq/core/utils/message.h"
 
 namespace roq {
