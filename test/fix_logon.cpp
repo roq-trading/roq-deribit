@@ -47,10 +47,15 @@ TEST(fix_logon, create_message) {
     .password = "j/tVe9IsQuc+RjegscnHcJ6czMVNM1+ib7vjbY3UV0M=",
     .deribit_cancel_on_disconnect = true,
   };
-  auto message = logon.encode(
+  core::fix::Writer writer(
       buffer,
+      core::fix::Version::FIX_44,
+      decltype(logon)::MSG_TYPE,
+      "ROQ_TRADING",
+      "DERIBITSERVER",
       msg_seq_num,
       sending_time);
+  auto message = logon.encode(writer);
   // core::print_string_with_escapes(message.data(), message.length());
   constexpr auto expected =
     "8=FIX.4.4\0019=0000205\00135=A\00149=ROQ_TRADING\00156=DERIBIT"

@@ -18,10 +18,15 @@ TEST(fix_order_cancel_request, create_message) {
     .cl_ord_id = "123",
     .orig_cl_ord_id = "123",
   };
-  auto message = order_cancel_request.encode(
+  core::fix::Writer writer(
       buffer,
+      core::fix::Version::FIX_44,
+      decltype(order_cancel_request)::MSG_TYPE,
+      "ROQ_TRADING",
+      "DERIBITSERVER",
       msg_seq_num,
       sending_time);
+  auto message = order_cancel_request.encode(writer);
   // core::print_string_with_escapes(message.data(), message.length());
   constexpr auto expected =
     "8=FIX.4.4\0019=0000081\00135=F\00149=ROQ_TRADING\00156=DERIBIT"

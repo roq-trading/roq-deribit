@@ -7,6 +7,7 @@
 #include "roq/core/utils/message.h"
 
 #include "roq/core/fix/order_cancel_replace_request.h"
+#include "roq/core/fix/writer.h"
 
 #include "roq/deribit/fix/deribit.h"
 
@@ -15,6 +16,8 @@ namespace deribit {
 namespace fix {
 
 struct OrderCancelReplaceRequest final {
+  static constexpr auto MSG_TYPE = core::fix::OrderCancelReplaceRequest ::msg_type;
+
   const std::string_view cl_ord_id;
   const std::string_view orig_cl_ord_id;
   const core::fix::Side side;
@@ -24,10 +27,7 @@ struct OrderCancelReplaceRequest final {
   const std::string_view symbol;
   std::chrono::nanoseconds transact_time;
 
-  core::utils::Message encode(
-      core::utils::Buffer& buffer,
-      uint64_t& msg_seq_num,
-      std::chrono::nanoseconds sending_time) const;
+  core::utils::Message encode(core::fix::Writer& writer) const;
 };
 
 }  // namespace fix

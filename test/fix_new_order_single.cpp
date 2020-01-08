@@ -24,10 +24,15 @@ TEST(fix_new_order_single, create_message) {
     .time_in_force = core::fix::TimeInForce::GTC,
     .deribit_label = "roq;123;345"
   };
-  auto message = new_order_single.encode(
+  core::fix::Writer writer(
       buffer,
+      core::fix::Version::FIX_44,
+      decltype(new_order_single)::MSG_TYPE,
+      "ROQ_TRADING",
+      "DERIBITSERVER",
       msg_seq_num,
       sending_time);
+  auto message = new_order_single.encode(writer);
   // core::print_string_with_escapes(message.data(), message.length());
   constexpr auto expected =
     "8=FIX.4.4\0019=0000159\00135=D\00149=ROQ_TRADING\00156=DERIBIT"

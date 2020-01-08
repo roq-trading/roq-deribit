@@ -2,9 +2,7 @@
 
 #include <benchmark/benchmark.h>
 
-#include "roq/patterns.h"
-
-#include "roq/deribit/fix/parser.h"
+#include "roq/deribit/fix/market_data_incremental_refresh.h"
 
 using namespace roq;  // NOLINT
 using namespace roq::deribit;  // NOLINT
@@ -70,53 +68,3 @@ void BM_fix_market_data_increment_refresh_parse_message_2(benchmark::State& stat
 }
 
 BENCHMARK(BM_fix_market_data_increment_refresh_parse_message_2);
-
-void BM_fix_parser_dispatch_market_data_increment_refresh(benchmark::State& state) {
-  core::utils::Buffer buffer(8192);
-  uint64_t processed = 0;
-  for (auto _ : state) {
-    core::fix::Buffer decode_buffer(buffer);
-    core::fix::Reader<core::fix::Version::FIX_44>::dispatch(
-        [&](const core::fix::message_t& message) {
-          fix::Parser::dispatch(
-              overloaded {
-                [](const fix::ExecutionReport&) {
-                },
-                [](const fix::Heartbeat&) {
-                },
-                [](const fix::Logon&) {
-                },
-                [](const fix::Logout&) {
-                },
-                [&](const fix::MarketDataIncrementalRefresh& market_data_incremental_refresh) {
-                  if (market_data_incremental_refresh.symbol.empty() == false)
-                    ++processed;
-                },
-                [](const fix::MarketDataRequestReject&) {
-                },
-                [](const fix::MarketDataSnapshotFullRefresh&) {
-                },
-                [](const fix::OrderCancelReject&) {
-                },
-                [](const fix::PositionReport&) {
-                },
-                [](const fix::Reject&) {
-                },
-                [](const fix::ResendRequest&) {
-                },
-                [](const fix::SecurityList&) {
-                },
-                [](const fix::TestRequest&) {
-                },
-                [](const fix::UserResponse&) {
-                },
-              },
-              message,
-              decode_buffer);
-        },
-        message_1,
-        std::strlen(message_1));
-  }
-}
-
-BENCHMARK(BM_fix_parser_dispatch_market_data_increment_refresh);

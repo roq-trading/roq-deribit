@@ -2,9 +2,7 @@
 
 #include <benchmark/benchmark.h>
 
-#include "roq/patterns.h"
-
-#include "roq/deribit/fix/parser.h"
+#include "roq/deribit/fix/logon.h"
 
 using namespace roq;  // NOLINT
 using namespace roq::deribit;  // NOLINT
@@ -34,56 +32,6 @@ void BM_fix_logon_parse_message(benchmark::State& state) {
 
 BENCHMARK(BM_fix_logon_parse_message);
 
-void BM_fix_parser_dispatch_logon(benchmark::State& state) {
-  core::utils::Buffer buffer(8192);
-  uint64_t processed = 0;
-  for (auto _ : state) {
-    core::fix::Buffer decode_buffer(buffer);
-    core::fix::Reader<core::fix::Version::FIX_44>::dispatch(
-        [&](const core::fix::message_t& message) {
-          fix::Parser::dispatch(
-              overloaded {
-                [](const fix::ExecutionReport&) {
-                },
-                [](const fix::Heartbeat&) {
-                },
-                [&](const fix::Logon& logon) {
-                  if (logon.heart_bt_int > 0)
-                    ++processed;
-                },
-                [](const fix::Logout&) {
-                },
-                [](const fix::MarketDataIncrementalRefresh&) {
-                },
-                [](const fix::MarketDataRequestReject&) {
-                },
-                [](const fix::MarketDataSnapshotFullRefresh&) {
-                },
-                [](const fix::OrderCancelReject&) {
-                },
-                [](const fix::PositionReport&) {
-                },
-                [](const fix::Reject&) {
-                },
-                [](const fix::ResendRequest&) {
-                },
-                [](const fix::SecurityList&) {
-                },
-                [](const fix::TestRequest&) {
-                },
-                [](const fix::UserResponse&) {
-                },
-              },
-              message,
-              decode_buffer);
-        },
-        MESSAGE,
-        std::strlen(MESSAGE));
-  }
-}
-
-BENCHMARK(BM_fix_parser_dispatch_logon);
-
 void BM_fix_logon_create_message(benchmark::State& state) {
   core::utils::Buffer buffer(4096);
   auto msg_seq_num = uint64_t{0};
@@ -97,10 +45,15 @@ void BM_fix_logon_create_message(benchmark::State& state) {
       .password = "j/tVe9IsQuc+RjegscnHcJ6czMVNM1+ib7vjbY3UV0M=",
       .deribit_cancel_on_disconnect = true,
     };
-    auto message = logon.encode(
+    core::fix::Writer writer(
         buffer,
+        core::fix::Version::FIX_44,
+        decltype(logon)::MSG_TYPE,
+        "ROQ_TRADING",
+        "DERIBITSERVER",
         msg_seq_num,
         sending_time);
+    auto message = logon.encode(writer);
     if (message.length())
       ++processed;
   }

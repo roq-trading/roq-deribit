@@ -7,6 +7,7 @@
 #include "roq/core/utils/message.h"
 
 #include "roq/core/fix/user_request.h"
+#include "roq/core/fix/writer.h"
 
 #include "roq/deribit/fix/deribit.h"
 
@@ -15,14 +16,13 @@ namespace deribit {
 namespace fix {
 
 struct UserRequest final {
+  static constexpr auto MSG_TYPE = core::fix::UserRequest::msg_type;
+
   std::string_view user_request_id;
   std::string_view username;
   std::string_view currency;
 
-  core::utils::Message encode(
-      core::utils::Buffer& buffer,
-      uint64_t& msg_seq_num,
-      std::chrono::nanoseconds sending_time) const;
+  core::utils::Message encode(core::fix::Writer& writer) const;
 };
 
 }  // namespace fix

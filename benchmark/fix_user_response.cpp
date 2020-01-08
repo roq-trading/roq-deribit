@@ -2,9 +2,7 @@
 
 #include <benchmark/benchmark.h>
 
-#include "roq/patterns.h"
-
-#include "roq/deribit/fix/parser.h"
+#include "roq/deribit/fix/user_response.h"
 
 using namespace roq;  // NOLINT
 using namespace roq::deribit;  // NOLINT
@@ -33,53 +31,3 @@ void BM_fix_user_response_parse_message(benchmark::State& state) {
 }
 
 BENCHMARK(BM_fix_user_response_parse_message);
-
-void BM_fix_parser_dispatch_user_response(benchmark::State& state) {
-  core::utils::Buffer buffer(8192);
-  uint64_t processed = 0;
-  for (auto _ : state) {
-    core::fix::Buffer decode_buffer(buffer);
-    core::fix::Reader<core::fix::Version::FIX_44>::dispatch(
-        [&](const core::fix::message_t& message) {
-          fix::Parser::dispatch(
-              overloaded {
-                [](const fix::ExecutionReport&) {
-                },
-                [](const fix::Heartbeat&) {
-                },
-                [](const fix::Logon&) {
-                },
-                [](const fix::Logout&) {
-                },
-                [](const fix::MarketDataIncrementalRefresh&) {
-                },
-                [](const fix::MarketDataRequestReject&) {
-                },
-                [](const fix::MarketDataSnapshotFullRefresh&) {
-                },
-                [](const fix::OrderCancelReject&) {
-                },
-                [](const fix::PositionReport&) {
-                },
-                [](const fix::Reject&) {
-                },
-                [](const fix::ResendRequest&) {
-                },
-                [](const fix::SecurityList&) {
-                },
-                [](const fix::TestRequest&) {
-                },
-                [&](const fix::UserResponse& user_response) {
-                  if (!user_response.user_request_id.empty())
-                    ++processed;
-                },
-              },
-              message,
-              decode_buffer);
-        },
-        MESSAGE,
-        std::strlen(MESSAGE));
-  }
-}
-
-BENCHMARK(BM_fix_parser_dispatch_user_response);

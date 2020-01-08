@@ -2,26 +2,13 @@
 
 #include "roq/deribit/fix/user_request.h"
 
-#include "roq/logging.h"
-
-#include "roq/core/fix/writer.h"
-
 namespace roq {
 namespace deribit {
 namespace fix {
 
 core::utils::Message UserRequest::encode(
-    core::utils::Buffer& buffer,
-    uint64_t& msg_seq_num,
-    std::chrono::nanoseconds sending_time) const {
-  return core::fix::Writer(
-      buffer,
-      FIX_VERSION,
-      core::fix::UserRequest::msg_type,
-      SENDER_COMP_ID,
-      TARGET_COMP_ID,
-      msg_seq_num,
-      sending_time)
+    core::fix::Writer& writer) const {
+  return writer
     .write(core::fix::Field::USER_REQUEST_ID, user_request_id)
     // TODO(thraneh): do *not* hardcode!
     .write(

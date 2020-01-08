@@ -14,8 +14,6 @@ namespace deribit {
 namespace fix {
 
 constexpr auto FIX_VERSION = core::fix::Version::FIX_44;
-constexpr auto SENDER_COMP_ID = "ROQ_TRADING";
-constexpr auto TARGET_COMP_ID = "DERIBITSERVER";
 
 enum class Deribit : uint32_t {
   INSTRUMENT_PRICE_PRECISION = 2576,

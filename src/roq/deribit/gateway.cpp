@@ -5,56 +5,17 @@
 #include <limits>
 #include <utility>
 
-#include "roq/logging.h"
-#include "roq/format.h"
-
-#include "roq/core/charconv.h"
-#include "roq/core/clock.h"
-
 #include "roq/core/fix/utils.h"
 
-#include "roq/core/metrics/profile.h"
-
-#include "roq/deribit/random.h"
 #include "roq/deribit/options.h"
 
-#include "roq/deribit/fix/heartbeat.h"
-#include "roq/deribit/fix/logon.h"
-#include "roq/deribit/fix/market_data_request.h"
-#include "roq/deribit/fix/new_order_single.h"
-#include "roq/deribit/fix/order_cancel_replace_request.h"
-#include "roq/deribit/fix/order_cancel_request.h"
-#include "roq/deribit/fix/order_mass_status_request.h"
-#include "roq/deribit/fix/request_for_positions.h"
-#include "roq/deribit/fix/security_list_request.h"
-#include "roq/deribit/fix/user_request.h"
 #include "roq/deribit/fix/utils.h"
-
-#define FIX_PREFIX "[FIX] "
 
 namespace roq {
 namespace deribit {
 
-// utilities
-
-namespace {
-constexpr std::string_view LOGOUT_RESPONSE("LOGOUT_RESPONSE");
-constexpr std::string_view RESEND_NOT_SUPPORTED("RESEND_NOT_SUPPORTED");
 constexpr auto TOLERANCE = double{1.0e-10};
-static std::string create_latency_labels(
-    const std::string_view& connection) {
-  return fmt::format(
-      "source=\"{}\", connection=\"{}\"",
-      FLAGS_name,
-      connection);
-}
-static auto create_histogram(const std::string_view& function) {
-  auto labels = fmt::format(
-      "source=\"{}\", function=\"{}\"",
-      FLAGS_name,
-      function);
-  return InternalLatency("roq_profile", labels.c_str());
-}
+
 template <typename T>
 static inline void mbp_update(
     auto& data,
@@ -83,6 +44,7 @@ static inline void mbp_update(
   if (offset >= data.size())
     throw std::runtime_error("Not enough space");
 }
+
 template <typename T>
 static inline void trade_update(
     auto& data,
@@ -99,75 +61,40 @@ static inline void trade_update(
   if (offset >= data.size())
     throw std::runtime_error("Not enough space");
 }
-}  // namespace
 
 Gateway::Gateway(
     server::Dispatcher& dispatcher,
     const Config& config)
     : _dispatcher(dispatcher),
-      _dns_base(_base, true),
-      _encode_buffer(FLAGS_encode_buffer_size),
+      _account(config.get_account()),
       _access_key(config.get_access_key()),
-      _access_secret(config.get_access_secret()),
       _symbols_regex(config.symbols),
+      _dns_base(_base, true),
+      _fix(
+          *this,
+          config,
+          _base,
+          _dns_base),
       _bid(FLAGS_max_depth),
       _ask(FLAGS_max_depth),
-      _trade(FLAGS_max_trades),
-      _account(config.get_account()),
-      _fix_latency("roq_latency", create_latency_labels("fix")),
-      _market_data_incremental_refresh(
-          create_histogram("market_data_incremental_refresh")) {
+      _trade(FLAGS_max_trades) {
   LOG_IF(WARNING, FLAGS_cancel_on_disconnect == false)(
       "Orders will *NOT* be cancelled on disconnect");
 }
 
-void Gateway::operator()(const StartEvent&) {
+void Gateway::operator()(const StartEvent& event) {
   LOG(INFO)("Starting the gateway...");
-  create_fix();
+  _fix(event);
 }
 
-void Gateway::operator()(const StopEvent&) {
+void Gateway::operator()(const StopEvent& event) {
   LOG(INFO)("Stopping the gateway...");
-  // FIXME(thraneh): send logout here...
+  _fix(event);
 }
 
 void Gateway::operator()(const TimerEvent& event) {
-  auto now = event.now;
-  auto ping = _next_update <= now;
-  if (ping)
-    _next_update = now + std::chrono::seconds{FLAGS_ping_freq_secs};
-  switch (_gateway_status) {
-    case GatewayStatus::DISCONNECTED:
-      if (static_cast<bool>(_fix)) {
-        _fix.reset();
-        _fix_reconnect_time = now +
-          std::chrono::seconds{ FLAGS_reconnect_secs };
-      } else {
-        if (_fix_reconnect_time < now) {
-          assert(_fix_reconnect_time.count() > 0);
-          _fix_reconnect_time = {};
-          create_fix();
-        }
-      }
-      break;
-    case GatewayStatus::DOWNLOADING:
-    case GatewayStatus::READY: {
-      if (ping) {
-        VLOG(4)(FIX_PREFIX "sending test request");
-        auto test_req_id = fmt::format(  // FIXME(thraneh): use charconv
-            "{}",
-            core::get_system_clock().count());
-        fix::TestRequest test_request {
-          .test_req_id = test_req_id,
-        };
-        send(test_request);
-      }
-      break;
-    }
-    default:
-      break;
-  }
   _base.loop(EVLOOP_NONBLOCK);
+  _fix(event);
 }
 
 void Gateway::operator()(const ConnectionStatusEvent&) {
@@ -207,7 +134,7 @@ void Gateway::operator()(const CreateOrderEvent& event) {
     if (unlikely(_order_mapping.find(key) != _order_mapping.end())) {
       error = Error::INVALID_ORDER_ID;
     } else {
-      request_id = create_request_id();
+      request_id = _fix.next_request_id();
       auto iter = _order_mapping.emplace(
           key,
           std::move(order_mapping)).first;
@@ -224,7 +151,7 @@ void Gateway::operator()(const CreateOrderEvent& event) {
         .deribit_label = (*iter).second.user_custom(),
       };
       try {
-        send(request);
+        _fix(request);
         order_mapping.update_request(request_id, type);
       } catch (std::exception& e) {
         LOG(WARNING)("Exception: what=\"{}\"", e.what());
@@ -282,7 +209,7 @@ void Gateway::operator()(const ModifyOrderEvent& event) {
       if (unlikely(order_mapping.ready() == false)) {
         error = Error::UNKNOWN_EXCHANGE_ORDER_ID;
       } else {
-        request_id = create_request_id();
+        request_id = _fix.next_request_id();
         fix::OrderCancelReplaceRequest request {
           .cl_ord_id = request_id,
           .orig_cl_ord_id = order_mapping.exchange_order_id(),
@@ -294,7 +221,7 @@ void Gateway::operator()(const ModifyOrderEvent& event) {
           .transact_time = order_mapping.update_time(),
         };
         try {
-          send(request);
+          _fix(request);
           order_mapping.update_request(request_id, type);
         } catch (std::exception& e) {
           LOG(WARNING)("Exception: what=\"{}\"", e.what());
@@ -353,13 +280,13 @@ void Gateway::operator()(const CancelOrderEvent& event) {
       if (unlikely(order_mapping.ready() == false)) {
         error = Error::UNKNOWN_EXCHANGE_ORDER_ID;
       } else {
-        request_id = create_request_id();
+        request_id = _fix.next_request_id();
         fix::OrderCancelRequest request {
           .cl_ord_id = request_id,
           .orig_cl_ord_id = order_mapping.exchange_order_id(),
         };
         try {
-          send(request);
+          _fix(request);
           order_mapping.update_request(request_id, type);
         } catch (std::exception& e) {
           LOG(WARNING)("Exception: what=\"{}\"", e.what());
@@ -391,61 +318,33 @@ void Gateway::operator()(const CancelOrderEvent& event) {
 }
 
 void Gateway::operator()(Metrics& metrics) {
-  metrics
-    .write(_fix_latency)
-    .write(_market_data_incremental_refresh);
+  _fix(metrics);
 }
 
-// FIX:
+// fix
 
-void Gateway::create_fix() {
-  assert(_gateway_status == GatewayStatus::DISCONNECTED);
-  assert(static_cast<bool>(_fix) == false);
-  _fix = std::make_unique<FIX>(
-      *this,
-      _ssl_context,
-      _base,
-      _dns_base,
-      core::URI(FLAGS_fix_uri),
-      FLAGS_decode_buffer_size);
-  _fix->start();
-  update(GatewayStatus::CONNECTING);
-}
-
-void Gateway::on_fix_connected() {
-  assert(_gateway_status == GatewayStatus::CONNECTING);
-  LOG(INFO)(FIX_PREFIX
-      "sending logon request (username=\"{}\")...", _access_key);
-  auto sending_time = core::get_realtime_clock();
-  auto raw_data = Random::create_raw_data(sending_time);
-  auto password = Random::create_password(raw_data, _access_secret);
-  fix::Logon logon = {
-    .heart_bt_int = static_cast<uint16_t>(FLAGS_ping_freq_secs),
-    .raw_data = raw_data,
-    .username = _access_key,
-    .password = password,
-    .deribit_cancel_on_disconnect = FLAGS_cancel_on_disconnect,
-  };
-  send(logon, sending_time);
-  update(GatewayStatus::LOGIN_SENT);
-}
-
-void Gateway::on_fix_disconnected() {
-  assert(_gateway_status != GatewayStatus::DISCONNECTED);
-  update(GatewayStatus::DISCONNECTED);
-  _download = Download::NONE;
-  reset();
+void Gateway::operator()(const FIX& fix) {
+  if (fix.ready()) {
+    switch (_gateway_status) {
+      case GatewayStatus::DISCONNECTED:
+      case GatewayStatus::CONNECTING:
+      case GatewayStatus::LOGIN_SENT:
+        begin_download();
+        break;
+      case GatewayStatus::DOWNLOADING:
+      case GatewayStatus::READY:
+        break;
+      case GatewayStatus::LOGGED_OUT:
+        LOG(FATAL)("Unexpected");
+    }
+  } else {
+    update(GatewayStatus::DISCONNECTED);
+    reset();
+  }
 }
 
 void Gateway::operator()(
-    const core::fix::header_t& header,
     const fix::ExecutionReport& execution_report) {
-  VLOG(1)(FIX_PREFIX
-      "event(header={}, execution_report={})",
-      header,
-      execution_report);
-  check(header);
-
   // download begin?
   switch (execution_report.mass_status_req_type) {
     case core::fix::MassStatusReqType::ORDERS:
@@ -644,154 +543,82 @@ void Gateway::operator()(
 }
 
 void Gateway::operator()(
-    const core::fix::header_t& header,
-    const fix::Heartbeat& heartbeat) {
-  // note! get clock *before* any logging (avoid latency)
-  auto now = core::get_system_clock();
-  VLOG(3)(FIX_PREFIX
-      "event(header={}, heartbeat={})",
-      header,
-      heartbeat);
-  check(header);
-  assert(_gateway_status != GatewayStatus::DISCONNECTED);
-  if (heartbeat.test_req_id.empty() == false) {
-    auto send_time = core::from_chars<uint64_t>(heartbeat.test_req_id);
-    auto latency =
-      std::chrono::duration_cast<std::chrono::nanoseconds>(
-          now - decltype(now){send_time}) / 2;  // 1-way
-    _fix_latency.update(latency.count());
+    const fix::MarketDataIncrementalRefresh& market_data_incremental_refresh) {
+  assert(_gateway_status == GatewayStatus::READY);
+  // weirdness -- told them and they would investigate
+  if (unlikely(FLAGS_silence_empty_messages &&
+        market_data_incremental_refresh.md_inc_grp.length == 0))
+    return;
+
+  size_t bid_length = 0, ask_length = 0, trade_length = 0;
+  std::chrono::nanoseconds exchange_time_utc = {};
+  auto& md_inc_grp = market_data_incremental_refresh.md_inc_grp;
+  for (size_t i = 0; i < md_inc_grp.length; ++i) {
+    auto& item = md_inc_grp.items[i];
+    if (item.md_entry_date > exchange_time_utc)
+      exchange_time_utc = item.md_entry_date;
+    switch (item.md_entry_type) {
+      case core::fix::MDEntryType::BID: {
+        mbp_update(_bid, bid_length, item);
+        break;
+      }
+      case core::fix::MDEntryType::OFFER: {
+        mbp_update(_ask, ask_length, item);
+        break;
+      }
+      case core::fix::MDEntryType::TRADE: {
+        trade_update(_trade, trade_length, item);
+        break;
+      }
+      case core::fix::MDEntryType::INDEX_VALUE:
+      case core::fix::MDEntryType::SETTLEMENT_PRICE:
+        // FIXME(thraneh): how to propagate these???
+        VLOG(4)("unsupported: {}", item);
+        break;
+      default:
+        LOG(WARNING)("unsupported: {}", item);
+        break;
+    }
+  }
+  if (bid_length > 0 || ask_length > 0) {
+    MarketByPrice market_by_price {
+      .exchange = FLAGS_exchange,
+      .symbol = market_data_incremental_refresh.symbol,
+      .bids = {
+        .items = _bid.data(),
+        .length = bid_length,
+      },
+      .asks = {
+        .items = _ask.data(),
+        .length = ask_length,
+      },
+      .snapshot = false,  // incremental
+      .exchange_time_utc = exchange_time_utc,
+    };
+    enqueue(market_by_price, true);
+  }
+  if (trade_length > 0) {
+    TradeSummary trade_summary {
+      .exchange = FLAGS_exchange,
+      .symbol = market_data_incremental_refresh.symbol,
+      .trades = {
+        .items = _trade.data(),
+        .length = trade_length,
+      },
+      .exchange_time_utc = exchange_time_utc,
+    };
+    enqueue(trade_summary, true);  // FIXME(thraneh): *not* always last
   }
 }
 
 void Gateway::operator()(
-    const core::fix::header_t& header,
-    const fix::Logon& logon) {
-  VLOG(1)(FIX_PREFIX
-      "event(header={}, logon={})",
-      header,
-      logon);
-  check(header);
-  assert(_gateway_status == GatewayStatus::LOGIN_SENT);
-  LOG(INFO)(FIX_PREFIX "logon COMPLETED");
-  begin_download();
-}
-
-void Gateway::operator()(
-    const core::fix::header_t& header,
-    const fix::Logout& logout) {
-  LOG(WARNING)(FIX_PREFIX
-      "event(header={}, logout={})",
-      header,
-      logout);
-  check(header);
-  assert(_gateway_status == GatewayStatus::READY);
-  update(GatewayStatus::LOGGED_OUT);
-  // note! mandated, must send a logout response
-  fix::Logout response = {
-    .text = LOGOUT_RESPONSE,
-  };
-  send(response);
-  LOG(INFO)(FIX_PREFIX "closing connection");
-  _fix->stop();
-}
-
-void Gateway::operator()(
-    const core::fix::header_t& header,
-    const fix::MarketDataIncrementalRefresh& market_data_incremental_refresh) {
-  core::metrics::profile(_market_data_incremental_refresh, [&]() {
-    VLOG(3)(FIX_PREFIX
-        "event(header={}, market_data_incremental_refresh={})",
-        header,
-        market_data_incremental_refresh);
-    check(header);
-    assert(_gateway_status == GatewayStatus::READY);
-    // weirdness -- told them and they would investigate
-    if (unlikely(FLAGS_silence_empty_messages &&
-          market_data_incremental_refresh.md_inc_grp.length == 0))
-      return;
-
-    size_t bid_length = 0, ask_length = 0, trade_length = 0;
-    std::chrono::nanoseconds exchange_time_utc = {};
-    auto& md_inc_grp = market_data_incremental_refresh.md_inc_grp;
-    for (size_t i = 0; i < md_inc_grp.length; ++i) {
-      auto& item = md_inc_grp.items[i];
-      if (item.md_entry_date > exchange_time_utc)
-        exchange_time_utc = item.md_entry_date;
-      switch (item.md_entry_type) {
-        case core::fix::MDEntryType::BID: {
-          mbp_update(_bid, bid_length, item);
-          break;
-        }
-        case core::fix::MDEntryType::OFFER: {
-          mbp_update(_ask, ask_length, item);
-          break;
-        }
-        case core::fix::MDEntryType::TRADE: {
-          trade_update(_trade, trade_length, item);
-          break;
-        }
-        case core::fix::MDEntryType::INDEX_VALUE:
-        case core::fix::MDEntryType::SETTLEMENT_PRICE:
-          // FIXME(thraneh): how to propagate these???
-          VLOG(4)(FIX_PREFIX "unsupported: {}", item);
-          break;
-        default:
-          LOG(WARNING)(FIX_PREFIX "unsupported: {}", item);
-          break;
-      }
-    }
-    if (bid_length > 0 || ask_length > 0) {
-      MarketByPrice market_by_price = {
-        .exchange = FLAGS_exchange,
-        .symbol = market_data_incremental_refresh.symbol,
-        .bids = {
-          .items = _bid.data(),
-          .length = bid_length,
-        },
-        .asks = {
-          .items = _ask.data(),
-          .length = ask_length,
-        },
-        .snapshot = false,  // incremental
-        .exchange_time_utc = exchange_time_utc,
-      };
-      enqueue(market_by_price, true);
-    }
-    if (trade_length > 0) {
-      TradeSummary trade_summary = {
-        .exchange = FLAGS_exchange,
-        .symbol = market_data_incremental_refresh.symbol,
-        .trades = {
-          .items = _trade.data(),
-          .length = trade_length,
-        },
-        .exchange_time_utc = exchange_time_utc,
-      };
-      enqueue(trade_summary, true);  // FIXME(thraneh): *not* always last
-    }
-  });
-}
-
-void Gateway::operator()(
-    const core::fix::header_t& header,
     const fix::MarketDataRequestReject& market_data_request_reject) {
-  LOG(WARNING)(FIX_PREFIX
-      "event(header={}, market_data_request_reject={})",
-      header,
-      market_data_request_reject);
-  check(header);
   assert(_gateway_status == GatewayStatus::READY);
   LOG(FATAL)("Unexpected -- now what?");  // FIXME(thraneh): ...
 }
 
 void Gateway::operator()(
-    const core::fix::header_t& header,
     const fix::MarketDataSnapshotFullRefresh& market_data_snapshot_full_refresh) {
-  VLOG(3)(FIX_PREFIX
-      "event(header={}, market_data_snapshot_full_refresh={})",
-      header,
-      market_data_snapshot_full_refresh);
-  check(header);
   assert(_gateway_status == GatewayStatus::READY);
   LOG(INFO)(
       "Market data snapshot symbol=\"{}\"",
@@ -814,7 +641,7 @@ void Gateway::operator()(
     }
   }
   // if (bid_length == 0 && ask_length == 0) return;  // TODO(thraneh): check roq-server support
-  MarketByPrice market_by_price = {
+  MarketByPrice market_by_price {
     .exchange = FLAGS_exchange,
     .symbol = market_data_snapshot_full_refresh.symbol,
     .bids = {
@@ -832,13 +659,7 @@ void Gateway::operator()(
 }
 
 void Gateway::operator()(
-    const core::fix::header_t& header,
     const fix::OrderCancelReject& order_cancel_reject) {
-  VLOG(1)(FIX_PREFIX
-      "event(header={}, order_cancel_reject={})",
-      header,
-      order_cancel_reject);
-  check(header);
   assert(_gateway_status == GatewayStatus::READY);
   auto iter = find_order_mapping(
       order_cancel_reject.cl_ord_id,
@@ -885,13 +706,7 @@ void Gateway::operator()(
 }
 
 void Gateway::operator()(
-    const core::fix::header_t& header,
     const fix::PositionReport& position_report) {
-  VLOG(2)(FIX_PREFIX
-      "event(header={}, position_report={})",
-      header,
-      position_report);
-  check(header);
   assert(_gateway_status == GatewayStatus::DOWNLOADING);
   switch (position_report.pos_req_result) {
     case core::fix::PosReqResult::VALID:
@@ -946,13 +761,7 @@ void Gateway::operator()(
 }
 
 void Gateway::operator()(
-    const core::fix::header_t& header,
     const fix::Reject& reject) {
-  LOG(WARNING)(FIX_PREFIX
-      "event(header={}, reject={})",
-      header,
-      reject);
-  check(header);
   assert(_gateway_status != GatewayStatus::DISCONNECTED);
 
   auto request_id = fmt::format(  // FIXME(thraneh): this is *wrong*
@@ -982,38 +791,12 @@ void Gateway::operator()(
         now,
         true);
   } else {
-    LOG(INFO)(FIX_PREFIX "closing connection");
-    _fix->stop();
+    LOG(FATAL)("unexpected");  // XXX disconnect and restart ???
   }
 }
 
 void Gateway::operator()(
-    const core::fix::header_t& header,
-    const fix::ResendRequest& resend_request) {
-  LOG(WARNING)(FIX_PREFIX
-      "event(header={}, resend_request={})",
-      header,
-      resend_request);
-  check(header);
-  fix::Reject reject = {
-    .ref_seq_num = header.msg_seq_num,
-    .ref_tag_id = 0,
-    .ref_msg_type = header.msg_type_raw,
-    .text = RESEND_NOT_SUPPORTED,
-  };
-  send(reject);
-  LOG(INFO)(FIX_PREFIX "closing connection");
-  _fix->stop();
-}
-
-void Gateway::operator()(
-    const core::fix::header_t& header,
     const fix::SecurityList& security_list) {
-  VLOG(2)(FIX_PREFIX
-      "event(header={}, security_list={})",
-      header,
-      security_list);
-  check(header);
   assert(_gateway_status == GatewayStatus::DOWNLOADING);
   _currencies.clear();
   if (security_list.instruments.length) {
@@ -1030,7 +813,7 @@ void Gateway::operator()(
       if (discard_symbol(instrument.symbol))
         continue;
       _symbols.emplace_back(instrument.symbol);
-      ReferenceData reference_data = {
+      ReferenceData reference_data {
         .exchange = FLAGS_exchange,
         .symbol = instrument.symbol,
         .security_type = fix::map_security_type(instrument.security_type),
@@ -1048,7 +831,7 @@ void Gateway::operator()(
       };
       enqueue(reference_data, false);
       // note! we receive no information about the trading status
-      MarketStatus market_status = {
+      MarketStatus market_status {
         .exchange = FLAGS_exchange,
         .symbol = instrument.symbol,
         .trading_status = TradingStatus::OPEN,  // TODO(thraneh): missing
@@ -1065,28 +848,7 @@ void Gateway::operator()(
 }
 
 void Gateway::operator()(
-    const core::fix::header_t& header,
-    const fix::TestRequest& test_request) {
-  VLOG(1)(FIX_PREFIX
-      "event(header={}, test_request={})",
-      header,
-      test_request);
-  check(header);
-  assert(_gateway_status != GatewayStatus::DISCONNECTED);
-  fix::Heartbeat heartbeat = {
-    .test_req_id = test_request.test_req_id,
-  };
-  send(heartbeat);
-}
-
-void Gateway::operator()(
-    const core::fix::header_t& header,
     const fix::UserResponse& user_response) {
-  VLOG(1)(FIX_PREFIX
-      "event(header={}, user_response={})",
-      header,
-      user_response);
-  check(header);
   FundsUpdate funds_update {
     .account = _account,
     .currency = user_response.currency,
@@ -1113,12 +875,14 @@ inline bool Gateway::discard_symbol(const std::string_view& symbol) {
 }
 
 void Gateway::update(GatewayStatus gateway_status) {
+  if (gateway_status == _gateway_status)
+    return;
   _gateway_status = gateway_status;
-  MarketDataStatus market_data_status = {
+  MarketDataStatus market_data_status {
     .status = _gateway_status,
   };
   enqueue(market_data_status, false);
-  OrderManagerStatus order_manager_status = {
+  OrderManagerStatus order_manager_status {
     .account = _account,
     .status = _gateway_status,
   };
@@ -1128,7 +892,7 @@ void Gateway::update(GatewayStatus gateway_status) {
 
 void Gateway::begin_download() {
   assert(_download == Download::NONE);
-  assert(_gateway_status == GatewayStatus::LOGIN_SENT);
+  // XXX assert(_gateway_status == GatewayStatus::LOGIN_SENT);
   update(GatewayStatus::DOWNLOADING);
   LOG(INFO)("Download:");
   download_securities();
@@ -1166,62 +930,54 @@ void Gateway::check_download() {
 
 void Gateway::download_securities() {
   assert(_gateway_status == GatewayStatus::DOWNLOADING);
-  LOG(INFO)(FIX_PREFIX "download securities...");
-  auto security_req_id = create_request_id();
-  fix::SecurityListRequest security_list_request = {
-    .security_req_id = security_req_id,
+  LOG(INFO)("... download securities");
+  auto request_id = _fix.next_request_id();
+  fix::SecurityListRequest security_list_request {
+    .security_req_id = request_id,
   };
-  send(security_list_request);
+  _fix(security_list_request);
   _download = Download::SECURITIES;
 }
 
 void Gateway::download_positions() {
   assert(_gateway_status == GatewayStatus::DOWNLOADING);
-  LOG(INFO)(FIX_PREFIX "download positions...");
-  auto pos_req_id = create_request_id();
-  fix::RequestForPositions request_for_positions = {
-    .pos_req_id = pos_req_id,
+  LOG(INFO)("... download positions");
+  auto request_id = _fix.next_request_id();
+  fix::RequestForPositions request_for_positions {
+    .pos_req_id = request_id,
     .pos_req_type = core::fix::PosReqType::POSITIONS,
   };
-  send(request_for_positions);
+  _fix(request_for_positions);
   _download = Download::POSITIONS;
 }
 
 void Gateway::download_orders() {
   assert(_gateway_status == GatewayStatus::DOWNLOADING);
-  LOG(INFO)(FIX_PREFIX "download orders...");
-  auto mass_status_req_id = create_request_id();
-  fix::OrderMassStatusRequest order_mass_status_request = {
-    .mass_status_req_id = mass_status_req_id,
+  LOG(INFO)("... download orders");
+  auto request_id = _fix.next_request_id();
+  fix::OrderMassStatusRequest order_mass_status_request {
+    .mass_status_req_id = request_id,
     .mass_status_req_type = core::fix::MassStatusReqType::ORDERS,
   };
-  send(order_mass_status_request);
+  _fix(order_mass_status_request);
   _download = Download::ORDERS;
 }
 
 void Gateway::download_user() {
   assert(_gateway_status == GatewayStatus::DOWNLOADING);
-  LOG(INFO)(FIX_PREFIX "download user...");
-  auto user_request_id = create_request_id();
-  // FIXME(thraneh): documentation refers to SecurityList
+  LOG(INFO)("... download user");
   assert(_currencies.empty() == false);
-  _download_users = _currencies.size();
+  _download_users = _currencies.size();  // async countdown
   for (auto& currency : _currencies) {
-    fix::UserRequest user_request_btc = {
-      .user_request_id = user_request_id,
+    auto request_id = _fix.next_request_id();
+    fix::UserRequest user_request_btc {
+      .user_request_id = request_id,
       .username = _access_key,
       .currency = static_cast<std::string_view>(currency),
     };
-    send(user_request_btc);
+    _fix(user_request_btc);
   }
   _download = Download::USER;
-}
-
-void Gateway::reset() {
-  _msg_seq_num = 0;
-  _download = Download::NONE;
-  _symbols.clear();
-  _their_msg_seq_num = 0;
 }
 
 void Gateway::subscribe_market_data() {
@@ -1231,48 +987,99 @@ void Gateway::subscribe_market_data() {
     return;
   }
   LOG(INFO)("Subscribe market data");
-  auto md_req_id = create_request_id();
+  if (FLAGS_batch_subscribe)
+    subscribe_market_data_batch();
+  else
+    subscribe_market_data_simple();
+}
+
+void Gateway::subscribe_market_data_batch() {
   // FIXME(thraneh): simplify this
-  if (FLAGS_batch_subscribe) {
-    std::vector<std::string_view> symbols(FLAGS_max_batch_size);
-    size_t j = 0;
-    for (size_t i = 0; i < _symbols.size(); ++i) {
-      symbols[j++] = _symbols[i];
-      if (j == symbols.size()) {
-        fix::MarketDataRequest market_data_request = {
-          .md_req_id = md_req_id,
-          .symbol = {},
-          .symbols = symbols,
-        };
-        send(market_data_request);
-        j = 0;
-      }
-    }
-    if (j > 0) {
-      fix::MarketDataRequest market_data_request = {
-        .md_req_id = md_req_id,
+  std::vector<std::string_view> symbols(FLAGS_max_batch_size);
+  size_t j = 0;
+  for (size_t i = 0; i < _symbols.size(); ++i) {
+    symbols[j++] = _symbols[i];
+    if (j == symbols.size()) {
+      auto request_id = _fix.next_request_id();
+      fix::MarketDataRequest market_data_request {
+        .md_req_id = request_id,
         .symbol = {},
         .symbols = symbols,
       };
-      send(market_data_request);
+      _fix(market_data_request);
+      j = 0;
     }
-  } else {
-    for (auto& symbol : _symbols) {
-      auto md_req_id = create_request_id();
-      fix::MarketDataRequest market_data_request = {
-        .md_req_id = md_req_id,
-        .symbol = symbol,
-        .symbols = {},
-      };
-      send(market_data_request);
-    }
+  }
+  if (j > 0) {
+    auto request_id = _fix.next_request_id();
+    fix::MarketDataRequest market_data_request {
+      .md_req_id = request_id,
+      .symbol = {},
+      .symbols = symbols,
+    };
+    _fix(market_data_request);
   }
 }
 
-std::string Gateway::create_request_id() {
-  return fmt::format(  // FIXME(thraneh): use charconv
-      "roq:{:06}",
-      ++_request_id);
+void Gateway::subscribe_market_data_simple() {
+  for (auto& symbol : _symbols) {
+    auto request_id = _fix.next_request_id();
+    fix::MarketDataRequest market_data_request {
+      .md_req_id = request_id,
+      .symbol = symbol,
+      .symbols = {},
+    };
+    _fix(market_data_request);
+  }
+}
+
+void Gateway::reset() {
+  _download = Download::NONE;
+  _symbols.clear();
+}
+
+template <typename T>
+void Gateway::enqueue(
+    const T& event,
+    bool is_last) {
+  auto now = core::get_system_clock();
+  enqueue(event, is_last, now, now);
+}
+
+template <typename T>
+void Gateway::enqueue(
+    const T& event,
+    bool is_last,
+    std::chrono::nanoseconds origin_create_time) {
+  auto now = core::get_system_clock();
+  enqueue(event, is_last, origin_create_time, now);
+}
+
+template <typename T>
+void Gateway::enqueue(
+    const T& event,
+    bool is_last,
+    const std::chrono::nanoseconds origin_create_time,
+    const std::chrono::nanoseconds source_receive_time) {
+  _dispatcher.enqueue(
+      event,
+      source_receive_time,
+      origin_create_time,
+      is_last);
+}
+
+template <typename T>
+void Gateway::enqueue(
+    uint8_t user_id,
+    const T& event,
+    bool is_last) {
+  auto now = core::get_system_clock();
+  _dispatcher.enqueue(
+      user_id,
+      event,
+      now,
+      now,
+      is_last);
 }
 
 decltype(Gateway::_order_mapping)::iterator
@@ -1313,47 +1120,6 @@ Gateway::create_order_mapping(
     LOG(WARNING)("*** INVALID USER_CUSTOM ***");
     return _order_mapping.end();
   }
-}
-
-template <typename T>
-inline void Gateway::send(const T& event) {
-  send(event, core::get_realtime_clock());
-}
-
-template <typename T>
-void Gateway::send(
-    const T& event,
-    const std::chrono::nanoseconds sending_time) {
-  VLOG(1)(FIX_PREFIX "event={}", event);
-  assert(static_cast<bool>(_fix));  // a check missing somehwere else
-  if (static_cast<bool>(_fix) == false) return;  // FIXME(thraneh): DEBUG
-  auto message = event.encode(
-      _encode_buffer,
-      _msg_seq_num,
-      sending_time);
-  // message.print();  // DEBUG
-  _fix->send(message);
-}
-
-void Gateway::check(const core::fix::header_t& header) {
-  auto current = header.msg_seq_num;
-  auto expected = _their_msg_seq_num + 1;
-  if (unlikely(current != expected)) {
-    if (expected < current) {
-      LOG(WARNING)(FIX_PREFIX
-          "*** SEQUENCE GAP *** current={} previous={} distance={}",
-          current,
-          _their_msg_seq_num,
-          current - _their_msg_seq_num);
-    } else {
-      LOG(WARNING)(FIX_PREFIX
-          "*** SEQUENCE REPLAY *** current={} previous={} distance={}",
-          current,
-          _their_msg_seq_num,
-          _their_msg_seq_num - current);
-    }
-  }
-  _their_msg_seq_num = current;
 }
 
 }  // namespace deribit

@@ -2,11 +2,6 @@
 
 #include "roq/deribit/fix/market_data_request.h"
 
-#include "roq/logging.h"
-
-#include "roq/core/fix/market_data_request.h"
-#include "roq/core/fix/writer.h"
-
 namespace roq {
 namespace deribit {
 namespace fix {
@@ -14,18 +9,7 @@ namespace fix {
 constexpr auto MARKET_DEPTH = size_t{20};
 
 core::utils::Message MarketDataRequest::encode(
-    core::utils::Buffer& buffer,
-    uint64_t& msg_seq_num,
-    std::chrono::nanoseconds sending_time) const {
-  assert(symbols.empty() != symbol.empty());  // one or the other
-  core::fix::Writer writer(
-      buffer,
-      FIX_VERSION,
-      core::fix::MarketDataRequest::msg_type,
-      SENDER_COMP_ID,
-      TARGET_COMP_ID,
-      msg_seq_num,
-      sending_time);
+    core::fix::Writer& writer) const {
   writer
     .write(core::fix::Field::MD_REQ_ID, md_req_id)
     .write(

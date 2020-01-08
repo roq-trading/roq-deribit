@@ -23,10 +23,15 @@ void BM_fix_order_cancel_replace_request_create_message(benchmark::State& state)
       .symbol = "BTC-27SEP19",
       .transact_time = sending_time,
     };
-    auto message = order_cancel_replace_request.encode(
+    core::fix::Writer writer(
         buffer,
+        core::fix::Version::FIX_44,
+        decltype(order_cancel_replace_request)::MSG_TYPE,
+        "ROQ_TRADING",
+        "DERIBITSERVER",
         msg_seq_num,
         sending_time);
+    auto message = order_cancel_replace_request.encode(writer);
     if (message.length())
       ++processed;
   }

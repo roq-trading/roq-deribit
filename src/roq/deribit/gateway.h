@@ -2,20 +2,14 @@
 
 #pragma once
 
-#include <memory>
 #include <string>
-#include <thread>
 #include <unordered_map>
 #include <vector>
 
 #include "roq/server.h"
 
-#include "roq/core/uri.h"
-#include "roq/core/clock.h"
 #include "roq/core/hash_map.h"
 #include "roq/core/hash_set.h"
-#include "roq/core/utils/buffer.h"
-#include "roq/core/ssl/ssl.h"
 
 #include "roq/core/event/base.h"
 #include "roq/core/event/dns_base.h"
@@ -24,19 +18,15 @@
 #include "roq/deribit/fix.h"
 #include "roq/deribit/order_mapping.h"
 
+// fix (inbound)
 #include "roq/deribit/fix/execution_report.h"
-#include "roq/deribit/fix/heartbeat.h"
-#include "roq/deribit/fix/logon.h"
-#include "roq/deribit/fix/logout.h"
 #include "roq/deribit/fix/market_data_incremental_refresh.h"
 #include "roq/deribit/fix/market_data_request_reject.h"
 #include "roq/deribit/fix/market_data_snapshot_full_refresh.h"
 #include "roq/deribit/fix/order_cancel_reject.h"
 #include "roq/deribit/fix/position_report.h"
 #include "roq/deribit/fix/reject.h"
-#include "roq/deribit/fix/resend_request.h"
 #include "roq/deribit/fix/security_list.h"
-#include "roq/deribit/fix/test_request.h"
 #include "roq/deribit/fix/user_response.h"
 
 namespace roq {
@@ -58,54 +48,17 @@ class Gateway final : public server::Handler {
 
   void operator()(Metrics& metrics) override;
 
- protected:
-  void create_fix();
-
- public:
-  void on_fix_connected();
-  void on_fix_disconnected();
-  void operator()(
-      const core::fix::header_t&,
-      const fix::ExecutionReport&);
-  void operator()(
-      const core::fix::header_t&,
-      const fix::Heartbeat&);
-  void operator()(
-      const core::fix::header_t&,
-      const fix::Logon&);
-  void operator()(
-      const core::fix::header_t&,
-      const fix::Logout&);
-  void operator()(
-      const core::fix::header_t&,
-      const fix::MarketDataIncrementalRefresh&);
-  void operator()(
-      const core::fix::header_t&,
-      const fix::MarketDataRequestReject&);
-  void operator()(
-      const core::fix::header_t&,
-      const fix::MarketDataSnapshotFullRefresh&);
-  void operator()(
-      const core::fix::header_t&,
-      const fix::OrderCancelReject&);
-  void operator()(
-      const core::fix::header_t&,
-      const fix::PositionReport&);
-  void operator()(
-      const core::fix::header_t&,
-      const fix::Reject&);
-  void operator()(
-      const core::fix::header_t&,
-      const fix::ResendRequest&);
-  void operator()(
-      const core::fix::header_t&,
-      const fix::SecurityList&);
-  void operator()(
-      const core::fix::header_t&,
-      const fix::TestRequest&);
-  void operator()(
-      const core::fix::header_t&,
-      const fix::UserResponse&);
+  // fix
+  void operator()(const FIX&);
+  void operator()(const fix::ExecutionReport&);
+  void operator()(const fix::MarketDataIncrementalRefresh&);
+  void operator()(const fix::MarketDataRequestReject&);
+  void operator()(const fix::MarketDataSnapshotFullRefresh&);
+  void operator()(const fix::OrderCancelReject&);
+  void operator()(const fix::PositionReport&);
+  void operator()(const fix::Reject&);
+  void operator()(const fix::SecurityList&);
+  void operator()(const fix::UserResponse&);
 
  private:
   bool discard_symbol(const std::string_view& symbol);
@@ -122,85 +75,57 @@ class Gateway final : public server::Handler {
   void download_user();
 
   void subscribe_market_data();
+  void subscribe_market_data_batch();
+  void subscribe_market_data_simple();
 
   void reset();
 
- private:
   template <typename T>
   void enqueue(
       const T& event,
-      bool is_last) {
-    auto now = core::get_system_clock();
-    enqueue(event, is_last, now, now);
-  }
+      bool is_last);
+
   template <typename T>
   void enqueue(
       const T& event,
       bool is_last,
-      std::chrono::nanoseconds origin_create_time) {
-    auto now = core::get_system_clock();
-    enqueue(event, is_last, origin_create_time, now);
-  }
+      std::chrono::nanoseconds origin_create_time);
+
   template <typename T>
   void enqueue(
       const T& event,
       bool is_last,
       const std::chrono::nanoseconds origin_create_time,
-      const std::chrono::nanoseconds source_receive_time) {
-    _dispatcher.enqueue(
-        event,
-        source_receive_time,
-        origin_create_time,
-        is_last);
-  }
+      const std::chrono::nanoseconds source_receive_time);
+
   template <typename T>
   void enqueue(
       uint8_t user_id,
       const T& event,
-      bool is_last) {
-    auto now = core::get_system_clock();
-    _dispatcher.enqueue(
-        user_id,
-        event,
-        now,
-        now,
-        is_last);
-  }
+      bool is_last);
 
  private:
-  template <typename T>
-  void send(const T& event);
-  template <typename T>
-  void send(
-      const T& event,
-      const std::chrono::nanoseconds sending_time);
-
-  std::string create_request_id();
-
-  void check(const core::fix::header_t& header);
-
-  inline auto create_order_id() {
+  inline auto create_order_id() {  // XXX review
     return ++_local_order_id;
   }
-  inline auto create_trade_id() {
+  inline auto create_trade_id() {  // XXX review
     return ++_local_trade_id;
   }
 
  private:
   server::Dispatcher& _dispatcher;
-  core::ssl::Context _ssl_context;
+  // config
+  const std::string _account;
+  const std::string _access_key;
+  const std::vector<std::regex> _symbols_regex;
+  // async
   core::event::Base _base;
   core::event::DNSBase _dns_base;
-  core::utils::Buffer _encode_buffer;
-  std::chrono::nanoseconds _next_update = {};
-  // fix:
-  std::unique_ptr<FIX> _fix;
-  const std::string _access_key;
-  const std::string _access_secret;
-  uint64_t _msg_seq_num = 0;
-  // gateway:
-  std::chrono::nanoseconds _fix_reconnect_time = {};
+  // connections
+  FIX _fix;
+  // gateway
   GatewayStatus _gateway_status = GatewayStatus::DISCONNECTED;
+  // download
   enum class Download {
     NONE,
     SECURITIES,
@@ -208,22 +133,14 @@ class Gateway final : public server::Handler {
     ORDERS,
     USER,
   } _download = Download::NONE;
+  std::vector<std::string> _symbols;
   uint32_t _download_execution_reports = 0;
-  uint32_t _request_id = 0;
   uint32_t _download_users = 0;
+
+
   // ...
-  std::vector<std::regex> _symbols_regex;
   std::vector<MBPUpdate> _bid, _ask;
   std::vector<Trade> _trade;
-  std::string _account;
-  std::vector<std::string> _symbols;
-  // ...
-  ExternalLatency _fix_latency;
-
- private:
-  InternalLatency _market_data_incremental_refresh;
-
-  uint64_t _their_msg_seq_num = 0;
 
   uint32_t _local_order_id = 10000000;  // TODO(thraneh): we need this extracted from the feed
 

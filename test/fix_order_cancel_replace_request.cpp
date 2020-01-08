@@ -24,10 +24,15 @@ TEST(fix_order_cancel_replace_request, create_message) {
     .symbol = "BTC-27SEP19",
     .transact_time = sending_time,
   };
-  auto message = order_cancel_replace_request.encode(
+  core::fix::Writer writer(
       buffer,
+      core::fix::Version::FIX_44,
+      decltype(order_cancel_replace_request)::MSG_TYPE,
+      "ROQ_TRADING",
+      "DERIBITSERVER",
       msg_seq_num,
       sending_time);
+  auto message = order_cancel_replace_request.encode(writer);
   // core::print_string_with_escapes(message.data(), message.length());
   constexpr auto expected =
     "8=FIX.4.4\0019=0000159\00135=G\00149=ROQ_TRADING\00156=DERIBIT"

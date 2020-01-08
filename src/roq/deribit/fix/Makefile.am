@@ -23,7 +23,6 @@ libroq_deribit_fix_la_SOURCES = \
 	order_cancel_reject.cpp \
 	order_cancel_replace_request.cpp \
 	order_cancel_request.cpp \
-	parser.cpp \
 	position_qty.cpp \
 	position_report.cpp \
 	reject.cpp \

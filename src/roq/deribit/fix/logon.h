@@ -7,13 +7,17 @@
 #include "roq/core/utils/buffer.h"
 #include "roq/core/utils/message.h"
 
+#include "roq/core/fix/logon.h"
 #include "roq/core/fix/reader.h"
+#include "roq/core/fix/writer.h"
 
 namespace roq {
 namespace deribit {
 namespace fix {
 
 struct Logon final {
+  static constexpr auto MSG_TYPE = core::fix::Logon::msg_type;
+
   uint16_t heart_bt_int = 0;
   std::string_view raw_data;
   std::string_view username;
@@ -29,10 +33,7 @@ struct Logon final {
       core::fix::message_t::const_iterator&& iter,
       const core::fix::message_t::const_iterator& end);
 
-  core::utils::Message encode(
-      core::utils::Buffer& buffer,
-      uint64_t& msg_seq_num,
-      std::chrono::nanoseconds sending_time) const;
+  core::utils::Message encode(core::fix::Writer& writer) const;
 };
 
 }  // namespace fix

@@ -23,10 +23,15 @@ void BM_fix_new_order_single_create_message(benchmark::State& state) {
       .time_in_force = core::fix::TimeInForce::GTC,
       .deribit_label = "roq;123;345",
     };
-    auto message = new_order_single.encode(
+    core::fix::Writer writer(
         buffer,
+        core::fix::Version::FIX_44,
+        decltype(new_order_single)::MSG_TYPE,
+        "ROQ_TRADING",
+        "DERIBITSERVER",
         msg_seq_num,
         sending_time);
+    auto message = new_order_single.encode(writer);
     if (message.length())
       ++processed;
   }

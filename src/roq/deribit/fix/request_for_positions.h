@@ -7,6 +7,7 @@
 #include "roq/core/utils/message.h"
 
 #include "roq/core/fix/request_for_positions.h"
+#include "roq/core/fix/writer.h"
 
 #include "roq/deribit/fix/deribit.h"
 
@@ -15,13 +16,12 @@ namespace deribit {
 namespace fix {
 
 struct RequestForPositions final {
+  static constexpr auto MSG_TYPE = core::fix::RequestForPositions::msg_type;
+
   std::string_view pos_req_id;
   core::fix::PosReqType pos_req_type = core::fix::PosReqType::UNKNOWN;
 
-  core::utils::Message encode(
-      core::utils::Buffer& buffer,
-      uint64_t& msg_seq_num,
-      std::chrono::nanoseconds sending_time) const;
+  core::utils::Message encode(core::fix::Writer& writer) const;
 };
 
 }  // namespace fix

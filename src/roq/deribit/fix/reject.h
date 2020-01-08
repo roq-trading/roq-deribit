@@ -4,16 +4,19 @@
 
 #include <fmt/format.h>
 
-#include "roq/core/utils/buffer.h"
 #include "roq/core/utils/message.h"
 
 #include "roq/core/fix/reader.h"
+#include "roq/core/fix/reject.h"
+#include "roq/core/fix/writer.h"
 
 namespace roq {
 namespace deribit {
 namespace fix {
 
 struct Reject final {
+  static constexpr auto MSG_TYPE = core::fix::Reject::msg_type;
+
   uint64_t ref_seq_num = 0;
   uint32_t ref_tag_id = 0;
   std::string_view ref_msg_type;
@@ -26,10 +29,7 @@ struct Reject final {
       core::fix::message_t::const_iterator&& iter,
       const core::fix::message_t::const_iterator& end);
 
-  core::utils::Message encode(
-      core::utils::Buffer& buffer,
-      uint64_t& msg_seq_num,
-      std::chrono::nanoseconds sending_time) const;
+  core::utils::Message encode(core::fix::Writer& writer) const;
 };
 
 }  // namespace fix

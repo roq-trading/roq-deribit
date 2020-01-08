@@ -9,6 +9,7 @@
 #include "roq/core/utils/message.h"
 
 #include "roq/core/fix/new_order_single.h"
+#include "roq/core/fix/writer.h"
 
 #include "roq/deribit/fix/deribit.h"
 
@@ -17,6 +18,8 @@ namespace deribit {
 namespace fix {
 
 struct NewOrderSingle final {
+  static constexpr auto MSG_TYPE = core::fix::NewOrderSingle::msg_type;
+
   std::string_view cl_ord_id;
   core::fix::Side side = core::fix::Side::UNKNOWN;
   double order_qty = std::numeric_limits<double>::quiet_NaN();
@@ -26,10 +29,7 @@ struct NewOrderSingle final {
   core::fix::TimeInForce time_in_force = core::fix::TimeInForce::UNKNOWN;
   std::string_view deribit_label;
 
-  core::utils::Message encode(
-      core::utils::Buffer& buffer,
-      uint64_t& msg_seq_num,
-      std::chrono::nanoseconds sending_time) const;
+  core::utils::Message encode(core::fix::Writer& writer) const;
 };
 
 }  // namespace fix

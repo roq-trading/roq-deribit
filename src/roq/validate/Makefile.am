@@ -13,4 +13,8 @@ roq_deribit_validate_CPPFLAGS = \
 	$(ROQ_CLIENT_CFLAGS) \
 	-I$(top_srcdir)/src
 roq_deribit_validate_SOURCES = \
+	application.cpp \
+	config.cpp \
+	options.cpp \
+	strategy.cpp \
 	main.cpp

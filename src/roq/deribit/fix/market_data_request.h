@@ -9,7 +9,8 @@
 
 #include "roq/core/utils/message.h"
 
-#include "roq/core/fix/order_cancel_request.h"
+#include "roq/core/fix/market_data_request.h"
+#include "roq/core/fix/writer.h"
 
 #include "roq/deribit/fix/deribit.h"
 
@@ -18,15 +19,14 @@ namespace deribit {
 namespace fix {
 
 struct MarketDataRequest final {
+  static constexpr auto MSG_TYPE = core::fix::MarketDataRequest::msg_type;
+
   std::string_view md_req_id;
   // optional -- single or list
   std::string_view symbol;
   std::vector<std::string_view> symbols;
 
-  core::utils::Message encode(
-      core::utils::Buffer& buffer,
-      uint64_t& msg_seq_num,
-      std::chrono::nanoseconds sending_time) const;
+  core::utils::Message encode(core::fix::Writer& writer) const;
 };
 
 }  // namespace fix

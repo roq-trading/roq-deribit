@@ -6,16 +6,19 @@
 
 #include <string_view>
 
-#include "roq/core/utils/buffer.h"
 #include "roq/core/utils/message.h"
 
 #include "roq/core/fix/reader.h"
+#include "roq/core/fix/test_request.h"
+#include "roq/core/fix/writer.h"
 
 namespace roq {
 namespace deribit {
 namespace fix {
 
 struct TestRequest final {
+  static constexpr auto MSG_TYPE = core::fix::TestRequest::msg_type;
+
   std::string_view test_req_id;
 
   static TestRequest parse(const core::fix::message_t& message);
@@ -25,10 +28,7 @@ struct TestRequest final {
       core::fix::message_t::const_iterator&& iter,
       const core::fix::message_t::const_iterator& end);
 
-  core::utils::Message encode(
-      core::utils::Buffer& buffer,
-      uint64_t& msg_seq_num,
-      std::chrono::nanoseconds sending_time) const;
+  core::utils::Message encode(core::fix::Writer& writer) const;
 };
 
 }  // namespace fix
