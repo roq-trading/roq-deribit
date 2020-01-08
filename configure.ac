@@ -18,7 +18,6 @@ AC_CONFIG_FILES([
  src/roq/deribit/api/Makefile
  src/roq/deribit/fix/Makefile
  src/roq/deribit/json/Makefile
- src/roq/validate/Makefile
  test/Makefile
 ])
 AC_CONFIG_FILES([roq-deribit.pc])

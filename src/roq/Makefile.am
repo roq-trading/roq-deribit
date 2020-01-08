@@ -1,1 +1,1 @@
-SUBDIRS = deribit validate
+SUBDIRS = deribit
