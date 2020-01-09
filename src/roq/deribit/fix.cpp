@@ -256,12 +256,12 @@ void FIX::send_heartbeat(std::chrono::nanoseconds now) {
   core::charconv::to_string(
       std::back_inserter(_buffer),
       now.count());
-  fix::Heartbeat heartbeat {
+  fix::TestRequest test_request {
     .test_req_id = std::string_view(
         _buffer.data(),
         _buffer.size()),
   };
-  send(heartbeat);
+  send(test_request);
 }
 
 void FIX::operator()(State state) {
