@@ -113,7 +113,6 @@ void FIX::operator()(const TimerEvent& event) {
       break;
     default:
       _connection.refresh(now);
-      break;
   }
 }
 
