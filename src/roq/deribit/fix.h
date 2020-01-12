@@ -101,7 +101,7 @@ class FIX final : public core::net::Manager::Handler {
   void send_logon();
   void send_logout(const std::string_view& text);
   void send_heartbeat(const std::string_view& test_req_id);
-  void send_heartbeat(std::chrono::nanoseconds now);
+  void send_test_request(std::chrono::nanoseconds now);
 
   void operator()(State state);
 

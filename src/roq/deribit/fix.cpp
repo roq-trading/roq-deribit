@@ -102,17 +102,16 @@ void FIX::operator()(const StopEvent&) {
 }
 
 void FIX::operator()(const TimerEvent& event) {
-  auto now = event.now;
   switch (_state) {
     case State::READY:
-      if (_next_heartbeat <= now) {
-        _next_heartbeat = now +
+      if (_next_heartbeat <= event.now) {
+        _next_heartbeat = event.now +
           std::chrono::seconds{FLAGS_ping_freq_secs};
-        send_heartbeat(now);
+        send_test_request(core::get_system_clock());
       }
       break;
     default:
-      _connection.refresh(now);
+      _connection.refresh(event.now);
   }
 }
 
@@ -250,7 +249,7 @@ void FIX::send_heartbeat(const std::string_view& test_req_id) {
   send(heartbeat);
 }
 
-void FIX::send_heartbeat(std::chrono::nanoseconds now) {
+void FIX::send_test_request(std::chrono::nanoseconds now) {
   _buffer.clear();
   core::charconv::to_string(
       std::back_inserter(_buffer),
