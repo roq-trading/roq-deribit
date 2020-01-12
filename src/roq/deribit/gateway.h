@@ -61,8 +61,6 @@ class Gateway final : public server::Handler {
   void operator()(const fix::UserResponse&);
 
  private:
-  bool discard_symbol(const std::string_view& symbol);
-
   void update(GatewayStatus gateway_status);
 
   void begin_download();
@@ -82,49 +80,37 @@ class Gateway final : public server::Handler {
 
   template <typename T>
   void enqueue(
-      const T& event,
+      const T& value,
       bool is_last);
-
-  template <typename T>
-  void enqueue(
-      const T& event,
-      bool is_last,
-      std::chrono::nanoseconds origin_create_time);
-
-  template <typename T>
-  void enqueue(
-      const T& event,
-      bool is_last,
-      const std::chrono::nanoseconds origin_create_time,
-      const std::chrono::nanoseconds source_receive_time);
 
   template <typename T>
   void enqueue(
       uint8_t user_id,
-      const T& event,
+      const T& value,
       bool is_last);
 
- private:
-  inline auto create_order_id() {  // XXX review
-    return ++_local_order_id;
-  }
-  inline auto create_trade_id() {  // XXX review
-    return ++_local_trade_id;
-  }
+  bool validate(const CreateOrderEvent& event);
+
+  bool validate(
+      const ModifyOrderEvent& event,
+      uint32_t gateway_order_id,
+      const std::string_view& external_order_id);
+
+  bool validate(
+      const CancelOrderEvent& event,
+      uint32_t gateway_order_id,
+      const std::string_view& external_order_id);
 
  private:
   server::Dispatcher& _dispatcher;
   // config
   const std::string _account;
   const std::string _access_key;
-  const std::vector<std::regex> _symbols_regex;
   // async
   core::event::Base _base;
   core::event::DNSBase _dns_base;
   // connections
   FIX _fix;
-  // gateway
-  GatewayStatus _gateway_status = GatewayStatus::DISCONNECTED;
   // download
   enum class Download {
     NONE,
@@ -133,31 +119,24 @@ class Gateway final : public server::Handler {
     ORDERS,
     USER,
   } _download = Download::NONE;
-  std::vector<std::string> _symbols;
   uint32_t _download_execution_reports = 0;
   uint32_t _download_users = 0;
-
-
-  // ...
+  core::hash_set<std::string> _currencies;
+  std::vector<std::string> _symbols;
+  // market data + order manager
+  GatewayStatus _gateway_status = GatewayStatus::DISCONNECTED;
+  // market data
   std::vector<MBPUpdate> _bid, _ask;
   std::vector<Trade> _trade;
-
-  uint32_t _local_order_id = 10000000;  // TODO(thraneh): we need this extracted from the feed
-
+  // order manager
   std::unordered_map<uint64_t, OrderMapping> _order_mapping;
-
   core::hash_map<std::string, uint64_t> _order_lookup;
 
-  uint32_t _local_trade_id = 20000000;
-
-  decltype(_order_mapping)::iterator find_order_mapping(
+  decltype(_order_mapping)::iterator find_order_mapping(  // XXX move
       const std::string_view& cl_ord_id,
       const std::string_view& orig_cl_ord_id);
-
-  decltype(_order_mapping)::iterator create_order_mapping(
+  decltype(_order_mapping)::iterator create_order_mapping(  // XXX move
       const fix::ExecutionReport& execution_report);
-
-  core::hash_set<std::string> _currencies;
 };
 
 }  // namespace deribit

@@ -57,7 +57,9 @@ static inline void trade_update(
     .quantity = item.md_entry_size,
     .trade_id = {},  // copy string (following statement)
   };
-  item.deribit_trade_id.copy(trade.trade_id, sizeof(trade.trade_id));
+  item.deribit_trade_id.copy(
+      trade.trade_id,
+      sizeof(trade.trade_id));
   if (offset >= data.size())
     throw std::runtime_error("Not enough space");
 }
@@ -68,7 +70,6 @@ Gateway::Gateway(
     : _dispatcher(dispatcher),
       _account(config.get_account()),
       _access_key(config.get_access_key()),
-      _symbols_regex(config.symbols),
       _dns_base(_base, true),
       _fix(
           *this,
@@ -101,220 +102,166 @@ void Gateway::operator()(const ConnectionStatusEvent&) {
 }
 
 void Gateway::operator()(const CreateOrderEvent& event) {
+  if (unlikely(validate(event) == false))
+    return;
   auto& message_info = event.message_info;
   auto& create_order = event.create_order;
-  constexpr auto type = RequestType::CREATE_ORDER;
-  constexpr auto origin = Origin::GATEWAY;
-  auto error = Error::NONE;
-  decltype(OrderAck::gateway_order_id) gateway_order_id = {};
-  std::string request_id;
-  if (unlikely(_gateway_status != GatewayStatus::READY)) {
-    error = Error::GATEWAY_NOT_READY;
-  } else if (unlikely(
-        create_order.account.compare(_account) != 0)) {
-    error = Error::INVALID_ACCOUNT;
-  } else if (unlikely(
-        create_order.exchange.compare(FLAGS_exchange) != 0)) {
-    error = Error::INVALID_EXCHANGE;
-  } else if (unlikely(
-        create_order.position_effect != PositionEffect::UNDEFINED)) {
-    error = Error::INVALID_POSITION_EFFECT;
-  } else if (unlikely(
-        create_order.order_template.empty() == false &&
-        create_order.order_template.compare("default") != 0)) {
-    error = Error::INVALID_ORDER_TEMPLATE;
+  // TODO(thraneh): check against max_order_id before continuing
+  auto gateway_order_id = _dispatcher.next_order_id();
+  OrderMapping order_mapping(
+      message_info,
+      create_order,
+      gateway_order_id);
+  auto key = order_mapping.key();
+  if (unlikely(_order_mapping.find(key) != _order_mapping.end())) {
+    _dispatcher.send_order_ack(
+        event,
+        Error::INVALID_ORDER_ID);
+    return;
   } else {
-    // TODO(thraneh): check against max_order_id before continuing
-    gateway_order_id = create_order_id();
-    OrderMapping order_mapping(
-        message_info,
-        create_order,
-        gateway_order_id);
-    auto key = order_mapping.key();
-    if (unlikely(_order_mapping.find(key) != _order_mapping.end())) {
-      error = Error::INVALID_ORDER_ID;
-    } else {
-      request_id = _fix.next_request_id();
-      auto iter = _order_mapping.emplace(
-          key,
-          std::move(order_mapping)).first;
-      auto& order_mapping = (*iter).second;
-      _order_lookup.emplace(request_id, key);
-      fix::NewOrderSingle request {
-        .cl_ord_id = request_id,
-        .side = core::fix::map(create_order.side),
-        .order_qty = create_order.quantity,
-        .price = create_order.price,
-        .symbol = create_order.symbol,
-        .ord_type = core::fix::map(create_order.order_type),
-        .time_in_force = core::fix::map(create_order.time_in_force),
-        .deribit_label = (*iter).second.user_custom(),
-      };
-      try {
-        _fix(request);
-        order_mapping.update_request(request_id, type);
-      } catch (std::exception& e) {
-        LOG(WARNING)("Exception: what=\"{}\"", e.what());
-        error = Error::NETWORK_ERROR;
-      }
+    auto iter = _order_mapping.emplace(
+        key,
+        std::move(order_mapping)).first;
+    // XXX fix this... replacing previous variable
+    auto& order_mapping = (*iter).second;
+    auto request_id = _fix.next_request_id();
+    _order_lookup.emplace(request_id, key);
+    fix::NewOrderSingle new_order_single {
+      .cl_ord_id = request_id,
+      .side = core::fix::map(create_order.side),
+      .order_qty = create_order.quantity,
+      .price = create_order.price,
+      .symbol = create_order.symbol,
+      .ord_type = core::fix::map(create_order.order_type),
+      .time_in_force = core::fix::map(create_order.time_in_force),
+      .deribit_label = (*iter).second.user_custom(),
+    };
+    try {
+      _fix(new_order_single);
+      order_mapping.update_request(
+          request_id,
+          RequestType::CREATE_ORDER);
+      _dispatcher.send_order_ack(
+          event,
+          gateway_order_id,
+          request_id);
+    } catch (std::exception& e) {
+      LOG(WARNING)("Exception: what=\"{}\"", e.what());
+      _dispatcher.send_order_ack(
+          event,
+          Error::NETWORK_ERROR);
     }
   }
-  OrderAck order_ack {
-    .account = create_order.account,
-    .order_id = create_order.order_id,
-    .type = type,
-    .origin = origin,
-    .status = (error == Error::NONE)
-      ? RequestStatus::FORWARDED
-      : RequestStatus::REJECTED,
-    .error = error,
-    .text = std::string_view(),
-    .gateway_order_id = gateway_order_id,
-    .external_order_id = std::string_view(),
-    .request_id = request_id,
-  };
-  _dispatcher.enqueue(
-      message_info.source,
-      order_ack,
-      message_info.source_receive_time,
-      message_info.origin_create_time,
-      true);
 }
 
 void Gateway::operator()(const ModifyOrderEvent& event) {
   auto& message_info = event.message_info;
   auto& modify_order = event.modify_order;
-  constexpr auto type = RequestType::MODIFY_ORDER;
-  constexpr auto origin = Origin::GATEWAY;
-  auto error = Error::NONE;
-  decltype(OrderAck::gateway_order_id) gateway_order_id = {};
-  decltype(OrderAck::external_order_id) external_order_id = {};
-  std::string request_id;
-  if (unlikely(_gateway_status != GatewayStatus::READY)) {
-    error = Error::GATEWAY_NOT_READY;
-  } else if (unlikely(
-        modify_order.account.compare(_account) != 0)) {
-    error = Error::INVALID_ACCOUNT;
-  } else {
-    auto key = OrderMapping::key(
-        message_info.source,
-        modify_order.order_id);
-    auto iter = _order_mapping.find(key);
-    if (unlikely(iter == _order_mapping.end())) {
-      error = Error::UNKNOWN_ORDER_ID;
-    } else {
-      auto& order_mapping = (*iter).second;
-      gateway_order_id = order_mapping.gateway_order_id();
-      external_order_id = order_mapping.exchange_order_id();
-      if (unlikely(order_mapping.ready() == false)) {
-        error = Error::UNKNOWN_EXCHANGE_ORDER_ID;
-      } else {
-        request_id = _fix.next_request_id();
-        fix::OrderCancelReplaceRequest request {
-          .cl_ord_id = request_id,
-          .orig_cl_ord_id = order_mapping.exchange_order_id(),
-          .side = core::fix::map(order_mapping.side()),
-          .order_qty = modify_order.quantity,
-          .ord_type = core::fix::map(order_mapping.order_type()),
-          .price = modify_order.price,
-          .symbol = order_mapping.symbol(),
-          .transact_time = order_mapping.update_time(),
-        };
-        try {
-          _fix(request);
-          order_mapping.update_request(request_id, type);
-        } catch (std::exception& e) {
-          LOG(WARNING)("Exception: what=\"{}\"", e.what());
-          error = Error::NETWORK_ERROR;
-        }
-      }
-    }
-  }
-  OrderAck order_ack {
-    .account = modify_order.account,
-    .order_id = modify_order.order_id,
-    .type = type,
-    .origin = origin,
-    .status = (error == Error::NONE)
-      ? RequestStatus::FORWARDED
-      : RequestStatus::REJECTED,
-    .error = error,
-    .text = std::string_view(),
-    .gateway_order_id = gateway_order_id,
-    .external_order_id = external_order_id,
-    .request_id = request_id,
-  };
-  _dispatcher.enqueue(
+  auto key = OrderMapping::key(
       message_info.source,
-      order_ack,
-      message_info.source_receive_time,
-      message_info.origin_create_time,
-      true);
+      modify_order.order_id);
+  auto iter = _order_mapping.find(key);
+  if (unlikely(iter == _order_mapping.end())) {
+    _dispatcher.send_order_ack(
+        event,
+        Error::UNKNOWN_ORDER_ID);
+    return;
+  }
+  auto& order_mapping = (*iter).second;
+  auto gateway_order_id = order_mapping.gateway_order_id();
+  auto external_order_id = order_mapping.exchange_order_id();
+  if (unlikely(validate(event, gateway_order_id, external_order_id) == false)) {
+    return;
+  }
+  if (unlikely(order_mapping.ready() == false)) {
+    _dispatcher.send_order_ack(
+        event,
+        Error::UNKNOWN_EXCHANGE_ORDER_ID,
+        gateway_order_id,
+        external_order_id);
+    return;
+  }
+  auto request_id = _fix.next_request_id();
+  fix::OrderCancelReplaceRequest order_cancel_replace_request {
+    .cl_ord_id = request_id,
+    .orig_cl_ord_id = order_mapping.exchange_order_id(),
+    .side = core::fix::map(order_mapping.side()),
+    .order_qty = modify_order.quantity,
+    .ord_type = core::fix::map(order_mapping.order_type()),
+    .price = modify_order.price,
+    .symbol = order_mapping.symbol(),
+    .transact_time = order_mapping.update_time(),
+  };
+  try {
+    _fix(order_cancel_replace_request);
+    order_mapping.update_request(
+        request_id,
+        RequestType::MODIFY_ORDER);
+    _dispatcher.send_order_ack(
+        event,
+        gateway_order_id,
+        external_order_id,
+        request_id);
+  } catch (std::exception& e) {
+    LOG(WARNING)("Exception: what=\"{}\"", e.what());
+    _dispatcher.send_order_ack(
+        event,
+        Error::NETWORK_ERROR,
+        gateway_order_id,
+        external_order_id);
+  }
 }
 
 void Gateway::operator()(const CancelOrderEvent& event) {
   auto& message_info = event.message_info;
   auto& cancel_order = event.cancel_order;
-  constexpr auto type = RequestType::CANCEL_ORDER;
-  constexpr auto origin = Origin::GATEWAY;
-  auto error = Error::NONE;
-  decltype(OrderAck::gateway_order_id) gateway_order_id = {};
-  decltype(OrderAck::external_order_id) external_order_id = {};
-  std::string request_id;
-  if (unlikely(_gateway_status != GatewayStatus::READY)) {
-    error = Error::GATEWAY_NOT_READY;
-  } else if (unlikely(
-        cancel_order.account.compare(_account) != 0)) {
-    error = Error::INVALID_ACCOUNT;
-  } else {
-    auto key = OrderMapping::key(
-        message_info.source,
-        cancel_order.order_id);
-    auto iter = _order_mapping.find(key);
-    if (unlikely(iter == _order_mapping.end())) {
-      error = Error::UNKNOWN_ORDER_ID;
-    } else {
-      auto& order_mapping = (*iter).second;
-      gateway_order_id = order_mapping.gateway_order_id();
-      external_order_id = order_mapping.exchange_order_id();
-      if (unlikely(order_mapping.ready() == false)) {
-        error = Error::UNKNOWN_EXCHANGE_ORDER_ID;
-      } else {
-        request_id = _fix.next_request_id();
-        fix::OrderCancelRequest request {
-          .cl_ord_id = request_id,
-          .orig_cl_ord_id = order_mapping.exchange_order_id(),
-        };
-        try {
-          _fix(request);
-          order_mapping.update_request(request_id, type);
-        } catch (std::exception& e) {
-          LOG(WARNING)("Exception: what=\"{}\"", e.what());
-          error = Error::NETWORK_ERROR;
-        }
-      }
-    }
-  }
-  OrderAck order_ack {
-    .account = cancel_order.account,
-    .order_id = cancel_order.order_id,
-    .type = type,
-    .origin = origin,
-    .status = (error == Error::NONE)
-      ? RequestStatus::FORWARDED
-      : RequestStatus::REJECTED,
-    .error = error,
-    .text = std::string_view(),
-    .gateway_order_id = gateway_order_id,
-    .external_order_id = external_order_id,
-    .request_id = request_id,
-  };
-  _dispatcher.enqueue(
+  auto key = OrderMapping::key(
       message_info.source,
-      order_ack,
-      message_info.source_receive_time,
-      message_info.origin_create_time,
-      true);
+      cancel_order.order_id);
+  auto iter = _order_mapping.find(key);
+  if (unlikely(iter == _order_mapping.end())) {
+    _dispatcher.send_order_ack(
+        event,
+        Error::UNKNOWN_ORDER_ID);
+    return;
+  }
+  auto& order_mapping = (*iter).second;
+  auto gateway_order_id = order_mapping.gateway_order_id();
+  auto external_order_id = order_mapping.exchange_order_id();
+  if (unlikely(validate(event, gateway_order_id, external_order_id) == false)) {
+    return;
+  }
+  if (unlikely(order_mapping.ready() == false)) {
+    _dispatcher.send_order_ack(
+        event,
+        Error::UNKNOWN_EXCHANGE_ORDER_ID,
+        gateway_order_id,
+        external_order_id);
+    return;
+  }
+  auto request_id = _fix.next_request_id();
+  fix::OrderCancelRequest order_cancel_request {
+    .cl_ord_id = request_id,
+    .orig_cl_ord_id = order_mapping.exchange_order_id(),
+  };
+  try {
+    _fix(order_cancel_request);
+    order_mapping.update_request(
+        request_id,
+        RequestType::CANCEL_ORDER);
+    _dispatcher.send_order_ack(
+        event,
+        gateway_order_id,
+        external_order_id,
+        request_id);
+  } catch (std::exception& e) {
+    LOG(WARNING)("Exception: what=\"{}\"", e.what());
+    _dispatcher.send_order_ack(
+        event,
+        Error::NETWORK_ERROR,
+        gateway_order_id,
+        external_order_id);
+  }
 }
 
 void Gateway::operator()(Metrics& metrics) {
@@ -475,10 +422,12 @@ void Gateway::operator()(
         order_mapping.reset_request();
       }
       if (order_update) {
-        for (size_t i = 0; i < execution_report.fills_grp.length; ++i) {
-          const auto& fills = execution_report.fills_grp.items[i];
+        roq::span fills_grp(
+            execution_report.fills_grp.items,
+            execution_report.fills_grp.length);
+        for (auto& fills : fills_grp) {
           // TODO(thraneh): map fill_exec_id <-> local_trade_id ???
-          auto trade_id = create_trade_id();
+          auto trade_id = _dispatcher.next_trade_id();
           TradeUpdate trade_update {
             .account = _account,
             .trade_id = trade_id,
@@ -545,16 +494,17 @@ void Gateway::operator()(
 void Gateway::operator()(
     const fix::MarketDataIncrementalRefresh& market_data_incremental_refresh) {
   assert(_gateway_status == GatewayStatus::READY);
-  // weirdness -- told them and they would investigate
+  // weirdness -- told them and they said they would investigate
   if (unlikely(FLAGS_silence_empty_messages &&
         market_data_incremental_refresh.md_inc_grp.length == 0))
     return;
 
   size_t bid_length = 0, ask_length = 0, trade_length = 0;
   std::chrono::nanoseconds exchange_time_utc = {};
-  auto& md_inc_grp = market_data_incremental_refresh.md_inc_grp;
-  for (size_t i = 0; i < md_inc_grp.length; ++i) {
-    auto& item = md_inc_grp.items[i];
+  roq::span md_inc_grp(
+      market_data_incremental_refresh.md_inc_grp.items,
+      market_data_incremental_refresh.md_inc_grp.length);
+  for (auto& item : md_inc_grp) {
     if (item.md_entry_date > exchange_time_utc)
       exchange_time_utc = item.md_entry_date;
     switch (item.md_entry_type) {
@@ -595,7 +545,10 @@ void Gateway::operator()(
       .snapshot = false,  // incremental
       .exchange_time_utc = exchange_time_utc,
     };
-    enqueue(market_by_price, true);
+    auto last = trade_length == 0;
+    enqueue(
+        market_by_price,
+        last);
   }
   if (trade_length > 0) {
     TradeSummary trade_summary {
@@ -607,14 +560,16 @@ void Gateway::operator()(
       },
       .exchange_time_utc = exchange_time_utc,
     };
-    enqueue(trade_summary, true);  // FIXME(thraneh): *not* always last
+    enqueue(
+        trade_summary,
+        true);
   }
 }
 
 void Gateway::operator()(
-    const fix::MarketDataRequestReject& market_data_request_reject) {
+    const fix::MarketDataRequestReject&) {
   assert(_gateway_status == GatewayStatus::READY);
-  LOG(FATAL)("Unexpected -- now what?");  // FIXME(thraneh): ...
+  LOG(FATAL)("Unexpected");  // don't know how to continue
 }
 
 void Gateway::operator()(
@@ -624,9 +579,13 @@ void Gateway::operator()(
       "Market data snapshot symbol=\"{}\"",
       market_data_snapshot_full_refresh.symbol);
   size_t bid_length = 0, ask_length = 0;
-  auto& md_full_grp = market_data_snapshot_full_refresh.md_full_grp;
-  for (size_t i = 0; i < md_full_grp.length; ++i) {
-    auto& item = md_full_grp.items[i];
+  roq::span md_full_grp(
+      market_data_snapshot_full_refresh.md_full_grp.items,
+      market_data_snapshot_full_refresh.md_full_grp.length);
+  // auto& md_full_grp = market_data_snapshot_full_refresh.md_full_grp;
+  // for (size_t i = 0; i < md_full_grp.length; ++i) {
+  //   auto& item = md_full_grp.items[i];
+  for (auto& item : md_full_grp) {
     switch (item.md_entry_type) {
       case core::fix::MDEntryType::BID: {
         mbp_update(_bid, bid_length, item);
@@ -655,7 +614,9 @@ void Gateway::operator()(
     .snapshot = true,  // reset
     .exchange_time_utc = {},
   };
-  enqueue(market_by_price, true);
+  enqueue(
+      market_by_price,
+      true);
 }
 
 void Gateway::operator()(
@@ -713,8 +674,10 @@ void Gateway::operator()(
       switch (position_report.pos_req_type) {
         case core::fix::PosReqType::POSITIONS: {
           size_t position_count = 0;
-          for (size_t i = 0; i < position_report.positions.length; ++i) {
-            auto& position = position_report.positions.items[i];
+          roq::span positions(
+              position_report.positions.items,
+              position_report.positions.length);
+          for (auto& position : positions) {
             PositionUpdate buy {
               .account = _account,
               .exchange = FLAGS_exchange,
@@ -737,8 +700,12 @@ void Gateway::operator()(
               .position_yesterday = 0.0,
               .position_cost_yesterday = 0.0,
             };
-            enqueue(buy, false);
-            enqueue(sell, true);
+            enqueue(
+                buy,
+                false);
+            enqueue(
+                sell,
+                true);
             ++position_count;
           }
           VLOG(1)(
@@ -783,12 +750,9 @@ void Gateway::operator()(
       .external_order_id = order_mapping.exchange_order_id(),
       .request_id = request_id,
     };
-    auto now = core::get_system_clock();
-    _dispatcher.enqueue(
+    enqueue(
         order_mapping.user_id(),
         order_ack,
-        now,
-        now,
         true);
   } else {
     LOG(FATAL)("unexpected");  // XXX disconnect and restart ???
@@ -802,15 +766,17 @@ void Gateway::operator()(
   if (security_list.instruments.length) {
     assert(_symbols.empty());
     size_t security_count = 0;
-    _symbols.reserve(security_list.instruments.length);  // note! alloc
-    for (size_t i = 0; i < security_list.instruments.length; ++i) {
-      auto& instrument = security_list.instruments.items[i];
+    roq::span instruments(
+        security_list.instruments.items,
+        security_list.instruments.length);
+    _symbols.reserve(instruments.size());  // note! alloc
+    for (auto& instrument : instruments) {
       // note!
       //   USD will cause a Reject
       //   using commission currency because it requires funding
       if (instrument.comm_currency.empty() == false)
         _currencies.emplace(instrument.comm_currency);
-      if (discard_symbol(instrument.symbol))
+      if (_dispatcher.discard_symbol(instrument.symbol))
         continue;
       _symbols.emplace_back(instrument.symbol);
       ReferenceData reference_data {
@@ -829,14 +795,18 @@ void Gateway::operator()(
         .strike_currency = instrument.strike_currency,
         .strike_price = instrument.strike_price,
       };
-      enqueue(reference_data, false);
+      enqueue(
+          reference_data,
+          false);
       // note! we receive no information about the trading status
       MarketStatus market_status {
         .exchange = FLAGS_exchange,
         .symbol = instrument.symbol,
         .trading_status = TradingStatus::OPEN,  // TODO(thraneh): missing
       };
-      enqueue(market_status, true);
+      enqueue(
+          market_status,
+          true);
       ++security_count;
     }
     VLOG(1)(
@@ -855,23 +825,13 @@ void Gateway::operator()(
     .balance = user_response.deribit_user_balance,
     .hold = double{0.0},
   };
-  enqueue(funds_update, true);
+  enqueue(
+      funds_update,
+      true);
   if (_download == Download::USER) {
     if (_download_users && 0 == --_download_users)
       check_download();
   }
-}
-
-// UTILS:
-
-inline bool Gateway::discard_symbol(const std::string_view& symbol) {
-  for (auto& regex : _symbols_regex)
-    if (std::regex_match(symbol.begin(), symbol.end(), regex)) {
-      return false;
-    }
-  VLOG(4)(
-      "Discard symbol=\"{}\" (reason: no regex match)", symbol);
-  return true;
 }
 
 void Gateway::update(GatewayStatus gateway_status) {
@@ -881,12 +841,16 @@ void Gateway::update(GatewayStatus gateway_status) {
   MarketDataStatus market_data_status {
     .status = _gateway_status,
   };
-  enqueue(market_data_status, false);
+  enqueue(
+      market_data_status,
+      false);
   OrderManagerStatus order_manager_status {
     .account = _account,
     .status = _gateway_status,
   };
-  enqueue(order_manager_status, true);
+  enqueue(
+      order_manager_status,
+      true);
   LOG(INFO)("Update: gateway_status={}", _gateway_status);
 }
 
@@ -1039,47 +1003,102 @@ void Gateway::reset() {
 }
 
 template <typename T>
-void Gateway::enqueue(
-    const T& event,
+inline void Gateway::enqueue(
+    const T& value,
     bool is_last) {
   auto now = core::get_system_clock();
-  enqueue(event, is_last, now, now);
-}
-
-template <typename T>
-void Gateway::enqueue(
-    const T& event,
-    bool is_last,
-    std::chrono::nanoseconds origin_create_time) {
-  auto now = core::get_system_clock();
-  enqueue(event, is_last, origin_create_time, now);
-}
-
-template <typename T>
-void Gateway::enqueue(
-    const T& event,
-    bool is_last,
-    const std::chrono::nanoseconds origin_create_time,
-    const std::chrono::nanoseconds source_receive_time) {
   _dispatcher.enqueue(
-      event,
-      source_receive_time,
-      origin_create_time,
+      value,
+      now,
+      now,
       is_last);
 }
 
 template <typename T>
-void Gateway::enqueue(
+inline void Gateway::enqueue(
     uint8_t user_id,
-    const T& event,
+    const T& value,
     bool is_last) {
   auto now = core::get_system_clock();
   _dispatcher.enqueue(
       user_id,
-      event,
+      value,
       now,
       now,
       is_last);
+}
+
+bool Gateway::validate(const CreateOrderEvent& event) {
+  auto& create_order = event.create_order;
+  auto error = Error::NONE;
+  if (unlikely(_gateway_status != GatewayStatus::READY)) {
+    error = Error::GATEWAY_NOT_READY;
+  } else if (unlikely(
+        create_order.account.compare(_account) != 0)) {
+    error = Error::INVALID_ACCOUNT;
+  } else if (unlikely(
+        create_order.exchange.compare(FLAGS_exchange) != 0)) {
+    error = Error::INVALID_EXCHANGE;
+  } else if (unlikely(
+        create_order.position_effect != PositionEffect::UNDEFINED)) {
+    error = Error::INVALID_POSITION_EFFECT;
+  } else if (unlikely(
+        create_order.order_template.empty() == false &&
+        create_order.order_template.compare("default") != 0)) {
+    error = Error::INVALID_ORDER_TEMPLATE;
+  } else {
+    return true;
+  }
+  assert(error != Error::NONE);
+  _dispatcher.send_order_ack(
+      event,
+      error);
+  return false;
+}
+
+bool Gateway::validate(
+    const ModifyOrderEvent& event,
+    uint32_t gateway_order_id,
+    const std::string_view& external_order_id) {
+  auto& modify_order = event.modify_order;
+  auto error = Error::NONE;
+  if (unlikely(_gateway_status != GatewayStatus::READY)) {
+    error = Error::GATEWAY_NOT_READY;
+  } else if (unlikely(modify_order.account.compare(_account) != 0)) {
+    error = Error::INVALID_ACCOUNT;
+  } else {
+    return true;
+  }
+  assert(error != Error::NONE);
+  _dispatcher.send_order_ack(
+      event,
+      error,
+      gateway_order_id,
+      external_order_id);
+  return false;
+}
+
+bool Gateway::validate(
+    const CancelOrderEvent& event,
+    uint32_t gateway_order_id,
+    const std::string_view& external_order_id) {
+  auto& cancel_order = event.cancel_order;
+  auto error = Error::NONE;
+  if (unlikely(_gateway_status != GatewayStatus::READY)) {
+    error = Error::GATEWAY_NOT_READY;
+  } else if (unlikely(
+        cancel_order.account.compare(_account) != 0)) {
+    error = Error::INVALID_ACCOUNT;
+  } else {
+    return true;
+  }
+  assert(error != Error::NONE);
+  _dispatcher.send_order_ack(
+      event,
+      error,
+      gateway_order_id,
+      external_order_id);
+  return false;
 }
 
 decltype(Gateway::_order_mapping)::iterator

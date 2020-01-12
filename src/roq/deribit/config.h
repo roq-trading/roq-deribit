@@ -5,7 +5,6 @@
 #include <fmt/format.h>
 
 #include <iostream>
-#include <regex>
 #include <string>
 #include <string_view>
 #include <unordered_map>
@@ -51,7 +50,7 @@ class Config final
 
  public:
   std::vector<User> users;
-  std::vector<std::regex> symbols;
+  server::Symbols symbols;
   std::unordered_map<std::string, Account> accounts;
 };
 

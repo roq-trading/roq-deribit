@@ -20,6 +20,7 @@ std::string Config::get_account() const {
 }
 
 void Config::dispatch(server::Config::Handler& handler) const {
+  handler(symbols);
   for (auto iter : accounts)
     handler(iter.second);
   for (auto& user : users)
@@ -27,19 +28,17 @@ void Config::dispatch(server::Config::Handler& handler) const {
 }
 
 void Config::operator()(server::Symbols&& symbols) {
-  for (auto& iter_1 : symbols.regex) {
-    for (auto& iter_2 : iter_1.second) {
-      (*this).symbols.emplace_back(std::regex(iter_2));
-    }
-  }
+  (*this).symbols = std::move(symbols);
 }
 
 void Config::operator()(Account&& account) {
-  accounts.emplace(account.name, account);
+  accounts.emplace(
+      account.name,
+      std::move(account));
 }
 
 void Config::operator()(User&& user) {
-  users.emplace_back(user);
+  users.emplace_back(std::move(user));
 }
 
 void Config::operator()(
