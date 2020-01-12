@@ -105,6 +105,7 @@ void FIX::operator()(const TimerEvent& event) {
   switch (_state) {
     case State::READY:
       if (_next_heartbeat <= event.now) {
+        assert(FLAGS_ping_freq_secs > 0);
         _next_heartbeat = event.now +
           std::chrono::seconds{FLAGS_ping_freq_secs};
         send_test_request(core::get_system_clock());
@@ -283,8 +284,11 @@ void FIX::operator()(const core::net::Manager::Disconnected&) {
 
 void FIX::operator()(const core::net::Manager::Read& read) {
   auto length = read.buffer.length();
-  if (length) {
-    auto buffer = read.buffer.pullup(length);
+  if (length == 0)
+    return;
+  auto buffer = read.buffer.pullup(length);
+  decltype(length) total = 0;
+  for (;;) {
     // core::print_memory(buffer, length);  // DEBUG
     auto bytes = core::fix::Reader<fix::FIX_VERSION>::dispatch(
         [&](const core::fix::message_t& message) {
@@ -292,21 +296,28 @@ void FIX::operator()(const core::net::Manager::Read& read) {
             check(message.header);
             parse(message);
           } catch (std::exception&) {
-            core::print_memory(buffer, length);
-            core::print_string_with_escapes(buffer, length);
+            core::print_memory(
+                buffer,
+                length);
+            core::print_string_with_escapes(
+                buffer,
+                length);
             throw;
           }
         },
         buffer,
         length);
+    assert(bytes <= length);
     if (bytes == 0)
-      return;
-    /*
+      break;
+    total += bytes;
+    buffer += bytes;
+    length -= bytes;
     if (FLAGS_log_fix)
       core::print_string_with_escapes(buffer, bytes);  // DEBUG
-    */
-    read.buffer.drain(bytes);
   }
+  if (total)
+    read.buffer.drain(total);
 }
 
 void FIX::check(const core::fix::header_t& header) {
