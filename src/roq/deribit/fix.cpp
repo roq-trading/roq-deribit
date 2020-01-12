@@ -103,7 +103,6 @@ void FIX::operator()(const StopEvent&) {
 
 void FIX::operator()(const TimerEvent& event) {
   auto now = event.now;
-  _connection.refresh(now);
   switch (_state) {
     case State::READY:
       if (_next_heartbeat <= now) {
@@ -113,6 +112,7 @@ void FIX::operator()(const TimerEvent& event) {
       }
       break;
     default:
+      _connection.refresh(now);
       break;
   }
 }

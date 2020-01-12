@@ -94,8 +94,8 @@ void Gateway::operator()(const StopEvent& event) {
 }
 
 void Gateway::operator()(const TimerEvent& event) {
-  _base.loop(EVLOOP_NONBLOCK);
   _fix(event);
+  _base.loop(EVLOOP_NONBLOCK);
 }
 
 void Gateway::operator()(const ConnectionStatusEvent&) {
