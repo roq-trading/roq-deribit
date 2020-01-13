@@ -293,6 +293,7 @@ void FIX::operator()(const core::net::Manager::Disconnected&) {
   _msg_seq_num = 0;
   _their_msg_seq_num = 0;
   (*this)(State::DISCONNECTED);
+  ++_counter.disconnect;
 }
 
 void FIX::operator()(const core::net::Manager::Read& read) {
