@@ -126,8 +126,8 @@ class Gateway final : public server::Handler {
   // market data + order manager
   GatewayStatus _gateway_status = GatewayStatus::DISCONNECTED;
   // market data
-  std::vector<MBPUpdate> _bid, _ask;
-  std::vector<Trade> _trade;
+  core::page_aligned_vector<MBPUpdate> _bid, _ask;
+  core::page_aligned_vector<Trade> _trade;
   // order manager
   std::unordered_map<uint64_t, OrderMapping> _order_mapping;
   core::hash_map<std::string, uint64_t> _order_lookup;
@@ -137,6 +137,8 @@ class Gateway final : public server::Handler {
       const std::string_view& orig_cl_ord_id);
   decltype(_order_mapping)::iterator create_order_mapping(  // XXX move
       const fix::ExecutionReport& execution_report);
+
+  core::metrics::Profile _debug;
 };
 
 }  // namespace deribit

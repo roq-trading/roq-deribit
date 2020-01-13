@@ -78,7 +78,11 @@ Gateway::Gateway(
           _dns_base),
       _bid(FLAGS_max_depth),
       _ask(FLAGS_max_depth),
-      _trade(FLAGS_max_trades) {
+      _trade(FLAGS_max_trades),
+      _debug(
+          FLAGS_name,
+          "internal",
+          "debug") {
   LOG_IF(WARNING, FLAGS_cancel_on_disconnect == false)(
       "Orders will *NOT* be cancelled on disconnect");
 }
@@ -266,6 +270,7 @@ void Gateway::operator()(const CancelOrderEvent& event) {
 
 void Gateway::operator()(Metrics& metrics) {
   _fix(metrics);
+  // _debug.write(metrics);  // DEBUG
 }
 
 // fix
