@@ -6,8 +6,9 @@
 
 #include "roq/core/stack/buffer.h"
 
-#include "roq/core/metrics/profile.h"
+#include "roq/core/metrics/counter.h"
 #include "roq/core/metrics/latency.h"
+#include "roq/core/metrics/profile.h"
 
 #include "roq/core/event/base.h"
 #include "roq/core/event/dns_base.h"
@@ -178,6 +179,10 @@ class FIX final : public core::net::Manager::Handler {
   core::stack::Buffer<char, 32> _buffer;
   uint32_t _request_id = 0;
   // metrics
+  struct {
+    core::metrics::Counter
+      disconnect;
+  } _counter;
   struct {
     core::metrics::Profile
       parse,

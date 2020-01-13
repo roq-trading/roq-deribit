@@ -22,6 +22,14 @@ constexpr std::string_view LOGOUT_RESPONSE("LOGOUT");  // XXX
 
 constexpr std::string_view CONNECTION("fix");
 
+static auto create_counter(
+    const std::string_view& function) {
+  return core::metrics::Counter(
+      FLAGS_name,
+      CONNECTION,
+      function);
+}
+
 static auto create_profile(
     const std::string_view& function) {
   return core::metrics::Profile(
@@ -55,6 +63,9 @@ FIX::FIX(
           _connection_factory),
       _encode_buffer(FLAGS_encode_buffer_size),
       _decode_buffer(FLAGS_decode_buffer_size),
+      _counter {
+        .disconnect = create_counter("disconnect"),
+      },
       _profile {
         .parse = create_profile("parse"),
         .execution_report = create_profile("execution_report"),
@@ -182,6 +193,8 @@ void FIX::operator()(
 
 void FIX::operator()(Metrics& metrics) {
   metrics
+    // counter
+    .write(_counter.disconnect)
     // profile
     .write(_profile.parse)
     .write(_profile.execution_report)
