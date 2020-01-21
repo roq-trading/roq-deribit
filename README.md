@@ -1,1 +1,1 @@
-DERIBIT
+Deribit
