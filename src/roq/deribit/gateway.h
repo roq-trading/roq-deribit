@@ -64,7 +64,6 @@ class Gateway final : public server::Handler {
   void update(GatewayStatus gateway_status);
 
   void begin_download();
-
   void check_download();
 
   void download_securities();
@@ -137,8 +136,6 @@ class Gateway final : public server::Handler {
       const std::string_view& orig_cl_ord_id);
   decltype(_order_mapping)::iterator create_order_mapping(  // XXX move
       const fix::ExecutionReport& execution_report);
-
-  core::metrics::Profile _debug;
 };
 
 }  // namespace deribit

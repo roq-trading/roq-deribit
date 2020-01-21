@@ -78,11 +78,7 @@ Gateway::Gateway(
           _dns_base),
       _bid(FLAGS_max_depth),
       _ask(FLAGS_max_depth),
-      _trade(FLAGS_max_trades),
-      _debug(
-          FLAGS_name,
-          "internal",
-          "debug") {
+      _trade(FLAGS_max_trades) {
   LOG_IF(WARNING, FLAGS_cancel_on_disconnect == false)(
       "Orders will *NOT* be cancelled on disconnect");
 }
@@ -270,7 +266,6 @@ void Gateway::operator()(const CancelOrderEvent& event) {
 
 void Gateway::operator()(Metrics& metrics) {
   _fix(metrics);
-  // _debug.write(metrics);  // DEBUG
 }
 
 // fix
@@ -294,6 +289,22 @@ void Gateway::operator()(const FIX& fix) {
     reset();
   }
 }
+
+// execution_repot:
+//
+// mass_status_req_type  what
+// ----------------------------------------
+//   ORDERS                begin download
+//   *                     order update
+//
+// exec_type       ord_status          what
+// ------------------------------------------------------------------
+//   REJECTED        *                   ack failure
+//   CANCELED        *                   ack success + order update
+//   ORDER_STATUS    NEW                 ack success + order update
+//   ORDER_STATUS    PARTIALLY_FILLED    order update
+//   ORDER_STATUS    FILLED              order update
+//   ORDER_STATUS    CANCELED            ack success
 
 void Gateway::operator()(
     const fix::ExecutionReport& execution_report) {
@@ -499,7 +510,9 @@ void Gateway::operator()(
 void Gateway::operator()(
     const fix::MarketDataIncrementalRefresh& market_data_incremental_refresh) {
   assert(_gateway_status == GatewayStatus::READY);
-  // weirdness -- told them and they said they would investigate
+
+  // weirdness -- they send a bunch of empty messages
+  // ... told them and they said they would investigate
   if (unlikely(FLAGS_silence_empty_messages &&
         market_data_incremental_refresh.md_inc_grp.length == 0))
     return;
@@ -587,9 +600,6 @@ void Gateway::operator()(
   roq::span md_full_grp(
       market_data_snapshot_full_refresh.md_full_grp.items,
       market_data_snapshot_full_refresh.md_full_grp.length);
-  // auto& md_full_grp = market_data_snapshot_full_refresh.md_full_grp;
-  // for (size_t i = 0; i < md_full_grp.length; ++i) {
-  //   auto& item = md_full_grp.items[i];
   for (auto& item : md_full_grp) {
     switch (item.md_entry_type) {
       case core::fix::MDEntryType::BID: {
@@ -604,7 +614,6 @@ void Gateway::operator()(
         break;
     }
   }
-  // if (bid_length == 0 && ask_length == 0) return;  // TODO(thraneh): check roq-server support
   MarketByPrice market_by_price {
     .exchange = FLAGS_exchange,
     .symbol = market_data_snapshot_full_refresh.symbol,
