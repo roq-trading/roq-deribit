@@ -237,8 +237,9 @@ void FIX::send_logon() {
       "sending logon request (username=\"{}\")...",
       _access_key);
   auto sending_time = core::get_realtime_clock();
-  auto raw_data = Random::create_raw_data(sending_time);
-  auto password = Random::create_password(raw_data, _access_secret);
+  Random random(_access_secret);  // XXX allocation
+  auto raw_data = random.create_raw_data(sending_time);
+  auto password = random.create_password(raw_data);
   fix::Logon logon {
     .heart_bt_int = static_cast<uint16_t>(FLAGS_ping_freq_secs),
     .raw_data = raw_data,

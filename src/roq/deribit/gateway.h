@@ -8,8 +8,8 @@
 
 #include "roq/server.h"
 
-#include "roq/core/hash_map.h"
-#include "roq/core/hash_set.h"
+#include "roq/core/hash/map.h"
+#include "roq/core/hash/set.h"
 
 #include "roq/core/event/base.h"
 #include "roq/core/event/dns_base.h"
@@ -120,7 +120,7 @@ class Gateway final : public server::Handler {
   } _download = Download::NONE;
   uint32_t _download_execution_reports = 0;
   uint32_t _download_users = 0;
-  core::hash_set<std::string> _currencies;
+  core::hash::set<std::string> _currencies;
   std::vector<std::string> _symbols;
   // market data + order manager
   GatewayStatus _gateway_status = GatewayStatus::DISCONNECTED;
@@ -129,7 +129,7 @@ class Gateway final : public server::Handler {
   core::page_aligned_vector<Trade> _trade;
   // order manager
   std::unordered_map<uint64_t, OrderMapping> _order_mapping;
-  core::hash_map<std::string, uint64_t> _order_lookup;
+  core::hash::map<std::string, uint64_t> _order_lookup;
 
   decltype(_order_mapping)::iterator find_order_mapping(  // XXX move
       const std::string_view& cl_ord_id,
