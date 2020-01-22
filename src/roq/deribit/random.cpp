@@ -2,11 +2,13 @@
 
 #include "roq/deribit/random.h"
 
-#include <cinttypes>
+#include <fmt/format.h>
+
+// #include <cinttypes>
 
 #include <array>
 #include <random>
-#include <stdexcept>
+// #include <stdexcept>
 
 #include "roq/core/binascii/base64.h"
 
@@ -15,11 +17,10 @@
 namespace roq {
 namespace deribit {
 
-namespace {
 static std::random_device RANDOM_DEVICE;
 static std::uniform_int_distribution<uint32_t> DISTRIBUTION;
-constexpr auto RANDOM_BYTES = size_t{32};
-}  // namespace
+
+constexpr size_t RANDOM_BYTES = 32;
 
 Random::Random(const std::string_view& secret)
     : _secret(secret) {
@@ -27,23 +28,20 @@ Random::Random(const std::string_view& secret)
 
 std::string Random::create_raw_data(
     const std::chrono::nanoseconds now) {
-  char buffer[4096];  // XXX use array
-  for (size_t i = 0; i < (RANDOM_BYTES / 4); ++i) {
-    uint32_t value = DISTRIBUTION(RANDOM_DEVICE);
-    *reinterpret_cast<uint32_t *>(buffer + sizeof(uint32_t) * i) = value;
-  }
+  using value_type = decltype(DISTRIBUTION)::result_type;
+  constexpr auto n = RANDOM_BYTES / sizeof(value_type);
+  std::array<value_type, n> buffer;
+  for (size_t i = 0; i < n; ++i)
+    buffer[i] = DISTRIBUTION(RANDOM_DEVICE);
   auto nonce = core::binascii::Base64::encode(
-      buffer,
-      sizeof(uint32_t) * (RANDOM_BYTES / 4));
-  auto msecs = std::chrono::duration_cast<std::chrono::milliseconds>(
-      now).count();
-  snprintf(  // XXX use charconv
-      buffer,
-      std::size(buffer),
-      "%013" PRIu64 ".%s",
+      buffer.data(),
+      buffer.size() * sizeof(value_type));
+  auto msecs = std::chrono::duration_cast<
+    std::chrono::milliseconds>(now).count();
+  return fmt::format(
+      "{:013}.{}",
       msecs,
-      nonce.c_str());
-  return std::string(buffer, 14 + nonce.length());
+      nonce);
 }
 
 std::string Random::create_password(const std::string_view& raw_data) {
