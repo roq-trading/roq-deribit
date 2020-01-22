@@ -4,11 +4,8 @@
 
 #include <fmt/format.h>
 
-// #include <cinttypes>
-
 #include <array>
 #include <random>
-// #include <stdexcept>
 
 #include "roq/core/binascii/base64.h"
 
