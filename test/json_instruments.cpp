@@ -67,7 +67,8 @@ TEST(json_instrument, parse_message) {
 
   int results = 0, instruments = 0;
   core::json::Parser parser(message);
-  for (auto [key, value] : parser.root<core::json::object_t>()) {
+  auto root = parser.root();
+  for (auto [key, value] : std::get<core::json::object_t>(root)) {
     if (key.compare("result") == 0) {
       ++results;
       for (auto iter : std::get<core::json::array_t>(value)) {

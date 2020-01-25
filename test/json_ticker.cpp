@@ -41,7 +41,8 @@ TEST(json_ticker, parse_message) {
   R"(})";
   int results = 0;
   core::json::Parser parser(message);
-  for (auto [key, value] : parser.root<core::json::object_t>()) {
+  auto root = parser.root();
+  for (auto [key, value] : std::get<core::json::object_t>(root)) {
     if (key.compare("result") == 0) {
       ++results;
       json::Ticker ticker;
