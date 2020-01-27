@@ -1021,7 +1021,7 @@ inline void Gateway::enqueue(
     const T& value,
     bool is_last) {
   auto now = core::get_system_clock();
-  _dispatcher.enqueue(
+  _dispatcher(
       value,
       now,
       now,
@@ -1034,7 +1034,7 @@ inline void Gateway::enqueue(
     const T& value,
     bool is_last) {
   auto now = core::get_system_clock();
-  _dispatcher.enqueue(
+  _dispatcher(
       user_id,
       value,
       now,
