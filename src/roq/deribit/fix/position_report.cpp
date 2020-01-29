@@ -48,17 +48,11 @@ void PositionReport::parse(
       switch (field) {
         case core::fix::Field::NO_POSITIONS: {
           static_assert(has_field(core::fix::Field::NO_POSITIONS));
-          auto length = core::from_chars<uint32_t>(value);
-          if (length) {
-            ++iter;
-            if (iter == end)
-              throw core::fix::UnexpectedEndOfMessage();
-            core::fix::Array array(buffer, positions, length);
-            for (auto& item : array)
-              item.parse(iter, end);
-            continue;
-          }
-          break;
+          positions = core::fix::Array<decltype(positions)>::parse(
+              buffer,
+              iter,
+              end);
+          continue;  // note!
         }
         case core::fix::Field::POS_MAINT_RPT_ID:
           static_assert(has_field(core::fix::Field::POS_MAINT_RPT_ID));

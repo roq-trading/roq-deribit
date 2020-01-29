@@ -438,10 +438,7 @@ void Gateway::operator()(
         order_mapping.reset_request();
       }
       if (order_update) {
-        roq::span fills_grp(
-            execution_report.fills_grp.items,
-            execution_report.fills_grp.length);
-        for (auto& fills : fills_grp) {
+        for (auto& fills : execution_report.fills_grp) {
           // TODO(thraneh): map fill_exec_id <-> local_trade_id ???
           auto trade_id = _dispatcher.next_trade_id();
           TradeUpdate trade_update {
@@ -491,7 +488,7 @@ void Gateway::operator()(
             true);
 
       } else {
-        LOG_IF(FATAL, execution_report.fills_grp.length > 0)(
+        LOG_IF(FATAL, execution_report.fills_grp.size() > 0)(
             "DEBUG: UNEXPECTED");
       }
     }
@@ -514,15 +511,12 @@ void Gateway::operator()(
   // weirdness -- they send a bunch of empty messages
   // ... told them and they said they would investigate
   if (unlikely(FLAGS_silence_empty_messages &&
-        market_data_incremental_refresh.md_inc_grp.length == 0))
+        market_data_incremental_refresh.md_inc_grp.empty()))
     return;
 
   size_t bid_length = 0, ask_length = 0, trade_length = 0;
   std::chrono::nanoseconds exchange_time_utc = {};
-  roq::span md_inc_grp(
-      market_data_incremental_refresh.md_inc_grp.items,
-      market_data_incremental_refresh.md_inc_grp.length);
-  for (auto& item : md_inc_grp) {
+  for (auto& item : market_data_incremental_refresh.md_inc_grp) {
     if (item.md_entry_date > exchange_time_utc)
       exchange_time_utc = item.md_entry_date;
     switch (item.md_entry_type) {
@@ -597,10 +591,7 @@ void Gateway::operator()(
       "Market data snapshot symbol=\"{}\"",
       market_data_snapshot_full_refresh.symbol);
   size_t bid_length = 0, ask_length = 0;
-  roq::span md_full_grp(
-      market_data_snapshot_full_refresh.md_full_grp.items,
-      market_data_snapshot_full_refresh.md_full_grp.length);
-  for (auto& item : md_full_grp) {
+  for (auto& item : market_data_snapshot_full_refresh.md_full_grp) {
     switch (item.md_entry_type) {
       case core::fix::MDEntryType::BID: {
         mbp_update(_bid, bid_length, item);
@@ -688,10 +679,7 @@ void Gateway::operator()(
       switch (position_report.pos_req_type) {
         case core::fix::PosReqType::POSITIONS: {
           size_t position_count = 0;
-          roq::span positions(
-              position_report.positions.items,
-              position_report.positions.length);
-          for (auto& position : positions) {
+          for (auto& position : position_report.positions) {
             PositionUpdate buy {
               .account = _account,
               .exchange = FLAGS_exchange,
@@ -725,7 +713,7 @@ void Gateway::operator()(
           VLOG(1)(
               "- positions: {} (/{})",
               position_count,
-              position_report.positions.length);
+              position_report.positions.size());
           break;
         }
         default:
@@ -777,14 +765,11 @@ void Gateway::operator()(
     const fix::SecurityList& security_list) {
   assert(_gateway_status == GatewayStatus::DOWNLOADING);
   _currencies.clear();
-  if (security_list.instruments.length) {
+  if (security_list.instruments.size() > 0) {
     assert(_symbols.empty());
     size_t security_count = 0;
-    roq::span instruments(
-        security_list.instruments.items,
-        security_list.instruments.length);
-    _symbols.reserve(instruments.size());  // note! alloc
-    for (auto& instrument : instruments) {
+    _symbols.reserve(security_list.instruments.size());  // note! alloc
+    for (auto& instrument : security_list.instruments) {
       // note!
       //   USD will cause a Reject
       //   using commission currency because it requires funding
@@ -826,7 +811,7 @@ void Gateway::operator()(
     VLOG(1)(
         "- securities: {} (/{})",
         security_count,
-        security_list.instruments.length);
+        security_list.instruments.size());
   }
   check_download();
 }

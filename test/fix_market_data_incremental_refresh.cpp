@@ -29,9 +29,9 @@ TEST(fix_market_data_incremental_refresh, parse_message_1) {
         EXPECT_DOUBLE_EQ(result.deribit_mark_price, 10517.44);
         EXPECT_DOUBLE_EQ(result.open_interest, 9465994.0);
         EXPECT_EQ(result.md_req_id, "123");
-        EXPECT_EQ(result.md_inc_grp.length, size_t{1});
+        EXPECT_EQ(result.md_inc_grp.size(), size_t{1});
         // item 0
-        auto& item_0 = result.md_inc_grp.items[0];
+        auto& item_0 = result.md_inc_grp[0];
         EXPECT_EQ(item_0.md_update_action, core::fix::MDUpdateAction::NEW);
         EXPECT_EQ(item_0.md_entry_type, core::fix::MDEntryType::OFFER);
         EXPECT_DOUBLE_EQ(item_0.md_entry_px, 10523.0);
@@ -71,9 +71,9 @@ TEST(fix_market_data_incremental_refresh, parse_message_2) {
         EXPECT_EQ(message.header.msg_type, core::fix::MsgType::MARKET_DATA_INCREMENTAL_REFRESH);
         auto result = fix::MarketDataIncrementalRefresh::parse(message, decode_buffer);
         EXPECT_EQ(result.symbol, "BTC-27SEP19");
-        EXPECT_EQ(result.md_inc_grp.length, size_t{5});
+        EXPECT_EQ(result.md_inc_grp.size(), size_t{5});
         // item 0
-        auto& item_0 = result.md_inc_grp.items[0];
+        auto& item_0 = result.md_inc_grp[0];
         EXPECT_EQ(item_0.md_update_action, core::fix::MDUpdateAction::NEW);
         EXPECT_EQ(item_0.md_entry_type, core::fix::MDEntryType::TRADE);
         EXPECT_DOUBLE_EQ(item_0.md_entry_px, 10519.5);
@@ -87,7 +87,7 @@ TEST(fix_market_data_incremental_refresh, parse_message_2) {
         EXPECT_DOUBLE_EQ(item_0.index_price, 10445.93);
         EXPECT_EQ(item_0.text, "2889354");
         // item 1
-        auto& item_1 = result.md_inc_grp.items[1];
+        auto& item_1 = result.md_inc_grp[1];
         EXPECT_EQ(item_1.md_update_action, core::fix::MDUpdateAction::NEW);
         EXPECT_EQ(item_1.md_entry_type, core::fix::MDEntryType::TRADE);
         EXPECT_DOUBLE_EQ(item_1.md_entry_px, 10520.0);
@@ -101,7 +101,7 @@ TEST(fix_market_data_incremental_refresh, parse_message_2) {
         EXPECT_DOUBLE_EQ(item_1.index_price, 10445.93);
         EXPECT_EQ(item_1.text, "2889355");
         // item 2
-        auto& item_2 = result.md_inc_grp.items[2];
+        auto& item_2 = result.md_inc_grp[2];
         EXPECT_EQ(item_2.md_update_action, core::fix::MDUpdateAction::NEW);
         EXPECT_EQ(item_2.md_entry_type, core::fix::MDEntryType::TRADE);
         EXPECT_DOUBLE_EQ(item_2.md_entry_px, 10520.0);
@@ -115,7 +115,7 @@ TEST(fix_market_data_incremental_refresh, parse_message_2) {
         EXPECT_DOUBLE_EQ(item_2.index_price, 10445.93);
         EXPECT_EQ(item_2.text, "2889356");
         // item 3
-        auto& item_3 = result.md_inc_grp.items[3];
+        auto& item_3 = result.md_inc_grp[3];
         EXPECT_EQ(item_3.md_update_action, core::fix::MDUpdateAction::NEW);
         EXPECT_EQ(item_3.md_entry_type, core::fix::MDEntryType::TRADE);
         EXPECT_DOUBLE_EQ(item_3.md_entry_px, 10520.0);
@@ -129,7 +129,7 @@ TEST(fix_market_data_incremental_refresh, parse_message_2) {
         EXPECT_DOUBLE_EQ(item_3.index_price, 10445.93);
         EXPECT_EQ(item_3.text, "2889357");
         // item 4
-        auto& item_4 = result.md_inc_grp.items[4];
+        auto& item_4 = result.md_inc_grp[4];
         EXPECT_EQ(item_4.md_update_action, core::fix::MDUpdateAction::NEW);
         EXPECT_EQ(item_4.md_entry_type, core::fix::MDEntryType::TRADE);
         EXPECT_DOUBLE_EQ(item_4.md_entry_px, 10520.0);
@@ -165,9 +165,9 @@ TEST(fix_market_data_incremental_refresh, parse_message_3) {
         EXPECT_EQ(message.header.msg_type, core::fix::MsgType::MARKET_DATA_INCREMENTAL_REFRESH);
         auto result = fix::MarketDataIncrementalRefresh::parse(message, decode_buffer);
         EXPECT_EQ(result.symbol, "ETH-PERPETUAL");
-        EXPECT_EQ(result.md_inc_grp.length, size_t{1});
+        EXPECT_EQ(result.md_inc_grp.size(), size_t{1});
         // item 0
-        auto& item_0 = result.md_inc_grp.items[0];
+        auto& item_0 = result.md_inc_grp[0];
         EXPECT_EQ(item_0.md_update_action, core::fix::MDUpdateAction::NEW);
         EXPECT_EQ(item_0.md_entry_type, core::fix::MDEntryType::TRADE);
         EXPECT_DOUBLE_EQ(item_0.md_entry_px, 170.15);

@@ -17,107 +17,6 @@ namespace roq {
 namespace deribit {
 namespace fix {
 
-namespace {
-constexpr bool has_field_2(const core::fix::Field& field) {
-  return core::fix::MDFull::has_field(field);
-}
-}  // namespace
-
-namespace {
-bool update_md_full(
-    auto& result,
-    const auto& tag,
-    const auto& field,
-    const auto& value) {
-  try {
-    switch (field) {
-      // key
-      case core::fix::Field::MD_ENTRY_TYPE:
-        static_assert(has_field_2(core::fix::Field::MD_ENTRY_TYPE));
-        return false;  // break
-      // standard
-      case core::fix::Field::MD_ENTRY_DATE:
-        static_assert(has_field_2(core::fix::Field::MD_ENTRY_DATE));
-        core::fix::update(result.md_entry_date, value);
-        break;
-      case core::fix::Field::MD_ENTRY_PX:
-        static_assert(has_field_2(core::fix::Field::MD_ENTRY_PX));
-        core::fix::update(result.md_entry_px, value);
-        break;
-      case core::fix::Field::MD_ENTRY_SIZE:
-        static_assert(has_field_2(core::fix::Field::MD_ENTRY_SIZE));
-        core::fix::update(result.md_entry_size, value);
-        break;
-      case core::fix::Field::SECONDARY_ORDER_ID:
-        static_assert(has_field_2(core::fix::Field::SECONDARY_ORDER_ID));
-        core::fix::update(result.secondary_order_id, value);
-        break;
-      case core::fix::Field::TEXT:
-        static_assert(has_field_2(core::fix::Field::TEXT));
-        core::fix::update(result.text, value);
-        break;
-      /*
-      // non-standard
-      case core::fix::Field::MD_UPDATE_ACTION:
-        static_assert(!has_field_2(core::fix::Field::MD_UPDATE_ACTION));
-        return;
-      */
-      case core::fix::Field::ORD_STATUS:
-        static_assert(!has_field_2(core::fix::Field::ORD_STATUS));
-        core::fix::update(result.ord_status, value);
-        break;
-      case core::fix::Field::SIDE:
-        static_assert(!has_field_2(core::fix::Field::SIDE));
-        core::fix::update(result.side, value);
-        break;
-      default:
-        if (has_field_2(field))
-          break;
-        // deribit specific
-        switch (static_cast<Deribit>(tag)) {
-          case Deribit::LABEL:
-            core::fix::update(result.deribit_label, value);
-            break;
-          case Deribit::LIQUIDATION:
-            core::fix::update(result.deribit_liquidation, value);
-            break;
-          case Deribit::TRADE_ID:
-            core::fix::update(result.deribit_trade_id, value);
-            break;
-          default:
-            return false;
-        }
-    }
-    return true;
-  } catch (core::fix::Exception&) {
-    throw;
-  } catch (std::runtime_error& e) {
-    throw core::fix::ParseError(tag, value, e);
-  }
-}
-
-void parse_md_full(
-    MarketDataSnapshotFullRefresh::MDFullGrp& result,
-    core::fix::message_t::const_iterator& iter,
-    const core::fix::message_t::const_iterator& end) {
-  assert(iter != end);
-  new (&result) std::remove_reference<decltype(result)>::type {};
-  // key
-  auto& [tag, value] = *iter;
-  auto field = core::fix::parse_field(tag);
-  static_assert(core::fix::MDFull::key_field == core::fix::Field::MD_ENTRY_TYPE);
-  if (field != core::fix::MDFull::key_field)
-    throw core::fix::InvalidField(tag, value);
-  core::fix::update(result.md_entry_type, value);
-  for (++iter; iter != end; ++iter) {
-    auto& [tag, value] = *iter;
-    auto field = core::fix::parse_field(tag);
-    if (update_md_full(result, tag, field, value) == false)
-      return;
-  }
-}
-}  // namespace
-
 MarketDataSnapshotFullRefresh MarketDataSnapshotFullRefresh::parse(
     const core::fix::message_t& message,
     core::fix::Buffer& buffer) {
@@ -160,17 +59,11 @@ void MarketDataSnapshotFullRefresh::parse(
           break;
         case core::fix::Field::NO_MD_ENTRIES: {
           static_assert(has_field(core::fix::Field::NO_MD_ENTRIES));
-          auto length = core::from_chars<uint32_t>(value);
-          if (length) {
-            ++iter;
-            if (iter == end)
-              throw core::fix::UnexpectedEndOfMessage();
-            core::fix::Array array(buffer, md_full_grp, length);
-            for (auto& item : array)
-              parse_md_full(item, iter, end);
-            continue;  // iterator has already been advanced
-          }
-          break;
+          md_full_grp = core::fix::Array<decltype(md_full_grp)>::parse(
+              buffer,
+              iter,
+              end);
+          continue;  // note!
         }
         case core::fix::Field::SYMBOL:
           static_assert(has_field(core::fix::Field::SYMBOL));

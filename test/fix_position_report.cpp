@@ -29,8 +29,8 @@ TEST(fix_position_report, parse_message) {
         EXPECT_EQ(position_report.pos_req_id, "roq-pos-003");
         EXPECT_EQ(position_report.pos_req_type, core::fix::PosReqType::POSITIONS);
         EXPECT_EQ(position_report.pos_req_result, core::fix::PosReqResult::VALID);
-        EXPECT_EQ(position_report.positions.length, size_t{1});
-        auto& item = position_report.positions.items[0];
+        EXPECT_EQ(position_report.positions.size(), size_t{1});
+        auto& item = position_report.positions[0];
         EXPECT_DOUBLE_EQ(item.long_qty, 0.0);
         EXPECT_DOUBLE_EQ(item.short_qty, 0.0);
         EXPECT_EQ(item.symbol, "BTC-27SEP19");

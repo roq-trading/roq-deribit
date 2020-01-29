@@ -175,7 +175,7 @@ void BM_fix_market_data_snapshot_full_refresh_parse_message(benchmark::State& st
     core::fix::Reader<core::fix::Version::FIX_44>::dispatch(
         [&](const core::fix::message_t& message) {
           auto market_data = fix::MarketDataSnapshotFullRefresh::parse(message, decode_buffer);
-          if (market_data.md_full_grp.length > 0)
+          if (market_data.md_full_grp.size() > 0)
             ++processed;
         },
         MESSAGE,

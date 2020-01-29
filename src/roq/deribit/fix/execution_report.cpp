@@ -7,7 +7,6 @@
 #include "roq/core/fix/array.h"
 #include "roq/core/fix/exception.h"
 #include "roq/core/fix/execution_report.h"
-#include "roq/core/fix/fills.h"
 #include "roq/core/fix/utils.h"
 
 #include "roq/deribit/fix/deribit.h"
@@ -18,72 +17,10 @@ namespace deribit {
 namespace fix {
 
 namespace {
-constexpr bool has_field_2(const core::fix::Field& field) {
-  return core::fix::FillsGrp::has_field(field);
+constexpr bool has_field(const core::fix::Field& field) {
+  return core::fix::ExecutionReport::has_field(field);
 }
 }  // namespace
-
-namespace {
-bool update_fills(
-    auto& result,
-    const auto& tag,
-    const auto& field,
-    const auto& value) {
-  try {
-    switch (field) {
-      // key
-      case core::fix::Field::FILL_EXEC_ID:
-        static_assert(has_field_2(core::fix::Field::FILL_EXEC_ID));
-        return false;  // break
-      // standard
-      case core::fix::Field::FILL_PX:
-        static_assert(has_field_2(core::fix::Field::FILL_PX));
-        core::fix::update(result.fill_px, value);
-        break;
-      case core::fix::Field::FILL_QTY:
-        static_assert(has_field_2(core::fix::Field::FILL_QTY));
-        core::fix::update(result.fill_qty, value);
-        break;
-      case core::fix::Field::FILL_LIQUIDITY_IND:
-        static_assert(has_field_2(core::fix::Field::FILL_LIQUIDITY_IND));
-        core::fix::update(result.fill_liquidity_ind, value);
-        break;
-      default:
-        if (has_field_2(field))
-          break;
-        return false;
-    }
-    return true;
-  } catch (core::fix::Exception&) {
-    throw;
-  } catch (std::runtime_error& e) {
-    throw core::fix::ParseError(tag, value, e);
-  }
-}
-
-void parse_fills_grp(
-    ExecutionReport::FillsGrp& result,
-    core::fix::message_t::const_iterator& iter,
-    const core::fix::message_t::const_iterator& end) {
-  assert(iter != end);
-  new (&result) std::remove_reference<decltype(result)>::type {};
-  // key
-  auto& [tag, value] = *iter;
-  auto field = core::fix::parse_field(tag);
-  static_assert(core::fix::Fills::key_field == core::fix::Field::FILL_EXEC_ID);
-  if (field != core::fix::Fills::key_field)
-    throw core::fix::InvalidField(tag, value);
-  core::fix::update(result.fill_exec_id, value);
-  // remaining fields
-  for (++iter; iter != end; ++iter) {
-    auto& [tag, value] = *iter;
-    auto field = core::fix::parse_field(tag);
-    if (update_fills(result, tag, field, value) == false)
-      return;
-  }
-}
-}  // namespace
-
 
 ExecutionReport ExecutionReport::parse(
     const core::fix::message_t& message,
@@ -100,12 +37,6 @@ void ExecutionReport::parse(
   new (&result) std::remove_reference<decltype(result)>::type {};
   result.parse(message.begin(), message.end(), buffer);
 }
-
-namespace {
-constexpr bool has_field(const core::fix::Field& field) {
-  return core::fix::ExecutionReport::has_field(field);
-}
-}  // namespace
 
 void ExecutionReport::parse(
     core::fix::message_t::const_iterator&& iter,
@@ -166,17 +97,11 @@ void ExecutionReport::parse(
           break;
         case core::fix::Field::NO_FILLS: {
           static_assert(has_field(core::fix::Field::NO_FILLS));
-          auto length = core::from_chars<uint32_t>(value);
-          if (length) {
-            ++iter;
-            if (iter == end)
-              throw core::fix::UnexpectedEndOfMessage();
-            core::fix::Array array(buffer, fills_grp, length);
-            for (auto& item : array)
-              parse_fills_grp(item, iter, end);
-            continue;
-          }
-          break;
+          fills_grp = core::fix::Array<decltype(fills_grp)>::parse(
+              buffer,
+              iter,
+              end);
+          continue;  // note!
         }
         case core::fix::Field::ORD_REJ_REASON:
           static_assert(has_field(core::fix::Field::ORD_REJ_REASON));

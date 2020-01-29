@@ -16,14 +16,10 @@ namespace deribit {
 namespace fix {
 
 struct SecurityList final {
+  roq::span<Instrument const> instruments;
   std::string_view security_req_id;
   core::fix::SecurityRequestResult security_request_result = core::fix::SecurityRequestResult::UNKNOWN;
   std::string_view security_response_id;
-
-  struct {
-    Instrument *items = nullptr;
-    size_t length = 0;
-  } instruments;  // Instrument
 
   static SecurityList parse(
       const core::fix::message_t& message,
@@ -55,17 +51,14 @@ struct fmt::formatter<roq::deribit::fix::SecurityList> {
     return format_to(
         ctx.out(),
         "{{"
+        "instruments=[{}], "
         "security_req_id=\"{}\", "
         "security_request_result={}, "
-        "security_response_id=\"{}\", "
-        "instruments=[{}]"
+        "security_response_id=\"{}\""
         "}}",
+        fmt::join(value.instruments, ", "),
         value.security_req_id,
         value.security_request_result,
-        value.security_response_id,
-        fmt::join(
-            value.instruments.items,
-            value.instruments.items + value.instruments.length,
-            ", "));
+        value.security_response_id);
   }
 };

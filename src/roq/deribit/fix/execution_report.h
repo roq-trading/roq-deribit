@@ -14,6 +14,7 @@
 #include "roq/core/fix/reader.h"
 
 #include "roq/deribit/fix/deribit.h"
+#include "roq/deribit/fix/fill.h"
 
 namespace roq {
 namespace deribit {
@@ -28,12 +29,13 @@ struct ExecutionReport final {
   double cum_qty = std::numeric_limits<double>::quiet_NaN();
   std::string_view exec_inst;  // TODO(thraneh): MultipleCharValue
   core::fix::ExecType exec_type = core::fix::ExecType::UNKNOWN;
+  roq::span<Fill const> fills_grp;
   double last_px = std::numeric_limits<double>::quiet_NaN();
   double last_qty = std::numeric_limits<double>::quiet_NaN();
   double leaves_qty = std::numeric_limits<double>::quiet_NaN();
   std::string_view mass_status_req_id;
   double max_show = std::numeric_limits<double>::quiet_NaN();
-  core::fix::OrdRejReason ord_rej_reason;
+  core::fix::OrdRejReason ord_rej_reason = core::fix::OrdRejReason::UNKNOWN;
   core::fix::OrdStatus ord_status = core::fix::OrdStatus::UNKNOWN;
   core::fix::OrdType ord_type = core::fix::OrdType::UNKNOWN;
   std::string_view order_id;
@@ -48,25 +50,13 @@ struct ExecutionReport final {
   std::string_view symbol;
   std::string_view text;
   uint32_t tot_num_reports = 0;
-  std::chrono::nanoseconds transact_time;
+  std::chrono::nanoseconds transact_time = {};
   double volatility = std::numeric_limits<double>::quiet_NaN();
-  struct {
-    struct {
-      // standard
-      std::string_view fill_exec_id;
-      double fill_px = std::numeric_limits<double>::quiet_NaN();
-      double fill_qty = std::numeric_limits<double>::quiet_NaN();
-      core::fix::FillLiquidityInd fill_liquidity_ind = core::fix::FillLiquidityInd::UNKNOWN;
-    } *items = nullptr;
-    size_t length = 0;
-  } fills_grp;  // FillsGrp
   // non-standard
   core::fix::MassStatusReqType mass_status_req_type = core::fix::MassStatusReqType::UNKNOWN;
   // deribit specific
   AdvOrderType deribit_adv_order_type = AdvOrderType::UNKNOWN;
   std::string_view deribit_label;
-
-  using FillsGrp = std::remove_pointer<decltype(fills_grp.items)>::type;
 
   static ExecutionReport parse(
       const core::fix::message_t& message,
@@ -86,29 +76,6 @@ struct ExecutionReport final {
 }  // namespace fix
 }  // namespace deribit
 }  // namespace roq
-
-template <>
-struct fmt::formatter<roq::deribit::fix::ExecutionReport::FillsGrp> {
-  template <typename C>
-  constexpr auto parse(C& ctx) {
-    return ctx.begin();
-  }
-  template <typename C>
-  auto format(const roq::deribit::fix::ExecutionReport::FillsGrp& value, C& ctx) {
-    return format_to(
-        ctx.out(),
-        "{{"
-        "fill_exec_id=\"{}\", "
-        "fill_px={}, "
-        "fill_qty={}, "
-        "fill_liquidity_ind={}"
-        "}}",
-        value.fill_exec_id,
-        value.fill_px,
-        value.fill_qty,
-        value.fill_liquidity_ind);
-  }
-};
 
 template <>
 struct fmt::formatter<roq::deribit::fix::ExecutionReport> {
@@ -164,10 +131,7 @@ struct fmt::formatter<roq::deribit::fix::ExecutionReport> {
         value.cum_qty,
         value.exec_inst,
         value.exec_type,
-        fmt::join(
-            value.fills_grp.items,
-            value.fills_grp.items + value.fills_grp.length,
-            ", "),
+        fmt::join(value.fills_grp, ", "),
         value.leaves_qty,
         value.last_px,
         value.last_qty,

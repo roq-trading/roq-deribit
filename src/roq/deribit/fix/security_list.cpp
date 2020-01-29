@@ -49,17 +49,11 @@ void SecurityList::parse(
       switch (field) {
         case core::fix::Field::NO_RELATED_SYM: {
           static_assert(has_field(core::fix::Field::NO_RELATED_SYM));
-          auto length = core::from_chars<uint32_t>(value);
-          if (length) {
-            ++iter;
-            if (iter == end)
-              throw core::fix::UnexpectedEndOfMessage();
-            core::fix::Array array(buffer, instruments, length);
-            for (auto& item : array)
-              item.parse(iter, end);
-            continue;
-          }
-          break;
+          instruments = core::fix::Array<decltype(instruments)>::parse(
+              buffer,
+              iter,
+              end);
+          continue;  // note!
         }
         case core::fix::Field::SECURITY_REQ_ID:
           static_assert(has_field(core::fix::Field::SECURITY_REQ_ID));

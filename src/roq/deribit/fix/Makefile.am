@@ -10,6 +10,7 @@ libroq_deribit_fix_la_CPPFLAGS = \
 libroq_deribit_fix_la_SOURCES = \
 	deribit.cpp \
 	execution_report.cpp \
+	fill.cpp \
 	heartbeat.cpp \
 	instrument.cpp \
 	logon.cpp \
@@ -18,11 +19,13 @@ libroq_deribit_fix_la_SOURCES = \
 	market_data_request.cpp \
 	market_data_request_reject.cpp \
 	market_data_snapshot_full_refresh.cpp \
+	md_full.cpp \
+	md_inc.cpp \
 	new_order_single.cpp \
-	order_mass_status_request.cpp \
 	order_cancel_reject.cpp \
 	order_cancel_replace_request.cpp \
 	order_cancel_request.cpp \
+	order_mass_status_request.cpp \
 	position_qty.cpp \
 	position_report.cpp \
 	reject.cpp \

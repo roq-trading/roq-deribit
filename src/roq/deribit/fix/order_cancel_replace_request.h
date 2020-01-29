@@ -4,6 +4,8 @@
 
 #include <fmt/format.h>
 
+#include <limits>
+
 #include "roq/core/utils/message.h"
 
 #include "roq/core/fix/order_cancel_replace_request.h"
@@ -20,12 +22,12 @@ struct OrderCancelReplaceRequest final {
 
   const std::string_view cl_ord_id;
   const std::string_view orig_cl_ord_id;
-  const core::fix::Side side;
-  double order_qty;
-  const core::fix::OrdType ord_type;
-  double price;
+  const core::fix::Side side = core::fix::Side::UNKNOWN;
+  double order_qty = std::numeric_limits<double>::quiet_NaN();
+  const core::fix::OrdType ord_type = core::fix::OrdType::UNKNOWN;
+  double price = std::numeric_limits<double>::quiet_NaN();
   const std::string_view symbol;
-  std::chrono::nanoseconds transact_time;
+  std::chrono::nanoseconds transact_time = {};
 
   core::utils::Message encode(core::fix::Writer& writer) const;
 };

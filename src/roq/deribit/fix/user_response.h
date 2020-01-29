@@ -16,7 +16,7 @@ namespace fix {
 struct UserResponse final {
   std::string_view username;
   std::string_view user_request_id;
-  core::fix::UserStatus user_status;
+  core::fix::UserStatus user_status = core::fix::UserStatus::UNKNOWN;
   // non-standard
   std::string_view currency;
   // deribit specific

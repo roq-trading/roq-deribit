@@ -13,6 +13,8 @@
 #include "roq/core/fix/buffer.h"
 #include "roq/core/fix/reader.h"
 
+#include "roq/deribit/fix/md_full.h"
+
 namespace roq {
 namespace deribit {
 namespace fix {
@@ -20,27 +22,8 @@ namespace fix {
 struct MarketDataSnapshotFullRefresh final {
   // standard
   double contract_multiplier = std::numeric_limits<double>::quiet_NaN();
+  roq::span<MDFull const> md_full_grp;
   std::string_view md_req_id;
-  struct {
-    struct {
-      // standard
-      std::chrono::nanoseconds md_entry_date;
-      double md_entry_px = std::numeric_limits<double>::quiet_NaN();
-      double md_entry_size = std::numeric_limits<double>::quiet_NaN();
-      core::fix::MDEntryType md_entry_type;  // key
-      std::string_view secondary_order_id;
-      std::string_view text;
-      // non-standard
-      core::fix::MDUpdateAction md_update_action;
-      core::fix::OrdStatus ord_status;
-      core::fix::Side side;
-      // deribit specific
-      std::string_view deribit_label;
-      std::string_view deribit_liquidation;
-      uint64_t deribit_trade_id;
-    } *items = nullptr;
-    size_t length = 0;
-  } md_full_grp;  // MDFullGrp
   std::string_view symbol;
   // non-standard
   double open_interest = std::numeric_limits<double>::quiet_NaN();
@@ -49,8 +32,6 @@ struct MarketDataSnapshotFullRefresh final {
   // deribit specific
   double deribit_mark_price = std::numeric_limits<double>::quiet_NaN();
   double deribit_trade_volume_24h = std::numeric_limits<double>::quiet_NaN();
-
-  using MDFullGrp = std::remove_pointer<decltype(md_full_grp.items)>::type;
 
   static MarketDataSnapshotFullRefresh parse(
       const core::fix::message_t& message,
@@ -72,45 +53,6 @@ struct MarketDataSnapshotFullRefresh final {
 }  // namespace roq
 
 template <>
-struct fmt::formatter<roq::deribit::fix::MarketDataSnapshotFullRefresh::MDFullGrp> {
-  template <typename C>
-  constexpr auto parse(C& ctx) {
-    return ctx.begin();
-  }
-  template <typename C>
-  auto format(const roq::deribit::fix::MarketDataSnapshotFullRefresh::MDFullGrp& value, C& ctx) {
-    return format_to(
-        ctx.out(),
-        "{{"
-        "md_entry_date={}, "
-        "md_entry_px={}, "
-        "md_entry_size={}, "
-        "md_entry_type={}, "
-        "secondary_order_id=\"{}\", "
-        "text=\"{}\", "
-        "md_update_action={}, "
-        "ord_status={}, "
-        "side={}, "
-        "deribit_label=\"{}\", "
-        "deribit_liquidation={}, "
-        "deribit_trade_id={}"
-        "}}",
-        value.md_entry_date,
-        value.md_entry_px,
-        value.md_entry_size,
-        value.md_entry_type,
-        value.secondary_order_id,
-        value.text,
-        value.md_update_action,
-        value.ord_status,
-        value.side,
-        value.deribit_label,
-        value.deribit_liquidation,
-        value.deribit_trade_id);
-  }
-};
-
-template <>
 struct fmt::formatter<roq::deribit::fix::MarketDataSnapshotFullRefresh> {
   template <typename C>
   constexpr auto parse(C& ctx) {
@@ -122,8 +64,8 @@ struct fmt::formatter<roq::deribit::fix::MarketDataSnapshotFullRefresh> {
         ctx.out(),
         "{{"
         "contract_multiplier={}, "
-        "md_req_id=\"{}\", "
         "md_full_grp=[{}], "
+        "md_req_id=\"{}\", "
         "symbol=\"{}\", "
         // non-standard
         "open_interest={}, "
@@ -134,11 +76,8 @@ struct fmt::formatter<roq::deribit::fix::MarketDataSnapshotFullRefresh> {
         "deribit_trade_volume_24h={}"
         "}}",
         value.contract_multiplier,
+        fmt::join(value.md_full_grp, ", "),
         value.md_req_id,
-        fmt::join(
-            value.md_full_grp.items,
-            value.md_full_grp.items + value.md_full_grp.length,
-            ", "),
         value.symbol,
         // non-standard
         value.open_interest,
