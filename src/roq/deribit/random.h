@@ -17,9 +17,6 @@ class Random final {
   Random(const Random&) = delete;
   Random(Random&&) = delete;
 
-  void operator=(const Random&) = delete;
-  void operator=(Random&&) = delete;
-
   std::string create_raw_data(const std::chrono::nanoseconds now);
   std::string create_password(const std::string_view& raw_data);
 

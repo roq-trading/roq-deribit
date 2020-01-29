@@ -68,9 +68,6 @@ class FIX final : public core::net::Manager::Handler {
   FIX(const FIX&) = delete;
   FIX(FIX&&) = delete;
 
-  void operator=(const FIX&) = delete;
-  void operator=(FIX&&) = delete;
-
   bool ready() const;
 
   std::string_view next_request_id();
