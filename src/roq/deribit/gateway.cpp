@@ -17,7 +17,7 @@ namespace deribit {
 constexpr auto TOLERANCE = double{1.0e-10};
 
 template <typename T>
-static inline void mbp_update(
+static bool mbp_update(
     auto& data,
     size_t& offset,
     const T& item) {
@@ -41,12 +41,11 @@ static inline void mbp_update(
     .price = item.md_entry_px,
     .quantity = item.md_entry_size,
   };
-  if (offset >= data.size())
-    throw std::runtime_error("Not enough space");
+  return offset < data.size();
 }
 
 template <typename T>
-static inline void trade_update(
+static bool trade_update(
     auto& data,
     size_t& offset,
     const T& item) {
@@ -60,8 +59,7 @@ static inline void trade_update(
   item.deribit_trade_id.copy(
       trade.trade_id,
       sizeof(trade.trade_id));
-  if (offset >= data.size())
-    throw std::runtime_error("Not enough space");
+  return offset < data.size();
 }
 
 Gateway::Gateway(
@@ -507,29 +505,34 @@ void Gateway::operator()(
 void Gateway::operator()(
     const fix::MarketDataIncrementalRefresh& market_data_incremental_refresh) {
   assert(_gateway_status == GatewayStatus::READY);
-
-  // weirdness -- they send a bunch of empty messages
-  // ... told them and they said they would investigate
-  if (unlikely(FLAGS_silence_empty_messages &&
-        market_data_incremental_refresh.md_inc_grp.empty()))
-    return;
-
+  bool success = true;
   size_t bid_length = 0, ask_length = 0, trade_length = 0;
   std::chrono::nanoseconds exchange_time_utc = {};
   for (auto& item : market_data_incremental_refresh.md_inc_grp) {
-    if (item.md_entry_date > exchange_time_utc)
+    if (success == false)
+      break;
+    if (exchange_time_utc < item.md_entry_date)
       exchange_time_utc = item.md_entry_date;
     switch (item.md_entry_type) {
       case core::fix::MDEntryType::BID: {
-        mbp_update(_bid, bid_length, item);
+        success = mbp_update(
+            _bid,
+            bid_length,
+            item);
         break;
       }
       case core::fix::MDEntryType::OFFER: {
-        mbp_update(_ask, ask_length, item);
+        success = mbp_update(
+            _ask,
+            ask_length,
+            item);
         break;
       }
       case core::fix::MDEntryType::TRADE: {
-        trade_update(_trade, trade_length, item);
+        success = trade_update(
+            _trade,
+            trade_length,
+            item);
         break;
       }
       case core::fix::MDEntryType::INDEX_VALUE:
@@ -541,6 +544,14 @@ void Gateway::operator()(
         LOG(WARNING)("unsupported: {}", item);
         break;
     }
+  }
+  if (unlikely(success == false)) {
+    LOG(FATAL)(
+        "Insufficient bid/ask/trade array size(s): "
+        "len(bid)={}/{}, len(ask)={}/{}, len(trade)={}/{}",
+        bid_length, _bid.size(),
+        ask_length, _ask.size(),
+        trade_length, _trade.size());
   }
   if (bid_length > 0 || ask_length > 0) {
     MarketByPrice market_by_price {
