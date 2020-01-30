@@ -280,8 +280,11 @@ void FIX::send_test_request(std::chrono::nanoseconds now) {
 void FIX::operator()(State state) {
   auto previous = ready();
   _state = state;
-  if (ready() != previous)
+  if (ready() != previous) {
+    if (previous)
+      ++_counter.disconnect;
     _gateway(*this);
+  }
 }
 
 void FIX::operator()(const core::net::Manager::Connected&) {
@@ -294,7 +297,6 @@ void FIX::operator()(const core::net::Manager::Disconnected&) {
   _msg_seq_num = 0;
   _their_msg_seq_num = 0;
   (*this)(State::DISCONNECTED);
-  ++_counter.disconnect;
 }
 
 void FIX::operator()(const core::net::Manager::Read& read) {
