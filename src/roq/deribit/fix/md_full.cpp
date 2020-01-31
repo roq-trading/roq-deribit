@@ -9,6 +9,8 @@
 #include "roq/deribit/fix/deribit.h"
 #include "roq/deribit/fix/utils.h"
 
+#include "roq/logging.h"
+
 namespace roq {
 namespace deribit {
 namespace fix {
@@ -65,8 +67,10 @@ bool update(
         core::fix::update(result.side, value);
         break;
       default:
-        if (has_field(field))
+        if (has_field(field)) {
+          DLOG(FATAL)("Unexpected tag={} field={}", tag, field);
           break;
+        }
         // deribit specific
         switch (static_cast<Deribit>(tag)) {
           case Deribit::LABEL:

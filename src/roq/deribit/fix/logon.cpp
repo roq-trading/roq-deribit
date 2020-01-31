@@ -8,6 +8,8 @@
 #include "roq/deribit/fix/deribit.h"
 #include "roq/deribit/fix/utils.h"
 
+#include "roq/logging.h"
+
 namespace roq {
 namespace deribit {
 namespace fix {
@@ -61,8 +63,10 @@ void Logon::parse(
           core::fix::update(password, value);
           break;
         default:
-          if (has_field(field))
+          if (has_field(field)) {
+            DLOG(FATAL)("Unexpected tag={} field={}", tag, field);
             break;
+          }
           switch (static_cast<Deribit>(tag)) {
             case Deribit::CANCEL_ON_DISCONNECT:
               core::fix::update(deribit_cancel_on_disconnect, value);
@@ -71,6 +75,7 @@ void Logon::parse(
               core::fix::update(deribit_use_wordsafe_tags, value);
               break;
             default:
+              DLOG(FATAL)("Unknown tag={} field={}", tag, field);
               throw core::fix::InvalidField(tag, value);
           }
       }

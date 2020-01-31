@@ -12,6 +12,8 @@
 #include "roq/deribit/fix/deribit.h"
 #include "roq/deribit/fix/utils.h"
 
+#include "roq/logging.h"
+
 namespace roq {
 namespace deribit {
 namespace fix {
@@ -177,8 +179,10 @@ void ExecutionReport::parse(
           core::fix::update(mass_status_req_type, value);
           break;
         default:
-          if (has_field(field))
+          if (has_field(field)) {
+            DLOG(FATAL)("Unexpected tag={} field={}", tag, field);
             break;
+          }
           switch (static_cast<Deribit>(tag)) {
             case Deribit::ADV_ORDER_TYPE:
               update(deribit_adv_order_type, value);
@@ -187,6 +191,7 @@ void ExecutionReport::parse(
               core::fix::update(deribit_label, value);
               break;
             default:
+              DLOG(FATAL)("Unknown tag={} field={}", tag, field);
               throw core::fix::InvalidField(tag, value);
           }
       }

@@ -7,6 +7,8 @@
 
 #include "roq/deribit/fix/utils.h"
 
+#include "roq/logging.h"
+
 namespace roq {
 namespace deribit {
 namespace fix {
@@ -43,8 +45,11 @@ void Heartbeat::parse(
           core::fix::update(test_req_id, value);
           break;
         default:
-          if (has_field(field))
+          if (has_field(field)) {
+            DLOG(FATAL)("Unexpected tag={} field={}", tag, field);
             break;
+          }
+          DLOG(FATAL)("Unknown tag={} field={}", tag, field);
           throw core::fix::InvalidField(tag, value);
       }
     } catch (core::fix::Exception&) {

@@ -9,6 +9,8 @@
 #include "roq/deribit/fix/deribit.h"
 #include "roq/deribit/fix/utils.h"
 
+#include "roq/logging.h"
+
 namespace roq {
 namespace deribit {
 namespace fix {
@@ -72,8 +74,10 @@ bool update(
         core::fix::update(result.underlying_price, value);
         break;
       default:
-        if (has_field(field))
+        if (has_field(field)) {
+          DLOG(FATAL)("Unexpected tag={} field={}", tag, field);
           break;
+        }
         switch (static_cast<Deribit>(tag)) {
           case Deribit::LIQUIDATION_PRICE:
             core::fix::update(result.deribit_liquidation_price, value);

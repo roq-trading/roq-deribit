@@ -12,6 +12,8 @@
 
 #include "roq/deribit/fix/utils.h"
 
+#include "roq/logging.h"
+
 namespace roq {
 namespace deribit {
 namespace fix {
@@ -68,8 +70,11 @@ void SecurityList::parse(
           core::fix::update(security_response_id, value);
           break;
         default:
-          if (has_field(field))
+          if (has_field(field)) {
+            DLOG(FATAL)("Unexpected tag={} field={}", tag, field);
             break;
+          }
+          DLOG(FATAL)("Unknown tag={} field={}", tag, field);
           throw core::fix::InvalidField(tag, value);
       }
     } catch (core::fix::Exception&) {

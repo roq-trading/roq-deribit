@@ -12,6 +12,8 @@
 #include "roq/deribit/fix/deribit.h"
 #include "roq/deribit/fix/utils.h"
 
+#include "roq/logging.h"
+
 namespace roq {
 namespace deribit {
 namespace fix {
@@ -74,8 +76,10 @@ void MarketDataIncrementalRefresh::parse(
           core::fix::update(open_interest, value);
           break;
         default:
-          if (has_field(field))
+          if (has_field(field)) {
+            DLOG(FATAL)("Unexpected tag={} field={}", tag, field);
             break;
+          }
           // deribit specific
           switch (static_cast<Deribit>(tag)) {
             case Deribit::MARK_PRICE:
@@ -85,6 +89,7 @@ void MarketDataIncrementalRefresh::parse(
               core::fix::update(deribit_trade_volume_24h, value);
               break;
             default:
+              DLOG(FATAL)("Unknown tag={} field={}", tag, field);
               throw core::fix::InvalidField(tag, value);
           }
       }

@@ -8,6 +8,8 @@
 
 #include "roq/deribit/fix/utils.h"
 
+#include "roq/logging.h"
+
 namespace roq {
 namespace deribit {
 namespace fix {
@@ -46,8 +48,11 @@ void MarketDataRequestReject::parse(
           core::fix::update(text, value);
           break;
         default:
-          if (core::fix::MarketDataRequestReject::has_field(field))
+          if (core::fix::MarketDataRequestReject::has_field(field)) {
+            DLOG(FATAL)("Unexpected tag={} field={}", tag, field);
             break;
+          }
+          DLOG(FATAL)("Unknown tag={} field={}", tag, field);
           throw core::fix::InvalidField(tag, value);
       }
     } catch (core::fix::Exception&) {

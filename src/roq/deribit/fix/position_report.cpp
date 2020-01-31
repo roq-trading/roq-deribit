@@ -11,6 +11,8 @@
 
 #include "roq/deribit/fix/utils.h"
 
+#include "roq/logging.h"
+
 namespace roq {
 namespace deribit {
 namespace fix {
@@ -71,8 +73,11 @@ void PositionReport::parse(
           core::fix::update(pos_req_type, value);
           break;
         default:
-          if (has_field(field))
+          if (has_field(field)) {
+            DLOG(FATAL)("Unexpected tag={} field={}", tag, field);
             break;
+          }
+          DLOG(FATAL)("Unknown tag={} field={}", tag, field);
           throw core::fix::InvalidField(tag, value);
       }
     } catch (core::fix::Exception&) {

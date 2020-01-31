@@ -8,6 +8,8 @@
 
 #include "roq/deribit/fix/utils.h"
 
+#include "roq/logging.h"
+
 namespace roq {
 namespace deribit {
 namespace fix {
@@ -57,8 +59,10 @@ void UserResponse::parse(
           core::fix::update(currency, value);
           break;
         default:
-          if (has_field(field))
+          if (has_field(field)) {
+            DLOG(FATAL)("Unexpected tag={} field={}", tag, field);
             break;
+          }
           switch (static_cast<Deribit>(tag)) {
             case Deribit::MARGIN_BALANCE:
               core::fix::update(deribit_margin_balance, value);
@@ -85,6 +89,7 @@ void UserResponse::parse(
               core::fix::update(deribit_user_maintenance_margin, value);
               break;
             default:
+              DLOG(FATAL)("Unknown tag={} field={}", tag, field);
               throw core::fix::InvalidField(tag, value);
           }
       }
