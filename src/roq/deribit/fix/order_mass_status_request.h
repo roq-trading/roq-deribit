@@ -16,10 +16,16 @@ namespace deribit {
 namespace fix {
 
 struct OrderMassStatusRequest final {
-  static constexpr auto MSG_TYPE = core::fix::OrderMassStatusRequest::msg_type;
-
   std::string_view mass_status_req_id;
-  core::fix::MassStatusReqType mass_status_req_type = core::fix::MassStatusReqType::UNKNOWN;
+  core::fix::MassStatusReqType mass_status_req_type =
+    core::fix::MassStatusReqType::UNKNOWN;
+
+ public:
+  static constexpr auto msg_type = core::fix::OrderMassStatusRequest::msg_type;
+
+  OrderMassStatusRequest() = default;
+  OrderMassStatusRequest(OrderMassStatusRequest&&) = default;
+  OrderMassStatusRequest(const OrderMassStatusRequest&) = delete;
 
   core::utils::Message encode(core::fix::Writer& writer) const;
 };

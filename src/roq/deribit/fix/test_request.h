@@ -17,16 +17,16 @@ namespace deribit {
 namespace fix {
 
 struct TestRequest final {
-  static constexpr auto MSG_TYPE = core::fix::TestRequest::msg_type;
-
   std::string_view test_req_id;
 
-  static TestRequest parse(const core::fix::message_t& message);
-  static void parse(TestRequest&, const core::fix::message_t& message);
+ public:
+  static constexpr auto msg_type = core::fix::TestRequest::msg_type;
 
-  void parse(
-      core::fix::message_t::const_iterator&& iter,
-      const core::fix::message_t::const_iterator& end);
+  TestRequest() = default;
+  TestRequest(TestRequest&&) = default;
+  TestRequest(const TestRequest&) = delete;
+
+  static TestRequest create(const core::fix::message_t& message);
 
   core::utils::Message encode(core::fix::Writer& writer) const;
 };

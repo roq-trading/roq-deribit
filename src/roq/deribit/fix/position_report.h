@@ -23,18 +23,13 @@ struct PositionReport final {
   core::fix::PosReqResult pos_req_result = core::fix::PosReqResult::UNKNOWN;
   core::fix::PosReqType pos_req_type = core::fix::PosReqType::UNKNOWN;
 
-  static PositionReport parse(
-      const core::fix::message_t& message,
-      core::fix::Buffer& buffer);
+ public:
+  PositionReport() = default;
+  PositionReport(PositionReport&&) = default;
+  PositionReport(const PositionReport&) = delete;
 
-  static void parse(
-      PositionReport&,
+  static PositionReport create(
       const core::fix::message_t& message,
-      core::fix::Buffer& buffer);
-
-  void parse(
-      core::fix::message_t::const_iterator&& iter,
-      const core::fix::message_t::const_iterator& end,
       core::fix::Buffer& buffer);
 };
 

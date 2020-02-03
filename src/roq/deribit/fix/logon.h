@@ -16,8 +16,6 @@ namespace deribit {
 namespace fix {
 
 struct Logon final {
-  static constexpr auto MSG_TYPE = core::fix::Logon::msg_type;
-
   uint16_t heart_bt_int = 0;
   std::string_view raw_data;
   std::string_view username;
@@ -26,12 +24,14 @@ struct Logon final {
   bool deribit_cancel_on_disconnect = false;
   bool deribit_use_wordsafe_tags = false;
 
-  static Logon parse(const core::fix::message_t& message);
-  static void parse(Logon&, const core::fix::message_t& message);
+ public:
+  static constexpr auto msg_type = core::fix::Logon::msg_type;
 
-  void parse(
-      core::fix::message_t::const_iterator&& iter,
-      const core::fix::message_t::const_iterator& end);
+  Logon() = default;
+  Logon(Logon&&) = default;
+  Logon(const Logon&) = delete;
+
+  static Logon create(const core::fix::message_t& message);
 
   core::utils::Message encode(core::fix::Writer& writer) const;
 };

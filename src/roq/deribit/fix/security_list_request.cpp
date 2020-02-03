@@ -9,7 +9,9 @@ namespace fix {
 core::utils::Message SecurityListRequest::encode(
     core::fix::Writer& writer) const {
   return writer
-    .write(core::fix::Field::SECURITY_REQ_ID, security_req_id)
+    .write(
+        core::fix::Field::SECURITY_REQ_ID,
+        security_req_id)
     .write(
         core::fix::Field::SECURITY_LIST_REQUEST_TYPE,
         security_list_request_type)

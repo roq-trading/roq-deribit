@@ -21,7 +21,6 @@ namespace deribit {
 namespace fix {
 
 struct ExecutionReport final {
-  // standard?
   double avg_px = std::numeric_limits<double>::quiet_NaN();
   std::string_view cl_ord_id;
   double commission = std::numeric_limits<double>::quiet_NaN();
@@ -58,18 +57,13 @@ struct ExecutionReport final {
   AdvOrderType deribit_adv_order_type = AdvOrderType::UNKNOWN;
   std::string_view deribit_label;
 
-  static ExecutionReport parse(
-      const core::fix::message_t& message,
-      core::fix::Buffer& buffer);
+ public:
+  ExecutionReport() = default;
+  ExecutionReport(ExecutionReport&&) = default;
+  ExecutionReport(const ExecutionReport&) = delete;
 
-  static void parse(
-      ExecutionReport&,
+  static ExecutionReport create(
       const core::fix::message_t& message,
-      core::fix::Buffer& buffer);
-
-  void parse(
-      core::fix::message_t::const_iterator&& iter,
-      const core::fix::message_t::const_iterator& end,
       core::fix::Buffer& buffer);
 };
 

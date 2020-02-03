@@ -17,60 +17,50 @@ namespace roq {
 namespace deribit {
 namespace fix {
 
-PositionReport PositionReport::parse(
-    const core::fix::message_t& message,
-    core::fix::Buffer& buffer) {
-  PositionReport result;
-  parse(result, message, buffer);
-  return result;
-}
-
-void PositionReport::parse(
-    PositionReport& result,
-    const core::fix::message_t& message,
-    core::fix::Buffer& buffer) {
-  new (&result) std::remove_reference<decltype(result)>::type {};
-  result.parse(message.begin(), message.end(), buffer);
-}
-
 namespace {
-constexpr bool has_field(const core::fix::Field& field) {
+constexpr bool has_field(const auto& field) {
   return core::fix::PositionReport::has_field(field);
 }
-}  // namespace
 
-void PositionReport::parse(
-    core::fix::message_t::const_iterator&& iter,
-    const core::fix::message_t::const_iterator& end,
-    core::fix::Buffer& buffer) {
+template <auto field>
+constexpr void check_field() {
+  static_assert(has_field(field));
+}
+
+void update(
+    auto& result,
+    auto&& iter,
+    const auto& end,
+    auto& buffer) {
   while (iter != end) {
     auto& [tag, value] = *iter;
     auto field = core::fix::parse_field(tag);
     try {
       switch (field) {
         case core::fix::Field::NO_POSITIONS: {
-          static_assert(has_field(core::fix::Field::NO_POSITIONS));
-          positions = core::fix::Array<decltype(positions)>::parse(
-              buffer,
-              iter,
-              end);
+          check_field<core::fix::Field::NO_POSITIONS>();
+          result.positions =
+            core::fix::Array<decltype(result.positions)>::create(
+                buffer,
+                iter,
+                end);
           continue;  // note!
         }
         case core::fix::Field::POS_MAINT_RPT_ID:
-          static_assert(has_field(core::fix::Field::POS_MAINT_RPT_ID));
-          core::fix::update(pos_maint_rpt_id, value);
+          check_field<core::fix::Field::POS_MAINT_RPT_ID>();
+          core::fix::update(result.pos_maint_rpt_id, value);
           break;
         case core::fix::Field::POS_REQ_ID:
-          static_assert(has_field(core::fix::Field::POS_REQ_ID));
-          core::fix::update(pos_req_id, value);
+          check_field<core::fix::Field::POS_REQ_ID>();
+          core::fix::update(result.pos_req_id, value);
           break;
         case core::fix::Field::POS_REQ_RESULT:
-          static_assert(has_field(core::fix::Field::POS_REQ_RESULT));
-          core::fix::update(pos_req_result, value);
+          check_field<core::fix::Field::POS_REQ_RESULT>();
+          core::fix::update(result.pos_req_result, value);
           break;
         case core::fix::Field::POS_REQ_TYPE:
-          static_assert(has_field(core::fix::Field::POS_REQ_TYPE));
-          core::fix::update(pos_req_type, value);
+          check_field<core::fix::Field::POS_REQ_TYPE>();
+          core::fix::update(result.pos_req_type, value);
           break;
         default:
           if (has_field(field)) {
@@ -88,7 +78,19 @@ void PositionReport::parse(
     ++iter;
   }
 }
+}  // namespace
 
+PositionReport PositionReport::create(
+    const core::fix::message_t& message,
+    core::fix::Buffer& buffer) {
+  PositionReport result;
+  update(
+      result,
+      message.begin(),
+      message.end(),
+      buffer);
+  return result;
+}
 }  // namespace fix
 }  // namespace deribit
 }  // namespace roq

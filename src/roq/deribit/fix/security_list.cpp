@@ -18,56 +18,51 @@ namespace roq {
 namespace deribit {
 namespace fix {
 
-SecurityList SecurityList::parse(
-    const core::fix::message_t& message,
-    core::fix::Buffer& buffer) {
-  SecurityList result;
-  parse(result, message, buffer);
-  return result;
-}
-
-void SecurityList::parse(
-    SecurityList& result,
-    const core::fix::message_t& message,
-    core::fix::Buffer& buffer) {
-  new (&result) std::remove_reference<decltype(result)>::type {};
-  result.parse(message.begin(), message.end(), buffer);
-}
-
 namespace {
-constexpr bool has_field(const core::fix::Field& field) {
+constexpr bool has_field(const auto& field) {
   return core::fix::SecurityList::has_field(field);
 }
-}  // namespace
 
-void SecurityList::parse(
-    core::fix::message_t::const_iterator&& iter,
-    const core::fix::message_t::const_iterator& end,
-    core::fix::Buffer& buffer) {
+template <auto field>
+constexpr void check_field() {
+  static_assert(has_field(field));
+}
+
+template <auto field>
+constexpr void non_standard_field() {
+  static_assert(has_field(field) == false);
+}
+
+void update(
+    auto& result,
+    auto&& iter,
+    const auto& end,
+    auto& buffer) {
   while (iter != end) {
     auto& [tag, value] = *iter;
     try {
       auto field = core::fix::parse_field(tag);
       switch (field) {
         case core::fix::Field::NO_RELATED_SYM: {
-          static_assert(has_field(core::fix::Field::NO_RELATED_SYM));
-          instruments = core::fix::Array<decltype(instruments)>::parse(
-              buffer,
-              iter,
-              end);
+          check_field<core::fix::Field::NO_RELATED_SYM>();
+          result.instruments =
+            core::fix::Array<decltype(result.instruments)>::create(
+                buffer,
+                iter,
+                end);
           continue;  // note!
         }
         case core::fix::Field::SECURITY_REQ_ID:
-          static_assert(has_field(core::fix::Field::SECURITY_REQ_ID));
-          core::fix::update(security_req_id, value);
+          check_field<core::fix::Field::SECURITY_REQ_ID>();
+          core::fix::update(result.security_req_id, value);
           break;
         case core::fix::Field::SECURITY_REQUEST_RESULT:
-          static_assert(has_field(core::fix::Field::SECURITY_REQUEST_RESULT));
-          core::fix::update(security_request_result, value);
+          check_field<core::fix::Field::SECURITY_REQUEST_RESULT>();
+          core::fix::update(result.security_request_result, value);
           break;
         case core::fix::Field::SECURITY_RESPONSE_ID:
-          static_assert(has_field(core::fix::Field::SECURITY_RESPONSE_ID));
-          core::fix::update(security_response_id, value);
+          check_field<core::fix::Field::SECURITY_RESPONSE_ID>();
+          core::fix::update(result.security_response_id, value);
           break;
         default:
           if (has_field(field)) {
@@ -84,6 +79,19 @@ void SecurityList::parse(
     }
     ++iter;
   }
+}
+}  // namespace
+
+SecurityList SecurityList::create(
+    const core::fix::message_t& message,
+    core::fix::Buffer& buffer) {
+  SecurityList result;
+  update(
+      result,
+      message.begin(),
+      message.end(),
+      buffer);
+  return result;
 }
 
 }  // namespace fix

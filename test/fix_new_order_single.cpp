@@ -27,7 +27,7 @@ TEST(fix_new_order_single, create_message) {
   core::fix::Writer writer(
       buffer,
       core::fix::Version::FIX_44,
-      decltype(new_order_single)::MSG_TYPE,
+      decltype(new_order_single)::msg_type,
       "ROQ_TRADING",
       "DERIBITSERVER",
       msg_seq_num,

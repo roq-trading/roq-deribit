@@ -15,19 +15,19 @@ namespace deribit {
 namespace fix {
 
 struct Reject final {
-  static constexpr auto MSG_TYPE = core::fix::Reject::msg_type;
-
   uint64_t ref_seq_num = 0;
   uint32_t ref_tag_id = 0;
   std::string_view ref_msg_type;
   std::string_view text;
 
-  static Reject parse(const core::fix::message_t& message);
-  static void parse(Reject&, const core::fix::message_t& message);
+ public:
+  static constexpr auto msg_type = core::fix::Reject::msg_type;
 
-  void parse(
-      core::fix::message_t::const_iterator&& iter,
-      const core::fix::message_t::const_iterator& end);
+  Reject() = default;
+  Reject(Reject&&) = default;
+  Reject(const Reject&) = delete;
+
+  static Reject create(const core::fix::message_t& message);
 
   core::utils::Message encode(core::fix::Writer& writer) const;
 };

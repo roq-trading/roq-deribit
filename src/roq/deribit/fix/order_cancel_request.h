@@ -16,10 +16,16 @@ namespace deribit {
 namespace fix {
 
 struct OrderCancelRequest final {
-  static constexpr auto MSG_TYPE = core::fix::OrderCancelRequest::msg_type;
-
   std::string_view cl_ord_id;
   std::string_view orig_cl_ord_id;
+
+ public:
+  static constexpr auto msg_type =
+    core::fix::OrderCancelRequest::msg_type;
+
+  OrderCancelRequest() = default;
+  OrderCancelRequest(OrderCancelRequest&&) = default;
+  OrderCancelRequest(const OrderCancelRequest&) = delete;
 
   core::utils::Message encode(core::fix::Writer& writer) const;
 };

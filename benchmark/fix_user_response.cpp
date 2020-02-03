@@ -21,7 +21,7 @@ void BM_fix_user_response_parse_message(benchmark::State& state) {
   for (auto _ : state) {
     core::fix::Reader<core::fix::Version::FIX_44>::dispatch(
         [&](const core::fix::message_t& message) {
-          auto user_response = fix::UserResponse::parse(message);
+          auto user_response = fix::UserResponse::create(message);
           if (!user_response.user_request_id.empty())
             ++processed;
         },

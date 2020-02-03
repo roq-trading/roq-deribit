@@ -29,12 +29,12 @@ struct UserResponse final {
   double deribit_user_initial_margin = std::numeric_limits<double>::quiet_NaN();
   double deribit_user_maintenance_margin = std::numeric_limits<double>::quiet_NaN();
 
-  static UserResponse parse(const core::fix::message_t& message);
-  static void parse(UserResponse&, const core::fix::message_t& message);
+ public:
+  UserResponse() = default;
+  UserResponse(UserResponse&&) = default;
+  UserResponse(const UserResponse&) = delete;
 
-  void parse(
-      core::fix::message_t::const_iterator&& iter,
-      const core::fix::message_t::const_iterator& end);
+  static UserResponse create(const core::fix::message_t& message);
 };
 
 }  // namespace fix

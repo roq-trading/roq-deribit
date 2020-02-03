@@ -14,15 +14,17 @@ namespace fix {
 
 struct MarketDataRequestReject final {
   std::string_view md_req_id;
-  core::fix::MDReqRejReason md_req_rej_reason = core::fix::MDReqRejReason::UNKNOWN;
+  core::fix::MDReqRejReason md_req_rej_reason =
+    core::fix::MDReqRejReason::UNKNOWN;
   std::string_view text;
 
-  static MarketDataRequestReject parse(const core::fix::message_t& message);
-  static void parse(MarketDataRequestReject&, const core::fix::message_t& message);
+ public:
+  MarketDataRequestReject() = default;
+  MarketDataRequestReject(MarketDataRequestReject&&) = default;
+  MarketDataRequestReject(const MarketDataRequestReject&) = delete;
 
-  void parse(
-      core::fix::message_t::const_iterator&& iter,
-      const core::fix::message_t::const_iterator& end);
+  static MarketDataRequestReject create(
+      const core::fix::message_t& message);
 };
 
 }  // namespace fix

@@ -18,8 +18,6 @@ namespace deribit {
 namespace fix {
 
 struct NewOrderSingle final {
-  static constexpr auto MSG_TYPE = core::fix::NewOrderSingle::msg_type;
-
   std::string_view cl_ord_id;
   core::fix::Side side = core::fix::Side::UNKNOWN;
   double order_qty = std::numeric_limits<double>::quiet_NaN();
@@ -28,6 +26,13 @@ struct NewOrderSingle final {
   core::fix::OrdType ord_type = core::fix::OrdType::UNKNOWN;
   core::fix::TimeInForce time_in_force = core::fix::TimeInForce::UNKNOWN;
   std::string_view deribit_label;
+
+ public:
+  static constexpr auto msg_type = core::fix::NewOrderSingle::msg_type;
+
+  NewOrderSingle() = default;
+  NewOrderSingle(NewOrderSingle&&) = default;
+  NewOrderSingle(const NewOrderSingle&) = delete;
 
   core::utils::Message encode(core::fix::Writer& writer) const;
 };

@@ -20,7 +20,6 @@ namespace deribit {
 namespace fix {
 
 struct MarketDataSnapshotFullRefresh final {
-  // standard
   double contract_multiplier = std::numeric_limits<double>::quiet_NaN();
   roq::span<MDFull const> md_full_grp;
   std::string_view md_req_id;
@@ -33,18 +32,13 @@ struct MarketDataSnapshotFullRefresh final {
   double deribit_mark_price = std::numeric_limits<double>::quiet_NaN();
   double deribit_trade_volume_24h = std::numeric_limits<double>::quiet_NaN();
 
-  static MarketDataSnapshotFullRefresh parse(
-      const core::fix::message_t& message,
-      core::fix::Buffer& buffer);
+ public:
+  MarketDataSnapshotFullRefresh() = default;
+  MarketDataSnapshotFullRefresh(MarketDataSnapshotFullRefresh&&) = default;
+  MarketDataSnapshotFullRefresh(const MarketDataSnapshotFullRefresh&) = delete;
 
-  static void parse(
-      MarketDataSnapshotFullRefresh&,
+  static MarketDataSnapshotFullRefresh create(
       const core::fix::message_t& message,
-      core::fix::Buffer& buffer);
-
-  void parse(
-      core::fix::message_t::const_iterator&& iter,
-      const core::fix::message_t::const_iterator& end,
       core::fix::Buffer& buffer);
 };
 

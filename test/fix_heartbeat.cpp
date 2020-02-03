@@ -19,7 +19,7 @@ TEST(fix_heartbeat, parse_message) {
       [&](const core::fix::message_t& message) {
         ++results;
         EXPECT_EQ(message.header.msg_type, core::fix::MsgType::HEARTBEAT);
-        auto heartbeat = fix::Heartbeat::parse(message);
+        auto heartbeat = fix::Heartbeat::create(message);
         EXPECT_EQ(heartbeat.test_req_id, "anybody in there?");
       },
       message,

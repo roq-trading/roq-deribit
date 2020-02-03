@@ -21,7 +21,7 @@ TEST(fix_user_response, parse_message) {
       [&](const core::fix::message_t& message) {
         ++results;
         EXPECT_EQ(message.header.msg_type, core::fix::MsgType::USER_RESPONSE);
-        auto user_response = fix::UserResponse::parse(message);
+        auto user_response = fix::UserResponse::create(message);
         EXPECT_EQ(user_response.user_request_id, "123");
         EXPECT_EQ(user_response.username, "5MP40u9h");
         EXPECT_EQ(user_response.user_status, core::fix::UserStatus::LOGGED_IN);

@@ -16,11 +16,16 @@ namespace deribit {
 namespace fix {
 
 struct UserRequest final {
-  static constexpr auto MSG_TYPE = core::fix::UserRequest::msg_type;
-
   std::string_view user_request_id;
   std::string_view username;
   std::string_view currency;
+
+ public:
+  static constexpr auto msg_type = core::fix::UserRequest::msg_type;
+
+  UserRequest() = default;
+  UserRequest(UserRequest&&) = default;
+  UserRequest(const UserRequest&) = delete;
 
   core::utils::Message encode(core::fix::Writer& writer) const;
 };

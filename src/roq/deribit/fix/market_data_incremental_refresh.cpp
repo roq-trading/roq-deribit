@@ -18,32 +18,26 @@ namespace roq {
 namespace deribit {
 namespace fix {
 
-MarketDataIncrementalRefresh MarketDataIncrementalRefresh::parse(
-    const core::fix::message_t& message,
-    core::fix::Buffer& buffer) {
-  MarketDataIncrementalRefresh result;  // FIXME(thraneh): 2x init?
-  parse(result, message, buffer);
-  return result;
-}
-
-void MarketDataIncrementalRefresh::parse(
-    MarketDataIncrementalRefresh& result,
-    const core::fix::message_t& message,
-    core::fix::Buffer& buffer) {
-  new (&result) std::remove_reference<decltype(result)>::type {};
-  result.parse(message.begin(), message.end(), buffer);
-}
-
 namespace {
-constexpr bool has_field(const core::fix::Field& field) {
+constexpr bool has_field(const auto& field) {
   return core::fix::MarketDataIncrementalRefresh::has_field(field);
 }
-}  // namespace
 
-void MarketDataIncrementalRefresh::parse(
-    core::fix::message_t::const_iterator&& iter,
-    const core::fix::message_t::const_iterator& end,
-    core::fix::Buffer& buffer) {
+template <auto field>
+constexpr void check_field() {
+  static_assert(has_field(field));
+}
+
+template <auto field>
+constexpr void non_standard_field() {
+  static_assert(has_field(field) == false);
+}
+
+void update(
+    auto& result,
+    auto&& iter,
+    const auto& end,
+    auto& buffer) {
   while (iter != end) {
     auto& [tag, value] = *iter;
     try {
@@ -51,29 +45,30 @@ void MarketDataIncrementalRefresh::parse(
       switch (field) {
         // standard
         case core::fix::Field::CONTRACT_MULTIPLIER:
-          static_assert(has_field(core::fix::Field::CONTRACT_MULTIPLIER));
-          core::fix::update(contract_multiplier, value);
+          check_field<core::fix::Field::CONTRACT_MULTIPLIER>();
+          core::fix::update(result.contract_multiplier, value);
           break;
         case core::fix::Field::NO_MD_ENTRIES: {
-          static_assert(has_field(core::fix::Field::NO_MD_ENTRIES));
-          md_inc_grp = core::fix::Array<decltype(md_inc_grp)>::parse(
-              buffer,
-              iter,
-              end);
+          check_field<core::fix::Field::NO_MD_ENTRIES>();
+          result.md_inc_grp =
+            core::fix::Array<decltype(result.md_inc_grp)>::create(
+                buffer,
+                iter,
+                end);
           continue;  // note!
         }
         case core::fix::Field::MD_REQ_ID:
-          static_assert(has_field(core::fix::Field::MD_REQ_ID));
-          core::fix::update(md_req_id, value);
+          check_field<core::fix::Field::MD_REQ_ID>();
+          core::fix::update(result.md_req_id, value);
           break;
         case core::fix::Field::SYMBOL:
-          static_assert(has_field(core::fix::Field::SYMBOL));
-          core::fix::update(symbol, value);
+          check_field<core::fix::Field::SYMBOL>();
+          core::fix::update(result.symbol, value);
           break;
         // non-standard
         case core::fix::Field::OPEN_INTEREST:
-          static_assert(!has_field(core::fix::Field::OPEN_INTEREST));
-          core::fix::update(open_interest, value);
+          non_standard_field<core::fix::Field::OPEN_INTEREST>();
+          core::fix::update(result.open_interest, value);
           break;
         default:
           if (has_field(field)) {
@@ -83,10 +78,10 @@ void MarketDataIncrementalRefresh::parse(
           // deribit specific
           switch (static_cast<Deribit>(tag)) {
             case Deribit::MARK_PRICE:
-              core::fix::update(deribit_mark_price, value);
+              core::fix::update(result.deribit_mark_price, value);
               break;
             case Deribit::TRADE_VOLUME_24H:
-              core::fix::update(deribit_trade_volume_24h, value);
+              core::fix::update(result.deribit_trade_volume_24h, value);
               break;
             default:
               DLOG(FATAL)("Unknown tag={} field={}", tag, field);
@@ -100,6 +95,19 @@ void MarketDataIncrementalRefresh::parse(
     }
     ++iter;
   }
+}
+}  // namespace
+
+MarketDataIncrementalRefresh MarketDataIncrementalRefresh::create(
+    const core::fix::message_t& message,
+    core::fix::Buffer& buffer) {
+  MarketDataIncrementalRefresh result;
+  update(
+      result,
+      message.begin(),
+      message.end(),
+      buffer);
+  return result;
 }
 
 }  // namespace fix

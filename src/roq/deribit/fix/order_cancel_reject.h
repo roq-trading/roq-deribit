@@ -21,12 +21,12 @@ struct OrderCancelReject final {
   double avg_px = std::numeric_limits<double>::quiet_NaN();
   double leaves_qty = std::numeric_limits<double>::quiet_NaN();
 
-  static OrderCancelReject parse(const core::fix::message_t& message);
-  static void parse(OrderCancelReject&, const core::fix::message_t& message);
+ public:
+  OrderCancelReject() = default;
+  OrderCancelReject(OrderCancelReject&&) = default;
+  OrderCancelReject(const OrderCancelReject&) = delete;
 
-  void parse(
-      core::fix::message_t::const_iterator&& iter,
-      const core::fix::message_t::const_iterator& end);
+  static OrderCancelReject create(const core::fix::message_t& message);
 };
 
 }  // namespace fix

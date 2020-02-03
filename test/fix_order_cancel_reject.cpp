@@ -19,7 +19,7 @@ TEST(fix_order_cancel_reject, parse_message) {
       [&](const core::fix::message_t& message) {
         ++results;
         EXPECT_EQ(message.header.msg_type, core::fix::MsgType::ORDER_CANCEL_REJECT);
-        auto result = fix::OrderCancelReject::parse(message);
+        auto result = fix::OrderCancelReject::create(message);
         EXPECT_EQ(result.orig_cl_ord_id, "123");
         EXPECT_EQ(result.cl_ord_id, "345");
         EXPECT_EQ(result.ord_status, core::fix::OrdStatus::REJECTED);

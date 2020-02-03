@@ -16,14 +16,6 @@ namespace deribit {
 namespace fix {
 
 struct PositionQty final {
-  PositionQty(
-      core::fix::message_t::const_iterator& iter,
-      const core::fix::message_t::const_iterator& end);
-
-  PositionQty(const PositionQty&) = delete;
-  PositionQty(PositionQty&&) = delete;
-
-  // standard
   core::fix::PosType pos_type = core::fix::PosType::UNKNOWN;
   double long_qty = std::numeric_limits<double>::quiet_NaN();
   double short_qty = std::numeric_limits<double>::quiet_NaN();
@@ -38,6 +30,14 @@ struct PositionQty final {
   // deribit specific
   double deribit_liquidation_price = std::numeric_limits<double>::quiet_NaN();
   double deribit_size_in_currency = std::numeric_limits<double>::quiet_NaN();
+
+ public:
+  PositionQty(
+      core::fix::message_t::const_iterator& iter,
+      const core::fix::message_t::const_iterator& end);
+
+  PositionQty(PositionQty&&) = default;
+  PositionQty(const PositionQty&) = delete;
 };
 
 }  // namespace fix

@@ -26,7 +26,7 @@ void BM_fix_new_order_single_create_message(benchmark::State& state) {
     core::fix::Writer writer(
         buffer,
         core::fix::Version::FIX_44,
-        decltype(new_order_single)::MSG_TYPE,
+        decltype(new_order_single)::msg_type,
         "ROQ_TRADING",
         "DERIBITSERVER",
         msg_seq_num,

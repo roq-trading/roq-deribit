@@ -3,7 +3,7 @@
 #include <gtest/gtest.h>
 
 #include "roq/core/fix/reader.h"
-// #include "roq/core/debug.h"
+#include "roq/core/debug.h"
 
 #include "roq/deribit/fix/logon.h"
 
@@ -22,7 +22,7 @@ TEST(fix_logon, parse_message) {
       [&](const core::fix::message_t& message) {
         ++results;
         EXPECT_EQ(message.header.msg_type, core::fix::MsgType::LOGON);
-        auto result = fix::Logon::parse(message);
+        auto result = fix::Logon::create(message);
         EXPECT_EQ(result.heart_bt_int, uint32_t{10});
         EXPECT_EQ(result.raw_data, "1567874758168.y4/hA3i6qxm4yVL+3N7IrGcINVAFMLFhy4l7ATSehxc=");
         EXPECT_EQ(result.username, "5MP40u9h");
@@ -50,7 +50,7 @@ TEST(fix_logon, create_message) {
   core::fix::Writer writer(
       buffer,
       core::fix::Version::FIX_44,
-      decltype(logon)::MSG_TYPE,
+      decltype(logon)::msg_type,
       "ROQ_TRADING",
       "DERIBITSERVER",
       msg_seq_num,
@@ -58,11 +58,11 @@ TEST(fix_logon, create_message) {
   auto message = logon.encode(writer);
   // core::print_string_with_escapes(message.data(), message.length());
   constexpr auto expected =
-    "8=FIX.4.4\0019=0000205\00135=A\00149=ROQ_TRADING\00156=DERIBIT"
+    "8=FIX.4.4\0019=0000212\00135=A\00149=ROQ_TRADING\00156=DERIBIT"
     "SERVER\00134=1\00152=20190917-06:46:50.000\001108=10\00196=156"
     "7874758168.y4/hA3i6qxm4yVL+3N7IrGcINVAFMLFhy4l7ATSehxc=\001553"
     "=5MP40u9h\001554=j/tVe9IsQuc+RjegscnHcJ6czMVNM1+ib7vjbY3UV0M=\001"
-    "9001=Y\00110=010\001";
+    "9001=Y\0019002=N\00110=095\001";
   ASSERT_EQ(message.length(), std::strlen(expected));
   for (size_t i = 0; i < message.length(); ++i)
     EXPECT_EQ(

@@ -9,8 +9,12 @@ namespace fix {
 core::utils::Message RequestForPositions::encode(
     core::fix::Writer& writer) const {
   return writer
-    .write(core::fix::Field::POS_REQ_ID, pos_req_id)
-    .write(core::fix::Field::POS_REQ_TYPE, pos_req_type)
+    .write(
+        core::fix::Field::POS_REQ_ID,
+        pos_req_id)
+    .write(
+        core::fix::Field::POS_REQ_TYPE,
+        pos_req_type)
     .finish();
 }
 

@@ -14,54 +14,59 @@ namespace roq {
 namespace deribit {
 namespace fix {
 
-MarketDataRequestReject MarketDataRequestReject::parse(
-    const core::fix::message_t& message) {
-  MarketDataRequestReject result;
-  parse(result, message);
-  return result;
-}
-void MarketDataRequestReject::parse(
-    MarketDataRequestReject& result,
-    const core::fix::message_t& message) {
-  new (&result) std::remove_reference<decltype(result)>::type {};
-  result.parse(message.begin(), message.end());
+namespace {
+constexpr bool has_field(const auto& field) {
+  return core::fix::MarketDataRequestReject::has_field(field);
 }
 
-void MarketDataRequestReject::parse(
-    core::fix::message_t::const_iterator&& iter,
-    const core::fix::message_t::const_iterator& end) {
-  for (; iter != end; ++iter) {
-    auto& [tag, value] = *iter;
-    try {
-      auto field = core::fix::parse_field(tag);
-      switch (field) {
-        case core::fix::Field::MD_REQ_ID:
-          static_assert(core::fix::MarketDataRequestReject::has_field(core::fix::Field::MD_REQ_ID));
-          core::fix::update(md_req_id, value);
-          break;
-        case core::fix::Field::MD_REQ_REJ_REASON:
-          static_assert(core::fix::MarketDataRequestReject::has_field(core::fix::Field::MD_REQ_REJ_REASON));
-          core::fix::update(md_req_rej_reason, value);
-          break;
-        case core::fix::Field::TEXT:
-          static_assert(core::fix::MarketDataRequestReject::has_field(core::fix::Field::TEXT));
-          core::fix::update(text, value);
-          break;
-        default:
-          if (core::fix::MarketDataRequestReject::has_field(field)) {
-            DLOG(FATAL)("Unexpected tag={} field={}", tag, field);
-            break;
-          }
-          DLOG(FATAL)("Unknown tag={} field={}", tag, field);
-          throw core::fix::InvalidField(tag, value);
+template <auto field>
+constexpr void check_field() {
+  static_assert(has_field(field));
+}
+
+void update_field(
+    auto& result,
+    auto& iter) {
+  auto& [tag, value] = *iter;
+  try {
+    auto field = core::fix::parse_field(tag);
+    switch (field) {
+      case core::fix::Field::MD_REQ_ID:
+        check_field<core::fix::Field::MD_REQ_ID>();
+        core::fix::update(result.md_req_id, value);
+        break;
+      case core::fix::Field::MD_REQ_REJ_REASON:
+        check_field<core::fix::Field::MD_REQ_REJ_REASON>();
+        core::fix::update(result.md_req_rej_reason, value);
+        break;
+    case core::fix::Field::TEXT:
+        check_field<core::fix::Field::TEXT>();
+      core::fix::update(result.text, value);
+      break;
+    default:
+      if (has_field(field)) {
+        DLOG(FATAL)("Unexpected tag={} field={}", tag, field);
+        break;
       }
-    } catch (core::fix::Exception&) {
-      throw;
-    } catch (std::runtime_error& e) {
-      throw core::fix::ParseError(tag, value, e);
+      DLOG(FATAL)("Unknown tag={} field={}", tag, field);
+      throw core::fix::InvalidField(tag, value);
     }
+  } catch (core::fix::Exception&) {
+    throw;
+  } catch (std::runtime_error& e) {
+    throw core::fix::ParseError(tag, value, e);
   }
 }
+}  // namespace
+
+MarketDataRequestReject MarketDataRequestReject::create(
+    const core::fix::message_t& message) {
+  MarketDataRequestReject result;
+  for (auto iter = message.begin(); iter != message.end(); ++iter)
+    update_field(result, iter);
+  return result;
+}
+
 
 }  // namespace fix
 }  // namespace deribit

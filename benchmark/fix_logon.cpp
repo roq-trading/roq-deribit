@@ -21,7 +21,7 @@ void BM_fix_logon_parse_message(benchmark::State& state) {
   for (auto _ : state) {
     core::fix::Reader<core::fix::Version::FIX_44>::dispatch(
         [&](const core::fix::message_t& message) {
-          auto result = fix::Logon::parse(message);
+          auto result = fix::Logon::create(message);
           if (result.heart_bt_int > 0)
             ++processed;
         },
@@ -48,7 +48,7 @@ void BM_fix_logon_create_message(benchmark::State& state) {
     core::fix::Writer writer(
         buffer,
         core::fix::Version::FIX_44,
-        decltype(logon)::MSG_TYPE,
+        decltype(logon)::msg_type,
         "ROQ_TRADING",
         "DERIBITSERVER",
         msg_seq_num,

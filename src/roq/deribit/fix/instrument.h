@@ -16,13 +16,6 @@ namespace deribit {
 namespace fix {
 
 struct Instrument final {
-  Instrument(
-      core::fix::message_t::const_iterator& iter,
-      const core::fix::message_t::const_iterator& end);
-
-  Instrument(const Instrument&) = delete;
-  Instrument(Instrument&&) = delete;
-
   double contract_multiplier = std::numeric_limits<double>::quiet_NaN();
   std::chrono::nanoseconds issue_date = {};
   std::chrono::nanoseconds maturity_date = {};
@@ -43,6 +36,14 @@ struct Instrument final {
   std::string_view underlying_symbol;
   // deribit specific
   uint8_t deribit_instrument_price_precision = 0;
+
+ public:
+  Instrument(
+      core::fix::message_t::const_iterator& iter,
+      const core::fix::message_t::const_iterator& end);
+
+  Instrument(Instrument&&) = default;
+  Instrument(const Instrument&) = delete;
 };
 
 }  // namespace fix

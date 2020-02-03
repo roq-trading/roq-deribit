@@ -17,11 +17,21 @@ namespace deribit {
 namespace fix {
 
 namespace {
-constexpr bool has_field(const core::fix::Field& field) {
-  return core::fix::FillsGrp::has_field(field);
+constexpr bool has_field(const auto& field) {
+  return core::fix::Fills::has_field(field);
 }
 
-bool update(
+template <auto field>
+constexpr void check_field() {
+  static_assert(has_field(field));
+}
+
+template <auto field>
+constexpr void non_standard_field() {
+  static_assert(has_field(field) == false);
+}
+
+bool update_field(
     auto& result,
     const auto& tag,
     const auto& field,
@@ -30,19 +40,19 @@ bool update(
     switch (field) {
       // key
       case core::fix::Field::FILL_EXEC_ID:
-        static_assert(has_field(core::fix::Field::FILL_EXEC_ID));
+        check_field<core::fix::Field::FILL_EXEC_ID>();
         return false;  // break
       // standard
       case core::fix::Field::FILL_PX:
-        static_assert(has_field(core::fix::Field::FILL_PX));
+        check_field<core::fix::Field::FILL_PX>();
         core::fix::update(result.fill_px, value);
         break;
       case core::fix::Field::FILL_QTY:
-        static_assert(has_field(core::fix::Field::FILL_QTY));
+        check_field<core::fix::Field::FILL_QTY>();
         core::fix::update(result.fill_qty, value);
         break;
       case core::fix::Field::FILL_LIQUIDITY_IND:
-        static_assert(has_field(core::fix::Field::FILL_LIQUIDITY_IND));
+        check_field<core::fix::Field::FILL_LIQUIDITY_IND>();
         core::fix::update(result.fill_liquidity_ind, value);
         break;
       default:
@@ -78,8 +88,12 @@ Fill::Fill(
   for (++iter; iter != end; ++iter) {
     auto& [tag, value] = *iter;
     auto field = core::fix::parse_field(tag);
-    if (update(*this, tag, field, value) == false)
-      return;
+    if (update_field(
+          *this,
+          tag,
+          field,
+          value) == false)
+      break;
   }
 }
 

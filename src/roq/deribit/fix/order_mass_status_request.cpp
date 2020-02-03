@@ -9,8 +9,12 @@ namespace fix {
 core::utils::Message OrderMassStatusRequest::encode(
     core::fix::Writer& writer) const {
   return writer
-    .write(core::fix::Field::MASS_STATUS_REQ_ID, mass_status_req_id)
-    .write(core::fix::Field::MASS_STATUS_REQ_TYPE, mass_status_req_type)
+    .write(
+        core::fix::Field::MASS_STATUS_REQ_ID,
+        mass_status_req_id)
+    .write(
+        core::fix::Field::MASS_STATUS_REQ_TYPE,
+        mass_status_req_type)
     .finish();
 }
 

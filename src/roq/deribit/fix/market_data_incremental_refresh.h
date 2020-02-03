@@ -31,18 +31,13 @@ struct MarketDataIncrementalRefresh final {
   double deribit_mark_price = std::numeric_limits<double>::quiet_NaN();
   double deribit_trade_volume_24h = std::numeric_limits<double>::quiet_NaN();
 
-  static MarketDataIncrementalRefresh parse(
-      const core::fix::message_t& message,
-      core::fix::Buffer& buffer);
+ public:
+  MarketDataIncrementalRefresh() = default;
+  MarketDataIncrementalRefresh(MarketDataIncrementalRefresh&&) = default;
+  MarketDataIncrementalRefresh(const MarketDataIncrementalRefresh&) = delete;
 
-  static void parse(
-      MarketDataIncrementalRefresh&,
+  static MarketDataIncrementalRefresh create(
       const core::fix::message_t& message,
-      core::fix::Buffer& buffer);
-
-  void parse(
-      core::fix::message_t::const_iterator&& iter,
-      const core::fix::message_t::const_iterator& end,
       core::fix::Buffer& buffer);
 };
 

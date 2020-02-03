@@ -19,12 +19,17 @@ namespace deribit {
 namespace fix {
 
 struct MarketDataRequest final {
-  static constexpr auto MSG_TYPE = core::fix::MarketDataRequest::msg_type;
-
   std::string_view md_req_id;
   // optional -- single or list
   std::string_view symbol;
   std::vector<std::string_view> symbols;
+
+ public:
+  static constexpr auto msg_type = core::fix::MarketDataRequest::msg_type;
+
+  MarketDataRequest() = default;
+  MarketDataRequest(MarketDataRequest&&) = default;
+  MarketDataRequest(const MarketDataRequest&) = delete;
 
   core::utils::Message encode(core::fix::Writer& writer) const;
 };

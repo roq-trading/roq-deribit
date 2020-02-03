@@ -25,7 +25,7 @@ TEST(fix_execution_report, parse_message) {
       [&](const core::fix::message_t& message) {
         ++results;
         EXPECT_EQ(message.header.msg_type, core::fix::MsgType::EXECUTION_REPORT);
-        auto result = fix::ExecutionReport::parse(message, decode_buffer);
+        auto result = fix::ExecutionReport::create(message, decode_buffer);
         EXPECT_EQ(result.order_id, "2831903667");
         EXPECT_EQ(result.cl_ord_id, "2831903667");
         EXPECT_EQ(result.orig_cl_ord_id, "123");
@@ -66,7 +66,7 @@ TEST(fix_execution_report, parse_order_mass_status) {
       [&](const core::fix::message_t& message) {
         ++results;
         EXPECT_EQ(message.header.msg_type, core::fix::MsgType::EXECUTION_REPORT);
-        auto result = fix::ExecutionReport::parse(message, decode_buffer);
+        auto result = fix::ExecutionReport::create(message, decode_buffer);
         EXPECT_EQ(result.mass_status_req_id, "roq-oms-005");
         EXPECT_EQ(result.mass_status_req_type, core::fix::MassStatusReqType::ORDERS);
         EXPECT_EQ(result.tot_num_reports, uint32_t{1});
@@ -96,7 +96,7 @@ TEST(fix_execution_report, parse_fill) {
       [&](const core::fix::message_t& message) {
         ++results;
         EXPECT_EQ(message.header.msg_type, core::fix::MsgType::EXECUTION_REPORT);
-        auto result = fix::ExecutionReport::parse(message, decode_buffer);
+        auto result = fix::ExecutionReport::create(message, decode_buffer);
         EXPECT_EQ(result.order_id, "3026811591");
         EXPECT_EQ(result.cl_ord_id, "3026811591");
         EXPECT_EQ(result.orig_cl_ord_id, "roq:000000014");

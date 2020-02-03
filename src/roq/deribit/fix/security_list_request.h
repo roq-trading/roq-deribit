@@ -16,11 +16,16 @@ namespace deribit {
 namespace fix {
 
 struct SecurityListRequest final {
-  static constexpr auto MSG_TYPE = core::fix::SecurityListRequest::msg_type;
-
   std::string_view security_req_id;
   core::fix::SecurityListRequestType security_list_request_type =
     core::fix::SecurityListRequestType::ALL_SECURITIES;
+
+ public:
+  static constexpr auto msg_type = core::fix::SecurityListRequest::msg_type;
+
+  SecurityListRequest() = default;
+  SecurityListRequest(SecurityListRequest&&) = default;
+  SecurityListRequest(const SecurityListRequest&) = delete;
 
   core::utils::Message encode(core::fix::Writer& writer) const;
 };

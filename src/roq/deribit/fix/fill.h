@@ -14,17 +14,18 @@ namespace deribit {
 namespace fix {
 
 struct Fill final {
-  Fill(
-      core::fix::message_t::const_iterator& iter,
-      const core::fix::message_t::const_iterator& end);
-
-  Fill(const Fill&) = delete;
-  Fill(Fill&&) = delete;
-
   std::string_view fill_exec_id;
   double fill_px = std::numeric_limits<double>::quiet_NaN();
   double fill_qty = std::numeric_limits<double>::quiet_NaN();
   core::fix::FillLiquidityInd fill_liquidity_ind = core::fix::FillLiquidityInd::UNKNOWN;
+
+ public:
+  Fill(
+      core::fix::message_t::const_iterator& iter,
+      const core::fix::message_t::const_iterator& end);
+
+  Fill(Fill&&) = default;
+  Fill(const Fill&) = delete;
 };
 
 }  // namespace fix

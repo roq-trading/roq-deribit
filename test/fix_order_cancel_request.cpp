@@ -21,7 +21,7 @@ TEST(fix_order_cancel_request, create_message) {
   core::fix::Writer writer(
       buffer,
       core::fix::Version::FIX_44,
-      decltype(order_cancel_request)::MSG_TYPE,
+      decltype(order_cancel_request)::msg_type,
       "ROQ_TRADING",
       "DERIBITSERVER",
       msg_seq_num,

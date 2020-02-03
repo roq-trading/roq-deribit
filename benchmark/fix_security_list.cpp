@@ -1230,7 +1230,7 @@ void BM_fix_security_list_parse_message(benchmark::State& state) {
     core::fix::Buffer decode_buffer(buffer);
     core::fix::Reader<core::fix::Version::FIX_44>::dispatch(
         [&](const core::fix::message_t& message) {
-          auto security_list = fix::SecurityList::parse(message, decode_buffer);
+          auto security_list = fix::SecurityList::create(message, decode_buffer);
           if (security_list.instruments.size() > 0)
             ++processed;
         },

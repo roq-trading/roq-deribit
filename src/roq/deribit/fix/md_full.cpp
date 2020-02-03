@@ -16,11 +16,21 @@ namespace deribit {
 namespace fix {
 
 namespace {
-constexpr bool has_field(const core::fix::Field& field) {
+constexpr bool has_field(const auto& field) {
   return core::fix::MDFull::has_field(field);
 }
 
-bool update(
+template <auto field>
+constexpr void check_field() {
+  static_assert(has_field(field));
+}
+
+template <auto field>
+constexpr void non_standard_field() {
+  static_assert(has_field(field) == false);
+}
+
+bool update_field(
     auto& result,
     const auto& tag,
     const auto& field,
@@ -29,41 +39,41 @@ bool update(
     switch (field) {
       // key
       case core::fix::Field::MD_ENTRY_TYPE:
-        static_assert(has_field(core::fix::Field::MD_ENTRY_TYPE));
+        check_field<core::fix::Field::MD_ENTRY_TYPE>();
         return false;  // break
       // standard
       case core::fix::Field::MD_ENTRY_DATE:
-        static_assert(has_field(core::fix::Field::MD_ENTRY_DATE));
+        check_field<core::fix::Field::MD_ENTRY_DATE>();
         core::fix::update(result.md_entry_date, value);
         break;
       case core::fix::Field::MD_ENTRY_PX:
-        static_assert(has_field(core::fix::Field::MD_ENTRY_PX));
+        check_field<core::fix::Field::MD_ENTRY_PX>();
         core::fix::update(result.md_entry_px, value);
         break;
       case core::fix::Field::MD_ENTRY_SIZE:
-        static_assert(has_field(core::fix::Field::MD_ENTRY_SIZE));
+        check_field<core::fix::Field::MD_ENTRY_SIZE>();
         core::fix::update(result.md_entry_size, value);
         break;
       case core::fix::Field::SECONDARY_ORDER_ID:
-        static_assert(has_field(core::fix::Field::SECONDARY_ORDER_ID));
+        check_field<core::fix::Field::SECONDARY_ORDER_ID>();
         core::fix::update(result.secondary_order_id, value);
         break;
       case core::fix::Field::TEXT:
-        static_assert(has_field(core::fix::Field::TEXT));
+        check_field<core::fix::Field::TEXT>();
         core::fix::update(result.text, value);
         break;
-      /*
       // non-standard
+      /*
       case core::fix::Field::MD_UPDATE_ACTION:
-        static_assert(!has_field(core::fix::Field::MD_UPDATE_ACTION));
+        non_standard_field<core::fix::Field::MD_UPDATE_ACTION>();
         return;
       */
       case core::fix::Field::ORD_STATUS:
-        static_assert(!has_field(core::fix::Field::ORD_STATUS));
+        non_standard_field<core::fix::Field::ORD_STATUS>();
         core::fix::update(result.ord_status, value);
         break;
       case core::fix::Field::SIDE:
-        static_assert(!has_field(core::fix::Field::SIDE));
+        non_standard_field<core::fix::Field::SIDE>();
         core::fix::update(result.side, value);
         break;
       default:
@@ -112,8 +122,12 @@ MDFull::MDFull(
   for (++iter; iter != end; ++iter) {
     auto& [tag, value] = *iter;
     auto field = core::fix::parse_field(tag);
-    if (update(*this, tag, field, value) == false)
-      return;
+    if (update_field(
+          *this,
+          tag,
+          field,
+          value) == false)
+      break;
   }
 }
 

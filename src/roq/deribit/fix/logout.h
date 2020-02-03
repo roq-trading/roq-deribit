@@ -18,16 +18,16 @@ namespace deribit {
 namespace fix {
 
 struct Logout final {
-  static constexpr auto MSG_TYPE = core::fix::Logout::msg_type;
-
   std::string_view text;
 
-  static Logout parse(const core::fix::message_t& message);
-  static void parse(Logout&, const core::fix::message_t& message);
+ public:
+  static constexpr auto msg_type = core::fix::Logout::msg_type;
 
-  void parse(
-      core::fix::message_t::const_iterator&& iter,
-      const core::fix::message_t::const_iterator& end);
+  Logout() = default;
+  Logout(Logout&&) = default;
+  Logout(const Logout&) = delete;
+
+  static Logout create(const core::fix::message_t& message);
 
   core::utils::Message encode(core::fix::Writer& writer) const;
 };

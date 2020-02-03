@@ -17,14 +17,6 @@ namespace deribit {
 namespace fix {
 
 struct MDFull final {
-  MDFull(
-      core::fix::message_t::const_iterator& iter,
-      const core::fix::message_t::const_iterator& end);
-
-  MDFull(const MDFull&) = delete;
-  MDFull(MDFull&&) = delete;
-
-  // standard
   std::chrono::nanoseconds md_entry_date = {};
   double md_entry_px = std::numeric_limits<double>::quiet_NaN();
   double md_entry_size = std::numeric_limits<double>::quiet_NaN();
@@ -39,6 +31,14 @@ struct MDFull final {
   std::string_view deribit_label;
   std::string_view deribit_liquidation;
   uint64_t deribit_trade_id = 0;
+
+ public:
+  MDFull(
+      core::fix::message_t::const_iterator& iter,
+      const core::fix::message_t::const_iterator& end);
+
+  MDFull(MDFull&&) = default;
+  MDFull(const MDFull&) = delete;
 };
 
 }  // namespace fix

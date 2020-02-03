@@ -23,7 +23,7 @@ TEST(fix_market_data_incremental_refresh, parse_message_1) {
       [&](const core::fix::message_t& message) {
         ++results;
         EXPECT_EQ(message.header.msg_type, core::fix::MsgType::MARKET_DATA_INCREMENTAL_REFRESH);
-        auto result = fix::MarketDataIncrementalRefresh::parse(message, decode_buffer);
+        auto result = fix::MarketDataIncrementalRefresh::create(message, decode_buffer);
         EXPECT_EQ(result.symbol, "BTC-27SEP19");
         EXPECT_DOUBLE_EQ(result.deribit_trade_volume_24h, 10831047.0);
         EXPECT_DOUBLE_EQ(result.deribit_mark_price, 10517.44);
@@ -69,7 +69,7 @@ TEST(fix_market_data_incremental_refresh, parse_message_2) {
       [&](const core::fix::message_t& message) {
         ++results;
         EXPECT_EQ(message.header.msg_type, core::fix::MsgType::MARKET_DATA_INCREMENTAL_REFRESH);
-        auto result = fix::MarketDataIncrementalRefresh::parse(message, decode_buffer);
+        auto result = fix::MarketDataIncrementalRefresh::create(message, decode_buffer);
         EXPECT_EQ(result.symbol, "BTC-27SEP19");
         EXPECT_EQ(result.md_inc_grp.size(), size_t{5});
         // item 0
@@ -163,7 +163,7 @@ TEST(fix_market_data_incremental_refresh, parse_message_3) {
       [&](const core::fix::message_t& message) {
         ++results;
         EXPECT_EQ(message.header.msg_type, core::fix::MsgType::MARKET_DATA_INCREMENTAL_REFRESH);
-        auto result = fix::MarketDataIncrementalRefresh::parse(message, decode_buffer);
+        auto result = fix::MarketDataIncrementalRefresh::create(message, decode_buffer);
         EXPECT_EQ(result.symbol, "ETH-PERPETUAL");
         EXPECT_EQ(result.md_inc_grp.size(), size_t{1});
         // item 0

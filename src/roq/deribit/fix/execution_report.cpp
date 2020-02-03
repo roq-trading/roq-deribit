@@ -19,164 +19,159 @@ namespace deribit {
 namespace fix {
 
 namespace {
-constexpr bool has_field(const core::fix::Field& field) {
+constexpr bool has_field(const auto& field) {
   return core::fix::ExecutionReport::has_field(field);
 }
-}  // namespace
 
-ExecutionReport ExecutionReport::parse(
-    const core::fix::message_t& message,
-    core::fix::Buffer& buffer) {
-  ExecutionReport result;
-  parse(result, message, buffer);
-  return result;
+template <auto field>
+constexpr void check_field() {
+  static_assert(has_field(field));
 }
 
-void ExecutionReport::parse(
-    ExecutionReport& result,
-    const core::fix::message_t& message,
-    core::fix::Buffer& buffer) {
-  new (&result) std::remove_reference<decltype(result)>::type {};
-  result.parse(message.begin(), message.end(), buffer);
+template <auto field>
+constexpr void non_standard_field() {
+  static_assert(has_field(field) == false);
 }
 
-void ExecutionReport::parse(
-    core::fix::message_t::const_iterator&& iter,
-    const core::fix::message_t::const_iterator& end,
-    core::fix::Buffer& buffer) {
+void update(
+    auto& result,
+    auto&& iter,
+    const auto& end,
+    auto& buffer) {
   while (iter != end) {
     auto& [tag, value] = *iter;
     try {
       auto field = core::fix::parse_field(tag);
       switch (field) {
         case core::fix::Field::AVG_PX:
-          static_assert(has_field(core::fix::Field::AVG_PX));
-          core::fix::update(avg_px, value);
+          check_field<core::fix::Field::AVG_PX>();
+          core::fix::update(result.avg_px, value);
           break;
         case core::fix::Field::CL_ORD_ID:
-          static_assert(has_field(core::fix::Field::CL_ORD_ID));
-          core::fix::update(cl_ord_id, value);
+          check_field<core::fix::Field::CL_ORD_ID>();
+          core::fix::update(result.cl_ord_id, value);
           break;
         case core::fix::Field::COMMISSION:
-          static_assert(has_field(core::fix::Field::COMMISSION));
-          core::fix::update(commission, value);
+          check_field<core::fix::Field::COMMISSION>();
+          core::fix::update(result.commission, value);
           break;
         case core::fix::Field::CONTRACT_MULTIPLIER:
-          static_assert(has_field(core::fix::Field::CONTRACT_MULTIPLIER));
-          core::fix::update(contract_multiplier, value);
+          check_field<core::fix::Field::CONTRACT_MULTIPLIER>();
+          core::fix::update(result.contract_multiplier, value);
           break;
         case core::fix::Field::CUM_QTY:
-          static_assert(has_field(core::fix::Field::CUM_QTY));
-          core::fix::update(cum_qty, value);
+          check_field<core::fix::Field::CUM_QTY>();
+          core::fix::update(result.cum_qty, value);
           break;
         case core::fix::Field::EXEC_INST:
-          static_assert(has_field(core::fix::Field::EXEC_INST));
-          core::fix::update(exec_inst, value);
+          check_field<core::fix::Field::EXEC_INST>();
+          core::fix::update(result.exec_inst, value);
           break;
         case core::fix::Field::EXEC_TYPE:
-          static_assert(has_field(core::fix::Field::EXEC_TYPE));
-          core::fix::update(exec_type, value);
+          check_field<core::fix::Field::EXEC_TYPE>();
+          core::fix::update(result.exec_type, value);
           break;
         case core::fix::Field::LAST_PX:
-          static_assert(has_field(core::fix::Field::LAST_PX));
-          core::fix::update(last_px, value);
+          check_field<core::fix::Field::LAST_PX>();
+          core::fix::update(result.last_px, value);
           break;
         case core::fix::Field::LAST_QTY:
-          static_assert(has_field(core::fix::Field::LAST_QTY));
-          core::fix::update(last_qty, value);
+          check_field<core::fix::Field::LAST_QTY>();
+          core::fix::update(result.last_qty, value);
           break;
         case core::fix::Field::LEAVES_QTY:
-          static_assert(has_field(core::fix::Field::LEAVES_QTY));
-          core::fix::update(leaves_qty, value);
+          check_field<core::fix::Field::LEAVES_QTY>();
+          core::fix::update(result.leaves_qty, value);
           break;
         case core::fix::Field::MASS_STATUS_REQ_ID:
-          static_assert(has_field(core::fix::Field::MASS_STATUS_REQ_ID));
-          core::fix::update(mass_status_req_id, value);
+          check_field<core::fix::Field::MASS_STATUS_REQ_ID>();
+          core::fix::update(result.mass_status_req_id, value);
           break;
         case core::fix::Field::MAX_SHOW:
-          static_assert(has_field(core::fix::Field::MAX_SHOW));
-          core::fix::update(max_show, value);
+          check_field<core::fix::Field::MAX_SHOW>();
+          core::fix::update(result.max_show, value);
           break;
         case core::fix::Field::NO_FILLS: {
-          static_assert(has_field(core::fix::Field::NO_FILLS));
-          fills_grp = core::fix::Array<decltype(fills_grp)>::parse(
-              buffer,
-              iter,
-              end);
+          check_field<core::fix::Field::NO_FILLS>();
+          result.fills_grp =
+            core::fix::Array<decltype(result.fills_grp)>::create(
+                buffer,
+                iter,
+                end);
           continue;  // note!
         }
         case core::fix::Field::ORD_REJ_REASON:
-          static_assert(has_field(core::fix::Field::ORD_REJ_REASON));
-          core::fix::update(ord_rej_reason, value);
+          check_field<core::fix::Field::ORD_REJ_REASON>();
+          core::fix::update(result.ord_rej_reason, value);
           break;
         case core::fix::Field::ORD_STATUS:
-          static_assert(has_field(core::fix::Field::ORD_STATUS));
-          core::fix::update(ord_status, value);
+          check_field<core::fix::Field::ORD_STATUS>();
+          core::fix::update(result.ord_status, value);
           break;
         case core::fix::Field::ORD_TYPE:
-          static_assert(has_field(core::fix::Field::ORD_TYPE));
-          core::fix::update(ord_type, value);
+          check_field<core::fix::Field::ORD_TYPE>();
+          core::fix::update(result.ord_type, value);
           break;
         case core::fix::Field::ORDER_ID:
-          static_assert(has_field(core::fix::Field::ORDER_ID));
-          core::fix::update(order_id, value);
+          check_field<core::fix::Field::ORDER_ID>();
+          core::fix::update(result.order_id, value);
           break;
         case core::fix::Field::ORDER_QTY:
-          static_assert(has_field(core::fix::Field::ORDER_QTY));
-          core::fix::update(order_qty, value);
+          check_field<core::fix::Field::ORDER_QTY>();
+          core::fix::update(result.order_qty, value);
           break;
         case core::fix::Field::ORIG_CL_ORD_ID:
-          static_assert(has_field(core::fix::Field::ORIG_CL_ORD_ID));
-          core::fix::update(orig_cl_ord_id, value);
+          check_field<core::fix::Field::ORIG_CL_ORD_ID>();
+          core::fix::update(result.orig_cl_ord_id, value);
           break;
         case core::fix::Field::PEGGED_PRICE:
-          static_assert(has_field(core::fix::Field::PEGGED_PRICE));
-          core::fix::update(pegged_price, value);
+          check_field<core::fix::Field::PEGGED_PRICE>();
+          core::fix::update(result.pegged_price, value);
           break;
         case core::fix::Field::PRICE:
-          static_assert(has_field(core::fix::Field::PRICE));
-          core::fix::update(price, value);
+          check_field<core::fix::Field::PRICE>();
+          core::fix::update(result.price, value);
           break;
         case core::fix::Field::QTY_TYPE:
-          static_assert(has_field(core::fix::Field::QTY_TYPE));
-          core::fix::update(qty_type, value);
+          check_field<core::fix::Field::QTY_TYPE>();
+          core::fix::update(result.qty_type, value);
           break;
         case core::fix::Field::SECURITY_EXCHANGE:
-          static_assert(has_field(core::fix::Field::SECURITY_EXCHANGE));
-          core::fix::update(security_exchange, value);
+          check_field<core::fix::Field::SECURITY_EXCHANGE>();
+          core::fix::update(result.security_exchange, value);
           break;
         case core::fix::Field::SIDE:
-          static_assert(has_field(core::fix::Field::SIDE));
-          core::fix::update(side, value);
+          check_field<core::fix::Field::SIDE>();
+          core::fix::update(result.side, value);
           break;
         case core::fix::Field::STOP_PX:
-          static_assert(has_field(core::fix::Field::STOP_PX));
-          core::fix::update(stop_px, value);
+          check_field<core::fix::Field::STOP_PX>();
+          core::fix::update(result.stop_px, value);
           break;
         case core::fix::Field::SYMBOL:
-          static_assert(has_field(core::fix::Field::SYMBOL));
-          core::fix::update(symbol, value);
+          check_field<core::fix::Field::SYMBOL>();
+          core::fix::update(result.symbol, value);
           break;
         case core::fix::Field::TEXT:
-          static_assert(has_field(core::fix::Field::TEXT));
-          core::fix::update(text, value);
+          check_field<core::fix::Field::TEXT>();
+          core::fix::update(result.text, value);
           break;
         case core::fix::Field::TOT_NUM_REPORTS:
-          static_assert(has_field(core::fix::Field::TOT_NUM_REPORTS));
-          core::fix::update(tot_num_reports, value);
+          check_field<core::fix::Field::TOT_NUM_REPORTS>();
+          core::fix::update(result.tot_num_reports, value);
           break;
         case core::fix::Field::TRANSACT_TIME:
-          static_assert(has_field(core::fix::Field::TRANSACT_TIME));
-          core::fix::update(transact_time, value);
+          check_field<core::fix::Field::TRANSACT_TIME>();
+          core::fix::update(result.transact_time, value);
           break;
         case core::fix::Field::VOLATILITY:
-          static_assert(has_field(core::fix::Field::VOLATILITY));
-          core::fix::update(volatility, value);
+          check_field<core::fix::Field::VOLATILITY>();
+          core::fix::update(result.volatility, value);
           break;
         // non-standard
         case core::fix::Field::MASS_STATUS_REQ_TYPE:
-          static_assert(!has_field(core::fix::Field::MASS_STATUS_REQ_TYPE));
-          core::fix::update(mass_status_req_type, value);
+          non_standard_field<core::fix::Field::MASS_STATUS_REQ_TYPE>();
+          core::fix::update(result.mass_status_req_type, value);
           break;
         default:
           if (has_field(field)) {
@@ -185,10 +180,10 @@ void ExecutionReport::parse(
           }
           switch (static_cast<Deribit>(tag)) {
             case Deribit::ADV_ORDER_TYPE:
-              update(deribit_adv_order_type, value);
+              update(result.deribit_adv_order_type, value);
               break;
             case Deribit::LABEL:
-              core::fix::update(deribit_label, value);
+              core::fix::update(result.deribit_label, value);
               break;
             default:
               DLOG(FATAL)("Unknown tag={} field={}", tag, field);
@@ -202,6 +197,19 @@ void ExecutionReport::parse(
     }
     ++iter;
   }
+}
+}  // namespace
+
+ExecutionReport ExecutionReport::create(
+    const core::fix::message_t& message,
+    core::fix::Buffer& buffer) {
+  ExecutionReport result;
+  update(
+      result,
+      message.begin(),
+      message.end(),
+      buffer);
+  return result;
 }
 
 }  // namespace fix

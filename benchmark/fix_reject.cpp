@@ -19,7 +19,7 @@ void BM_fix_reject_parse_message(benchmark::State& state) {
   for (auto _ : state) {
     core::fix::Reader<core::fix::Version::FIX_44>::dispatch(
         [&](const core::fix::message_t& message) {
-          auto reject = fix::Reject::parse(message);
+          auto reject = fix::Reject::create(message);
           if (!reject.text.empty())
             ++processed;
         },

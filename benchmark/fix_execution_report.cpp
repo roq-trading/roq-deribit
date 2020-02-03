@@ -25,7 +25,7 @@ void BM_fix_execution_report_parse_message(benchmark::State& state) {
     core::fix::Buffer decode_buffer(buffer);
     core::fix::Reader<core::fix::Version::FIX_44>::dispatch(
         [&](const core::fix::message_t& message) {
-          auto result = fix::ExecutionReport::parse(message, decode_buffer);
+          auto result = fix::ExecutionReport::create(message, decode_buffer);
           if (!result.order_id.empty())
             ++processed;
         },

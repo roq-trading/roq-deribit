@@ -16,10 +16,15 @@ namespace deribit {
 namespace fix {
 
 struct RequestForPositions final {
-  static constexpr auto MSG_TYPE = core::fix::RequestForPositions::msg_type;
-
   std::string_view pos_req_id;
   core::fix::PosReqType pos_req_type = core::fix::PosReqType::UNKNOWN;
+
+ public:
+  static constexpr auto msg_type = core::fix::RequestForPositions::msg_type;
+
+  RequestForPositions() = default;
+  RequestForPositions(RequestForPositions&&) = default;
+  RequestForPositions(const RequestForPositions&) = delete;
 
   core::utils::Message encode(core::fix::Writer& writer) const;
 };

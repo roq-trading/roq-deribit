@@ -18,21 +18,17 @@ namespace fix {
 struct SecurityList final {
   roq::span<Instrument const> instruments;
   std::string_view security_req_id;
-  core::fix::SecurityRequestResult security_request_result = core::fix::SecurityRequestResult::UNKNOWN;
+  core::fix::SecurityRequestResult security_request_result =
+    core::fix::SecurityRequestResult::UNKNOWN;
   std::string_view security_response_id;
 
-  static SecurityList parse(
-      const core::fix::message_t& message,
-      core::fix::Buffer& buffer);
+ public:
+  SecurityList() = default;
+  SecurityList(SecurityList&&) = default;
+  SecurityList(const SecurityList&) = delete;
 
-  static void parse(
-      SecurityList&,
+  static SecurityList create(
       const core::fix::message_t& message,
-      core::fix::Buffer& buffer);
-
-  void parse(
-      core::fix::message_t::const_iterator&& iter,
-      const core::fix::message_t::const_iterator& end,
       core::fix::Buffer& buffer);
 };
 

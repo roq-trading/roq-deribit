@@ -19,7 +19,7 @@ TEST(fix_logout, parse_message) {
       [&](const core::fix::message_t& message) {
         ++results;
         EXPECT_EQ(message.header.msg_type, core::fix::MsgType::LOGOUT);
-        auto logout = fix::Logout::parse(message);
+        auto logout = fix::Logout::create(message);
         EXPECT_EQ(logout.text, "invalid_credentials");
       },
       message,

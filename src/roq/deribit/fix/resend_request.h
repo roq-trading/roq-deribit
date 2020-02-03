@@ -16,12 +16,12 @@ struct ResendRequest final {
   uint64_t begin_seq_no = 0;
   uint64_t end_seq_no = 0;
 
-  static ResendRequest parse(const core::fix::message_t& message);
-  static void parse(ResendRequest&, const core::fix::message_t& message);
+ public:
+  ResendRequest() = default;
+  ResendRequest(ResendRequest&&) = default;
+  ResendRequest(const ResendRequest&) = delete;
 
-  void parse(
-      core::fix::message_t::const_iterator&& iter,
-      const core::fix::message_t::const_iterator& end);
+  static ResendRequest create(const core::fix::message_t& message);
 };
 
 }  // namespace fix

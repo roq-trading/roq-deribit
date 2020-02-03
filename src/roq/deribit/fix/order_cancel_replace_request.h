@@ -18,8 +18,6 @@ namespace deribit {
 namespace fix {
 
 struct OrderCancelReplaceRequest final {
-  static constexpr auto MSG_TYPE = core::fix::OrderCancelReplaceRequest ::msg_type;
-
   const std::string_view cl_ord_id;
   const std::string_view orig_cl_ord_id;
   const core::fix::Side side = core::fix::Side::UNKNOWN;
@@ -28,6 +26,14 @@ struct OrderCancelReplaceRequest final {
   double price = std::numeric_limits<double>::quiet_NaN();
   const std::string_view symbol;
   std::chrono::nanoseconds transact_time = {};
+
+ public:
+  static constexpr auto msg_type =
+    core::fix::OrderCancelReplaceRequest ::msg_type;
+
+  OrderCancelReplaceRequest() = default;
+  OrderCancelReplaceRequest(OrderCancelReplaceRequest&&) = default;
+  OrderCancelReplaceRequest(const OrderCancelReplaceRequest&) = delete;
 
   core::utils::Message encode(core::fix::Writer& writer) const;
 };

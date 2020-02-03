@@ -19,7 +19,7 @@ void BM_fix_market_data_request_reject_parse_message(benchmark::State& state) {
   for (auto _ : state) {
     core::fix::Reader<core::fix::Version::FIX_44>::dispatch(
         [&](const core::fix::message_t& message) {
-          auto market_data_request_reject = fix::MarketDataRequestReject::parse(message);
+          auto market_data_request_reject = fix::MarketDataRequestReject::create(message);
           if (!market_data_request_reject.text.empty())
             ++processed;
         },

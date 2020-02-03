@@ -222,7 +222,7 @@ void FIX::send(
   core::fix::Writer writer(
       _encode_buffer,
       fix::FIX_VERSION,
-      T::MSG_TYPE,
+      T::msg_type,
       SENDER_COMP_ID,
       TARGET_COMP_ID,
       _msg_seq_num,
@@ -374,120 +374,145 @@ void FIX::parse_helper(const core::fix::message_t& message) {
   switch (message.header.msg_type) {
     // session
     case core::fix::MsgType::HEARTBEAT: {
+      auto heartbeat = fix::Heartbeat::create(message);
       (*this)(
           message.header,
-          fix::Heartbeat::parse(message));
+          heartbeat);
       break;
     }
     case core::fix::MsgType::LOGON: {
+      auto logon = fix::Logon::create(message);
       (*this)(
           message.header,
-          fix::Logon::parse(message));
+          logon);
       break;
     }
     case core::fix::MsgType::LOGOUT: {
+      auto logout = fix::Logout::create(message);
       (*this)(
           message.header,
-          fix::Logout::parse(message));
+          logout);
       break;
     }
     case core::fix::MsgType::RESEND_REQUEST: {
+      auto resend_request = fix::ResendRequest::create(message);
       (*this)(
           message.header,
-          fix::ResendRequest::parse(message));
+          resend_request);
       break;
     }
     case core::fix::MsgType::TEST_REQUEST: {
+      auto test_request = fix::TestRequest::create(message);
       (*this)(
           message.header,
-          fix::TestRequest::parse(message));
+          test_request);
       break;
     }
     // ...
     case core::fix::MsgType::EXECUTION_REPORT: {
       _profile.execution_report(
           [&]() {
+            auto execution_report =
+              fix::ExecutionReport::create(
+                  message,
+                  buffer);
             (*this)(
                 message.header,
-                fix::ExecutionReport::parse(
-                  message,
-                  buffer));
+                execution_report);
           });
       break;
     }
     case core::fix::MsgType::MARKET_DATA_INCREMENTAL_REFRESH: {
       _profile.market_data_incremental_refresh(
           [&]() {
+            auto market_data_incremental_referesh =
+                fix::MarketDataIncrementalRefresh::create(
+                    message,
+                    buffer);
             (*this)(
                 message.header,
-                fix::MarketDataIncrementalRefresh::parse(
-                  message,
-                  buffer));
+                market_data_incremental_referesh);
           });
       break;
     }
     case core::fix::MsgType::MARKET_DATA_REQUEST_REJECT: {
       _profile.market_data_request_reject(
           [&]() {
+            auto market_data_request_reject =
+              fix::MarketDataRequestReject::create(message);
             (*this)(
                 message.header,
-                fix::MarketDataRequestReject::parse(message));
+                market_data_request_reject);
           });
       break;
     }
     case core::fix::MsgType::MARKET_DATA_SNAPSHOT_FULL_REFRESH: {
       _profile.market_data_snapshot_full_refresh(
           [&]() {
+            auto market_data_snapshot_full_refresh =
+              fix::MarketDataSnapshotFullRefresh::create(
+                  message,
+                  buffer);
             (*this)(
                 message.header,
-                fix::MarketDataSnapshotFullRefresh::parse(
-                  message,
-                  buffer));
+                market_data_snapshot_full_refresh);
           });
       break;
     }
     case core::fix::MsgType::ORDER_CANCEL_REJECT: {
       _profile.order_cancel_reject(
           [&]() {
+            auto order_cancel_reject =
+              fix::OrderCancelReject::create(message);
             (*this)(
                 message.header,
-                fix::OrderCancelReject::parse(message));
+                order_cancel_reject);
           });
       break;
     }
     case core::fix::MsgType::POSITION_REPORT: {
       _profile.position_report(
           [&]() {
+            auto position_report =
+              fix::PositionReport::create(
+                  message,
+                  buffer);
             (*this)(
                 message.header,
-                fix::PositionReport::parse(message, buffer));
+                position_report);
           });
       break;
     }
     case core::fix::MsgType::REJECT: {
       _profile.reject(
           [&]() {
+            auto reject = fix::Reject::create(message);
             (*this)(
                 message.header,
-                fix::Reject::parse(message));
+                reject);
           });
       break;
     }
     case core::fix::MsgType::SECURITY_LIST: {
       _profile.security_list(
           [&]() {
+            auto security_list =
+              fix::SecurityList::create(
+                  message,
+                  buffer);
             (*this)(
                 message.header,
-                fix::SecurityList::parse(message, buffer));
+                security_list);
           });
       break;
     }
     case core::fix::MsgType::USER_RESPONSE: {
       _profile.user_response(
           [&]() {
+            auto user_response = fix::UserResponse::create(message);
             (*this)(
                 message.header,
-                fix::UserResponse::parse(message));
+                user_response);
           });
       break;
     }

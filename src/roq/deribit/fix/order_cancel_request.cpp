@@ -9,8 +9,12 @@ namespace fix {
 core::utils::Message OrderCancelRequest::encode(
     core::fix::Writer& writer) const {
   return writer
-    .write(core::fix::Field::CL_ORD_ID, cl_ord_id)
-    .write(core::fix::Field::ORIG_CL_ORD_ID, orig_cl_ord_id)
+    .write(
+        core::fix::Field::CL_ORD_ID,
+        cl_ord_id)
+    .write(
+        core::fix::Field::ORIG_CL_ORD_ID,
+        orig_cl_ord_id)
     .finish();
 }
 

@@ -26,7 +26,7 @@ void BM_fix_order_cancel_replace_request_create_message(benchmark::State& state)
     core::fix::Writer writer(
         buffer,
         core::fix::Version::FIX_44,
-        decltype(order_cancel_replace_request)::MSG_TYPE,
+        decltype(order_cancel_replace_request)::msg_type,
         "ROQ_TRADING",
         "DERIBITSERVER",
         msg_seq_num,

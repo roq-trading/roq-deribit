@@ -17,14 +17,6 @@ namespace deribit {
 namespace fix {
 
 struct MDInc final {
-  MDInc(
-      core::fix::message_t::const_iterator& iter,
-      const core::fix::message_t::const_iterator& end);
-
-  MDInc(const MDInc&) = delete;
-  MDInc(MDInc&&) = delete;
-
-  // standard
   std::chrono::nanoseconds md_entry_date = {};
   double md_entry_px = std::numeric_limits<double>::quiet_NaN();
   double md_entry_size = std::numeric_limits<double>::quiet_NaN();
@@ -41,6 +33,14 @@ struct MDInc final {
   std::string_view deribit_label;
   std::string_view deribit_liquidation;
   std::string_view deribit_trade_id;
+
+ public:
+  MDInc(
+      core::fix::message_t::const_iterator& iter,
+      const core::fix::message_t::const_iterator& end);
+
+  MDInc(MDInc&&) = default;
+  MDInc(const MDInc&) = delete;
 };
 
 }  // namespace fix
