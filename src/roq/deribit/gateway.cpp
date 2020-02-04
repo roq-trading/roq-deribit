@@ -144,7 +144,9 @@ void Gateway::operator()(const CreateOrderEvent& event) {
           gateway_order_id,
           request_id);
     } catch (std::exception& e) {
-      LOG(WARNING)("Exception: what=\"{}\"", e.what());
+      LOG(WARNING)(
+          FMT_STRING("Exception: what=\"{}\""),
+          e.what());
       _dispatcher.send_order_ack(
           event,
           Error::NETWORK_ERROR);
@@ -201,7 +203,9 @@ void Gateway::operator()(const ModifyOrderEvent& event) {
         external_order_id,
         request_id);
   } catch (std::exception& e) {
-    LOG(WARNING)("Exception: what=\"{}\"", e.what());
+    LOG(WARNING)(
+        FMT_STRING("Exception: what=\"{}\""),
+        e.what());
     _dispatcher.send_order_ack(
         event,
         Error::NETWORK_ERROR,
@@ -253,7 +257,9 @@ void Gateway::operator()(const CancelOrderEvent& event) {
         external_order_id,
         request_id);
   } catch (std::exception& e) {
-    LOG(WARNING)("Exception: what=\"{}\"", e.what());
+    LOG(WARNING)(
+        FMT_STRING("Exception: what=\"{}\""),
+        e.what());
     _dispatcher.send_order_ack(
         event,
         Error::NETWORK_ERROR,
@@ -538,17 +544,22 @@ void Gateway::operator()(
       case core::fix::MDEntryType::INDEX_VALUE:
       case core::fix::MDEntryType::SETTLEMENT_PRICE:
         // FIXME(thraneh): how to propagate these???
-        VLOG(4)("unsupported: {}", item);
+        VLOG(4)(
+            FMT_STRING("unsupported: {}"),
+            item);
         break;
       default:
-        LOG(WARNING)("unsupported: {}", item);
+        LOG(WARNING)(
+          FMT_STRING("unsupported: {}"),
+          item);
         break;
     }
   }
   if (unlikely(success == false)) {
     LOG(FATAL)(
-        "Insufficient bid/ask/trade array size(s): "
-        "len(bid)={}/{}, len(ask)={}/{}, len(trade)={}/{}",
+        FMT_STRING(
+          "Insufficient bid/ask/trade array size(s): "
+          "len(bid)={}/{}, len(ask)={}/{}, len(trade)={}/{}"),
         bid_length, _bid.size(),
         ask_length, _ask.size(),
         trade_length, _trade.size());
@@ -599,7 +610,7 @@ void Gateway::operator()(
     const fix::MarketDataSnapshotFullRefresh& market_data_snapshot_full_refresh) {
   assert(_gateway_status == GatewayStatus::READY);
   LOG(INFO)(
-      "Market data snapshot symbol=\"{}\"",
+      FMT_STRING("Market data snapshot symbol=\"{}\""),
       market_data_snapshot_full_refresh.symbol);
   size_t bid_length = 0, ask_length = 0;
   for (auto& item : market_data_snapshot_full_refresh.md_full_grp) {
@@ -722,7 +733,7 @@ void Gateway::operator()(
             ++position_count;
           }
           VLOG(1)(
-              "- positions: {} (/{})",
+              FMT_STRING("- positions: {} (/{})"),
               position_count,
               position_report.positions.size());
           break;
@@ -745,7 +756,8 @@ void Gateway::operator()(
   assert(_gateway_status != GatewayStatus::DISCONNECTED);
 
   auto request_id = fmt::format(  // FIXME(thraneh): this is *wrong*
-      "roq:{:06}", reject.ref_seq_num);
+      FMT_STRING("roq:{:06}"),
+      reject.ref_seq_num);
   // FIXME(thraneh): this lookup doesn't *just* manage cl_ord_id
   auto iter = find_order_mapping(request_id, std::string_view());
   if (iter != _order_mapping.end())  {
@@ -820,7 +832,7 @@ void Gateway::operator()(
       ++security_count;
     }
     VLOG(1)(
-        "- securities: {} (/{})",
+        FMT_STRING("- securities: {} (/{})"),
         security_count,
         security_list.instruments.size());
   }
@@ -861,7 +873,9 @@ void Gateway::update(GatewayStatus gateway_status) {
   enqueue(
       order_manager_status,
       true);
-  LOG(INFO)("Update: gateway_status={}", _gateway_status);
+  LOG(INFO)(
+      FMT_STRING("Update: gateway_status={}"),
+      _gateway_status);
 }
 
 void Gateway::begin_download() {

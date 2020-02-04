@@ -48,10 +48,16 @@ void update_field(
         break;
       default:
         if (has_field(field)) {
-          DLOG(FATAL)("Unexpected tag={} field={}", tag, field);
+          DLOG(FATAL)(
+              FMT_STRING("Unexpected tag={} field={}"),
+              tag,
+              field);
           break;
         }
-        DLOG(FATAL)("Unknown tag={} field={}", tag, field);
+        DLOG(FATAL)(
+            FMT_STRING("Unknown tag={} field={}"),
+            tag,
+            field);
         throw core::fix::InvalidField(tag, value);
     }
   } catch (core::fix::Exception&) {

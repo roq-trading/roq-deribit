@@ -48,7 +48,9 @@ bool OrderMapping::validate(
         execution_report.symbol.empty() == false &&
         execution_report.symbol.compare(_symbol) != 0)) {
     LOG(WARNING)(
-        "Unexpected symbol, received \"{}\", expected \"{}\"",
+        FMT_STRING(
+          "Unexpected symbol: "
+          "received \"{}\", expected \"{}\""),
         execution_report.symbol,
         _symbol);
     result = false;
@@ -57,7 +59,7 @@ bool OrderMapping::validate(
   auto side = core::fix::map(execution_report.side);
   if (unlikely(side != Side::UNDEFINED && side != _side)) {
     LOG(WARNING)(
-        "Unexpected side, received {}, expected {}",
+        FMT_STRING("Unexpected side: received {}, expected {}"),
         side,
         _side);
     result = false;
@@ -73,7 +75,9 @@ bool OrderMapping::validate(
   } else {
     if (execution_report.cl_ord_id.compare(_exchange_order_id) != 0) {
       LOG(WARNING)(
-          "Unexpected cl_ord_id, received \"{}\", expected \"{}\"",
+          FMT_STRING(
+            "Unexpected cl_ord_id: "
+            "received \"{}\", expected \"{}\""),
           execution_report.cl_ord_id,
           _exchange_order_id);
       result = false;

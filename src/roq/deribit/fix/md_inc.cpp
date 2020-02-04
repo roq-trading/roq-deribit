@@ -85,7 +85,10 @@ bool update_field(
         break;
       default:
         if (has_field(field)) {
-          DLOG(FATAL)("Unexpected tag={} field={}", tag, field);
+          DLOG(FATAL)(
+              FMT_STRING("Unexpected tag={} field={}"),
+              tag,
+              field);
           break;
         }
         // deribit specific

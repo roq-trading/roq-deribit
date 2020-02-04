@@ -55,7 +55,10 @@ void update_field(
         break;
       default:
         if (has_field(field)) {
-          DLOG(FATAL)("Unexpected tag={} field={}", tag, field);
+          DLOG(FATAL)(
+              FMT_STRING("Unexpected tag={} field={}"),
+              tag,
+              field);
           break;
         }
         switch (static_cast<Deribit>(tag)) {
@@ -84,7 +87,10 @@ void update_field(
             core::fix::update(result.deribit_user_maintenance_margin, value);
             break;
           default:
-            DLOG(FATAL)("Unknown tag={} field={}", tag, field);
+            DLOG(FATAL)(
+                FMT_STRING("Unknown tag={} field={}"),
+                tag,
+                field);
             throw core::fix::InvalidField(tag, value);
         }
     }

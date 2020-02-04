@@ -72,7 +72,10 @@ void update(
           break;
         default:
           if (has_field(field)) {
-            DLOG(FATAL)("Unexpected tag={} field={}", tag, field);
+            DLOG(FATAL)(
+                FMT_STRING("Unexpected tag={} field={}"),
+                tag,
+                field);
             break;
           }
           // deribit specific
@@ -84,7 +87,10 @@ void update(
               core::fix::update(result.deribit_trade_volume_24h, value);
               break;
             default:
-              DLOG(FATAL)("Unknown tag={} field={}", tag, field);
+              DLOG(FATAL)(
+                  FMT_STRING("Unknown tag={} field={}"),
+                  tag,
+                  field);
               throw core::fix::InvalidField(tag, value);
           }
       }
