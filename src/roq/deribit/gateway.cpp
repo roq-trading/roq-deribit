@@ -610,7 +610,7 @@ void Gateway::operator()(
     const fix::MarketDataSnapshotFullRefresh& market_data_snapshot_full_refresh) {
   assert(_gateway_status == GatewayStatus::READY);
   LOG(INFO)(
-      FMT_STRING("Market data snapshot symbol=\"{}\""),
+      FMT_STRING("Received market data snapshot for symbol=\"{}\""),
       market_data_snapshot_full_refresh.symbol);
   size_t bid_length = 0, ask_length = 0;
   for (auto& item : market_data_snapshot_full_refresh.md_full_grp) {
@@ -911,6 +911,13 @@ void Gateway::check_download() {
       LOG(INFO)("Download COMPLETED");
       _download = Download::NONE;
       subscribe_market_data();
+      LOG(INFO)("********************************************");
+      LOG(INFO)("***   DEFAULT LOGGING IS NOW MINIMAL     ***");
+      LOG(INFO)("***                                      ***");
+      LOG(INFO)("***   verbose logging can be enabled     ***");
+      LOG(INFO)("***   by setting the ROQ_v environment   ***");
+      LOG(INFO)("***   variable to a non-zero value       ***");
+      LOG(INFO)("********************************************");
       break;
     };
   }
