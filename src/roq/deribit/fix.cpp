@@ -6,11 +6,8 @@
 
 #include "roq/deribit/gateway.h"
 #include "roq/deribit/options.h"
-#include "roq/deribit/random.h"
 
 #include "roq/core/debug.h"
-
-#define PREFIX "[FIX] "
 
 namespace roq {
 namespace deribit {
@@ -49,11 +46,12 @@ static auto create_latency(
 FIX::FIX(
     Gateway& gateway,
     const Config& config,
+    Random& random,
     core::event::Base& base,
     core::event::DNSBase& dns_base)
     : _gateway(gateway),
       _access_key(config.get_access_key()),
-      _access_secret(config.get_access_secret()),
+      _random(random),
       _connection_factory(
           base,
           dns_base,
@@ -130,7 +128,7 @@ void FIX::operator()(const TimerEvent& event) {
 void FIX::operator()(
     const fix::MarketDataRequest& market_data_request) {
   VLOG(1)(
-      FMT_STRING(PREFIX "request(market_data_request={})"),
+      FMT_STRING("request(market_data_request={})"),
       market_data_request);
   send(market_data_request);
 }
@@ -138,7 +136,7 @@ void FIX::operator()(
 void FIX::operator()(
     const fix::NewOrderSingle& new_order_single) {
   VLOG(1)(
-      FMT_STRING(PREFIX "request(new_order_single={})"),
+      FMT_STRING("request(new_order_single={})"),
       new_order_single);
   send(new_order_single);
 }
@@ -146,7 +144,7 @@ void FIX::operator()(
 void FIX::operator()(
     const fix::OrderCancelReplaceRequest& order_cancel_replace_request) {
   VLOG(1)(
-      FMT_STRING(PREFIX "request(order_cancel_replace_request={})"),
+      FMT_STRING("request(order_cancel_replace_request={})"),
       order_cancel_replace_request);
   send(order_cancel_replace_request);
 }
@@ -154,7 +152,7 @@ void FIX::operator()(
 void FIX::operator()(
     const fix::OrderCancelRequest& order_cancel_request) {
   VLOG(1)(
-      FMT_STRING(PREFIX "request(order_cancel_request={})"),
+      FMT_STRING("request(order_cancel_request={})"),
       order_cancel_request);
   send(order_cancel_request);
 }
@@ -162,7 +160,7 @@ void FIX::operator()(
 void FIX::operator()(
     const fix::OrderMassStatusRequest& order_mass_status_request) {
   VLOG(1)(
-      FMT_STRING(PREFIX "request(order_mass_status_request={})"),
+      FMT_STRING("request(order_mass_status_request={})"),
       order_mass_status_request);
   send(order_mass_status_request);
 }
@@ -170,7 +168,7 @@ void FIX::operator()(
 void FIX::operator()(
     const fix::RequestForPositions& request_for_position) {
   VLOG(1)(
-      FMT_STRING(PREFIX "request(request_for_position={})"),
+      FMT_STRING("request(request_for_position={})"),
       request_for_position);
   send(request_for_position);
 }
@@ -178,7 +176,7 @@ void FIX::operator()(
 void FIX::operator()(
     const fix::SecurityListRequest& security_list_request) {
   VLOG(1)(
-      FMT_STRING(PREFIX "request(security_list_request={})"),
+      FMT_STRING("request(security_list_request={})"),
       security_list_request);
   send(security_list_request);
 }
@@ -186,7 +184,7 @@ void FIX::operator()(
 void FIX::operator()(
     const fix::UserRequest& user_request) {
   VLOG(1)(
-      FMT_STRING(PREFIX "request(user_request={})"),
+      FMT_STRING("request(user_request={})"),
       user_request);
   send(user_request);
 }
@@ -234,12 +232,11 @@ void FIX::send(
 
 void FIX::send_logon() {
   LOG(INFO)(
-      FMT_STRING(PREFIX "sending logon request (username=\"{}\")..."),
+      FMT_STRING("sending logon request (username=\"{}\")..."),
       _access_key);
   auto sending_time = core::get_realtime_clock();
-  Random random(_access_secret);  // XXX allocation
-  auto raw_data = random.create_raw_data(sending_time);
-  auto password = random.create_password(raw_data);
+  auto raw_data = _random.create_raw_data(sending_time);
+  auto password = _random.create_password(raw_data);
   fix::Logon logon {
     .heart_bt_int = static_cast<uint16_t>(FLAGS_ping_freq_secs),
     .raw_data = raw_data,
@@ -344,7 +341,6 @@ void FIX::check(const core::fix::header_t& header) {
     if (expected < current) {
       LOG(WARNING)(
           FMT_STRING(
-            PREFIX
             "*** SEQUENCE GAP *** "
             "current={} previous={} distance={}"),
           current,
@@ -353,7 +349,6 @@ void FIX::check(const core::fix::header_t& header) {
     } else {
       LOG(WARNING)(
           FMT_STRING(
-            PREFIX
             "*** SEQUENCE REPLAY *** "
             "current={} previous={} distance={}"),
           current,
@@ -526,7 +521,7 @@ void FIX::parse_helper(const core::fix::message_t& message) {
     }
     default:
       LOG(WARNING)(
-          FMT_STRING(PREFIX "Unexpected msg_type={}"),
+          FMT_STRING("Unexpected msg_type={}"),
           message.header.msg_type);
       break;
   }
@@ -538,7 +533,7 @@ void FIX::operator()(
   // note! get clock *before* any logging (avoid latency)
   auto now = core::get_system_clock();
   VLOG(3)(
-      FMT_STRING(PREFIX "event(header={}, heartbeat={})"),
+      FMT_STRING("event(header={}, heartbeat={})"),
       header,
       heartbeat);
   // assert(_gateway_status != GatewayStatus::DISCONNECTED);
@@ -555,11 +550,11 @@ void FIX::operator()(
     const core::fix::header_t& header,
     const fix::Logon& logon) {
   VLOG(1)(
-      FMT_STRING(PREFIX "event(header={}, logon={})"),
+      FMT_STRING("event(header={}, logon={})"),
       header,
       logon);
   assert(_state == State::LOGON_SENT);
-  LOG(INFO)(PREFIX "logon COMPLETED");
+  LOG(INFO)("logon COMPLETED");
   (*this)(State::READY);
 }
 
@@ -567,14 +562,14 @@ void FIX::operator()(
     const core::fix::header_t& header,
     const fix::Logout& logout) {
   LOG(WARNING)(
-      FMT_STRING(PREFIX "event(header={}, logout={})"),
+      FMT_STRING("event(header={}, logout={})"),
       header,
       logout);
   // assert(_gateway_status == GatewayStatus::READY);
   // update(GatewayStatus::LOGGED_OUT);
   // note! mandated, must send a logout response
   send_logout(LOGOUT_RESPONSE);
-  LOG(INFO)(PREFIX "closing connection");
+  LOG(INFO)("closing connection");
   _connection.close();
 }
 
@@ -582,7 +577,7 @@ void FIX::operator()(
     const core::fix::header_t& header,
     const fix::ResendRequest& resend_request) {
   LOG(WARNING)(
-      FMT_STRING(PREFIX "event(header={}, resend_request={})"),
+      FMT_STRING("event(header={}, resend_request={})"),
       header,
       resend_request);
   /*
@@ -595,7 +590,7 @@ void FIX::operator()(
   };
   send(reject);
   */
-  LOG(INFO)(PREFIX "closing connection");
+  LOG(INFO)("closing connection");
   _connection.close();
 }
 
@@ -603,7 +598,7 @@ void FIX::operator()(
     const core::fix::header_t& header,
     const fix::TestRequest& test_request) {
   VLOG(1)(
-      FMT_STRING(PREFIX "event(header={}, test_request={})"),
+      FMT_STRING("event(header={}, test_request={})"),
       header,
       test_request);
   // assert(_gateway_status != GatewayStatus::DISCONNECTED);
@@ -614,7 +609,7 @@ void FIX::operator()(
     const core::fix::header_t& header,
     const fix::ExecutionReport& execution_report) {
   VLOG(3)(
-      FMT_STRING(PREFIX "event(header={}, execution_report={})"),
+      FMT_STRING("event(header={}, execution_report={})"),
       header,
       execution_report);
   _gateway(execution_report);
@@ -624,7 +619,7 @@ void FIX::operator()(
     const core::fix::header_t& header,
     const fix::MarketDataIncrementalRefresh& market_data_incremental_refresh) {
   VLOG(3)(
-      FMT_STRING(PREFIX "event(header={}, market_data_incremental_refresh={})"),
+      FMT_STRING("event(header={}, market_data_incremental_refresh={})"),
       header,
       market_data_incremental_refresh);
   _gateway(market_data_incremental_refresh);
@@ -634,7 +629,7 @@ void FIX::operator()(
     const core::fix::header_t& header,
     const fix::MarketDataRequestReject& market_data_request_reject) {
   LOG(WARNING)(
-      FMT_STRING(PREFIX "event(header={}, market_data_request_reject={})"),
+      FMT_STRING("event(header={}, market_data_request_reject={})"),
       header,
       market_data_request_reject);
   _gateway(market_data_request_reject);
@@ -644,7 +639,7 @@ void FIX::operator()(
     const core::fix::header_t& header,
     const fix::MarketDataSnapshotFullRefresh& market_data_snapshot_full_refresh) {
   VLOG(3)(
-      FMT_STRING(PREFIX "event(header={}, market_data_snapshot_full_refresh={})"),
+      FMT_STRING("event(header={}, market_data_snapshot_full_refresh={})"),
       header,
       market_data_snapshot_full_refresh);
   _gateway(market_data_snapshot_full_refresh);
@@ -654,7 +649,7 @@ void FIX::operator()(
     const core::fix::header_t& header,
     const fix::OrderCancelReject& order_cancel_reject) {
   VLOG(3)(
-      FMT_STRING(PREFIX "event(header={}, order_cancel_reject={})"),
+      FMT_STRING("event(header={}, order_cancel_reject={})"),
       header,
       order_cancel_reject);
   _gateway(order_cancel_reject);
@@ -664,7 +659,7 @@ void FIX::operator()(
     const core::fix::header_t& header,
     const fix::PositionReport& position_report) {
   VLOG(3)(
-      FMT_STRING(PREFIX "event(header={}, position_report={})"),
+      FMT_STRING("event(header={}, position_report={})"),
       header,
       position_report);
   _gateway(position_report);
@@ -674,7 +669,7 @@ void FIX::operator()(
     const core::fix::header_t& header,
     const fix::Reject& reject) {
   VLOG(3)(
-      FMT_STRING(PREFIX "event(header={}, reject={})"),
+      FMT_STRING("event(header={}, reject={})"),
       header,
       reject);
   _gateway(reject);
@@ -684,7 +679,7 @@ void FIX::operator()(
     const core::fix::header_t& header,
     const fix::SecurityList& security_list) {
   VLOG(2)(
-      FMT_STRING(PREFIX "event(header={}, security_list={})"),
+      FMT_STRING("event(header={}, security_list={})"),
       header,
       security_list);
   _gateway(security_list);
@@ -694,7 +689,7 @@ void FIX::operator()(
     const core::fix::header_t& header,
     const fix::UserResponse& user_response) {
   VLOG(2)(
-      FMT_STRING(PREFIX "event(header={}, user_response={})"),
+      FMT_STRING("event(header={}, user_response={})"),
       header,
       user_response);
   _gateway(user_response);

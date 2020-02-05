@@ -14,8 +14,8 @@ class Random final {
  public:
   explicit Random(const std::string_view& secret);
 
-  Random(const Random&) = delete;
   Random(Random&&) = delete;
+  Random(const Random&) = delete;
 
   std::string create_raw_data(const std::chrono::nanoseconds now);
   std::string create_password(const std::string_view& raw_data);

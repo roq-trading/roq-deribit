@@ -17,6 +17,7 @@
 #include "roq/core/net/tcp_connection_factory.h"
 
 #include "roq/deribit/config.h"
+#include "roq/deribit/random.h"
 
 // session
 #include "roq/deribit/fix/heartbeat.h"
@@ -62,6 +63,7 @@ class FIX final : public core::net::Manager::Handler {
   FIX(
       Gateway& gateway,
       const Config& config,
+      Random& random,
       core::event::Base& base,
       core::event::DNSBase& dns_base);
 
@@ -160,7 +162,8 @@ class FIX final : public core::net::Manager::Handler {
   Gateway& _gateway;
   // config
   const std::string _access_key;
-  const std::string _access_secret;
+  // authentication
+  Random& _random;
   // connection
   core::net::TcpConnectionFactory _connection_factory;
   core::net::Manager _connection;

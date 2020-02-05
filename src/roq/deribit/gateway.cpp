@@ -5,6 +5,8 @@
 #include <limits>
 #include <utility>
 
+#include "roq/core/utils.h"
+
 #include "roq/core/fix/utils.h"
 
 #include "roq/deribit/options.h"
@@ -37,10 +39,12 @@ static bool mbp_update(
       throw std::runtime_error("MDUpdateAction not supported");
       break;
   }
-  new (&data[offset++]) MBPUpdate {
+  auto& obj = data[offset];
+  new (&obj) MBPUpdate {
     .price = item.md_entry_px,
     .quantity = item.md_entry_size,
   };
+  ++offset;
   return offset < data.size();
 }
 
@@ -49,16 +53,17 @@ static bool trade_update(
     auto& data,
     size_t& offset,
     const T& item) {
-  auto& trade = data[offset++];
-  new (&trade) Trade {
+  auto& obj = data[offset];
+  new (&obj) Trade {
     .side = core::fix::map(item.side),
     .price = item.md_entry_px,
     .quantity = item.md_entry_size,
-    .trade_id = {},  // copy string (following statement)
+    .trade_id = {},
   };
-  item.deribit_trade_id.copy(
-      trade.trade_id,
-      sizeof(trade.trade_id));
+  core::copy_to(
+      item.deribit_trade_id,
+      obj.trade_id);
+  ++offset;
   return offset < data.size();
 }
 
@@ -68,10 +73,12 @@ Gateway::Gateway(
     : _dispatcher(dispatcher),
       _account(config.get_account()),
       _access_key(config.get_access_key()),
+      _random(config.get_access_secret()),
       _dns_base(_base, true),
       _fix(
           *this,
           config,
+          _random,
           _base,
           _dns_base),
       _bid(FLAGS_max_depth),

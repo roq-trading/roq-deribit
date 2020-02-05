@@ -17,6 +17,7 @@
 #include "roq/deribit/config.h"
 #include "roq/deribit/fix.h"
 #include "roq/deribit/order_mapping.h"
+#include "roq/deribit/random.h"
 
 // fix (inbound)
 #include "roq/deribit/fix/execution_report.h"
@@ -105,6 +106,8 @@ class Gateway final : public server::Handler {
   // config
   const std::string _account;
   const std::string _access_key;
+  // authentication
+  Random _random;
   // async
   core::event::Base _base;
   core::event::DNSBase _dns_base;

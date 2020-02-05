@@ -42,6 +42,7 @@ std::string Random::create_raw_data(
 }
 
 std::string Random::create_password(const std::string_view& raw_data) {
+  _sha.clear();
   _sha.update(raw_data);
   _sha.update(_secret);
   std::array<char, 32> buffer;
