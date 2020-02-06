@@ -1,8 +1,4 @@
-symbols = [
-  ".*-PERPETUAL",
-  ".*-DERIBIT-INDEX",
-  ".*-\\d{2}\\D{3}\\d{2}",
-]
+symbols = ".*"
 
 [order_templates]
 

@@ -61,6 +61,10 @@ void update(
           check_field<core::fix::Field::MD_REQ_ID>();
           core::fix::update(result.md_req_id, value);
           break;
+        case core::fix::Field::PUT_OR_CALL:
+          check_field<core::fix::Field::PUT_OR_CALL>();
+          core::fix::update(result.put_or_call, value);
+          break;
         case core::fix::Field::SYMBOL:
           check_field<core::fix::Field::SYMBOL>();
           core::fix::update(result.symbol, value);

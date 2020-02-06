@@ -40,24 +40,14 @@ core::utils::Message MarketDataRequest::encode(
         core::fix::MDEntryType::OFFER)
     .write(
         core::fix::Field::MD_ENTRY_TYPE,
-        core::fix::MDEntryType::TRADE);
-  if (symbols.empty()) {
-    writer
-      .write(
-          core::fix::Field::NO_RELATED_SYM,
-          size_t{1})
-      .write(
-          core::fix::Field::SYMBOL,
-          symbol);
-  } else {
-    writer.write(
+        core::fix::MDEntryType::TRADE)
+    .write(
         core::fix::Field::NO_RELATED_SYM,
         symbols.size());
-    for (auto& iter : symbols)
-      writer.write(
-          core::fix::Field::SYMBOL,
-          iter);
-  }
+  for (auto& iter : symbols)
+    writer.write(
+        core::fix::Field::SYMBOL,
+        iter);
   return writer.finish();
 }
 

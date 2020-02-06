@@ -17,9 +17,6 @@ DECLARE_uint32(encode_buffer_size);
 DECLARE_uint32(decode_buffer_size);
 DECLARE_uint64(reconnect_secs);
 
-// following options are work-arounds for weird behavior:
-// - batch subscription doesn't seem to work (as of 2019-10-06)
-DECLARE_bool(batch_subscribe);
 DECLARE_uint32(max_batch_size);
 
 DECLARE_bool(log_fix);

@@ -4,8 +4,9 @@
 
 #include <fmt/format.h>
 
-#include <string_view>
-#include <vector>
+#include <string>
+
+#include "roq/compat.h"
 
 #include "roq/core/utils/message.h"
 
@@ -20,9 +21,7 @@ namespace fix {
 
 struct MarketDataRequest final {
   std::string_view md_req_id;
-  // optional -- single or list
-  std::string_view symbol;
-  std::vector<std::string_view> symbols;
+  roq::span<std::string> symbols;
 
  public:
   static constexpr auto msg_type = core::fix::MarketDataRequest::msg_type;
@@ -46,23 +45,13 @@ struct fmt::formatter<roq::deribit::fix::MarketDataRequest> {
   }
   template <typename C>
   auto format(const roq::deribit::fix::MarketDataRequest& value, C& ctx) {
-    if (value.symbols.empty()) {
-      return format_to(
-          ctx.out(),
-          "{{"
-          "md_req_id=\"{}\", "
-          "symbol=\"{}\""
-          "}}",
-          value.md_req_id,
-          value.symbol);
-    }
     return format_to(
         ctx.out(),
         "{{"
         "md_req_id=\"{}\", "
-        "symbol=[\"{}\"]"
+        "symbols=[{}]"
         "}}",
         value.md_req_id,
-        fmt::join(value.symbols, "\", \""));
+        fmt::join(value.symbols, ", "));
   }
 };

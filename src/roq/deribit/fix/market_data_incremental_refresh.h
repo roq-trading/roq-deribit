@@ -24,6 +24,7 @@ struct MarketDataIncrementalRefresh final {
   double contract_multiplier = std::numeric_limits<double>::quiet_NaN();
   roq::span<MDInc const> md_inc_grp;
   std::string_view md_req_id;
+  core::fix::PutOrCall put_or_call = core::fix::PutOrCall::UNKNOWN;
   std::string_view symbol;
   // non-standard
   double open_interest = std::numeric_limits<double>::quiet_NaN();
@@ -59,6 +60,7 @@ struct fmt::formatter<roq::deribit::fix::MarketDataIncrementalRefresh> {
         "contract_multiplier={}, "
         "md_inc_grp=[{}], "
         "md_req_id=\"{}\", "
+        "put_or_call={}, "
         "symbol=\"{}\", "
         // non-standard
         "open_interest={}, "
@@ -69,6 +71,7 @@ struct fmt::formatter<roq::deribit::fix::MarketDataIncrementalRefresh> {
         value.contract_multiplier,
         fmt::join(value.md_inc_grp, ", "),
         value.md_req_id,
+        value.put_or_call,
         value.symbol,
         // non-standard
         value.open_interest,

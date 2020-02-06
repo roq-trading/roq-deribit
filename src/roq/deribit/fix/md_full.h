@@ -21,9 +21,11 @@ struct MDFull final {
   double md_entry_px = std::numeric_limits<double>::quiet_NaN();
   double md_entry_size = std::numeric_limits<double>::quiet_NaN();
   core::fix::MDEntryType md_entry_type = core::fix::MDEntryType::UNKNOWN;  // key
+  std::string_view order_id;
   std::string_view secondary_order_id;
   std::string_view text;
   // non-standard
+  double index_price = std::numeric_limits<double>::quiet_NaN();
   core::fix::MDUpdateAction md_update_action = core::fix::MDUpdateAction::UNKNOWN;
   core::fix::OrdStatus ord_status = core::fix::OrdStatus::UNKNOWN;
   core::fix::Side side = core::fix::Side::UNKNOWN;
@@ -60,8 +62,10 @@ struct fmt::formatter<roq::deribit::fix::MDFull> {
         "md_entry_px={}, "
         "md_entry_size={}, "
         "md_entry_type={}, "
+        "order_id=\"{}\", "
         "secondary_order_id=\"{}\", "
         "text=\"{}\", "
+        "index_price={}, "
         "md_update_action={}, "
         "ord_status={}, "
         "side={}, "
@@ -73,8 +77,10 @@ struct fmt::formatter<roq::deribit::fix::MDFull> {
         value.md_entry_px,
         value.md_entry_size,
         value.md_entry_type,
+        value.order_id,
         value.secondary_order_id,
         value.text,
+        value.index_price,
         value.md_update_action,
         value.ord_status,
         value.side,

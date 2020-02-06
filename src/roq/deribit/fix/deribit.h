@@ -38,8 +38,8 @@ enum class Deribit : uint32_t {
   SIZE_IN_CURRENCY = 100089,
   MARK_PRICE = 100090,
   LIQUIDATION = 100091,
-  TODO_1 = 100092,
-  TODO_2 = 100093,
+  CURRENT_FUNDING = 100092,
+  FUNDING_8H = 100093,
 };
 
 enum class AdvOrderType : char {

@@ -73,8 +73,6 @@ class Gateway final : public server::Handler {
   void download_user();
 
   void subscribe_market_data();
-  void subscribe_market_data_batch();
-  void subscribe_market_data_simple();
 
   void reset();
 

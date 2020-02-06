@@ -989,47 +989,19 @@ void Gateway::subscribe_market_data() {
     return;
   }
   LOG(INFO)("Subscribe market data");
-  if (FLAGS_batch_subscribe)
-    subscribe_market_data_batch();
-  else
-    subscribe_market_data_simple();
-}
-
-void Gateway::subscribe_market_data_batch() {
-  // FIXME(thraneh): simplify this
-  std::vector<std::string_view> symbols(FLAGS_max_batch_size);
-  size_t j = 0;
-  for (size_t i = 0; i < _symbols.size(); ++i) {
-    symbols[j++] = _symbols[i];
-    if (j == symbols.size()) {
-      auto request_id = _fix.next_request_id();
-      fix::MarketDataRequest market_data_request {
-        .md_req_id = request_id,
-        .symbol = {},
-        .symbols = symbols,
-      };
-      _fix(market_data_request);
-      j = 0;
-    }
-  }
-  if (j > 0) {
+  for (size_t i = 0;; ++i) {
+    auto offset = i * FLAGS_max_batch_size;
+    if (_symbols.size() < offset)
+      break;
+    auto count = std::min<size_t>(
+        _symbols.size() - offset,
+        FLAGS_max_batch_size);
     auto request_id = _fix.next_request_id();
     fix::MarketDataRequest market_data_request {
       .md_req_id = request_id,
-      .symbol = {},
-      .symbols = symbols,
-    };
-    _fix(market_data_request);
-  }
-}
-
-void Gateway::subscribe_market_data_simple() {
-  for (auto& symbol : _symbols) {
-    auto request_id = _fix.next_request_id();
-    fix::MarketDataRequest market_data_request {
-      .md_req_id = request_id,
-      .symbol = symbol,
-      .symbols = {},
+      .symbols = decltype(fix::MarketDataRequest::symbols)(
+        &_symbols[offset],
+        count),
     };
     _fix(market_data_request);
   }

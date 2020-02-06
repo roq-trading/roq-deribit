@@ -23,6 +23,7 @@ struct MarketDataSnapshotFullRefresh final {
   double contract_multiplier = std::numeric_limits<double>::quiet_NaN();
   roq::span<MDFull const> md_full_grp;
   std::string_view md_req_id;
+  core::fix::PutOrCall put_or_call = core::fix::PutOrCall::UNKNOWN;
   std::string_view symbol;
   // non-standard
   double open_interest = std::numeric_limits<double>::quiet_NaN();
@@ -31,6 +32,8 @@ struct MarketDataSnapshotFullRefresh final {
   // deribit specific
   double deribit_mark_price = std::numeric_limits<double>::quiet_NaN();
   double deribit_trade_volume_24h = std::numeric_limits<double>::quiet_NaN();
+  double deribit_current_funding = std::numeric_limits<double>::quiet_NaN();
+  double deribit_funding_8h = std::numeric_limits<double>::quiet_NaN();
 
  public:
   MarketDataSnapshotFullRefresh() = default;
@@ -60,6 +63,7 @@ struct fmt::formatter<roq::deribit::fix::MarketDataSnapshotFullRefresh> {
         "contract_multiplier={}, "
         "md_full_grp=[{}], "
         "md_req_id=\"{}\", "
+        "put_or_call={}, "
         "symbol=\"{}\", "
         // non-standard
         "open_interest={}, "
@@ -67,11 +71,14 @@ struct fmt::formatter<roq::deribit::fix::MarketDataSnapshotFullRefresh> {
         "underlying_symbol=\"{}\", "
         // deribit specific
         "deribit_mark_price={}, "
-        "deribit_trade_volume_24h={}"
+        "deribit_trade_volume_24h={}, "
+        "deribit_current_funding={}, "
+        "deribit_funding_8h={}"
         "}}",
         value.contract_multiplier,
         fmt::join(value.md_full_grp, ", "),
         value.md_req_id,
+        value.put_or_call,
         value.symbol,
         // non-standard
         value.open_interest,
@@ -79,6 +86,8 @@ struct fmt::formatter<roq::deribit::fix::MarketDataSnapshotFullRefresh> {
         value.underlying_symbol,
         // deribit specific
         value.deribit_mark_price,
-        value.deribit_trade_volume_24h);
+        value.deribit_trade_volume_24h,
+        value.deribit_current_funding,
+        value.deribit_funding_8h);
   }
 };

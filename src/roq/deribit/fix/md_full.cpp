@@ -54,6 +54,10 @@ bool update_field(
         check_field<core::fix::Field::MD_ENTRY_SIZE>();
         core::fix::update(result.md_entry_size, value);
         break;
+      case core::fix::Field::ORDER_ID:
+        check_field<core::fix::Field::ORDER_ID>();
+        core::fix::update(result.order_id, value);
+        break;
       case core::fix::Field::SECONDARY_ORDER_ID:
         check_field<core::fix::Field::SECONDARY_ORDER_ID>();
         core::fix::update(result.secondary_order_id, value);
@@ -63,11 +67,14 @@ bool update_field(
         core::fix::update(result.text, value);
         break;
       // non-standard
-      /*
+      case core::fix::Field::PRICE:
+        non_standard_field<core::fix::Field::PRICE>();
+        core::fix::update(result.index_price, value);
+        break;
       case core::fix::Field::MD_UPDATE_ACTION:
         non_standard_field<core::fix::Field::MD_UPDATE_ACTION>();
-        return;
-      */
+        core::fix::update(result.md_update_action, value);
+        break;
       case core::fix::Field::ORD_STATUS:
         non_standard_field<core::fix::Field::ORD_STATUS>();
         core::fix::update(result.ord_status, value);

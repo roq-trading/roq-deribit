@@ -62,6 +62,10 @@ void update(
                 end);
           continue;  // note!
         }
+        case core::fix::Field::PUT_OR_CALL:
+          check_field<core::fix::Field::PUT_OR_CALL>();
+          core::fix::update(result.put_or_call, value);
+          break;
         case core::fix::Field::SYMBOL:
           check_field<core::fix::Field::SYMBOL>();
           core::fix::update(result.symbol, value);
@@ -95,8 +99,11 @@ void update(
             case Deribit::TRADE_VOLUME_24H:
               core::fix::update(result.deribit_trade_volume_24h, value);
               break;
-            case Deribit::TODO_1:
-            case Deribit::TODO_2:
+            case Deribit::CURRENT_FUNDING:
+              core::fix::update(result.deribit_current_funding, value);
+              break;
+            case Deribit::FUNDING_8H:
+              core::fix::update(result.deribit_funding_8h, value);
               break;
             default:
               DLOG(FATAL)(

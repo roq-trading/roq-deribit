@@ -47,13 +47,9 @@ DEFINE_uint64(reconnect_secs,
     {10},
     "time before reconnect (seconds)");
 
-DEFINE_bool(batch_subscribe,
-    false,
-    "batch subscribe symbols? (bool)");
-
 DEFINE_uint32(max_batch_size,
     56,
-    "max batch size");
+    "max batch size (it appears there is a limit)");
 
 DEFINE_bool(log_fix,
     false,
