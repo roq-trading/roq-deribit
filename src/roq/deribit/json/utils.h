@@ -10,7 +10,9 @@
 
 #include "roq/core/charconv/datetime.h"
 
-#include "roq/deribit/api/enums.h"
+#include "roq/deribit/json/kind.h"
+#include "roq/deribit/json/option_type.h"
+#include "roq/deribit/json/state.h"
 
 namespace roq {
 namespace deribit {
@@ -32,26 +34,23 @@ inline void update(
 
 template <>
 inline void update(
-    api::Kind& result,
+    Kind& result,
     const core::json::value_t& value) {
-  result = api::to_enum<std::remove_reference<decltype(result)>::type>(
-      core::json::get<std::string_view>(value));
+  result = parse_kind(core::json::get<std::string_view>(value));
 }
 
 template <>
 inline void update(
-    api::OptionType& result,
+    OptionType& result,
     const core::json::value_t& value) {
-  result = api::to_enum<std::remove_reference<decltype(result)>::type>(
-      core::json::get<std::string_view>(value));
+  result = parse_option_type(core::json::get<std::string_view>(value));
 }
 
 template <>
 inline void update(
-    api::State& result,
+    State& result,
     const core::json::value_t& value) {
-  result = api::to_enum<std::remove_reference<decltype(result)>::type>(
-      core::json::get<std::string_view>(value));
+  result = parse_state(core::json::get<std::string_view>(value));
 }
 
 }  // namespace json

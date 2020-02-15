@@ -14,7 +14,6 @@ roq_deribit_test_LDADD = \
 	libgtest.la \
 	$(top_builddir)/src/roq/deribit/fix/libroq-deribit-fix.la \
 	$(top_builddir)/src/roq/deribit/json/libroq-deribit-json.la \
-	$(top_builddir)/src/roq/deribit/api/libroq-deribit-api.la \
 	$(DATE_LIBS) \
 	$(ROQ_CORE_LIBS) \
 	$(ROQ_API_LIBS) \

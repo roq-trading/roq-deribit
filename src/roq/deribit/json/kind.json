@@ -1,0 +1,8 @@
+{
+"name": "Kind",
+"type": "enum",
+"values": [
+	{ "name": "future" },
+	{ "name": "option" }
+]
+}

@@ -1,0 +1,15 @@
+{
+"name": "Currency",
+"type": "json::item",
+"values": [
+	{ "name": "coin_type", "type": "std::string_view" },
+	{ "name": "currency_long", "type": "std::string_view" },
+	{ "name": "currency", "type": "std::string_view" },
+	{ "name": "disabled_deposit_address_creation", "type": "bool" },
+	{ "name": "fee_precision", "type": "uint32_t" },
+	{ "name": "min_confirmations", "type": "uint32_t" },
+	{ "name": "min_withdrawal_fee", "type": "double" },
+	{ "name": "withdrawal_fee", "type": "double" },
+	{ "name": "withdrawal_priorities" }
+]
+}

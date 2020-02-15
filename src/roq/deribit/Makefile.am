@@ -1,11 +1,10 @@
-SUBDIRS = api fix json
+SUBDIRS = fix json
 
 bin_PROGRAMS = roq-deribit
 roq_deribit_LDFLAGS = \
 	$(PTHREAD_CFLAGS) \
 	$(top_builddir)/src/roq/deribit/fix/libroq-deribit-fix.la \
 	$(top_builddir)/src/roq/deribit/json/libroq-deribit-json.la \
-	$(top_builddir)/src/roq/deribit/api/libroq-deribit-api.la \
 	$(ROQ_SERVER_LIBS) \
 	$(ROQ_CORE_LIBS) \
 	$(ROQ_API_LIBS) \

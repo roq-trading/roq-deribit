@@ -1,0 +1,16 @@
+{
+"name": "Field",
+"type": "enum",
+"values": [
+	{ "name": "error" },
+	{ "name": "id" },
+	{ "name": "jsonrpc" },
+	{ "name": "method" },
+	{ "name": "params" },
+	{ "name": "result" },
+	{ "name": "testnet" },
+	{ "name": "usDiff" },
+	{ "name": "usIn" },
+	{ "name": "usOut" }
+]
+}

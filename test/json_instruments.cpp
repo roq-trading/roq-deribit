@@ -73,8 +73,7 @@ TEST(json_instrument, parse_message) {
       ++results;
       for (auto iter : std::get<core::json::array_t>(value)) {
         ++instruments;
-        json::Instrument instrument;
-        json::Instrument::parse(instrument, std::move(std::get<core::json::object_t>(iter)));
+        json::Instrument instrument(iter);
         switch (instruments) {
           case 1:
             EXPECT_DOUBLE_EQ(instrument.tick_size, 0.5);
@@ -84,7 +83,7 @@ TEST(json_instrument, parse_message) {
             EXPECT_DOUBLE_EQ(instrument.min_trade_amount, 10.0);
             EXPECT_DOUBLE_EQ(instrument.max_leverage, 100.0);
             EXPECT_DOUBLE_EQ(instrument.maker_commission, -0.0002);
-            EXPECT_EQ(instrument.kind, api::Kind::FUTURE);
+            EXPECT_EQ(instrument.kind, json::Kind::FUTURE);
             EXPECT_EQ(instrument.is_active, true);
             EXPECT_EQ(instrument.instrument_name, "BTC-27SEP19");
             EXPECT_EQ(instrument.expiration_timestamp, std::chrono::milliseconds{1569571200000});
@@ -100,7 +99,7 @@ TEST(json_instrument, parse_message) {
             EXPECT_DOUBLE_EQ(instrument.min_trade_amount, 10.0);
             EXPECT_DOUBLE_EQ(instrument.max_leverage, 100.0);
             EXPECT_DOUBLE_EQ(instrument.maker_commission, -0.0002);
-            EXPECT_EQ(instrument.kind, api::Kind::FUTURE);
+            EXPECT_EQ(instrument.kind, json::Kind::FUTURE);
             EXPECT_EQ(instrument.is_active, true);
             EXPECT_EQ(instrument.instrument_name, "BTC-27DEC19");
             EXPECT_EQ(instrument.expiration_timestamp, std::chrono::milliseconds{1577433600000});
@@ -116,7 +115,7 @@ TEST(json_instrument, parse_message) {
             EXPECT_DOUBLE_EQ(instrument.min_trade_amount, 10.0);
             EXPECT_DOUBLE_EQ(instrument.max_leverage, 100.0);
             EXPECT_DOUBLE_EQ(instrument.maker_commission, -0.00025);
-            EXPECT_EQ(instrument.kind, api::Kind::FUTURE);
+            EXPECT_EQ(instrument.kind, json::Kind::FUTURE);
             EXPECT_EQ(instrument.is_active, true);
             EXPECT_EQ(instrument.instrument_name, "BTC-PERPETUAL");
             EXPECT_EQ(instrument.expiration_timestamp, std::chrono::milliseconds{32503734000000});

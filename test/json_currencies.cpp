@@ -47,8 +47,7 @@ TEST(json_currency, parse_message) {
       ++results;
       for (auto iter : std::get<core::json::array_t>(value)) {
         ++currencies;
-        json::Currency currency;
-        json::Currency::parse(currency, std::move(std::get<core::json::object_t>(iter)));
+        json::Currency currency(iter);
         switch (currencies) {
           case 1:
             EXPECT_DOUBLE_EQ(currency.withdrawal_fee, 0.0004);

@@ -10,6 +10,7 @@ namespace roq {
 namespace deribit {
 namespace json {
 
+/*
 struct response_t final {
   core::json::value_t result;
 };
@@ -24,6 +25,7 @@ struct notification_t final {
   std::string_view channel;
   core::json::value_t data;
 };
+*/
 
 class Message final {
  public:
@@ -72,21 +74,6 @@ class Message final {
     NOTIFICATION
   };
   static Type find_type(const std::string_view& message);
-
-  enum class Field {
-    UNKNOWN,
-    ERROR,
-    ID,
-    JSONRPC,
-    METHOD,
-    PARAMS,
-    RESULT,
-    TESTNET,
-    US_DIFF,
-    US_IN,
-    US_OUT,
-  };
-  static constexpr Field parse_name(const std::string_view& name);
 };
 
 }  // namespace json

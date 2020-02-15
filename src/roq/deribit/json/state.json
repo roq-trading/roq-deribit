@@ -1,0 +1,8 @@
+{
+"name": "State",
+"type": "enum",
+"values": [
+	{ "name": "closed" },
+	{ "name": "open" }
+]
+}

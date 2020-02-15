@@ -45,9 +45,8 @@ TEST(json_ticker, parse_message) {
   for (auto [key, value] : std::get<core::json::object_t>(root)) {
     if (key.compare("result") == 0) {
       ++results;
-      json::Ticker ticker;
-      json::Ticker::parse(ticker, std::move(std::get<core::json::object_t>(value)));
-      EXPECT_EQ(ticker.state, api::State::OPEN);
+      json::Ticker ticker(value);
+      EXPECT_EQ(ticker.state, json::State::OPEN);
       EXPECT_DOUBLE_EQ(ticker.settlement_price, 10053.92);
       EXPECT_DOUBLE_EQ(ticker.open_interest, 422565281);
       EXPECT_DOUBLE_EQ(ticker.min_price, 10346.94);
