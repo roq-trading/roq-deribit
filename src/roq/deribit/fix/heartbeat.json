@@ -1,0 +1,7 @@
+{
+"name": "Heartbeat",
+"type": "simple",
+"values": [
+	{ "tag": "TEST_REQ_ID", "name": "test_req_id", "type": "std::string_view" }
+]
+}
