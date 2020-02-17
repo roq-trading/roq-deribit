@@ -47,7 +47,6 @@ ROQ_CHECK_OPENSSL
 PKG_CHECK_MODULES([ROQ_API], [roq-api])
 PKG_CHECK_MODULES([ROQ_CORE], [roq-core])
 PKG_CHECK_MODULES([ROQ_SERVER], [roq-server])
-PKG_CHECK_MODULES([ROQ_CLIENT], [roq-client])
 
 AC_ARG_ENABLE([benchmark],
 	      AS_HELP_STRING([--enable-benchmark], [Enable benchmark]),
