@@ -14,9 +14,10 @@
 #include "roq/core/event/base.h"
 #include "roq/core/event/dns_base.h"
 
+#include "roq/core/oms/order_cache.h"
+
 #include "roq/deribit/config.h"
 #include "roq/deribit/fix.h"
-#include "roq/deribit/order_mapping.h"
 #include "roq/deribit/random.h"
 
 // fix (inbound)
@@ -87,18 +88,6 @@ class Gateway final : public server::Handler {
       const T& value,
       bool is_last);
 
-  bool validate(const CreateOrderEvent& event);
-
-  bool validate(
-      const ModifyOrderEvent& event,
-      uint32_t gateway_order_id,
-      const std::string_view& external_order_id);
-
-  bool validate(
-      const CancelOrderEvent& event,
-      uint32_t gateway_order_id,
-      const std::string_view& external_order_id);
-
  private:
   server::Dispatcher& _dispatcher;
   // config
@@ -129,14 +118,7 @@ class Gateway final : public server::Handler {
   core::page_aligned_vector<MBPUpdate> _bid, _ask;
   core::page_aligned_vector<Trade> _trade;
   // order manager
-  std::unordered_map<uint64_t, OrderMapping> _order_mapping;
-  core::hash::map<std::string, uint64_t> _order_lookup;
-
-  decltype(_order_mapping)::iterator find_order_mapping(  // XXX move
-      const std::string_view& cl_ord_id,
-      const std::string_view& orig_cl_ord_id);
-  decltype(_order_mapping)::iterator create_order_mapping(  // XXX move
-      const fix::ExecutionReport& execution_report);
+  core::oms::OrderCache _order_cache;
 };
 
 }  // namespace deribit

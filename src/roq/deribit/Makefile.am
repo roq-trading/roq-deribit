@@ -39,6 +39,5 @@ roq_deribit_SOURCES = \
 	fix.cpp \
 	gateway.cpp \
 	options.cpp \
-	order_mapping.cpp \
 	random.cpp \
 	main.cpp
