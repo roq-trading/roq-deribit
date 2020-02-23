@@ -72,8 +72,6 @@ class FIX final : public core::net::Manager::Handler {
 
   bool ready() const;
 
-  std::string_view next_request_id();
-
   void operator()(const StartEvent&);
   void operator()(const StopEvent&);
   void operator()(const TimerEvent&);

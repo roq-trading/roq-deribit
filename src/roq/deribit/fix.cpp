@@ -88,20 +88,6 @@ bool FIX::ready() const {
   return _state == State::READY;
 }
 
-std::string_view FIX::next_request_id() {
-  _buffer.clear();
-  // XXX core::stack::Buffer::insert ???
-  // _buffer.insert(
-  //     _buffer.end(),
-  //     {'r', 'o', 'q', '-'});
-  core::charconv::to_string(
-      std::back_inserter(_buffer),
-      ++_request_id);
-  return std::string_view(
-      _buffer.data(),
-      _buffer.size());
-}
-
 void FIX::operator()(const StartEvent&) {
   _connection.start();
 }
@@ -262,14 +248,16 @@ void FIX::send_heartbeat(const std::string_view& test_req_id) {
 }
 
 void FIX::send_test_request(std::chrono::nanoseconds now) {
+  // request_id is current time
   _buffer.clear();
   core::charconv::to_string(
       std::back_inserter(_buffer),
       now.count());
+  auto request_id = std::string_view(
+      _buffer.data(),
+      _buffer.size());
   fix::TestRequest test_request {
-    .test_req_id = std::string_view(
-        _buffer.data(),
-        _buffer.size()),
+    .test_req_id = request_id,
   };
   send(test_request);
 }

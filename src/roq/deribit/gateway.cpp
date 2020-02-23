@@ -108,28 +108,12 @@ void Gateway::operator()(const TimerEvent& event) {
 void Gateway::operator()(const ConnectionStatusEvent&) {
 }
 
-void Gateway::operator()(const CreateOrderEvent& event) {
-  DLOG(INFO)(FMT_STRING("event={}"), event);
-  // useful
+void Gateway::operator()(
+    const CreateOrderEvent& event,
+    const std::string_view& request_id,
+    uint32_t gateway_order_id) {
   auto& message_info = event.message_info;
   auto& create_order = event.create_order;
-  // validate
-  if (unlikely(_gateway_status != GatewayStatus::READY))
-    throw core::oms::Exception(Error::GATEWAY_NOT_READY);
-  if (unlikely(create_order.account.compare(_account) != 0))
-    throw core::oms::Exception(Error::INVALID_ACCOUNT);
-  if (unlikely(create_order.exchange.compare(FLAGS_exchange) != 0))
-    throw core::oms::Exception(Error::INVALID_EXCHANGE);
-  if (unlikely(create_order.position_effect != PositionEffect::UNDEFINED))
-    throw core::oms::Exception(Error::INVALID_POSITION_EFFECT);
-  if (unlikely(
-        create_order.order_template.empty() == false &&
-        create_order.order_template.compare("default") != 0))
-    throw core::oms::Exception(Error::INVALID_ORDER_TEMPLATE);
-  // TODO(thraneh): check against max_order_id before continuing
-  // let's try
-  auto gateway_order_id = _dispatcher.next_order_id();
-  auto request_id = _fix.next_request_id();
   core::stack::Buffer<char, 36> buffer;
   fmt::format_to(
       std::back_inserter(buffer),
@@ -151,44 +135,13 @@ void Gateway::operator()(const CreateOrderEvent& event) {
     .deribit_label = deribit_label,
   };
   _fix(new_order_single);
-  auto& order = _order_cache.create(
-      event,
-      gateway_order_id,
-      request_id);
-  DLOG(INFO)(FMT_STRING("order={}"), order);
-  _dispatcher.send_order_ack(
-      event,
-      gateway_order_id,
-      request_id);
-  order.update_request(
-      RequestType::CREATE_ORDER,
-      request_id);
-  DLOG(INFO)(FMT_STRING("order={}"), order);
 }
 
-void Gateway::operator()(const ModifyOrderEvent& event) {
-  DLOG(INFO)(FMT_STRING("event={}"), event);
-  auto& order = _order_cache.find(event);
-  DLOG(INFO)(FMT_STRING("order={}"), order);
-  // useful
+void Gateway::operator()(
+    const ModifyOrderEvent& event,
+    const std::string_view& request_id,
+    const core::oms::Order& order) {
   auto& modify_order = event.modify_order;
-  auto gateway_order_id = order.gateway_order_id();
-  auto exchange_order_id = order.exchange_order_id();
-  // validate
-  if (unlikely(_gateway_status != GatewayStatus::READY))
-    throw core::oms::Exception(
-        Error::GATEWAY_NOT_READY,
-        order);
-  if (unlikely(modify_order.account.compare(_account) != 0))
-    throw core::oms::Exception(
-        Error::INVALID_ACCOUNT,
-        order);
-  if (unlikely(exchange_order_id.empty()))
-    throw core::oms::Exception(
-        Error::UNKNOWN_EXCHANGE_ORDER_ID,
-        order);
-  // let's try
-  auto request_id = _fix.next_request_id();
   fix::OrderCancelReplaceRequest order_cancel_replace_request {
     .cl_ord_id = request_id,
     .orig_cl_ord_id = order.exchange_order_id(),
@@ -200,53 +153,17 @@ void Gateway::operator()(const ModifyOrderEvent& event) {
     .transact_time = order.update_time(),
   };
   _fix(order_cancel_replace_request);
-  _dispatcher.send_order_ack(
-      event,
-      gateway_order_id,
-      exchange_order_id,
-      request_id);
-  order.update_request(
-      RequestType::MODIFY_ORDER,
-      request_id);
 }
 
-void Gateway::operator()(const CancelOrderEvent& event) {
-  DLOG(INFO)(FMT_STRING("event={}"), event);
-  auto& order = _order_cache.find(event);
-  DLOG(INFO)(FMT_STRING("order={}"), order);
-  // useful
-  auto& cancel_order = event.cancel_order;
-  auto gateway_order_id = order.gateway_order_id();
-  auto exchange_order_id = order.exchange_order_id();
-  // validate
-  if (unlikely(_gateway_status != GatewayStatus::READY))
-    throw core::oms::Exception(
-        Error::GATEWAY_NOT_READY,
-        order);
-  if (unlikely(cancel_order.account.compare(_account) != 0))
-    throw core::oms::Exception(
-        Error::INVALID_ACCOUNT,
-        order);
-  if (unlikely(exchange_order_id.empty()))
-    throw core::oms::Exception(
-        Error::UNKNOWN_EXCHANGE_ORDER_ID,
-        order);
-  // let's try
-  auto request_id = _fix.next_request_id();
+void Gateway::operator()(
+    const CancelOrderEvent&,
+    const std::string_view& request_id,
+    const core::oms::Order& order) {
   fix::OrderCancelRequest order_cancel_request {
     .cl_ord_id = request_id,
     .orig_cl_ord_id = order.exchange_order_id(),
   };
   _fix(order_cancel_request);
-  _dispatcher.send_order_ack(
-      event,
-      gateway_order_id,
-      exchange_order_id,
-      request_id);
-  order.update_request(
-      RequestType::CANCEL_ORDER,
-      request_id);
-  DLOG(INFO)(FMT_STRING("order={}"), order);
 }
 
 void Gateway::operator()(Metrics& metrics) {
@@ -307,9 +224,7 @@ void Gateway::operator()(
   }
 
   // XXX we used to also create orders here...
-  auto found = _order_cache.find(
-      execution_report.cl_ord_id,
-      execution_report.orig_cl_ord_id,
+  auto found = _dispatcher.find_order(
       [&](auto& order) {
     DLOG(INFO)(FMT_STRING("order={}"), order);
 
@@ -477,7 +392,9 @@ void Gateway::operator()(
       DLOG_IF(FATAL, execution_report.fills_grp.size() > 0)(
           "UNEXPECTED");
     }
-  });
+  },
+      execution_report.cl_ord_id,
+      execution_report.orig_cl_ord_id);
 
   // TODO(thraneh): process fills? --> maintain positions
 
@@ -635,9 +552,7 @@ void Gateway::operator()(
 void Gateway::operator()(
     const fix::OrderCancelReject& order_cancel_reject) {
   assert(_gateway_status == GatewayStatus::READY);
-  auto found = _order_cache.find(
-      order_cancel_reject.cl_ord_id,
-      order_cancel_reject.orig_cl_ord_id,
+  auto found = _dispatcher.find_order(
       [&](auto& order) {
     constexpr auto origin = Origin::EXCHANGE;
     auto status = RequestStatus::UNDEFINED;
@@ -673,7 +588,9 @@ void Gateway::operator()(
           true);
       order.reset_request();
     }
-  });
+  },
+      order_cancel_reject.cl_ord_id,
+      order_cancel_reject.orig_cl_ord_id);
   LOG_IF(WARNING, found == false)("*** EXTERNAL ORDER ***");
 }
 
@@ -743,8 +660,7 @@ void Gateway::operator()(
       FMT_STRING("roq:{:06}"),
       reject.ref_seq_num);
 
-  auto found = _order_cache.find(
-      request_id,  // XXX WRONG !!!!!!!!!!!!!!!!!!!!!!!!!
+  auto found = _dispatcher.find_order(
       [&](const auto& order) {
     auto error = fix::map_error(reject.text);
     OrderAck order_ack {
@@ -763,7 +679,8 @@ void Gateway::operator()(
         order.user_id(),
         order_ack,
         true);
-  });
+  },
+      request_id);  // XXX WRONG !!!!!!!!!!!!!!!!!!!!!!!!!
   LOG_IF(FATAL, found == false)("unexpected");  // XXX disconnect and restart ???
 }
 
@@ -909,7 +826,7 @@ void Gateway::check_download() {
 void Gateway::download_securities() {
   assert(_gateway_status == GatewayStatus::DOWNLOADING);
   LOG(INFO)("... download securities");
-  auto request_id = _fix.next_request_id();
+  auto request_id = _dispatcher.next_request_id();
   fix::SecurityListRequest security_list_request {
     .security_req_id = request_id,
   };
@@ -920,7 +837,7 @@ void Gateway::download_securities() {
 void Gateway::download_positions() {
   assert(_gateway_status == GatewayStatus::DOWNLOADING);
   LOG(INFO)("... download positions");
-  auto request_id = _fix.next_request_id();
+  auto request_id = _dispatcher.next_request_id();
   fix::RequestForPositions request_for_positions {
     .pos_req_id = request_id,
     .pos_req_type = core::fix::PosReqType::POSITIONS,
@@ -932,7 +849,7 @@ void Gateway::download_positions() {
 void Gateway::download_orders() {
   assert(_gateway_status == GatewayStatus::DOWNLOADING);
   LOG(INFO)("... download orders");
-  auto request_id = _fix.next_request_id();
+  auto request_id = _dispatcher.next_request_id();
   fix::OrderMassStatusRequest order_mass_status_request {
     .mass_status_req_id = request_id,
     .mass_status_req_type = core::fix::MassStatusReqType::ORDERS,
@@ -947,7 +864,7 @@ void Gateway::download_user() {
   assert(_currencies.empty() == false);
   _download_users = _currencies.size();  // async countdown
   for (auto& currency : _currencies) {
-    auto request_id = _fix.next_request_id();
+    auto request_id = _dispatcher.next_request_id();
     fix::UserRequest user_request_btc {
       .user_request_id = request_id,
       .username = _access_key,
@@ -972,7 +889,7 @@ void Gateway::subscribe_market_data() {
     auto count = std::min<size_t>(
         _symbols.size() - offset,
         FLAGS_max_batch_size);
-    auto request_id = _fix.next_request_id();
+    auto request_id = _dispatcher.next_request_id();
     fix::MarketDataRequest market_data_request {
       .md_req_id = request_id,
       .symbols = decltype(fix::MarketDataRequest::symbols)(

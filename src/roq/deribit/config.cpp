@@ -6,6 +6,8 @@
 
 #include "roq/logging.h"
 
+#include "roq/deribit/options.h"
+
 namespace roq {
 namespace deribit {
 
@@ -20,6 +22,7 @@ std::string Config::get_account() const {
 }
 
 void Config::dispatch(server::Config::Handler& handler) const {
+  handler(FLAGS_exchange);
   handler(symbols);
   for (auto iter : accounts)
     handler(iter.second);
