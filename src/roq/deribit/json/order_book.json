@@ -1,6 +1,6 @@
 {
 "name": "OrderBook",
-"type": "json::item",
+"type": "item",
 "values": [
 	{ "name": "ask_iv", "type": "double" },
 	{ "name": "asks" },

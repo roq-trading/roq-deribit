@@ -1,6 +1,6 @@
 {
 "name": "Ticker",
-"type": "json::item",
+"type": "item",
 "values": [
 	{ "name": "best_ask_amount", "type": "double" },
 	{ "name": "best_ask_price", "type": "double" },

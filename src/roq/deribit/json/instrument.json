@@ -1,6 +1,6 @@
 {
 "name": "Instrument",
-"type": "json::item",
+"type": "item",
 "values": [
 	{ "name": "base_currency", "type": "std::string_view" },
 	{ "name": "contract_size", "type": "double" },

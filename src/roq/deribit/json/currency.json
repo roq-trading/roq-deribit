@@ -1,6 +1,6 @@
 {
 "name": "Currency",
-"type": "json::item",
+"type": "item",
 "values": [
 	{ "name": "coin_type", "type": "std::string_view" },
 	{ "name": "currency_long", "type": "std::string_view" },
