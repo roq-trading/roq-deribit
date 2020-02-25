@@ -1,0 +1,15 @@
+{
+"name": "OrderCancelReplaceRequest",
+"type": "struct",
+"values": [
+	{ "tag": 41, "name": "OrigClOrdID", "type": "std::string_view" },
+	{ "tag": 11, "name": "ClOrdID", "type": "std::string_view" },
+	{ "tag": 60, "name": "TransactTime", "type": "std::chrono::nanoseconds" },
+	{ "tag": 54, "name": "Side", "type": "roq::core::fix::Side" },
+	{ "tag": 38, "name": "OrderQty", "type": "double" },
+	{ "tag": 40, "name": "OrdType", "type": "double" },
+	{ "tag": 44, "name": "Price", "type": "double" },
+	{ "tag": 55, "name": "Symbol", "type": "std::string_view" },
+	{ "tag": 18, "name": "ExecInst", "type": "std::string_view" }
+]
+}

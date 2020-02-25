@@ -867,6 +867,7 @@ void Gateway::download_user() {
     auto request_id = _dispatcher.next_request_id();
     fix::UserRequest user_request_btc {
       .user_request_id = request_id,
+      // .request_type = core::fix::UserRequestType::REQUEST_INDIVIDUAL_USER_STATUS,
       .username = _access_key,
       .currency = static_cast<std::string_view>(currency),
     };

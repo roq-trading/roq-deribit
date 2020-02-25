@@ -1,0 +1,11 @@
+{
+"name": "Reject",
+"type": "simple",
+"values": [
+	{ "tag": 45, "name": "RefSeqNum", "type": "uint64_t" },
+	{ "tag": 371, "name": "RefTagID", "type": "uint32_t" },
+	{ "tag": 372, "name": "RefMsgType", "type": "std::string_view" },
+	{ "tag": 373, "name": "SessionRejectReason", "type": "std::string_view" },
+	{ "tag": 58, "name": "Text", "type": "std::string_view" }
+]
+}

@@ -1,0 +1,10 @@
+{
+"name": "SecurityList",
+"type": "comp",
+"values": [
+	{ "tag": 320, "name": "SecurityReqId", "type": "std::string_view" },
+	{ "tag": 322, "name": "SecurityResponseID", "type": "std::string_view" },
+	{ "tag": 560, "name": "SecurityListRequestType", "type": "roq::core::fix::SecurityRequestResult" },
+	{ "tag": 146, "name": "NoRelatedSym", "type": "roq::span<Instrument>" }
+]
+}

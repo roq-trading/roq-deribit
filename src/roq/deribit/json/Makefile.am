@@ -38,14 +38,14 @@ libroq_deribit_json_la_SOURCES = \
 
 .json.h:
 	@abs_top_builddir@/autogen/autogen.py \
-		--namespace=deribit/json \
+		--namespace=roq/deribit/json \
 		--output-type json \
 		--file-type h \
 		$< > $@
 
 .json.cpp:
 	@abs_top_builddir@/autogen/autogen.py \
-		--namespace=deribit/json \
+		--namespace=roq/deribit/json \
 		--output-type json \
 		--file-type cpp \
 		$< > $@

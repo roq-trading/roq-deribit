@@ -1,0 +1,8 @@
+{
+"name": "OrderCancelRequest",
+"type": "struct",
+"values": [
+	{ "tag": 11, "name": "ClOrdID", "type": "std::string_view" },
+	{ "tag": 41, "name": "OrigClOrdID", "type": "std::string_view" }
+]
+}

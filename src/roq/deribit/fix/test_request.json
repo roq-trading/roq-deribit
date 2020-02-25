@@ -1,5 +1,5 @@
 {
-"name": "Heartbeat",
+"name": "TestRequest",
 "type": "simple",
 "values": [
 	{ "tag": 112, "name": "TestReqId", "type": "std::string_view" }

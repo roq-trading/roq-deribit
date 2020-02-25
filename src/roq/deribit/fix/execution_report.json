@@ -1,0 +1,32 @@
+{
+"name": "ExecutionReport",
+"type": "comp",
+"values": [
+	{ "tag": 11, "name": "ClOrdID", "type": "std::string_view" },
+	{ "tag": 41, "name": "OrigClOrdID", "type": "std::string_view" },
+	{ "tag": 39, "name": "OrdStatus", "type": "roq::core::fix::OrdStatus" },
+	{ "tag": 54, "name": "Side", "type": "roq::core::fix::Side" },
+	{ "tag": 60, "name": "TransactTime", "type": "std::chrono::nanoseconds" },
+	{ "tag": 12, "name": "Comission", "type": "double" },
+	{ "tag": 151, "name": "LeavesQty", "type": "double" },
+	{ "tag": 14, "name": "CumQty", "type": "double" },
+	{ "tag": 38, "name": "OrderQty", "type": "double" },
+	{ "tag": 40, "name": "OrdType", "type": "roq::core::fix::OrdType" },
+	{ "tag": 44, "name": "Price", "type": "double" },
+	{ "tag": 18, "name": "ExecInst", "type": "std::string_view" },
+	{ "tag": 103, "name": "OrdRejReason", "type": "roq::core::fix::OrdRejReason" },
+	{ "tag": 58, "name": "Text", "type": "std::string_view" },
+	{ "tag": 207, "name": "SecurityExchange", "type": "std::string_view" },
+	{ "tag": 55, "name": "Symbol", "type": "std::string_view" },
+	{ "tag": 854, "name": "QtyType", "type": "roq::core::fix::QtyType" },
+	{ "tag": 231, "name": "ContractMultiplier", "type": "double" },
+	{ "tag": 6, "name": "AvgPx", "type": "double" },
+	{ "tag": 210, "name": "MaxShow", "type": "double" },
+	{ "tag": 10012, "name": "DeribitAdvOrderType", "type": "std::string_view" },
+	{ "tag": 1188, "name": "Volatility", "type": "double" },
+	{ "tag": 839, "name": "PeggedPrice", "type": "double" },
+	{ "tag": 31, "name": "LastPx", "type": "double" },
+	{ "tag": 32, "name": "LastQty", "type": "double" },
+	{ "tag": 1362, "name": "NoFills", "type": "roq::span<Fill>" }
+]
+}

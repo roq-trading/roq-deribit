@@ -1,0 +1,18 @@
+{
+"name": "MarketDataSnapshotFullRefresh",
+"type": "comp",
+"values": [
+	{ "tag": 55, "name": "Symbol", "type": "std::string_view" },
+	{ "tag": 262, "name": "MDReqID", "type": "std::string_view" },
+	{ "tag": 311, "name": "UnderlyingSymbol", "type": "std::string_view" },
+	{ "tag": 810, "name": "UnderlyingPx", "type": "double" },
+	{ "tag": 231, "name": "ContractMultiplier", "type": "double" },
+	{ "tag": 201, "name": "PutOrCall", "type": "roq::core::fix::PutOrCall" },
+	{ "tag": 100087, "name": "TradeVolume24h", "type": "double" },
+	{ "tag": 100090, "name": "MarkPrice", "type": "double" },
+	{ "tag": 746, "name": "OpenInterest", "type": "double" },
+	{ "tag": 100092, "name": "CurrentFunding", "type": "double" },
+	{ "tag": 100093, "name": "Funding8h", "type": "double" },
+	{ "tag": 268, "name": "NoMdEntries", "type": "roq::span<MDFull>" }
+]
+}

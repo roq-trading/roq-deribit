@@ -1,0 +1,15 @@
+{
+"name": "Logon",
+"type": "simple",
+"values": [
+	{ "tag": 108, "name": "HeartBtInt", "type": "uint16_t" },
+	{ "tag": 95, "name": "RawDataLength", "type": "std::string_view" },
+	{ "tag": 96, "name": "RawData", "type": "std::string_view" },
+	{ "tag": 553, "name": "Username", "type": "std::string_view" },
+	{ "tag": 554, "name": "Password", "type": "std::string_view" },
+	{ "tag": 9002, "name": "UseWordsafeTags", "type": "bool" },
+	{ "tag": 9001, "name": "CancelOnDisconnect", "type": "bool" },
+	{ "tag": 9004, "name": "DeribitAppId", "type": "std::string_view" },
+	{ "tag": 9005, "name": "DeribitAppSig", "type": "std::string_view" }
+]
+}

@@ -1,0 +1,18 @@
+{
+"name": "PositionQty",
+"type": "item",
+"values": [
+	{ "tag": 703, "name": "PosType", "type": "roq::core::fix::PosType" },
+	{ "tag": 704, "name": "LongQty", "type": "double" },
+	{ "tag": 705, "name": "ShortQty", "type": "double" },
+	{ "tag": 55, "name": "Symbol", "type": "std::string_view" },
+	{ "tag": 854, "name": "QtyType", "type": "roq::core::fix::QtyType" },
+	{ "tag": 231, "name": "ContractMultiplier", "type": "double" },
+	{ "tag": 883, "name": "UnderlyingEndPrice", "type": "double" },
+	{ "tag": 54, "name": "Side", "type": "roq::core::fix::Side" },
+	{ "tag": 730, "name": "SettlPrice", "type": "double" },
+	{ "tag": 96, "name": "RawData", "type": "std::string_view" },
+	{ "tag": 100088, "name": "DeribitLiquidationPrice", "type": "double" },
+	{ "tag": 100089, "name": "DeribitSizeInCurrency", "type": "double" }
+]
+}

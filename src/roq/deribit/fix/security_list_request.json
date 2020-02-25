@@ -1,0 +1,8 @@
+{
+"name": "SecurityListRequest",
+"type": "simple",
+"values": [
+	{ "tag": 320, "name": "SecurityReqId", "type": "std::string_view" },
+	{ "tag": 559, "name": "SecurityListRequestType", "type": "roq::core::fix::SecurityListRequestType" }
+]
+}
