@@ -30,10 +30,10 @@ TEST(fix_user_response, parse_message) {
         EXPECT_DOUBLE_EQ(user_response.deribit_user_balance, 10.0);
         EXPECT_DOUBLE_EQ(user_response.deribit_user_initial_margin, 0.0);
         EXPECT_DOUBLE_EQ(user_response.deribit_user_maintenance_margin, 0.0);
-        EXPECT_DOUBLE_EQ(user_response.deribit_unrealized_pl, 0.0);
-        EXPECT_DOUBLE_EQ(user_response.deribit_realized_pl, 0.0);
-        EXPECT_DOUBLE_EQ(user_response.deribit_total_pl, 0.0);
-        EXPECT_DOUBLE_EQ(user_response.deribit_margin_balance, 10.0);
+        EXPECT_DOUBLE_EQ(user_response.deribit_user_unrealized_pl, 0.0);
+        EXPECT_DOUBLE_EQ(user_response.deribit_user_realized_pl, 0.0);
+        EXPECT_DOUBLE_EQ(user_response.deribit_user_total_pl, 0.0);
+        EXPECT_DOUBLE_EQ(user_response.deribit_user_margin_balance, 10.0);
       },
       message,
       std::strlen(message));

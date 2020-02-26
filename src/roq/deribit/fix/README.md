@@ -1,4 +1,15 @@
 
+There's no core functionality to support missing values
+RequestForPositions
+	{ "tag": 15, "name": "Currency", "type": "std::string_view" }
+
+Online documentation has wrong key field
+MDFull
+	{ "tag": 269, "name": "MDEntryType", "type": "roq::core::fix::MDEntryType" },
+
+
+
+
 ExecutionReport
 
 1362	NoFills	No	Number of immediate fill entries for the order

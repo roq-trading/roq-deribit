@@ -71,10 +71,18 @@ class Gateway final : public server::Handler {
   void operator()(const fix::UserResponse&);
 
  private:
+  enum class Download {
+    NONE,
+    SECURITIES,
+    POSITIONS,
+    ORDERS,
+    USER,
+  };
+
   void update(GatewayStatus gateway_status);
 
   void begin_download();
-  void check_download();
+  void check_download(Download download);
 
   void download_securities();
   void download_positions();
@@ -109,13 +117,7 @@ class Gateway final : public server::Handler {
   // connections
   FIX _fix;
   // download
-  enum class Download {
-    NONE,
-    SECURITIES,
-    POSITIONS,
-    ORDERS,
-    USER,
-  } _download = Download::NONE;
+  Download _download = Download::NONE;
   uint32_t _download_execution_reports = 0;
   uint32_t _download_users = 0;
   core::hash::set<std::string> _currencies;

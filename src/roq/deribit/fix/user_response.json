@@ -2,10 +2,10 @@
 "name": "UserResponse",
 "type": "simple",
 "values": [
-	{ "tag": 923, "name": "UserRequestID", "type": "std::string_view" },
-	{ "tag": 553, "name": "Username", "type": "std::string_view" },
+	{ "tag": 923, "name": "UserRequestID", "type": "std::string_view", "required": true },
+	{ "tag": 553, "name": "Username", "type": "std::string_view", "required": true },
 	{ "tag": 926, "name": "UserStatus", "type": "roq::core::fix::UserStatus" },
-	{ "tag": 15, "name": "Currency", "type": "std::string_view" },
+	{ "tag": 15, "name": "Currency", "type": "std::string_view", "custom": true },
 	{ "tag": 100001, "name": "DeribitUserEquity", "type": "double", "custom": true },
 	{ "tag": 100002, "name": "DeribitUserBalance", "type": "double", "custom": true },
 	{ "tag": 100003, "name": "DeribitUserInitialMargin", "type": "double", "custom": true },

@@ -3,7 +3,7 @@
 "type": "simple",
 "values": [
 	{ "tag": 58, "name": "Text", "type": "std::string_view" },
-	{ "tag": 262, "name": "MDReqID", "type": "std::string_view" },
-	{ "tag": 281, "name": "MDReqRejReason", "type": "roq::core::fix::MDReqRejReason" }
+	{ "tag": 262, "name": "MDReqID", "type": "std::string_view", "required": true },
+	{ "tag": 281, "name": "MDReqRejReason", "type": "roq::core::fix::MDReqRejReason", "required": true }
 ]
 }

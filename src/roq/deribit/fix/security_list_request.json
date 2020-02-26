@@ -1,8 +1,8 @@
 {
 "name": "SecurityListRequest",
-"type": "simple",
+"type": "struct",
 "values": [
-	{ "tag": 320, "name": "SecurityReqId", "type": "std::string_view" },
-	{ "tag": 559, "name": "SecurityListRequestType", "type": "roq::core::fix::SecurityListRequestType" }
+	{ "tag": 320, "name": "SecurityReqId", "type": "std::string_view", "required": true },
+	{ "tag": 559, "name": "SecurityListRequestType", "type": "roq::core::fix::SecurityListRequestType", "required": true }
 ]
 }

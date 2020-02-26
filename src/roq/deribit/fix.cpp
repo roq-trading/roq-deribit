@@ -7,6 +7,8 @@
 #include "roq/deribit/gateway.h"
 #include "roq/deribit/options.h"
 
+#include "roq/deribit/fix/deribit.h"
+
 #include "roq/core/debug.h"
 
 namespace roq {
@@ -225,10 +227,14 @@ void FIX::send_logon() {
   auto password = _random.create_password(raw_data);
   fix::Logon logon {
     .heart_bt_int = static_cast<uint16_t>(FLAGS_ping_freq_secs),
+    .raw_data_length = static_cast<uint32_t>(raw_data.length()),
     .raw_data = raw_data,
     .username = _access_key,
     .password = password,
-    .deribit_cancel_on_disconnect = FLAGS_cancel_on_disconnect,
+    .use_wordsafe_tags = false,
+    .cancel_on_disconnect = FLAGS_cancel_on_disconnect,
+    .deribit_app_id = std::string_view(),
+    .deribit_app_sig = std::string_view(),
   };
   send(logon);
 }

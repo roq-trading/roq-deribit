@@ -20,9 +20,11 @@ TEST(fix_new_order_single, create_message) {
     .order_qty = 2.0,
     .price = 0.5,
     .symbol = "BTC-27SEP19",
+    .exec_inst = std::string_view(),
     .ord_type = core::fix::OrdType::LIMIT,
     .time_in_force = core::fix::TimeInForce::GTC,
-    .deribit_label = "roq;123;345"
+    .deribit_label = "roq;123;345",
+    .deribit_adv_order_type = '\0',
   };
   core::fix::Writer writer(
       buffer,

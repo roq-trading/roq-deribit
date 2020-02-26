@@ -130,12 +130,24 @@ void Gateway::operator()(
     .order_qty = create_order.quantity,
     .price = create_order.price,
     .symbol = create_order.symbol,
+    .exec_inst = std::string_view(),
     .ord_type = core::fix::map(create_order.order_type),
     .time_in_force = core::fix::map(create_order.time_in_force),
     .deribit_label = deribit_label,
+    .deribit_adv_order_type = '\0',
   };
   _fix(new_order_single);
 }
+  std::string_view cl_ord_id;
+  roq::core::fix::Side side = roq::core::fix::Side::UNDEFINED;
+  double order_qty = std::numeric_limits<double>::quiet_NaN();
+  double price = std::numeric_limits<double>::quiet_NaN();
+  std::string_view symbol;
+  std::string_view exec_inst;
+  roq::core::fix::OrdType ord_type = roq::core::fix::OrdType::UNDEFINED;
+  roq::core::fix::TimeInForce time_in_force = roq::core::fix::TimeInForce::UNDEFINED;
+  uint32_t deribit_label = 0;
+  char deribit_adv_order_type = '\0';
 
 void Gateway::operator()(
     const ModifyOrderEvent& event,
@@ -143,14 +155,15 @@ void Gateway::operator()(
     const core::oms::Order& order) {
   auto& modify_order = event.modify_order;
   fix::OrderCancelReplaceRequest order_cancel_replace_request {
-    .cl_ord_id = request_id,
     .orig_cl_ord_id = order.exchange_order_id(),
+    .cl_ord_id = request_id,
+    .transact_time = order.update_time(),
     .side = core::fix::map(order.side()),
     .order_qty = modify_order.quantity,
     .ord_type = core::fix::map(order.order_type()),
     .price = modify_order.price,
     .symbol = order.symbol(),
-    .transact_time = order.update_time(),
+    .exec_inst = std::string_view(),
   };
   _fix(order_cancel_replace_request);
 }
@@ -217,7 +230,7 @@ void Gateway::operator()(
       assert(_gateway_status == GatewayStatus::DOWNLOADING);
       _download_execution_reports = execution_report.tot_num_reports;
       if (_download_execution_reports == 0)
-        check_download();
+        check_download(Download::ORDERS);
       return;
     default:
       break;
@@ -339,7 +352,7 @@ void Gateway::operator()(
       order.reset_request();
     }
     if (order_update) {
-      for (auto& fills : execution_report.fills_grp) {
+      for (auto& fills : execution_report.no_fills) {
         // TODO(thraneh): map fill_exec_id <-> local_trade_id ???
         auto trade_id = _dispatcher.next_trade_id();
         TradeUpdate trade_update {
@@ -389,7 +402,7 @@ void Gateway::operator()(
           true);
 
     } else {
-      DLOG_IF(FATAL, execution_report.fills_grp.size() > 0)(
+      DLOG_IF(FATAL, execution_report.no_fills.size() > 0)(
           "UNEXPECTED");
     }
   },
@@ -407,7 +420,7 @@ void Gateway::operator()(
   // download end?
   if (_download_execution_reports &&
       0 == --_download_execution_reports) {
-    check_download();
+    check_download(Download::ORDERS);
   }
 }
 
@@ -417,7 +430,7 @@ void Gateway::operator()(
   bool success = true;
   size_t bid_length = 0, ask_length = 0, trade_length = 0;
   std::chrono::nanoseconds exchange_time_utc = {};
-  for (auto& item : market_data_incremental_refresh.md_inc_grp) {
+  for (auto& item : market_data_incremental_refresh.no_md_entries) {
     if (success == false)
       break;
     if (exchange_time_utc < item.md_entry_date)
@@ -516,7 +529,7 @@ void Gateway::operator()(
       FMT_STRING("Received market data snapshot for symbol=\"{}\""),
       market_data_snapshot_full_refresh.symbol);
   size_t bid_length = 0, ask_length = 0;
-  for (auto& item : market_data_snapshot_full_refresh.md_full_grp) {
+  for (auto& item : market_data_snapshot_full_refresh.no_md_entries) {
     switch (item.md_entry_type) {
       case core::fix::MDEntryType::BID: {
         mbp_update(_bid, bid_length, item);
@@ -596,13 +609,11 @@ void Gateway::operator()(
 
 void Gateway::operator()(
     const fix::PositionReport& position_report) {
-  assert(_gateway_status == GatewayStatus::DOWNLOADING);
   switch (position_report.pos_req_result) {
     case core::fix::PosReqResult::VALID:
       switch (position_report.pos_req_type) {
         case core::fix::PosReqType::POSITIONS: {
-          size_t position_count = 0;
-          for (auto& position : position_report.positions) {
+          for (auto& position : position_report.no_positions) {
             PositionUpdate buy {
               .account = _account,
               .exchange = FLAGS_exchange,
@@ -631,12 +642,7 @@ void Gateway::operator()(
             enqueue(
                 sell,
                 true);
-            ++position_count;
           }
-          VLOG(1)(
-              FMT_STRING("- positions: {} (/{})"),
-              position_count,
-              position_report.positions.size());
           break;
         }
         default:
@@ -648,12 +654,14 @@ void Gateway::operator()(
       DLOG(FATAL)("UNEXPECTED");
       break;
   }
-
-  check_download();
+  check_download(Download::POSITIONS);
 }
 
 void Gateway::operator()(
     const fix::Reject& reject) {
+  LOG(WARNING)(
+      FMT_STRING("reject={}"),
+      reject);
   assert(_gateway_status != GatewayStatus::DISCONNECTED);
 
   auto request_id = fmt::format(  // FIXME(thraneh): this is *wrong*
@@ -688,11 +696,11 @@ void Gateway::operator()(
     const fix::SecurityList& security_list) {
   assert(_gateway_status == GatewayStatus::DOWNLOADING);
   _currencies.clear();
-  if (security_list.instruments.size() > 0) {
+  if (security_list.no_related_sym.size() > 0) {
     assert(_symbols.empty());
     size_t security_count = 0;
-    _symbols.reserve(security_list.instruments.size());  // note! alloc
-    for (auto& instrument : security_list.instruments) {
+    _symbols.reserve(security_list.no_related_sym.size());  // note! alloc
+    for (auto& instrument : security_list.no_related_sym) {
       // note!
       //   USD will cause a Reject
       //   using commission currency because it requires funding
@@ -734,9 +742,9 @@ void Gateway::operator()(
     VLOG(1)(
         FMT_STRING("- securities: {} (/{})"),
         security_count,
-        security_list.instruments.size());
+        security_list.no_related_sym.size());
   }
-  check_download();
+  check_download(Download::SECURITIES);
 }
 
 void Gateway::operator()(
@@ -752,7 +760,7 @@ void Gateway::operator()(
       true);
   if (_download == Download::USER) {
     if (_download_users && 0 == --_download_users)
-      check_download();
+      check_download(Download::USER);
   }
 }
 
@@ -786,13 +794,14 @@ void Gateway::begin_download() {
   download_securities();
 }
 
-void Gateway::check_download() {
-  assert(_download != Download::NONE);
-  assert(_gateway_status == GatewayStatus::DOWNLOADING);
+void Gateway::check_download(Download download) {
+  // if (_gateway_status != GatewayStatus::DOWNLOADING)
+  //   return;
+  if (download != _download)
+    return;
   switch (_download) {
     case Download::NONE:
-      assert(false);
-      break;
+      return;
     case Download::SECURITIES:
       LOG(INFO)("Download securities COMPLETED");
       download_positions();
@@ -829,6 +838,8 @@ void Gateway::download_securities() {
   auto request_id = _dispatcher.next_request_id();
   fix::SecurityListRequest security_list_request {
     .security_req_id = request_id,
+    .security_list_request_type =
+      core::fix::SecurityListRequestType::ALL_SECURITIES,
   };
   _fix(security_list_request);
   _download = Download::SECURITIES;
@@ -841,6 +852,9 @@ void Gateway::download_positions() {
   fix::RequestForPositions request_for_positions {
     .pos_req_id = request_id,
     .pos_req_type = core::fix::PosReqType::POSITIONS,
+    .subscription_request_type =
+      roq::core::fix::SubscriptionRequestType::SNAPSHOT_UPDATES,
+    .currency = std::string_view(),
   };
   _fix(request_for_positions);
   _download = Download::POSITIONS;
@@ -867,7 +881,7 @@ void Gateway::download_user() {
     auto request_id = _dispatcher.next_request_id();
     fix::UserRequest user_request_btc {
       .user_request_id = request_id,
-      // .request_type = core::fix::UserRequestType::REQUEST_INDIVIDUAL_USER_STATUS,
+      .user_request_type = core::fix::UserRequestType::REQUEST_INDIVIDUAL_USER_STATUS,
       .username = _access_key,
       .currency = static_cast<std::string_view>(currency),
     };
@@ -883,6 +897,15 @@ void Gateway::subscribe_market_data() {
     return;
   }
   LOG(INFO)("Subscribe market data");
+  fix::MDReq md_entry_types[] = { {
+      .md_entry_type = core::fix::MDEntryType::BID,
+    }, {
+      .md_entry_type = core::fix::MDEntryType::OFFER,
+    }, {
+      .md_entry_type = core::fix::MDEntryType::TRADE,
+    }
+  };
+  std::vector<fix::InstrmtMDReq> related_sym(FLAGS_max_batch_size);
   for (size_t i = 0;; ++i) {
     auto offset = i * FLAGS_max_batch_size;
     if (_symbols.size() < offset)
@@ -890,12 +913,22 @@ void Gateway::subscribe_market_data() {
     auto count = std::min<size_t>(
         _symbols.size() - offset,
         FLAGS_max_batch_size);
+    for (size_t i = 0; i < count; ++i)
+      related_sym[i].symbol = _symbols[offset + i];
     auto request_id = _dispatcher.next_request_id();
     fix::MarketDataRequest market_data_request {
       .md_req_id = request_id,
-      .symbols = decltype(fix::MarketDataRequest::symbols)(
-        &_symbols[offset],
-        count),
+      .subscription_request_type = core::fix::SubscriptionRequestType::SNAPSHOT_UPDATES,
+      .market_depth = 20,  // the maximum
+      .md_update_type = core::fix::MDUpdateType::INCREMENTAL_REFRESH,
+      .deribit_trade_amount = 0,  // none
+      .deribit_since_timestamp = {},  // none
+      .no_md_entry_types = roq::span(
+          md_entry_types,
+          std::size(md_entry_types)),
+      .no_related_sym = roq::span(
+          related_sym.data(),
+          count),
     };
     _fix(market_data_request);
   }

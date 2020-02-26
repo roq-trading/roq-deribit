@@ -7,11 +7,72 @@ libroq_deribit_fix_la_CPPFLAGS = \
 	-I$(top_srcdir)/src \
 	$(LIBCONFIG_CFLAGS) \
 	$(ROQ_CFLAGS)
+BUILT_SOURCES = \
+	execution_report.cpp \
+	execution_report.h \
+	fill.cpp \
+	fill.h \
+	heartbeat.cpp \
+	heartbeat.h \
+	instrmt_md_req.cpp \
+	instrmt_md_req.h \
+	instrument.cpp \
+	instrument.h \
+	logon.cpp \
+	logon.h \
+	logout.cpp \
+	logout.h \
+	market_data_incremental_refresh.cpp \
+	market_data_incremental_refresh.h \
+	market_data_request.cpp \
+	market_data_request.h \
+	market_data_request_reject.cpp \
+	market_data_request_reject.h \
+	market_data_snapshot_full_refresh.cpp \
+	market_data_snapshot_full_refresh.h \
+	md_full.cpp \
+	md_full.h \
+	md_inc.cpp \
+	md_inc.h \
+	md_req.cpp \
+	md_req.h \
+	new_order_single.cpp \
+	new_order_single.h \
+	order_cancel_reject.cpp \
+	order_cancel_reject.h \
+	order_cancel_replace_request.cpp \
+	order_cancel_replace_request.h \
+	order_cancel_request.cpp \
+	order_cancel_request.h \
+	order_mass_status_request.cpp \
+	order_mass_status_request.h \
+	position_qty.cpp \
+	position_qty.h \
+	position_report.cpp \
+	position_report.h \
+	reject.cpp \
+	reject.h \
+	request_for_positions.cpp \
+	request_for_positions.h \
+	resend_request.cpp \
+	resend_request.h \
+	security_list.cpp \
+	security_list.h \
+	security_list_request.cpp \
+	security_list_request.h \
+	test_request.cpp \
+	test_request.h \
+	user_request.cpp \
+	user_request.h \
+	user_response.cpp \
+	user_response.h
+CLEANFILES = $(BUILT_SOURCES)
 libroq_deribit_fix_la_SOURCES = \
 	deribit.cpp \
 	execution_report.cpp \
 	fill.cpp \
 	heartbeat.cpp \
+	instrmt_md_req.cpp \
 	instrument.cpp \
 	logon.cpp \
 	logout.cpp \
@@ -21,6 +82,7 @@ libroq_deribit_fix_la_SOURCES = \
 	market_data_snapshot_full_refresh.cpp \
 	md_full.cpp \
 	md_inc.cpp \
+	md_req.cpp \
 	new_order_single.cpp \
 	order_cancel_reject.cpp \
 	order_cancel_replace_request.cpp \
@@ -37,3 +99,17 @@ libroq_deribit_fix_la_SOURCES = \
 	user_request.cpp \
 	user_response.cpp \
 	utils.cpp
+
+.json.h:
+	@abs_top_builddir@/autogen/autogen.py \
+		--namespace=roq/deribit/fix \
+		--output-type fix \
+		--file-type h \
+		$< > $@
+
+.json.cpp:
+	@abs_top_builddir@/autogen/autogen.py \
+		--namespace=roq/deribit/fix \
+		--output-type fix \
+		--file-type cpp \
+		$< > $@

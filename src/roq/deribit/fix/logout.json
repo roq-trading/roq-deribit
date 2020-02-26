@@ -1,6 +1,6 @@
 {
 "name": "Logout",
-"type": "simple",
+"type": "simple2",
 "values": [
 	{ "tag": 58, "name": "Text", "type": "std::string_view" }
 ]

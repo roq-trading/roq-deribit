@@ -29,14 +29,14 @@ TEST(fix_position_report, parse_message) {
         EXPECT_EQ(position_report.pos_req_id, "roq-pos-003");
         EXPECT_EQ(position_report.pos_req_type, core::fix::PosReqType::POSITIONS);
         EXPECT_EQ(position_report.pos_req_result, core::fix::PosReqResult::VALID);
-        EXPECT_EQ(position_report.positions.size(), size_t{1});
-        auto& item = position_report.positions[0];
+        EXPECT_EQ(position_report.no_positions.size(), size_t{1});
+        auto& item = position_report.no_positions[0];
         EXPECT_DOUBLE_EQ(item.long_qty, 0.0);
         EXPECT_DOUBLE_EQ(item.short_qty, 0.0);
         EXPECT_EQ(item.symbol, "BTC-27SEP19");
         EXPECT_EQ(item.qty_type, core::fix::QtyType::CONTRACTS);
         EXPECT_DOUBLE_EQ(item.contract_multiplier, 10.0);
-        EXPECT_DOUBLE_EQ(item.underlying_price, 10184.50);
+        EXPECT_DOUBLE_EQ(item.underlying_end_price, 10184.50);
         EXPECT_DOUBLE_EQ(item.settl_price, 0.0);
       },
       message,
