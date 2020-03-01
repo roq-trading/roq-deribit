@@ -138,16 +138,6 @@ void Gateway::operator()(
   };
   _fix(new_order_single);
 }
-  std::string_view cl_ord_id;
-  roq::core::fix::Side side = roq::core::fix::Side::UNDEFINED;
-  double order_qty = std::numeric_limits<double>::quiet_NaN();
-  double price = std::numeric_limits<double>::quiet_NaN();
-  std::string_view symbol;
-  std::string_view exec_inst;
-  roq::core::fix::OrdType ord_type = roq::core::fix::OrdType::UNDEFINED;
-  roq::core::fix::TimeInForce time_in_force = roq::core::fix::TimeInForce::UNDEFINED;
-  uint32_t deribit_label = 0;
-  char deribit_adv_order_type = '\0';
 
 void Gateway::operator()(
     const ModifyOrderEvent& event,

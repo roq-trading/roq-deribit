@@ -36,21 +36,24 @@ template <>
 inline void update(
     Kind& result,
     const core::json::value_t& value) {
-  result = parse_kind(core::json::get<std::string_view>(value));
+  using result_type = std::remove_reference<decltype(result)>::type;
+  result = result_type(core::json::get<std::string_view>(value));
 }
 
 template <>
 inline void update(
     OptionType& result,
     const core::json::value_t& value) {
-  result = parse_option_type(core::json::get<std::string_view>(value));
+  using result_type = std::remove_reference<decltype(result)>::type;
+  result = result_type(core::json::get<std::string_view>(value));
 }
 
 template <>
 inline void update(
     State& result,
     const core::json::value_t& value) {
-  result = parse_state(core::json::get<std::string_view>(value));
+  using result_type = std::remove_reference<decltype(result)>::type;
+  result = result_type(core::json::get<std::string_view>(value));
 }
 
 }  // namespace json
