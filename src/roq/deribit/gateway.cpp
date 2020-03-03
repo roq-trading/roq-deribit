@@ -9,8 +9,6 @@
 
 #include "roq/core/fix/utils.h"
 
-#include "roq/core/oms/exception.h"
-
 #include "roq/deribit/options.h"
 
 #include "roq/deribit/fix/utils.h"
@@ -142,17 +140,17 @@ void Gateway::operator()(
 void Gateway::operator()(
     const ModifyOrderEvent& event,
     const std::string_view& request_id,
-    const core::oms::Order& order) {
+    const server::OMS_Order& order) {
   auto& modify_order = event.modify_order;
   fix::OrderCancelReplaceRequest order_cancel_replace_request {
-    .orig_cl_ord_id = order.exchange_order_id(),
+    .orig_cl_ord_id = order.external_order_id,
     .cl_ord_id = request_id,
-    .transact_time = order.update_time(),
-    .side = core::fix::map(order.side()),
+    .transact_time = order.update_time_utc,
+    .side = core::fix::map(order.side),
     .order_qty = modify_order.quantity,
-    .ord_type = core::fix::map(order.order_type()),
+    .ord_type = core::fix::map(order.order_type),
     .price = modify_order.price,
-    .symbol = order.symbol(),
+    .symbol = order.symbol,
     .exec_inst = std::string_view(),
   };
   _fix(order_cancel_replace_request);
@@ -161,10 +159,10 @@ void Gateway::operator()(
 void Gateway::operator()(
     const CancelOrderEvent&,
     const std::string_view& request_id,
-    const core::oms::Order& order) {
+    const server::OMS_Order& order) {
   fix::OrderCancelRequest order_cancel_request {
     .cl_ord_id = request_id,
-    .orig_cl_ord_id = order.exchange_order_id(),
+    .orig_cl_ord_id = order.external_order_id,
   };
   _fix(order_cancel_request);
 }
@@ -211,6 +209,81 @@ void Gateway::operator()(const FIX& fix) {
 //   ORDER_STATUS    FILLED              order update
 //   ORDER_STATUS    CANCELED            ack success
 
+auto compute_request_status(
+    auto request_type,
+    auto exec_type,
+    auto ord_status,
+    bool download) {
+  switch (exec_type) {
+    case core::fix::ExecType::REJECTED: {
+      switch (request_type) {
+        case RequestType::UNDEFINED:
+          LOG(WARNING)("*** EXTERNAL ACTION ***");
+          break;
+        case RequestType::CREATE_ORDER:
+        case RequestType::MODIFY_ORDER:
+        case RequestType::CANCEL_ORDER:
+          return RequestStatus::REJECTED;
+      }
+      break;
+    }
+    case core::fix::ExecType::CANCELED: {
+      switch (request_type) {
+        case RequestType::UNDEFINED:
+          LOG(WARNING)("*** EXTERNAL ACTION ***");
+          break;
+        case RequestType::CREATE_ORDER:
+        case RequestType::MODIFY_ORDER:
+          DLOG(FATAL)("UNEXPECTED");
+          break;
+        case RequestType::CANCEL_ORDER:
+          return RequestStatus::ACCEPTED;
+      }
+      break;
+    }
+    case core::fix::ExecType::ORDER_STATUS:
+      switch (ord_status) {
+        case core::fix::OrdStatus::NEW: {
+          switch (request_type) {
+            case RequestType::UNDEFINED:
+              LOG_IF(WARNING, download == false)("*** EXTERNAL ACTION ***");
+              break;
+            case RequestType::CREATE_ORDER:
+            case RequestType::MODIFY_ORDER:
+              return RequestStatus::ACCEPTED;
+            case RequestType::CANCEL_ORDER:
+              DLOG(FATAL)("UNEXPECTED");
+              break;
+          }
+          break;
+        }
+        case core::fix::OrdStatus::PARTIALLY_FILLED:
+        case core::fix::OrdStatus::FILLED:
+          break;
+        case core::fix::OrdStatus::CANCELED:
+          switch (request_type) {
+            case RequestType::UNDEFINED:
+              break;
+            case RequestType::CREATE_ORDER:
+            case RequestType::MODIFY_ORDER:
+              LOG(WARNING)("*** EXTERNAL ACTION ***");
+              break;
+            case RequestType::CANCEL_ORDER:
+              return RequestStatus::ACCEPTED;
+          }
+      break;
+        default:
+          DLOG(FATAL)("UNEXPECTED");
+          break;
+      }
+      break;
+    default:
+      DLOG(FATAL)("UNEXPECTED");
+      break;
+  }
+  return RequestStatus::UNDEFINED;
+}
+
 void Gateway::operator()(
     const fix::ExecutionReport& execution_report) {
   DLOG(INFO)(FMT_STRING("execution_report={}"), execution_report);
@@ -226,178 +299,77 @@ void Gateway::operator()(
       break;
   }
 
+  server::OMS_Lookup order_lookup {
+    .symbol = execution_report.symbol,
+    .side = core::fix::map(execution_report.side),
+    .status = core::fix::map(execution_report.ord_status),
+    .price = execution_report.price,
+    .remaining_quantity = execution_report.leaves_qty,
+    .traded_quantity = execution_report.cum_qty,
+    .commissions = execution_report.commission,
+    .timestamp = execution_report.transact_time,
+    .external_order_id = execution_report.order_id,
+  };
+
   // XXX we used to also create orders here...
   auto found = _dispatcher.find_order(
-      [&](auto& order) {
-    DLOG(INFO)(FMT_STRING("order={}"), order);
+      execution_report.cl_ord_id,
+      execution_report.orig_cl_ord_id,
+      order_lookup,
+      [&](const auto& order, auto& result) {
 
-    bool valid =
-      order.check_symbol(execution_report.symbol) &&
-      order.check_side(core::fix::map(execution_report.side)) &&
-      order.check_quantity(execution_report.order_qty);
+    result.request_status = compute_request_status(
+        order.request_type,
+        execution_report.exec_type,
+        execution_report.ord_status,
+        _download == Download::ORDERS);
 
-    LOG_IF(FATAL, valid == false)("*** SOMETHING WRONG ***");
-
-    order.update_exchange_order_id(execution_report.order_id);
-    order.update_traded_quantity(execution_report.last_qty);
-    order.update_time(execution_report.transact_time);
-    DLOG(INFO)(FMT_STRING("order={}"), order);
-
-    constexpr auto origin = Origin::EXCHANGE;
-    auto status = RequestStatus::UNDEFINED;
-    auto error = fix::map_error(execution_report.text);
-    bool order_update = true;
-    switch (execution_report.exec_type) {
-      case core::fix::ExecType::REJECTED: {
-        switch (order.request()) {
-          case RequestType::UNDEFINED:
-            LOG(WARNING)("*** EXTERNAL ACTION ***");
-            break;
-          case RequestType::CREATE_ORDER:
-            order_update = false;
-            [[ fallthrough ]];
-          case RequestType::MODIFY_ORDER:
-          case RequestType::CANCEL_ORDER:
-            status = RequestStatus::REJECTED;
-            break;
-        }
-        break;
-      }
-      case core::fix::ExecType::CANCELED: {
-        switch (order.request()) {
-          case RequestType::UNDEFINED:
-            LOG(WARNING)("*** EXTERNAL ACTION ***");
-            break;
-          case RequestType::CREATE_ORDER:
-          case RequestType::MODIFY_ORDER:
-            DLOG(FATAL)("UNEXPECTED");
-            break;
-          case RequestType::CANCEL_ORDER:
-            status = RequestStatus::ACCEPTED;
-            order_update = false;
-            break;
-        }
-        break;
-      }
-      case core::fix::ExecType::ORDER_STATUS:
-        switch (execution_report.ord_status) {
-          case core::fix::OrdStatus::NEW: {
-            switch (order.request()) {
-              case RequestType::UNDEFINED:
-                switch (_download) {
-                  case Download::NONE:
-                    LOG(WARNING)("*** EXTERNAL ACTION ***");
-                    break;
-                  case Download::ORDERS:
-                    break;
-                  default:
-                    DLOG(FATAL)("UNEXPECTED");
-                }
-                break;
-              case RequestType::CREATE_ORDER:
-              case RequestType::MODIFY_ORDER:
-                status = RequestStatus::ACCEPTED;
-                break;
-              case RequestType::CANCEL_ORDER:
-                DLOG(FATAL)("UNEXPECTED");
-                break;
-            }
-            break;
-          }
-          case core::fix::OrdStatus::PARTIALLY_FILLED:
-          case core::fix::OrdStatus::FILLED:
-            break;
-          case core::fix::OrdStatus::CANCELED:
-            // TODO(thraneh): how to signal external action
-            // -- we need to add an "expectation" into order?
-            break;
-          default:
-            DLOG(FATAL)("UNEXPECTED");
-            break;
-        }
-        break;
-      default:
-        DLOG(FATAL)("UNEXPECTED");
-        break;
+    if (result.request_status != RequestStatus::UNDEFINED) {
+      result.origin = Origin::EXCHANGE;
+      result.error = fix::map_error(execution_report.text);
+      result.text = execution_report.text;
     }
-    if (status != RequestStatus::UNDEFINED) {
-      OrderAck order_ack {
-        .account = _account,
-        .order_id = order.user_order_id(),
-        .type = order.request(),
-        .origin = origin,
-        .status = (error == Error::NONE)
-          ? RequestStatus::ACCEPTED
-          : RequestStatus::REJECTED,
-        .error = error,
-        .text = execution_report.text,
-        .gateway_order_id = order.gateway_order_id(),
-        .external_order_id = order.exchange_order_id(),
-        .request_id = execution_report.orig_cl_ord_id,
-      };
-      enqueue(
-          order.user_id(),
-          order_ack,
-          order_update == false);  // only "last" if no order_update
-      order.reset_request();
-    }
-    if (order_update) {
+
+    if (true) {
+      // XXX TODO all trades in 1 go
       for (auto& fills : execution_report.no_fills) {
         // TODO(thraneh): map fill_exec_id <-> local_trade_id ???
         auto trade_id = _dispatcher.next_trade_id();
-        TradeUpdate trade_update {
-          .account = _account,
-          .trade_id = trade_id,
-          .order_id = order.user_order_id(),
-          .exchange = FLAGS_exchange,
-          .symbol = execution_report.symbol,
-          .side = order.side(),
+        roq::Fill fill {
           .quantity = fills.fill_qty,
           .price = fills.fill_px,
+          .trade_id = trade_id,
+          .gateway_trade_id = trade_id,
+          .external_trade_id = {},
+        };
+        roq::core::copy_to(
+            fills.fill_exec_id,
+            fill.external_trade_id);
+        TradeUpdate trade_update {
+          .account = order.account,
+          .order_id = order.user_order_id,
+          .exchange = order.exchange,
+          .symbol = order.symbol,
+          .side = order.side,
           .position_effect = PositionEffect::UNDEFINED,
-          .order_template = std::string(),
+          .order_template = std::string_view(),
           .create_time_utc = execution_report.transact_time,
           .update_time_utc = execution_report.transact_time,
-          .gateway_order_id = order.gateway_order_id(),
-          .gateway_trade_id = trade_id,
-          .external_order_id = order.exchange_order_id(),
-          .external_trade_id = fills.fill_exec_id,
+          .gateway_order_id = order.gateway_order_id,
+          .external_order_id = order.external_order_id,
+          .fills = roq::span<Fill const>(&fill, 1),
         };
         enqueue(
-            order.user_id(),
+            order.user_id,
             trade_update,
             false);
       }
-      OrderUpdate order_update {
-        .account = _account,
-        .order_id = order.user_order_id(),
-        .exchange = FLAGS_exchange,
-        .symbol = execution_report.symbol,
-        .status = core::fix::map(execution_report.ord_status),
-        .side = order.side(),
-        .price = execution_report.price,
-        .remaining_quantity = execution_report.leaves_qty,
-        .traded_quantity = execution_report.cum_qty,
-        .position_effect = PositionEffect::UNDEFINED,
-        .order_template = std::string(),
-        .create_time_utc = order.create_time(),
-        .update_time_utc = order.update_time(),
-        .commissions = execution_report.commission,
-        .gateway_order_id = order.gateway_order_id(),
-        .external_order_id = order.exchange_order_id(),
-      };
-      enqueue(
-          order.user_id(),
-          order_update,
-          true);
 
     } else {
       DLOG_IF(FATAL, execution_report.no_fills.size() > 0)(
           "UNEXPECTED");
     }
-  },
-      execution_report.cl_ord_id,
-      execution_report.orig_cl_ord_id);
+  });
 
   // TODO(thraneh): process fills? --> maintain positions
 
@@ -555,45 +527,33 @@ void Gateway::operator()(
 void Gateway::operator()(
     const fix::OrderCancelReject& order_cancel_reject) {
   assert(_gateway_status == GatewayStatus::READY);
+
+  server::OMS_Lookup order_lookup {
+    .symbol = std::string_view(),
+    .side = Side::UNDEFINED,
+    .status = core::fix::map(order_cancel_reject.ord_status),
+    .price = std::numeric_limits<double>::quiet_NaN(),
+    .remaining_quantity = std::numeric_limits<double>::quiet_NaN(),
+    .traded_quantity = std::numeric_limits<double>::quiet_NaN(),
+    .commissions = std::numeric_limits<double>::quiet_NaN(),
+    .timestamp = {},
+    .external_order_id = std::string_view(),
+  };
+
   auto found = _dispatcher.find_order(
-      [&](auto& order) {
-    constexpr auto origin = Origin::EXCHANGE;
-    auto status = RequestStatus::UNDEFINED;
-    auto error = fix::map_error(order_cancel_reject.text);
-    switch (order.request()) {
-      case RequestType::UNDEFINED:
-        LOG(WARNING)("*** EXTERNAL ACTION ***");
-        break;
-      case RequestType::CREATE_ORDER:
-      case RequestType::MODIFY_ORDER:
-        DLOG(FATAL)("UNEXPECTED");
-        break;
-      case RequestType::CANCEL_ORDER:
-        status = RequestStatus::REJECTED;
-        break;
-    }
-    if (status != RequestStatus::UNDEFINED) {
-      OrderAck order_ack {
-        .account = _account,
-        .order_id = order.user_order_id(),
-        .type = order.request(),
-        .origin = origin,
-        .status = status,
-        .error = error,
-        .text = order_cancel_reject.text,
-        .gateway_order_id = order.gateway_order_id(),
-        .external_order_id = order.exchange_order_id(),
-        .request_id = order_cancel_reject.orig_cl_ord_id,
-      };
-      enqueue(
-          order.user_id(),
-          order_ack,
-          true);
-      order.reset_request();
-    }
-  },
       order_cancel_reject.cl_ord_id,
-      order_cancel_reject.orig_cl_ord_id);
+      order_cancel_reject.orig_cl_ord_id,
+      order_lookup,
+      [&](const auto& order, auto& result) {
+
+    DLOG_IF(FATAL, order.request_type != RequestType::MODIFY_ORDER)("UNEXPECTED");
+
+    result.origin = Origin::EXCHANGE;
+    result.request_status = RequestStatus::REJECTED;
+    result.error = fix::map_error(order_cancel_reject.text);
+    result.text = order_cancel_reject.text;
+  });
+
   LOG_IF(WARNING, found == false)("*** EXTERNAL ORDER ***");
 }
 
@@ -654,6 +614,8 @@ void Gateway::operator()(
       reject);
   assert(_gateway_status != GatewayStatus::DISCONNECTED);
 
+  LOG(FATAL)("Not supported");
+/*
   auto request_id = fmt::format(  // FIXME(thraneh): this is *wrong*
       FMT_STRING("roq:{:06}"),
       reject.ref_seq_num);
@@ -674,12 +636,13 @@ void Gateway::operator()(
       .request_id = request_id,
     };
     enqueue(
-        order.user_id(),
+        order.user_id,
         order_ack,
         true);
   },
       request_id);  // XXX WRONG !!!!!!!!!!!!!!!!!!!!!!!!!
   LOG_IF(FATAL, found == false)("unexpected");  // XXX disconnect and restart ???
+  */
 }
 
 void Gateway::operator()(

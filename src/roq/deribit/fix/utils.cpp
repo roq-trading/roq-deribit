@@ -27,11 +27,11 @@ Error map_error(const std::string_view& value) {
     switch (value.data()[0]) {
       case 'c':
         if (value.compare("canceled") == 0)
-          return Error::NONE;
+          return Error::UNDEFINED;
         break;
       case 's':
         if (value.compare("success") == 0)
-          return Error::NONE;
+          return Error::UNDEFINED;
         break;
     }
   }
