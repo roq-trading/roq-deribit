@@ -29,11 +29,11 @@ libroq_deribit_json_la_SOURCES = \
 	currency.cpp \
 	instrument.cpp \
 	kind.cpp \
-	message.cpp \
 	option_type.cpp \
 	order_book.cpp \
 	state.cpp \
 	ticker.cpp \
+	message.cpp \
 	utils.cpp
 
 .json.h:
