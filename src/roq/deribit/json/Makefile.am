@@ -7,32 +7,28 @@ libroq_deribit_json_la_CPPFLAGS = \
 	-I$(top_srcdir)/src \
 	$(LIBCONFIG_CFLAGS) \
 	$(ROQ_CFLAGS)
-BUILT_SOURCES = \
+AUTOGEN_CPP = \
 	currency.cpp \
-	currency.h \
 	field.cpp \
-	field.h \
 	instrument.cpp \
-	instrument.h \
 	kind.cpp \
-	kind.h \
 	option_type.cpp \
-	option_type.h \
 	order_book.cpp \
-	order_book.h \
 	state.cpp \
+	ticker.cpp
+AUTOGEN_H = \
+	currency.h \
+	field.h \
+	instrument.h \
+	kind.h \
+	option_type.h \
+	order_book.h \
 	state.h \
-	ticker.cpp \
 	ticker.h
+BUILT_SOURCES = $(AUTOGEN_CPP) $(AUTOGEN_H)
 CLEANFILES = $(BUILT_SOURCES)
 libroq_deribit_json_la_SOURCES = \
-	currency.cpp \
-	instrument.cpp \
-	kind.cpp \
-	option_type.cpp \
-	order_book.cpp \
-	state.cpp \
-	ticker.cpp \
+	$(AUTOGEN_CPP) \
 	message.cpp \
 	utils.cpp
 

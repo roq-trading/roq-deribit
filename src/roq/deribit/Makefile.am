@@ -35,6 +35,7 @@ roq_deribit_CPPFLAGS = \
 	$(ROQ_SERVER_CFLAGS)
 roq_deribit_SOURCES = \
 	application.cpp \
+	common.cpp \
 	config.cpp \
 	fix.cpp \
 	gateway.cpp \

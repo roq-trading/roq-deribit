@@ -4,18 +4,14 @@
 
 #include "roq/core/stack/buffer.h"
 
+#include "roq/deribit/common.h"
 #include "roq/deribit/gateway.h"
 #include "roq/deribit/options.h"
-
-#include "roq/deribit/fix/deribit.h"
 
 #include "roq/core/debug.h"
 
 namespace roq {
 namespace deribit {
-
-constexpr std::string_view SENDER_COMP_ID("ROQ_TRADING");
-constexpr std::string_view TARGET_COMP_ID("DERIBITSERVER");
 
 constexpr std::string_view LOGOUT_RESPONSE("LOGOUT");  // XXX
 
@@ -207,7 +203,7 @@ void FIX::send(
     std::chrono::nanoseconds sending_time) {
   core::fix::Writer writer(
       _encode_buffer,
-      fix::FIX_VERSION,
+      FIX_VERSION,
       T::msg_type,
       SENDER_COMP_ID,
       TARGET_COMP_ID,
@@ -298,7 +294,7 @@ void FIX::operator()(const core::net::Manager::Read& read) {
   decltype(length) total = 0;
   for (;;) {
     // core::print_memory(buffer, length);  // DEBUG
-    auto bytes = core::fix::Reader<fix::FIX_VERSION>::dispatch(
+    auto bytes = core::fix::Reader<FIX_VERSION>::dispatch(
         [&](const core::fix::message_t& message) {
           try {
             check(message.header);
