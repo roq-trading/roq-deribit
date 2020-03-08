@@ -67,12 +67,15 @@ AUTOGEN_H = \
 	test_request.h \
 	user_request.h \
 	user_response.h
-BUILT_SOURCES = $(AUTOGEN_CPP) $(AUTOGEN_H)
+BUILT_SOURCES = $(AUTOGEN_CPP) $(AUTOGEN_H) .gitignore
 CLEANFILES = $(BUILT_SOURCES)
 libroq_deribit_fix_la_SOURCES = \
 	$(AUTOGEN_CPP) \
 	adv_order_type.cpp \
 	utils.cpp
+
+.gitignore: Makefile.am
+	echo $(AUTOGEN_CPP) $(AUTOGEN_H) | tr " " "\n" | sort > $@
 
 .json.h:
 	@abs_top_builddir@/autogen/autogen.py \
