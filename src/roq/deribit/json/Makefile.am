@@ -25,8 +25,8 @@ AUTOGEN_H = \
 	order_book.h \
 	state.h \
 	ticker.h
-BUILT_SOURCES = $(AUTOGEN_CPP) $(AUTOGEN_H) .gitignore
-CLEANFILES = $(BUILT_SOURCES)
+CLEANFILES = $(AUTOGEN_CPP) $(AUTOGEN_H)
+BUILT_SOURCES = $(CLEANFILES) .gitignore
 libroq_deribit_json_la_SOURCES = \
 	$(AUTOGEN_CPP) \
 	message.cpp \

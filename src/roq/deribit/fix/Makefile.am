@@ -67,8 +67,8 @@ AUTOGEN_H = \
 	test_request.h \
 	user_request.h \
 	user_response.h
-BUILT_SOURCES = $(AUTOGEN_CPP) $(AUTOGEN_H) .gitignore
-CLEANFILES = $(BUILT_SOURCES)
+CLEANFILES = $(AUTOGEN_CPP) $(AUTOGEN_H)
+BUILT_SOURCES = $(CLEANFILES) .gitignore
 libroq_deribit_fix_la_SOURCES = \
 	$(AUTOGEN_CPP) \
 	adv_order_type.cpp \
