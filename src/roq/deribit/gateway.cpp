@@ -176,6 +176,9 @@ void Gateway::operator()(Metrics& metrics) {
 void Gateway::operator()(const FIX& fix) {
   if (fix.ready()) {
     switch (_gateway_status) {
+      case GatewayStatus::UNDEFINED:
+        assert(false);
+        break;
       case GatewayStatus::DISCONNECTED:
       case GatewayStatus::CONNECTING:
       case GatewayStatus::LOGIN_SENT:
@@ -317,7 +320,6 @@ void Gateway::operator()(
       execution_report.orig_cl_ord_id,
       order_lookup,
       [&](const auto& order, auto& result) {
-
     result.request_status = compute_request_status(
         order.request_type,
         execution_report.exec_type,
@@ -545,7 +547,6 @@ void Gateway::operator()(
       order_cancel_reject.orig_cl_ord_id,
       order_lookup,
       [&](const auto& order, auto& result) {
-
     DLOG_IF(FATAL, order.request_type != RequestType::MODIFY_ORDER)("UNEXPECTED");
 
     result.origin = Origin::EXCHANGE;
@@ -773,13 +774,7 @@ void Gateway::check_download(Download download) {
       LOG(INFO)("Download COMPLETED");
       _download = Download::NONE;
       subscribe_market_data();
-      LOG(INFO)("********************************************");
-      LOG(INFO)("***   DEFAULT LOGGING IS NOW MINIMAL     ***");
-      LOG(INFO)("***                                      ***");
-      LOG(INFO)("***   verbose logging can be enabled     ***");
-      LOG(INFO)("***   by setting the ROQ_v environment   ***");
-      LOG(INFO)("***   variable to a non-zero value       ***");
-      LOG(INFO)("********************************************");
+      server::PRINT_REDUCED_LOGGING();
       break;
     };
   }
