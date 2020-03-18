@@ -861,24 +861,26 @@ void Gateway::subscribe_market_data() {
     auto count = std::min<size_t>(
         _symbols.size() - offset,
         FLAGS_max_batch_size);
-    for (size_t i = 0; i < count; ++i)
-      related_sym[i].symbol = _symbols[offset + i];
-    auto request_id = _dispatcher.next_request_id();
-    fix::MarketDataRequest market_data_request {
-      .md_req_id = request_id,
-      .subscription_request_type = core::fix::SubscriptionRequestType::SNAPSHOT_UPDATES,
-      .market_depth = 20,  // the maximum
-      .md_update_type = core::fix::MDUpdateType::INCREMENTAL_REFRESH,
-      .deribit_trade_amount = 0,  // none
-      .deribit_since_timestamp = {},  // none
-      .no_md_entry_types = roq::span(
-          md_entry_types,
-          std::size(md_entry_types)),
-      .no_related_sym = roq::span(
-          related_sym.data(),
-          count),
-    };
-    _fix(market_data_request);
+    if (count) {
+      for (size_t i = 0; i < count; ++i)
+        related_sym[i].symbol = _symbols[offset + i];
+      auto request_id = _dispatcher.next_request_id();
+      fix::MarketDataRequest market_data_request {
+        .md_req_id = request_id,
+        .subscription_request_type = core::fix::SubscriptionRequestType::SNAPSHOT_UPDATES,
+        .market_depth = 20,  // the maximum
+        .md_update_type = core::fix::MDUpdateType::INCREMENTAL_REFRESH,
+        .deribit_trade_amount = 0,  // none
+        .deribit_since_timestamp = {},  // none
+        .no_md_entry_types = roq::span(
+            md_entry_types,
+            std::size(md_entry_types)),
+        .no_related_sym = roq::span(
+            related_sym.data(),
+            count),
+      };
+      _fix(market_data_request);
+    }
   }
 }
 
