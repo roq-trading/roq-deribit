@@ -14,7 +14,7 @@ CONFIG_FILE="$CWD/config/$NAME.toml"
 
 URI="deribit.com"
 
-WS_URI="wss://$URI/ws/api/v2"
+WS_URI="wss://www.$URI/ws/api/v2"
 FIX_URI="tcp://www.$URI:9880"
 
 $PREFIX ./roq-deribit \
