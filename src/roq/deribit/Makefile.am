@@ -41,4 +41,5 @@ roq_deribit_SOURCES = \
 	gateway.cpp \
 	options.cpp \
 	random.cpp \
+	web_socket.cpp \
 	main.cpp

@@ -1,0 +1,7 @@
+{
+"name": "RequestType",
+"type": "enum",
+"values": [
+	{ "name": "login" }
+]
+}

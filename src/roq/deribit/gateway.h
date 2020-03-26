@@ -11,12 +11,15 @@
 #include "roq/core/hash/map.h"
 #include "roq/core/hash/set.h"
 
+#include "roq/core/ssl/ssl.h"
+
 #include "roq/core/event/base.h"
 #include "roq/core/event/dns_base.h"
 
 #include "roq/deribit/config.h"
 #include "roq/deribit/fix.h"
 #include "roq/deribit/random.h"
+#include "roq/deribit/web_socket.h"
 
 // fix (inbound)
 #include "roq/deribit/fix/execution_report.h"
@@ -57,6 +60,9 @@ class Gateway final : public server::Handler {
       const server::OMS_Order& order) override;
 
   void operator()(Metrics& metrics) override;
+
+  // web socket
+  void operator()(const WebSocket&);
 
   // fix
   void operator()(const FIX&);
@@ -114,7 +120,10 @@ class Gateway final : public server::Handler {
   // async
   core::event::Base _base;
   core::event::DNSBase _dns_base;
+  // crypto
+  core::ssl::Context _ssl_context;
   // connections
+  WebSocket _web_socket;
   FIX _fix;
   // download
   Download _download = Download::NONE;

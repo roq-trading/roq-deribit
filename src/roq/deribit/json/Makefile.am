@@ -9,20 +9,26 @@ libroq_deribit_json_la_CPPFLAGS = \
 	$(ROQ_CFLAGS)
 AUTOGEN_CPP = \
 	currency.cpp \
+	error.cpp \
 	field.cpp \
 	instrument.cpp \
 	kind.cpp \
+	method.cpp \
 	option_type.cpp \
 	order_book.cpp \
+	request_type.cpp \
 	state.cpp \
 	ticker.cpp
 AUTOGEN_H = \
 	currency.h \
+	error.h \
 	field.h \
 	instrument.h \
 	kind.h \
+	method.h \
 	option_type.h \
 	order_book.h \
+	request_type.h \
 	state.h \
 	ticker.h
 CLEANFILES = $(AUTOGEN_CPP) $(AUTOGEN_H)

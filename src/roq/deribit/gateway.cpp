@@ -75,6 +75,13 @@ Gateway::Gateway(
       _access_key(config.get_access_key()),
       _random(config.get_access_secret()),
       _dns_base(_base, true),
+      _web_socket(
+          *this,
+          config,
+          _random,
+          _base,
+          _dns_base,
+          _ssl_context),
       _fix(
           *this,
           config,
@@ -90,15 +97,18 @@ Gateway::Gateway(
 
 void Gateway::operator()(const StartEvent& event) {
   LOG(INFO)("Starting the gateway...");
+  _web_socket(event);
   _fix(event);
 }
 
 void Gateway::operator()(const StopEvent& event) {
   LOG(INFO)("Stopping the gateway...");
   _fix(event);
+  _web_socket(event);
 }
 
 void Gateway::operator()(const TimerEvent& event) {
+  _web_socket(event);
   _fix(event);
   _base.loop(EVLOOP_NONBLOCK);
 }
@@ -169,6 +179,11 @@ void Gateway::operator()(
 
 void Gateway::operator()(Metrics& metrics) {
   _fix(metrics);
+}
+
+// web socket
+
+void Gateway::operator()(const WebSocket&) {
 }
 
 // fix
@@ -309,7 +324,9 @@ void Gateway::operator()(
     .price = execution_report.price,
     .remaining_quantity = execution_report.leaves_qty,
     .traded_quantity = execution_report.cum_qty,
-    .commissions = execution_report.commission,
+    // XXX note! this is per-trade -- need another approach
+    // .commissions =  execution_report.commission,
+    .commissions = std::numeric_limits<double>::quiet_NaN(),  // execution_report.commission,
     .timestamp = execution_report.transact_time,
     .external_order_id = execution_report.order_id,
   };
