@@ -1,3 +1,5 @@
+auth_response.cpp
+auth_response.h
 currency.cpp
 currency.h
 error.cpp

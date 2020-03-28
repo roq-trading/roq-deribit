@@ -11,6 +11,7 @@
 #include "roq/deribit/gateway.h"
 #include "roq/deribit/options.h"
 
+#include "roq/deribit/json/auth_response.h"
 #include "roq/deribit/json/error.h"
 #include "roq/deribit/json/method.h"
 #include "roq/deribit/json/request_type.h"
@@ -154,7 +155,7 @@ void WebSocket::operator()(const core::web::Socket::Disconnected&) {
 
 void WebSocket::operator()(const core::web::Socket::Ready&) {
   _gateway(*this);
-  // login();
+  login();
 }
 
 void WebSocket::operator()(const core::web::Socket::Close&) {
@@ -208,6 +209,8 @@ void WebSocket::operator()(
           result.id);
       break;
     case json::RequestType::LOGIN: {
+      json::AuthResponse response(value);
+      LOG(INFO)(FMT_STRING("{}"), response);
       LOG(INFO)("Login successful");
       _logged_in = true;
       _gateway(*this);

@@ -75,7 +75,6 @@ Gateway::Gateway(
       _access_key(config.get_access_key()),
       _random(config.get_access_secret()),
       _dns_base(_base, true),
-      /*
       _web_socket(
           *this,
           config,
@@ -83,7 +82,6 @@ Gateway::Gateway(
           _base,
           _dns_base,
           _ssl_context),
-          */
       _fix(
           *this,
           config,
@@ -99,18 +97,18 @@ Gateway::Gateway(
 
 void Gateway::operator()(const StartEvent& event) {
   LOG(INFO)("Starting the gateway...");
-  // _web_socket(event);
+  _web_socket(event);
   _fix(event);
 }
 
 void Gateway::operator()(const StopEvent& event) {
   LOG(INFO)("Stopping the gateway...");
   _fix(event);
-  // _web_socket(event);
+  _web_socket(event);
 }
 
 void Gateway::operator()(const TimerEvent& event) {
-  // _web_socket(event);
+  _web_socket(event);
   _fix(event);
   _base.loop(EVLOOP_NONBLOCK);
 }

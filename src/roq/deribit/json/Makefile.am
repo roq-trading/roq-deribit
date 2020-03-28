@@ -8,6 +8,7 @@ libroq_deribit_json_la_CPPFLAGS = \
 	$(LIBCONFIG_CFLAGS) \
 	$(ROQ_CFLAGS)
 AUTOGEN_CPP = \
+	auth_response.cpp \
 	currency.cpp \
 	error.cpp \
 	field.cpp \
@@ -20,6 +21,7 @@ AUTOGEN_CPP = \
 	state.cpp \
 	ticker.cpp
 AUTOGEN_H = \
+	auth_response.h \
 	currency.h \
 	error.h \
 	field.h \
