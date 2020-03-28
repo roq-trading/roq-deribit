@@ -22,6 +22,8 @@ SecurityType map_security_type(const std::string_view& value);
 
 Error map_error(const std::string_view& value);
 
+std::string_view map(ExecutionInstruction execution_instruction);
+
 }  // namespace fix
 }  // namespace deribit
 }  // namespace roq

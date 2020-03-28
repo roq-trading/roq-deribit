@@ -122,6 +122,10 @@ void Gateway::operator()(
     uint32_t gateway_order_id) {
   auto& message_info = event.message_info;
   auto& create_order = event.create_order;
+  if (std::isfinite(create_order.stop_price))
+    throw std::runtime_error("stop_price not supported");
+  if (std::isfinite(create_order.max_show_quantity))
+    throw std::runtime_error("max_show_quantity not supported");
   core::stack::Buffer<char, 36> buffer;
   fmt::format_to(
       std::back_inserter(buffer),
@@ -138,7 +142,7 @@ void Gateway::operator()(
     .order_qty = create_order.quantity,
     .price = create_order.price,
     .symbol = create_order.symbol,
-    .exec_inst = std::string_view(),
+    .exec_inst = fix::map(create_order.execution_instruction),
     .ord_type = core::fix::map(create_order.order_type),
     .time_in_force = core::fix::map(create_order.time_in_force),
     .deribit_label = deribit_label,
