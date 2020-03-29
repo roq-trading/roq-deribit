@@ -123,10 +123,11 @@ class Gateway final : public server::Handler {
   // crypto
   core::ssl::Context _ssl_context;
   // connections
-  WebSocket _web_socket;
+  // WebSocket _web_socket;
   FIX _fix;
   // download
   Download _download = Download::NONE;
+  std::chrono::nanoseconds _download_timestamp = {};
   uint32_t _download_execution_reports = 0;
   uint32_t _download_users = 0;
   core::hash::set<std::string> _currencies;

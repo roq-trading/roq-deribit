@@ -72,6 +72,8 @@ class FIX final : public core::net::Manager::Handler {
 
   bool ready() const;
 
+  void close();
+
   void operator()(const StartEvent&);
   void operator()(const StopEvent&);
   void operator()(const TimerEvent&);

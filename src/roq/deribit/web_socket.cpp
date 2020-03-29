@@ -129,7 +129,7 @@ void WebSocket::login() {
       nonce,
       signature,
       request_type.as_raw_text());
-  DLOG(INFO)(FMT_STRING("login=\"{}\""), message);
+  DLOG(INFO)(FMT_STRING("{}"), message);
   _connection.send_text(message);
 }
 
@@ -175,6 +175,7 @@ void WebSocket::parse(const std::string_view& message) {
   _profile.parse(
       [&]() {
         try {
+          DLOG(INFO)(FMT_STRING("{}"), message);
           core::jsonrpc::Parser::dispatch(
               *this,
               message);

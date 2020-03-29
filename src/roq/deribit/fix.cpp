@@ -86,6 +86,10 @@ bool FIX::ready() const {
   return _state == State::READY;
 }
 
+void FIX::close() {
+  _connection.close();
+}
+
 void FIX::operator()(const StartEvent&) {
   _connection.start();
 }
