@@ -123,7 +123,7 @@ class Gateway final : public server::Handler {
   // crypto
   core::ssl::Context _ssl_context;
   // connections
-  // WebSocket _web_socket;
+  WebSocket _web_socket;
   FIX _fix;
   // download
   Download _download = Download::NONE;

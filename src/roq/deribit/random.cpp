@@ -23,7 +23,9 @@ static_assert(CHARSET_LENGTH == 36);
 
 static std::random_device GENERATOR;
 
-static std::uniform_int_distribution<int> CHARSET_DISTRIBUTION(0, CHARSET_LENGTH);
+static std::uniform_int_distribution<int> CHARSET_DISTRIBUTION(
+    0,
+    CHARSET_LENGTH - 1);  // note! inclusive
 
 static std::uniform_int_distribution<uint32_t> DISTRIBUTION;
 
