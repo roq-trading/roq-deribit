@@ -192,6 +192,7 @@ void Gateway::operator()(
 }
 
 void Gateway::operator()(Metrics& metrics) {
+  _web_socket(metrics);
   _fix(metrics);
 }
 
