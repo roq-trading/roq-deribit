@@ -11,7 +11,6 @@
 #include "roq/deribit/gateway.h"
 #include "roq/deribit/options.h"
 
-#include "roq/deribit/json/auth_response.h"
 #include "roq/deribit/json/error.h"
 #include "roq/deribit/json/method.h"
 #include "roq/deribit/json/request_type.h"
@@ -73,6 +72,11 @@ WebSocket::WebSocket(
       },
       _profile {
         .parse = create_profile("parse"),
+        .auth = create_profile("auth"),
+        .currencies = create_profile("currencies"),
+        .instruments = create_profile("instruments"),
+        .positions = create_profile("positions"),
+        .ticker = create_profile("ticker"),
       },
       _latency {
         .ping = create_latency("ping"),
@@ -103,7 +107,7 @@ void WebSocket::operator()(const TimerEvent& event) {
 void WebSocket::login() {
   LOG(INFO)("Sending login request...");
   constexpr json::RequestType request_type =
-    json::RequestType::LOGIN;
+    json::RequestType::AUTH;
   auto timestamp = std::chrono::duration_cast<
     std::chrono::milliseconds>(core::get_realtime_clock());
   auto nonce = _random.create_nonce();
@@ -132,12 +136,84 @@ void WebSocket::login() {
   _connection.send_text(message);
 }
 
+void WebSocket::get_currencies() {
+  constexpr json::RequestType request_type =
+    json::RequestType::GET_CURRENCIES;
+  auto message = fmt::format(
+      FMT_STRING(
+        "{{"
+        "\"method\":\"public/get_currencies\","
+        "\"params\":{{"
+        "}},"
+        "\"id\":\"{}\""
+        "}}"),
+      request_type.as_raw_text());
+  _connection.send_text(message);
+}
+
+void WebSocket::get_instruments(const std::string_view& currency) {
+  constexpr json::RequestType request_type =
+    json::RequestType::GET_INSTRUMENTS;
+  auto message = fmt::format(
+      FMT_STRING(
+        "{{"
+        "\"method\":\"public/get_instruments\","
+        "\"params\":{{"
+        "\"currency\":\"{}\""
+        "}},"
+        "\"id\":\"{}\""
+        "}}"),
+      currency,
+      request_type.as_raw_text());
+  _connection.send_text(message);
+}
+
+void WebSocket::get_positions(const std::string_view& currency) {
+  constexpr json::RequestType request_type =
+    json::RequestType::GET_POSITIONS;
+  auto message = fmt::format(
+      FMT_STRING(
+        "{{"
+        "\"method\":\"private/get_positions\","
+        "\"params\":{{"
+        "\"currency\":\"{}\""
+        "}},"
+        "\"id\":\"{}\""
+        "}}"),
+      currency,
+      request_type.as_raw_text());
+  _connection.send_text(message);
+}
+
+void WebSocket::subscribe_ticker(
+    const std::string_view& instrument_name) {
+  constexpr json::RequestType request_type =
+    json::RequestType::SUBSCRIBE_TICKER;
+  auto message = fmt::format(
+      FMT_STRING(
+        "{{"
+        "\"method\":\"public/subscribe\","
+        "\"params\":{{"
+        "\"channels\":[\"ticker.{}.raw\"]"
+        "}},"
+        "\"id\":\"{}\""
+        "}}"),
+      instrument_name,
+      request_type.as_raw_text());
+  _connection.send_text(message);
+}
+
 void WebSocket::operator()(Metrics& metrics) {
   metrics
     // counter
     .write(_counter.disconnect)
     // profile
     .write(_profile.parse)
+    .write(_profile.auth)
+    .write(_profile.currencies)
+    .write(_profile.instruments)
+    .write(_profile.positions)
+    .write(_profile.ticker)
     // latency
     .write(_latency.ping)
     .write(_latency.heartbeat);
@@ -174,7 +250,6 @@ void WebSocket::parse(const std::string_view& message) {
   _profile.parse(
       [&]() {
         try {
-          DLOG(INFO)(FMT_STRING("{}"), message);
           core::jsonrpc::Parser::dispatch(
               *this,
               message);
@@ -208,14 +283,31 @@ void WebSocket::operator()(
           FMT_STRING("Unknown request_type=\"{}\""),
           result.id);
       break;
-    case json::RequestType::LOGIN: {
-      json::AuthResponse response(value);
-      LOG(INFO)(FMT_STRING("{}"), response);
-      LOG(INFO)("Login successful");
-      _logged_in = true;
-      _gateway(*this);
+    case json::RequestType::AUTH: {
+      json::Auth auth(value);
+      (*this)(auth);
       break;
     }
+    case json::RequestType::GET_CURRENCIES: {
+      core::json::Buffer buffer(_decode_buffer);
+      json::Currencies currencies(value, buffer);
+      (*this)(currencies);
+      break;
+    }
+    case json::RequestType::GET_INSTRUMENTS: {
+      core::json::Buffer buffer(_decode_buffer);
+      json::Instruments instruments(value, buffer);
+      (*this)(instruments);
+      break;
+    }
+    case json::RequestType::GET_POSITIONS: {
+      core::json::Buffer buffer(_decode_buffer);
+      json::Positions positions(value, buffer);
+      (*this)(positions);
+      break;
+    }
+    case json::RequestType::SUBSCRIBE_TICKER:
+      break;
   }
 }
 
@@ -231,7 +323,67 @@ void WebSocket::operator()(
           FMT_STRING("Unknown method=\"{}\""),
           notification.method);
       break;
+    case json::Method::SUBSCRIPTION: {
+      core::json::Buffer buffer(_decode_buffer);
+      json::Parser::dispatch(
+          *this,
+          value,
+          buffer);
+      break;
+    }
   }
+}
+
+void WebSocket::operator()(const json::Auth& auth) {
+  _profile.auth(
+      [&]() {
+    VLOG(1)(
+        FMT_STRING("auth={}"),
+        auth);
+    LOG(INFO)("Login successful");
+    _logged_in = true;
+    _gateway(*this);
+  });
+}
+
+void WebSocket::operator()(const json::Currencies& currencies) {
+  _profile.currencies(
+      [&]() {
+    VLOG(1)(
+        FMT_STRING("currencies={}"),
+        currencies);
+    _gateway(currencies);
+  });
+}
+
+void WebSocket::operator()(const json::Instruments& instruments) {
+  _profile.instruments(
+      [&]() {
+    VLOG(1)(
+        FMT_STRING("instruments={}"),
+        instruments);
+    _gateway(instruments);
+  });
+}
+
+void WebSocket::operator()(const json::Positions& positions) {
+  _profile.positions(
+      [&]() {
+    VLOG(1)(
+        FMT_STRING("positions={}"),
+        positions);
+    _gateway(positions);
+  });
+}
+
+void WebSocket::operator()(const json::Ticker& ticker) {
+  _profile.ticker(
+      [&]() {
+    VLOG(1)(
+        FMT_STRING("ticker={}"),
+        ticker);
+    _gateway(ticker);
+  });
 }
 
 }  // namespace deribit

@@ -1,0 +1,8 @@
+{
+"name": "Direction",
+"type": "enum",
+"values": [
+	{ "name": "buy" },
+	{ "name": "sell" }
+]
+}

@@ -2,6 +2,10 @@
 "name": "RequestType",
 "type": "enum",
 "values": [
-	{ "name": "login" }
+	{ "name": "auth" },
+	{ "name": "get_currencies" },
+	{ "name": "get_instruments" },
+	{ "name": "get_positions" },
+	{ "name": "subscribe_ticker" }
 ]
 }

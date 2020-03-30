@@ -2,6 +2,6 @@
 "name": "Method",
 "type": "enum",
 "values": [
-	{ "name": "ticker" }
+	{ "name": "subscription" }
 ]
 }

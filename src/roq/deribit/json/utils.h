@@ -10,6 +10,7 @@
 
 #include "roq/core/charconv/datetime.h"
 
+#include "roq/deribit/json/direction.h"
 #include "roq/deribit/json/kind.h"
 #include "roq/deribit/json/option_type.h"
 #include "roq/deribit/json/state.h"
@@ -30,6 +31,14 @@ inline void update(
     std::chrono::nanoseconds& result,
     const core::json::value_t& value) {
   result = std::chrono::milliseconds{core::json::get<uint64_t>(value)};
+}
+
+template <>
+inline void update(
+    Direction& result,
+    const core::json::value_t& value) {
+  using result_type = std::remove_reference<decltype(result)>::type;
+  result = result_type(core::json::get<std::string_view>(value));
 }
 
 template <>

@@ -24,6 +24,13 @@
 #include "roq/deribit/config.h"
 #include "roq/deribit/random.h"
 
+#include "roq/deribit/json/auth.h"
+#include "roq/deribit/json/currencies.h"
+#include "roq/deribit/json/instruments.h"
+#include "roq/deribit/json/parser.h"
+#include "roq/deribit/json/positions.h"
+#include "roq/deribit/json/ticker.h"
+
 namespace roq {
 namespace deribit {
 
@@ -31,8 +38,8 @@ class Gateway;
 
 class WebSocket final
     : public core::web::Socket::Handler,
-      public core::jsonrpc::Parser::Handler {
-
+      public core::jsonrpc::Parser::Handler,
+      public json::Parser::Handler {
  public:
   WebSocket(
       Gateway& gateway,
@@ -54,8 +61,13 @@ class WebSocket final
   void operator()(const TimerEvent&);
 
   // request
-
   void login();
+  void get_currencies();
+  void get_instruments(const std::string_view& currency);
+  void get_positions(const std::string_view& currency);
+
+  // subscribe
+  void subscribe_ticker(const std::string_view& instrument_name);
 
   void operator()(Metrics& metrics);
 
@@ -79,6 +91,15 @@ class WebSocket final
       const core::jsonrpc::Notification& notification,
       core::json::value_t& value) override;
 
+  // response
+  void operator()(const json::Auth& auth);
+  void operator()(const json::Currencies& currencies);
+  void operator()(const json::Instruments& instruments);
+  void operator()(const json::Positions& positions);
+
+  // notifications
+  void operator()(const json::Ticker& ticker) override;
+
  private:
   Gateway& _gateway;
   // config
@@ -101,7 +122,12 @@ class WebSocket final
   } _counter;
   struct {
     core::metrics::Profile
-      parse;
+      parse,
+      auth,
+      currencies,
+      instruments,
+      positions,
+      ticker;
   } _profile;
   struct {
     core::metrics::Latency

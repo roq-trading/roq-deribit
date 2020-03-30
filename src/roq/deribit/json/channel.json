@@ -1,0 +1,7 @@
+{
+"name": "Channel",
+"type": "enum",
+"values": [
+	{ "name": "ticker" }
+]
+}

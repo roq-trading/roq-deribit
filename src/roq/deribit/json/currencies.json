@@ -1,0 +1,7 @@
+{
+"name": "Currencies",
+"type": "array",
+"values": [
+	{ "name": "data", "type": "roq::span<Currency>" }
+]
+}

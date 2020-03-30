@@ -21,6 +21,12 @@
 #include "roq/deribit/random.h"
 #include "roq/deribit/web_socket.h"
 
+// json (inbound)
+#include "roq/deribit/json/currencies.h"
+#include "roq/deribit/json/instruments.h"
+#include "roq/deribit/json/positions.h"
+#include "roq/deribit/json/ticker.h"
+
 // fix (inbound)
 #include "roq/deribit/fix/execution_report.h"
 #include "roq/deribit/fix/market_data_incremental_refresh.h"
@@ -63,6 +69,10 @@ class Gateway final : public server::Handler {
 
   // web socket
   void operator()(const WebSocket&);
+  void operator()(const json::Currencies&);
+  void operator()(const json::Instruments&);
+  void operator()(const json::Positions&);
+  void operator()(const json::Ticker&);
 
   // fix
   void operator()(const FIX&);

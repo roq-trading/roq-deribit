@@ -199,6 +199,52 @@ void Gateway::operator()(Metrics& metrics) {
 // web socket
 
 void Gateway::operator()(const WebSocket&) {
+  if (_web_socket.ready()) {
+    // DEBUG
+    _web_socket.get_currencies();
+    _web_socket.subscribe_ticker("BTC-PERPETUAL");
+  }
+}
+
+void Gateway::operator()(const json::Currencies& currencies) {
+  VLOG(1)(FMT_STRING("currencies={}"), currencies);
+  for (auto& item : currencies.data) {
+    _web_socket.get_instruments(item.currency);
+    _web_socket.get_positions(item.currency);
+  }
+}
+
+void Gateway::operator()(const json::Instruments& instruments) {
+  VLOG(1)(FMT_STRING("instruments={}"), instruments);
+  for (auto& item : instruments.data) {
+    if (_dispatcher.discard_symbol(item.instrument_name))
+      continue;
+    _web_socket.subscribe_ticker(item.instrument_name);
+  }
+}
+
+void Gateway::operator()(const json::Positions& positions) {
+  VLOG(1)(FMT_STRING("positions={}"), positions);
+  // XXX check if we're done yet?
+}
+
+void Gateway::operator()(const json::Ticker& ticker) {
+  VLOG(3)(FMT_STRING("ticker={}"), ticker);
+  TopOfBook top_of_book = {
+    .exchange = FLAGS_exchange,
+    .symbol = ticker.instrument_name,
+    .layer = {
+      .bid_price = ticker.best_bid_price,
+      .bid_quantity = ticker.best_bid_amount,
+      .ask_price = ticker.best_ask_price,
+      .ask_quantity = ticker.best_ask_amount,
+    },
+    .snapshot = false,
+    .exchange_time_utc = ticker.timestamp,
+  };
+  enqueue(
+      top_of_book,
+      true);
 }
 
 // fix

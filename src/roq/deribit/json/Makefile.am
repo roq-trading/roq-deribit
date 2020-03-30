@@ -8,28 +8,40 @@ libroq_deribit_json_la_CPPFLAGS = \
 	$(LIBCONFIG_CFLAGS) \
 	$(ROQ_CFLAGS)
 AUTOGEN_CPP = \
-	auth_response.cpp \
+	auth.cpp \
+	channel.cpp \
+	currencies.cpp \
 	currency.cpp \
+	direction.cpp \
 	error.cpp \
 	field.cpp \
 	instrument.cpp \
+	instruments.cpp \
 	kind.cpp \
 	method.cpp \
 	option_type.cpp \
 	order_book.cpp \
+	position.cpp \
+	positions.cpp \
 	request_type.cpp \
 	state.cpp \
 	ticker.cpp
 AUTOGEN_H = \
-	auth_response.h \
+	auth.h \
+	channel.h \
+	currencies.h \
 	currency.h \
+	direction.h \
 	error.h \
 	field.h \
 	instrument.h \
+	instruments.h \
 	kind.h \
 	method.h \
 	option_type.h \
 	order_book.h \
+	position.h \
+	positions.h \
 	request_type.h \
 	state.h \
 	ticker.h
@@ -37,7 +49,7 @@ CLEANFILES = $(AUTOGEN_CPP) $(AUTOGEN_H)
 BUILT_SOURCES = $(CLEANFILES) .gitignore
 libroq_deribit_json_la_SOURCES = \
 	$(AUTOGEN_CPP) \
-	message.cpp \
+	parser.cpp \
 	utils.cpp
 
 .gitignore: Makefile.am
