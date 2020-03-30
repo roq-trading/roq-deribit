@@ -67,7 +67,8 @@ class WebSocket final
   void get_positions(const std::string_view& currency);
 
   // subscribe
-  void subscribe_ticker(const std::string_view& instrument_name);
+  void subscribe_ticker(const std::string_view& instrument);
+  void subscribe_ticker(const roq::span<std::string_view>& instruments);
 
   void operator()(Metrics& metrics);
 

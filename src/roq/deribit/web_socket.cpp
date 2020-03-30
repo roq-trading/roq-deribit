@@ -203,6 +203,24 @@ void WebSocket::subscribe_ticker(
   _connection.send_text(message);
 }
 
+void WebSocket::subscribe_ticker(
+    const roq::span<std::string_view>& instruments) {
+  constexpr json::RequestType request_type =
+    json::RequestType::SUBSCRIBE_TICKER;
+  auto message = fmt::format(
+      FMT_STRING(
+        "{{"
+        "\"method\":\"public/subscribe\","
+        "\"params\":{{"
+        "\"channels\":[\"ticker.{}.raw\"]"
+        "}},"
+        "\"id\":\"{}\""
+        "}}"),
+      fmt::join(instruments, ".raw\",\"ticker."),
+      request_type.as_raw_text());
+  _connection.send_text(message);
+}
+
 void WebSocket::operator()(Metrics& metrics) {
   metrics
     // counter

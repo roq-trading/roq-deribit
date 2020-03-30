@@ -5,6 +5,8 @@
 #include <limits>
 #include <utility>
 
+#include "roq/compat.h"
+
 #include "roq/core/utils.h"
 
 #include "roq/core/fix/utils.h"
@@ -202,7 +204,6 @@ void Gateway::operator()(const WebSocket&) {
   if (_web_socket.ready()) {
     // DEBUG
     _web_socket.get_currencies();
-    _web_socket.subscribe_ticker("BTC-PERPETUAL");
   }
 }
 
@@ -216,11 +217,19 @@ void Gateway::operator()(const json::Currencies& currencies) {
 
 void Gateway::operator()(const json::Instruments& instruments) {
   VLOG(1)(FMT_STRING("instruments={}"), instruments);
+  std::vector<std::string_view> symbols;
+  symbols.reserve(instruments.data.size());
   for (auto& item : instruments.data) {
     if (_dispatcher.discard_symbol(item.instrument_name))
       continue;
-    _web_socket.subscribe_ticker(item.instrument_name);
+    symbols.push_back(item.instrument_name);
   }
+  if (symbols.empty())
+    return;
+  _web_socket.subscribe_ticker(
+      roq::span(
+          symbols.data(),
+          symbols.size()));
 }
 
 void Gateway::operator()(const json::Positions& positions) {
