@@ -65,6 +65,18 @@ inline void update(
   result = result_type(core::json::get<std::string_view>(value));
 }
 
+// ...
+
+inline TradingStatus map(State state) {
+  switch (state) {
+    case State::UNDEFINED: break;
+    case State::UNKNOWN:   break;
+    case State::CLOSED:    return TradingStatus::OPEN;
+    case State::OPEN:      return TradingStatus::OPEN;
+  }
+  return TradingStatus::UNDEFINED;
+}
+
 }  // namespace json
 }  // namespace deribit
 }  // namespace roq

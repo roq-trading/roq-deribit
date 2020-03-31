@@ -530,7 +530,6 @@ void FIX::operator()(
       FMT_STRING("event(header={}, heartbeat={})"),
       header,
       heartbeat);
-  // assert(_gateway_status != GatewayStatus::DISCONNECTED);
   if (heartbeat.test_req_id.empty() == false) {
     auto send_time = core::from_chars<uint64_t>(heartbeat.test_req_id);
     auto latency =
@@ -559,8 +558,6 @@ void FIX::operator()(
       FMT_STRING("event(header={}, logout={})"),
       header,
       logout);
-  // assert(_gateway_status == GatewayStatus::READY);
-  // update(GatewayStatus::LOGGED_OUT);
   // note! mandated, must send a logout response
   send_logout(LOGOUT_RESPONSE);
   LOG(INFO)("closing connection");
@@ -574,16 +571,6 @@ void FIX::operator()(
       FMT_STRING("event(header={}, resend_request={})"),
       header,
       resend_request);
-  /*
-  fix::Reject reject {
-    .session_reject_reason = core::fix::SessionRejectReason::OTHER,
-    .ref_seq_num = header.msg_seq_num,
-    .ref_tag_id = 0,
-    .ref_msg_type = header.msg_type_raw,
-    .text = RESEND_NOT_SUPPORTED,
-  };
-  send(reject);
-  */
   LOG(INFO)("closing connection");
   _connection.close();
 }
@@ -595,7 +582,6 @@ void FIX::operator()(
       FMT_STRING("event(header={}, test_request={})"),
       header,
       test_request);
-  // assert(_gateway_status != GatewayStatus::DISCONNECTED);
   send_heartbeat(test_request.test_req_id);
 }
 

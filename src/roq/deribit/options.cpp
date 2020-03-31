@@ -47,6 +47,10 @@ DEFINE_uint32(max_trades,
     uint32_t{16384},
     "maximum trades for trade summary");
 
+DEFINE_uint32(max_fills,
+    uint32_t{256},
+    "maximum fills for trade update");
+
 DEFINE_uint32(encode_buffer_size,
     uint32_t{1048576},
     "encode buffer size");

@@ -142,8 +142,11 @@ class Gateway final : public server::Handler {
   uint32_t _download_users = 0;
   core::hash::set<std::string> _currencies;
   std::vector<std::string> _symbols;
+  core::hash::map<std::string, TradingStatus> _trading_status;
   // market data + order manager
   GatewayStatus _gateway_status = GatewayStatus::DISCONNECTED;
+  // order manager
+  core::page_aligned_vector<Fill> _fill;
   // market data
   core::page_aligned_vector<MBPUpdate> _bid, _ask;
   core::page_aligned_vector<Trade> _trade;

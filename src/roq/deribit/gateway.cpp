@@ -13,6 +13,8 @@
 
 #include "roq/deribit/options.h"
 
+#include "roq/deribit/json/utils.h"
+
 #include "roq/deribit/fix/utils.h"
 
 namespace roq {
@@ -69,6 +71,28 @@ static bool trade_update(
   return offset < data.size();
 }
 
+template <typename T>
+static bool fill_update(
+    auto& dispatcher,
+    auto& data,
+    size_t& offset,
+    const T& item) {
+  auto trade_id = dispatcher.next_trade_id();
+  auto& obj = data[offset];
+  new (&obj) Fill {
+    .quantity = item.fill_qty,
+    .price = item.fill_px,
+    .trade_id = trade_id,
+    .gateway_trade_id = trade_id,
+    .external_trade_id = {},
+  };
+  roq::core::copy_to(
+      item.fill_exec_id,
+      obj.external_trade_id);
+  ++offset;
+  return offset < data.size();
+}
+
 Gateway::Gateway(
     server::Dispatcher& dispatcher,
     const Config& config)
@@ -90,6 +114,7 @@ Gateway::Gateway(
           _random,
           _base,
           _dns_base),
+      _fill(FLAGS_max_fills),
       _bid(FLAGS_max_depth),
       _ask(FLAGS_max_depth),
       _trade(FLAGS_max_trades) {
@@ -254,6 +279,19 @@ void Gateway::operator()(const json::Ticker& ticker) {
   enqueue(
       top_of_book,
       true);
+  auto trading_status = json::map(ticker.state);
+  auto& item = _trading_status[ticker.instrument_name];
+  if (item != trading_status) {
+    item = trading_status;
+    MarketStatus market_status {
+      .exchange = FLAGS_exchange,
+      .symbol = ticker.instrument_name,
+      .trading_status = json::map(ticker.state),
+    };
+    enqueue(
+        market_status,
+        true);
+  }
 }
 
 // fix
@@ -374,7 +412,6 @@ auto compute_request_status(
 
 void Gateway::operator()(
     const fix::ExecutionReport& execution_report) {
-  DLOG(INFO)(FMT_STRING("execution_report={}"), execution_report);
   // download begin?
   switch (execution_report.mass_status_req_type) {
     case core::fix::MassStatusReqType::ORDERS:
@@ -419,44 +456,43 @@ void Gateway::operator()(
       result.text = execution_report.text;
     }
 
-    if (true) {
-      // XXX TODO all trades in 1 go
-      for (auto& fills : execution_report.no_fills) {
-        // TODO(thraneh): map fill_exec_id <-> local_trade_id ???
-        auto trade_id = _dispatcher.next_trade_id();
-        roq::Fill fill {
-          .quantity = fills.fill_qty,
-          .price = fills.fill_px,
-          .trade_id = trade_id,
-          .gateway_trade_id = trade_id,
-          .external_trade_id = {},
-        };
-        roq::core::copy_to(
-            fills.fill_exec_id,
-            fill.external_trade_id);
-        TradeUpdate trade_update {
-          .account = order.account,
-          .order_id = order.user_order_id,
-          .exchange = order.exchange,
-          .symbol = order.symbol,
-          .side = order.side,
-          .position_effect = PositionEffect::UNDEFINED,
-          .order_template = std::string_view(),
-          .create_time_utc = execution_report.transact_time,
-          .update_time_utc = execution_report.transact_time,
-          .gateway_order_id = order.gateway_order_id,
-          .external_order_id = order.external_order_id,
-          .fills = roq::span<Fill const>(&fill, 1),
-        };
-        enqueue(
-            order.user_id,
-            trade_update,
-            false);
-      }
-
-    } else {
-      DLOG_IF(FATAL, execution_report.no_fills.size() > 0)(
-          "UNEXPECTED");
+    size_t fill_length = 0;
+    bool success = true;
+    for (auto& item : execution_report.no_fills) {
+      if (success == false)
+        break;
+      success = fill_update(
+          _dispatcher,
+          _fill,
+          fill_length,
+          item);
+    }
+    if (unlikely(success == false)) {
+      LOG(FATAL)(
+          FMT_STRING(
+            "Insufficient fill array size(s): "
+            "len(fill)={}/{}={}/{}"),
+          fill_length, execution_report.no_fills.size());
+    }
+    if (fill_length) {
+      TradeUpdate trade_update {
+        .account = order.account,
+        .order_id = order.user_order_id,
+        .exchange = order.exchange,
+        .symbol = order.symbol,
+        .side = order.side,
+        .position_effect = PositionEffect::UNDEFINED,
+        .order_template = std::string_view(),
+        .create_time_utc = execution_report.transact_time,
+        .update_time_utc = execution_report.transact_time,
+        .gateway_order_id = order.gateway_order_id,
+        .external_order_id = order.external_order_id,
+        .fills = roq::span<Fill const>(_fill.data(), fill_length),
+      };
+      enqueue(
+          order.user_id,
+          trade_update,
+          true);
     }
   });
 
@@ -703,34 +739,6 @@ void Gateway::operator()(
   assert(_gateway_status != GatewayStatus::DISCONNECTED);
 
   LOG(FATAL)("Not supported");
-/*
-  auto request_id = fmt::format(  // FIXME(thraneh): this is *wrong*
-      FMT_STRING("roq:{:06}"),
-      reject.ref_seq_num);
-
-  auto found = _dispatcher.find_order(
-      [&](const auto& order) {
-    auto error = fix::map_error(reject.text);
-    OrderAck order_ack {
-      .account = _account,
-      .order_id = order.user_order_id(),
-      .type = RequestType::CREATE_ORDER,  // FIXME(thraneh): from order
-      .origin = Origin::EXCHANGE,
-      .status = RequestStatus::REJECTED,
-      .error = error,
-      .text = reject.text,
-      .gateway_order_id = order.gateway_order_id(),
-      .external_order_id = order.exchange_order_id(),
-      .request_id = request_id,
-    };
-    enqueue(
-        order.user_id,
-        order_ack,
-        true);
-  },
-      request_id);  // XXX WRONG !!!!!!!!!!!!!!!!!!!!!!!!!
-  LOG_IF(FATAL, found == false)("unexpected");  // XXX disconnect and restart ???
-  */
 }
 
 void Gateway::operator()(
@@ -768,15 +776,6 @@ void Gateway::operator()(
       };
       enqueue(
           reference_data,
-          false);
-      // note! we receive no information about the trading status
-      MarketStatus market_status {
-        .exchange = FLAGS_exchange,
-        .symbol = instrument.symbol,
-        .trading_status = TradingStatus::OPEN,  // TODO(thraneh): missing
-      };
-      enqueue(
-          market_status,
           true);
       ++security_count;
     }
@@ -829,15 +828,12 @@ void Gateway::update(GatewayStatus gateway_status) {
 
 void Gateway::begin_download() {
   assert(_download == Download::NONE);
-  // XXX assert(_gateway_status == GatewayStatus::LOGIN_SENT);
   update(GatewayStatus::DOWNLOADING);
   LOG(INFO)("Download:");
   download_securities();
 }
 
 void Gateway::check_download(Download download) {
-  // if (_gateway_status != GatewayStatus::DOWNLOADING)
-  //   return;
   if (download != _download)
     return;
   switch (_download) {
