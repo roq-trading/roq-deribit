@@ -412,6 +412,8 @@ auto compute_request_status(
 
 void Gateway::operator()(
     const fix::ExecutionReport& execution_report) {
+  DLOG(INFO)(FMT_STRING("execution_report={}"), execution_report);
+
   // download begin?
   switch (execution_report.mass_status_req_type) {
     case core::fix::MassStatusReqType::ORDERS:
