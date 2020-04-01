@@ -40,6 +40,17 @@ class WebSocket final
     : public core::web::Socket::Handler,
       public core::jsonrpc::Parser::Handler,
       public json::Parser::Handler {
+  enum class State {
+    DISCONNECTED,
+    LOGON_SENT,
+    DOWNLOAD,
+    READY,
+  };
+  enum class Download {
+    UNDEFINED,
+    CURRENCIES,
+  };
+
  public:
   WebSocket(
       Gateway& gateway,

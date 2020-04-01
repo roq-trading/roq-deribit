@@ -231,6 +231,17 @@ void Gateway::operator()(const WebSocket&) {
     // DEBUG
     _web_socket.get_currencies();
   }
+/*
+  auto status = _web_socket.status();
+
+  switch (_web_socket.download()) {
+    case WebSocket::Download::UNDEFINED:
+      break;
+    case WebSocket::Download::CURRENCIES:
+      _web_socket.get_currencies();
+      break;
+  }
+*/
 }
 
 void Gateway::operator()(const json::Currencies& currencies) {
@@ -318,6 +329,24 @@ void Gateway::operator()(const FIX& fix) {
     update(GatewayStatus::DISCONNECTED);
     reset();
   }
+/*
+  auto status = _fix.status();
+
+  switch (_fix.download()) {
+    case Fix::Download::SECURITIES:
+      download_securities();
+      break;
+    case Fix::Download::POSITIONS:
+      download_positions();
+      break;
+    case Fix::Download::ORDERS:
+      download_orders();
+      break;
+    case Fix::Download::USER:
+      download_user();
+      break;
+  }
+*/
 }
 
 // execution_repot:

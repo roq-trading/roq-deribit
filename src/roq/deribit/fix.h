@@ -56,7 +56,15 @@ class FIX final : public core::net::Manager::Handler {
   enum class State {
     DISCONNECTED,
     LOGON_SENT,
+    DOWNLOAD,
     READY,
+  };
+  enum class Download {
+    UNDEFINED,
+    SECURITIES,
+    POSITIONS,
+    ORDERS,
+    USER,
   };
 
  public:
@@ -78,14 +86,16 @@ class FIX final : public core::net::Manager::Handler {
   void operator()(const StopEvent&);
   void operator()(const TimerEvent&);
 
+  void operator()(const fix::SecurityListRequest&);
   void operator()(const fix::MarketDataRequest&);
+
+  void operator()(const fix::UserRequest&);
+  void operator()(const fix::RequestForPositions&);
+  void operator()(const fix::OrderMassStatusRequest&);
+
   void operator()(const fix::NewOrderSingle&);
   void operator()(const fix::OrderCancelReplaceRequest&);
   void operator()(const fix::OrderCancelRequest&);
-  void operator()(const fix::OrderMassStatusRequest&);
-  void operator()(const fix::RequestForPositions&);
-  void operator()(const fix::SecurityListRequest&);
-  void operator()(const fix::UserRequest&);
 
   void operator()(Metrics& metrics);
 
@@ -172,6 +182,7 @@ class FIX final : public core::net::Manager::Handler {
   core::utils::Buffer _decode_buffer;
   // session
   State _state = State::DISCONNECTED;
+  Download _download = Download::UNDEFINED;
   uint64_t _msg_seq_num = 0;
   std::chrono::nanoseconds _next_heartbeat = {};
   uint64_t _their_msg_seq_num = 0;

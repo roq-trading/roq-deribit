@@ -87,6 +87,7 @@ bool FIX::ready() const {
 }
 
 void FIX::close() {
+  // XXX send_logout?
   _connection.close();
 }
 
@@ -114,11 +115,43 @@ void FIX::operator()(const TimerEvent& event) {
 }
 
 void FIX::operator()(
+    const fix::SecurityListRequest& security_list_request) {
+  VLOG(1)(
+      FMT_STRING("request(security_list_request={})"),
+      security_list_request);
+  send(security_list_request);
+}
+
+void FIX::operator()(
     const fix::MarketDataRequest& market_data_request) {
   VLOG(1)(
       FMT_STRING("request(market_data_request={})"),
       market_data_request);
   send(market_data_request);
+}
+
+void FIX::operator()(
+    const fix::UserRequest& user_request) {
+  VLOG(1)(
+      FMT_STRING("request(user_request={})"),
+      user_request);
+  send(user_request);
+}
+
+void FIX::operator()(
+    const fix::RequestForPositions& request_for_position) {
+  VLOG(1)(
+      FMT_STRING("request(request_for_position={})"),
+      request_for_position);
+  send(request_for_position);
+}
+
+void FIX::operator()(
+    const fix::OrderMassStatusRequest& order_mass_status_request) {
+  VLOG(1)(
+      FMT_STRING("request(order_mass_status_request={})"),
+      order_mass_status_request);
+  send(order_mass_status_request);
 }
 
 void FIX::operator()(
@@ -143,38 +176,6 @@ void FIX::operator()(
       FMT_STRING("request(order_cancel_request={})"),
       order_cancel_request);
   send(order_cancel_request);
-}
-
-void FIX::operator()(
-    const fix::OrderMassStatusRequest& order_mass_status_request) {
-  VLOG(1)(
-      FMT_STRING("request(order_mass_status_request={})"),
-      order_mass_status_request);
-  send(order_mass_status_request);
-}
-
-void FIX::operator()(
-    const fix::RequestForPositions& request_for_position) {
-  VLOG(1)(
-      FMT_STRING("request(request_for_position={})"),
-      request_for_position);
-  send(request_for_position);
-}
-
-void FIX::operator()(
-    const fix::SecurityListRequest& security_list_request) {
-  VLOG(1)(
-      FMT_STRING("request(security_list_request={})"),
-      security_list_request);
-  send(security_list_request);
-}
-
-void FIX::operator()(
-    const fix::UserRequest& user_request) {
-  VLOG(1)(
-      FMT_STRING("request(user_request={})"),
-      user_request);
-  send(user_request);
 }
 
 void FIX::operator()(Metrics& metrics) {
