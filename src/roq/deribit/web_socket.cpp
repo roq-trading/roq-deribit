@@ -185,8 +185,9 @@ void WebSocket::get_positions(const std::string_view& currency) {
   _connection.send_text(message);
 }
 
+template <typename T>
 void WebSocket::subscribe_ticker(
-    const std::string_view& instrument_name) {
+    const roq::span<T>& symbols) {
   constexpr json::RequestType request_type =
     json::RequestType::SUBSCRIBE_TICKER;
   auto message = fmt::format(
@@ -198,28 +199,41 @@ void WebSocket::subscribe_ticker(
         "}},"
         "\"id\":\"{}\""
         "}}"),
-      instrument_name,
+      fmt::join(symbols, ".raw\",\"ticker."),
       request_type.as_raw_text());
   _connection.send_text(message);
 }
 
-void WebSocket::subscribe_ticker(
-    const roq::span<std::string_view>& instruments) {
+template
+void WebSocket::subscribe_ticker(const roq::span<std::string>&);
+
+template
+void WebSocket::subscribe_ticker(const roq::span<std::string_view>&);
+
+template <typename T>
+void WebSocket::unsubscribe_ticker(
+    const roq::span<T>& symbols) {
   constexpr json::RequestType request_type =
-    json::RequestType::SUBSCRIBE_TICKER;
+    json::RequestType::UNSUBSCRIBE_TICKER;
   auto message = fmt::format(
       FMT_STRING(
         "{{"
-        "\"method\":\"public/subscribe\","
+        "\"method\":\"public/unsubscribe\","
         "\"params\":{{"
         "\"channels\":[\"ticker.{}.raw\"]"
         "}},"
         "\"id\":\"{}\""
         "}}"),
-      fmt::join(instruments, ".raw\",\"ticker."),
+      fmt::join(symbols, ".raw\",\"ticker."),
       request_type.as_raw_text());
   _connection.send_text(message);
 }
+
+template
+void WebSocket::unsubscribe_ticker(const roq::span<std::string>&);
+
+template
+void WebSocket::unsubscribe_ticker(const roq::span<std::string_view>&);
 
 void WebSocket::operator()(Metrics& metrics) {
   metrics
@@ -238,16 +252,17 @@ void WebSocket::operator()(Metrics& metrics) {
 }
 
 void WebSocket::operator()(const core::web::Socket::Connected&) {
-  _gateway(*this);
+  LOG(INFO)("Connected");
 }
 
 void WebSocket::operator()(const core::web::Socket::Disconnected&) {
-  _logged_in = false;
+  LOG(INFO)("Disconnected");
+  reset();
   _gateway(*this);
 }
 
 void WebSocket::operator()(const core::web::Socket::Ready&) {
-  _gateway(*this);
+  LOG(INFO)("Upgraded");
   login();
 }
 
@@ -272,6 +287,9 @@ void WebSocket::parse(const std::string_view& message) {
               *this,
               message);
         } catch (std::exception& e) {
+          LOG(WARNING)(
+              FMT_STRING("message=\"{}\""),
+              message);
           LOG(FATAL)(
               FMT_STRING("ERROR what=\"{}\""),
               e.what());
@@ -325,6 +343,7 @@ void WebSocket::operator()(
       break;
     }
     case json::RequestType::SUBSCRIBE_TICKER:
+    case json::RequestType::UNSUBSCRIBE_TICKER:
       break;
   }
 }
@@ -358,7 +377,7 @@ void WebSocket::operator()(const json::Auth& auth) {
     VLOG(1)(
         FMT_STRING("auth={}"),
         auth);
-    LOG(INFO)("Login successful");
+    LOG(INFO)("Ready");
     _logged_in = true;
     _gateway(*this);
   });
@@ -403,6 +422,13 @@ void WebSocket::operator()(const json::Ticker& ticker) {
     _gateway(ticker);
   });
 }
+
+void WebSocket::reset() {
+  _logged_in = false;
+}
+
+// auth -> download
+// timer -> download
 
 }  // namespace deribit
 }  // namespace roq

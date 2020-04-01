@@ -49,6 +49,7 @@ class WebSocket final
   enum class Download {
     UNDEFINED,
     CURRENCIES,
+    INSTRUMENTS,
   };
 
  public:
@@ -71,15 +72,17 @@ class WebSocket final
   void operator()(const StopEvent&);
   void operator()(const TimerEvent&);
 
-  // request
   void login();
+
   void get_currencies();
   void get_instruments(const std::string_view& currency);
   void get_positions(const std::string_view& currency);
 
-  // subscribe
-  void subscribe_ticker(const std::string_view& instrument);
-  void subscribe_ticker(const roq::span<std::string_view>& instruments);
+  template <typename T>
+  void subscribe_ticker(const roq::span<T>& symbols);
+
+  template <typename T>
+  void unsubscribe_ticker(const roq::span<T>& symbols);
 
   void operator()(Metrics& metrics);
 
@@ -103,14 +106,15 @@ class WebSocket final
       const core::jsonrpc::Notification& notification,
       core::json::value_t& value) override;
 
-  // response
   void operator()(const json::Auth& auth);
+
   void operator()(const json::Currencies& currencies);
   void operator()(const json::Instruments& instruments);
   void operator()(const json::Positions& positions);
 
-  // notifications
   void operator()(const json::Ticker& ticker) override;
+
+  void reset();
 
  private:
   Gateway& _gateway;
@@ -122,9 +126,6 @@ class WebSocket final
   core::web::Socket _connection;
   // buffers
   core::utils::Buffer _decode_buffer;
-  // session
-  std::chrono::nanoseconds _next_heartbeat = {};
-  bool _logged_in = false;
   // other
   core::stack::Buffer<char, 32> _stack_buffer;
   // metrics
@@ -146,6 +147,12 @@ class WebSocket final
       ping,
       heartbeat;
   } _latency;
+  // session
+  bool _logged_in = false;
+  struct {
+    Download download = Download::UNDEFINED;
+    std::chrono::nanoseconds request_timestamp = {};
+  } _download;
 };
 
 }  // namespace deribit

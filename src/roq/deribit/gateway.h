@@ -87,18 +87,10 @@ class Gateway final : public server::Handler {
   void operator()(const fix::UserResponse&);
 
  private:
-  enum class Download {
-    NONE,
-    SECURITIES,
-    POSITIONS,
-    ORDERS,
-    USER,
-  };
-
   void update(GatewayStatus gateway_status);
 
   void begin_download();
-  void check_download(Download download);
+  // void check_download(Download download);
 
   void download_securities();
   void download_positions();
@@ -132,17 +124,42 @@ class Gateway final : public server::Handler {
   core::event::DNSBase _dns_base;
   // crypto
   core::ssl::Context _ssl_context;
-  // connections
-  WebSocket _web_socket;
-  FIX _fix;
-  // download
-  Download _download = Download::NONE;
-  std::chrono::nanoseconds _download_timestamp = {};
+  // fix
+  struct {
+    FIX connection;
+    enum class Download {
+      UNDEFINED,
+      SECURITIES,
+      POSITIONS,
+      ORDERS,
+      USER,
+    } download = Download::UNDEFINED;
+    std::chrono::nanoseconds download_timestamp = {};
+  } _fix;
+  // web socket
+  struct {
+    WebSocket connection;
+    enum class Download {
+      UNDEFINED,
+      CURRENCIES,
+      INSTRUMENTS,
+      POSITIONS,
+    } download = Download::UNDEFINED;
+    std::chrono::nanoseconds download_timestamp = {};
+    uint32_t download_counter = 0;
+  } _web_socket;
+
+  // download (fix)
   uint32_t _download_execution_reports = 0;
   uint32_t _download_users = 0;
   core::hash::set<std::string> _currencies;
   std::vector<std::string> _symbols;
   core::hash::map<std::string, TradingStatus> _trading_status;
+
+  // download (ws)
+  std::vector<std::string> _currencies_2;
+  std::vector<std::string> _symbols_2;
+
   // market data + order manager
   GatewayStatus _gateway_status = GatewayStatus::DISCONNECTED;
   // order manager
@@ -150,6 +167,10 @@ class Gateway final : public server::Handler {
   // market data
   core::page_aligned_vector<MBPUpdate> _bid, _ask;
   core::page_aligned_vector<Trade> _trade;
+
+ protected:
+  using download_t = decltype(_fix)::Download;
+  void check_download(download_t download);
 };
 
 }  // namespace deribit

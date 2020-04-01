@@ -6,6 +6,7 @@
 	{ "name": "get_currencies" },
 	{ "name": "get_instruments" },
 	{ "name": "get_positions" },
-	{ "name": "subscribe_ticker" }
+	{ "name": "subscribe_ticker" },
+	{ "name": "unsubscribe_ticker" }
 ]
 }
