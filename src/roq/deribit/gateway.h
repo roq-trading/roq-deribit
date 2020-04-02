@@ -7,6 +7,7 @@
 #include <vector>
 
 #include "roq/server.h"
+#include "roq/download.h"
 
 #include "roq/core/hash/map.h"
 #include "roq/core/hash/set.h"
@@ -87,10 +88,33 @@ class Gateway final : public server::Handler {
   void operator()(const fix::UserResponse&);
 
  private:
-  void update(GatewayStatus gateway_status);
+  enum class FIXState {
+    UNDEFINED,
+    SECURITIES,
+    POSITIONS,
+    ORDERS,
+    USER,
+    DONE,
+  };
+  using FIXDownload = server::Download<FIXState>;
 
-  void begin_download();
-  // void check_download(Download download);
+  uint32_t download(FIXDownload::State state);
+
+ private:
+  enum class WSState {
+    UNDEFINED,
+    CURRENCIES,
+    INSTRUMENTS,
+    POSITIONS,
+    SUBSCRIBE_TICKERS,
+    DONE,
+  };
+  using WebSocketDownload = server::Download<WSState>;
+
+  uint32_t download(WebSocketDownload::State state);
+
+ private:
+  void update(GatewayStatus gateway_status);
 
   void download_securities();
   void download_positions();
@@ -98,8 +122,6 @@ class Gateway final : public server::Handler {
   void download_user();
 
   void subscribe_market_data();
-
-  void reset();
 
   template <typename T>
   void enqueue(
@@ -125,29 +147,11 @@ class Gateway final : public server::Handler {
   // crypto
   core::ssl::Context _ssl_context;
   // fix
-  struct {
-    FIX connection;
-    enum class Download {
-      UNDEFINED,
-      SECURITIES,
-      POSITIONS,
-      ORDERS,
-      USER,
-    } download = Download::UNDEFINED;
-    std::chrono::nanoseconds download_timestamp = {};
-  } _fix;
+  FIX _fix;
+  FIXDownload _fix_download;
   // web socket
-  struct {
-    WebSocket connection;
-    enum class Download {
-      UNDEFINED,
-      CURRENCIES,
-      INSTRUMENTS,
-      POSITIONS,
-    } download = Download::UNDEFINED;
-    std::chrono::nanoseconds download_timestamp = {};
-    uint32_t download_counter = 0;
-  } _web_socket;
+  WebSocket _web_socket;
+  WebSocketDownload _web_socket_download;
 
   // download (fix)
   uint32_t _download_execution_reports = 0;
@@ -167,10 +171,6 @@ class Gateway final : public server::Handler {
   // market data
   core::page_aligned_vector<MBPUpdate> _bid, _ask;
   core::page_aligned_vector<Trade> _trade;
-
- protected:
-  using download_t = decltype(_fix)::Download;
-  void check_download(download_t download);
 };
 
 }  // namespace deribit
