@@ -26,7 +26,8 @@
 	{ "name": "timestamp", "type": "std::chrono::nanoseconds" },
 	{ "name": "underlying_index", "type": "std::string_view" },
 	{ "name": "underlying_price", "type": "double" },
-	{ "name": "estimated_delivery_price", "comment": "undocumented -- have seen expired (string) and price (number)" },
-	{ "name": "mark_iv", "comment": "undocumented" }
+	{ "name": "mark_iv", "comment": "undocumented" },
+	{ "name": "delivery_price", "comment": "undocumented" },
+	{ "name": "estimated_delivery_price", "comment": "undocumented -- have seen expired (string) and price (number)" }
 ]
 }
