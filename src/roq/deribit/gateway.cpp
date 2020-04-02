@@ -378,8 +378,8 @@ uint32_t Gateway::download(FIXDownload::State state) {
       download_user();
       return _currencies.size();
     case FIXDownload::State::DONE:
-      LOG(INFO)("READY");
       update(GatewayStatus::READY);
+      subscribe_market_data();
       server::PRINT_REDUCED_LOGGING();
       break;
   }
@@ -591,7 +591,7 @@ void Gateway::operator()(
   }
 
   // download end?
-  _fix.download.check(
+  _fix.download.check_relaxed(
       FIXDownload::State::ORDERS,
       [this](auto state) -> uint32_t {
         return download(state);
