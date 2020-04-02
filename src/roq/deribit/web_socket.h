@@ -46,11 +46,6 @@ class WebSocket final
     DOWNLOAD,
     READY,
   };
-  enum class Download {
-    UNDEFINED,
-    CURRENCIES,
-    INSTRUMENTS,
-  };
 
  public:
   WebSocket(
@@ -149,10 +144,6 @@ class WebSocket final
   } _latency;
   // session
   bool _logged_in = false;
-  struct {
-    Download download = Download::UNDEFINED;
-    std::chrono::nanoseconds request_timestamp = {};
-  } _download;
 };
 
 }  // namespace deribit

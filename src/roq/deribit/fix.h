@@ -59,13 +59,6 @@ class FIX final : public core::net::Manager::Handler {
     DOWNLOAD,
     READY,
   };
-  enum class Download {
-    UNDEFINED,
-    SECURITIES,
-    POSITIONS,
-    ORDERS,
-    USER,
-  };
 
  public:
   FIX(
@@ -182,7 +175,6 @@ class FIX final : public core::net::Manager::Handler {
   core::utils::Buffer _decode_buffer;
   // session
   State _state = State::DISCONNECTED;
-  Download _download = Download::UNDEFINED;
   uint64_t _msg_seq_num = 0;
   std::chrono::nanoseconds _next_heartbeat = {};
   uint64_t _their_msg_seq_num = 0;
