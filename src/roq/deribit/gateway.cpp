@@ -101,23 +101,30 @@ Gateway::Gateway(
       _access_key(config.get_access_key()),
       _random(config.get_access_secret()),
       _dns_base(_base, true),
-      _fix(
-        *this,
-        config,
-        _random,
-        _base,
-        _dns_base),
-      _fix_download(
-          std::chrono::seconds { FLAGS_download_timeout_secs }),
-      _web_socket(
+      _fix {
+        .connection = {
           *this,
           config,
           _random,
           _base,
           _dns_base,
-          _ssl_context),
-      _web_socket_download(
-          std::chrono::seconds { FLAGS_download_timeout_secs }),
+        },
+        .download = FIXDownload(
+          std::chrono::seconds { FLAGS_download_timeout_secs }
+        ),
+      },
+      _web_socket {
+        .connection = {
+          *this,
+          config,
+          _random,
+          _base,
+          _dns_base,
+          _ssl_context },
+        .download = WebSocketDownload(
+          std::chrono::seconds { FLAGS_download_timeout_secs }
+        ),
+      },
       _fill(FLAGS_max_fills),
       _bid(FLAGS_max_depth),
       _ask(FLAGS_max_depth),
@@ -128,30 +135,30 @@ Gateway::Gateway(
 
 void Gateway::operator()(const StartEvent& event) {
   LOG(INFO)("Starting the gateway...");
-  _web_socket(event);
-  _fix(event);
+  _web_socket.connection(event);
+  _fix.connection(event);
 }
 
 void Gateway::operator()(const StopEvent& event) {
   LOG(INFO)("Stopping the gateway...");
-  _web_socket(event);
-  _fix(event);
+  _web_socket.connection(event);
+  _fix.connection(event);
 }
 
 void Gateway::operator()(const TimerEvent& event) {
   // fix
-  if (_fix_download.check_time_out(event.now)) {
+  if (_fix.download.has_expired()) {
     LOG(WARNING)("FIX download has timed out");
-    _fix.close();
+    _fix.connection.close();
   } else {
-    _fix(event);
+    _fix.connection(event);
   }
   // web socket
-  if (_web_socket_download.check_time_out(event.now)) {
+  if (_web_socket.download.has_expired()) {
     LOG(WARNING)("WebSocket download has timed out");
-    _web_socket.close();
+    _web_socket.connection.close();
   } else {
-    _web_socket(event);
+    _web_socket.connection(event);
   }
   _base.loop(EVLOOP_NONBLOCK);
 }
@@ -191,7 +198,7 @@ void Gateway::operator()(
     .deribit_label = deribit_label,
     .deribit_adv_order_type = '\0',
   };
-  _fix(new_order_single);
+  _fix.connection(new_order_single);
 }
 
 void Gateway::operator()(
@@ -210,7 +217,7 @@ void Gateway::operator()(
     .symbol = order.symbol,
     .exec_inst = std::string_view(),
   };
-  _fix(order_cancel_replace_request);
+  _fix.connection(order_cancel_replace_request);
 }
 
 void Gateway::operator()(
@@ -221,12 +228,12 @@ void Gateway::operator()(
     .cl_ord_id = request_id,
     .orig_cl_ord_id = order.external_order_id,
   };
-  _fix(order_cancel_request);
+  _fix.connection(order_cancel_request);
 }
 
 void Gateway::operator()(Metrics& metrics) {
-  _web_socket(metrics);
-  _fix(metrics);
+  _web_socket.connection(metrics);
+  _fix.connection(metrics);
 }
 
 // web socket
@@ -239,22 +246,22 @@ uint32_t Gateway::download(WebSocketDownload::State state) {
     case WebSocketDownload::State::CURRENCIES:
       DLOG(INFO)("Download currencies");
       assert(_currencies_2.empty());
-      _web_socket.get_currencies();
+      _web_socket.connection.get_currencies();
       return 1;
     case WebSocketDownload::State::INSTRUMENTS:
       DLOG(INFO)("Download instruments");
       assert(_symbols_2.empty());
       for (auto& currency : _currencies_2)
-        _web_socket.get_instruments(currency);
+        _web_socket.connection.get_instruments(currency);
       return _currencies_2.size();
     case WebSocketDownload::State::POSITIONS:
       DLOG(INFO)("Download positions");
       for (auto& currency : _currencies_2)
-        _web_socket.get_positions(currency);
+        _web_socket.connection.get_positions(currency);
       return _currencies_2.size();
     case WebSocketDownload::State::SUBSCRIBE_TICKERS:
       DLOG(INFO)("Subscribe ticker");
-      _web_socket.subscribe_ticker(
+      _web_socket.connection.subscribe_ticker(
           roq::span(
               _symbols_2.data(),
               _symbols_2.size()));
@@ -266,14 +273,14 @@ uint32_t Gateway::download(WebSocketDownload::State state) {
 }
 
 void Gateway::operator()(const WebSocket&) {
-  if (_web_socket.ready()) {
-    _web_socket_download.check(
+  if (_web_socket.connection.ready()) {
+    _web_socket.download.check(
         WebSocketDownload::State::UNDEFINED,
         [this](auto state) -> uint32_t {
           return download(state);
         });
   } else {
-    _web_socket_download.reset();
+    _web_socket.download.reset();
     _currencies_2.clear();
     _symbols_2.clear();
   }
@@ -284,7 +291,7 @@ void Gateway::operator()(const json::Currencies& currencies) {
   assert(_currencies_2.empty());
   for (auto& item : currencies.data)
     _currencies_2.emplace_back(item.currency);
-  _web_socket_download.check(
+  _web_socket.download.check(
       WebSocketDownload::State::CURRENCIES,
       [this](auto state) -> uint32_t {
         return download(state);
@@ -298,7 +305,7 @@ void Gateway::operator()(const json::Instruments& instruments) {
       continue;
     _symbols_2.emplace_back(item.instrument_name);
   }
-  _web_socket_download.check(
+  _web_socket.download.check(
       WebSocketDownload::State::INSTRUMENTS,
       [this](auto state) -> uint32_t {
         return download(state);
@@ -308,7 +315,7 @@ void Gateway::operator()(const json::Instruments& instruments) {
 void Gateway::operator()(const json::Positions& positions) {
   VLOG(1)(FMT_STRING("positions={}"), positions);
   // XXX do something
-  _web_socket_download.check(
+  _web_socket.download.check(
       WebSocketDownload::State::POSITIONS,
       [this](auto state) -> uint32_t {
         return download(state);
@@ -380,16 +387,16 @@ uint32_t Gateway::download(FIXDownload::State state) {
 }
 
 void Gateway::operator()(const FIX&) {
-  if (_fix.ready()) {
+  if (_fix.connection.ready()) {
     update(GatewayStatus::DOWNLOADING);
-    _fix_download.check(
+    _fix.download.check(
         FIXDownload::State::UNDEFINED,
         [this](auto state) -> uint32_t {
           return download(state);
         });
   } else {
     update(GatewayStatus::DISCONNECTED);
-    _fix_download.reset();
+    _fix.download.reset();
     _symbols.clear();
   }
 }
@@ -492,15 +499,9 @@ void Gateway::operator()(
   // download begin?
   switch (execution_report.mass_status_req_type) {
     case core::fix::MassStatusReqType::ORDERS:
-      /*
-      assert(_gateway_status == GatewayStatus::DOWNLOADING);
-      _download_execution_reports = execution_report.tot_num_reports;
-      if (_download_execution_reports == 0)
-        check_download(decltype(_fix)::Download::ORDERS);
-      */
-      _fix_download.update(
+      _fix.download.update(
           FIXDownload::State::ORDERS,
-          2,  //execution_report.tot_num_reports,
+          execution_report.tot_num_reports,
           [this](auto state) -> uint32_t {
             return download(state);
           });
@@ -533,7 +534,7 @@ void Gateway::operator()(
         order.request_type,
         execution_report.exec_type,
         execution_report.ord_status,
-        _fix_download.downloading(FIXDownload::State::ORDERS));
+        _fix.download.downloading(FIXDownload::State::ORDERS));
 
     if (result.request_status != RequestStatus::UNDEFINED) {
       result.origin = Origin::EXCHANGE;
@@ -590,13 +591,7 @@ void Gateway::operator()(
   }
 
   // download end?
-  /*
-  if (_download_execution_reports &&
-      0 == --_download_execution_reports) {
-    check_download(decltype(_fix)::Download::ORDERS);
-  }
-  */
-  _fix_download.check(
+  _fix.download.check(
       FIXDownload::State::ORDERS,
       [this](auto state) -> uint32_t {
         return download(state);
@@ -824,7 +819,7 @@ void Gateway::operator()(
       break;
   }
   // note! relaxed because we receive duplicate updates
-  _fix_download.check_relaxed(
+  _fix.download.check_relaxed(
       FIXDownload::State::POSITIONS,
       [this](auto state) -> uint32_t {
         return download(state);
@@ -883,7 +878,7 @@ void Gateway::operator()(
         security_count,
         security_list.no_related_sym.size());
   }
-  _fix_download.check(
+  _fix.download.check(
       FIXDownload::State::SECURITIES,
       [this](auto state) -> uint32_t {
         return download(state);
@@ -901,7 +896,7 @@ void Gateway::operator()(
   enqueue(
       funds_update,
       true);
-  _fix_download.check(
+  _fix.download.check(
       FIXDownload::State::USER,
       [this](auto state) -> uint32_t {
         return download(state);
@@ -930,46 +925,6 @@ void Gateway::update(GatewayStatus gateway_status) {
       _gateway_status);
 }
 
-/*
-void Gateway::begin_download() {
-  assert(_fix.download == decltype(_fix)::Download::UNDEFINED);
-  update(GatewayStatus::DOWNLOADING);
-  LOG(INFO)("Download:");
-  download_securities();
-}
-
-void Gateway::check_download(Gateway::download_t download) {
-  if (download != _fix.download)
-    return;
-  switch (_fix.download) {
-    case decltype(_fix)::Download::UNDEFINED:
-      return;
-    case decltype(_fix)::Download::SECURITIES:
-      LOG(INFO)("Download securities COMPLETED");
-      download_positions();
-      break;
-    case decltype(_fix)::Download::POSITIONS:
-      LOG(INFO)("Download positions COMPLETED");
-      download_orders();
-      break;
-    case decltype(_fix)::Download::ORDERS:
-      LOG(INFO)("Download orders COMPLETED");
-      download_user();
-      break;
-    case decltype(_fix)::Download::USER: {
-      LOG(INFO)("Download user COMPLETED");
-      update(GatewayStatus::READY);
-      LOG(INFO)("Download COMPLETED");
-      _fix.download = decltype(_fix)::Download::UNDEFINED;
-      _fix.download_timestamp = {};
-      subscribe_market_data();
-      server::PRINT_REDUCED_LOGGING();
-      break;
-    };
-  }
-}
-*/
-
 void Gateway::download_securities() {
   auto request_id = _dispatcher.next_request_id();
   fix::SecurityListRequest security_list_request {
@@ -977,7 +932,7 @@ void Gateway::download_securities() {
     .security_list_request_type =
       core::fix::SecurityListRequestType::ALL_SECURITIES,
   };
-  _fix(security_list_request);
+  _fix.connection(security_list_request);
 }
 
 void Gateway::download_positions() {
@@ -989,7 +944,7 @@ void Gateway::download_positions() {
       roq::core::fix::SubscriptionRequestType::SNAPSHOT_UPDATES,
     .currency = std::string_view(),
   };
-  _fix(request_for_positions);
+  _fix.connection(request_for_positions);
 }
 
 void Gateway::download_orders() {
@@ -998,12 +953,11 @@ void Gateway::download_orders() {
     .mass_status_req_id = request_id,
     .mass_status_req_type = core::fix::MassStatusReqType::ORDERS,
   };
-  _fix(order_mass_status_request);
+  _fix.connection(order_mass_status_request);
 }
 
 void Gateway::download_user() {
   assert(_currencies.empty() == false);
-  _download_users = _currencies.size();  // async countdown
   for (auto& currency : _currencies) {
     auto request_id = _dispatcher.next_request_id();
     fix::UserRequest user_request_btc {
@@ -1012,7 +966,7 @@ void Gateway::download_user() {
       .username = _access_key,
       .currency = static_cast<std::string_view>(currency),
     };
-    _fix(user_request_btc);
+    _fix.connection(user_request_btc);
   }
 }
 
@@ -1057,7 +1011,7 @@ void Gateway::subscribe_market_data() {
             related_sym.data(),
             count),
       };
-      _fix(market_data_request);
+      _fix.connection(market_data_request);
     }
   }
 }

@@ -44,5 +44,6 @@ nodist_roq_deribit_test_SOURCES = \
 	fix_user_response.cpp \
 	json_currencies.cpp \
 	json_instruments.cpp \
+	json_subscription.cpp \
 	json_ticker.cpp \
 	main.cpp

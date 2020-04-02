@@ -147,23 +147,22 @@ class Gateway final : public server::Handler {
   // crypto
   core::ssl::Context _ssl_context;
   // fix
-  FIX _fix;
-  FIXDownload _fix_download;
+  struct {
+    FIX connection;
+    FIXDownload download;
+  } _fix;
   // web socket
-  WebSocket _web_socket;
-  WebSocketDownload _web_socket_download;
-
+  struct  {
+    WebSocket connection;
+    WebSocketDownload download;
+  } _web_socket;
   // download (fix)
-  uint32_t _download_execution_reports = 0;
-  uint32_t _download_users = 0;
   core::hash::set<std::string> _currencies;
   std::vector<std::string> _symbols;
   core::hash::map<std::string, TradingStatus> _trading_status;
-
-  // download (ws)
+  // download (web socket)
   std::vector<std::string> _currencies_2;
   std::vector<std::string> _symbols_2;
-
   // market data + order manager
   GatewayStatus _gateway_status = GatewayStatus::DISCONNECTED;
   // order manager
