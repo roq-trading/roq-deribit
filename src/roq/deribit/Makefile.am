@@ -33,7 +33,16 @@ roq_deribit_CPPFLAGS = \
 	$(ROQ_API_CFLAGS) \
 	$(ROQ_CORE_CFLAGS) \
 	$(ROQ_SERVER_CFLAGS)
+AUTOGEN_CPP = \
+	fix_state.cpp \
+	web_socket_state.cpp
+AUTOGEN_H = \
+	fix_state.h \
+	web_socket_state.h
+CLEANFILES = $(AUTOGEN_CPP) $(AUTOGEN_H)
+BUILT_SOURCES = $(CLEANFILES) .gitignore
 roq_deribit_SOURCES = \
+	$(AUTOGEN_CPP) \
 	application.cpp \
 	common.cpp \
 	config.cpp \
@@ -43,3 +52,20 @@ roq_deribit_SOURCES = \
 	random.cpp \
 	web_socket.cpp \
 	main.cpp
+
+.gitignore: Makefile.am
+	echo $(AUTOGEN_CPP) $(AUTOGEN_H) | tr " " "\n" | sort > $@
+
+.json.h:
+	@abs_top_builddir@/autogen/autogen.py \
+		--namespace=roq/deribit \
+		--output-type state \
+		--file-type h \
+		$< > $@
+
+.json.cpp:
+	@abs_top_builddir@/autogen/autogen.py \
+		--namespace=roq/deribit \
+		--output-type state \
+		--file-type cpp \
+		$< > $@

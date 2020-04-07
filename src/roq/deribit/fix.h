@@ -53,13 +53,6 @@ namespace deribit {
 class Gateway;
 
 class FIX final : public core::net::Manager::Handler {
-  enum class State {
-    DISCONNECTED,
-    LOGON_SENT,
-    DOWNLOAD,
-    READY,
-  };
-
  public:
   FIX(
       Gateway& gateway,
@@ -105,8 +98,6 @@ class FIX final : public core::net::Manager::Handler {
   void send_logout(const std::string_view& text);
   void send_heartbeat(const std::string_view& test_req_id);
   void send_test_request(std::chrono::nanoseconds now);
-
-  void operator()(State state);
 
   void operator()(const core::net::Manager::Connected&) override;
   void operator()(const core::net::Manager::Disconnected&) override;
@@ -173,14 +164,7 @@ class FIX final : public core::net::Manager::Handler {
   // buffers
   core::utils::Buffer _encode_buffer;
   core::utils::Buffer _decode_buffer;
-  // session
-  State _state = State::DISCONNECTED;
-  uint64_t _msg_seq_num = 0;
-  std::chrono::nanoseconds _next_heartbeat = {};
-  uint64_t _their_msg_seq_num = 0;
-  // other
-  core::stack::Buffer<char, 32> _buffer;
-  uint32_t _request_id = 0;
+  core::stack::Buffer<char, 32> _stack_buffer;
   // metrics
   struct {
     core::metrics::Counter
@@ -202,6 +186,15 @@ class FIX final : public core::net::Manager::Handler {
   struct {
     core::metrics::Latency ping;
   } _latency;
+  // state
+  struct {
+    uint64_t msg_seq_num = 0;
+  } _outbound;
+  struct {
+    uint64_t msg_seq_num = 0;
+  } _inbound;
+  bool _ready = false;
+  std::chrono::nanoseconds _next_heartbeat = {};
 };
 
 }  // namespace deribit

@@ -109,8 +109,6 @@ class WebSocket final
 
   void operator()(const json::Ticker& ticker) override;
 
-  void reset();
-
  private:
   Gateway& _gateway;
   // config
@@ -121,7 +119,6 @@ class WebSocket final
   core::web::Socket _connection;
   // buffers
   core::utils::Buffer _decode_buffer;
-  // other
   core::stack::Buffer<char, 32> _stack_buffer;
   // metrics
   struct {
@@ -142,8 +139,8 @@ class WebSocket final
       ping,
       heartbeat;
   } _latency;
-  // session
-  bool _logged_in = false;
+  // state
+  bool _ready = false;
 };
 
 }  // namespace deribit

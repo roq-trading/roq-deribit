@@ -110,8 +110,7 @@ Gateway::Gateway(
           _dns_base,
         },
         .download = FIXDownload(
-          std::chrono::seconds { FLAGS_download_timeout_secs }
-        ),
+          std::chrono::seconds { FLAGS_download_timeout_secs }),
       },
       _web_socket {
         .connection = {
@@ -122,8 +121,7 @@ Gateway::Gateway(
           _dns_base,
           _ssl_context },
         .download = WebSocketDownload(
-          std::chrono::seconds { FLAGS_download_timeout_secs }
-        ),
+          std::chrono::seconds { FLAGS_download_timeout_secs }),
       },
       _fill(FLAGS_max_fills),
       _bid(FLAGS_max_depth),
@@ -241,34 +239,29 @@ void Gateway::operator()(Metrics& metrics) {
 uint32_t Gateway::download(WebSocketDownload::State state) {
   switch (state) {
     case WebSocketDownload::State::UNDEFINED:
-      assert(false);
       break;
     case WebSocketDownload::State::CURRENCIES:
-      DLOG(INFO)("Download currencies");
       assert(_currencies_2.empty());
       _web_socket.connection.get_currencies();
       return 1;
     case WebSocketDownload::State::INSTRUMENTS:
-      DLOG(INFO)("Download instruments");
       assert(_symbols_2.empty());
       for (auto& currency : _currencies_2)
         _web_socket.connection.get_instruments(currency);
       return _currencies_2.size();
     case WebSocketDownload::State::POSITIONS:
-      DLOG(INFO)("Download positions");
       for (auto& currency : _currencies_2)
         _web_socket.connection.get_positions(currency);
       return _currencies_2.size();
-    case WebSocketDownload::State::SUBSCRIBE_TICKERS:
-      DLOG(INFO)("Subscribe ticker");
+    case WebSocketDownload::State::DONE:
+      LOG(INFO)("Ready");
       _web_socket.connection.subscribe_ticker(
           roq::span(
               _symbols_2.data(),
               _symbols_2.size()));
-      return 0;  // don't wait
-    case WebSocketDownload::State::DONE:
-      break;
+      return 0;
   }
+  assert(false);
   return 0;
 }
 
@@ -287,7 +280,9 @@ void Gateway::operator()(const WebSocket&) {
 }
 
 void Gateway::operator()(const json::Currencies& currencies) {
-  VLOG(1)(FMT_STRING("currencies={}"), currencies);
+  VLOG(1)(
+      FMT_STRING(R"(currencies={})"),
+      currencies);
   assert(_currencies_2.empty());
   for (auto& item : currencies.data)
     _currencies_2.emplace_back(item.currency);
@@ -299,7 +294,9 @@ void Gateway::operator()(const json::Currencies& currencies) {
 }
 
 void Gateway::operator()(const json::Instruments& instruments) {
-  VLOG(1)(FMT_STRING("instruments={}"), instruments);
+  VLOG(1)(
+      FMT_STRING(R"(instruments={})"),
+      instruments);
   for (auto& item : instruments.data) {
     if (_dispatcher.discard_symbol(item.instrument_name))
       continue;
@@ -313,7 +310,9 @@ void Gateway::operator()(const json::Instruments& instruments) {
 }
 
 void Gateway::operator()(const json::Positions& positions) {
-  VLOG(1)(FMT_STRING("positions={}"), positions);
+  VLOG(1)(
+      FMT_STRING(R"(positions={})"),
+      positions);
   // XXX do something
   _web_socket.download.check(
       WebSocketDownload::State::POSITIONS,
@@ -323,7 +322,9 @@ void Gateway::operator()(const json::Positions& positions) {
 }
 
 void Gateway::operator()(const json::Ticker& ticker) {
-  VLOG(3)(FMT_STRING("ticker={}"), ticker);
+  VLOG(3)(
+      FMT_STRING(R"(ticker={})"),
+      ticker);
   TopOfBook top_of_book = {
     .exchange = FLAGS_exchange,
     .symbol = ticker.instrument_name,
@@ -362,27 +363,24 @@ uint32_t Gateway::download(FIXDownload::State state) {
       assert(false);
       break;
     case FIXDownload::State::SECURITIES:
-      DLOG(INFO)("Download securities");
       download_securities();
       return 1;
     case FIXDownload::State::POSITIONS:
-      DLOG(INFO)("Download positions");
       download_positions();
       return 1;
     case FIXDownload::State::ORDERS:
-      DLOG(INFO)("Download orders");
       download_orders();
-      return 1;  // wrong
+      return 1;  // first ExecutionReport has the real number
     case FIXDownload::State::USER:
-      DLOG(INFO)("Download user");
       download_user();
       return _currencies.size();
     case FIXDownload::State::DONE:
+      LOG(INFO)("Ready");
       update(GatewayStatus::READY);
       subscribe_market_data();
-      server::PRINT_REDUCED_LOGGING();
-      break;
+      return 0;
   }
+  assert(false);
   return 0;
 }
 
@@ -494,7 +492,9 @@ auto compute_request_status(
 
 void Gateway::operator()(
     const fix::ExecutionReport& execution_report) {
-  DLOG(INFO)(FMT_STRING("execution_report={}"), execution_report);
+  DLOG(INFO)(
+      FMT_STRING(R"(execution_report={})"),
+      execution_report);
 
   // download begin?
   switch (execution_report.mass_status_req_type) {
@@ -556,9 +556,10 @@ void Gateway::operator()(
     if (unlikely(success == false)) {
       LOG(FATAL)(
           FMT_STRING(
-            "Insufficient fill array size(s): "
-            "len(fill)={}/{}={}/{}"),
-          fill_length, execution_report.no_fills.size());
+            R"(Insufficient fill array size(s): )"
+            R"(len(fill)={}/{}={}/{})"),
+          fill_length,
+          execution_report.no_fills.size());
     }
     if (fill_length) {
       TradeUpdate trade_update {
@@ -635,12 +636,12 @@ void Gateway::operator()(
       case core::fix::MDEntryType::SETTLEMENT_PRICE:
         // FIXME(thraneh): how to propagate these???
         VLOG(4)(
-            FMT_STRING("unsupported: {}"),
+            FMT_STRING(R"(unsupported: {})"),
             item);
         break;
       default:
         LOG(WARNING)(
-          FMT_STRING("unsupported: {}"),
+          FMT_STRING(R"(unsupported: {})"),
           item);
         break;
     }
@@ -648,8 +649,8 @@ void Gateway::operator()(
   if (unlikely(success == false)) {
     LOG(FATAL)(
         FMT_STRING(
-          "Insufficient bid/ask/trade array size(s): "
-          "len(bid)={}/{}, len(ask)={}/{}, len(trade)={}/{}"),
+          R"(Insufficient bid/ask/trade array size(s): )"
+          R"(len(bid)={}/{}, len(ask)={}/{}, len(trade)={}/{})"),
         bid_length, _bid.size(),
         ask_length, _ask.size(),
         trade_length, _trade.size());
@@ -699,8 +700,8 @@ void Gateway::operator()(
 void Gateway::operator()(
     const fix::MarketDataSnapshotFullRefresh& market_data_snapshot_full_refresh) {
   assert(_gateway_status == GatewayStatus::READY);
-  LOG(INFO)(
-      FMT_STRING("Received market data snapshot for symbol=\"{}\""),
+  VLOG(1)(
+      FMT_STRING(R"(Received market data snapshot for symbol="{}")"),
       market_data_snapshot_full_refresh.symbol);
   size_t bid_length = 0, ask_length = 0;
   for (auto& item : market_data_snapshot_full_refresh.no_md_entries) {
@@ -771,7 +772,7 @@ void Gateway::operator()(
 void Gateway::operator()(
     const fix::PositionReport& position_report) {
   VLOG(1)(
-      FMT_STRING("position_report={}"),
+      FMT_STRING(R"(position_report={})"),
       position_report);
   switch (position_report.pos_req_result) {
     case core::fix::PosReqResult::VALID:
@@ -829,7 +830,7 @@ void Gateway::operator()(
 void Gateway::operator()(
     const fix::Reject& reject) {
   LOG(WARNING)(
-      FMT_STRING("reject={}"),
+      FMT_STRING(R"(reject={})"),
       reject);
   assert(_gateway_status != GatewayStatus::DISCONNECTED);
 
@@ -874,7 +875,7 @@ void Gateway::operator()(
       ++security_count;
     }
     VLOG(1)(
-        FMT_STRING("- securities: {} (/{})"),
+        FMT_STRING(R"(- securities: {} (/{}))"),
         security_count,
         security_list.no_related_sym.size());
   }
@@ -921,7 +922,7 @@ void Gateway::update(GatewayStatus gateway_status) {
       order_manager_status,
       true);
   LOG(INFO)(
-      FMT_STRING("Update: gateway_status={}"),
+      FMT_STRING(R"(Update: gateway_status={})"),
       _gateway_status);
 }
 

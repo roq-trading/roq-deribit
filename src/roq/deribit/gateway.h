@@ -22,6 +22,9 @@
 #include "roq/deribit/random.h"
 #include "roq/deribit/web_socket.h"
 
+#include "roq/deribit/fix_state.h"
+#include "roq/deribit/web_socket_state.h"
+
 // json (inbound)
 #include "roq/deribit/json/currencies.h"
 #include "roq/deribit/json/instruments.h"
@@ -88,28 +91,11 @@ class Gateway final : public server::Handler {
   void operator()(const fix::UserResponse&);
 
  private:
-  enum class FIXState {
-    UNDEFINED,
-    SECURITIES,
-    POSITIONS,
-    ORDERS,
-    USER,
-    DONE,
-  };
   using FIXDownload = server::Download<FIXState>;
 
   uint32_t download(FIXDownload::State state);
 
- private:
-  enum class WSState {
-    UNDEFINED,
-    CURRENCIES,
-    INSTRUMENTS,
-    POSITIONS,
-    SUBSCRIBE_TICKERS,
-    DONE,
-  };
-  using WebSocketDownload = server::Download<WSState>;
+  using WebSocketDownload = server::Download<WebSocketState>;
 
   uint32_t download(WebSocketDownload::State state);
 
