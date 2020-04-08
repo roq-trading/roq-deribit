@@ -517,9 +517,6 @@ void Gateway::operator()(
     .price = execution_report.price,
     .remaining_quantity = execution_report.leaves_qty,
     .traded_quantity = execution_report.cum_qty,
-    // XXX note! this is per-trade -- need another approach
-    // .commissions =  execution_report.commission,
-    .commissions = std::numeric_limits<double>::quiet_NaN(),  // execution_report.commission,
     .timestamp = execution_report.transact_time,
     .external_order_id = execution_report.order_id,
   };
@@ -748,7 +745,6 @@ void Gateway::operator()(
     .price = std::numeric_limits<double>::quiet_NaN(),
     .remaining_quantity = std::numeric_limits<double>::quiet_NaN(),
     .traded_quantity = std::numeric_limits<double>::quiet_NaN(),
-    .commissions = std::numeric_limits<double>::quiet_NaN(),
     .timestamp = {},
     .external_order_id = std::string_view(),
   };
