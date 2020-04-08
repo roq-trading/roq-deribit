@@ -144,19 +144,19 @@ void Gateway::operator()(const StopEvent& event) {
 }
 
 void Gateway::operator()(const TimerEvent& event) {
+  _fix.connection(event);
+  _web_socket.connection(event);
   // fix
   if (_fix.download.has_expired()) {
     LOG(WARNING)("FIX download has timed out");
+    _fix.download.reset();
     _fix.connection.close();
-  } else {
-    _fix.connection(event);
   }
   // web socket
   if (_web_socket.download.has_expired()) {
     LOG(WARNING)("WebSocket download has timed out");
+    _web_socket.download.reset();
     _web_socket.connection.close();
-  } else {
-    _web_socket.connection(event);
   }
   _base.loop(EVLOOP_NONBLOCK);
 }
