@@ -828,9 +828,12 @@ void Gateway::operator()(
   LOG(WARNING)(
       FMT_STRING(R"(reject={})"),
       reject);
-  assert(_gateway_status != GatewayStatus::DISCONNECTED);
-
-  LOG(FATAL)("Not supported");
+  if (reject.session_reject_reason.compare("99") == 0 &&
+      reject.text.compare("connection_too_slow") == 0) {
+    _fix.connection.close();
+  } else {
+    LOG(FATAL)("Unexpected");
+  }
 }
 
 void Gateway::operator()(
