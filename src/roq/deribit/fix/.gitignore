@@ -50,6 +50,10 @@ security_list.cpp
 security_list.h
 security_list_request.cpp
 security_list_request.h
+security_status.cpp
+security_status.h
+security_status_request.cpp
+security_status_request.h
 test_request.cpp
 test_request.h
 user_request.cpp

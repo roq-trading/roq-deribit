@@ -35,6 +35,7 @@
 #include "roq/deribit/fix/position_report.h"
 #include "roq/deribit/fix/reject.h"  // ... normally session level
 #include "roq/deribit/fix/security_list.h"
+#include "roq/deribit/fix/security_status.h"
 #include "roq/deribit/fix/user_response.h"
 
 // business (outbound)
@@ -45,6 +46,7 @@
 #include "roq/deribit/fix/order_mass_status_request.h"
 #include "roq/deribit/fix/request_for_positions.h"
 #include "roq/deribit/fix/security_list_request.h"
+#include "roq/deribit/fix/security_status_request.h"
 #include "roq/deribit/fix/user_request.h"
 
 namespace roq {
@@ -73,6 +75,7 @@ class FIX final : public core::net::Manager::Handler {
   void operator()(const TimerEvent&);
 
   void operator()(const fix::SecurityListRequest&);
+  void operator()(const fix::SecurityStatusRequest&);
   void operator()(const fix::MarketDataRequest&);
 
   void operator()(const fix::UserRequest&);
@@ -150,6 +153,9 @@ class FIX final : public core::net::Manager::Handler {
       const fix::SecurityList&);
   void operator()(
       const core::fix::header_t&,
+      const fix::SecurityStatus&);
+  void operator()(
+      const core::fix::header_t&,
       const fix::UserResponse&);
 
  private:
@@ -181,6 +187,7 @@ class FIX final : public core::net::Manager::Handler {
       position_report,
       reject,
       security_list,
+      security_status,
       user_response;
   } _profile;
   struct {

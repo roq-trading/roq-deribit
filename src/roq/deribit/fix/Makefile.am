@@ -34,6 +34,8 @@ AUTOGEN_CPP = \
 	resend_request.cpp \
 	security_list.cpp \
 	security_list_request.cpp \
+	security_status.cpp \
+	security_status_request.cpp \
 	test_request.cpp \
 	user_request.cpp \
 	user_response.cpp
@@ -64,6 +66,8 @@ AUTOGEN_H = \
 	resend_request.h \
 	security_list.h \
 	security_list_request.h \
+	security_status.h \
+	security_status_request.h \
 	test_request.h \
 	user_request.h \
 	user_response.h

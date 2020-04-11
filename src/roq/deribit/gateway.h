@@ -88,6 +88,7 @@ class Gateway final : public server::Handler {
   void operator()(const fix::PositionReport&);
   void operator()(const fix::Reject&);
   void operator()(const fix::SecurityList&);
+  void operator()(const fix::SecurityStatus&);
   void operator()(const fix::UserResponse&);
 
  private:

@@ -75,6 +75,7 @@ FIX::FIX(
         .position_report = create_profile("position_report"),
         .reject = create_profile("reject"),
         .security_list = create_profile("security_list"),
+        .security_status = create_profile("security_status"),
         .user_response = create_profile("user_response"),
       },
       _latency {
@@ -116,6 +117,14 @@ void FIX::operator()(
       FMT_STRING(R"(request(security_list_request={}))"),
       security_list_request);
   send(security_list_request);
+}
+
+void FIX::operator()(
+    const fix::SecurityStatusRequest& security_status_request) {
+  VLOG(1)(
+      FMT_STRING(R"(request(security_status_request={}))"),
+      security_status_request);
+  send(security_status_request);
 }
 
 void FIX::operator()(
@@ -188,6 +197,7 @@ void FIX::operator()(Metrics& metrics) {
     .write(_profile.position_report)
     .write(_profile.reject)
     .write(_profile.security_list)
+    .write(_profile.security_status)
     .write(_profile.user_response)
     // latency
     .write(_latency.ping);
@@ -488,6 +498,19 @@ void FIX::parse_helper(const core::fix::message_t& message) {
           });
       break;
     }
+    case core::fix::MsgType::SECURITY_STATUS: {
+      _profile.security_status(
+          [&]() {
+            auto security_status =
+              fix::SecurityStatus::create(
+                  message,
+                  buffer);
+            (*this)(
+                message.header,
+                security_status);
+          });
+      break;
+    }
     case core::fix::MsgType::USER_RESPONSE: {
       _profile.user_response(
           [&]() {
@@ -650,6 +673,16 @@ void FIX::operator()(
       header,
       security_list);
   _gateway(security_list);
+}
+
+void FIX::operator()(
+    const core::fix::header_t& header,
+    const fix::SecurityStatus& security_status) {
+  VLOG(2)(
+      FMT_STRING(R"(event(header={}, security_status={}))"),
+      header,
+      security_status);
+  _gateway(security_status);
 }
 
 void FIX::operator()(

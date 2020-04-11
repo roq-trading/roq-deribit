@@ -886,6 +886,10 @@ void Gateway::operator()(
 }
 
 void Gateway::operator()(
+    const fix::SecurityStatus&) {
+}
+
+void Gateway::operator()(
     const fix::UserResponse& user_response) {
   FundsUpdate funds_update {
     .account = _account,
