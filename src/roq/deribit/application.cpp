@@ -17,6 +17,7 @@ int Application::main(int, char **) {
       config);
   LOG(INFO)("Starting the gateway...");
   roq::server::Trading<Gateway>(
+      PACKAGE_NAME,
       config,
       FLAGS_listen,
       server::RequestIdType::SEQUENTIAL,
