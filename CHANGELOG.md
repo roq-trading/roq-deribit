@@ -1,0 +1,34 @@
+# Change Log
+
+All notable changes will be documented in this file.
+
+## Head
+
+## 0.3.5 &ndash; 2020-04-22
+
+### Added
+
+* `fix::SecurityStatus` and `fix::SecurityStatusRequst` (but not yet
+   using)
+
+### Changed
+
+* `fix::Reject` "connection too slow" will now cause connection reset
+
+## 0.3.4 &ndash; 2020-04-08
+
+### Added
+
+* `OrderUpdate::execution_instruction` support
+* `json::Ticker::delivery_price` parsing
+* Web-Socket support (for download)
+
+### Removed
+
+* `OrderUpdate::commissions`
+
+### Changed
+
+* New download state management
+
+## 0.3.3 &ndash; 2020-03-04
