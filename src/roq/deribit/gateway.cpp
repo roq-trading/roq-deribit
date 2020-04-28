@@ -110,7 +110,10 @@ Gateway::Gateway(
           _dns_base,
         },
         .download = FIXDownload(
-          std::chrono::seconds { FLAGS_download_timeout_secs }),
+            std::chrono::seconds { FLAGS_download_timeout_secs },
+            [this](auto state) {
+              return download(state);
+            }),
       },
       _web_socket {
         .connection = {
@@ -121,7 +124,10 @@ Gateway::Gateway(
           _dns_base,
           _ssl_context },
         .download = WebSocketDownload(
-          std::chrono::seconds { FLAGS_download_timeout_secs }),
+            std::chrono::seconds { FLAGS_download_timeout_secs },
+            [this](auto state) {
+              return download(state);
+            }),
       },
       _fill(FLAGS_max_fills),
       _bid(FLAGS_max_depth),
@@ -147,17 +153,21 @@ void Gateway::operator()(const TimerEvent& event) {
   _fix.connection(event);
   _web_socket.connection(event);
   // fix
+  /*
   if (_fix.download.has_expired()) {
     LOG(WARNING)("FIX download has timed out");
     _fix.download.reset();
     _fix.connection.close();
   }
+  */
   // web socket
+  /*
   if (_web_socket.download.has_expired()) {
     LOG(WARNING)("WebSocket download has timed out");
     _web_socket.download.reset();
     _web_socket.connection.close();
   }
+  */
   _base.loop(EVLOOP_NONBLOCK);
 }
 
@@ -267,11 +277,7 @@ uint32_t Gateway::download(WebSocketDownload::State state) {
 
 void Gateway::operator()(const WebSocket&) {
   if (_web_socket.connection.ready()) {
-    _web_socket.download.check(
-        WebSocketDownload::State::UNDEFINED,
-        [this](auto state) -> uint32_t {
-          return download(state);
-        });
+    _web_socket.download.begin();
   } else {
     _web_socket.download.reset();
     _currencies_2.clear();
@@ -280,20 +286,18 @@ void Gateway::operator()(const WebSocket&) {
 }
 
 void Gateway::operator()(const json::Currencies& currencies) {
+  constexpr auto state = WebSocketDownload::State::CURRENCIES;
   VLOG(1)(
       FMT_STRING(R"(currencies={})"),
       currencies);
   assert(_currencies_2.empty());
   for (auto& item : currencies.data)
     _currencies_2.emplace_back(item.currency);
-  _web_socket.download.check(
-      WebSocketDownload::State::CURRENCIES,
-      [this](auto state) -> uint32_t {
-        return download(state);
-      });
+  _web_socket.download.check(state);
 }
 
 void Gateway::operator()(const json::Instruments& instruments) {
+  constexpr auto state = WebSocketDownload::State::INSTRUMENTS;
   VLOG(1)(
       FMT_STRING(R"(instruments={})"),
       instruments);
@@ -302,23 +306,16 @@ void Gateway::operator()(const json::Instruments& instruments) {
       continue;
     _symbols_2.emplace_back(item.instrument_name);
   }
-  _web_socket.download.check(
-      WebSocketDownload::State::INSTRUMENTS,
-      [this](auto state) -> uint32_t {
-        return download(state);
-      });
+  _web_socket.download.check(state);
 }
 
 void Gateway::operator()(const json::Positions& positions) {
+  constexpr auto state = WebSocketDownload::State::POSITIONS;
   VLOG(1)(
       FMT_STRING(R"(positions={})"),
       positions);
   // XXX do something
-  _web_socket.download.check(
-      WebSocketDownload::State::POSITIONS,
-      [this](auto state) -> uint32_t {
-        return download(state);
-      });
+  _web_socket.download.check(state);
 }
 
 void Gateway::operator()(const json::Ticker& ticker) {
@@ -387,11 +384,7 @@ uint32_t Gateway::download(FIXDownload::State state) {
 void Gateway::operator()(const FIX&) {
   if (_fix.connection.ready()) {
     update(GatewayStatus::DOWNLOADING);
-    _fix.download.check(
-        FIXDownload::State::UNDEFINED,
-        [this](auto state) -> uint32_t {
-          return download(state);
-        });
+    _fix.download.begin();
   } else {
     update(GatewayStatus::DISCONNECTED);
     _fix.download.reset();
@@ -501,10 +494,7 @@ void Gateway::operator()(
     case core::fix::MassStatusReqType::ORDERS:
       _fix.download.update(
           FIXDownload::State::ORDERS,
-          execution_report.tot_num_reports,
-          [this](auto state) -> uint32_t {
-            return download(state);
-          });
+          execution_report.tot_num_reports);
       return;
     default:
       break;
@@ -589,11 +579,7 @@ void Gateway::operator()(
   }
 
   // download end?
-  _fix.download.check_relaxed(
-      FIXDownload::State::ORDERS,
-      [this](auto state) -> uint32_t {
-        return download(state);
-      });
+  _fix.download.check_relaxed(FIXDownload::State::ORDERS);
 }
 
 void Gateway::operator()(
@@ -816,11 +802,7 @@ void Gateway::operator()(
       break;
   }
   // note! relaxed because we receive duplicate updates
-  _fix.download.check_relaxed(
-      FIXDownload::State::POSITIONS,
-      [this](auto state) -> uint32_t {
-        return download(state);
-      });
+  _fix.download.check_relaxed(FIXDownload::State::POSITIONS);
 }
 
 void Gateway::operator()(
@@ -878,11 +860,7 @@ void Gateway::operator()(
         security_count,
         security_list.no_related_sym.size());
   }
-  _fix.download.check(
-      FIXDownload::State::SECURITIES,
-      [this](auto state) -> uint32_t {
-        return download(state);
-      });
+  _fix.download.check(FIXDownload::State::SECURITIES);
 }
 
 void Gateway::operator()(
@@ -900,11 +878,7 @@ void Gateway::operator()(
   enqueue(
       funds_update,
       true);
-  _fix.download.check(
-      FIXDownload::State::USER,
-      [this](auto state) -> uint32_t {
-        return download(state);
-      });
+  _fix.download.check(FIXDownload::State::USER);
 }
 
 void Gateway::update(GatewayStatus gateway_status) {
