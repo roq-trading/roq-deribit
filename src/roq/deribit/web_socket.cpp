@@ -8,7 +8,6 @@
 
 #include "roq/core/clock.h"
 
-#include "roq/deribit/gateway.h"
 #include "roq/deribit/options.h"
 
 #include "roq/deribit/json/error.h"
@@ -47,13 +46,13 @@ static auto create_latency(
 }  // namespace
 
 WebSocket::WebSocket(
-    Gateway& gateway,
+    Handler& handler,
     const Config& config,
     Random& random,
     core::event::Base& base,
     core::event::DNSBase& dns_base,
     core::ssl::Context& ssl_context)
-    : _gateway(gateway),
+    : _handler(handler),
       _access_key(config.get_access_key()),
       _random(random),
       _connection(
@@ -260,7 +259,7 @@ void WebSocket::operator()(const core::web::Socket::Connected&) {
 void WebSocket::operator()(const core::web::Socket::Disconnected&) {
   ++_counter.disconnect;
   _ready = false;
-  _gateway(*this);
+  _handler(*this);
 }
 
 void WebSocket::operator()(const core::web::Socket::Ready&) {
@@ -381,7 +380,7 @@ void WebSocket::operator()(const json::Auth& auth) {
     LOG(INFO)("Ready");
     assert(_ready == false);
     _ready = true;
-    _gateway(*this);
+    _handler(*this);
   });
 }
 
@@ -391,7 +390,7 @@ void WebSocket::operator()(const json::Currencies& currencies) {
     VLOG(1)(
         FMT_STRING(R"(currencies={})"),
         currencies);
-    _gateway(currencies);
+    _handler(currencies);
   });
 }
 
@@ -401,7 +400,7 @@ void WebSocket::operator()(const json::Instruments& instruments) {
     VLOG(1)(
         FMT_STRING(R"(instruments={})"),
         instruments);
-    _gateway(instruments);
+    _handler(instruments);
   });
 }
 
@@ -411,7 +410,7 @@ void WebSocket::operator()(const json::Positions& positions) {
     VLOG(1)(
         FMT_STRING(R"(positions={})"),
         positions);
-    _gateway(positions);
+    _handler(positions);
   });
 }
 
@@ -421,7 +420,7 @@ void WebSocket::operator()(const json::Ticker& ticker) {
     VLOG(2)(
         FMT_STRING(R"(ticker={})"),
         ticker);
-    _gateway(ticker);
+    _handler(ticker);
   });
 }
 

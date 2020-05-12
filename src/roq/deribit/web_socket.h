@@ -34,8 +34,6 @@
 namespace roq {
 namespace deribit {
 
-class Gateway;
-
 class WebSocket final
     : public core::web::Socket::Handler,
       public core::jsonrpc::Parser::Handler,
@@ -48,8 +46,16 @@ class WebSocket final
   };
 
  public:
+  struct Handler {
+    virtual void operator()(const WebSocket&) = 0;
+    virtual void operator()(const json::Currencies&) = 0;
+    virtual void operator()(const json::Instruments&) = 0;
+    virtual void operator()(const json::Positions&) = 0;
+    virtual void operator()(const json::Ticker&) = 0;
+  };
+
   WebSocket(
-      Gateway& gateway,
+      Handler& handler,
       const Config& config,
       Random& random,
       core::event::Base& base,
@@ -89,6 +95,7 @@ class WebSocket final
   void operator()(const core::web::Socket::Latency&) override;
   void operator()(const core::web::Socket::Text&) override;
 
+ private:
   void parse(const std::string_view& message);
 
   void operator()(
@@ -110,7 +117,7 @@ class WebSocket final
   void operator()(const json::Ticker& ticker) override;
 
  private:
-  Gateway& _gateway;
+  Handler& _handler;
   // config
   const std::string _access_key;
   // authentication

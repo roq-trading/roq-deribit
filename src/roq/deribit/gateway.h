@@ -25,31 +25,20 @@
 #include "roq/deribit/fix_state.h"
 #include "roq/deribit/web_socket_state.h"
 
-// json (inbound)
-#include "roq/deribit/json/currencies.h"
-#include "roq/deribit/json/instruments.h"
-#include "roq/deribit/json/positions.h"
-#include "roq/deribit/json/ticker.h"
-
-// fix (inbound)
-#include "roq/deribit/fix/execution_report.h"
-#include "roq/deribit/fix/market_data_incremental_refresh.h"
-#include "roq/deribit/fix/market_data_request_reject.h"
-#include "roq/deribit/fix/market_data_snapshot_full_refresh.h"
-#include "roq/deribit/fix/order_cancel_reject.h"
-#include "roq/deribit/fix/position_report.h"
-#include "roq/deribit/fix/reject.h"
-#include "roq/deribit/fix/security_list.h"
-#include "roq/deribit/fix/user_response.h"
-
 namespace roq {
 namespace deribit {
 
-class Gateway final : public server::Handler {
+class Gateway final
+    : public server::Handler,
+      public WebSocket::Handler,
+      public FIX::Handler {
  public:
   Gateway(
       server::Dispatcher& dispatcher,
       const Config& config);
+
+ protected:
+  // server::Handler
 
   void operator()(const StartEvent&) override;
   void operator()(const StopEvent&) override;
@@ -71,25 +60,27 @@ class Gateway final : public server::Handler {
 
   void operator()(Metrics& metrics) override;
 
-  // web socket
-  void operator()(const WebSocket&);
-  void operator()(const json::Currencies&);
-  void operator()(const json::Instruments&);
-  void operator()(const json::Positions&);
-  void operator()(const json::Ticker&);
+  // WebSocket::Handler
 
-  // fix
-  void operator()(const FIX&);
-  void operator()(const fix::ExecutionReport&);
-  void operator()(const fix::MarketDataIncrementalRefresh&);
-  void operator()(const fix::MarketDataRequestReject&);
-  void operator()(const fix::MarketDataSnapshotFullRefresh&);
-  void operator()(const fix::OrderCancelReject&);
-  void operator()(const fix::PositionReport&);
-  void operator()(const fix::Reject&);
-  void operator()(const fix::SecurityList&);
-  void operator()(const fix::SecurityStatus&);
-  void operator()(const fix::UserResponse&);
+  void operator()(const WebSocket&) override;
+  void operator()(const json::Currencies&) override;
+  void operator()(const json::Instruments&) override;
+  void operator()(const json::Positions&) override;
+  void operator()(const json::Ticker&) override;
+
+  // FIX::Handler
+
+  void operator()(const FIX&) override;
+  void operator()(const fix::ExecutionReport&) override;
+  void operator()(const fix::MarketDataIncrementalRefresh&) override;
+  void operator()(const fix::MarketDataRequestReject&) override;
+  void operator()(const fix::MarketDataSnapshotFullRefresh&) override;
+  void operator()(const fix::OrderCancelReject&) override;
+  void operator()(const fix::PositionReport&) override;
+  void operator()(const fix::Reject&) override;
+  void operator()(const fix::SecurityList&) override;
+  void operator()(const fix::SecurityStatus&) override;
+  void operator()(const fix::UserResponse&) override;
 
  private:
   using FIXDownload = server::Download<FIXState>;
@@ -100,7 +91,6 @@ class Gateway final : public server::Handler {
 
   uint32_t download(WebSocketDownload::State state);
 
- private:
   void update(GatewayStatus gateway_status);
 
   void download_securities();

@@ -5,7 +5,6 @@
 #include "roq/core/stack/buffer.h"
 
 #include "roq/deribit/common.h"
-#include "roq/deribit/gateway.h"
 #include "roq/deribit/options.h"
 
 #include "roq/core/debug.h"
@@ -42,12 +41,12 @@ static auto create_latency(
 }
 
 FIX::FIX(
-    Gateway& gateway,
+    Handler& handler,
     const Config& config,
     Random& random,
     core::event::Base& base,
     core::event::DNSBase& dns_base)
-    : _gateway(gateway),
+    : _handler(handler),
       _access_key(config.get_access_key()),
       _random(random),
       _connection_factory(
@@ -282,7 +281,7 @@ void FIX::operator()(const core::net::Manager::Disconnected&) {
   _inbound = {};
   _ready = false;
   _next_heartbeat = {};
-  _gateway(*this);
+  _handler(*this);
 }
 
 void FIX::operator()(const core::net::Manager::Read& read) {
@@ -557,7 +556,7 @@ void FIX::operator()(
   LOG(INFO)("Ready");
   assert(_ready == false);
   _ready = true;
-  _gateway(*this);
+  _handler(*this);
 }
 
 void FIX::operator()(
@@ -602,7 +601,7 @@ void FIX::operator()(
       FMT_STRING(R"(event(header={}, execution_report={}))"),
       header,
       execution_report);
-  _gateway(execution_report);
+  _handler(execution_report);
 }
 
 void FIX::operator()(
@@ -612,7 +611,7 @@ void FIX::operator()(
       FMT_STRING(R"(event(header={}, market_data_incremental_refresh={}))"),
       header,
       market_data_incremental_refresh);
-  _gateway(market_data_incremental_refresh);
+  _handler(market_data_incremental_refresh);
 }
 
 void FIX::operator()(
@@ -622,7 +621,7 @@ void FIX::operator()(
       FMT_STRING(R"(event(header={}, market_data_request_reject={}))"),
       header,
       market_data_request_reject);
-  _gateway(market_data_request_reject);
+  _handler(market_data_request_reject);
 }
 
 void FIX::operator()(
@@ -632,7 +631,7 @@ void FIX::operator()(
       FMT_STRING(R"(event(header={}, market_data_snapshot_full_refresh={}))"),
       header,
       market_data_snapshot_full_refresh);
-  _gateway(market_data_snapshot_full_refresh);
+  _handler(market_data_snapshot_full_refresh);
 }
 
 void FIX::operator()(
@@ -642,7 +641,7 @@ void FIX::operator()(
       FMT_STRING(R"(event(header={}, order_cancel_reject={}))"),
       header,
       order_cancel_reject);
-  _gateway(order_cancel_reject);
+  _handler(order_cancel_reject);
 }
 
 void FIX::operator()(
@@ -652,7 +651,7 @@ void FIX::operator()(
       FMT_STRING(R"(event(header={}, position_report={}))"),
       header,
       position_report);
-  _gateway(position_report);
+  _handler(position_report);
 }
 
 void FIX::operator()(
@@ -662,7 +661,7 @@ void FIX::operator()(
       FMT_STRING(R"(event(header={}, reject={}))"),
       header,
       reject);
-  _gateway(reject);
+  _handler(reject);
 }
 
 void FIX::operator()(
@@ -672,7 +671,7 @@ void FIX::operator()(
       FMT_STRING(R"(event(header={}, security_list={}))"),
       header,
       security_list);
-  _gateway(security_list);
+  _handler(security_list);
 }
 
 void FIX::operator()(
@@ -682,7 +681,7 @@ void FIX::operator()(
       FMT_STRING(R"(event(header={}, security_status={}))"),
       header,
       security_status);
-  _gateway(security_status);
+  _handler(security_status);
 }
 
 void FIX::operator()(
@@ -692,7 +691,7 @@ void FIX::operator()(
       FMT_STRING(R"(event(header={}, user_response={}))"),
       header,
       user_response);
-  _gateway(user_response);
+  _handler(user_response);
 }
 
 }  // namespace deribit

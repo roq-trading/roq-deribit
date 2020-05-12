@@ -52,12 +52,23 @@
 namespace roq {
 namespace deribit {
 
-class Gateway;
-
 class FIX final : public core::net::Manager::Handler {
  public:
+  struct Handler {
+    virtual void operator()(const FIX&) = 0;
+    virtual void operator()(const fix::ExecutionReport&) = 0;
+    virtual void operator()(const fix::MarketDataIncrementalRefresh&) = 0;
+    virtual void operator()(const fix::MarketDataRequestReject&) = 0;
+    virtual void operator()(const fix::MarketDataSnapshotFullRefresh&) = 0;
+    virtual void operator()(const fix::OrderCancelReject&) = 0;
+    virtual void operator()(const fix::PositionReport&) = 0;
+    virtual void operator()(const fix::Reject&) = 0;
+    virtual void operator()(const fix::SecurityList&) = 0;
+    virtual void operator()(const fix::SecurityStatus&) = 0;
+    virtual void operator()(const fix::UserResponse&) = 0;
+  };
   FIX(
-      Gateway& gateway,
+      Handler& handler,
       const Config& config,
       Random& random,
       core::event::Base& base,
@@ -89,6 +100,11 @@ class FIX final : public core::net::Manager::Handler {
   void operator()(Metrics& metrics);
 
  protected:
+  void operator()(const core::net::Manager::Connected&) override;
+  void operator()(const core::net::Manager::Disconnected&) override;
+  void operator()(const core::net::Manager::Read&) override;
+
+ private:
   template <typename T>
   void send(const T& event);
 
@@ -101,10 +117,6 @@ class FIX final : public core::net::Manager::Handler {
   void send_logout(const std::string_view& text);
   void send_heartbeat(const std::string_view& test_req_id);
   void send_test_request(std::chrono::nanoseconds now);
-
-  void operator()(const core::net::Manager::Connected&) override;
-  void operator()(const core::net::Manager::Disconnected&) override;
-  void operator()(const core::net::Manager::Read&) override;
 
   void check(const core::fix::header_t& header);
 
@@ -159,7 +171,7 @@ class FIX final : public core::net::Manager::Handler {
       const fix::UserResponse&);
 
  private:
-  Gateway& _gateway;
+  Handler& _handler;
   // config
   const std::string _access_key;
   // authentication
