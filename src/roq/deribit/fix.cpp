@@ -103,9 +103,9 @@ void FIX::operator()(const TimerEvent& event) {
   if (_connection.refresh(event.now) == false)
     return;
   if (_ready && _next_heartbeat <= event.now) {
-    assert(FLAGS_ping_freq_secs > 0);
+    assert(FLAGS_fix_ping_freq_secs > 0);
     _next_heartbeat = event.now +
-      std::chrono::seconds{FLAGS_ping_freq_secs};
+      std::chrono::seconds{FLAGS_fix_ping_freq_secs};
     send_test_request(core::get_system_clock());
   }
 }
@@ -229,7 +229,7 @@ void FIX::send_logon() {
   auto raw_data = _random.create_raw_data(sending_time);
   auto password = _random.create_password(raw_data);
   fix::Logon logon {
-    .heart_bt_int = static_cast<uint16_t>(FLAGS_ping_freq_secs),
+    .heart_bt_int = static_cast<uint16_t>(FLAGS_fix_ping_freq_secs),
     .raw_data_length = static_cast<uint32_t>(raw_data.length()),
     .raw_data = raw_data,
     .username = _access_key,
@@ -315,7 +315,7 @@ void FIX::operator()(const core::net::Manager::Read& read) {
     total += bytes;
     buffer += bytes;
     length -= bytes;
-    if (FLAGS_log_fix)
+    if (FLAGS_fix_debug)
       core::print_string_with_escapes(buffer, bytes);  // DEBUG
   }
   if (total)
