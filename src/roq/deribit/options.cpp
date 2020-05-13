@@ -2,11 +2,6 @@
 
 #include "roq/deribit/options.h"
 
-DEFINE_string(listen,
-    "",
-    "bind address (path)");
-// DEFINE_validator(listen, ...);
-
 DEFINE_string(config_file,
     "",
     "config file (path)");
@@ -35,21 +30,13 @@ DEFINE_uint32(fix_ping_freq_secs,
     5,
     "ping frequency (seconds)");
 
-DEFINE_bool(fix_debug,
-    false,
-    "log fix messages?");
-
-DEFINE_bool(cancel_on_disconnect,
+DEFINE_bool(fix_cancel_on_disconnect,
     true,
     "cancel orders on disconnect? (bool)");
 
-DEFINE_uint32(max_trades,
-    16384,
-    "maximum trades for trade summary");
-
-DEFINE_uint32(max_fills,
-    256,
-    "maximum fills for trade update");
+DEFINE_bool(fix_debug,
+    false,
+    "log fix messages?");
 
 DEFINE_uint32(encode_buffer_size,
     1048576,
