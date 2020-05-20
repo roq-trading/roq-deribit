@@ -574,8 +574,14 @@ void Gateway::operator()(
 
   if (found == false) {
     auto external = execution_report.deribit_label.empty();
-    LOG_IF(WARNING, external)("*** EXTERNAL ORDER ***");
-    LOG_IF(WARNING, !external)("*** UNKNOWN INTERNAL ORDER ***");
+    if (external) {
+      LOG(WARNING)("*** EXTERNAL ORDER ***");
+    } else {
+      LOG(WARNING)("*** UNKNOWN INTERNAL ORDER ***");
+    }
+    LOG(WARNING)(
+        FMT_STRING("execution_report={}"),
+        execution_report);
   }
 
   // download end?
@@ -748,7 +754,12 @@ void Gateway::operator()(
     result.text = order_cancel_reject.text;
   });
 
-  LOG_IF(WARNING, found == false)("*** EXTERNAL ORDER ***");
+  if (found == false) {
+    LOG(WARNING)("*** EXTERNAL ORDER ***");
+    LOG(WARNING)(
+        FMT_STRING("order_cancel_reject={}"),
+        order_cancel_reject);
+  }
 }
 
 void Gateway::operator()(
