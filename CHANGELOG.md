@@ -4,6 +4,12 @@ All notable changes will be documented in this file.
 
 ## Head
 
+### Added
+
+* `SessionStatistics` now used to propagate the index value
+  (`index_value`), funding rate (`margin_rate`) and mark price
+  (`pre_settlement_price`) from `fix::MarketDataIncrementalRefresh`
+
 ## 0.3.6 &ndash; 2020-05-02
 
 ## 0.3.5 &ndash; 2020-04-22

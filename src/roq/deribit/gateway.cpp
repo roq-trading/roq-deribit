@@ -593,6 +593,10 @@ void Gateway::operator()(
   assert(_gateway_status == GatewayStatus::READY);
   bool success = true;
   size_t bid_length = 0, ask_length = 0, trade_length = 0;
+  double index_value = std::numeric_limits<double>::quiet_NaN(),
+         settlement_price = std::numeric_limits<double>::quiet_NaN();
+  bool publish_session_statistics =
+    std::isfinite(market_data_incremental_refresh.mark_price);
   std::chrono::nanoseconds exchange_time_utc = {};
   for (auto& item : market_data_incremental_refresh.no_md_entries) {
     if (success == false)
@@ -622,11 +626,16 @@ void Gateway::operator()(
         break;
       }
       case core::fix::MDEntryType::INDEX_VALUE:
+        if (std::isfinite(item.md_entry_px)) {
+          index_value = item.md_entry_px;
+          publish_session_statistics = true;
+        }
+        break;
       case core::fix::MDEntryType::SETTLEMENT_PRICE:
-        // FIXME(thraneh): how to propagate these???
-        VLOG(4)(
-            FMT_STRING(R"(unsupported: {})"),
-            item);
+        if (std::isfinite(item.md_entry_px)) {
+          settlement_price = item.md_entry_px;
+          publish_session_statistics = true;
+        }
         break;
       default:
         LOG(WARNING)(
@@ -659,6 +668,9 @@ void Gateway::operator()(
       .snapshot = false,  // incremental
       .exchange_time_utc = exchange_time_utc,
     };
+    VLOG(3)(
+        FMT_STRING("market_by_price={}"),
+        market_by_price);
     auto last = trade_length == 0;
     enqueue(
         market_by_price,
@@ -674,8 +686,37 @@ void Gateway::operator()(
       },
       .exchange_time_utc = exchange_time_utc,
     };
+    VLOG(3)(
+        FMT_STRING("trade_summary={}"),
+        trade_summary);
     enqueue(
         trade_summary,
+        true);
+  }
+  if (publish_session_statistics) {
+    DLOG_IF(WARNING, std::fabs(settlement_price - index_value) > TOLERANCE)(
+        FMT_STRING(R"(settlement_price={} != index_value={})"),
+        settlement_price,
+        index_value);
+    SessionStatistics session_statistics {
+      .exchange = FLAGS_exchange,
+      .symbol = market_data_incremental_refresh.symbol,
+      .pre_open_interest = market_data_incremental_refresh.open_interest,
+      .pre_settlement_price = market_data_incremental_refresh.mark_price,
+      .pre_close_price = std::numeric_limits<double>::quiet_NaN(),
+      .highest_traded_price = std::numeric_limits<double>::quiet_NaN(),
+      .lowest_traded_price = std::numeric_limits<double>::quiet_NaN(),
+      .upper_limit_price = std::numeric_limits<double>::quiet_NaN(),
+      .lower_limit_price = std::numeric_limits<double>::quiet_NaN(),
+      .index_value = index_value,
+      .margin_rate = std::numeric_limits<double>::quiet_NaN(),
+      .exchange_time_utc = exchange_time_utc,
+    };
+    VLOG(3)(
+        FMT_STRING("session_statistics={}"),
+        session_statistics);
+    enqueue(
+        session_statistics,
         true);
   }
 }
@@ -837,6 +878,9 @@ void Gateway::operator()(
     size_t security_count = 0;
     _symbols.reserve(security_list.no_related_sym.size());  // note! alloc
     for (auto& instrument : security_list.no_related_sym) {
+      VLOG(1)(
+          FMT_STRING(R"(instrument={})"),
+          instrument);
       // note!
       //   USD will cause a Reject
       //   using commission currency because it requires funding
