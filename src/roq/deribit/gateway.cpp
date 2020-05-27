@@ -694,10 +694,12 @@ void Gateway::operator()(
         true);
   }
   if (publish_session_statistics) {
+    /* XXX this is indeed the case (settlement price can differ -- but why?)
     DLOG_IF(WARNING, std::fabs(settlement_price - index_value) > TOLERANCE)(
         FMT_STRING(R"(settlement_price={} != index_value={})"),
         settlement_price,
         index_value);
+    */
     SessionStatistics session_statistics {
       .exchange = FLAGS_exchange,
       .symbol = market_data_incremental_refresh.symbol,
