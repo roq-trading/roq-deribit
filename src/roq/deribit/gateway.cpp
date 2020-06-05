@@ -62,11 +62,8 @@ static bool trade_update(
     .side = core::fix::map(item.side),
     .price = item.md_entry_px,
     .quantity = item.md_entry_size,
-    .trade_id = {},
+    .trade_id = item.deribit_trade_id,
   };
-  core::copy_to(
-      item.deribit_trade_id,
-      obj.trade_id);
   ++offset;
   return offset < data.size();
 }
@@ -84,11 +81,8 @@ static bool fill_update(
     .price = item.fill_px,
     .trade_id = trade_id,
     .gateway_trade_id = trade_id,
-    .external_trade_id = {},
+    .external_trade_id = item.fill_exec_id,
   };
-  roq::core::copy_to(
-      item.fill_exec_id,
-      obj.external_trade_id);
   ++offset;
   return offset < data.size();
 }
@@ -137,19 +131,19 @@ Gateway::Gateway(
       "Orders will *NOT* be cancelled on disconnect");
 }
 
-void Gateway::operator()(const StartEvent& event) {
+void Gateway::operator()(const server::StartEvent& event) {
   LOG(INFO)("Starting the gateway...");
   _web_socket.connection(event);
   _fix.connection(event);
 }
 
-void Gateway::operator()(const StopEvent& event) {
+void Gateway::operator()(const server::StopEvent& event) {
   LOG(INFO)("Stopping the gateway...");
   _web_socket.connection(event);
   _fix.connection(event);
 }
 
-void Gateway::operator()(const TimerEvent& event) {
+void Gateway::operator()(const server::TimerEvent& event) {
   _fix.connection(event);
   _web_socket.connection(event);
   // fix
@@ -171,7 +165,7 @@ void Gateway::operator()(const TimerEvent& event) {
   _base.loop(EVLOOP_NONBLOCK);
 }
 
-void Gateway::operator()(const ConnectionStatusEvent&) {
+void Gateway::operator()(const server::ConnectionStatusEvent&) {
 }
 
 void Gateway::operator()(
@@ -561,7 +555,10 @@ void Gateway::operator()(
         .update_time_utc = execution_report.transact_time,
         .gateway_order_id = order.gateway_order_id,
         .external_order_id = order.external_order_id,
-        .fills = roq::span<Fill const>(_fill.data(), fill_length),
+        .fills = {
+          _fill.data(),
+          fill_length
+        },
       };
       enqueue(
           order.user_id,

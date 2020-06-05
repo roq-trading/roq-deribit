@@ -91,15 +91,15 @@ void FIX::close() {
   _connection.close();
 }
 
-void FIX::operator()(const StartEvent&) {
+void FIX::operator()(const server::StartEvent&) {
   _connection.start();
 }
 
-void FIX::operator()(const StopEvent&) {
+void FIX::operator()(const server::StopEvent&) {
   _connection.stop();
 }
 
-void FIX::operator()(const TimerEvent& event) {
+void FIX::operator()(const server::TimerEvent& event) {
   if (_connection.refresh(event.now) == false)
     return;
   if (_ready && _next_heartbeat <= event.now) {

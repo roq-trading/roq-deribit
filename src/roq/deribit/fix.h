@@ -16,6 +16,8 @@
 #include "roq/core/net/manager.h"
 #include "roq/core/net/tcp_connection_factory.h"
 
+#include "roq/server.h"
+
 #include "roq/deribit/config.h"
 #include "roq/deribit/random.h"
 
@@ -81,9 +83,9 @@ class FIX final : public core::net::Manager::Handler {
 
   void close();
 
-  void operator()(const StartEvent&);
-  void operator()(const StopEvent&);
-  void operator()(const TimerEvent&);
+  void operator()(const server::StartEvent&);
+  void operator()(const server::StopEvent&);
+  void operator()(const server::TimerEvent&);
 
   void operator()(const fix::SecurityListRequest&);
   void operator()(const fix::SecurityStatusRequest&);
