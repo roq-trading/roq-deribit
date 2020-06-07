@@ -4,8 +4,9 @@ roq_deribit_benchmark_LDADD = \
 	$(top_builddir)/src/roq/deribit/fix/libroq-deribit-fix.la \
 	$(top_builddir)/src/roq/deribit/json/libroq-deribit-json.la \
 	$(DATE_LIBS) \
-	$(ROQ_API_LIBS) \
 	$(ROQ_CORE_LIBS) \
+	$(ROQ_API_LIBS) \
+	$(ROQ_LOGGING_LIBS) \
 	$(FMT_LIBS) \
 	$(BENCHMARK_LIBS)  \
 	$(RT_LIBS) \
@@ -13,6 +14,7 @@ roq_deribit_benchmark_LDADD = \
 roq_deribit_benchmark_CFLAGS = -pthread
 roq_deribit_benchmark_CPPFLAGS = \
 	-I$(top_builddir)/src \
+	$(ROQ_LOGGING_CFLAGS) \
 	$(ROQ_API_CFLAGS) \
 	$(ROQ_CORE_CFLAGS) \
 	$(BENCHMARK_CFLAGS) \
