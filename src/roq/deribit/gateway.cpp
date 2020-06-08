@@ -534,7 +534,7 @@ void Gateway::operator()(
           fill_length,
           item);
     }
-    if (unlikely(success == false)) {
+    if (ROQ_PREDICT_FALSE(success == false)) {
       LOG(FATAL)(
           FMT_STRING(
             R"(Insufficient fill array size(s): )"
@@ -641,7 +641,7 @@ void Gateway::operator()(
         break;
     }
   }
-  if (unlikely(success == false)) {
+  if (ROQ_PREDICT_FALSE(success == false)) {
     LOG(FATAL)(
         FMT_STRING(
           R"(Insufficient bid/ask/trade array size(s): )"

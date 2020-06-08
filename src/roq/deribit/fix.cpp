@@ -2,8 +2,6 @@
 
 #include "roq/deribit/fix.h"
 
-#include "roq/builtins.h"
-
 #include "roq/core/stack/buffer.h"
 
 #include "roq/deribit/common.h"
@@ -327,7 +325,7 @@ void FIX::operator()(const core::net::Manager::Read& read) {
 void FIX::check(const core::fix::header_t& header) {
   auto current = header.msg_seq_num;
   auto expected = _inbound.msg_seq_num + 1;
-  if (unlikely(current != expected)) {
+  if (ROQ_PREDICT_FALSE(current != expected)) {
     if (expected < current) {
       LOG(WARNING)(
           FMT_STRING(
