@@ -2,6 +2,8 @@
 
 #include "roq/deribit/fix.h"
 
+#include "roq/builtins.h"
+
 #include "roq/core/stack/buffer.h"
 
 #include "roq/deribit/common.h"
@@ -182,24 +184,24 @@ void FIX::operator()(
   send(order_cancel_request);
 }
 
-void FIX::operator()(Metrics& metrics) {
-  metrics
+void FIX::operator()(metrics::Writer& writer) {
+  writer
     // counter
-    .write(_counter.disconnect)
+    .write(_counter.disconnect, metrics::COUNTER)
     // profile
-    .write(_profile.parse)
-    .write(_profile.execution_report)
-    .write(_profile.market_data_incremental_refresh)
-    .write(_profile.market_data_request_reject)
-    .write(_profile.market_data_snapshot_full_refresh)
-    .write(_profile.order_cancel_reject)
-    .write(_profile.position_report)
-    .write(_profile.reject)
-    .write(_profile.security_list)
-    .write(_profile.security_status)
-    .write(_profile.user_response)
+    .write(_profile.parse, metrics::PROFILE)
+    .write(_profile.execution_report, metrics::PROFILE)
+    .write(_profile.market_data_incremental_refresh, metrics::PROFILE)
+    .write(_profile.market_data_request_reject, metrics::PROFILE)
+    .write(_profile.market_data_snapshot_full_refresh, metrics::PROFILE)
+    .write(_profile.order_cancel_reject, metrics::PROFILE)
+    .write(_profile.position_report, metrics::PROFILE)
+    .write(_profile.reject, metrics::PROFILE)
+    .write(_profile.security_list, metrics::PROFILE)
+    .write(_profile.security_status, metrics::PROFILE)
+    .write(_profile.user_response, metrics::PROFILE)
     // latency
-    .write(_latency.ping);
+    .write(_latency.ping, metrics::LATENCY);
 }
 
 template <typename T>

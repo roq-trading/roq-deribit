@@ -99,7 +99,7 @@ class FIX final : public core::net::Manager::Handler {
   void operator()(const fix::OrderCancelReplaceRequest&);
   void operator()(const fix::OrderCancelRequest&);
 
-  void operator()(Metrics& metrics);
+  void operator()(metrics::Writer& writer);
 
  protected:
   void operator()(const core::net::Manager::Connected&) override;

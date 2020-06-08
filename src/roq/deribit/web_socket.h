@@ -87,7 +87,7 @@ class WebSocket final
   template <typename T>
   void unsubscribe_ticker(const roq::span<T>& symbols);
 
-  void operator()(Metrics& metrics);
+  void operator()(metrics::Writer& writer);
 
  protected:
   void operator()(const core::web::Socket::Connected&) override;

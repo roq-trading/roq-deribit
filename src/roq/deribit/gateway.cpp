@@ -233,9 +233,9 @@ void Gateway::operator()(
   _fix.connection(order_cancel_request);
 }
 
-void Gateway::operator()(Metrics& metrics) {
-  _web_socket.connection(metrics);
-  _fix.connection(metrics);
+void Gateway::operator()(metrics::Writer& writer) {
+  _web_socket.connection(writer);
+  _fix.connection(writer);
 }
 
 // web socket

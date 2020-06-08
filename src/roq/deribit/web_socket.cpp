@@ -237,20 +237,20 @@ void WebSocket::unsubscribe_ticker(const roq::span<std::string>&);
 template
 void WebSocket::unsubscribe_ticker(const roq::span<std::string_view>&);
 
-void WebSocket::operator()(Metrics& metrics) {
-  metrics
+void WebSocket::operator()(metrics::Writer& writer) {
+  writer
     // counter
-    .write(_counter.disconnect)
+    .write(_counter.disconnect, metrics::COUNTER)
     // profile
-    .write(_profile.parse)
-    .write(_profile.auth)
-    .write(_profile.currencies)
-    .write(_profile.instruments)
-    .write(_profile.positions)
-    .write(_profile.ticker)
+    .write(_profile.parse, metrics::PROFILE)
+    .write(_profile.auth, metrics::PROFILE)
+    .write(_profile.currencies, metrics::PROFILE)
+    .write(_profile.instruments, metrics::PROFILE)
+    .write(_profile.positions, metrics::PROFILE)
+    .write(_profile.ticker, metrics::PROFILE)
     // latency
-    .write(_latency.ping)
-    .write(_latency.heartbeat);
+    .write(_latency.ping, metrics::LATENCY)
+    .write(_latency.heartbeat, metrics::LATENCY);
 }
 
 void WebSocket::operator()(const core::web::Socket::Connected&) {
