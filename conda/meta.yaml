@@ -26,7 +26,7 @@ requirements:
     - roq-api =={{ version }}
     - roq-core =={{ version }}
     - roq-server =={{ version }}
-    - roq-oss-date ==2.4.1
+    - roq-oss-date
     - roq-oss-http-parser
     - roq-oss-benchmark
 
