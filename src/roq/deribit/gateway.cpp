@@ -279,7 +279,9 @@ void Gateway::operator()(const WebSocket&) {
   }
 }
 
-void Gateway::operator()(const json::Currencies& currencies) {
+void Gateway::operator()(
+    const json::Currencies& currencies,
+    const server::Trace& trace) {
   constexpr auto state = WebSocketDownload::State::CURRENCIES;
   VLOG(1)(
       FMT_STRING(R"(currencies={})"),
@@ -290,7 +292,9 @@ void Gateway::operator()(const json::Currencies& currencies) {
   _web_socket.download.check(state);
 }
 
-void Gateway::operator()(const json::Instruments& instruments) {
+void Gateway::operator()(
+    const json::Instruments& instruments,
+    const server::Trace& trace) {
   constexpr auto state = WebSocketDownload::State::INSTRUMENTS;
   VLOG(1)(
       FMT_STRING(R"(instruments={})"),
@@ -303,7 +307,9 @@ void Gateway::operator()(const json::Instruments& instruments) {
   _web_socket.download.check(state);
 }
 
-void Gateway::operator()(const json::Positions& positions) {
+void Gateway::operator()(
+    const json::Positions& positions,
+    const server::Trace& trace) {
   constexpr auto state = WebSocketDownload::State::POSITIONS;
   VLOG(1)(
       FMT_STRING(R"(positions={})"),
@@ -312,7 +318,9 @@ void Gateway::operator()(const json::Positions& positions) {
   _web_socket.download.check(state);
 }
 
-void Gateway::operator()(const json::Ticker& ticker) {
+void Gateway::operator()(
+    const json::Ticker& ticker,
+    const server::Trace& trace) {
   VLOG(3)(
       FMT_STRING(R"(ticker={})"),
       ticker);
@@ -330,6 +338,7 @@ void Gateway::operator()(const json::Ticker& ticker) {
   };
   enqueue(
       top_of_book,
+      trace,
       true);
   auto trading_status = json::map(ticker.state);
   auto& item = _trading_status[ticker.instrument_name];
@@ -342,6 +351,7 @@ void Gateway::operator()(const json::Ticker& ticker) {
     };
     enqueue(
         market_status,
+        trace,
         true);
   }
 }
@@ -478,7 +488,8 @@ auto compute_request_status(
 }
 
 void Gateway::operator()(
-    const fix::ExecutionReport& execution_report) {
+    const fix::ExecutionReport& execution_report,
+    const server::Trace& trace) {
   DLOG(INFO)(
       FMT_STRING(R"(execution_report={})"),
       execution_report);
@@ -510,6 +521,7 @@ void Gateway::operator()(
       execution_report.cl_ord_id,
       execution_report.orig_cl_ord_id,
       order_lookup,
+      trace,
       [&](const auto& order, auto& result) {
     result.request_status = compute_request_status(
         order.request_type,
@@ -563,6 +575,7 @@ void Gateway::operator()(
       enqueue(
           order.user_id,
           trade_update,
+          trace,
           true);
     }
   });
@@ -586,7 +599,8 @@ void Gateway::operator()(
 }
 
 void Gateway::operator()(
-    const fix::MarketDataIncrementalRefresh& market_data_incremental_refresh) {
+    const fix::MarketDataIncrementalRefresh& market_data_incremental_refresh,
+    const server::Trace& trace) {
   assert(_gateway_status == GatewayStatus::READY);
   bool success = true;
   size_t bid_length = 0, ask_length = 0, trade_length = 0;
@@ -671,6 +685,7 @@ void Gateway::operator()(
     auto last = trade_length == 0;
     enqueue(
         market_by_price,
+        trace,
         last);
   }
   if (trade_length > 0) {
@@ -688,6 +703,7 @@ void Gateway::operator()(
         trade_summary);
     enqueue(
         trade_summary,
+        trace,
         true);
   }
   if (publish_session_statistics) {
@@ -716,18 +732,21 @@ void Gateway::operator()(
         session_statistics);
     enqueue(
         session_statistics,
+        trace,
         true);
   }
 }
 
 void Gateway::operator()(
-    const fix::MarketDataRequestReject&) {
+    const fix::MarketDataRequestReject&,
+    const server::Trace& trace) {
   assert(_gateway_status == GatewayStatus::READY);
   LOG(FATAL)("Unexpected");  // don't know how to continue
 }
 
 void Gateway::operator()(
-    const fix::MarketDataSnapshotFullRefresh& market_data_snapshot_full_refresh) {
+    const fix::MarketDataSnapshotFullRefresh& market_data_snapshot_full_refresh,
+    const server::Trace& trace) {
   assert(_gateway_status == GatewayStatus::READY);
   VLOG(1)(
       FMT_STRING(R"(Received market data snapshot for symbol="{}")"),
@@ -763,11 +782,13 @@ void Gateway::operator()(
   };
   enqueue(
       market_by_price,
+      trace,
       true);
 }
 
 void Gateway::operator()(
-    const fix::OrderCancelReject& order_cancel_reject) {
+    const fix::OrderCancelReject& order_cancel_reject,
+    const server::Trace& trace) {
   assert(_gateway_status == GatewayStatus::READY);
 
   server::OMS_Lookup order_lookup {
@@ -785,6 +806,7 @@ void Gateway::operator()(
       order_cancel_reject.cl_ord_id,
       order_cancel_reject.orig_cl_ord_id,
       order_lookup,
+      trace,
       [&](const auto& order, auto& result) {
     DLOG_IF(FATAL, order.request_type != RequestType::MODIFY_ORDER)("UNEXPECTED");
 
@@ -803,7 +825,8 @@ void Gateway::operator()(
 }
 
 void Gateway::operator()(
-    const fix::PositionReport& position_report) {
+    const fix::PositionReport& position_report,
+    const server::Trace& trace) {
   VLOG(1)(
       FMT_STRING(R"(position_report={})"),
       position_report);
@@ -836,9 +859,11 @@ void Gateway::operator()(
             };
             enqueue(
                 buy,
+                trace,
                 false);
             enqueue(
                 sell,
+                trace,
                 true);
           }
           break;
@@ -857,7 +882,8 @@ void Gateway::operator()(
 }
 
 void Gateway::operator()(
-    const fix::Reject& reject) {
+    const fix::Reject& reject,
+    const server::Trace&) {
   LOG(WARNING)(
       FMT_STRING(R"(reject={})"),
       reject);
@@ -870,7 +896,8 @@ void Gateway::operator()(
 }
 
 void Gateway::operator()(
-    const fix::SecurityList& security_list) {
+    const fix::SecurityList& security_list,
+    const server::Trace& trace) {
   _currencies.clear();
   if (security_list.no_related_sym.size() > 0) {
     assert(_symbols.empty());
@@ -906,6 +933,7 @@ void Gateway::operator()(
       };
       enqueue(
           reference_data,
+          trace,
           true);
       ++security_count;
     }
@@ -918,11 +946,13 @@ void Gateway::operator()(
 }
 
 void Gateway::operator()(
-    const fix::SecurityStatus&) {
+    const fix::SecurityStatus&,
+    const server::Trace& trace) {
 }
 
 void Gateway::operator()(
-    const fix::UserResponse& user_response) {
+    const fix::UserResponse& user_response,
+    const server::Trace& trace) {
   FundsUpdate funds_update {
     .account = _account,
     .currency = user_response.currency,
@@ -931,6 +961,7 @@ void Gateway::operator()(
   };
   enqueue(
       funds_update,
+      trace,
       true);
   _fix.download.check(FIXDownload::State::USER);
 }
@@ -939,11 +970,13 @@ void Gateway::update(GatewayStatus gateway_status) {
   if (gateway_status == _gateway_status)
     return;
   _gateway_status = gateway_status;
+  server::Trace trace;
   MarketDataStatus market_data_status {
     .status = _gateway_status,
   };
   enqueue(
       market_data_status,
+      trace,
       false);
   OrderManagerStatus order_manager_status {
     .account = _account,
@@ -951,6 +984,7 @@ void Gateway::update(GatewayStatus gateway_status) {
   };
   enqueue(
       order_manager_status,
+      trace,
       true);
   LOG(INFO)(
       FMT_STRING(R"(Update: gateway_status={})"),
@@ -1051,12 +1085,11 @@ void Gateway::subscribe_market_data() {
 template <typename T>
 inline void Gateway::enqueue(
     const T& value,
+    const server::Trace& trace,
     bool is_last) {
-  auto now = core::get_system_clock();
   _dispatcher(
       value,
-      now,
-      now,
+      trace,
       is_last);
 }
 
@@ -1064,13 +1097,12 @@ template <typename T>
 inline void Gateway::enqueue(
     uint8_t user_id,
     const T& value,
+    const server::Trace& trace,
     bool is_last) {
-  auto now = core::get_system_clock();
   _dispatcher(
       user_id,
       value,
-      now,
-      now,
+      trace,
       is_last);
 }
 

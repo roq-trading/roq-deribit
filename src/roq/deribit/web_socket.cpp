@@ -309,6 +309,7 @@ void WebSocket::operator()(
 void WebSocket::operator()(
     const core::jsonrpc::Result& result,
     core::json::value_t& value) {
+  server::Trace trace;  // XXX not correct (*parsing* has already started)
   json::RequestType request_type(result.id);
   switch (request_type) {
     case json::RequestType::UNDEFINED:
@@ -320,25 +321,33 @@ void WebSocket::operator()(
       break;
     case json::RequestType::AUTH: {
       json::Auth auth(value);
-      (*this)(auth);
+      (*this)(
+          auth,
+          trace);
       break;
     }
     case json::RequestType::GET_CURRENCIES: {
       core::json::Buffer buffer(_decode_buffer);
       json::Currencies currencies(value, buffer);
-      (*this)(currencies);
+      (*this)(
+          currencies,
+          trace);
       break;
     }
     case json::RequestType::GET_INSTRUMENTS: {
       core::json::Buffer buffer(_decode_buffer);
       json::Instruments instruments(value, buffer);
-      (*this)(instruments);
+      (*this)(
+          instruments,
+          trace);
       break;
     }
     case json::RequestType::GET_POSITIONS: {
       core::json::Buffer buffer(_decode_buffer);
       json::Positions positions(value, buffer);
-      (*this)(positions);
+      (*this)(
+          positions,
+          trace);
       break;
     }
     case json::RequestType::SUBSCRIBE_TICKER:
@@ -350,6 +359,7 @@ void WebSocket::operator()(
 void WebSocket::operator()(
     const core::jsonrpc::Notification& notification,
     core::json::value_t& value) {
+  server::Trace trace;  // XXX not correct (*parsing* has already started)
   json::Method method(notification.method);
   switch (method) {
     case json::Method::UNDEFINED:
@@ -364,13 +374,16 @@ void WebSocket::operator()(
       json::Parser::dispatch(
           *this,
           value,
-          buffer);
+          buffer,
+          trace);
       break;
     }
   }
 }
 
-void WebSocket::operator()(const json::Auth& auth) {
+void WebSocket::operator()(
+    const json::Auth& auth,
+    const server::Trace& trace) {
   _profile.auth(
       [&]() {
     VLOG(1)(
@@ -383,43 +396,59 @@ void WebSocket::operator()(const json::Auth& auth) {
   });
 }
 
-void WebSocket::operator()(const json::Currencies& currencies) {
+void WebSocket::operator()(
+    const json::Currencies& currencies,
+    const server::Trace& trace) {
   _profile.currencies(
       [&]() {
     VLOG(1)(
         FMT_STRING(R"(currencies={})"),
         currencies);
-    _handler(currencies);
+    _handler(
+        currencies,
+        trace);
   });
 }
 
-void WebSocket::operator()(const json::Instruments& instruments) {
+void WebSocket::operator()(
+    const json::Instruments& instruments,
+    const server::Trace& trace) {
   _profile.instruments(
       [&]() {
     VLOG(1)(
         FMT_STRING(R"(instruments={})"),
         instruments);
-    _handler(instruments);
+    _handler(
+        instruments,
+        trace);
   });
 }
 
-void WebSocket::operator()(const json::Positions& positions) {
+void WebSocket::operator()(
+    const json::Positions& positions,
+    const server::Trace& trace) {
   _profile.positions(
       [&]() {
     VLOG(1)(
         FMT_STRING(R"(positions={})"),
         positions);
-    _handler(positions);
+    _handler(
+        positions,
+        trace);
   });
 }
 
-void WebSocket::operator()(const json::Ticker& ticker) {
+void WebSocket::operator()(
+    const json::Ticker& ticker,
+    const server::Trace& trace) {
   _profile.ticker(
       [&]() {
     VLOG(2)(
         FMT_STRING(R"(ticker={})"),
         ticker);
-    _handler(ticker);
+    _handler(
+        ticker,
+        trace);
   });
 }
 

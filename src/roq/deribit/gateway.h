@@ -63,24 +63,54 @@ class Gateway final
   // WebSocket::Handler
 
   void operator()(const WebSocket&) override;
-  void operator()(const json::Currencies&) override;
-  void operator()(const json::Instruments&) override;
-  void operator()(const json::Positions&) override;
-  void operator()(const json::Ticker&) override;
+
+  void operator()(
+      const json::Currencies&,
+      const server::Trace&) override;
+  void operator()(
+      const json::Instruments&,
+      const server::Trace&) override;
+  void operator()(
+      const json::Positions&,
+      const server::Trace&) override;
+  void operator()(
+      const json::Ticker&,
+      const server::Trace&) override;
 
   // FIX::Handler
 
   void operator()(const FIX&) override;
-  void operator()(const fix::ExecutionReport&) override;
-  void operator()(const fix::MarketDataIncrementalRefresh&) override;
-  void operator()(const fix::MarketDataRequestReject&) override;
-  void operator()(const fix::MarketDataSnapshotFullRefresh&) override;
-  void operator()(const fix::OrderCancelReject&) override;
-  void operator()(const fix::PositionReport&) override;
-  void operator()(const fix::Reject&) override;
-  void operator()(const fix::SecurityList&) override;
-  void operator()(const fix::SecurityStatus&) override;
-  void operator()(const fix::UserResponse&) override;
+
+  void operator()(
+      const fix::ExecutionReport&,
+      const server::Trace&) override;
+  void operator()(
+      const fix::MarketDataIncrementalRefresh&,
+      const server::Trace&) override;
+  void operator()(
+      const fix::MarketDataRequestReject&,
+      const server::Trace&) override;
+  void operator()(
+      const fix::MarketDataSnapshotFullRefresh&,
+      const server::Trace&) override;
+  void operator()(
+      const fix::OrderCancelReject&,
+      const server::Trace&) override;
+  void operator()(
+      const fix::PositionReport&,
+      const server::Trace&) override;
+  void operator()(
+      const fix::Reject&,
+      const server::Trace&) override;
+  void operator()(
+      const fix::SecurityList&,
+      const server::Trace&) override;
+  void operator()(
+      const fix::SecurityStatus&,
+      const server::Trace&) override;
+  void operator()(
+      const fix::UserResponse&,
+      const server::Trace&) override;
 
  private:
   using FIXDownload = server::Download<FIXState>;
@@ -103,12 +133,14 @@ class Gateway final
   template <typename T>
   void enqueue(
       const T& value,
+      const server::Trace& trace,
       bool is_last);
 
   template <typename T>
   void enqueue(
       uint8_t user_id,
       const T& value,
+      const server::Trace& trace,
       bool is_last);
 
  private:

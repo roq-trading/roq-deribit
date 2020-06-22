@@ -50,10 +50,19 @@ class WebSocket final
  public:
   struct Handler {
     virtual void operator()(const WebSocket&) = 0;
-    virtual void operator()(const json::Currencies&) = 0;
-    virtual void operator()(const json::Instruments&) = 0;
-    virtual void operator()(const json::Positions&) = 0;
-    virtual void operator()(const json::Ticker&) = 0;
+
+    virtual void operator()(
+        const json::Currencies&,
+        const server::Trace&) = 0;
+    virtual void operator()(
+        const json::Instruments&,
+        const server::Trace&) = 0;
+    virtual void operator()(
+        const json::Positions&,
+        const server::Trace&) = 0;
+    virtual void operator()(
+        const json::Ticker&,
+        const server::Trace&) = 0;
   };
 
   WebSocket(
@@ -110,13 +119,23 @@ class WebSocket final
       const core::jsonrpc::Notification& notification,
       core::json::value_t& value) override;
 
-  void operator()(const json::Auth& auth);
+  void operator()(
+      const json::Auth& auth,
+      const server::Trace& trace);
 
-  void operator()(const json::Currencies& currencies);
-  void operator()(const json::Instruments& instruments);
-  void operator()(const json::Positions& positions);
+  void operator()(
+      const json::Currencies& currencies,
+      const server::Trace& trace);
+  void operator()(
+      const json::Instruments& instruments,
+      const server::Trace& trace);
+  void operator()(
+      const json::Positions& positions,
+      const server::Trace& trace);
 
-  void operator()(const json::Ticker& ticker) override;
+  void operator()(
+      const json::Ticker& ticker,
+      const server::Trace& trace) override;
 
  private:
   Handler& _handler;

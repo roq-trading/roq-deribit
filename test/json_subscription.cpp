@@ -8,7 +8,9 @@ using namespace roq;  // NOLINT
 using namespace roq::deribit;  // NOLINT
 
 struct MyHandler : public json::Parser::Handler {
-  void operator()(const json::Ticker&) override {
+  void operator()(
+      const json::Ticker&,
+      const server::Trace&) override {
   }
 };
 
@@ -106,8 +108,10 @@ TEST(json_subscription, parse_message) {
   core::json::Parser parser(message);
   auto root = parser.root();
   MyHandler handler;
+  server::Trace trace;
   json::Parser::dispatch(
       handler,
       root,
-      buffer_);
+      buffer_,
+      trace);
 }

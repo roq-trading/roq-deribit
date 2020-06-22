@@ -7,6 +7,8 @@
 #include "roq/core/json/buffer.h"
 #include "roq/core/json/parser.h"
 
+#include "roq/server.h"
+
 #include "roq/deribit/json/ticker.h"
 
 namespace roq {
@@ -15,13 +17,16 @@ namespace json {
 
 struct Parser final {
   struct Handler {
-    virtual void operator()(const Ticker&) = 0;
+    virtual void operator()(
+        const Ticker&,
+        const server::Trace&) = 0;
   };
 
   static void dispatch(
       Handler& handler,
       core::json::value_t& value,
-      core::json::Buffer& buffer);
+      core::json::Buffer& buffer,
+      const server::Trace& trace);
 };
 
 }  // namespace json

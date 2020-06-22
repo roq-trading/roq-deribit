@@ -15,17 +15,24 @@ roq_deribit_test_LDADD = \
 	$(top_builddir)/src/roq/deribit/fix/libroq-deribit-fix.la \
 	$(top_builddir)/src/roq/deribit/json/libroq-deribit-json.la \
 	$(DATE_LIBS) \
+	$(ROQ_SERVER_LIBS) \
 	$(ROQ_CORE_LIBS) \
 	$(ROQ_API_LIBS) \
 	$(ROQ_LOGGING_LIBS) \
+	$(BROTLI_LIBS) \
+	$(HTTP_PARSER_LIBS) \
 	$(FMT_LIBS) \
-	$(DATE_LIBS)
+	$(LIBEVENT_LIBS) \
+	-levent_openssl \
+	$(DATE_LIBS) \
+	$(CROSSGUID_LIBS)
 roq_deribit_test_CPPFLAGS = \
 	-I$(top_builddir)/src \
 	-I$(top_srcdir)/third_party/googletest/googletest/include \
 	$(ROQ_LOGGING_CFLAGS) \
 	$(ROQ_API_CFLAGS) \
 	$(ROQ_CORE_CFLAGS) \
+	$(ROQ_SERVER_CFLAGS) \
 	$(FMT_CFLAGS) \
 	$(DATE_CFLAGS)
 nodist_roq_deribit_test_SOURCES = \
