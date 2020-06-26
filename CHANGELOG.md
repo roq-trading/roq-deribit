@@ -4,6 +4,10 @@ All notable changes will be documented in this file.
 
 ## Head
 
+### Added
+
+* `json::Instrument::block_trade_commission`
+
 ## 0.3.9 &ndash; 2020-06-09
 
 ## 0.3.8 &ndash; 2020-06-06
