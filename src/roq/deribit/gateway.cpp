@@ -281,7 +281,7 @@ void Gateway::operator()(const WebSocket&) {
 
 void Gateway::operator()(
     const json::Currencies& currencies,
-    const server::Trace& trace) {
+    const server::Trace&) {
   constexpr auto state = WebSocketDownload::State::CURRENCIES;
   VLOG(1)(
       FMT_STRING(R"(currencies={})"),
@@ -294,7 +294,7 @@ void Gateway::operator()(
 
 void Gateway::operator()(
     const json::Instruments& instruments,
-    const server::Trace& trace) {
+    const server::Trace&) {
   constexpr auto state = WebSocketDownload::State::INSTRUMENTS;
   VLOG(1)(
       FMT_STRING(R"(instruments={})"),
@@ -309,7 +309,7 @@ void Gateway::operator()(
 
 void Gateway::operator()(
     const json::Positions& positions,
-    const server::Trace& trace) {
+    const server::Trace&) {
   constexpr auto state = WebSocketDownload::State::POSITIONS;
   VLOG(1)(
       FMT_STRING(R"(positions={})"),
@@ -665,7 +665,7 @@ void Gateway::operator()(
         trade_length, _trade.size());
   }
   if (bid_length > 0 || ask_length > 0) {
-    MarketByPrice market_by_price {
+    MarketByPriceUpdate market_by_price_update {
       .exchange = FLAGS_exchange,
       .symbol = market_data_incremental_refresh.symbol,
       .bids = {
@@ -680,11 +680,11 @@ void Gateway::operator()(
       .exchange_time_utc = exchange_time_utc,
     };
     VLOG(3)(
-        FMT_STRING("market_by_price={}"),
-        market_by_price);
+        FMT_STRING("market_by_price_update={}"),
+        market_by_price_update);
     auto last = trade_length == 0;
     enqueue(
-        market_by_price,
+        market_by_price_update,
         trace,
         last);
   }
@@ -739,7 +739,7 @@ void Gateway::operator()(
 
 void Gateway::operator()(
     const fix::MarketDataRequestReject&,
-    const server::Trace& trace) {
+    const server::Trace&) {
   assert(_gateway_status == GatewayStatus::READY);
   LOG(FATAL)("Unexpected");  // don't know how to continue
 }
@@ -766,7 +766,7 @@ void Gateway::operator()(
         break;
     }
   }
-  MarketByPrice market_by_price {
+  MarketByPriceUpdate market_by_price_update {
     .exchange = FLAGS_exchange,
     .symbol = market_data_snapshot_full_refresh.symbol,
     .bids = {
@@ -781,7 +781,7 @@ void Gateway::operator()(
     .exchange_time_utc = {},
   };
   enqueue(
-      market_by_price,
+      market_by_price_update,
       trace,
       true);
 }
@@ -947,7 +947,7 @@ void Gateway::operator()(
 
 void Gateway::operator()(
     const fix::SecurityStatus&,
-    const server::Trace& trace) {
+    const server::Trace&) {
 }
 
 void Gateway::operator()(

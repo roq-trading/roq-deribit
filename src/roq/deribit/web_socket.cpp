@@ -383,7 +383,7 @@ void WebSocket::operator()(
 
 void WebSocket::operator()(
     const json::Auth& auth,
-    const server::Trace& trace) {
+    const server::Trace&) {
   _profile.auth(
       [&]() {
     VLOG(1)(

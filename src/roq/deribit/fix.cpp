@@ -547,7 +547,7 @@ void FIX::parse_helper(const core::fix::message_t& message) {
 void FIX::operator()(
     const core::fix::header_t& header,
     const fix::Heartbeat& heartbeat,
-    const server::Trace& trace) {
+    const server::Trace&) {
   // note! get clock *before* any logging (avoid latency)
   auto now = core::get_system_clock();
   VLOG(3)(
@@ -566,7 +566,7 @@ void FIX::operator()(
 void FIX::operator()(
     const core::fix::header_t& header,
     const fix::Logon& logon,
-    const server::Trace& trace) {
+    const server::Trace&) {
   VLOG(1)(
       FMT_STRING(R"(event(header={}, logon={}))"),
       header,
@@ -580,7 +580,7 @@ void FIX::operator()(
 void FIX::operator()(
     const core::fix::header_t& header,
     const fix::Logout& logout,
-    const server::Trace& trace) {
+    const server::Trace&) {
   LOG(WARNING)(
       FMT_STRING(R"(event(header={}, logout={}))"),
       header,
@@ -595,7 +595,7 @@ void FIX::operator()(
 void FIX::operator()(
     const core::fix::header_t& header,
     const fix::ResendRequest& resend_request,
-    const server::Trace& trace) {
+    const server::Trace&) {
   LOG(WARNING)(
       FMT_STRING(R"(event(header={}, resend_request={}))"),
       header,
@@ -607,7 +607,7 @@ void FIX::operator()(
 void FIX::operator()(
     const core::fix::header_t& header,
     const fix::TestRequest& test_request,
-    const server::Trace& trace) {
+    const server::Trace&) {
   VLOG(1)(
       FMT_STRING(R"(event(header={}, test_request={}))"),
       header,
