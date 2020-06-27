@@ -165,15 +165,15 @@ void Gateway::operator()(const server::TimerEvent& event) {
   _base.loop(EVLOOP_NONBLOCK);
 }
 
-void Gateway::operator()(const server::ConnectionStatusEvent&) {
+void Gateway::operator()(const Event<ConnectionStatus>&) {
 }
 
 void Gateway::operator()(
-    const CreateOrderEvent& event,
+    const Event<CreateOrder>& event,
     const std::string_view& request_id,
     uint32_t gateway_order_id) {
   auto& message_info = event.message_info;
-  auto& create_order = event.create_order;
+  auto& create_order = event.value;
   if (std::isfinite(create_order.stop_price))
     throw std::runtime_error("stop_price not supported");
   if (std::isfinite(create_order.max_show_quantity))
@@ -204,10 +204,10 @@ void Gateway::operator()(
 }
 
 void Gateway::operator()(
-    const ModifyOrderEvent& event,
+    const Event<ModifyOrder>& event,
     const std::string_view& request_id,
     const server::OMS_Order& order) {
-  auto& modify_order = event.modify_order;
+  auto& modify_order = event.value;
   fix::OrderCancelReplaceRequest order_cancel_replace_request {
     .orig_cl_ord_id = order.external_order_id,
     .cl_ord_id = request_id,
@@ -223,7 +223,7 @@ void Gateway::operator()(
 }
 
 void Gateway::operator()(
-    const CancelOrderEvent&,
+    const Event<CancelOrder>&,
     const std::string_view& request_id,
     const server::OMS_Order& order) {
   fix::OrderCancelRequest order_cancel_request {
