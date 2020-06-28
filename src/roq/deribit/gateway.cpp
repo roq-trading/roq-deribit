@@ -734,6 +734,35 @@ void Gateway::operator()(
         session_statistics,
         trace,
         true);
+    // XXX NEW
+    Statistics statistics[] = {
+      {
+        .type = StatisticsType::PRE_OPEN_INTEREST,
+        .value = market_data_incremental_refresh.open_interest
+      }, {
+        .type = StatisticsType::PRE_SETTLEMENT_PRICE,
+        .value = market_data_incremental_refresh.mark_price
+      }, {
+        .type = StatisticsType::INDEX_VALUE,
+        .value = index_value
+      }, };
+    static_assert(std::size(statistics) == 3);  // just checking...
+    StatisticsUpdate statistics_update {
+      .exchange = FLAGS_exchange,
+      .symbol = market_data_incremental_refresh.symbol,
+      .statistics = roq::span(
+          statistics,
+          std::size(statistics)),
+      .snapshot = false,
+      .exchange_time_utc = exchange_time_utc,
+    };
+    VLOG(3)(
+        FMT_STRING("statistics_update={}"),
+        statistics_update);
+    enqueue(
+        statistics_update,
+        trace,
+        true);
   }
 }
 
