@@ -6,6 +6,7 @@ All notable changes will be documented in this file.
 
 ### Added
 
+* `fix::ExecutionReport::SecondaryExecID` (tag 527)
 * `json::Instrument::block_trade_commission`
 
 ## 0.3.9 &ndash; 2020-06-09

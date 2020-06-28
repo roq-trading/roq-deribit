@@ -35,6 +35,7 @@
 	{ "tag": 100010, "name": "DeribitLabel", "type": "std::string_view", "custom": true },
 	{ "tag": 150, "name": "ExecType", "type": "roq::core::fix::ExecType" },
 	{ "tag": 37, "name": "OrderID", "type": "std::string_view" },
-	{ "tag": 5127, "name": "ConditionTriggerMethod", "type": "std::string_view", "custom": true }
+	{ "tag": 5127, "name": "ConditionTriggerMethod", "type": "std::string_view", "custom": true },
+	{ "tag": 527, "name": "SecondaryExecID", "type": "std::string_view" }
 ]
 }
