@@ -104,9 +104,9 @@ class FIX final : public core::net::Manager::Handler {
 
   void close();
 
-  void operator()(const server::StartEvent&);
-  void operator()(const server::StopEvent&);
-  void operator()(const server::TimerEvent&);
+  void operator()(const Event<Start>&);
+  void operator()(const Event<Stop>&);
+  void operator()(const Event<Timer>&);
 
   void operator()(const fix::SecurityListRequest&);
   void operator()(const fix::SecurityStatusRequest&);

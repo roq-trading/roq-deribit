@@ -91,20 +91,20 @@ void FIX::close() {
   _connection.close();
 }
 
-void FIX::operator()(const server::StartEvent&) {
+void FIX::operator()(const Event<Start>&) {
   _connection.start();
 }
 
-void FIX::operator()(const server::StopEvent&) {
+void FIX::operator()(const Event<Stop>&) {
   _connection.stop();
 }
 
-void FIX::operator()(const server::TimerEvent& event) {
-  if (_connection.refresh(event.now) == false)
+void FIX::operator()(const Event<Timer>& event) {
+  if (_connection.refresh(event.value.now) == false)
     return;
-  if (_ready && _next_heartbeat <= event.now) {
+  if (_ready && _next_heartbeat <= event.value.now) {
     assert(FLAGS_fix_ping_freq_secs > 0);
-    _next_heartbeat = event.now +
+    _next_heartbeat = event.value.now +
       std::chrono::seconds{FLAGS_fix_ping_freq_secs};
     send_test_request(core::get_system_clock());
   }
