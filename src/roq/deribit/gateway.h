@@ -179,6 +179,7 @@ class Gateway final
   // market data
   core::page_aligned_vector<MBPUpdate> _bid, _ask;
   core::page_aligned_vector<Trade> _trade;
+  core::page_aligned_vector<Statistics> _statistics;
 };
 
 }  // namespace deribit

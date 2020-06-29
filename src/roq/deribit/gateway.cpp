@@ -126,7 +126,8 @@ Gateway::Gateway(
       _fill(FLAGS_cache_fills_max_depth),
       _bid(FLAGS_cache_mbp_max_depth),
       _ask(FLAGS_cache_mbp_max_depth),
-      _trade(FLAGS_cache_trades_max_depth) {
+      _trade(FLAGS_cache_trades_max_depth),
+      _statistics(StatisticsType::MAX) {
   LOG_IF(WARNING, FLAGS_fix_cancel_on_disconnect == false)(
       "Orders will *NOT* be cancelled on disconnect");
 }
@@ -603,11 +604,17 @@ void Gateway::operator()(
     const server::Trace& trace) {
   assert(_gateway_status == GatewayStatus::READY);
   bool success = true;
-  size_t bid_length = 0, ask_length = 0, trade_length = 0;
-  double index_value = std::numeric_limits<double>::quiet_NaN(),
-         settlement_price = std::numeric_limits<double>::quiet_NaN();
-  bool publish_session_statistics =
-    std::isfinite(market_data_incremental_refresh.mark_price);
+  size_t bid_length = 0, ask_length = 0, trade_length = 0, statistics_length = 0;
+  // open interest
+  new (&_statistics[statistics_length++]) Statistics {
+    .type = StatisticsType::PRE_OPEN_INTEREST,
+    .value = market_data_incremental_refresh.open_interest,
+  };
+  // mark price
+  new (&_statistics[statistics_length++]) Statistics {
+    .type = StatisticsType::PRE_SETTLEMENT_PRICE,
+    .value = market_data_incremental_refresh.mark_price,
+  };
   std::chrono::nanoseconds exchange_time_utc = {};
   for (auto& item : market_data_incremental_refresh.no_md_entries) {
     if (success == false)
@@ -637,16 +644,16 @@ void Gateway::operator()(
         break;
       }
       case core::fix::MDEntryType::INDEX_VALUE:
-        if (std::isfinite(item.md_entry_px)) {
-          index_value = item.md_entry_px;
-          publish_session_statistics = true;
-        }
+        new (&_statistics[statistics_length++]) Statistics {
+          .type = StatisticsType::INDEX_VALUE,
+          .value = item.md_entry_px,
+        };
         break;
       case core::fix::MDEntryType::SETTLEMENT_PRICE:
-        if (std::isfinite(item.md_entry_px)) {
-          settlement_price = item.md_entry_px;
-          publish_session_statistics = true;
-        }
+        new (&_statistics[statistics_length++]) Statistics {
+          .type = StatisticsType::SETTLEMENT_PRICE,
+          .value = item.md_entry_px,
+        };
         break;
       default:
         LOG(WARNING)(
@@ -706,53 +713,13 @@ void Gateway::operator()(
         trace,
         true);
   }
-  if (publish_session_statistics) {
-    /* XXX this is indeed the case (settlement price can differ -- but why?)
-    DLOG_IF(WARNING, std::fabs(settlement_price - index_value) > TOLERANCE)(
-        FMT_STRING(R"(settlement_price={} != index_value={})"),
-        settlement_price,
-        index_value);
-    */
-    SessionStatistics session_statistics {
-      .exchange = FLAGS_exchange,
-      .symbol = market_data_incremental_refresh.symbol,
-      .pre_open_interest = market_data_incremental_refresh.open_interest,
-      .pre_settlement_price = market_data_incremental_refresh.mark_price,
-      .pre_close_price = std::numeric_limits<double>::quiet_NaN(),
-      .highest_traded_price = std::numeric_limits<double>::quiet_NaN(),
-      .lowest_traded_price = std::numeric_limits<double>::quiet_NaN(),
-      .upper_limit_price = std::numeric_limits<double>::quiet_NaN(),
-      .lower_limit_price = std::numeric_limits<double>::quiet_NaN(),
-      .index_value = index_value,
-      .margin_rate = std::numeric_limits<double>::quiet_NaN(),
-      .exchange_time_utc = exchange_time_utc,
-    };
-    VLOG(3)(
-        FMT_STRING("session_statistics={}"),
-        session_statistics);
-    enqueue(
-        session_statistics,
-        trace,
-        true);
-    // XXX NEW
-    Statistics statistics[] = {
-      {
-        .type = StatisticsType::PRE_OPEN_INTEREST,
-        .value = market_data_incremental_refresh.open_interest
-      }, {
-        .type = StatisticsType::PRE_SETTLEMENT_PRICE,
-        .value = market_data_incremental_refresh.mark_price
-      }, {
-        .type = StatisticsType::INDEX_VALUE,
-        .value = index_value
-      }, };
-    static_assert(std::size(statistics) == 3);  // just checking...
+  if (statistics_length > 0) {
     StatisticsUpdate statistics_update {
       .exchange = FLAGS_exchange,
       .symbol = market_data_incremental_refresh.symbol,
       .statistics = roq::span(
-          statistics,
-          std::size(statistics)),
+          _statistics.data(),
+          statistics_length),
       .snapshot = false,
       .exchange_time_utc = exchange_time_utc,
     };
