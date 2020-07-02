@@ -25,7 +25,8 @@ roq_deribit_test_LDADD = \
 	$(LIBEVENT_LIBS) \
 	-levent_openssl \
 	$(DATE_LIBS) \
-	$(CROSSGUID_LIBS)
+	$(CROSSGUID_LIBS) \
+	$(STDCXX_FS_LIBS)
 roq_deribit_test_CPPFLAGS = \
 	-I$(top_builddir)/src \
 	-I$(top_srcdir)/third_party/googletest/googletest/include \
