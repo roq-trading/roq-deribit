@@ -66,16 +66,16 @@ class Gateway final
 
   void operator()(
       const json::Currencies&,
-      const server::Trace&) override;
+      const server::TraceInfo&) override;
   void operator()(
       const json::Instruments&,
-      const server::Trace&) override;
+      const server::TraceInfo&) override;
   void operator()(
       const json::Positions&,
-      const server::Trace&) override;
+      const server::TraceInfo&) override;
   void operator()(
       const json::Ticker&,
-      const server::Trace&) override;
+      const server::TraceInfo&) override;
 
   // FIX::Handler
 
@@ -83,34 +83,34 @@ class Gateway final
 
   void operator()(
       const fix::ExecutionReport&,
-      const server::Trace&) override;
+      const server::TraceInfo&) override;
   void operator()(
       const fix::MarketDataIncrementalRefresh&,
-      const server::Trace&) override;
+      const server::TraceInfo&) override;
   void operator()(
       const fix::MarketDataRequestReject&,
-      const server::Trace&) override;
+      const server::TraceInfo&) override;
   void operator()(
       const fix::MarketDataSnapshotFullRefresh&,
-      const server::Trace&) override;
+      const server::TraceInfo&) override;
   void operator()(
       const fix::OrderCancelReject&,
-      const server::Trace&) override;
+      const server::TraceInfo&) override;
   void operator()(
       const fix::PositionReport&,
-      const server::Trace&) override;
+      const server::TraceInfo&) override;
   void operator()(
       const fix::Reject&,
-      const server::Trace&) override;
+      const server::TraceInfo&) override;
   void operator()(
       const fix::SecurityList&,
-      const server::Trace&) override;
+      const server::TraceInfo&) override;
   void operator()(
       const fix::SecurityStatus&,
-      const server::Trace&) override;
+      const server::TraceInfo&) override;
   void operator()(
       const fix::UserResponse&,
-      const server::Trace&) override;
+      const server::TraceInfo&) override;
 
  private:
   using FIXDownload = server::Download<FIXState>;
@@ -129,19 +129,6 @@ class Gateway final
   void download_user();
 
   void subscribe_market_data();
-
-  template <typename T>
-  void enqueue(
-      const T& value,
-      const server::Trace& trace,
-      bool is_last);
-
-  template <typename T>
-  void enqueue(
-      uint8_t user_id,
-      const T& value,
-      const server::Trace& trace,
-      bool is_last);
 
  private:
   server::Dispatcher& _dispatcher;

@@ -61,34 +61,34 @@ class FIX final : public core::net::Manager::Handler {
 
     virtual void operator()(
         const fix::ExecutionReport&,
-        const server::Trace&) = 0;
+        const server::TraceInfo&) = 0;
     virtual void operator()(
         const fix::MarketDataIncrementalRefresh&,
-        const server::Trace&) = 0;
+        const server::TraceInfo&) = 0;
     virtual void operator()(
         const fix::MarketDataRequestReject&,
-        const server::Trace&) = 0;
+        const server::TraceInfo&) = 0;
     virtual void operator()(
         const fix::MarketDataSnapshotFullRefresh&,
-        const server::Trace&) = 0;
+        const server::TraceInfo&) = 0;
     virtual void operator()(
         const fix::OrderCancelReject&,
-        const server::Trace&) = 0;
+        const server::TraceInfo&) = 0;
     virtual void operator()(
         const fix::PositionReport&,
-        const server::Trace&) = 0;
+        const server::TraceInfo&) = 0;
     virtual void operator()(
         const fix::Reject&,
-        const server::Trace&) = 0;
+        const server::TraceInfo&) = 0;
     virtual void operator()(
         const fix::SecurityList&,
-        const server::Trace&) = 0;
+        const server::TraceInfo&) = 0;
     virtual void operator()(
         const fix::SecurityStatus&,
-        const server::Trace&) = 0;
+        const server::TraceInfo&) = 0;
     virtual void operator()(
         const fix::UserResponse&,
-        const server::Trace&) = 0;
+        const server::TraceInfo&) = 0;
   };
   FIX(
       Handler& handler,
@@ -149,64 +149,64 @@ class FIX final : public core::net::Manager::Handler {
   void operator()(
       const core::fix::header_t&,
       const fix::Heartbeat&,
-      const server::Trace&);
+      const server::TraceInfo&);
   void operator()(
       const core::fix::header_t&,
       const fix::Logon&,
-      const server::Trace&);
+      const server::TraceInfo&);
   void operator()(
       const core::fix::header_t&,
       const fix::Logout&,
-      const server::Trace&);
+      const server::TraceInfo&);
   void operator()(
       const core::fix::header_t&,
       const fix::ResendRequest&,
-      const server::Trace&);
+      const server::TraceInfo&);
   void operator()(
       const core::fix::header_t&,
       const fix::TestRequest&,
-      const server::Trace&);
+      const server::TraceInfo&);
 
   void operator()(
       const core::fix::header_t&,
       const fix::ExecutionReport&,
-      const server::Trace&);
+      const server::TraceInfo&);
   void operator()(
       const core::fix::header_t&,
       const fix::MarketDataIncrementalRefresh&,
-      const server::Trace&);
+      const server::TraceInfo&);
   void operator()(
       const core::fix::header_t&,
       const fix::MarketDataRequestReject&,
-      const server::Trace&);
+      const server::TraceInfo&);
   void operator()(
       const core::fix::header_t&,
       const fix::MarketDataSnapshotFullRefresh&,
-      const server::Trace&);
+      const server::TraceInfo&);
   void operator()(
       const core::fix::header_t&,
       const fix::OrderCancelReject&,
-      const server::Trace&);
+      const server::TraceInfo&);
   void operator()(
       const core::fix::header_t&,
       const fix::PositionReport&,
-      const server::Trace&);
+      const server::TraceInfo&);
   void operator()(
       const core::fix::header_t&,
       const fix::Reject&,
-      const server::Trace&);
+      const server::TraceInfo&);
   void operator()(
       const core::fix::header_t&,
       const fix::SecurityList&,
-      const server::Trace&);
+      const server::TraceInfo&);
   void operator()(
       const core::fix::header_t&,
       const fix::SecurityStatus&,
-      const server::Trace&);
+      const server::TraceInfo&);
   void operator()(
       const core::fix::header_t&,
       const fix::UserResponse&,
-      const server::Trace&);
+      const server::TraceInfo&);
 
  private:
   Handler& _handler;

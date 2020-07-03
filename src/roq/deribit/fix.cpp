@@ -361,7 +361,7 @@ void FIX::parse(const core::fix::message_t& message) {
 }
 
 void FIX::parse_helper(const core::fix::message_t& message) {
-  server::Trace trace;
+  server::TraceInfo trace_info;
   core::fix::Buffer buffer(_decode_buffer);
   switch (message.header.msg_type) {
     // session
@@ -370,7 +370,7 @@ void FIX::parse_helper(const core::fix::message_t& message) {
       (*this)(
           message.header,
           heartbeat,
-          trace);
+          trace_info);
       break;
     }
     case core::fix::MsgType::LOGON: {
@@ -378,7 +378,7 @@ void FIX::parse_helper(const core::fix::message_t& message) {
       (*this)(
           message.header,
           logon,
-          trace);
+          trace_info);
       break;
     }
     case core::fix::MsgType::LOGOUT: {
@@ -386,7 +386,7 @@ void FIX::parse_helper(const core::fix::message_t& message) {
       (*this)(
           message.header,
           logout,
-          trace);
+          trace_info);
       break;
     }
     case core::fix::MsgType::RESEND_REQUEST: {
@@ -394,7 +394,7 @@ void FIX::parse_helper(const core::fix::message_t& message) {
       (*this)(
           message.header,
           resend_request,
-          trace);
+          trace_info);
       break;
     }
     case core::fix::MsgType::TEST_REQUEST: {
@@ -402,7 +402,7 @@ void FIX::parse_helper(const core::fix::message_t& message) {
       (*this)(
           message.header,
           test_request,
-          trace);
+          trace_info);
       break;
     }
     // ...
@@ -416,7 +416,7 @@ void FIX::parse_helper(const core::fix::message_t& message) {
             (*this)(
                 message.header,
                 execution_report,
-                trace);
+                trace_info);
           });
       break;
     }
@@ -430,7 +430,7 @@ void FIX::parse_helper(const core::fix::message_t& message) {
             (*this)(
                 message.header,
                 market_data_incremental_referesh,
-                trace);
+                trace_info);
           });
       break;
     }
@@ -442,7 +442,7 @@ void FIX::parse_helper(const core::fix::message_t& message) {
             (*this)(
                 message.header,
                 market_data_request_reject,
-                trace);
+                trace_info);
           });
       break;
     }
@@ -456,7 +456,7 @@ void FIX::parse_helper(const core::fix::message_t& message) {
             (*this)(
                 message.header,
                 market_data_snapshot_full_refresh,
-                trace);
+                trace_info);
           });
       break;
     }
@@ -468,7 +468,7 @@ void FIX::parse_helper(const core::fix::message_t& message) {
             (*this)(
                 message.header,
                 order_cancel_reject,
-                trace);
+                trace_info);
           });
       break;
     }
@@ -482,7 +482,7 @@ void FIX::parse_helper(const core::fix::message_t& message) {
             (*this)(
                 message.header,
                 position_report,
-                trace);
+                trace_info);
           });
       break;
     }
@@ -493,7 +493,7 @@ void FIX::parse_helper(const core::fix::message_t& message) {
             (*this)(
                 message.header,
                 reject,
-                trace);
+                trace_info);
           });
       break;
     }
@@ -507,7 +507,7 @@ void FIX::parse_helper(const core::fix::message_t& message) {
             (*this)(
                 message.header,
                 security_list,
-                trace);
+                trace_info);
           });
       break;
     }
@@ -521,7 +521,7 @@ void FIX::parse_helper(const core::fix::message_t& message) {
             (*this)(
                 message.header,
                 security_status,
-                trace);
+                trace_info);
           });
       break;
     }
@@ -532,7 +532,7 @@ void FIX::parse_helper(const core::fix::message_t& message) {
             (*this)(
                 message.header,
                 user_response,
-                trace);
+                trace_info);
           });
       break;
     }
@@ -547,7 +547,7 @@ void FIX::parse_helper(const core::fix::message_t& message) {
 void FIX::operator()(
     const core::fix::header_t& header,
     const fix::Heartbeat& heartbeat,
-    const server::Trace&) {
+    const server::TraceInfo&) {
   // note! get clock *before* any logging (avoid latency)
   auto now = core::get_system_clock();
   VLOG(3)(
@@ -566,7 +566,7 @@ void FIX::operator()(
 void FIX::operator()(
     const core::fix::header_t& header,
     const fix::Logon& logon,
-    const server::Trace&) {
+    const server::TraceInfo&) {
   VLOG(1)(
       FMT_STRING(R"(event(header={}, logon={}))"),
       header,
@@ -580,7 +580,7 @@ void FIX::operator()(
 void FIX::operator()(
     const core::fix::header_t& header,
     const fix::Logout& logout,
-    const server::Trace&) {
+    const server::TraceInfo&) {
   LOG(WARNING)(
       FMT_STRING(R"(event(header={}, logout={}))"),
       header,
@@ -595,7 +595,7 @@ void FIX::operator()(
 void FIX::operator()(
     const core::fix::header_t& header,
     const fix::ResendRequest& resend_request,
-    const server::Trace&) {
+    const server::TraceInfo&) {
   LOG(WARNING)(
       FMT_STRING(R"(event(header={}, resend_request={}))"),
       header,
@@ -607,7 +607,7 @@ void FIX::operator()(
 void FIX::operator()(
     const core::fix::header_t& header,
     const fix::TestRequest& test_request,
-    const server::Trace&) {
+    const server::TraceInfo&) {
   VLOG(1)(
       FMT_STRING(R"(event(header={}, test_request={}))"),
       header,
@@ -618,131 +618,131 @@ void FIX::operator()(
 void FIX::operator()(
     const core::fix::header_t& header,
     const fix::ExecutionReport& execution_report,
-    const server::Trace& trace) {
+    const server::TraceInfo& trace_info) {
   VLOG(3)(
       FMT_STRING(R"(event(header={}, execution_report={}))"),
       header,
       execution_report);
   _handler(
       execution_report,
-      trace);
+      trace_info);
 }
 
 void FIX::operator()(
     const core::fix::header_t& header,
     const fix::MarketDataIncrementalRefresh& market_data_incremental_refresh,
-    const server::Trace& trace) {
+    const server::TraceInfo& trace_info) {
   VLOG(3)(
       FMT_STRING(R"(event(header={}, market_data_incremental_refresh={}))"),
       header,
       market_data_incremental_refresh);
   _handler(
       market_data_incremental_refresh,
-      trace);
+      trace_info);
 }
 
 void FIX::operator()(
     const core::fix::header_t& header,
     const fix::MarketDataRequestReject& market_data_request_reject,
-    const server::Trace& trace) {
+    const server::TraceInfo& trace_info) {
   LOG(WARNING)(
       FMT_STRING(R"(event(header={}, market_data_request_reject={}))"),
       header,
       market_data_request_reject);
   _handler(
       market_data_request_reject,
-      trace);
+      trace_info);
 }
 
 void FIX::operator()(
     const core::fix::header_t& header,
     const fix::MarketDataSnapshotFullRefresh& market_data_snapshot_full_refresh,
-    const server::Trace& trace) {
+    const server::TraceInfo& trace_info) {
   VLOG(3)(
       FMT_STRING(R"(event(header={}, market_data_snapshot_full_refresh={}))"),
       header,
       market_data_snapshot_full_refresh);
   _handler(
       market_data_snapshot_full_refresh,
-      trace);
+      trace_info);
 }
 
 void FIX::operator()(
     const core::fix::header_t& header,
     const fix::OrderCancelReject& order_cancel_reject,
-    const server::Trace& trace) {
+    const server::TraceInfo& trace_info) {
   VLOG(3)(
       FMT_STRING(R"(event(header={}, order_cancel_reject={}))"),
       header,
       order_cancel_reject);
   _handler(
       order_cancel_reject,
-      trace);
+      trace_info);
 }
 
 void FIX::operator()(
     const core::fix::header_t& header,
     const fix::PositionReport& position_report,
-    const server::Trace& trace) {
+    const server::TraceInfo& trace_info) {
   VLOG(3)(
       FMT_STRING(R"(event(header={}, position_report={}))"),
       header,
       position_report);
   _handler(
       position_report,
-      trace);
+      trace_info);
 }
 
 void FIX::operator()(
     const core::fix::header_t& header,
     const fix::Reject& reject,
-    const server::Trace& trace) {
+    const server::TraceInfo& trace_info) {
   VLOG(3)(
       FMT_STRING(R"(event(header={}, reject={}))"),
       header,
       reject);
   _handler(
       reject,
-      trace);
+      trace_info);
 }
 
 void FIX::operator()(
     const core::fix::header_t& header,
     const fix::SecurityList& security_list,
-    const server::Trace& trace) {
+    const server::TraceInfo& trace_info) {
   VLOG(2)(
       FMT_STRING(R"(event(header={}, security_list={}))"),
       header,
       security_list);
   _handler(
       security_list,
-      trace);
+      trace_info);
 }
 
 void FIX::operator()(
     const core::fix::header_t& header,
     const fix::SecurityStatus& security_status,
-    const server::Trace& trace) {
+    const server::TraceInfo& trace_info) {
   VLOG(2)(
       FMT_STRING(R"(event(header={}, security_status={}))"),
       header,
       security_status);
   _handler(
       security_status,
-      trace);
+      trace_info);
 }
 
 void FIX::operator()(
     const core::fix::header_t& header,
     const fix::UserResponse& user_response,
-    const server::Trace& trace) {
+    const server::TraceInfo& trace_info) {
   VLOG(2)(
       FMT_STRING(R"(event(header={}, user_response={}))"),
       header,
       user_response);
   _handler(
       user_response,
-      trace);
+      trace_info);
 }
 
 }  // namespace deribit

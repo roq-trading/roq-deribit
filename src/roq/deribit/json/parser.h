@@ -19,14 +19,14 @@ struct Parser final {
   struct Handler {
     virtual void operator()(
         const Ticker&,
-        const server::Trace&) = 0;
+        const server::TraceInfo&) = 0;
   };
 
   static void dispatch(
       Handler& handler,
       core::json::value_t& value,
       core::json::Buffer& buffer,
-      const server::Trace& trace);
+      const server::TraceInfo& trace_info);
 };
 
 }  // namespace json

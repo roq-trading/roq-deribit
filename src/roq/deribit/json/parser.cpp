@@ -19,11 +19,11 @@ template <typename T>
 void dispatch_ticker(
     Parser::Handler& handler,
     T& value,
-    const server::Trace& trace) {
+    const server::TraceInfo& trace_info) {
   Ticker ticker(value);
   handler(
       ticker,
-      trace);
+      trace_info);
 }
 }  // namespace
 
@@ -31,7 +31,7 @@ void Parser::dispatch(
     Parser::Handler& handler,
     core::json::value_t& value,
     core::json::Buffer& buffer,
-    const server::Trace& trace) {
+    const server::TraceInfo& trace_info) {
   (void)buffer;  // avoid warning
   // note! message is nested / channel name is at level 2
   auto message = core::json::get<std::string_view>(value);
@@ -77,7 +77,7 @@ void Parser::dispatch(
                 dispatch_ticker(
                     handler,
                     value,
-                    trace);
+                    trace_info);
                 break;
             }
           }

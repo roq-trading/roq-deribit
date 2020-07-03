@@ -53,16 +53,16 @@ class WebSocket final
 
     virtual void operator()(
         const json::Currencies&,
-        const server::Trace&) = 0;
+        const server::TraceInfo&) = 0;
     virtual void operator()(
         const json::Instruments&,
-        const server::Trace&) = 0;
+        const server::TraceInfo&) = 0;
     virtual void operator()(
         const json::Positions&,
-        const server::Trace&) = 0;
+        const server::TraceInfo&) = 0;
     virtual void operator()(
         const json::Ticker&,
-        const server::Trace&) = 0;
+        const server::TraceInfo&) = 0;
   };
 
   WebSocket(
@@ -121,21 +121,21 @@ class WebSocket final
 
   void operator()(
       const json::Auth& auth,
-      const server::Trace& trace);
+      const server::TraceInfo& trace_info);
 
   void operator()(
       const json::Currencies& currencies,
-      const server::Trace& trace);
+      const server::TraceInfo& trace_info);
   void operator()(
       const json::Instruments& instruments,
-      const server::Trace& trace);
+      const server::TraceInfo& trace_info);
   void operator()(
       const json::Positions& positions,
-      const server::Trace& trace);
+      const server::TraceInfo& trace_info);
 
   void operator()(
       const json::Ticker& ticker,
-      const server::Trace& trace) override;
+      const server::TraceInfo& trace_info) override;
 
  private:
   Handler& _handler;
