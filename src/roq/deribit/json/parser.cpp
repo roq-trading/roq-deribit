@@ -48,7 +48,7 @@ void Parser::dispatch(
           break;
         case Field::UNKNOWN:
           DLOG(FATAL)(
-              FMT_STRING("Unknown key=\"{}\""),
+              R"(Unknown key="{}")",
               key);
           break;
         case Field::CHANNEL: {
@@ -60,7 +60,7 @@ void Parser::dispatch(
             channel = Channel::UNKNOWN;
           }
           LOG_IF(WARNING, channel == Channel::UNKNOWN)(
-              FMT_STRING("Can't parse channel=\"{}\""),
+              R"(Can't parse channel="{}")",
               name);
           break;
         }
@@ -87,7 +87,9 @@ void Parser::dispatch(
   }
   if (dispatched)
     return;
-  LOG(WARNING)(FMT_STRING("message=\"{}\""), message);
+  LOG(WARNING)(
+      R"(message="{}")",
+      message);
   LOG(FATAL)("Unexpected");
 }
 

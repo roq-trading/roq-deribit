@@ -48,7 +48,7 @@ void Config::operator()(
     const std::string_view& key,
     cpptoml::base&) {
   LOG(WARNING)(
-      FMT_STRING(R"(UNKNOWN KEY="{}")"),
+      R"(UNKNOWN KEY="{}")",
       key);
 }
 

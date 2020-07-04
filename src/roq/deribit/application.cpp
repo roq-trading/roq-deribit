@@ -13,7 +13,7 @@ int Application::main(int, char **) {
   LOG(INFO)("Parse configuration");
   Config config(FLAGS_config_file);
   VLOG(1)(
-      FMT_STRING(R"(config={})"),
+      R"(config={})",
       config);
   LOG(INFO)("Starting the gateway...");
   roq::server::Trading<Gateway>(

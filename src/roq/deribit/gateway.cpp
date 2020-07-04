@@ -285,7 +285,7 @@ void Gateway::operator()(
     const server::TraceInfo&) {
   constexpr auto state = WebSocketDownload::State::CURRENCIES;
   VLOG(1)(
-      FMT_STRING(R"(currencies={})"),
+      R"(currencies={})",
       currencies);
   assert(_currencies_2.empty());
   for (auto& item : currencies.data)
@@ -298,7 +298,7 @@ void Gateway::operator()(
     const server::TraceInfo&) {
   constexpr auto state = WebSocketDownload::State::INSTRUMENTS;
   VLOG(1)(
-      FMT_STRING(R"(instruments={})"),
+      R"(instruments={})",
       instruments);
   for (auto& item : instruments.data) {
     if (_dispatcher.discard_symbol(item.instrument_name))
@@ -313,7 +313,7 @@ void Gateway::operator()(
     const server::TraceInfo&) {
   constexpr auto state = WebSocketDownload::State::POSITIONS;
   VLOG(1)(
-      FMT_STRING(R"(positions={})"),
+      R"(positions={})",
       positions);
   // XXX do something
   _web_socket.download.check(state);
@@ -323,7 +323,7 @@ void Gateway::operator()(
     const json::Ticker& ticker,
     const server::TraceInfo& trace_info) {
   VLOG(3)(
-      FMT_STRING(R"(ticker={})"),
+      R"(ticker={})",
       ticker);
   TopOfBook top_of_book = {
     .exchange = FLAGS_exchange,
@@ -494,7 +494,7 @@ void Gateway::operator()(
     const fix::ExecutionReport& execution_report,
     const server::TraceInfo& trace_info) {
   DLOG(INFO)(
-      FMT_STRING(R"(execution_report={})"),
+      R"(execution_report={})",
       execution_report);
 
   // download begin?
@@ -551,9 +551,8 @@ void Gateway::operator()(
     }
     if (ROQ_PREDICT_FALSE(success == false)) {
       LOG(FATAL)(
-          FMT_STRING(
-            R"(Insufficient fill array size(s): )"
-            R"(len(fill)={}/{}={}/{})"),
+          R"(Insufficient fill array size(s): )"
+          R"(len(fill)={}/{}={}/{})",
           fill_length,
           execution_report.no_fills.size());
     }
@@ -594,7 +593,7 @@ void Gateway::operator()(
       LOG(WARNING)("*** UNKNOWN INTERNAL ORDER ***");
     }
     LOG(WARNING)(
-        FMT_STRING("execution_report={}"),
+        "execution_report={}",
         execution_report);
   }
 
@@ -660,16 +659,15 @@ void Gateway::operator()(
         break;
       default:
         LOG(WARNING)(
-          FMT_STRING(R"(unsupported: {})"),
+          R"(unsupported: {})",
           item);
         break;
     }
   }
   if (ROQ_PREDICT_FALSE(success == false)) {
     LOG(FATAL)(
-        FMT_STRING(
-          R"(Insufficient bid/ask/trade array size(s): )"
-          R"(len(bid)={}/{}, len(ask)={}/{}, len(trade)={}/{})"),
+        R"(Insufficient bid/ask/trade array size(s): )"
+        R"(len(bid)={}/{}, len(ask)={}/{}, len(trade)={}/{})",
         bid_length, _bid.size(),
         ask_length, _ask.size(),
         trade_length, _trade.size());
@@ -690,7 +688,7 @@ void Gateway::operator()(
       .exchange_time_utc = exchange_time_utc,
     };
     VLOG(3)(
-        FMT_STRING("market_by_price_update={}"),
+        "market_by_price_update={}",
         market_by_price_update);
     auto last = trade_length == 0;
     server::create_trace_and_dispatch(
@@ -710,7 +708,7 @@ void Gateway::operator()(
       .exchange_time_utc = exchange_time_utc,
     };
     VLOG(3)(
-        FMT_STRING("trade_summary={}"),
+        "trade_summary={}",
         trade_summary);
     server::create_trace_and_dispatch(
         trace_info,
@@ -729,7 +727,7 @@ void Gateway::operator()(
       .exchange_time_utc = exchange_time_utc,
     };
     VLOG(3)(
-        FMT_STRING("statistics_update={}"),
+        "statistics_update={}",
         statistics_update);
     server::create_trace_and_dispatch(
         trace_info,
@@ -751,7 +749,7 @@ void Gateway::operator()(
     const server::TraceInfo& trace_info) {
   assert(_gateway_status == GatewayStatus::READY);
   VLOG(1)(
-      FMT_STRING(R"(Received market data snapshot for symbol="{}")"),
+      R"(Received market data snapshot for symbol="{}")",
       market_data_snapshot_full_refresh.symbol);
   size_t bid_length = 0, ask_length = 0;
   for (auto& item : market_data_snapshot_full_refresh.no_md_entries) {
@@ -822,7 +820,7 @@ void Gateway::operator()(
   if (found == false) {
     LOG(WARNING)("*** EXTERNAL ORDER ***");
     LOG(WARNING)(
-        FMT_STRING("order_cancel_reject={}"),
+        "order_cancel_reject={}",
         order_cancel_reject);
   }
 }
@@ -831,7 +829,7 @@ void Gateway::operator()(
     const fix::PositionReport& position_report,
     const server::TraceInfo& trace_info) {
   VLOG(1)(
-      FMT_STRING(R"(position_report={})"),
+      R"(position_report={})",
       position_report);
   switch (position_report.pos_req_result) {
     case core::fix::PosReqResult::VALID:
@@ -890,7 +888,7 @@ void Gateway::operator()(
     const fix::Reject& reject,
     const server::TraceInfo&) {
   LOG(WARNING)(
-      FMT_STRING(R"(reject={})"),
+      R"(reject={})",
       reject);
   if (reject.session_reject_reason.compare("99") == 0 &&
       reject.text.compare("connection_too_slow") == 0) {
@@ -910,7 +908,7 @@ void Gateway::operator()(
     _symbols.reserve(security_list.no_related_sym.size());  // note! alloc
     for (auto& instrument : security_list.no_related_sym) {
       VLOG(1)(
-          FMT_STRING(R"(instrument={})"),
+          R"(instrument={})",
           instrument);
       // note!
       //   USD will cause a Reject
@@ -944,7 +942,7 @@ void Gateway::operator()(
       ++security_count;
     }
     VLOG(1)(
-        FMT_STRING(R"(- securities: {} (/{}))"),
+        R"(- securities: {} (/{}))",
         security_count,
         security_list.no_related_sym.size());
   }
@@ -996,7 +994,7 @@ void Gateway::update(GatewayStatus gateway_status) {
       _dispatcher,
       true);
   LOG(INFO)(
-      FMT_STRING(R"(Update: gateway_status={})"),
+      R"(Update: gateway_status={})",
       _gateway_status);
 }
 

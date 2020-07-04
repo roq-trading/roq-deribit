@@ -113,7 +113,7 @@ void FIX::operator()(const Event<Timer>& event) {
 void FIX::operator()(
     const fix::SecurityListRequest& security_list_request) {
   VLOG(1)(
-      FMT_STRING(R"(request(security_list_request={}))"),
+      R"(request(security_list_request={}))",
       security_list_request);
   send(security_list_request);
 }
@@ -121,7 +121,7 @@ void FIX::operator()(
 void FIX::operator()(
     const fix::SecurityStatusRequest& security_status_request) {
   VLOG(1)(
-      FMT_STRING(R"(request(security_status_request={}))"),
+      R"(request(security_status_request={}))",
       security_status_request);
   send(security_status_request);
 }
@@ -129,7 +129,7 @@ void FIX::operator()(
 void FIX::operator()(
     const fix::MarketDataRequest& market_data_request) {
   VLOG(1)(
-      FMT_STRING(R"(request(market_data_request={}))"),
+      R"(request(market_data_request={}))",
       market_data_request);
   send(market_data_request);
 }
@@ -137,7 +137,7 @@ void FIX::operator()(
 void FIX::operator()(
     const fix::UserRequest& user_request) {
   VLOG(1)(
-      FMT_STRING(R"(request(user_request={}))"),
+      R"(request(user_request={}))",
       user_request);
   send(user_request);
 }
@@ -145,7 +145,7 @@ void FIX::operator()(
 void FIX::operator()(
     const fix::RequestForPositions& request_for_position) {
   VLOG(1)(
-      FMT_STRING(R"(request(request_for_position={}))"),
+      R"(request(request_for_position={}))",
       request_for_position);
   send(request_for_position);
 }
@@ -153,7 +153,7 @@ void FIX::operator()(
 void FIX::operator()(
     const fix::OrderMassStatusRequest& order_mass_status_request) {
   VLOG(1)(
-      FMT_STRING(R"(request(order_mass_status_request={}))"),
+      R"(request(order_mass_status_request={}))",
       order_mass_status_request);
   send(order_mass_status_request);
 }
@@ -161,7 +161,7 @@ void FIX::operator()(
 void FIX::operator()(
     const fix::NewOrderSingle& new_order_single) {
   VLOG(1)(
-      FMT_STRING(R"(request(new_order_single={}))"),
+      R"(request(new_order_single={}))",
       new_order_single);
   send(new_order_single);
 }
@@ -169,7 +169,7 @@ void FIX::operator()(
 void FIX::operator()(
     const fix::OrderCancelReplaceRequest& order_cancel_replace_request) {
   VLOG(1)(
-      FMT_STRING(R"(request(order_cancel_replace_request={}))"),
+      R"(request(order_cancel_replace_request={}))",
       order_cancel_replace_request);
   send(order_cancel_replace_request);
 }
@@ -177,7 +177,7 @@ void FIX::operator()(
 void FIX::operator()(
     const fix::OrderCancelRequest& order_cancel_request) {
   VLOG(1)(
-      FMT_STRING(R"(request(order_cancel_request={}))"),
+      R"(request(order_cancel_request={}))",
       order_cancel_request);
   send(order_cancel_request);
 }
@@ -328,17 +328,15 @@ void FIX::check(const core::fix::header_t& header) {
   if (ROQ_PREDICT_FALSE(current != expected)) {
     if (expected < current) {
       LOG(WARNING)(
-          FMT_STRING(
-            R"(*** SEQUENCE GAP *** )"
-            R"(current={} previous={} distance={})"),
+          R"(*** SEQUENCE GAP *** )"
+          R"(current={} previous={} distance={})",
           current,
           _inbound.msg_seq_num,
           current - _inbound.msg_seq_num);
     } else {
       LOG(WARNING)(
-          FMT_STRING(
-            R"(*** SEQUENCE REPLAY *** )"
-            R"(current={} previous={} distance={})"),
+          R"(*** SEQUENCE REPLAY *** )"
+          R"(current={} previous={} distance={})",
           current,
           _inbound.msg_seq_num,
           _inbound.msg_seq_num - current);
@@ -354,7 +352,7 @@ void FIX::parse(const core::fix::message_t& message) {
           parse_helper(message);
         } catch (std::exception& e) {
           LOG(FATAL)(
-              FMT_STRING(R"(ERROR what="{}")"),
+              R"(ERROR what="{}")",
               e.what());
         }
       });
@@ -538,7 +536,7 @@ void FIX::parse_helper(const core::fix::message_t& message) {
     }
     default:
       LOG(WARNING)(
-          FMT_STRING(R"(Unexpected msg_type={})"),
+          R"(Unexpected msg_type={})",
           message.header.msg_type);
       break;
   }
@@ -551,7 +549,7 @@ void FIX::operator()(
   // note! get clock *before* any logging (avoid latency)
   auto now = core::get_system_clock();
   VLOG(3)(
-      FMT_STRING(R"(event(header={}, heartbeat={}))"),
+      R"(event(header={}, heartbeat={}))",
       header,
       heartbeat);
   if (heartbeat.test_req_id.empty() == false) {
@@ -568,7 +566,7 @@ void FIX::operator()(
     const fix::Logon& logon,
     const server::TraceInfo&) {
   VLOG(1)(
-      FMT_STRING(R"(event(header={}, logon={}))"),
+      R"(event(header={}, logon={}))",
       header,
       logon);
   LOG(INFO)("Ready");
@@ -582,7 +580,7 @@ void FIX::operator()(
     const fix::Logout& logout,
     const server::TraceInfo&) {
   LOG(WARNING)(
-      FMT_STRING(R"(event(header={}, logout={}))"),
+      R"(event(header={}, logout={}))",
       header,
       logout);
   _ready = false;
@@ -597,7 +595,7 @@ void FIX::operator()(
     const fix::ResendRequest& resend_request,
     const server::TraceInfo&) {
   LOG(WARNING)(
-      FMT_STRING(R"(event(header={}, resend_request={}))"),
+      R"(event(header={}, resend_request={}))",
       header,
       resend_request);
   LOG(INFO)("closing connection");
@@ -609,7 +607,7 @@ void FIX::operator()(
     const fix::TestRequest& test_request,
     const server::TraceInfo&) {
   VLOG(1)(
-      FMT_STRING(R"(event(header={}, test_request={}))"),
+      R"(event(header={}, test_request={}))",
       header,
       test_request);
   send_heartbeat(test_request.test_req_id);
@@ -620,7 +618,7 @@ void FIX::operator()(
     const fix::ExecutionReport& execution_report,
     const server::TraceInfo& trace_info) {
   VLOG(3)(
-      FMT_STRING(R"(event(header={}, execution_report={}))"),
+      R"(event(header={}, execution_report={}))",
       header,
       execution_report);
   _handler(
@@ -633,7 +631,7 @@ void FIX::operator()(
     const fix::MarketDataIncrementalRefresh& market_data_incremental_refresh,
     const server::TraceInfo& trace_info) {
   VLOG(3)(
-      FMT_STRING(R"(event(header={}, market_data_incremental_refresh={}))"),
+      R"(event(header={}, market_data_incremental_refresh={}))",
       header,
       market_data_incremental_refresh);
   _handler(
@@ -646,7 +644,7 @@ void FIX::operator()(
     const fix::MarketDataRequestReject& market_data_request_reject,
     const server::TraceInfo& trace_info) {
   LOG(WARNING)(
-      FMT_STRING(R"(event(header={}, market_data_request_reject={}))"),
+      R"(event(header={}, market_data_request_reject={}))",
       header,
       market_data_request_reject);
   _handler(
@@ -659,7 +657,7 @@ void FIX::operator()(
     const fix::MarketDataSnapshotFullRefresh& market_data_snapshot_full_refresh,
     const server::TraceInfo& trace_info) {
   VLOG(3)(
-      FMT_STRING(R"(event(header={}, market_data_snapshot_full_refresh={}))"),
+      R"(event(header={}, market_data_snapshot_full_refresh={}))",
       header,
       market_data_snapshot_full_refresh);
   _handler(
@@ -672,7 +670,7 @@ void FIX::operator()(
     const fix::OrderCancelReject& order_cancel_reject,
     const server::TraceInfo& trace_info) {
   VLOG(3)(
-      FMT_STRING(R"(event(header={}, order_cancel_reject={}))"),
+      R"(event(header={}, order_cancel_reject={}))",
       header,
       order_cancel_reject);
   _handler(
@@ -685,7 +683,7 @@ void FIX::operator()(
     const fix::PositionReport& position_report,
     const server::TraceInfo& trace_info) {
   VLOG(3)(
-      FMT_STRING(R"(event(header={}, position_report={}))"),
+      R"(event(header={}, position_report={}))",
       header,
       position_report);
   _handler(
@@ -698,7 +696,7 @@ void FIX::operator()(
     const fix::Reject& reject,
     const server::TraceInfo& trace_info) {
   VLOG(3)(
-      FMT_STRING(R"(event(header={}, reject={}))"),
+      R"(event(header={}, reject={}))",
       header,
       reject);
   _handler(
@@ -711,7 +709,7 @@ void FIX::operator()(
     const fix::SecurityList& security_list,
     const server::TraceInfo& trace_info) {
   VLOG(2)(
-      FMT_STRING(R"(event(header={}, security_list={}))"),
+      R"(event(header={}, security_list={}))",
       header,
       security_list);
   _handler(
@@ -724,7 +722,7 @@ void FIX::operator()(
     const fix::SecurityStatus& security_status,
     const server::TraceInfo& trace_info) {
   VLOG(2)(
-      FMT_STRING(R"(event(header={}, security_status={}))"),
+      R"(event(header={}, security_status={}))",
       header,
       security_status);
   _handler(
@@ -737,7 +735,7 @@ void FIX::operator()(
     const fix::UserResponse& user_response,
     const server::TraceInfo& trace_info) {
   VLOG(2)(
-      FMT_STRING(R"(event(header={}, user_response={}))"),
+      R"(event(header={}, user_response={}))",
       header,
       user_response);
   _handler(

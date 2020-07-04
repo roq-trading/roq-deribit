@@ -112,19 +112,18 @@ void WebSocket::login() {
       timestamp,
       nonce);
   auto message = fmt::format(
-      FMT_STRING(
-        R"({{)"
-        R"("method":"public/auth",)"
-        R"("params":{{)"
-        R"("grant_type":"client_signature",)"
-        R"("client_id":"{}",)"
-        R"("timestamp":"{}",)"
-        R"("nonce":"{}",)"
-        R"("data":"",)"
-        R"("signature":"{}")"
-        R"(}},)"
-        R"("id":"{}")"
-        R"(}})"),
+      R"({{)"
+      R"("method":"public/auth",)"
+      R"("params":{{)"
+      R"("grant_type":"client_signature",)"
+      R"("client_id":"{}",)"
+      R"("timestamp":"{}",)"
+      R"("nonce":"{}",)"
+      R"("data":"",)"
+      R"("signature":"{}")"
+      R"(}},)"
+      R"("id":"{}")"
+      R"(}})",
       _access_key,
       timestamp.count(),
       nonce,
@@ -137,12 +136,11 @@ void WebSocket::get_currencies() {
   constexpr json::RequestType request_type =
     json::RequestType::GET_CURRENCIES;
   auto message = fmt::format(
-      FMT_STRING(
-        R"({{)"
-        R"("method":"public/get_currencies",)"
-        R"("params":{{}},)"
-        R"("id":"{}")"
-        R"(}})"),
+      R"({{)"
+      R"("method":"public/get_currencies",)"
+      R"("params":{{}},)"
+      R"("id":"{}")"
+      R"(}})",
       request_type.as_raw_text());
   _connection.send_text(message);
 }
@@ -151,14 +149,13 @@ void WebSocket::get_instruments(const std::string_view& currency) {
   constexpr json::RequestType request_type =
     json::RequestType::GET_INSTRUMENTS;
   auto message = fmt::format(
-      FMT_STRING(
-        R"({{)"
-        R"("method":"public/get_instruments",)"
-        R"("params":{{)"
-        R"("currency":"{}")"
-        R"(}},)"
-        R"("id":"{}")"
-        R"(}})"),
+      R"({{)"
+      R"("method":"public/get_instruments",)"
+      R"("params":{{)"
+      R"("currency":"{}")"
+      R"(}},)"
+      R"("id":"{}")"
+      R"(}})",
       currency,
       request_type.as_raw_text());
   _connection.send_text(message);
@@ -168,14 +165,13 @@ void WebSocket::get_positions(const std::string_view& currency) {
   constexpr json::RequestType request_type =
     json::RequestType::GET_POSITIONS;
   auto message = fmt::format(
-      FMT_STRING(
-        R"({{)"
-        R"("method":"private/get_positions",)"
-        R"("params":{{)"
-        R"("currency":"{}")"
-        R"(}},)"
-        R"("id":"{}")"
-        R"(}})"),
+      R"({{)"
+      R"("method":"private/get_positions",)"
+      R"("params":{{)"
+      R"("currency":"{}")"
+      R"(}},)"
+      R"("id":"{}")"
+      R"(}})",
       currency,
       request_type.as_raw_text());
   _connection.send_text(message);
@@ -187,14 +183,13 @@ void WebSocket::subscribe_ticker(
   constexpr json::RequestType request_type =
     json::RequestType::SUBSCRIBE_TICKER;
   auto message = fmt::format(
-      FMT_STRING(
-        R"({{)"
-        R"("method":"public/subscribe",)"
-        R"("params":{{)"
-        R"("channels":["ticker.{}.raw"])"
-        R"(}},)"
-        R"("id":"{}")"
-        R"(}})"),
+      R"({{)"
+      R"("method":"public/subscribe",)"
+      R"("params":{{)"
+      R"("channels":["ticker.{}.raw"])"
+      R"(}},)"
+      R"("id":"{}")"
+      R"(}})",
       fmt::join(
           symbols,
           R"(.raw","ticker.)"),
@@ -214,14 +209,13 @@ void WebSocket::unsubscribe_ticker(
   constexpr json::RequestType request_type =
     json::RequestType::UNSUBSCRIBE_TICKER;
   auto message = fmt::format(
-      FMT_STRING(
-        R"({{)"
-        R"("method":"public/unsubscribe",)"
-        R"("params":{{)"
-        R"("channels":["ticker.{}.raw"])"
-        R"(}},)"
-        R"("id":"{}")"
-        R"(}})"),
+      R"({{)"
+      R"("method":"public/unsubscribe",)"
+      R"("params":{{)"
+      R"("channels":["ticker.{}.raw"])"
+      R"(}},)"
+      R"("id":"{}")"
+      R"(}})",
       fmt::join(
           symbols,
           R"(.raw","ticker.)"),
@@ -287,10 +281,10 @@ void WebSocket::parse(const std::string_view& message) {
               message);
         } catch (std::exception& e) {
           LOG(WARNING)(
-              FMT_STRING(R"(message="{}")"),
+              R"(message="{}")",
               message);
           LOG(FATAL)(
-              FMT_STRING(R"("ERROR what="{}")"),
+              R"("ERROR what="{}")",
               e.what());
         }
       });
@@ -301,7 +295,7 @@ void WebSocket::operator()(
     core::json::value_t& value) {
   json::Error error_2(value);
   LOG(FATAL)(
-      FMT_STRING(R"(error={}, id="{}")"),
+      R"(error={}, id="{}")",
       error_2,
       error.id);
 }
@@ -316,7 +310,7 @@ void WebSocket::operator()(
       break;
     case json::RequestType::UNKNOWN:
       DLOG(FATAL)(
-          FMT_STRING(R"(Unknown request_type="{}")"),
+          R"(Unknown request_type="{}")",
           result.id);
       break;
     case json::RequestType::AUTH: {
@@ -366,7 +360,7 @@ void WebSocket::operator()(
       break;
     case json::Method::UNKNOWN:
       DLOG(FATAL)(
-          FMT_STRING(R"(Unknown method="{}")"),
+          R"(Unknown method="{}")",
           notification.method);
       break;
     case json::Method::SUBSCRIPTION: {
@@ -387,7 +381,7 @@ void WebSocket::operator()(
   _profile.auth(
       [&]() {
     VLOG(1)(
-        FMT_STRING(R"(auth={})"),
+        R"(auth={})",
         auth);
     LOG(INFO)("Ready");
     assert(_ready == false);
@@ -402,7 +396,7 @@ void WebSocket::operator()(
   _profile.currencies(
       [&]() {
     VLOG(1)(
-        FMT_STRING(R"(currencies={})"),
+        R"(currencies={})",
         currencies);
     _handler(
         currencies,
@@ -416,7 +410,7 @@ void WebSocket::operator()(
   _profile.instruments(
       [&]() {
     VLOG(1)(
-        FMT_STRING(R"(instruments={})"),
+        R"(instruments={})",
         instruments);
     _handler(
         instruments,
@@ -430,7 +424,7 @@ void WebSocket::operator()(
   _profile.positions(
       [&]() {
     VLOG(1)(
-        FMT_STRING(R"(positions={})"),
+        R"(positions={})",
         positions);
     _handler(
         positions,
@@ -444,7 +438,7 @@ void WebSocket::operator()(
   _profile.ticker(
       [&]() {
     VLOG(2)(
-        FMT_STRING(R"(ticker={})"),
+        R"(ticker={})",
         ticker);
     _handler(
         ticker,

@@ -77,7 +77,7 @@ std::string Random::create_raw_data(
   auto msecs = std::chrono::duration_cast<
     std::chrono::milliseconds>(now).count();
   return fmt::format(
-      FMT_STRING("{:013}.{}"),
+      "{:013}.{}",
       msecs,
       nonce);
 }
