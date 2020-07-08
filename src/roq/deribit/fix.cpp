@@ -325,7 +325,7 @@ void FIX::operator()(const core::net::Manager::Read& read) {
 void FIX::check(const core::fix::header_t& header) {
   auto current = header.msg_seq_num;
   auto expected = _inbound.msg_seq_num + 1;
-  if (ROQ_PREDICT_FALSE(current != expected)) {
+  if (ROQ_UNLIKELY(current != expected)) {
     if (expected < current) {
       LOG(WARNING)(
           R"(*** SEQUENCE GAP *** )"

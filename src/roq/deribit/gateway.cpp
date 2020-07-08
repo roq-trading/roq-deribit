@@ -549,7 +549,7 @@ void Gateway::operator()(
           fill_length,
           item);
     }
-    if (ROQ_PREDICT_FALSE(success == false)) {
+    if (ROQ_UNLIKELY(success == false)) {
       LOG(FATAL)(
           R"(Insufficient fill array size(s): )"
           R"(len(fill)={}/{}={}/{})",
@@ -664,7 +664,7 @@ void Gateway::operator()(
         break;
     }
   }
-  if (ROQ_PREDICT_FALSE(success == false)) {
+  if (ROQ_UNLIKELY(success == false)) {
     LOG(FATAL)(
         R"(Insufficient bid/ask/trade array size(s): )"
         R"(len(bid)={}/{}, len(ask)={}/{}, len(trade)={}/{})",
