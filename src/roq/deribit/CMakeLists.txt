@@ -17,22 +17,26 @@ set(SOURCES
 
 include(RoqAutogen)
 
+set(AUTOGEN_SCHEMAS
+  fix_state.json
+  web_socket_state.json)
+
 roq_autogen(
   OUTPUT AUTOGEN_HEADERS
-  PATTERN "*.json"
   NAMESPACE "roq/deribit"
   OUTPUT_TYPE "state"
-  FILE_TYPE "h")
+  FILE_TYPE "h"
+  SOURCES ${AUTOGEN_SCHEMAS})
 
 add_custom_target(autogen-headers ALL
   DEPENDS ${AUTOGEN_HEADERS})
 
 roq_autogen(
   OUTPUT AUTOGEN_SOURCES
-  PATTERN "*.json"
   NAMESPACE "roq/deribit"
   OUTPUT_TYPE "state"
-  FILE_TYPE "cpp")
+  FILE_TYPE "cpp"
+  SOURCES ${AUTOGEN_SCHEMAS})
 
 add_executable("${TARGET_NAME}"
   ${SOURCES}
