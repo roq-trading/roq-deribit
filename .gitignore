@@ -57,6 +57,7 @@ build/
 
 # project specific
 
+roq-deribit.pc
 roq-deribit
 roq-deribit-benchmark
 roq-deribit-test
