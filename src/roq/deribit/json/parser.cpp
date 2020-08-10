@@ -30,9 +30,8 @@ void dispatch_ticker(
 void Parser::dispatch(
     Parser::Handler& handler,
     core::json::value_t& value,
-    core::json::Buffer& buffer,
+    [[ maybe_unused ]] core::json::Buffer& buffer,
     const server::TraceInfo& trace_info) {
-  (void)buffer;  // avoid warning
   // note! message is nested / channel name is at level 2
   auto message = core::json::get<std::string_view>(value);
   auto channel = Channel::UNDEFINED;
