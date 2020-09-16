@@ -1,9 +1,6 @@
-symbols = ".*"
-
-[order_templates]
-
-  [order_templates.default]
-  self_trade_prevention = 'D'
+[symbols]
+  include = ".*"
+  exclude = "USDT-.*"  # no market data
 
 [accounts]
 
