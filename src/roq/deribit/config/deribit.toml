@@ -1,13 +1,6 @@
-symbols = [
-  ".*-PERPETUAL",
-  ".*-DERIBIT-INDEX",
-  ".*-\\d{2}\\D{3}\\d{2}",
-]
-
-[order_templates]
-
-  [order_templates.default]
-  self_trade_prevention = 'D'
+[symbols]
+  include = ".*"
+  exclude = "USDT-.*"  # [2020-09-18] workaround due to missing market data
 
 [accounts]
 
@@ -15,7 +8,7 @@ symbols = [
   master = true
   login = "2tZQEQRV"
   secret = "saQaP6WmDefitTmd6DcAqnhJFtpC9eubZ3bzYm21af4"
-  symbols = [ "BTC-.*", "ETH-.*" ]
+  symbols = ".*"
 
 [users]
 
@@ -24,22 +17,6 @@ symbols = [
   symbols = ".*"
 
   [users.trader]
-  password = "secret"
-  accounts = [ "A1" ]
-  symbols = [ "BTC-\\d{2}\\D{3}\\d{2}" ]
-  monitor_period_secs = 60
-  ban_period_secs = 300
-  request_limit = 10
-
-  [users.example-1]
-  password = "1234"
-  symbols = ".*"
-
-  [users.example-2]
-  password = "1234"
-  symbols = ".*"
-
-  [users.example-3]
   password = "secret"
   accounts = [ "A1" ]
   symbols = [ "BTC-\\d{2}\\D{3}\\d{2}" ]

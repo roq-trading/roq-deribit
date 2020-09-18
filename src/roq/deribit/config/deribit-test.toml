@@ -1,6 +1,6 @@
 [symbols]
   include = ".*"
-  exclude = "USDT-.*"  # no market data
+  exclude = "USDT-.*"  # [2020-09-18] workaround due to missing market data
 
 [accounts]
 
@@ -8,7 +8,7 @@
   master = true
   login = "5MP40u9h"
   secret = "8XC2sDXtrGFtVdOFKCU2eg3uE1oOntCoJCM3abpNBmI"
-  symbols = [ "BTC-.*", "ETH-.*" ]
+  symbols = ".*"
 
 [users]
 
@@ -17,22 +17,6 @@
   symbols = ".*"
 
   [users.trader]
-  password = "secret"
-  accounts = [ "A1" ]
-  symbols = [ "BTC-\\d{2}\\D{3}\\d{2}" ]
-  monitor_period_secs = 60
-  ban_period_secs = 300
-  request_limit = 10
-
-  [users.example-1]
-  password = "1234"
-  symbols = ".*"
-
-  [users.example-2]
-  password = "1234"
-  symbols = ".*"
-
-  [users.example-3]
   password = "secret"
   accounts = [ "A1" ]
   symbols = [ "BTC-\\d{2}\\D{3}\\d{2}" ]
