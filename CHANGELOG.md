@@ -4,6 +4,8 @@ All notable changes will be documented in this file.
 
 ## Head
 
+## 0.4.4 &ndash; 2020-09-20
+
 ### Changed
 
 * Default config excludes `"USDT-.*"` due to missing market data on testnet
