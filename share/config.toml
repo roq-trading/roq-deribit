@@ -19,7 +19,7 @@
   [users.trader]
   password = "secret"
   accounts = [ "A1" ]
-  symbols = [ "BTC-\\d{2}\\D{3}\\d{2}" ]
+  symbols = [ "BTC-.*" ]
   monitor_period_secs = 60
   ban_period_secs = 300
   request_limit = 10
