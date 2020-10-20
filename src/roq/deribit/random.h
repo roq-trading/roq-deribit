@@ -5,27 +5,26 @@
 #include <chrono>
 #include <string>
 
-#include "roq/core/crypto/sha.h"
 #include "roq/core/crypto/hmac.h"
+#include "roq/core/crypto/sha.h"
 
 namespace roq {
 namespace deribit {
 
 class Random final {
  public:
-  explicit Random(const std::string_view& secret);
+  explicit Random(const std::string_view &secret);
 
-  Random(Random&&) = delete;
-  Random(const Random&) = delete;
+  Random(Random &&) = delete;
+  Random(const Random &) = delete;
 
   std::string create_nonce();
 
   std::string create_signature(
-      std::chrono::milliseconds timestamp,
-      const std::string_view& nonce);
+      std::chrono::milliseconds timestamp, const std::string_view &nonce);
 
   std::string create_raw_data(const std::chrono::nanoseconds now);
-  std::string create_password(const std::string_view& raw_data);
+  std::string create_password(const std::string_view &raw_data);
 
  private:
   const std::string _secret;

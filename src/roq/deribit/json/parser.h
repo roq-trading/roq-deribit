@@ -17,16 +17,14 @@ namespace json {
 
 struct Parser final {
   struct Handler {
-    virtual void operator()(
-        const Ticker&,
-        const server::TraceInfo&) = 0;
+    virtual void operator()(const Ticker &, const server::TraceInfo &) = 0;
   };
 
   static void dispatch(
-      Handler& handler,
-      core::json::value_t& value,
-      core::json::Buffer& buffer,
-      const server::TraceInfo& trace_info);
+      Handler &handler,
+      core::json::value_t &value,
+      core::json::Buffer &buffer,
+      const server::TraceInfo &trace_info);
 };
 
 }  // namespace json

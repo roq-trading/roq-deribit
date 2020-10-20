@@ -14,9 +14,9 @@ enum class AdvOrderType : char {
   USD_ORDER = '1',
 };
 
-extern const char *EnumNameAdvOrderType(const AdvOrderType& value);
+extern const char *EnumNameAdvOrderType(const AdvOrderType &value);
 
-extern AdvOrderType parse_adv_order_type(const std::string_view& value);
+extern AdvOrderType parse_adv_order_type(const std::string_view &value);
 
 }  // namespace fix
 }  // namespace deribit
@@ -25,14 +25,12 @@ extern AdvOrderType parse_adv_order_type(const std::string_view& value);
 template <>
 struct fmt::formatter<roq::deribit::fix::AdvOrderType> {
   template <typename C>
-  constexpr auto parse(C& ctx) {
+  constexpr auto parse(C &ctx) {
     return ctx.begin();
   }
   template <typename C>
-  auto format(const roq::deribit::fix::AdvOrderType& value, C& ctx) {
+  auto format(const roq::deribit::fix::AdvOrderType &value, C &ctx) {
     return format_to(
-        ctx.out(),
-        "{}",
-        roq::deribit::fix::EnumNameAdvOrderType(value));
+        ctx.out(), "{}", roq::deribit::fix::EnumNameAdvOrderType(value));
   }
 };

@@ -3,7 +3,5 @@
 #include "roq/deribit/common.h"
 
 namespace roq {
-namespace deribit {
-
-}  // namespace deribit
+namespace deribit {}  // namespace deribit
 }  // namespace roq

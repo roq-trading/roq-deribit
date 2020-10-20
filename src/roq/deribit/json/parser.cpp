@@ -17,21 +17,17 @@ namespace json {
 namespace {
 template <typename T>
 void dispatch_ticker(
-    Parser::Handler& handler,
-    T& value,
-    const server::TraceInfo& trace_info) {
+    Parser::Handler &handler, T &value, const server::TraceInfo &trace_info) {
   Ticker ticker(value);
-  handler(
-      ticker,
-      trace_info);
+  handler(ticker, trace_info);
 }
 }  // namespace
 
 void Parser::dispatch(
-    Parser::Handler& handler,
-    core::json::value_t& value,
-    [[ maybe_unused ]] core::json::Buffer& buffer,
-    const server::TraceInfo& trace_info) {
+    Parser::Handler &handler,
+    core::json::value_t &value,
+    [[maybe_unused]] core::json::Buffer &buffer,
+    const server::TraceInfo &trace_info) {
   // note! message is nested / channel name is at level 2
   auto message = core::json::get<std::string_view>(value);
   auto channel = Channel::UNDEFINED;
@@ -46,9 +42,7 @@ void Parser::dispatch(
           LOG(FATAL)("Unexpected");
           break;
         case Field::UNKNOWN:
-          DLOG(FATAL)(
-              R"(Unknown key="{}")",
-              key);
+          DLOG(FATAL)(R"(Unknown key="{}")", key);
           break;
         case Field::CHANNEL: {
           auto name = std::get<std::string_view>(value);
@@ -58,9 +52,8 @@ void Parser::dispatch(
           } else {
             channel = Channel::UNKNOWN;
           }
-          LOG_IF(WARNING, channel == Channel::UNKNOWN)(
-              R"(Can't parse channel="{}")",
-              name);
+          LOG_IF(WARNING, channel == Channel::UNKNOWN)
+          (R"(Can't parse channel="{}")", name);
           break;
         }
         case Field::DATA:
@@ -73,10 +66,7 @@ void Parser::dispatch(
                 break;
               case Channel::TICKER:
                 dispatched = true;
-                dispatch_ticker(
-                    handler,
-                    value,
-                    trace_info);
+                dispatch_ticker(handler, value, trace_info);
                 break;
             }
           }
@@ -84,11 +74,8 @@ void Parser::dispatch(
       }
     }
   }
-  if (dispatched)
-    return;
-  LOG(WARNING)(
-      R"(message="{}")",
-      message);
+  if (dispatched) return;
+  LOG(WARNING)(R"(message="{}")", message);
   LOG(FATAL)("Unexpected");
 }
 

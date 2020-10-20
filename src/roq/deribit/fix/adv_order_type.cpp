@@ -6,21 +6,26 @@ namespace roq {
 namespace deribit {
 namespace fix {
 
-const char *EnumNameAdvOrderType(const AdvOrderType& value) {
+const char *EnumNameAdvOrderType(const AdvOrderType &value) {
   switch (value) {
-    case AdvOrderType::IMPLIED_VOLATILITY_ORDER: return "IMPLIED_VOLATILITY_ORDER";
-    case AdvOrderType::USD_ORDER: return "USD_ORDER";
-    default: return "UNKNOWN";
+    case AdvOrderType::IMPLIED_VOLATILITY_ORDER:
+      return "IMPLIED_VOLATILITY_ORDER";
+    case AdvOrderType::USD_ORDER:
+      return "USD_ORDER";
+    default:
+      return "UNKNOWN";
   }
 }
 
-AdvOrderType parse_adv_order_type(const std::string_view& value) {
-  if (value.empty())
-    return AdvOrderType::UNKNOWN;
+AdvOrderType parse_adv_order_type(const std::string_view &value) {
+  if (value.empty()) return AdvOrderType::UNKNOWN;
   switch (value.data()[0]) {
-    case '0': return AdvOrderType::IMPLIED_VOLATILITY_ORDER;
-    case '1': return AdvOrderType::USD_ORDER;
-    default: return AdvOrderType::UNKNOWN;
+    case '0':
+      return AdvOrderType::IMPLIED_VOLATILITY_ORDER;
+    case '1':
+      return AdvOrderType::USD_ORDER;
+    default:
+      return AdvOrderType::UNKNOWN;
   }
 }
 

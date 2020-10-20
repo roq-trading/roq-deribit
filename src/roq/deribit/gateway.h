@@ -5,8 +5,8 @@
 #include <string>
 #include <vector>
 
-#include "roq/server.h"
 #include "roq/download.h"
+#include "roq/server.h"
 
 #include "roq/core/hash/map.h"
 #include "roq/core/hash/set.h"
@@ -27,89 +27,70 @@
 namespace roq {
 namespace deribit {
 
-class Gateway final
-    : public server::Handler,
-      public WebSocket::Handler,
-      public FIX::Handler {
+class Gateway final : public server::Handler,
+                      public WebSocket::Handler,
+                      public FIX::Handler {
  public:
-  Gateway(
-      server::Dispatcher& dispatcher,
-      const Config& config);
+  Gateway(server::Dispatcher &dispatcher, const Config &config);
 
  protected:
   // server::Handler
 
-  void operator()(const Event<Start>&) override;
-  void operator()(const Event<Stop>&) override;
-  void operator()(const Event<Timer>&) override;
-  void operator()(const Event<Connection>&) override;
+  void operator()(const Event<Start> &) override;
+  void operator()(const Event<Stop> &) override;
+  void operator()(const Event<Timer> &) override;
+  void operator()(const Event<Connection> &) override;
 
   void operator()(
-      const Event<CreateOrder>& event,
-      const std::string_view& request_id,
+      const Event<CreateOrder> &event,
+      const std::string_view &request_id,
       uint32_t gateway_order_id) override;
   void operator()(
-      const Event<ModifyOrder>& event,
-      const std::string_view& request_id,
-      const server::OMS_Order& order) override;
+      const Event<ModifyOrder> &event,
+      const std::string_view &request_id,
+      const server::OMS_Order &order) override;
   void operator()(
-      const Event<CancelOrder>& event,
-      const std::string_view& request_id,
-      const server::OMS_Order& order) override;
+      const Event<CancelOrder> &event,
+      const std::string_view &request_id,
+      const server::OMS_Order &order) override;
 
-  void operator()(metrics::Writer& writer) override;
+  void operator()(metrics::Writer &writer) override;
 
   // WebSocket::Handler
 
-  void operator()(const WebSocket&) override;
+  void operator()(const WebSocket &) override;
 
+  void operator()(const json::Currencies &, const server::TraceInfo &) override;
   void operator()(
-      const json::Currencies&,
-      const server::TraceInfo&) override;
-  void operator()(
-      const json::Instruments&,
-      const server::TraceInfo&) override;
-  void operator()(
-      const json::Positions&,
-      const server::TraceInfo&) override;
-  void operator()(
-      const json::Ticker&,
-      const server::TraceInfo&) override;
+      const json::Instruments &, const server::TraceInfo &) override;
+  void operator()(const json::Positions &, const server::TraceInfo &) override;
+  void operator()(const json::Ticker &, const server::TraceInfo &) override;
 
   // FIX::Handler
 
-  void operator()(const FIX&) override;
+  void operator()(const FIX &) override;
 
   void operator()(
-      const fix::ExecutionReport&,
-      const server::TraceInfo&) override;
+      const fix::ExecutionReport &, const server::TraceInfo &) override;
   void operator()(
-      const fix::MarketDataIncrementalRefresh&,
-      const server::TraceInfo&) override;
+      const fix::MarketDataIncrementalRefresh &,
+      const server::TraceInfo &) override;
   void operator()(
-      const fix::MarketDataRequestReject&,
-      const server::TraceInfo&) override;
+      const fix::MarketDataRequestReject &, const server::TraceInfo &) override;
   void operator()(
-      const fix::MarketDataSnapshotFullRefresh&,
-      const server::TraceInfo&) override;
+      const fix::MarketDataSnapshotFullRefresh &,
+      const server::TraceInfo &) override;
   void operator()(
-      const fix::OrderCancelReject&,
-      const server::TraceInfo&) override;
+      const fix::OrderCancelReject &, const server::TraceInfo &) override;
   void operator()(
-      const fix::PositionReport&,
-      const server::TraceInfo&) override;
+      const fix::PositionReport &, const server::TraceInfo &) override;
+  void operator()(const fix::Reject &, const server::TraceInfo &) override;
   void operator()(
-      const fix::Reject&,
-      const server::TraceInfo&) override;
+      const fix::SecurityList &, const server::TraceInfo &) override;
   void operator()(
-      const fix::SecurityList&,
-      const server::TraceInfo&) override;
+      const fix::SecurityStatus &, const server::TraceInfo &) override;
   void operator()(
-      const fix::SecurityStatus&,
-      const server::TraceInfo&) override;
-  void operator()(
-      const fix::UserResponse&,
-      const server::TraceInfo&) override;
+      const fix::UserResponse &, const server::TraceInfo &) override;
 
  private:
   using FIXDownload = server::Download<FIXState>;
@@ -130,7 +111,7 @@ class Gateway final
   void subscribe_market_data();
 
  private:
-  server::Dispatcher& _dispatcher;
+  server::Dispatcher &_dispatcher;
   // config
   const std::string _account;
   const std::string _access_key;
@@ -147,7 +128,7 @@ class Gateway final
     FIXDownload download;
   } _fix;
   // web socket
-  struct  {
+  struct {
     WebSocket connection;
     WebSocketDownload download;
   } _web_socket;

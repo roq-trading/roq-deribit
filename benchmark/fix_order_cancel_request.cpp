@@ -4,13 +4,13 @@
 
 #include "roq/deribit/fix/order_cancel_request.h"
 
-using namespace roq;  // NOLINT
+using namespace roq;           // NOLINT
 using namespace roq::deribit;  // NOLINT
 
-void BM_fix_order_cancel_request_create_message(benchmark::State& state) {
+void BM_fix_order_cancel_request_create_message(benchmark::State &state) {
   core::utils::Buffer buffer(4096);
-  auto msg_seq_num = uint64_t{0};
-  auto sending_time = std::chrono::seconds{1568702810};
+  auto msg_seq_num = uint64_t { 0 };
+  auto sending_time = std::chrono::seconds { 1568702810 };
   uint64_t processed = 0;
   for (auto _ : state) {
     fix::OrderCancelRequest order_cancel_request = {
@@ -26,8 +26,7 @@ void BM_fix_order_cancel_request_create_message(benchmark::State& state) {
         msg_seq_num,
         sending_time);
     auto message = order_cancel_request.encode(writer);
-    if (message.length())
-      ++processed;
+    if (message.length()) ++processed;
   }
 }
 

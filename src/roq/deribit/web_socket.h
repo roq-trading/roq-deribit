@@ -36,10 +36,9 @@
 namespace roq {
 namespace deribit {
 
-class WebSocket final
-    : public core::web::Socket::Handler,
-      public core::jsonrpc::Parser::Handler,
-      public json::Parser::Handler {
+class WebSocket final : public core::web::Socket::Handler,
+                        public core::jsonrpc::Parser::Handler,
+                        public json::Parser::Handler {
   enum class State {
     DISCONNECTED,
     LOGON_SENT,
@@ -49,100 +48,89 @@ class WebSocket final
 
  public:
   struct Handler {
-    virtual void operator()(const WebSocket&) = 0;
+    virtual void operator()(const WebSocket &) = 0;
 
     virtual void operator()(
-        const json::Currencies&,
-        const server::TraceInfo&) = 0;
+        const json::Currencies &, const server::TraceInfo &) = 0;
     virtual void operator()(
-        const json::Instruments&,
-        const server::TraceInfo&) = 0;
+        const json::Instruments &, const server::TraceInfo &) = 0;
     virtual void operator()(
-        const json::Positions&,
-        const server::TraceInfo&) = 0;
+        const json::Positions &, const server::TraceInfo &) = 0;
     virtual void operator()(
-        const json::Ticker&,
-        const server::TraceInfo&) = 0;
+        const json::Ticker &, const server::TraceInfo &) = 0;
   };
 
   WebSocket(
-      Handler& handler,
-      const Config& config,
-      Random& random,
-      core::event::Base& base,
-      core::event::DNSBase& dns_base,
-      core::ssl::Context& ssl_context);
+      Handler &handler,
+      const Config &config,
+      Random &random,
+      core::event::Base &base,
+      core::event::DNSBase &dns_base,
+      core::ssl::Context &ssl_context);
 
-  WebSocket(WebSocket&&) = delete;
-  WebSocket(const WebSocket&) = delete;
+  WebSocket(WebSocket &&) = delete;
+  WebSocket(const WebSocket &) = delete;
 
   bool ready() const;
 
   void close();
 
-  void operator()(const Event<Start>&);
-  void operator()(const Event<Stop>&);
-  void operator()(const Event<Timer>&);
+  void operator()(const Event<Start> &);
+  void operator()(const Event<Stop> &);
+  void operator()(const Event<Timer> &);
 
   void login();
 
   void get_currencies();
-  void get_instruments(const std::string_view& currency);
-  void get_positions(const std::string_view& currency);
+  void get_instruments(const std::string_view &currency);
+  void get_positions(const std::string_view &currency);
 
   template <typename T>
-  void subscribe_ticker(const roq::span<T>& symbols);
+  void subscribe_ticker(const roq::span<T> &symbols);
 
   template <typename T>
-  void unsubscribe_ticker(const roq::span<T>& symbols);
+  void unsubscribe_ticker(const roq::span<T> &symbols);
 
-  void operator()(metrics::Writer& writer);
+  void operator()(metrics::Writer &writer);
 
  protected:
-  void operator()(const core::web::Socket::Connected&) override;
-  void operator()(const core::web::Socket::Disconnected&) override;
-  void operator()(const core::web::Socket::Ready&) override;
-  void operator()(const core::web::Socket::Close&) override;
-  void operator()(const core::web::Socket::Latency&) override;
-  void operator()(const core::web::Socket::Text&) override;
+  void operator()(const core::web::Socket::Connected &) override;
+  void operator()(const core::web::Socket::Disconnected &) override;
+  void operator()(const core::web::Socket::Ready &) override;
+  void operator()(const core::web::Socket::Close &) override;
+  void operator()(const core::web::Socket::Latency &) override;
+  void operator()(const core::web::Socket::Text &) override;
 
  private:
-  void parse(const std::string_view& message);
+  void parse(const std::string_view &message);
 
   void operator()(
-      const core::jsonrpc::Error& error,
-      core::json::value_t& value) override;
+      const core::jsonrpc::Error &error, core::json::value_t &value) override;
   void operator()(
-      const core::jsonrpc::Result& result,
-      core::json::value_t& value) override;
+      const core::jsonrpc::Result &result, core::json::value_t &value) override;
   void operator()(
-      const core::jsonrpc::Notification& notification,
-      core::json::value_t& value) override;
+      const core::jsonrpc::Notification &notification,
+      core::json::value_t &value) override;
+
+  void operator()(const json::Auth &auth, const server::TraceInfo &trace_info);
 
   void operator()(
-      const json::Auth& auth,
-      const server::TraceInfo& trace_info);
+      const json::Currencies &currencies, const server::TraceInfo &trace_info);
+  void operator()(
+      const json::Instruments &instruments,
+      const server::TraceInfo &trace_info);
+  void operator()(
+      const json::Positions &positions, const server::TraceInfo &trace_info);
 
   void operator()(
-      const json::Currencies& currencies,
-      const server::TraceInfo& trace_info);
-  void operator()(
-      const json::Instruments& instruments,
-      const server::TraceInfo& trace_info);
-  void operator()(
-      const json::Positions& positions,
-      const server::TraceInfo& trace_info);
-
-  void operator()(
-      const json::Ticker& ticker,
-      const server::TraceInfo& trace_info) override;
+      const json::Ticker &ticker, const server::TraceInfo &trace_info) override;
 
  private:
-  Handler& _handler;
+  Handler &_handler;
   // config
   const std::string _access_key;
   // authentication
-  Random& _random;
+  Random &_random;
   // web socket
   core::web::Socket _connection;
   // buffers
@@ -150,22 +138,14 @@ class WebSocket final
   core::stack::Buffer<char, 32> _stack_buffer;
   // metrics
   struct {
-    core::metrics::Counter
-      disconnect;
+    core::metrics::Counter disconnect;
   } _counter;
   struct {
-    core::metrics::Profile
-      parse,
-      auth,
-      currencies,
-      instruments,
-      positions,
-      ticker;
+    core::metrics::Profile parse, auth, currencies, instruments, positions,
+        ticker;
   } _profile;
   struct {
-    core::metrics::Latency
-      ping,
-      heartbeat;
+    core::metrics::Latency ping, heartbeat;
   } _latency;
   // state
   bool _ready = false;

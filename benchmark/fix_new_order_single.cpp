@@ -4,13 +4,13 @@
 
 #include "roq/deribit/fix/new_order_single.h"
 
-using namespace roq;  // NOLINT
+using namespace roq;           // NOLINT
 using namespace roq::deribit;  // NOLINT
 
-void BM_fix_new_order_single_create_message(benchmark::State& state) {
+void BM_fix_new_order_single_create_message(benchmark::State &state) {
   core::utils::Buffer buffer(4096);
-  auto msg_seq_num = uint64_t{0};
-  auto sending_time = std::chrono::seconds{1568702810};
+  auto msg_seq_num = uint64_t { 0 };
+  auto sending_time = std::chrono::seconds { 1568702810 };
   uint64_t processed = 0;
   for (auto _ : state) {
     fix::NewOrderSingle new_order_single = {
@@ -34,8 +34,7 @@ void BM_fix_new_order_single_create_message(benchmark::State& state) {
         msg_seq_num,
         sending_time);
     auto message = new_order_single.encode(writer);
-    if (message.length())
-      ++processed;
+    if (message.length()) ++processed;
   }
 }
 
