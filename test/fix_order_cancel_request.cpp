@@ -12,11 +12,11 @@ using namespace roq::deribit;  // NOLINT
 
 TEST(fix_order_cancel_request, create_message) {
   core::utils::Buffer buffer(4096);
-  auto msg_seq_num = uint64_t { 0 };
-  auto sending_time = std::chrono::seconds { 1568702810 };
+  auto msg_seq_num = uint64_t{0};
+  auto sending_time = std::chrono::seconds{1568702810};
   fix::OrderCancelRequest order_cancel_request = {
-    .cl_ord_id = "123",
-    .orig_cl_ord_id = "123",
+      .cl_ord_id = "123",
+      .orig_cl_ord_id = "123",
   };
   core::fix::Writer writer(
       buffer,

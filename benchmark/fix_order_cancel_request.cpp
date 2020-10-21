@@ -9,13 +9,13 @@ using namespace roq::deribit;  // NOLINT
 
 void BM_fix_order_cancel_request_create_message(benchmark::State &state) {
   core::utils::Buffer buffer(4096);
-  auto msg_seq_num = uint64_t { 0 };
-  auto sending_time = std::chrono::seconds { 1568702810 };
+  auto msg_seq_num = uint64_t{0};
+  auto sending_time = std::chrono::seconds{1568702810};
   uint64_t processed = 0;
   for (auto _ : state) {
     fix::OrderCancelRequest order_cancel_request = {
-      .cl_ord_id = "123",
-      .orig_cl_ord_id = "123",
+        .cl_ord_id = "123",
+        .orig_cl_ord_id = "123",
     };
     core::fix::Writer writer(
         buffer,

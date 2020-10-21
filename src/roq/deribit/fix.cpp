@@ -39,27 +39,27 @@ FIX::FIX(
       _connection(*this, _connection_factory),
       _encode_buffer(FLAGS_encode_buffer_size),
       _decode_buffer(FLAGS_decode_buffer_size),
-      _counter {
-        .disconnect = create_counter("disconnect"),
+      _counter{
+          .disconnect = create_counter("disconnect"),
       },
-      _profile {
-        .parse = create_profile("parse"),
-        .execution_report = create_profile("execution_report"),
-        .market_data_incremental_refresh =
-            create_profile("market_data_incremental_refresh"),
-        .market_data_request_reject =
-            create_profile("market_data_request_reject"),
-        .market_data_snapshot_full_refresh =
-            create_profile("market_data_snapshot_full_refresh"),
-        .order_cancel_reject = create_profile("order_cancel_reject"),
-        .position_report = create_profile("position_report"),
-        .reject = create_profile("reject"),
-        .security_list = create_profile("security_list"),
-        .security_status = create_profile("security_status"),
-        .user_response = create_profile("user_response"),
+      _profile{
+          .parse = create_profile("parse"),
+          .execution_report = create_profile("execution_report"),
+          .market_data_incremental_refresh =
+              create_profile("market_data_incremental_refresh"),
+          .market_data_request_reject =
+              create_profile("market_data_request_reject"),
+          .market_data_snapshot_full_refresh =
+              create_profile("market_data_snapshot_full_refresh"),
+          .order_cancel_reject = create_profile("order_cancel_reject"),
+          .position_report = create_profile("position_report"),
+          .reject = create_profile("reject"),
+          .security_list = create_profile("security_list"),
+          .security_status = create_profile("security_status"),
+          .user_response = create_profile("user_response"),
       },
-      _latency {
-        .ping = create_latency("ping"),
+      _latency{
+          .ping = create_latency("ping"),
       } {
 }
 
@@ -85,7 +85,7 @@ void FIX::operator()(const Event<Timer> &event) {
   if (_ready && _next_heartbeat <= event.value.now) {
     assert(FLAGS_fix_ping_freq_secs > 0);
     _next_heartbeat =
-        event.value.now + std::chrono::seconds { FLAGS_fix_ping_freq_secs };
+        event.value.now + std::chrono::seconds{FLAGS_fix_ping_freq_secs};
     send_test_request(core::get_system_clock());
   }
 }
@@ -184,30 +184,30 @@ void FIX::send_logon() {
   auto sending_time = core::get_realtime_clock();
   auto raw_data = _random.create_raw_data(sending_time);
   auto password = _random.create_password(raw_data);
-  fix::Logon logon {
-    .heart_bt_int = static_cast<uint16_t>(FLAGS_fix_ping_freq_secs),
-    .raw_data_length = static_cast<uint32_t>(raw_data.length()),
-    .raw_data = raw_data,
-    .username = _access_key,
-    .password = password,
-    .use_wordsafe_tags = false,
-    .cancel_on_disconnect = FLAGS_fix_cancel_on_disconnect,
-    .deribit_app_id = std::string_view(),
-    .deribit_app_sig = std::string_view(),
+  fix::Logon logon{
+      .heart_bt_int = static_cast<uint16_t>(FLAGS_fix_ping_freq_secs),
+      .raw_data_length = static_cast<uint32_t>(raw_data.length()),
+      .raw_data = raw_data,
+      .username = _access_key,
+      .password = password,
+      .use_wordsafe_tags = false,
+      .cancel_on_disconnect = FLAGS_fix_cancel_on_disconnect,
+      .deribit_app_id = std::string_view(),
+      .deribit_app_sig = std::string_view(),
   };
   send(logon);
 }
 
 void FIX::send_logout(const std::string_view &text) {
-  fix::Logout logout {
-    .text = text,
+  fix::Logout logout{
+      .text = text,
   };
   send(logout);
 }
 
 void FIX::send_heartbeat(const std::string_view &test_req_id) {
-  fix::Heartbeat heartbeat {
-    .test_req_id = test_req_id,
+  fix::Heartbeat heartbeat{
+      .test_req_id = test_req_id,
   };
   send(heartbeat);
 }
@@ -218,8 +218,8 @@ void FIX::send_test_request(std::chrono::nanoseconds now) {
   core::charconv::to_string(std::back_inserter(_stack_buffer), now.count());
   auto request_id =
       std::string_view(_stack_buffer.data(), _stack_buffer.size());
-  fix::TestRequest test_request {
-    .test_req_id = request_id,
+  fix::TestRequest test_request{
+      .test_req_id = request_id,
   };
   send(test_request);
 }
@@ -421,7 +421,7 @@ void FIX::operator()(
   if (heartbeat.test_req_id.empty() == false) {
     auto send_time = core::from_chars<uint64_t>(heartbeat.test_req_id);
     auto latency = std::chrono::duration_cast<std::chrono::nanoseconds>(
-                       now - decltype(now) { send_time }) /
+                       now - decltype(now){send_time}) /
                    2;  // 1-way
     _latency.ping.update(latency.count());
   }

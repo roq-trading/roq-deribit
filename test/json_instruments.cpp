@@ -87,10 +87,10 @@ TEST(json_instrument, parse_message) {
             EXPECT_EQ(instrument.instrument_name, "BTC-27SEP19");
             EXPECT_EQ(
                 instrument.expiration_timestamp,
-                std::chrono::milliseconds { 1569571200000 });
+                std::chrono::milliseconds{1569571200000});
             EXPECT_EQ(
                 instrument.creation_timestamp,
-                std::chrono::milliseconds { 1553760060000 });
+                std::chrono::milliseconds{1553760060000});
             EXPECT_DOUBLE_EQ(instrument.contract_size, 10.0);
             EXPECT_EQ(instrument.base_currency, "BTC");
             break;
@@ -107,10 +107,10 @@ TEST(json_instrument, parse_message) {
             EXPECT_EQ(instrument.instrument_name, "BTC-27DEC19");
             EXPECT_EQ(
                 instrument.expiration_timestamp,
-                std::chrono::milliseconds { 1577433600000 });
+                std::chrono::milliseconds{1577433600000});
             EXPECT_EQ(
                 instrument.creation_timestamp,
-                std::chrono::milliseconds { 1561622460000 });
+                std::chrono::milliseconds{1561622460000});
             EXPECT_DOUBLE_EQ(instrument.contract_size, 10.0);
             EXPECT_EQ(instrument.base_currency, "BTC");
             break;
@@ -127,10 +127,10 @@ TEST(json_instrument, parse_message) {
             EXPECT_EQ(instrument.instrument_name, "BTC-PERPETUAL");
             EXPECT_EQ(
                 instrument.expiration_timestamp,
-                std::chrono::milliseconds { 32503734000000 });
+                std::chrono::milliseconds{32503734000000});
             EXPECT_EQ(
                 instrument.creation_timestamp,
-                std::chrono::milliseconds { 1534167754000 });
+                std::chrono::milliseconds{1534167754000});
             EXPECT_DOUBLE_EQ(instrument.contract_size, 10.0);
             EXPECT_EQ(instrument.base_currency, "BTC");
             break;

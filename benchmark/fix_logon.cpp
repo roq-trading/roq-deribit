@@ -33,22 +33,22 @@ BENCHMARK(BM_fix_logon_parse_message);
 
 void BM_fix_logon_create_message(benchmark::State &state) {
   core::utils::Buffer buffer(4096);
-  auto msg_seq_num = uint64_t { 0 };
-  auto sending_time = std::chrono::seconds { 1568702810 };
+  auto msg_seq_num = uint64_t{0};
+  auto sending_time = std::chrono::seconds{1568702810};
   std::string_view raw_data =
       "1567874758168.y4/hA3i6qxm4yVL+3N7IrGcINVAFMLFhy4l7ATSehxc=";
   uint64_t processed = 0;
   for (auto _ : state) {
     fix::Logon logon = {
-      .heart_bt_int = uint16_t { 10 },
-      .raw_data_length = static_cast<uint32_t>(raw_data.size()),
-      .raw_data = raw_data.data(),
-      .username = "5MP40u9h",
-      .password = "j/tVe9IsQuc+RjegscnHcJ6czMVNM1+ib7vjbY3UV0M=",
-      .use_wordsafe_tags = false,
-      .cancel_on_disconnect = true,
-      .deribit_app_id = std::string_view(),
-      .deribit_app_sig = std::string_view(),
+        .heart_bt_int = uint16_t{10},
+        .raw_data_length = static_cast<uint32_t>(raw_data.size()),
+        .raw_data = raw_data.data(),
+        .username = "5MP40u9h",
+        .password = "j/tVe9IsQuc+RjegscnHcJ6czMVNM1+ib7vjbY3UV0M=",
+        .use_wordsafe_tags = false,
+        .cancel_on_disconnect = true,
+        .deribit_app_id = std::string_view(),
+        .deribit_app_sig = std::string_view(),
     };
     core::fix::Writer writer(
         buffer,

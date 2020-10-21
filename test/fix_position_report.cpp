@@ -32,7 +32,7 @@ TEST(fix_position_report, parse_message) {
             position_report.pos_req_type, core::fix::PosReqType::POSITIONS);
         EXPECT_EQ(
             position_report.pos_req_result, core::fix::PosReqResult::VALID);
-        EXPECT_EQ(position_report.no_positions.size(), size_t { 1 });
+        EXPECT_EQ(position_report.no_positions.size(), size_t{1});
         auto &item = position_report.no_positions[0];
         EXPECT_DOUBLE_EQ(item.long_qty, 0.0);
         EXPECT_DOUBLE_EQ(item.short_qty, 0.0);

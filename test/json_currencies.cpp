@@ -51,8 +51,8 @@ TEST(json_currency, parse_message) {
           case 1:
             EXPECT_DOUBLE_EQ(currency.withdrawal_fee, 0.0004);
             EXPECT_DOUBLE_EQ(currency.min_withdrawal_fee, 0.0001);
-            EXPECT_EQ(currency.min_confirmations, uint32_t { 4 });
-            EXPECT_EQ(currency.fee_precision, uint32_t { 4 });
+            EXPECT_EQ(currency.min_confirmations, uint32_t{4});
+            EXPECT_EQ(currency.fee_precision, uint32_t{4});
             EXPECT_EQ(currency.currency_long, "Ethereum");
             EXPECT_EQ(currency.currency, "ETH");
             EXPECT_EQ(currency.coin_type, "ETHER");
@@ -60,8 +60,8 @@ TEST(json_currency, parse_message) {
           case 2:
             EXPECT_DOUBLE_EQ(currency.withdrawal_fee, 0.0001);
             EXPECT_DOUBLE_EQ(currency.min_withdrawal_fee, 0.0001);
-            EXPECT_EQ(currency.min_confirmations, uint32_t { 1 });
-            EXPECT_EQ(currency.fee_precision, uint32_t { 4 });
+            EXPECT_EQ(currency.min_confirmations, uint32_t{1});
+            EXPECT_EQ(currency.fee_precision, uint32_t{4});
             EXPECT_EQ(currency.currency_long, "Bitcoin");
             EXPECT_EQ(currency.currency, "BTC");
             EXPECT_EQ(currency.coin_type, "BITCOIN");

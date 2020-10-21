@@ -46,25 +46,25 @@ WebSocket::WebSocket(
           ssl_context,
           core::URI(FLAGS_ws_uri),
           std::string_view(),  // query
-          std::chrono::seconds { FLAGS_ws_ping_freq_secs },
+          std::chrono::seconds{FLAGS_ws_ping_freq_secs},
           FLAGS_decode_buffer_size,  // XXX need read buffer size
           FLAGS_encode_buffer_size,
           []() { return std::string(); }),
       _decode_buffer(FLAGS_decode_buffer_size),
-      _counter {
-        .disconnect = create_counter("disconnect"),
+      _counter{
+          .disconnect = create_counter("disconnect"),
       },
-      _profile {
-        .parse = create_profile("parse"),
-        .auth = create_profile("auth"),
-        .currencies = create_profile("currencies"),
-        .instruments = create_profile("instruments"),
-        .positions = create_profile("positions"),
-        .ticker = create_profile("ticker"),
+      _profile{
+          .parse = create_profile("parse"),
+          .auth = create_profile("auth"),
+          .currencies = create_profile("currencies"),
+          .instruments = create_profile("instruments"),
+          .positions = create_profile("positions"),
+          .ticker = create_profile("ticker"),
       },
-      _latency {
-        .ping = create_latency("ping"),
-        .heartbeat = create_latency("heartbeat"),
+      _latency{
+          .ping = create_latency("ping"),
+          .heartbeat = create_latency("heartbeat"),
       } {
 }
 

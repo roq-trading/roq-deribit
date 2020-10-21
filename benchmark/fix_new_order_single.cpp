@@ -9,21 +9,21 @@ using namespace roq::deribit;  // NOLINT
 
 void BM_fix_new_order_single_create_message(benchmark::State &state) {
   core::utils::Buffer buffer(4096);
-  auto msg_seq_num = uint64_t { 0 };
-  auto sending_time = std::chrono::seconds { 1568702810 };
+  auto msg_seq_num = uint64_t{0};
+  auto sending_time = std::chrono::seconds{1568702810};
   uint64_t processed = 0;
   for (auto _ : state) {
     fix::NewOrderSingle new_order_single = {
-      .cl_ord_id = "roq-ord-006",
-      .side = core::fix::Side::BUY,
-      .order_qty = 2.0,
-      .price = 0.5,
-      .symbol = "BTC-27SEP19",
-      .exec_inst = std::string_view(),
-      .ord_type = core::fix::OrdType::LIMIT,
-      .time_in_force = core::fix::TimeInForce::GTC,
-      .deribit_label = "roq;123;345",
-      .deribit_adv_order_type = '\0',
+        .cl_ord_id = "roq-ord-006",
+        .side = core::fix::Side::BUY,
+        .order_qty = 2.0,
+        .price = 0.5,
+        .symbol = "BTC-27SEP19",
+        .exec_inst = std::string_view(),
+        .ord_type = core::fix::OrdType::LIMIT,
+        .time_in_force = core::fix::TimeInForce::GTC,
+        .deribit_label = "roq;123;345",
+        .deribit_adv_order_type = '\0',
     };
     core::fix::Writer writer(
         buffer,
