@@ -2,6 +2,7 @@
 
 #include "roq/deribit/gateway.h"
 
+#include <algorithm>
 #include <limits>
 #include <utility>
 
