@@ -8,7 +8,7 @@ using namespace roq;           // NOLINT
 using namespace roq::deribit;  // NOLINT
 
 void BM_fix_order_cancel_replace_request_create_message(
-    benchmark::State &state) {
+    benchmark::State &state) {  // cppcheck-suppress constParameterCallback
   core::utils::Buffer buffer(4096);
   auto msg_seq_num = uint64_t{0};
   auto sending_time = std::chrono::seconds{1568702810};

@@ -99,7 +99,6 @@ TEST(json_subscription, parse_message) {
                              R"("ask_iv":500.0)"
                              R"(})"
                              R"(})";
-  int results = 0;
   core::utils::Buffer buffer(4096);
   core::json::Buffer buffer_(buffer);
   core::json::Parser parser(message);

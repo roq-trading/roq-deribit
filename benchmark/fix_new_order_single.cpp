@@ -7,6 +7,7 @@
 using namespace roq;           // NOLINT
 using namespace roq::deribit;  // NOLINT
 
+// cppcheck-suppress constParameterCallback
 void BM_fix_new_order_single_create_message(benchmark::State &state) {
   core::utils::Buffer buffer(4096);
   auto msg_seq_num = uint64_t{0};

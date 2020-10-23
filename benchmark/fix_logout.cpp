@@ -14,6 +14,7 @@ static const char *MESSAGE =
     "s\00110=166\001";
 }  // namespace
 
+// cppcheck-suppress constParameterCallback
 void BM_fix_logout_parse_message(benchmark::State &state) {
   uint64_t processed = 0;
   for (auto _ : state) {

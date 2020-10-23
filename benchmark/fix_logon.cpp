@@ -16,6 +16,7 @@ static const char *MESSAGE =
     "M=\0019001=Y\00110=115\001";
 }  // namespace
 
+// cppcheck-suppress constParameterCallback
 void BM_fix_logon_parse_message(benchmark::State &state) {
   uint64_t processed = 0;
   for (auto _ : state) {
@@ -31,6 +32,7 @@ void BM_fix_logon_parse_message(benchmark::State &state) {
 
 BENCHMARK(BM_fix_logon_parse_message);
 
+// cppcheck-suppress constParameterCallback
 void BM_fix_logon_create_message(benchmark::State &state) {
   core::utils::Buffer buffer(4096);
   auto msg_seq_num = uint64_t{0};

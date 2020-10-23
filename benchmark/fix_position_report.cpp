@@ -17,6 +17,7 @@ static const char *MESSAGE =
     "100089=0.00000000\00110=026\001";
 }  // namespace
 
+// cppcheck-suppress constParameterCallback
 void BM_fix_position_report_parse_message(benchmark::State &state) {
   core::utils::Buffer buffer(8192);
   uint64_t processed = 0;

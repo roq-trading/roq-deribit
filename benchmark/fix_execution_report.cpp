@@ -18,6 +18,7 @@ static const char *MESSAGE =
     "10=195\001";
 }  // namespace
 
+// cppcheck-suppress constParameterCallback
 void BM_fix_execution_report_parse_message(benchmark::State &state) {
   core::utils::Buffer buffer(8192);
   uint64_t processed = 0;

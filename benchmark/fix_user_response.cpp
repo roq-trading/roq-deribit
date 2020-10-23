@@ -16,6 +16,7 @@ static const char *MESSAGE =
     "1=0.0\001100013=10.0\00110=004\001";
 }  // namespace
 
+// cppcheck-suppress constParameterCallback
 void BM_fix_user_response_parse_message(benchmark::State &state) {
   uint64_t processed = 0;
   for (auto _ : state) {

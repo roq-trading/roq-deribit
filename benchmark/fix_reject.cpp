@@ -14,6 +14,7 @@ static const char *MESSAGE =
     "not_implemented\00110=092\001";
 }  // namespace
 
+// cppcheck-suppress constParameterCallback
 void BM_fix_reject_parse_message(benchmark::State &state) {
   uint64_t processed = 0;
   for (auto _ : state) {

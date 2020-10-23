@@ -184,7 +184,7 @@ void Gateway::operator()(
     const Event<ModifyOrder> &event,
     const std::string_view &request_id,
     const server::OMS_Order &order) {
-  auto &modify_order = event.value;
+  const auto &modify_order = event.value;
   fix::OrderCancelReplaceRequest order_cancel_replace_request{
       .orig_cl_ord_id = order.external_order_id,
       .cl_ord_id = request_id,
@@ -950,7 +950,7 @@ void Gateway::subscribe_market_data() {
     auto count =
         std::min<size_t>(_symbols.size() - offset, FLAGS_max_batch_size);
     if (count) {
-      for (size_t j = 0; i < count; ++i)
+      for (size_t j = 0; j < count; ++j)
         related_sym[j].symbol = _symbols[offset + j];
       auto request_id = _dispatcher.next_request_id();
       fix::MarketDataRequest market_data_request{
