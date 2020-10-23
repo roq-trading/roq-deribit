@@ -259,7 +259,11 @@ void Gateway::operator()(
   constexpr auto state = WebSocketDownload::State::CURRENCIES;
   VLOG(1)(R"(currencies={})", currencies);
   assert(_currencies_2.empty());
-  for (auto &item : currencies.data) _currencies_2.emplace_back(item.currency);
+  std::transform(
+      currencies.data.begin(),
+      currencies.data.end(),
+      std::back_inserter(_currencies_2),
+      [](const auto &item) { return std::string(item.currency); });
   _web_socket.download.check(state);
 }
 
@@ -946,8 +950,8 @@ void Gateway::subscribe_market_data() {
     auto count =
         std::min<size_t>(_symbols.size() - offset, FLAGS_max_batch_size);
     if (count) {
-      for (size_t i = 0; i < count; ++i)
-        related_sym[i].symbol = _symbols[offset + i];
+      for (size_t j = 0; i < count; ++i)
+        related_sym[j].symbol = _symbols[offset + j];
       auto request_id = _dispatcher.next_request_id();
       fix::MarketDataRequest market_data_request{
           .md_req_id = request_id,
