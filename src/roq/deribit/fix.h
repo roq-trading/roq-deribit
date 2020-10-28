@@ -197,40 +197,40 @@ class FIX final : public core::net::Manager::Handler {
       const server::TraceInfo &);
 
  private:
-  Handler &_handler;
+  Handler &handler_;
   // config
-  const std::string _access_key;
+  const std::string access_key_;
   // authentication
-  Random &_random;
+  Random &random_;
   // connection
-  core::net::TcpConnectionFactory _connection_factory;
-  core::net::Manager _connection;
+  core::net::TcpConnectionFactory connection_factory_;
+  core::net::Manager connection_;
   // buffers
-  core::utils::Buffer _encode_buffer;
-  core::utils::Buffer _decode_buffer;
-  core::stack::Buffer<char, 32> _stack_buffer;
+  core::utils::Buffer encode_buffer_;
+  core::utils::Buffer decode_buffer_;
+  core::stack::Buffer<char, 32> stack_buffer_;
   // metrics
   struct {
     core::metrics::Counter disconnect;
-  } _counter;
+  } counter_;
   struct {
     core::metrics::Profile parse, execution_report,
         market_data_incremental_refresh, market_data_request_reject,
         market_data_snapshot_full_refresh, order_cancel_reject, position_report,
         reject, security_list, security_status, user_response;
-  } _profile;
+  } profile_;
   struct {
     core::metrics::Latency ping;
-  } _latency;
+  } latency_;
   // state
   struct {
     uint64_t msg_seq_num = 0;
-  } _outbound;
+  } outbound_;
   struct {
     uint64_t msg_seq_num = 0;
-  } _inbound;
-  bool _ready = false;
-  std::chrono::nanoseconds _next_heartbeat = {};
+  } inbound_;
+  bool ready_ = false;
+  std::chrono::nanoseconds next_heartbeat_ = {};
 };
 
 }  // namespace deribit

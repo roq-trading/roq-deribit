@@ -32,7 +32,7 @@ static std::uniform_int_distribution<uint32_t> DISTRIBUTION;
 constexpr size_t RANDOM_BYTES = 32;
 
 Random::Random(const std::string_view &secret)
-    : _secret(secret), _hmac(secret.data(), secret.length()) {
+    : secret_(secret), hmac_(secret.data(), secret.length()) {
 }
 
 std::string Random::create_nonce() {
@@ -46,10 +46,10 @@ std::string Random::create_nonce() {
 std::string Random::create_signature(
     std::chrono::milliseconds timestamp, const std::string_view &nonce) {
   auto message = fmt::format("{}\n{}\n", timestamp.count(), nonce);
-  _hmac.clear();
-  _hmac.update(message);
+  hmac_.clear();
+  hmac_.update(message);
   std::array<char, 32> buffer;
-  auto length = _hmac.digest(buffer.data(), buffer.size());
+  auto length = hmac_.digest(buffer.data(), buffer.size());
   assert(length == buffer.size());
   return core::binascii::Hex::encode(buffer.data(), length);
 }
@@ -67,11 +67,11 @@ std::string Random::create_raw_data(const std::chrono::nanoseconds now) {
 }
 
 std::string Random::create_password(const std::string_view &raw_data) {
-  _sha.clear();
-  _sha.update(raw_data);
-  _sha.update(_secret);
+  sha_.clear();
+  sha_.update(raw_data);
+  sha_.update(secret_);
   std::array<char, 32> buffer;
-  auto length = _sha.digest(buffer.data(), buffer.size());
+  auto length = sha_.digest(buffer.data(), buffer.size());
   assert(length == buffer.size());
   return core::binascii::Base64::encode(buffer.data(), length);
 }

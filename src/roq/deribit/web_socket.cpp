@@ -38,8 +38,8 @@ WebSocket::WebSocket(
     core::event::Base &base,
     core::event::DNSBase &dns_base,
     core::ssl::Context &ssl_context)
-    : _handler(handler), _access_key(config.get_access_key()), _random(random),
-      _connection(
+    : handler_(handler), access_key_(config.get_access_key()), random_(random),
+      connection_(
           *this,
           base,
           dns_base,
@@ -50,11 +50,11 @@ WebSocket::WebSocket(
           FLAGS_decode_buffer_size,  // XXX need read buffer size
           FLAGS_encode_buffer_size,
           []() { return std::string(); }),
-      _decode_buffer(FLAGS_decode_buffer_size),
-      _counter{
+      decode_buffer_(FLAGS_decode_buffer_size),
+      counter_{
           .disconnect = create_counter("disconnect"),
       },
-      _profile{
+      profile_{
           .parse = create_profile("parse"),
           .auth = create_profile("auth"),
           .currencies = create_profile("currencies"),
@@ -62,38 +62,38 @@ WebSocket::WebSocket(
           .positions = create_profile("positions"),
           .ticker = create_profile("ticker"),
       },
-      _latency{
+      latency_{
           .ping = create_latency("ping"),
           .heartbeat = create_latency("heartbeat"),
       } {
 }
 
 bool WebSocket::ready() const {
-  return _connection.ready();
+  return connection_.ready();
 }
 
 void WebSocket::close() {
-  _connection.close();
+  connection_.close();
 }
 
 void WebSocket::operator()(const Event<Start> &) {
-  _connection.start();
+  connection_.start();
 }
 
 void WebSocket::operator()(const Event<Stop> &) {
-  _connection.stop();
+  connection_.stop();
 }
 
 void WebSocket::operator()(const Event<Timer> &event) {
-  _connection.refresh(event.value.now);
+  connection_.refresh(event.value.now);
 }
 
 void WebSocket::login() {
   constexpr json::RequestType request_type = json::RequestType::AUTH;
   auto timestamp = std::chrono::duration_cast<std::chrono::milliseconds>(
       core::get_realtime_clock());
-  auto nonce = _random.create_nonce();
-  auto signature = _random.create_signature(timestamp, nonce);
+  auto nonce = random_.create_nonce();
+  auto signature = random_.create_signature(timestamp, nonce);
   auto message = fmt::format(
       R"({{)"
       R"("method":"public/auth",)"
@@ -107,12 +107,12 @@ void WebSocket::login() {
       R"(}},)"
       R"("id":"{}")"
       R"(}})",
-      _access_key,
+      access_key_,
       timestamp.count(),
       nonce,
       signature,
       request_type.as_raw_text());
-  _connection.send_text(message);
+  connection_.send_text(message);
 }
 
 void WebSocket::get_currencies() {
@@ -124,7 +124,7 @@ void WebSocket::get_currencies() {
       R"("id":"{}")"
       R"(}})",
       request_type.as_raw_text());
-  _connection.send_text(message);
+  connection_.send_text(message);
 }
 
 void WebSocket::get_instruments(const std::string_view &currency) {
@@ -139,7 +139,7 @@ void WebSocket::get_instruments(const std::string_view &currency) {
       R"(}})",
       currency,
       request_type.as_raw_text());
-  _connection.send_text(message);
+  connection_.send_text(message);
 }
 
 void WebSocket::get_positions(const std::string_view &currency) {
@@ -154,7 +154,7 @@ void WebSocket::get_positions(const std::string_view &currency) {
       R"(}})",
       currency,
       request_type.as_raw_text());
-  _connection.send_text(message);
+  connection_.send_text(message);
 }
 
 template <typename T>
@@ -171,7 +171,7 @@ void WebSocket::subscribe_ticker(const roq::span<T> &symbols) {
       R"(}})",
       fmt::join(symbols, R"(.raw","ticker.)"),
       request_type.as_raw_text());
-  _connection.send_text(message);
+  connection_.send_text(message);
 }
 
 template void WebSocket::subscribe_ticker(const roq::span<std::string> &);
@@ -192,7 +192,7 @@ void WebSocket::unsubscribe_ticker(const roq::span<T> &symbols) {
       R"(}})",
       fmt::join(symbols, R"(.raw","ticker.)"),
       request_type.as_raw_text());
-  _connection.send_text(message);
+  connection_.send_text(message);
 }
 
 template void WebSocket::unsubscribe_ticker(const roq::span<std::string> &);
@@ -203,17 +203,17 @@ template void WebSocket::unsubscribe_ticker(
 void WebSocket::operator()(metrics::Writer &writer) {
   writer
       // counter
-      .write(_counter.disconnect, metrics::COUNTER)
+      .write(counter_.disconnect, metrics::COUNTER)
       // profile
-      .write(_profile.parse, metrics::PROFILE)
-      .write(_profile.auth, metrics::PROFILE)
-      .write(_profile.currencies, metrics::PROFILE)
-      .write(_profile.instruments, metrics::PROFILE)
-      .write(_profile.positions, metrics::PROFILE)
-      .write(_profile.ticker, metrics::PROFILE)
+      .write(profile_.parse, metrics::PROFILE)
+      .write(profile_.auth, metrics::PROFILE)
+      .write(profile_.currencies, metrics::PROFILE)
+      .write(profile_.instruments, metrics::PROFILE)
+      .write(profile_.positions, metrics::PROFILE)
+      .write(profile_.ticker, metrics::PROFILE)
       // latency
-      .write(_latency.ping, metrics::LATENCY)
-      .write(_latency.heartbeat, metrics::LATENCY);
+      .write(latency_.ping, metrics::LATENCY)
+      .write(latency_.heartbeat, metrics::LATENCY);
 }
 
 void WebSocket::operator()(const core::web::Socket::Connected &) {
@@ -221,9 +221,9 @@ void WebSocket::operator()(const core::web::Socket::Connected &) {
 }
 
 void WebSocket::operator()(const core::web::Socket::Disconnected &) {
-  ++_counter.disconnect;
-  _ready = false;
-  _handler(*this);
+  ++counter_.disconnect;
+  ready_ = false;
+  handler_(*this);
 }
 
 void WebSocket::operator()(const core::web::Socket::Ready &) {
@@ -234,7 +234,7 @@ void WebSocket::operator()(const core::web::Socket::Close &) {
 }
 
 void WebSocket::operator()(const core::web::Socket::Latency &latency) {
-  _latency.ping.update(
+  latency_.ping.update(
       std::chrono::duration_cast<std::chrono::nanoseconds>(latency.sample)
           .count());
 }
@@ -244,7 +244,7 @@ void WebSocket::operator()(const core::web::Socket::Text &text) {
 }
 
 void WebSocket::parse(const std::string_view &message) {
-  _profile.parse([&]() {
+  profile_.parse([&]() {
     try {
       core::jsonrpc::Parser::dispatch(*this, message);
     } catch (std::exception &e) {
@@ -277,19 +277,19 @@ void WebSocket::operator()(
       break;
     }
     case json::RequestType::GET_CURRENCIES: {
-      core::json::Buffer buffer(_decode_buffer);
+      core::json::Buffer buffer(decode_buffer_);
       json::Currencies currencies(value, buffer);
       (*this)(currencies, trace_info);
       break;
     }
     case json::RequestType::GET_INSTRUMENTS: {
-      core::json::Buffer buffer(_decode_buffer);
+      core::json::Buffer buffer(decode_buffer_);
       json::Instruments instruments(value, buffer);
       (*this)(instruments, trace_info);
       break;
     }
     case json::RequestType::GET_POSITIONS: {
-      core::json::Buffer buffer(_decode_buffer);
+      core::json::Buffer buffer(decode_buffer_);
       json::Positions positions(value, buffer);
       (*this)(positions, trace_info);
       break;
@@ -313,7 +313,7 @@ void WebSocket::operator()(
       DLOG(FATAL)(R"(Unknown method="{}")", notification.method);
       break;
     case json::Method::SUBSCRIPTION: {
-      core::json::Buffer buffer(_decode_buffer);
+      core::json::Buffer buffer(decode_buffer_);
       json::Parser::dispatch(*this, value, buffer, trace_info);
       break;
     }
@@ -321,44 +321,44 @@ void WebSocket::operator()(
 }
 
 void WebSocket::operator()(const json::Auth &auth, const server::TraceInfo &) {
-  _profile.auth([&]() {
+  profile_.auth([&]() {
     VLOG(1)(R"(auth={})", auth);
     LOG(INFO)("Ready");
-    assert(_ready == false);
-    _ready = true;
-    _handler(*this);
+    assert(ready_ == false);
+    ready_ = true;
+    handler_(*this);
   });
 }
 
 void WebSocket::operator()(
     const json::Currencies &currencies, const server::TraceInfo &trace_info) {
-  _profile.currencies([&]() {
+  profile_.currencies([&]() {
     VLOG(1)(R"(currencies={})", currencies);
-    _handler(currencies, trace_info);
+    handler_(currencies, trace_info);
   });
 }
 
 void WebSocket::operator()(
     const json::Instruments &instruments, const server::TraceInfo &trace_info) {
-  _profile.instruments([&]() {
+  profile_.instruments([&]() {
     VLOG(1)(R"(instruments={})", instruments);
-    _handler(instruments, trace_info);
+    handler_(instruments, trace_info);
   });
 }
 
 void WebSocket::operator()(
     const json::Positions &positions, const server::TraceInfo &trace_info) {
-  _profile.positions([&]() {
+  profile_.positions([&]() {
     VLOG(1)(R"(positions={})", positions);
-    _handler(positions, trace_info);
+    handler_(positions, trace_info);
   });
 }
 
 void WebSocket::operator()(
     const json::Ticker &ticker, const server::TraceInfo &trace_info) {
-  _profile.ticker([&]() {
+  profile_.ticker([&]() {
     VLOG(2)(R"(ticker={})", ticker);
-    _handler(ticker, trace_info);
+    handler_(ticker, trace_info);
   });
 }
 

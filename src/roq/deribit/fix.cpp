@@ -34,15 +34,15 @@ FIX::FIX(
     Random &random,
     core::event::Base &base,
     core::event::DNSBase &dns_base)
-    : _handler(handler), _access_key(config.get_access_key()), _random(random),
-      _connection_factory(base, dns_base, FLAGS_fix_uri),
-      _connection(*this, _connection_factory),
-      _encode_buffer(FLAGS_encode_buffer_size),
-      _decode_buffer(FLAGS_decode_buffer_size),
-      _counter{
+    : handler_(handler), access_key_(config.get_access_key()), random_(random),
+      connection_factory_(base, dns_base, FLAGS_fix_uri),
+      connection_(*this, connection_factory_),
+      encode_buffer_(FLAGS_encode_buffer_size),
+      decode_buffer_(FLAGS_decode_buffer_size),
+      counter_{
           .disconnect = create_counter("disconnect"),
       },
-      _profile{
+      profile_{
           .parse = create_profile("parse"),
           .execution_report = create_profile("execution_report"),
           .market_data_incremental_refresh =
@@ -58,33 +58,33 @@ FIX::FIX(
           .security_status = create_profile("security_status"),
           .user_response = create_profile("user_response"),
       },
-      _latency{
+      latency_{
           .ping = create_latency("ping"),
       } {
 }
 
 bool FIX::ready() const {
-  return _connection.ready();
+  return connection_.ready();
 }
 
 void FIX::close() {
   // XXX send_logout?
-  _connection.close();
+  connection_.close();
 }
 
 void FIX::operator()(const Event<Start> &) {
-  _connection.start();
+  connection_.start();
 }
 
 void FIX::operator()(const Event<Stop> &) {
-  _connection.stop();
+  connection_.stop();
 }
 
 void FIX::operator()(const Event<Timer> &event) {
-  if (_connection.refresh(event.value.now) == false) return;
-  if (_ready && _next_heartbeat <= event.value.now) {
+  if (connection_.refresh(event.value.now) == false) return;
+  if (ready_ && next_heartbeat_ <= event.value.now) {
     assert(FLAGS_fix_ping_freq_secs > 0);
-    _next_heartbeat =
+    next_heartbeat_ =
         event.value.now + std::chrono::seconds{FLAGS_fix_ping_freq_secs};
     send_test_request(core::get_system_clock());
   }
@@ -143,21 +143,21 @@ void FIX::operator()(const fix::OrderCancelRequest &order_cancel_request) {
 void FIX::operator()(metrics::Writer &writer) {
   writer
       // counter
-      .write(_counter.disconnect, metrics::COUNTER)
+      .write(counter_.disconnect, metrics::COUNTER)
       // profile
-      .write(_profile.parse, metrics::PROFILE)
-      .write(_profile.execution_report, metrics::PROFILE)
-      .write(_profile.market_data_incremental_refresh, metrics::PROFILE)
-      .write(_profile.market_data_request_reject, metrics::PROFILE)
-      .write(_profile.market_data_snapshot_full_refresh, metrics::PROFILE)
-      .write(_profile.order_cancel_reject, metrics::PROFILE)
-      .write(_profile.position_report, metrics::PROFILE)
-      .write(_profile.reject, metrics::PROFILE)
-      .write(_profile.security_list, metrics::PROFILE)
-      .write(_profile.security_status, metrics::PROFILE)
-      .write(_profile.user_response, metrics::PROFILE)
+      .write(profile_.parse, metrics::PROFILE)
+      .write(profile_.execution_report, metrics::PROFILE)
+      .write(profile_.market_data_incremental_refresh, metrics::PROFILE)
+      .write(profile_.market_data_request_reject, metrics::PROFILE)
+      .write(profile_.market_data_snapshot_full_refresh, metrics::PROFILE)
+      .write(profile_.order_cancel_reject, metrics::PROFILE)
+      .write(profile_.position_report, metrics::PROFILE)
+      .write(profile_.reject, metrics::PROFILE)
+      .write(profile_.security_list, metrics::PROFILE)
+      .write(profile_.security_status, metrics::PROFILE)
+      .write(profile_.user_response, metrics::PROFILE)
       // latency
-      .write(_latency.ping, metrics::LATENCY);
+      .write(latency_.ping, metrics::LATENCY);
 }
 
 template <typename T>
@@ -168,27 +168,27 @@ void FIX::send(const T &event) {
 template <typename T>
 void FIX::send(const T &event, std::chrono::nanoseconds sending_time) {
   core::fix::Writer writer(
-      _encode_buffer,
+      encode_buffer_,
       FIX_VERSION,
       T::msg_type,
       SENDER_COMP_ID,
       TARGET_COMP_ID,
-      _outbound.msg_seq_num,
+      outbound_.msg_seq_num,
       sending_time);
   auto message = event.encode(writer);
   // message.print();  // DEBUG
-  _connection.send(message);
+  connection_.send(message);
 }
 
 void FIX::send_logon() {
   auto sending_time = core::get_realtime_clock();
-  auto raw_data = _random.create_raw_data(sending_time);
-  auto password = _random.create_password(raw_data);
+  auto raw_data = random_.create_raw_data(sending_time);
+  auto password = random_.create_password(raw_data);
   fix::Logon logon{
       .heart_bt_int = static_cast<uint16_t>(FLAGS_fix_ping_freq_secs),
       .raw_data_length = static_cast<uint32_t>(raw_data.length()),
       .raw_data = raw_data,
-      .username = _access_key,
+      .username = access_key_,
       .password = password,
       .use_wordsafe_tags = false,
       .cancel_on_disconnect = FLAGS_fix_cancel_on_disconnect,
@@ -214,10 +214,10 @@ void FIX::send_heartbeat(const std::string_view &test_req_id) {
 
 void FIX::send_test_request(std::chrono::nanoseconds now) {
   // request_id is current time
-  _stack_buffer.clear();
-  core::charconv::to_string(std::back_inserter(_stack_buffer), now.count());
+  stack_buffer_.clear();
+  core::charconv::to_string(std::back_inserter(stack_buffer_), now.count());
   auto request_id =
-      std::string_view(_stack_buffer.data(), _stack_buffer.size());
+      std::string_view(stack_buffer_.data(), stack_buffer_.size());
   fix::TestRequest test_request{
       .test_req_id = request_id,
   };
@@ -229,12 +229,12 @@ void FIX::operator()(const core::net::Manager::Connected &) {
 }
 
 void FIX::operator()(const core::net::Manager::Disconnected &) {
-  ++_counter.disconnect;
-  _outbound = {};
-  _inbound = {};
-  _ready = false;
-  _next_heartbeat = {};
-  _handler(*this);
+  ++counter_.disconnect;
+  outbound_ = {};
+  inbound_ = {};
+  ready_ = false;
+  next_heartbeat_ = {};
+  handler_(*this);
 }
 
 void FIX::operator()(const core::net::Manager::Read &read) {
@@ -270,29 +270,29 @@ void FIX::operator()(const core::net::Manager::Read &read) {
 
 void FIX::check(const core::fix::header_t &header) {
   auto current = header.msg_seq_num;
-  auto expected = _inbound.msg_seq_num + 1;
+  auto expected = inbound_.msg_seq_num + 1;
   if (ROQ_UNLIKELY(current != expected)) {
     if (expected < current) {
       LOG(WARNING)
       (R"(*** SEQUENCE GAP *** )"
        R"(current={} previous={} distance={})",
        current,
-       _inbound.msg_seq_num,
-       current - _inbound.msg_seq_num);
+       inbound_.msg_seq_num,
+       current - inbound_.msg_seq_num);
     } else {
       LOG(WARNING)
       (R"(*** SEQUENCE REPLAY *** )"
        R"(current={} previous={} distance={})",
        current,
-       _inbound.msg_seq_num,
-       _inbound.msg_seq_num - current);
+       inbound_.msg_seq_num,
+       inbound_.msg_seq_num - current);
     }
   }
-  _inbound.msg_seq_num = current;
+  inbound_.msg_seq_num = current;
 }
 
 void FIX::parse(const core::fix::message_t &message) {
-  _profile.parse([&]() {
+  profile_.parse([&]() {
     try {
       parse_helper(message);
     } catch (std::exception &e) {
@@ -303,7 +303,7 @@ void FIX::parse(const core::fix::message_t &message) {
 
 void FIX::parse_helper(const core::fix::message_t &message) {
   server::TraceInfo trace_info;
-  core::fix::Buffer buffer(_decode_buffer);
+  core::fix::Buffer buffer(decode_buffer_);
   switch (message.header.msg_type) {
     // session
     case core::fix::MsgType::HEARTBEAT: {
@@ -333,14 +333,14 @@ void FIX::parse_helper(const core::fix::message_t &message) {
     }
     // ...
     case core::fix::MsgType::EXECUTION_REPORT: {
-      _profile.execution_report([&]() {
+      profile_.execution_report([&]() {
         auto execution_report = fix::ExecutionReport::create(message, buffer);
         (*this)(message.header, execution_report, trace_info);
       });
       break;
     }
     case core::fix::MsgType::MARKET_DATA_INCREMENTAL_REFRESH: {
-      _profile.market_data_incremental_refresh([&]() {
+      profile_.market_data_incremental_refresh([&]() {
         auto market_data_incremental_referesh =
             fix::MarketDataIncrementalRefresh::create(message, buffer);
         (*this)(message.header, market_data_incremental_referesh, trace_info);
@@ -348,7 +348,7 @@ void FIX::parse_helper(const core::fix::message_t &message) {
       break;
     }
     case core::fix::MsgType::MARKET_DATA_REQUEST_REJECT: {
-      _profile.market_data_request_reject([&]() {
+      profile_.market_data_request_reject([&]() {
         auto market_data_request_reject =
             fix::MarketDataRequestReject::create(message);
         (*this)(message.header, market_data_request_reject, trace_info);
@@ -356,7 +356,7 @@ void FIX::parse_helper(const core::fix::message_t &message) {
       break;
     }
     case core::fix::MsgType::MARKET_DATA_SNAPSHOT_FULL_REFRESH: {
-      _profile.market_data_snapshot_full_refresh([&]() {
+      profile_.market_data_snapshot_full_refresh([&]() {
         auto market_data_snapshot_full_refresh =
             fix::MarketDataSnapshotFullRefresh::create(message, buffer);
         (*this)(message.header, market_data_snapshot_full_refresh, trace_info);
@@ -364,42 +364,42 @@ void FIX::parse_helper(const core::fix::message_t &message) {
       break;
     }
     case core::fix::MsgType::ORDER_CANCEL_REJECT: {
-      _profile.order_cancel_reject([&]() {
+      profile_.order_cancel_reject([&]() {
         auto order_cancel_reject = fix::OrderCancelReject::create(message);
         (*this)(message.header, order_cancel_reject, trace_info);
       });
       break;
     }
     case core::fix::MsgType::POSITION_REPORT: {
-      _profile.position_report([&]() {
+      profile_.position_report([&]() {
         auto position_report = fix::PositionReport::create(message, buffer);
         (*this)(message.header, position_report, trace_info);
       });
       break;
     }
     case core::fix::MsgType::REJECT: {
-      _profile.reject([&]() {
+      profile_.reject([&]() {
         auto reject = fix::Reject::create(message);
         (*this)(message.header, reject, trace_info);
       });
       break;
     }
     case core::fix::MsgType::SECURITY_LIST: {
-      _profile.security_list([&]() {
+      profile_.security_list([&]() {
         auto security_list = fix::SecurityList::create(message, buffer);
         (*this)(message.header, security_list, trace_info);
       });
       break;
     }
     case core::fix::MsgType::SECURITY_STATUS: {
-      _profile.security_status([&]() {
+      profile_.security_status([&]() {
         auto security_status = fix::SecurityStatus::create(message, buffer);
         (*this)(message.header, security_status, trace_info);
       });
       break;
     }
     case core::fix::MsgType::USER_RESPONSE: {
-      _profile.user_response([&]() {
+      profile_.user_response([&]() {
         auto user_response = fix::UserResponse::create(message);
         (*this)(message.header, user_response, trace_info);
       });
@@ -423,7 +423,7 @@ void FIX::operator()(
     auto latency = std::chrono::duration_cast<std::chrono::nanoseconds>(
                        now - decltype(now){send_time}) /
                    2;  // 1-way
-    _latency.ping.update(latency.count());
+    latency_.ping.update(latency.count());
   }
 }
 
@@ -433,9 +433,9 @@ void FIX::operator()(
     const server::TraceInfo &) {
   VLOG(1)(R"(event(header={}, logon={}))", header, logon);
   LOG(INFO)("Ready");
-  assert(_ready == false);
-  _ready = true;
-  _handler(*this);
+  assert(ready_ == false);
+  ready_ = true;
+  handler_(*this);
 }
 
 void FIX::operator()(
@@ -443,11 +443,11 @@ void FIX::operator()(
     const fix::Logout &logout,
     const server::TraceInfo &) {
   LOG(WARNING)(R"(event(header={}, logout={}))", header, logout);
-  _ready = false;
+  ready_ = false;
   // note! mandated, must send a logout response
   send_logout(LOGOUT_RESPONSE);
   LOG(INFO)("closing connection");
-  _connection.close();
+  connection_.close();
 }
 
 void FIX::operator()(
@@ -457,7 +457,7 @@ void FIX::operator()(
   LOG(WARNING)
   (R"(event(header={}, resend_request={}))", header, resend_request);
   LOG(INFO)("closing connection");
-  _connection.close();
+  connection_.close();
 }
 
 void FIX::operator()(
@@ -473,7 +473,7 @@ void FIX::operator()(
     const fix::ExecutionReport &execution_report,
     const server::TraceInfo &trace_info) {
   VLOG(3)(R"(event(header={}, execution_report={}))", header, execution_report);
-  _handler(execution_report, trace_info);
+  handler_(execution_report, trace_info);
 }
 
 void FIX::operator()(
@@ -484,7 +484,7 @@ void FIX::operator()(
   (R"(event(header={}, market_data_incremental_refresh={}))",
    header,
    market_data_incremental_refresh);
-  _handler(market_data_incremental_refresh, trace_info);
+  handler_(market_data_incremental_refresh, trace_info);
 }
 
 void FIX::operator()(
@@ -495,7 +495,7 @@ void FIX::operator()(
   (R"(event(header={}, market_data_request_reject={}))",
    header,
    market_data_request_reject);
-  _handler(market_data_request_reject, trace_info);
+  handler_(market_data_request_reject, trace_info);
 }
 
 void FIX::operator()(
@@ -506,7 +506,7 @@ void FIX::operator()(
   (R"(event(header={}, market_data_snapshot_full_refresh={}))",
    header,
    market_data_snapshot_full_refresh);
-  _handler(market_data_snapshot_full_refresh, trace_info);
+  handler_(market_data_snapshot_full_refresh, trace_info);
 }
 
 void FIX::operator()(
@@ -515,7 +515,7 @@ void FIX::operator()(
     const server::TraceInfo &trace_info) {
   VLOG(3)
   (R"(event(header={}, order_cancel_reject={}))", header, order_cancel_reject);
-  _handler(order_cancel_reject, trace_info);
+  handler_(order_cancel_reject, trace_info);
 }
 
 void FIX::operator()(
@@ -523,7 +523,7 @@ void FIX::operator()(
     const fix::PositionReport &position_report,
     const server::TraceInfo &trace_info) {
   VLOG(3)(R"(event(header={}, position_report={}))", header, position_report);
-  _handler(position_report, trace_info);
+  handler_(position_report, trace_info);
 }
 
 void FIX::operator()(
@@ -531,7 +531,7 @@ void FIX::operator()(
     const fix::Reject &reject,
     const server::TraceInfo &trace_info) {
   VLOG(3)(R"(event(header={}, reject={}))", header, reject);
-  _handler(reject, trace_info);
+  handler_(reject, trace_info);
 }
 
 void FIX::operator()(
@@ -539,7 +539,7 @@ void FIX::operator()(
     const fix::SecurityList &security_list,
     const server::TraceInfo &trace_info) {
   VLOG(2)(R"(event(header={}, security_list={}))", header, security_list);
-  _handler(security_list, trace_info);
+  handler_(security_list, trace_info);
 }
 
 void FIX::operator()(
@@ -547,7 +547,7 @@ void FIX::operator()(
     const fix::SecurityStatus &security_status,
     const server::TraceInfo &trace_info) {
   VLOG(2)(R"(event(header={}, security_status={}))", header, security_status);
-  _handler(security_status, trace_info);
+  handler_(security_status, trace_info);
 }
 
 void FIX::operator()(
@@ -555,7 +555,7 @@ void FIX::operator()(
     const fix::UserResponse &user_response,
     const server::TraceInfo &trace_info) {
   VLOG(2)(R"(event(header={}, user_response={}))", header, user_response);
-  _handler(user_response, trace_info);
+  handler_(user_response, trace_info);
 }
 
 }  // namespace deribit

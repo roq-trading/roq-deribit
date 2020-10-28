@@ -111,42 +111,42 @@ class Gateway final : public server::Handler,
   void subscribe_market_data();
 
  private:
-  server::Dispatcher &_dispatcher;
+  server::Dispatcher &dispatcher_;
   // config
-  const std::string _account;
-  const std::string _access_key;
+  const std::string account_;
+  const std::string access_key_;
   // authentication
-  Random _random;
+  Random random_;
   // async
-  core::event::Base _base;
-  core::event::DNSBase _dns_base;
+  core::event::Base base_;
+  core::event::DNSBase dns_base_;
   // crypto
-  core::ssl::Context _ssl_context;
+  core::ssl::Context ssl_context_;
   // fix
   struct {
     FIX connection;
     FIXDownload download;
-  } _fix;
+  } fix_;
   // web socket
   struct {
     WebSocket connection;
     WebSocketDownload download;
-  } _web_socket;
+  } web_socket_;
   // download (fix)
-  core::hash::set<std::string> _currencies;
-  std::vector<std::string> _symbols;
-  core::hash::map<std::string, TradingStatus> _trading_status;
+  core::hash::set<std::string> currencies_;
+  std::vector<std::string> symbols_;
+  core::hash::map<std::string, TradingStatus> trading_status_;
   // download (web socket)
-  std::vector<std::string> _currencies_2;
-  std::vector<std::string> _symbols_2;
+  std::vector<std::string> currencies_2_;
+  std::vector<std::string> symbols_2_;
   // market data + order manager
-  GatewayStatus _gateway_status = GatewayStatus::DISCONNECTED;
+  GatewayStatus gateway_status_ = GatewayStatus::DISCONNECTED;
   // order manager
-  core::page_aligned_vector<Fill> _fill;
+  core::page_aligned_vector<Fill> fill_;
   // market data
-  core::page_aligned_vector<MBPUpdate> _bid, _ask;
-  core::page_aligned_vector<Trade> _trade;
-  core::page_aligned_vector<Statistics> _statistics;
+  core::page_aligned_vector<MBPUpdate> bid_, ask_;
+  core::page_aligned_vector<Trade> trade_;
+  core::page_aligned_vector<Statistics> statistics_;
 };
 
 }  // namespace deribit

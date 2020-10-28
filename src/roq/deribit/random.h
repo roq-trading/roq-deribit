@@ -27,9 +27,9 @@ class Random final {
   std::string create_password(const std::string_view &raw_data);
 
  private:
-  const std::string _secret;
-  core::crypto::SHA256 _sha;
-  core::crypto::HMAC_SHA256 _hmac;
+  const std::string secret_;
+  core::crypto::SHA256 sha_;
+  core::crypto::HMAC_SHA256 hmac_;
 };
 
 }  // namespace deribit
