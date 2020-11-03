@@ -58,14 +58,10 @@ inline void update(State &result, const core::json::value_t &value) {
 
 inline TradingStatus map(State state) {
   switch (state) {
-    case State::UNDEFINED:
-      break;
-    case State::UNKNOWN:
-      break;
-    case State::CLOSED:
-      return TradingStatus::OPEN;
-    case State::OPEN:
-      return TradingStatus::OPEN;
+    case State::UNDEFINED: break;
+    case State::UNKNOWN: break;
+    case State::CLOSED: return TradingStatus::OPEN;
+    case State::OPEN: return TradingStatus::OPEN;
   }
   return TradingStatus::UNDEFINED;
 }

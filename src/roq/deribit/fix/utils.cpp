@@ -36,14 +36,10 @@ Error map_error(const std::string_view &value) {
 
 std::string_view map(ExecutionInstruction execution_instruction) {
   switch (execution_instruction) {
-    case ExecutionInstruction::UNDEFINED:
-      return std::string_view();
-    case ExecutionInstruction::PARTICIPATE_DO_NOT_INITIATE:
-      return "6";
-    case ExecutionInstruction::DO_NOT_INCREASE:
-      return "E";
-    default:
-      throw std::runtime_error("Not a supported execution instruction");
+    case ExecutionInstruction::UNDEFINED: return std::string_view();
+    case ExecutionInstruction::PARTICIPATE_DO_NOT_INITIATE: return "6";
+    case ExecutionInstruction::DO_NOT_INCREASE: return "E";
+    default: throw std::runtime_error("Not a supported execution instruction");
   }
 }
 

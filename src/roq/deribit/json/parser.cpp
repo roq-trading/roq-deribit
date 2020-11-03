@@ -38,12 +38,8 @@ void Parser::dispatch(
     for (auto [key, value] : std::get<core::json::object_t>(root)) {
       auto field = Field(key);
       switch (field) {
-        case Field::UNDEFINED:
-          LOG(FATAL)("Unexpected");
-          break;
-        case Field::UNKNOWN:
-          DLOG(FATAL)(R"(Unknown key="{}")", key);
-          break;
+        case Field::UNDEFINED: LOG(FATAL)("Unexpected"); break;
+        case Field::UNKNOWN: DLOG(FATAL)(R"(Unknown key="{}")", key); break;
         case Field::CHANNEL: {
           auto name = std::get<std::string_view>(value);
           auto delim = name.find_first_of('.');
@@ -59,11 +55,8 @@ void Parser::dispatch(
         case Field::DATA:
           if (channel != Channel::UNDEFINED) {
             switch (channel) {
-              case Channel::UNDEFINED:
-                break;  // not ready
-              case Channel::UNKNOWN:
-                DLOG(FATAL)("Unknown channel");
-                break;
+              case Channel::UNDEFINED: break;  // not ready
+              case Channel::UNKNOWN: DLOG(FATAL)("Unknown channel"); break;
               case Channel::TICKER:
                 dispatched = true;
                 dispatch_ticker(handler, value, trace_info);
