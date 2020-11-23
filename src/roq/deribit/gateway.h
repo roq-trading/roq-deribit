@@ -8,8 +8,8 @@
 #include "roq/download.h"
 #include "roq/server.h"
 
-#include "roq/core/hash/map.h"
-#include "roq/core/hash/set.h"
+#include "roq/core/container/hash_map.h"
+#include "roq/core/container/hash_set.h"
 
 #include "roq/core/ssl/ssl.h"
 
@@ -133,9 +133,9 @@ class Gateway final : public server::Handler,
     WebSocketDownload download;
   } web_socket_;
   // download (fix)
-  core::hash::set<std::string> currencies_;
+  core::container::hash_set<std::string> currencies_;
   std::vector<std::string> symbols_;
-  core::hash::map<std::string, TradingStatus> trading_status_;
+  core::container::hash_map<std::string, TradingStatus> trading_status_;
   // download (web socket)
   std::vector<std::string> currencies_2_;
   std::vector<std::string> symbols_2_;
