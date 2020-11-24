@@ -792,8 +792,6 @@ void Gateway::operator()(
           .settlement_currency = instrument.settl_currency,
           .commission_currency = instrument.comm_currency,
           .tick_size = instrument.min_price_increment,
-          .limit_up = std::numeric_limits<double>::quiet_NaN(),
-          .limit_down = std::numeric_limits<double>::quiet_NaN(),
           .multiplier = instrument.contract_multiplier,
           .min_trade_vol = instrument.min_trade_vol,
           .option_type = core::fix::map(instrument.put_or_call),
