@@ -797,6 +797,10 @@ void Gateway::operator()(
           .option_type = core::fix::map(instrument.put_or_call),
           .strike_currency = instrument.strike_currency,
           .strike_price = instrument.strike_price,
+          .underlying = instrument.underlying_symbol,
+          .issue_date_utc = instrument.issue_date,
+          .expiry_time_utc = instrument.maturity_date,  // XXX what about time?
+          .settlement_date_utc = {},
       };
       server::create_trace_and_dispatch(
           trace_info, reference_data, dispatcher_, true);
