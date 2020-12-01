@@ -784,6 +784,8 @@ void Gateway::operator()(
         currencies_.emplace(instrument.comm_currency);
       if (dispatcher_.discard_symbol(instrument.symbol)) continue;
       symbols_.emplace_back(instrument.symbol);
+      auto expiry_time_utc = instrument.maturity_date +
+                             core::charconv::to_time(instrument.maturity_time);
       ReferenceData reference_data{
           .exchange = FLAGS_exchange,
           .symbol = instrument.symbol,
@@ -799,7 +801,7 @@ void Gateway::operator()(
           .strike_price = instrument.strike_price,
           .underlying = instrument.underlying_symbol,
           .issue_date_utc = instrument.issue_date,
-          .expiry_time_utc = instrument.maturity_date,  // XXX what about time?
+          .expiry_time_utc = expiry_time_utc,
           .settlement_date_utc = {},
       };
       server::create_trace_and_dispatch(
