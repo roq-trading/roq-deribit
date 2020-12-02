@@ -63,6 +63,11 @@ static bool trade_update(auto &data, size_t &offset, const T &item) {
 }
 
 template <typename T>
+static T combine(T date_part, T time_part) {
+  return date_part < T::max() ? date_part + time_part : T::max();
+}
+
+template <typename T>
 static bool fill_update(
     auto &dispatcher, auto &data, size_t &offset, const T &item) {
   auto trade_id = dispatcher.next_trade_id();
@@ -791,8 +796,10 @@ void Gateway::operator()(
         currencies_.emplace(instrument.comm_currency);
       if (dispatcher_.discard_symbol(instrument.symbol)) continue;
       symbols_.emplace_back(instrument.symbol);
-      auto expiry_time_utc = instrument.maturity_date +
-                             core::charconv::to_time(instrument.maturity_time);
+      auto expiry_time_utc = combine(
+          instrument.maturity_date,
+          core::charconv::time_from_string<std::chrono::milliseconds>(
+              instrument.maturity_time));
       ReferenceData reference_data{
           .exchange = FLAGS_exchange,
           .symbol = instrument.symbol,
@@ -813,6 +820,7 @@ void Gateway::operator()(
               ReferenceData::expiry_time_utc)>(expiry_time_utc),
           .settlement_date_utc = {},
       };
+      LOG(INFO)("reference_data={}", reference_data);
       server::create_trace_and_dispatch(
           trace_info, reference_data, dispatcher_, true);
       ++security_count;
