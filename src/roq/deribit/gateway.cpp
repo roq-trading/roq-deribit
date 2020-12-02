@@ -187,7 +187,9 @@ void Gateway::operator()(
   fix::OrderCancelReplaceRequest order_cancel_replace_request{
       .orig_cl_ord_id = order.external_order_id,
       .cl_ord_id = request_id,
-      .transact_time = order.update_time_utc,
+      .transact_time = std::chrono::duration_cast<decltype(
+          fix::OrderCancelReplaceRequest::transact_time)>(
+          order.update_time_utc),
       .side = core::fix::map(order.side),
       .order_qty = modify_order.quantity,
       .ord_type = core::fix::map(order.order_type),
@@ -805,8 +807,10 @@ void Gateway::operator()(
           .strike_currency = instrument.strike_currency,
           .strike_price = instrument.strike_price,
           .underlying = instrument.underlying_symbol,
-          .issue_date_utc = instrument.issue_date,
-          .expiry_time_utc = expiry_time_utc,
+          .issue_date_utc = std::chrono::duration_cast<decltype(
+              ReferenceData::issue_date_utc)>(instrument.issue_date),
+          .expiry_time_utc = std::chrono::duration_cast<decltype(
+              ReferenceData::expiry_time_utc)>(expiry_time_utc),
           .settlement_date_utc = {},
       };
       server::create_trace_and_dispatch(

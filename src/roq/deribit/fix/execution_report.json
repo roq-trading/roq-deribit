@@ -6,7 +6,7 @@
 	{ "tag": 41, "name": "OrigClOrdID", "type": "std::string_view", "required": true },
 	{ "tag": 39, "name": "OrdStatus", "type": "roq::core::fix::OrdStatus", "required": true },
 	{ "tag": 54, "name": "Side", "type": "roq::core::fix::Side", "required": true },
-	{ "tag": 60, "name": "TransactTime", "type": "std::chrono::nanoseconds", "required": true },
+	{ "tag": 60, "name": "TransactTime", "type": "std::chrono::milliseconds", "required": true },
 	{ "tag": 12, "name": "Commission", "type": "double" },
 	{ "tag": 151, "name": "LeavesQty", "type": "double", "required": true },
 	{ "tag": 14, "name": "CumQty", "type": "double", "required": true },

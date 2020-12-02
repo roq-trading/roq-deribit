@@ -2,7 +2,7 @@
 "name": "OrderCancelReject",
 "type": "simple",
 "values": [
-	{ "tag": 52, "name": "SendingTime", "type": "std::chrono::nanoseconds", "required": true, "custom": true },
+	{ "tag": 52, "name": "SendingTime", "type": "std::chrono::milliseconds", "required": true, "custom": true },
 	{ "tag": 11, "name": "ClOrdID", "type": "std::string_view", "required": true },
 	{ "tag": 41, "name": "OrigClOrdID", "type": "std::string_view", "required": true },
 	{ "tag": 39, "name": "OrdStatus", "type": "roq::core::fix::OrdStatus" },

@@ -4,8 +4,8 @@
 "values": [
 	{ "name": "base_currency", "type": "std::string_view" },
 	{ "name": "contract_size", "type": "double" },
-	{ "name": "creation_timestamp", "type": "std::chrono::nanoseconds" },
-	{ "name": "expiration_timestamp", "type": "std::chrono::nanoseconds" },
+	{ "name": "creation_timestamp", "type": "std::chrono::milliseconds" },
+	{ "name": "expiration_timestamp", "type": "std::chrono::milliseconds" },
 	{ "name": "instrument_name", "type": "std::string_view" },
 	{ "name": "is_active", "type": "bool" },
 	{ "name": "kind", "type": "Kind" },
