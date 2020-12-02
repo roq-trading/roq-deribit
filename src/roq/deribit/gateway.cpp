@@ -92,14 +92,14 @@ Gateway::Gateway(server::Dispatcher &dispatcher, const Config &config)
                   dns_base_,
               },
           .download = FIXDownload(
-              std::chrono::seconds{FLAGS_download_timeout_secs},
+              std::chrono::seconds{FLAGS_fix_request_timeout_secs},
               [this](auto state) { return download(state); }),
       },
       web_socket_{
           .connection =
               {*this, config, random_, base_, dns_base_, ssl_context_},
           .download = WebSocketDownload(
-              std::chrono::seconds{FLAGS_download_timeout_secs},
+              std::chrono::seconds{FLAGS_ws_request_timeout_secs},
               [this](auto state) { return download(state); }),
       },
       fill_(FLAGS_cache_fills_max_depth), bid_(FLAGS_cache_mbp_max_depth),
@@ -920,12 +920,13 @@ void Gateway::subscribe_market_data() {
       {
           .md_entry_type = core::fix::MDEntryType::TRADE,
       }};
-  std::vector<fix::InstrmtMDReq> related_sym(FLAGS_max_batch_size);
+  std::vector<fix::InstrmtMDReq> related_sym(
+      FLAGS_fix_market_data_request_max_size);
   for (size_t i = 0;; ++i) {
-    auto offset = i * FLAGS_max_batch_size;
+    auto offset = i * FLAGS_fix_market_data_request_max_size;
     if (symbols_.size() < offset) break;
-    auto count =
-        std::min<size_t>(symbols_.size() - offset, FLAGS_max_batch_size);
+    auto count = std::min<size_t>(
+        symbols_.size() - offset, FLAGS_fix_market_data_request_max_size);
     if (count) {
       for (size_t j = 0; j < count; ++j)
         related_sym[j].symbol = symbols_[offset + j];
