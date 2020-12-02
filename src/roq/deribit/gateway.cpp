@@ -287,6 +287,7 @@ void Gateway::operator()(
 void Gateway::operator()(
     const json::Ticker &ticker, const server::TraceInfo &trace_info) {
   VLOG(3)(R"(ticker={})", ticker);
+  auto &layer = top_of_book_[ticker.instrument_name];
   TopOfBook top_of_book = {
       .exchange = FLAGS_exchange,
       .symbol = ticker.instrument_name,
@@ -300,7 +301,11 @@ void Gateway::operator()(
       .snapshot = false,
       .exchange_time_utc = ticker.timestamp,
   };
-  server::create_trace_and_dispatch(trace_info, top_of_book, dispatcher_, true);
+  if (std::memcmp(&layer, &top_of_book.layer, sizeof(layer)) != 0) {
+    layer = top_of_book.layer;
+    server::create_trace_and_dispatch(
+        trace_info, top_of_book, dispatcher_, true);
+  }
   auto trading_status = json::map(ticker.state);
   auto &item = trading_status_[ticker.instrument_name];
   if (item != trading_status) {

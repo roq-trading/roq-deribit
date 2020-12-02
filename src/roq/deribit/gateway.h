@@ -135,10 +135,11 @@ class Gateway final : public server::Handler,
   // download (fix)
   core::container::hash_set<std::string> currencies_;
   std::vector<std::string> symbols_;
-  core::container::hash_map<std::string, TradingStatus> trading_status_;
   // download (web socket)
   std::vector<std::string> currencies_2_;
   std::vector<std::string> symbols_2_;
+  core::container::hash_map<std::string, roq::Layer> top_of_book_;
+  core::container::hash_map<std::string, TradingStatus> trading_status_;
   // market data + order manager
   GatewayStatus gateway_status_ = GatewayStatus::DISCONNECTED;
   // order manager
