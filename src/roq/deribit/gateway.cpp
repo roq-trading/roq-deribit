@@ -831,7 +831,6 @@ void Gateway::operator()(
           .expiry_datetime_utc = std::chrono::duration_cast<decltype(
               ReferenceData::expiry_datetime_utc)>(expiry_datetime_utc),
       };
-      LOG(INFO)("reference_data={}", reference_data);
       server::create_trace_and_dispatch(
           trace_info, reference_data, dispatcher_, true);
       ++security_count;
