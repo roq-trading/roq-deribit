@@ -23,7 +23,7 @@ TEST(fix_order_cancel_replace_request, create_message) {
       .ord_type = core::fix::OrdType::LIMIT,
       .price = 1.0,
       .symbol = "BTC-27SEP19",
-      .exec_inst = std::string_view(),
+      .exec_inst = {},
   };
   core::fix::Writer writer(
       buffer,

@@ -53,8 +53,8 @@ TEST(fix_logon, create_message) {
       .password = "j/tVe9IsQuc+RjegscnHcJ6czMVNM1+ib7vjbY3UV0M=",
       .use_wordsafe_tags = false,
       .cancel_on_disconnect = true,
-      .deribit_app_id = std::string_view(),
-      .deribit_app_sig = std::string_view(),
+      .deribit_app_id = {},
+      .deribit_app_sig = {},
   };
   core::fix::Writer writer(
       buffer,

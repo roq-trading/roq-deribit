@@ -192,8 +192,8 @@ void FIX::send_logon() {
       .password = password,
       .use_wordsafe_tags = false,
       .cancel_on_disconnect = FLAGS_fix_cancel_on_disconnect,
-      .deribit_app_id = std::string_view(),
-      .deribit_app_sig = std::string_view(),
+      .deribit_app_id = {},
+      .deribit_app_sig = {},
   };
   send(logon);
 }

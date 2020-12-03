@@ -200,7 +200,7 @@ void Gateway::operator()(
       .ord_type = core::fix::map(order.order_type),
       .price = modify_order.price,
       .symbol = order.symbol,
-      .exec_inst = std::string_view(),
+      .exec_inst = {},
   };
   fix_.connection(order_cancel_replace_request);
 }
@@ -455,6 +455,7 @@ void Gateway::operator()(
       .remaining_quantity = execution_report.leaves_qty,
       .traded_quantity = execution_report.cum_qty,
       .timestamp = execution_report.transact_time,
+      .external_account = {},
       .external_order_id = execution_report.order_id,
   };
 
@@ -498,10 +499,11 @@ void Gateway::operator()(
               .symbol = order.symbol,
               .side = order.side,
               .position_effect = PositionEffect::UNDEFINED,
-              .order_template = std::string_view(),
+              .order_template = {},
               .create_time_utc = execution_report.transact_time,
               .update_time_utc = execution_report.transact_time,
               .gateway_order_id = order.gateway_order_id,
+              .external_account = {},
               .external_order_id = order.external_order_id,
               .fills = {fill_.data(), fill_length},
           };
@@ -691,14 +693,15 @@ void Gateway::operator()(
   assert(gateway_status_ == GatewayStatus::READY);
 
   server::OMS_Lookup order_lookup{
-      .symbol = std::string_view(),
+      .symbol = {},
       .side = Side::UNDEFINED,
       .status = core::fix::map(order_cancel_reject.ord_status),
       .price = std::numeric_limits<double>::quiet_NaN(),
       .remaining_quantity = std::numeric_limits<double>::quiet_NaN(),
       .traded_quantity = std::numeric_limits<double>::quiet_NaN(),
       .timestamp = {},
-      .external_order_id = std::string_view(),
+      .external_account = {},
+      .external_order_id = {},
   };
 
   auto found = dispatcher_.find_order(
@@ -741,6 +744,7 @@ void Gateway::operator()(
                 .position_cost = 0.0,
                 .position_yesterday = 0.0,
                 .position_cost_yesterday = 0.0,
+                .external_account = {},
             };
             PositionUpdate sell{
                 .account = account_,
@@ -752,6 +756,7 @@ void Gateway::operator()(
                 .position_cost = 0.0,
                 .position_yesterday = 0.0,
                 .position_cost_yesterday = 0.0,
+                .external_account = {},
             };
             server::create_trace_and_dispatch(
                 trace_info, buy, dispatcher_, false);
@@ -796,13 +801,15 @@ void Gateway::operator()(
         currencies_.emplace(instrument.comm_currency);
       if (dispatcher_.discard_symbol(instrument.symbol)) continue;
       symbols_.emplace_back(instrument.symbol);
-      auto expiry_time_utc = combine(
+      auto expiry_datetime = combine(
           instrument.maturity_date,
           core::charconv::time_from_string<std::chrono::milliseconds>(
               instrument.maturity_time));
+      auto expiry_datetime_utc = expiry_datetime;
       ReferenceData reference_data{
           .exchange = FLAGS_exchange,
           .symbol = instrument.symbol,
+          .description = instrument.security_desc,
           .security_type = fix::map_security_type(instrument.security_type),
           .currency = instrument.currency,
           .settlement_currency = instrument.settl_currency,
@@ -814,11 +821,15 @@ void Gateway::operator()(
           .strike_currency = instrument.strike_currency,
           .strike_price = instrument.strike_price,
           .underlying = instrument.underlying_symbol,
-          .issue_date_utc = std::chrono::duration_cast<decltype(
-              ReferenceData::issue_date_utc)>(instrument.issue_date),
-          .expiry_time_utc = std::chrono::duration_cast<decltype(
-              ReferenceData::expiry_time_utc)>(expiry_time_utc),
-          .settlement_date_utc = {},
+          .time_zone = {},
+          .issue_date =
+              std::chrono::duration_cast<decltype(ReferenceData::issue_date)>(
+                  instrument.issue_date),
+          .settlement_date = {},
+          .expiry_datetime = std::chrono::duration_cast<decltype(
+              ReferenceData::expiry_datetime)>(expiry_datetime),
+          .expiry_datetime_utc = std::chrono::duration_cast<decltype(
+              ReferenceData::expiry_datetime_utc)>(expiry_datetime_utc),
       };
       LOG(INFO)("reference_data={}", reference_data);
       server::create_trace_and_dispatch(
@@ -845,6 +856,7 @@ void Gateway::operator()(
       .currency = user_response.currency,
       .balance = user_response.deribit_user_balance,
       .hold = double{0.0},
+      .external_account = {},
   };
   server::create_trace_and_dispatch(
       trace_info, funds_update, dispatcher_, true);
@@ -886,7 +898,7 @@ void Gateway::download_positions() {
       .pos_req_type = core::fix::PosReqType::POSITIONS,
       .subscription_request_type =
           roq::core::fix::SubscriptionRequestType::SNAPSHOT_UPDATES,
-      .currency = std::string_view(),
+      .currency = {},
   };
   fix_.connection(request_for_positions);
 }
