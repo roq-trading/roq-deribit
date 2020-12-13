@@ -32,7 +32,6 @@ target_link_libraries(
   roq-core::roq-core
   roq-logging::roq-logging
   gtest_main
-  ${CROSSGUID_LIBRARIES}
   ${UUID_LIBRARIES}
   ${RT_LIBRARIES})
 
