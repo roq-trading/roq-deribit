@@ -23,8 +23,8 @@ namespace deribit {
 
 constexpr auto TOLERANCE = double{1.0e-10};
 
-template <typename T>
-static bool mbp_update(auto &data, size_t &offset, const T &item) {
+template <typename C, typename T>
+static bool mbp_update(C &data, size_t &offset, const T &item) {
   // validate
   switch (item.md_update_action) {
     case core::fix::MDUpdateAction::UNKNOWN: break;
@@ -49,8 +49,8 @@ static bool mbp_update(auto &data, size_t &offset, const T &item) {
   return offset < data.size();
 }
 
-template <typename T>
-static bool trade_update(auto &data, size_t &offset, const T &item) {
+template <typename C, typename T>
+static bool trade_update(C &data, size_t &offset, const T &item) {
   auto &obj = data[offset];
   new (&obj) Trade{
       .side = core::fix::map(item.side),
@@ -67,9 +67,9 @@ static T combine(T date_part, T time_part) {
   return date_part < T::max() ? date_part + time_part : T::max();
 }
 
-template <typename T>
+template <typename C, typename T>
 static bool fill_update(
-    auto &dispatcher, auto &data, size_t &offset, const T &item) {
+    server::Dispatcher &dispatcher, C &data, size_t &offset, const T &item) {
   auto trade_id = dispatcher.next_trade_id();
   auto &obj = data[offset];
   new (&obj) Fill{
@@ -376,7 +376,10 @@ void Gateway::operator()(const FIX &) {
 //   ORDER_STATUS    CANCELED            ack success
 
 auto compute_request_status(
-    auto request_type, auto exec_type, auto ord_status, bool download) {
+    RequestType request_type,
+    core::fix::ExecType exec_type,
+    core::fix::OrdStatus ord_status,
+    bool download) {
   switch (exec_type) {
     case core::fix::ExecType::REJECTED: {
       switch (request_type) {
