@@ -43,7 +43,8 @@ void BM_fix_market_data_increment_refresh_parse_message_1(
         [&](const core::fix::message_t &message) {
           auto result =
               fix::MarketDataIncrementalRefresh::create(message, decode_buffer);
-          if (!result.md_req_id.empty()) ++processed;
+          if (!result.md_req_id.empty())
+            ++processed;
         },
         message_1,
         std::strlen(message_1));
@@ -62,7 +63,8 @@ void BM_fix_market_data_increment_refresh_parse_message_2(
         [&](const core::fix::message_t &message) {
           auto result =
               fix::MarketDataIncrementalRefresh::create(message, decode_buffer);
-          if (!result.md_req_id.empty()) ++processed;
+          if (!result.md_req_id.empty())
+            ++processed;
         },
         message_2,
         std::strlen(message_2));

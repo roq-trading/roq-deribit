@@ -22,7 +22,8 @@ void BM_fix_market_data_request_reject_parse_message(benchmark::State &state) {
         [&](const core::fix::message_t &message) {
           auto market_data_request_reject =
               fix::MarketDataRequestReject::create(message);
-          if (!market_data_request_reject.text.empty()) ++processed;
+          if (!market_data_request_reject.text.empty())
+            ++processed;
         },
         MESSAGE,
         std::strlen(MESSAGE));

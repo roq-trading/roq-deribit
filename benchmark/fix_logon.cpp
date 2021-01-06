@@ -23,7 +23,8 @@ void BM_fix_logon_parse_message(benchmark::State &state) {
     core::fix::Reader<core::fix::Version::FIX_44>::dispatch(
         [&](const core::fix::message_t &message) {
           auto result = fix::Logon::create(message);
-          if (result.heart_bt_int > 0) ++processed;
+          if (result.heart_bt_int > 0)
+            ++processed;
         },
         MESSAGE,
         std::strlen(MESSAGE));
@@ -61,7 +62,8 @@ void BM_fix_logon_create_message(benchmark::State &state) {
         msg_seq_num,
         sending_time);
     auto message = logon.encode(writer);
-    if (message.length()) ++processed;
+    if (message.length())
+      ++processed;
   }
 }
 

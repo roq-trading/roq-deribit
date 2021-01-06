@@ -27,7 +27,8 @@ void BM_fix_position_report_parse_message(benchmark::State &state) {
         [&](const core::fix::message_t &message) {
           auto position_report =
               fix::PositionReport::create(message, decode_buffer);
-          if (!position_report.pos_req_id.empty()) ++processed;
+          if (!position_report.pos_req_id.empty())
+            ++processed;
         },
         MESSAGE,
         std::strlen(MESSAGE));

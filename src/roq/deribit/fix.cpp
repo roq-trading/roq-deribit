@@ -81,7 +81,8 @@ void FIX::operator()(const Event<Stop> &) {
 }
 
 void FIX::operator()(const Event<Timer> &event) {
-  if (connection_.refresh(event.value.now) == false) return;
+  if (connection_.refresh(event.value.now) == false)
+    return;
   if (ready_ && next_heartbeat_ <= event.value.now) {
     assert(FLAGS_fix_ping_freq_secs > 0);
     next_heartbeat_ =
@@ -239,7 +240,8 @@ void FIX::operator()(const core::net::Manager::Disconnected &) {
 
 void FIX::operator()(const core::net::Manager::Read &read) {
   auto length = read.buffer.length();
-  if (length == 0) return;
+  if (length == 0)
+    return;
   auto buffer = read.buffer.pullup(length);
   decltype(length) total = 0;
   for (;;) {
@@ -258,14 +260,16 @@ void FIX::operator()(const core::net::Manager::Read &read) {
         buffer,
         length);
     assert(bytes <= length);
-    if (bytes == 0) break;
+    if (bytes == 0)
+      break;
     total += bytes;
     buffer += bytes;
     length -= bytes;
     if (FLAGS_fix_debug)
       core::print_string_with_escapes(buffer, bytes);  // DEBUG
   }
-  if (total) read.buffer.drain(total);
+  if (total)
+    read.buffer.drain(total);
 }
 
 void FIX::check(const core::fix::header_t &header) {

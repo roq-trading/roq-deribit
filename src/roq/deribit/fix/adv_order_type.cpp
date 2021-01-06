@@ -16,7 +16,8 @@ const char *EnumNameAdvOrderType(const AdvOrderType &value) {
 }
 
 AdvOrderType parse_adv_order_type(const std::string_view &value) {
-  if (value.empty()) return AdvOrderType::UNKNOWN;
+  if (value.empty())
+    return AdvOrderType::UNKNOWN;
   switch (value.data()[0]) {
     case '0': return AdvOrderType::IMPLIED_VOLATILITY_ORDER;
     case '1': return AdvOrderType::USD_ORDER;

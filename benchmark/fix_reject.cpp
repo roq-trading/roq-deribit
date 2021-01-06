@@ -21,7 +21,8 @@ void BM_fix_reject_parse_message(benchmark::State &state) {
     core::fix::Reader<core::fix::Version::FIX_44>::dispatch(
         [&](const core::fix::message_t &message) {
           auto reject = fix::Reject::create(message);
-          if (!reject.text.empty()) ++processed;
+          if (!reject.text.empty())
+            ++processed;
         },
         MESSAGE,
         std::strlen(MESSAGE));

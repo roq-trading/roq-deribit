@@ -177,7 +177,8 @@ void BM_fix_market_data_snapshot_full_refresh_parse_message(
         [&](const core::fix::message_t &message) {
           auto market_data = fix::MarketDataSnapshotFullRefresh::create(
               message, decode_buffer);
-          if (market_data.no_md_entries.size() > 0) ++processed;
+          if (market_data.no_md_entries.size() > 0)
+            ++processed;
         },
         MESSAGE,
         std::strlen(MESSAGE));

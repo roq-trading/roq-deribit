@@ -21,7 +21,8 @@ void BM_fix_order_cancel_reject_parse_message(benchmark::State &state) {
     core::fix::Reader<core::fix::Version::FIX_44>::dispatch(
         [&](const core::fix::message_t &message) {
           auto result = fix::OrderCancelReject::create(message);
-          if (!result.text.empty()) ++processed;
+          if (!result.text.empty())
+            ++processed;
         },
         MESSAGE,
         std::strlen(MESSAGE));

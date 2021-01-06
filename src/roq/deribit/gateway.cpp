@@ -277,7 +277,8 @@ void Gateway::operator()(
   constexpr auto state = WebSocketDownload::State::INSTRUMENTS;
   VLOG(1)(R"(instruments={})", instruments);
   for (auto &item : instruments.data) {
-    if (dispatcher_.discard_symbol(item.instrument_name)) continue;
+    if (dispatcher_.discard_symbol(item.instrument_name))
+      continue;
     symbols_2_.emplace_back(item.instrument_name);
   }
   web_socket_.download.check(state);
@@ -484,7 +485,8 @@ void Gateway::operator()(
         size_t fill_length = 0;
         bool success = true;
         for (auto &item : execution_report.no_fills) {
-          if (success == false) break;
+          if (success == false)
+            break;
           success = fill_update(dispatcher_, fill_, fill_length, item);
         }
         if (ROQ_UNLIKELY(success == false)) {
@@ -550,7 +552,8 @@ void Gateway::operator()(
   };
   std::chrono::nanoseconds exchange_time_utc = {};
   for (auto &item : market_data_incremental_refresh.no_md_entries) {
-    if (success == false) break;
+    if (success == false)
+      break;
     if (exchange_time_utc < item.md_entry_date)
       exchange_time_utc = item.md_entry_date;
     switch (item.md_entry_type) {
@@ -802,7 +805,8 @@ void Gateway::operator()(
       //   using commission currency because it requires funding
       if (instrument.comm_currency.empty() == false)
         currencies_.emplace(instrument.comm_currency);
-      if (dispatcher_.discard_symbol(instrument.symbol)) continue;
+      if (dispatcher_.discard_symbol(instrument.symbol))
+        continue;
       symbols_.emplace_back(instrument.symbol);
       auto expiry_datetime = combine(
           instrument.maturity_date,
@@ -866,7 +870,8 @@ void Gateway::operator()(
 }
 
 void Gateway::update(GatewayStatus gateway_status) {
-  if (gateway_status == gateway_status_) return;
+  if (gateway_status == gateway_status_)
+    return;
   gateway_status_ = gateway_status;
   server::TraceInfo trace_info;
   MarketDataStatus market_data_status{
@@ -950,7 +955,8 @@ void Gateway::subscribe_market_data() {
       FLAGS_fix_market_data_request_max_size);
   for (size_t i = 0;; ++i) {
     auto offset = i * FLAGS_fix_market_data_request_max_size;
-    if (symbols_.size() < offset) break;
+    if (symbols_.size() < offset)
+      break;
     auto count = std::min<size_t>(
         symbols_.size() - offset, FLAGS_fix_market_data_request_max_size);
     if (count) {

@@ -35,7 +35,8 @@ void BM_fix_new_order_single_create_message(benchmark::State &state) {
         msg_seq_num,
         sending_time);
     auto message = new_order_single.encode(writer);
-    if (message.length()) ++processed;
+    if (message.length())
+      ++processed;
   }
 }
 
