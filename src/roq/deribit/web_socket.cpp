@@ -266,7 +266,8 @@ void WebSocket::operator()(
       trace_info;  // XXX not correct (*parsing* has already started)
   json::RequestType request_type(result.id);
   switch (request_type) {
-    case json::RequestType::UNDEFINED: break;
+    case json::RequestType::UNDEFINED:
+      break;
     case json::RequestType::UNKNOWN:
       DLOG(FATAL)(R"(Unknown request_type="{}")", result.id);
       break;
@@ -294,7 +295,8 @@ void WebSocket::operator()(
       break;
     }
     case json::RequestType::SUBSCRIBE_TICKER:
-    case json::RequestType::UNSUBSCRIBE_TICKER: break;
+    case json::RequestType::UNSUBSCRIBE_TICKER:
+      break;
   }
 }
 
@@ -305,7 +307,8 @@ void WebSocket::operator()(
       trace_info;  // XXX not correct (*parsing* has already started)
   json::Method method(notification.method);
   switch (method) {
-    case json::Method::UNDEFINED: break;
+    case json::Method::UNDEFINED:
+      break;
     case json::Method::UNKNOWN:
       DLOG(FATAL)(R"(Unknown method="{}")", notification.method);
       break;

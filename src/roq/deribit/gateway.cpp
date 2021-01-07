@@ -27,7 +27,8 @@ template <typename C, typename T>
 static bool mbp_update(C &data, size_t &offset, const T &item) {
   // validate
   switch (item.md_update_action) {
-    case core::fix::MDUpdateAction::UNKNOWN: break;
+    case core::fix::MDUpdateAction::UNKNOWN:
+      break;
     case core::fix::MDUpdateAction::NEW:
     case core::fix::MDUpdateAction::CHANGE:
       assert(std::fabs(item.md_entry_size) >= TOLERANCE);
@@ -225,7 +226,8 @@ void Gateway::operator()(metrics::Writer &writer) {
 
 uint32_t Gateway::download(WebSocketDownload::State state) {
   switch (state) {
-    case WebSocketDownload::State::UNDEFINED: break;
+    case WebSocketDownload::State::UNDEFINED:
+      break;
     case WebSocketDownload::State::CURRENCIES:
       assert(currencies_2_.empty());
       web_socket_.connection.get_currencies();
@@ -332,13 +334,21 @@ void Gateway::operator()(
 
 uint32_t Gateway::download(FIXDownload::State state) {
   switch (state) {
-    case FIXDownload::State::UNDEFINED: assert(false); break;
-    case FIXDownload::State::SECURITIES: download_securities(); return 1;
-    case FIXDownload::State::POSITIONS: download_positions(); return 1;
+    case FIXDownload::State::UNDEFINED:
+      assert(false);
+      break;
+    case FIXDownload::State::SECURITIES:
+      download_securities();
+      return 1;
+    case FIXDownload::State::POSITIONS:
+      download_positions();
+      return 1;
     case FIXDownload::State::ORDERS:
       download_orders();
       return 1;  // first ExecutionReport has the real number
-    case FIXDownload::State::USER: download_user(); return currencies_.size();
+    case FIXDownload::State::USER:
+      download_user();
+      return currencies_.size();
     case FIXDownload::State::DONE:
       LOG(INFO)("Ready");
       update(GatewayStatus::READY);
@@ -389,7 +399,8 @@ auto compute_request_status(
           break;
         case RequestType::CREATE_ORDER:
         case RequestType::MODIFY_ORDER:
-        case RequestType::CANCEL_ORDER: return RequestStatus::REJECTED;
+        case RequestType::CANCEL_ORDER:
+          return RequestStatus::REJECTED;
       }
       break;
     }
@@ -399,8 +410,11 @@ auto compute_request_status(
           LOG(WARNING)("*** EXTERNAL ACTION ***");
           break;
         case RequestType::CREATE_ORDER:
-        case RequestType::MODIFY_ORDER: DLOG(FATAL)("UNEXPECTED"); break;
-        case RequestType::CANCEL_ORDER: return RequestStatus::ACCEPTED;
+        case RequestType::MODIFY_ORDER:
+          DLOG(FATAL)("UNEXPECTED");
+          break;
+        case RequestType::CANCEL_ORDER:
+          return RequestStatus::ACCEPTED;
       }
       break;
     }
@@ -412,27 +426,37 @@ auto compute_request_status(
               LOG_IF(WARNING, download == false)("*** EXTERNAL ACTION ***");
               break;
             case RequestType::CREATE_ORDER:
-            case RequestType::MODIFY_ORDER: return RequestStatus::ACCEPTED;
-            case RequestType::CANCEL_ORDER: DLOG(FATAL)("UNEXPECTED"); break;
+            case RequestType::MODIFY_ORDER:
+              return RequestStatus::ACCEPTED;
+            case RequestType::CANCEL_ORDER:
+              DLOG(FATAL)("UNEXPECTED");
+              break;
           }
           break;
         }
         case core::fix::OrdStatus::PARTIALLY_FILLED:
-        case core::fix::OrdStatus::FILLED: break;
+        case core::fix::OrdStatus::FILLED:
+          break;
         case core::fix::OrdStatus::CANCELED:
           switch (request_type) {
-            case RequestType::UNDEFINED: break;
+            case RequestType::UNDEFINED:
+              break;
             case RequestType::CREATE_ORDER:
             case RequestType::MODIFY_ORDER:
               LOG(WARNING)("*** EXTERNAL ACTION ***");
               break;
-            case RequestType::CANCEL_ORDER: return RequestStatus::ACCEPTED;
+            case RequestType::CANCEL_ORDER:
+              return RequestStatus::ACCEPTED;
           }
           break;
-        default: DLOG(FATAL)("UNEXPECTED"); break;
+        default:
+          DLOG(FATAL)("UNEXPECTED");
+          break;
       }
       break;
-    default: DLOG(FATAL)("UNEXPECTED"); break;
+    default:
+      DLOG(FATAL)("UNEXPECTED");
+      break;
   }
   return RequestStatus::UNDEFINED;
 }
@@ -448,7 +472,8 @@ void Gateway::operator()(
       fix_.download.update(
           FIXDownload::State::ORDERS, execution_report.tot_num_reports);
       return;
-    default: break;
+    default:
+      break;
   }
 
   server::OMS_Lookup order_lookup{
@@ -581,7 +606,9 @@ void Gateway::operator()(
             .value = item.md_entry_px,
         };
         break;
-      default: LOG(WARNING)(R"(unsupported: {})", item); break;
+      default:
+        LOG(WARNING)(R"(unsupported: {})", item);
+        break;
     }
   }
   if (ROQ_UNLIKELY(success == false)) {
@@ -670,7 +697,8 @@ void Gateway::operator()(
         mbp_update(ask_, ask_length, item);
         break;
       }
-      default: break;
+      default:
+        break;
     }
   }
   MarketByPriceUpdate market_by_price_update{
@@ -771,10 +799,14 @@ void Gateway::operator()(
           }
           break;
         }
-        default: DLOG(FATAL)("UNEXPECTED"); break;
+        default:
+          DLOG(FATAL)("UNEXPECTED");
+          break;
       }
       break;
-    default: DLOG(FATAL)("UNEXPECTED"); break;
+    default:
+      DLOG(FATAL)("UNEXPECTED");
+      break;
   }
   // note! relaxed because we receive duplicate updates
   fix_.download.check_relaxed(FIXDownload::State::POSITIONS);
