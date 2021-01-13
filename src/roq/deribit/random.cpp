@@ -58,7 +58,8 @@ std::string Random::create_raw_data(const std::chrono::nanoseconds now) {
   using value_type = decltype(DISTRIBUTION)::result_type;
   constexpr auto n = RANDOM_BYTES / sizeof(value_type);
   std::array<value_type, n> buffer;
-  for (size_t i = 0; i < n; ++i) buffer[i] = DISTRIBUTION(GENERATOR);
+  for (size_t i = 0; i < n; ++i)
+    buffer[i] = DISTRIBUTION(GENERATOR);
   auto nonce = core::binascii::Base64::encode(
       buffer.data(), buffer.size() * sizeof(value_type));
   auto msecs =
