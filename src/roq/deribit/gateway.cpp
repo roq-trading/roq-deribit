@@ -2,6 +2,8 @@
 
 #include "roq/deribit/gateway.h"
 
+#include <absl/flags/flag.h>
+
 #include <algorithm>
 #include <limits>
 #include <utility>
@@ -98,20 +100,24 @@ Gateway::Gateway(server::Dispatcher &dispatcher, const Config &config)
                   dns_base_,
               },
           .download = FIXDownload(
-              std::chrono::seconds{FLAGS_fix_request_timeout_secs},
+              std::chrono::seconds{
+                  absl::GetFlag(FLAGS_fix_request_timeout_secs)},
               [this](auto state) { return download(state); }),
       },
       web_socket_{
           .connection =
               {*this, config, random_, base_, dns_base_, ssl_context_},
           .download = WebSocketDownload(
-              std::chrono::seconds{FLAGS_ws_request_timeout_secs},
+              std::chrono::seconds{
+                  absl::GetFlag(FLAGS_ws_request_timeout_secs)},
               [this](auto state) { return download(state); }),
       },
-      fill_(FLAGS_cache_fills_max_depth), bid_(FLAGS_cache_mbp_max_depth),
-      ask_(FLAGS_cache_mbp_max_depth), trade_(FLAGS_cache_trades_max_depth),
+      fill_(absl::GetFlag(FLAGS_cache_fills_max_depth)),
+      bid_(absl::GetFlag(FLAGS_cache_mbp_max_depth)),
+      ask_(absl::GetFlag(FLAGS_cache_mbp_max_depth)),
+      trade_(absl::GetFlag(FLAGS_cache_trades_max_depth)),
       statistics_(StatisticsType::MAX) {
-  LOG_IF(WARNING, FLAGS_fix_cancel_on_disconnect == false)
+  LOG_IF(WARNING, absl::GetFlag(FLAGS_fix_cancel_on_disconnect) == false)
   ("Orders will *NOT* be cancelled on disconnect");
 }
 
@@ -299,7 +305,7 @@ void Gateway::operator()(
   VLOG(3)(R"(ticker={})", ticker);
   auto &layer = top_of_book_[ticker.instrument_name];
   TopOfBook top_of_book = {
-      .exchange = FLAGS_exchange,
+      .exchange = absl::GetFlag(FLAGS_exchange),
       .symbol = ticker.instrument_name,
       .layer =
           {
@@ -321,7 +327,7 @@ void Gateway::operator()(
   if (item != trading_status) {
     item = trading_status;
     MarketStatus market_status{
-        .exchange = FLAGS_exchange,
+        .exchange = absl::GetFlag(FLAGS_exchange),
         .symbol = ticker.instrument_name,
         .trading_status = json::map(ticker.state),
     };
@@ -624,7 +630,7 @@ void Gateway::operator()(
   }
   if (bid_length > 0 || ask_length > 0) {
     MarketByPriceUpdate market_by_price_update{
-        .exchange = FLAGS_exchange,
+        .exchange = absl::GetFlag(FLAGS_exchange),
         .symbol = market_data_incremental_refresh.symbol,
         .bids =
             {
@@ -646,7 +652,7 @@ void Gateway::operator()(
   }
   if (trade_length > 0) {
     TradeSummary trade_summary{
-        .exchange = FLAGS_exchange,
+        .exchange = absl::GetFlag(FLAGS_exchange),
         .symbol = market_data_incremental_refresh.symbol,
         .trades =
             {
@@ -661,7 +667,7 @@ void Gateway::operator()(
   }
   if (statistics_length > 0) {
     StatisticsUpdate statistics_update{
-        .exchange = FLAGS_exchange,
+        .exchange = absl::GetFlag(FLAGS_exchange),
         .symbol = market_data_incremental_refresh.symbol,
         .statistics = roq::span(statistics_.data(), statistics_length),
         .snapshot = false,
@@ -702,7 +708,7 @@ void Gateway::operator()(
     }
   }
   MarketByPriceUpdate market_by_price_update{
-      .exchange = FLAGS_exchange,
+      .exchange = absl::GetFlag(FLAGS_exchange),
       .symbol = market_data_snapshot_full_refresh.symbol,
       .bids =
           {
@@ -770,7 +776,7 @@ void Gateway::operator()(
           for (auto &position : position_report.no_positions) {
             PositionUpdate buy{
                 .account = account_,
-                .exchange = FLAGS_exchange,
+                .exchange = absl::GetFlag(FLAGS_exchange),
                 .symbol = position.symbol,
                 .side = Side::BUY,
                 .position = position.long_qty,
@@ -782,7 +788,7 @@ void Gateway::operator()(
             };
             PositionUpdate sell{
                 .account = account_,
-                .exchange = FLAGS_exchange,
+                .exchange = absl::GetFlag(FLAGS_exchange),
                 .symbol = position.symbol,
                 .side = Side::SELL,
                 .position = position.short_qty,
@@ -846,7 +852,7 @@ void Gateway::operator()(
               instrument.maturity_time));
       auto expiry_datetime_utc = expiry_datetime;
       ReferenceData reference_data{
-          .exchange = FLAGS_exchange,
+          .exchange = absl::GetFlag(FLAGS_exchange),
           .symbol = instrument.symbol,
           .description = instrument.security_desc,
           .security_type = fix::map_security_type(instrument.security_type),
@@ -984,13 +990,14 @@ void Gateway::subscribe_market_data() {
           .md_entry_type = core::fix::MDEntryType::TRADE,
       }};
   std::vector<fix::InstrmtMDReq> related_sym(
-      FLAGS_fix_market_data_request_max_size);
+      absl::GetFlag(FLAGS_fix_market_data_request_max_size));
   for (size_t i = 0;; ++i) {
-    auto offset = i * FLAGS_fix_market_data_request_max_size;
+    auto offset = i * absl::GetFlag(FLAGS_fix_market_data_request_max_size);
     if (symbols_.size() < offset)
       break;
     auto count = std::min<size_t>(
-        symbols_.size() - offset, FLAGS_fix_market_data_request_max_size);
+        symbols_.size() - offset,
+        absl::GetFlag(FLAGS_fix_market_data_request_max_size));
     if (count) {
       for (size_t j = 0; j < count; ++j)
         related_sym[j].symbol = symbols_[offset + j];

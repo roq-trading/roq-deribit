@@ -19,9 +19,9 @@ WS_URI="wss://$URI/ws/api/v2"
 
 $PREFIX ./roq-deribit \
 	--name "deribit" \
-	--config-file "$CONFIG_FILE" \
-	--client-listen-address "$CWD/$NAME.sock" \
-	--metrics-listen-address "$CWD/${NAME}_metrics.sock" \
-	--fix-uri "$FIX_URI" \
-	--ws-uri "$WS_URI" \
+	--config_file "$CONFIG_FILE" \
+	--client_listen_address "$CWD/$NAME.sock" \
+	--metrics_listen_address "$CWD/${NAME}_metrics.sock" \
+	--fix_uri "$FIX_URI" \
+	--ws_uri "$WS_URI" \
 	$@

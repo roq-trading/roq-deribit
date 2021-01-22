@@ -2,31 +2,34 @@
 
 #pragma once
 
-#include <gflags/gflags.h>
+#include <absl/flags/declare.h>
 
-DECLARE_string(config_file);
+#include <cstdint>
+#include <string>
 
-DECLARE_string(exchange);
+ABSL_DECLARE_FLAG(std::string, config_file);
+
+ABSL_DECLARE_FLAG(std::string, exchange);
 
 // ws
-DECLARE_string(ws_uri);
-DECLARE_uint32(ws_ping_freq_secs);
-DECLARE_uint32(ws_request_timeout_secs);
+ABSL_DECLARE_FLAG(std::string, ws_uri);
+ABSL_DECLARE_FLAG(uint32_t, ws_ping_freq_secs);
+ABSL_DECLARE_FLAG(uint32_t, ws_request_timeout_secs);
 
 // fix
-DECLARE_string(fix_uri);
-DECLARE_uint32(fix_ping_freq_secs);
-DECLARE_uint32(fix_request_timeout_secs);
-DECLARE_bool(fix_cancel_on_disconnect);
-DECLARE_uint32(fix_market_data_request_max_size);
-DECLARE_bool(fix_debug);
+ABSL_DECLARE_FLAG(std::string, fix_uri);
+ABSL_DECLARE_FLAG(uint32_t, fix_ping_freq_secs);
+ABSL_DECLARE_FLAG(uint32_t, fix_request_timeout_secs);
+ABSL_DECLARE_FLAG(bool, fix_cancel_on_disconnect);
+ABSL_DECLARE_FLAG(uint32_t, fix_market_data_request_max_size);
+ABSL_DECLARE_FLAG(bool, fix_debug);
 
 // XXX review
-DECLARE_uint32(encode_buffer_size);
-DECLARE_uint32(decode_buffer_size);
+ABSL_DECLARE_FLAG(uint32_t, encode_buffer_size);
+ABSL_DECLARE_FLAG(uint32_t, decode_buffer_size);
 
 // external
-DECLARE_string(name);
-DECLARE_uint32(cache_mbp_max_depth);
-DECLARE_uint32(cache_trades_max_depth);
-DECLARE_uint32(cache_fills_max_depth);
+ABSL_DECLARE_FLAG(std::string, name);
+ABSL_DECLARE_FLAG(uint32_t, cache_mbp_max_depth);
+ABSL_DECLARE_FLAG(uint32_t, cache_trades_max_depth);
+ABSL_DECLARE_FLAG(uint32_t, cache_fills_max_depth);

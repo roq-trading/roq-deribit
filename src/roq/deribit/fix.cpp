@@ -2,6 +2,8 @@
 
 #include "roq/deribit/fix.h"
 
+#include <absl/flags/flag.h>
+
 #include "roq/core/stack/buffer.h"
 
 #include "roq/deribit/common.h"
@@ -17,15 +19,18 @@ constexpr std::string_view LOGOUT_RESPONSE("LOGOUT");  // XXX
 constexpr std::string_view CONNECTION("fix");
 
 static auto create_counter(const std::string_view &function) {
-  return core::metrics::Counter(FLAGS_name, CONNECTION, function);
+  return core::metrics::Counter(
+      absl::GetFlag(FLAGS_name), CONNECTION, function);
 }
 
 static auto create_profile(const std::string_view &function) {
-  return core::metrics::Profile(FLAGS_name, CONNECTION, function);
+  return core::metrics::Profile(
+      absl::GetFlag(FLAGS_name), CONNECTION, function);
 }
 
 static auto create_latency(const std::string_view &function) {
-  return core::metrics::Latency(FLAGS_name, CONNECTION, function);
+  return core::metrics::Latency(
+      absl::GetFlag(FLAGS_name), CONNECTION, function);
 }
 
 FIX::FIX(
@@ -35,10 +40,10 @@ FIX::FIX(
     core::event::Base &base,
     core::event::DNSBase &dns_base)
     : handler_(handler), access_key_(config.get_access_key()), random_(random),
-      connection_factory_(base, dns_base, FLAGS_fix_uri),
+      connection_factory_(base, dns_base, absl::GetFlag(FLAGS_fix_uri)),
       connection_(*this, connection_factory_),
-      encode_buffer_(FLAGS_encode_buffer_size),
-      decode_buffer_(FLAGS_decode_buffer_size),
+      encode_buffer_(absl::GetFlag(FLAGS_encode_buffer_size)),
+      decode_buffer_(absl::GetFlag(FLAGS_decode_buffer_size)),
       counter_{
           .disconnect = create_counter("disconnect"),
       },
@@ -84,9 +89,10 @@ void FIX::operator()(const Event<Timer> &event) {
   if (connection_.refresh(event.value.now) == false)
     return;
   if (ready_ && next_heartbeat_ <= event.value.now) {
-    assert(FLAGS_fix_ping_freq_secs > 0);
+    assert(absl::GetFlag(FLAGS_fix_ping_freq_secs) > 0);
     next_heartbeat_ =
-        event.value.now + std::chrono::seconds{FLAGS_fix_ping_freq_secs};
+        event.value.now +
+        std::chrono::seconds{absl::GetFlag(FLAGS_fix_ping_freq_secs)};
     send_test_request(core::get_system_clock());
   }
 }
@@ -186,13 +192,14 @@ void FIX::send_logon() {
   auto raw_data = random_.create_raw_data(sending_time);
   auto password = random_.create_password(raw_data);
   fix::Logon logon{
-      .heart_bt_int = static_cast<uint16_t>(FLAGS_fix_ping_freq_secs),
+      .heart_bt_int =
+          static_cast<uint16_t>(absl::GetFlag(FLAGS_fix_ping_freq_secs)),
       .raw_data_length = static_cast<uint32_t>(raw_data.length()),
       .raw_data = raw_data,
       .username = access_key_,
       .password = password,
       .use_wordsafe_tags = false,
-      .cancel_on_disconnect = FLAGS_fix_cancel_on_disconnect,
+      .cancel_on_disconnect = absl::GetFlag(FLAGS_fix_cancel_on_disconnect),
       .deribit_app_id = {},
       .deribit_app_sig = {},
   };
@@ -265,7 +272,7 @@ void FIX::operator()(const core::net::Manager::Read &read) {
     total += bytes;
     buffer += bytes;
     length -= bytes;
-    if (FLAGS_fix_debug)
+    if (absl::GetFlag(FLAGS_fix_debug))
       core::print_string_with_escapes(buffer, bytes);  // DEBUG
   }
   if (total)
