@@ -8,11 +8,11 @@ set(SOURCES
     common.cpp
     config.cpp
     fix.cpp
+    flags.cpp
     gateway.cpp
-    main.cpp
-    options.cpp
     random.cpp
-    web_socket.cpp)
+    web_socket.cpp
+    main.cpp)
 
 include(RoqAutogen)
 

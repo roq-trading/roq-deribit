@@ -2,18 +2,16 @@
 
 #include "roq/deribit/application.h"
 
-#include <absl/flags/flag.h>
-
 #include "roq/deribit/config.h"
+#include "roq/deribit/flags.h"
 #include "roq/deribit/gateway.h"
-#include "roq/deribit/options.h"
 
 namespace roq {
 namespace deribit {
 
 int Application::main(int, char **) {
   LOG(INFO)("Parse configuration");
-  Config config(absl::GetFlag(FLAGS_config_file));
+  Config config(Flags::config_file());
   VLOG(1)(R"(config={})", config);
   LOG(INFO)("Starting the gateway...");
   roq::server::Trading<Gateway>(
