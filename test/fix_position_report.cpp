@@ -24,14 +24,11 @@ TEST(fix_position_report, parse_message) {
       [&](const core::fix::message_t &message) {
         ++results;
         EXPECT_EQ(message.header.msg_type, core::fix::MsgType::POSITION_REPORT);
-        auto position_report =
-            fix::PositionReport::create(message, decode_buffer);
+        auto position_report = fix::PositionReport::create(message, decode_buffer);
         EXPECT_EQ(position_report.pos_maint_rpt_id, "3221109");
         EXPECT_EQ(position_report.pos_req_id, "roq-pos-003");
-        EXPECT_EQ(
-            position_report.pos_req_type, core::fix::PosReqType::POSITIONS);
-        EXPECT_EQ(
-            position_report.pos_req_result, core::fix::PosReqResult::VALID);
+        EXPECT_EQ(position_report.pos_req_type, core::fix::PosReqType::POSITIONS);
+        EXPECT_EQ(position_report.pos_req_result, core::fix::PosReqResult::VALID);
         EXPECT_EQ(position_report.no_positions.size(), size_t{1});
         auto &item = position_report.no_positions[0];
         EXPECT_DOUBLE_EQ(item.long_qty, 0.0);

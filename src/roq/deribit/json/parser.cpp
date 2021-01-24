@@ -16,8 +16,7 @@ namespace json {
 
 namespace {
 template <typename T>
-void dispatch_ticker(
-    Parser::Handler &handler, T &value, const server::TraceInfo &trace_info) {
+void dispatch_ticker(Parser::Handler &handler, T &value, const server::TraceInfo &trace_info) {
   Ticker ticker(value);
   handler(ticker, trace_info);
 }

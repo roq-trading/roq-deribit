@@ -18,9 +18,7 @@ TEST(fix_market_data_request_reject, parse_message) {
   auto bytes = core::fix::Reader<core::fix::Version::FIX_44>::dispatch(
       [&](const core::fix::message_t &message) {
         ++results;
-        EXPECT_EQ(
-            message.header.msg_type,
-            core::fix::MsgType::MARKET_DATA_REQUEST_REJECT);
+        EXPECT_EQ(message.header.msg_type, core::fix::MsgType::MARKET_DATA_REQUEST_REJECT);
         auto reject = fix::MarketDataRequestReject::create(message);
         EXPECT_EQ(reject.md_req_id, "123");
         EXPECT_EQ(reject.md_req_rej_reason, core::fix::MDReqRejReason::UNKNOWN);

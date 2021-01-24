@@ -25,8 +25,7 @@ inline void update(T &result, const core::json::value_t &value) {
 }
 
 template <>
-inline void update(
-    std::chrono::milliseconds &result, const core::json::value_t &value) {
+inline void update(std::chrono::milliseconds &result, const core::json::value_t &value) {
   result = std::chrono::milliseconds{core::json::get<uint64_t>(value)};
 }
 

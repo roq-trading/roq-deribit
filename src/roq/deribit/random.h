@@ -20,8 +20,7 @@ class Random final {
 
   std::string create_nonce();
 
-  std::string create_signature(
-      std::chrono::milliseconds timestamp, const std::string_view &nonce);
+  std::string create_signature(std::chrono::milliseconds timestamp, const std::string_view &nonce);
 
   std::string create_raw_data(const std::chrono::nanoseconds now);
   std::string create_password(const std::string_view &raw_data);

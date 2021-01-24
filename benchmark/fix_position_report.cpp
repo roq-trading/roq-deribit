@@ -25,8 +25,7 @@ void BM_fix_position_report_parse_message(benchmark::State &state) {
     core::fix::Buffer decode_buffer(buffer);
     core::fix::Reader<core::fix::Version::FIX_44>::dispatch(
         [&](const core::fix::message_t &message) {
-          auto position_report =
-              fix::PositionReport::create(message, decode_buffer);
+          auto position_report = fix::PositionReport::create(message, decode_buffer);
           if (!position_report.pos_req_id.empty())
             ++processed;
         },

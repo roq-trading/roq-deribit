@@ -18,8 +18,7 @@ TEST(fix_order_cancel_reject, parse_message) {
   auto bytes = core::fix::Reader<core::fix::Version::FIX_44>::dispatch(
       [&](const core::fix::message_t &message) {
         ++results;
-        EXPECT_EQ(
-            message.header.msg_type, core::fix::MsgType::ORDER_CANCEL_REJECT);
+        EXPECT_EQ(message.header.msg_type, core::fix::MsgType::ORDER_CANCEL_REJECT);
         auto result = fix::OrderCancelReject::create(message);
         EXPECT_EQ(result.orig_cl_ord_id, "123");
         EXPECT_EQ(result.cl_ord_id, "345");

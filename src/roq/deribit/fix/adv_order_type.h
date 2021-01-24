@@ -30,7 +30,6 @@ struct fmt::formatter<roq::deribit::fix::AdvOrderType> {
   }
   template <typename C>
   auto format(const roq::deribit::fix::AdvOrderType &value, C &ctx) {
-    return format_to(
-        ctx.out(), "{}", roq::deribit::fix::EnumNameAdvOrderType(value));
+    return format_to(ctx.out(), "{}", roq::deribit::fix::EnumNameAdvOrderType(value));
   }
 };

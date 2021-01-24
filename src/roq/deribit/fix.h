@@ -59,27 +59,18 @@ class FIX final : public core::net::Manager::Handler {
   struct Handler {
     virtual void operator()(const FIX &) = 0;
 
+    virtual void operator()(const fix::ExecutionReport &, const server::TraceInfo &) = 0;
     virtual void operator()(
-        const fix::ExecutionReport &, const server::TraceInfo &) = 0;
+        const fix::MarketDataIncrementalRefresh &, const server::TraceInfo &) = 0;
+    virtual void operator()(const fix::MarketDataRequestReject &, const server::TraceInfo &) = 0;
     virtual void operator()(
-        const fix::MarketDataIncrementalRefresh &,
-        const server::TraceInfo &) = 0;
-    virtual void operator()(
-        const fix::MarketDataRequestReject &, const server::TraceInfo &) = 0;
-    virtual void operator()(
-        const fix::MarketDataSnapshotFullRefresh &,
-        const server::TraceInfo &) = 0;
-    virtual void operator()(
-        const fix::OrderCancelReject &, const server::TraceInfo &) = 0;
-    virtual void operator()(
-        const fix::PositionReport &, const server::TraceInfo &) = 0;
+        const fix::MarketDataSnapshotFullRefresh &, const server::TraceInfo &) = 0;
+    virtual void operator()(const fix::OrderCancelReject &, const server::TraceInfo &) = 0;
+    virtual void operator()(const fix::PositionReport &, const server::TraceInfo &) = 0;
     virtual void operator()(const fix::Reject &, const server::TraceInfo &) = 0;
-    virtual void operator()(
-        const fix::SecurityList &, const server::TraceInfo &) = 0;
-    virtual void operator()(
-        const fix::SecurityStatus &, const server::TraceInfo &) = 0;
-    virtual void operator()(
-        const fix::UserResponse &, const server::TraceInfo &) = 0;
+    virtual void operator()(const fix::SecurityList &, const server::TraceInfo &) = 0;
+    virtual void operator()(const fix::SecurityStatus &, const server::TraceInfo &) = 0;
+    virtual void operator()(const fix::UserResponse &, const server::TraceInfo &) = 0;
   };
   FIX(Handler &handler,
       const Config &config,
@@ -134,67 +125,36 @@ class FIX final : public core::net::Manager::Handler {
   void parse(const core::fix::message_t &message);
   void parse_helper(const core::fix::message_t &message);
 
+  void operator()(const core::fix::header_t &, const fix::Heartbeat &, const server::TraceInfo &);
+  void operator()(const core::fix::header_t &, const fix::Logon &, const server::TraceInfo &);
+  void operator()(const core::fix::header_t &, const fix::Logout &, const server::TraceInfo &);
   void operator()(
-      const core::fix::header_t &,
-      const fix::Heartbeat &,
-      const server::TraceInfo &);
-  void operator()(
-      const core::fix::header_t &,
-      const fix::Logon &,
-      const server::TraceInfo &);
-  void operator()(
-      const core::fix::header_t &,
-      const fix::Logout &,
-      const server::TraceInfo &);
-  void operator()(
-      const core::fix::header_t &,
-      const fix::ResendRequest &,
-      const server::TraceInfo &);
-  void operator()(
-      const core::fix::header_t &,
-      const fix::TestRequest &,
-      const server::TraceInfo &);
+      const core::fix::header_t &, const fix::ResendRequest &, const server::TraceInfo &);
+  void operator()(const core::fix::header_t &, const fix::TestRequest &, const server::TraceInfo &);
 
   void operator()(
-      const core::fix::header_t &,
-      const fix::ExecutionReport &,
-      const server::TraceInfo &);
+      const core::fix::header_t &, const fix::ExecutionReport &, const server::TraceInfo &);
   void operator()(
       const core::fix::header_t &,
       const fix::MarketDataIncrementalRefresh &,
       const server::TraceInfo &);
   void operator()(
-      const core::fix::header_t &,
-      const fix::MarketDataRequestReject &,
-      const server::TraceInfo &);
+      const core::fix::header_t &, const fix::MarketDataRequestReject &, const server::TraceInfo &);
   void operator()(
       const core::fix::header_t &,
       const fix::MarketDataSnapshotFullRefresh &,
       const server::TraceInfo &);
   void operator()(
-      const core::fix::header_t &,
-      const fix::OrderCancelReject &,
-      const server::TraceInfo &);
+      const core::fix::header_t &, const fix::OrderCancelReject &, const server::TraceInfo &);
   void operator()(
-      const core::fix::header_t &,
-      const fix::PositionReport &,
-      const server::TraceInfo &);
+      const core::fix::header_t &, const fix::PositionReport &, const server::TraceInfo &);
+  void operator()(const core::fix::header_t &, const fix::Reject &, const server::TraceInfo &);
   void operator()(
-      const core::fix::header_t &,
-      const fix::Reject &,
-      const server::TraceInfo &);
+      const core::fix::header_t &, const fix::SecurityList &, const server::TraceInfo &);
   void operator()(
-      const core::fix::header_t &,
-      const fix::SecurityList &,
-      const server::TraceInfo &);
+      const core::fix::header_t &, const fix::SecurityStatus &, const server::TraceInfo &);
   void operator()(
-      const core::fix::header_t &,
-      const fix::SecurityStatus &,
-      const server::TraceInfo &);
-  void operator()(
-      const core::fix::header_t &,
-      const fix::UserResponse &,
-      const server::TraceInfo &);
+      const core::fix::header_t &, const fix::UserResponse &, const server::TraceInfo &);
 
  private:
   Handler &handler_;
@@ -214,10 +174,9 @@ class FIX final : public core::net::Manager::Handler {
     core::metrics::Counter disconnect;
   } counter_;
   struct {
-    core::metrics::Profile parse, execution_report,
-        market_data_incremental_refresh, market_data_request_reject,
-        market_data_snapshot_full_refresh, order_cancel_reject, position_report,
-        reject, security_list, security_status, user_response;
+    core::metrics::Profile parse, execution_report, market_data_incremental_refresh,
+        market_data_request_reject, market_data_snapshot_full_refresh, order_cancel_reject,
+        position_report, reject, security_list, security_status, user_response;
   } profile_;
   struct {
     core::metrics::Latency ping;

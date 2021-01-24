@@ -24,12 +24,9 @@ TEST(fix_logon, parse_message) {
         EXPECT_EQ(message.header.msg_type, core::fix::MsgType::LOGON);
         auto result = fix::Logon::create(message);
         EXPECT_EQ(result.heart_bt_int, uint32_t{10});
-        EXPECT_EQ(
-            result.raw_data,
-            "1567874758168.y4/hA3i6qxm4yVL+3N7IrGcINVAFMLFhy4l7ATSehxc=");
+        EXPECT_EQ(result.raw_data, "1567874758168.y4/hA3i6qxm4yVL+3N7IrGcINVAFMLFhy4l7ATSehxc=");
         EXPECT_EQ(result.username, "5MP40u9h");
-        EXPECT_EQ(
-            result.password, "j/tVe9IsQuc+RjegscnHcJ6czMVNM1+ib7vjbY3UV0M=");
+        EXPECT_EQ(result.password, "j/tVe9IsQuc+RjegscnHcJ6czMVNM1+ib7vjbY3UV0M=");
         EXPECT_EQ(result.cancel_on_disconnect, true);
         EXPECT_EQ(result.use_wordsafe_tags, false);
       },
@@ -43,8 +40,7 @@ TEST(fix_logon, create_message) {
   core::utils::Buffer buffer(4096);
   auto msg_seq_num = uint64_t{0};
   auto sending_time = std::chrono::seconds{1568702810};
-  std::string_view raw_data =
-      "1567874758168.y4/hA3i6qxm4yVL+3N7IrGcINVAFMLFhy4l7ATSehxc=";
+  std::string_view raw_data = "1567874758168.y4/hA3i6qxm4yVL+3N7IrGcINVAFMLFhy4l7ATSehxc=";
   fix::Logon logon = {
       .heart_bt_int = uint16_t{10},
       .raw_data_length = static_cast<uint32_t>(raw_data.size()),

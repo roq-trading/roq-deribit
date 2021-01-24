@@ -22,11 +22,8 @@ TEST(fix_market_data_incremental_refresh, parse_message_1) {
   auto bytes = core::fix::Reader<core::fix::Version::FIX_44>::dispatch(
       [&](const core::fix::message_t &message) {
         ++results;
-        EXPECT_EQ(
-            message.header.msg_type,
-            core::fix::MsgType::MARKET_DATA_INCREMENTAL_REFRESH);
-        auto result =
-            fix::MarketDataIncrementalRefresh::create(message, decode_buffer);
+        EXPECT_EQ(message.header.msg_type, core::fix::MsgType::MARKET_DATA_INCREMENTAL_REFRESH);
+        auto result = fix::MarketDataIncrementalRefresh::create(message, decode_buffer);
         EXPECT_EQ(result.symbol, "BTC-27SEP19");
         EXPECT_DOUBLE_EQ(result.trade_volume24h, 10831047.0);
         EXPECT_DOUBLE_EQ(result.mark_price, 10517.44);
@@ -39,8 +36,7 @@ TEST(fix_market_data_incremental_refresh, parse_message_1) {
         EXPECT_EQ(item_0.md_entry_type, core::fix::MDEntryType::OFFER);
         EXPECT_DOUBLE_EQ(item_0.md_entry_px, 10523.0);
         EXPECT_DOUBLE_EQ(item_0.md_entry_size, 1000.0);
-        EXPECT_EQ(
-            item_0.md_entry_date, std::chrono::milliseconds{1567870620896});
+        EXPECT_EQ(item_0.md_entry_date, std::chrono::milliseconds{1567870620896});
       },
       message,
       std::strlen(message));
@@ -72,11 +68,8 @@ TEST(fix_market_data_incremental_refresh, parse_message_2) {
   auto bytes = core::fix::Reader<core::fix::Version::FIX_44>::dispatch(
       [&](const core::fix::message_t &message) {
         ++results;
-        EXPECT_EQ(
-            message.header.msg_type,
-            core::fix::MsgType::MARKET_DATA_INCREMENTAL_REFRESH);
-        auto result =
-            fix::MarketDataIncrementalRefresh::create(message, decode_buffer);
+        EXPECT_EQ(message.header.msg_type, core::fix::MsgType::MARKET_DATA_INCREMENTAL_REFRESH);
+        auto result = fix::MarketDataIncrementalRefresh::create(message, decode_buffer);
         EXPECT_EQ(result.symbol, "BTC-27SEP19");
         EXPECT_EQ(result.no_md_entries.size(), size_t{5});
         // item 0
@@ -85,8 +78,7 @@ TEST(fix_market_data_incremental_refresh, parse_message_2) {
         EXPECT_EQ(item_0.md_entry_type, core::fix::MDEntryType::TRADE);
         EXPECT_DOUBLE_EQ(item_0.md_entry_px, 10519.5);
         EXPECT_DOUBLE_EQ(item_0.md_entry_size, 826.0);
-        EXPECT_EQ(
-            item_0.md_entry_date, std::chrono::milliseconds{1567870620378});
+        EXPECT_EQ(item_0.md_entry_date, std::chrono::milliseconds{1567870620378});
         EXPECT_EQ(item_0.deribit_trade_id, "18254681");
         EXPECT_EQ(item_0.side, core::fix::Side::BUY);
         EXPECT_EQ(item_0.order_id, "0");
@@ -100,8 +92,7 @@ TEST(fix_market_data_incremental_refresh, parse_message_2) {
         EXPECT_EQ(item_1.md_entry_type, core::fix::MDEntryType::TRADE);
         EXPECT_DOUBLE_EQ(item_1.md_entry_px, 10520.0);
         EXPECT_DOUBLE_EQ(item_1.md_entry_size, 42.0);
-        EXPECT_EQ(
-            item_1.md_entry_date, std::chrono::milliseconds{1567870620378});
+        EXPECT_EQ(item_1.md_entry_date, std::chrono::milliseconds{1567870620378});
         EXPECT_EQ(item_1.deribit_trade_id, "18254682");
         EXPECT_EQ(item_1.side, core::fix::Side::BUY);
         EXPECT_EQ(item_1.order_id, "0");
@@ -115,8 +106,7 @@ TEST(fix_market_data_incremental_refresh, parse_message_2) {
         EXPECT_EQ(item_2.md_entry_type, core::fix::MDEntryType::TRADE);
         EXPECT_DOUBLE_EQ(item_2.md_entry_px, 10520.0);
         EXPECT_DOUBLE_EQ(item_2.md_entry_size, 42.0);
-        EXPECT_EQ(
-            item_2.md_entry_date, std::chrono::milliseconds{1567870620378});
+        EXPECT_EQ(item_2.md_entry_date, std::chrono::milliseconds{1567870620378});
         EXPECT_EQ(item_2.deribit_trade_id, "18254683");
         EXPECT_EQ(item_2.side, core::fix::Side::BUY);
         EXPECT_EQ(item_2.order_id, "0");
@@ -130,8 +120,7 @@ TEST(fix_market_data_incremental_refresh, parse_message_2) {
         EXPECT_EQ(item_3.md_entry_type, core::fix::MDEntryType::TRADE);
         EXPECT_DOUBLE_EQ(item_3.md_entry_px, 10520.0);
         EXPECT_DOUBLE_EQ(item_3.md_entry_size, 42.0);
-        EXPECT_EQ(
-            item_3.md_entry_date, std::chrono::milliseconds{1567870620378});
+        EXPECT_EQ(item_3.md_entry_date, std::chrono::milliseconds{1567870620378});
         EXPECT_EQ(item_3.deribit_trade_id, "18254684");
         EXPECT_EQ(item_3.side, core::fix::Side::BUY);
         EXPECT_EQ(item_3.order_id, "0");
@@ -145,8 +134,7 @@ TEST(fix_market_data_incremental_refresh, parse_message_2) {
         EXPECT_EQ(item_4.md_entry_type, core::fix::MDEntryType::TRADE);
         EXPECT_DOUBLE_EQ(item_4.md_entry_px, 10520.0);
         EXPECT_DOUBLE_EQ(item_4.md_entry_size, 27.0);
-        EXPECT_EQ(
-            item_4.md_entry_date, std::chrono::milliseconds{1567870620378});
+        EXPECT_EQ(item_4.md_entry_date, std::chrono::milliseconds{1567870620378});
         EXPECT_EQ(item_4.deribit_trade_id, "18254685");
         EXPECT_EQ(item_4.side, core::fix::Side::BUY);
         EXPECT_EQ(item_4.order_id, "0");
@@ -174,11 +162,8 @@ TEST(fix_market_data_incremental_refresh, parse_message_3) {
   auto bytes = core::fix::Reader<core::fix::Version::FIX_44>::dispatch(
       [&](const core::fix::message_t &message) {
         ++results;
-        EXPECT_EQ(
-            message.header.msg_type,
-            core::fix::MsgType::MARKET_DATA_INCREMENTAL_REFRESH);
-        auto result =
-            fix::MarketDataIncrementalRefresh::create(message, decode_buffer);
+        EXPECT_EQ(message.header.msg_type, core::fix::MsgType::MARKET_DATA_INCREMENTAL_REFRESH);
+        auto result = fix::MarketDataIncrementalRefresh::create(message, decode_buffer);
         EXPECT_EQ(result.symbol, "ETH-PERPETUAL");
         EXPECT_EQ(result.no_md_entries.size(), size_t{1});
         // item 0
@@ -187,8 +172,7 @@ TEST(fix_market_data_incremental_refresh, parse_message_3) {
         EXPECT_EQ(item_0.md_entry_type, core::fix::MDEntryType::TRADE);
         EXPECT_DOUBLE_EQ(item_0.md_entry_px, 170.15);
         EXPECT_DOUBLE_EQ(item_0.md_entry_size, 22.0);
-        EXPECT_EQ(
-            item_0.md_entry_date, std::chrono::milliseconds{1569685692830});
+        EXPECT_EQ(item_0.md_entry_date, std::chrono::milliseconds{1569685692830});
         EXPECT_EQ(item_0.deribit_trade_id, "ETH-1192275");
         EXPECT_EQ(item_0.side, core::fix::Side::BUY);
         EXPECT_EQ(item_0.order_id, "0");

@@ -37,9 +37,8 @@ Random::Random(const std::string_view &secret)
 
 std::string Random::create_nonce() {
   std::string result(RANDOM_BYTES, '-');
-  std::generate(result.begin(), result.end(), []() {
-    return CHARSET_DATA[CHARSET_DISTRIBUTION(GENERATOR)];
-  });
+  std::generate(
+      result.begin(), result.end(), []() { return CHARSET_DATA[CHARSET_DISTRIBUTION(GENERATOR)]; });
   return result;
 }
 
@@ -60,10 +59,8 @@ std::string Random::create_raw_data(const std::chrono::nanoseconds now) {
   std::array<value_type, n> buffer;
   for (size_t i = 0; i < n; ++i)
     buffer[i] = DISTRIBUTION(GENERATOR);
-  auto nonce = core::binascii::Base64::encode(
-      buffer.data(), buffer.size() * sizeof(value_type));
-  auto msecs =
-      std::chrono::duration_cast<std::chrono::milliseconds>(now).count();
+  auto nonce = core::binascii::Base64::encode(buffer.data(), buffer.size() * sizeof(value_type));
+  auto msecs = std::chrono::duration_cast<std::chrono::milliseconds>(now).count();
   return fmt::format("{:013}.{}", msecs, nonce);
 }
 

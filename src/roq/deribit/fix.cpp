@@ -36,8 +36,7 @@ FIX::FIX(
     core::event::DNSBase &dns_base)
     : handler_(handler), access_key_(config.get_access_key()), random_(random),
       connection_factory_(base, dns_base, Flags::fix_uri()),
-      connection_(*this, connection_factory_),
-      encode_buffer_(Flags::encode_buffer_size()),
+      connection_(*this, connection_factory_), encode_buffer_(Flags::encode_buffer_size()),
       decode_buffer_(Flags::decode_buffer_size()),
       counter_{
           .disconnect = create_counter("disconnect"),
@@ -45,12 +44,9 @@ FIX::FIX(
       profile_{
           .parse = create_profile("parse"),
           .execution_report = create_profile("execution_report"),
-          .market_data_incremental_refresh =
-              create_profile("market_data_incremental_refresh"),
-          .market_data_request_reject =
-              create_profile("market_data_request_reject"),
-          .market_data_snapshot_full_refresh =
-              create_profile("market_data_snapshot_full_refresh"),
+          .market_data_incremental_refresh = create_profile("market_data_incremental_refresh"),
+          .market_data_request_reject = create_profile("market_data_request_reject"),
+          .market_data_snapshot_full_refresh = create_profile("market_data_snapshot_full_refresh"),
           .order_cancel_reject = create_profile("order_cancel_reject"),
           .position_report = create_profile("position_report"),
           .reject = create_profile("reject"),
@@ -85,8 +81,7 @@ void FIX::operator()(const Event<Timer> &event) {
     return;
   if (ready_ && next_heartbeat_ <= event.value.now) {
     assert(Flags::fix_ping_freq_secs() > 0);
-    next_heartbeat_ =
-        event.value.now + std::chrono::seconds{Flags::fix_ping_freq_secs()};
+    next_heartbeat_ = event.value.now + std::chrono::seconds{Flags::fix_ping_freq_secs()};
     send_test_request(core::get_system_clock());
   }
 }
@@ -96,8 +91,7 @@ void FIX::operator()(const fix::SecurityListRequest &security_list_request) {
   send(security_list_request);
 }
 
-void FIX::operator()(
-    const fix::SecurityStatusRequest &security_status_request) {
+void FIX::operator()(const fix::SecurityStatusRequest &security_status_request) {
   VLOG(1)(R"(request(security_status_request={}))", security_status_request);
   send(security_status_request);
 }
@@ -117,8 +111,7 @@ void FIX::operator()(const fix::RequestForPositions &request_for_position) {
   send(request_for_position);
 }
 
-void FIX::operator()(
-    const fix::OrderMassStatusRequest &order_mass_status_request) {
+void FIX::operator()(const fix::OrderMassStatusRequest &order_mass_status_request) {
   VLOG(1)
   (R"(request(order_mass_status_request={}))", order_mass_status_request);
   send(order_mass_status_request);
@@ -129,8 +122,7 @@ void FIX::operator()(const fix::NewOrderSingle &new_order_single) {
   send(new_order_single);
 }
 
-void FIX::operator()(
-    const fix::OrderCancelReplaceRequest &order_cancel_replace_request) {
+void FIX::operator()(const fix::OrderCancelReplaceRequest &order_cancel_replace_request) {
   VLOG(1)
   (R"(request(order_cancel_replace_request={}))", order_cancel_replace_request);
   send(order_cancel_replace_request);
@@ -217,8 +209,7 @@ void FIX::send_test_request(std::chrono::nanoseconds now) {
   // request_id is current time
   stack_buffer_.clear();
   core::charconv::to_string(std::back_inserter(stack_buffer_), now.count());
-  auto request_id =
-      std::string_view(stack_buffer_.data(), stack_buffer_.size());
+  auto request_id = std::string_view(stack_buffer_.data(), stack_buffer_.size());
   fix::TestRequest test_request{
       .test_req_id = request_id,
   };
@@ -353,8 +344,7 @@ void FIX::parse_helper(const core::fix::message_t &message) {
     }
     case core::fix::MsgType::MARKET_DATA_REQUEST_REJECT: {
       profile_.market_data_request_reject([&]() {
-        auto market_data_request_reject =
-            fix::MarketDataRequestReject::create(message);
+        auto market_data_request_reject = fix::MarketDataRequestReject::create(message);
         (*this)(message.header, market_data_request_reject, trace_info);
       });
       break;
@@ -416,25 +406,21 @@ void FIX::parse_helper(const core::fix::message_t &message) {
 }
 
 void FIX::operator()(
-    const core::fix::header_t &header,
-    const fix::Heartbeat &heartbeat,
-    const server::TraceInfo &) {
+    const core::fix::header_t &header, const fix::Heartbeat &heartbeat, const server::TraceInfo &) {
   // note! get clock *before* any logging (avoid latency)
   auto now = core::get_system_clock();
   VLOG(3)(R"(event(header={}, heartbeat={}))", header, heartbeat);
   if (heartbeat.test_req_id.empty() == false) {
     auto send_time = core::from_chars<uint64_t>(heartbeat.test_req_id);
-    auto latency = std::chrono::duration_cast<std::chrono::nanoseconds>(
-                       now - decltype(now){send_time}) /
-                   2;  // 1-way
+    auto latency =
+        std::chrono::duration_cast<std::chrono::nanoseconds>(now - decltype(now){send_time}) /
+        2;  // 1-way
     latency_.ping.update(latency.count());
   }
 }
 
 void FIX::operator()(
-    const core::fix::header_t &header,
-    const fix::Logon &logon,
-    const server::TraceInfo &) {
+    const core::fix::header_t &header, const fix::Logon &logon, const server::TraceInfo &) {
   VLOG(1)(R"(event(header={}, logon={}))", header, logon);
   LOG(INFO)("Ready");
   assert(ready_ == false);
@@ -443,9 +429,7 @@ void FIX::operator()(
 }
 
 void FIX::operator()(
-    const core::fix::header_t &header,
-    const fix::Logout &logout,
-    const server::TraceInfo &) {
+    const core::fix::header_t &header, const fix::Logout &logout, const server::TraceInfo &) {
   LOG(WARNING)(R"(event(header={}, logout={}))", header, logout);
   ready_ = false;
   // note! mandated, must send a logout response
@@ -496,9 +480,7 @@ void FIX::operator()(
     const fix::MarketDataRequestReject &market_data_request_reject,
     const server::TraceInfo &trace_info) {
   LOG(WARNING)
-  (R"(event(header={}, market_data_request_reject={}))",
-   header,
-   market_data_request_reject);
+  (R"(event(header={}, market_data_request_reject={}))", header, market_data_request_reject);
   handler_(market_data_request_reject, trace_info);
 }
 

@@ -69,8 +69,7 @@ static T combine(T date_part, T time_part) {
 }
 
 template <typename C, typename T>
-static bool fill_update(
-    server::Dispatcher &dispatcher, C &data, size_t &offset, const T &item) {
+static bool fill_update(server::Dispatcher &dispatcher, C &data, size_t &offset, const T &item) {
   auto trade_id = dispatcher.next_trade_id();
   auto &obj = data[offset];
   new (&obj) Fill{
@@ -85,9 +84,8 @@ static bool fill_update(
 }
 
 Gateway::Gateway(server::Dispatcher &dispatcher, const Config &config)
-    : dispatcher_(dispatcher), account_(config.get_account()),
-      access_key_(config.get_access_key()), random_(config.get_access_secret()),
-      dns_base_(base_, true),
+    : dispatcher_(dispatcher), account_(config.get_account()), access_key_(config.get_access_key()),
+      random_(config.get_access_secret()), dns_base_(base_, true),
       fix_{
           .connection =
               {
@@ -102,15 +100,13 @@ Gateway::Gateway(server::Dispatcher &dispatcher, const Config &config)
               [this](auto state) { return download(state); }),
       },
       web_socket_{
-          .connection =
-              {*this, config, random_, base_, dns_base_, ssl_context_},
+          .connection = {*this, config, random_, base_, dns_base_, ssl_context_},
           .download = WebSocketDownload(
               std::chrono::seconds{Flags::ws_request_timeout_secs()},
               [this](auto state) { return download(state); }),
       },
       fill_(Flags::cache_fills_max_depth()), bid_(Flags::cache_mbp_max_depth()),
-      ask_(Flags::cache_mbp_max_depth()),
-      trade_(Flags::cache_trades_max_depth()),
+      ask_(Flags::cache_mbp_max_depth()), trade_(Flags::cache_trades_max_depth()),
       statistics_(StatisticsType::MAX) {
   LOG_IF(WARNING, Flags::fix_cancel_on_disconnect() == false)
   ("Orders will *NOT* be cancelled on disconnect");
@@ -194,9 +190,9 @@ void Gateway::operator()(
   fix::OrderCancelReplaceRequest order_cancel_replace_request{
       .orig_cl_ord_id = order.external_order_id,
       .cl_ord_id = request_id,
-      .transact_time = std::chrono::duration_cast<decltype(
-          fix::OrderCancelReplaceRequest::transact_time)>(
-          order.update_time_utc),
+      .transact_time =
+          std::chrono::duration_cast<decltype(fix::OrderCancelReplaceRequest::transact_time)>(
+              order.update_time_utc),
       .side = core::fix::map(order.side),
       .order_qty = modify_order.quantity,
       .ord_type = core::fix::map(order.order_type),
@@ -244,8 +240,7 @@ uint32_t Gateway::download(WebSocketDownload::State state) {
       return currencies_2_.size();
     case WebSocketDownload::State::DONE:
       LOG(INFO)("Ready");
-      web_socket_.connection.subscribe_ticker(
-          roq::span(symbols_2_.data(), symbols_2_.size()));
+      web_socket_.connection.subscribe_ticker(roq::span(symbols_2_.data(), symbols_2_.size()));
       return 0;
   }
   assert(false);
@@ -262,8 +257,7 @@ void Gateway::operator()(const WebSocket &) {
   }
 }
 
-void Gateway::operator()(
-    const json::Currencies &currencies, const server::TraceInfo &) {
+void Gateway::operator()(const json::Currencies &currencies, const server::TraceInfo &) {
   constexpr auto state = WebSocketDownload::State::CURRENCIES;
   VLOG(1)(R"(currencies={})", currencies);
   assert(currencies_2_.empty());
@@ -275,8 +269,7 @@ void Gateway::operator()(
   web_socket_.download.check(state);
 }
 
-void Gateway::operator()(
-    const json::Instruments &instruments, const server::TraceInfo &) {
+void Gateway::operator()(const json::Instruments &instruments, const server::TraceInfo &) {
   constexpr auto state = WebSocketDownload::State::INSTRUMENTS;
   VLOG(1)(R"(instruments={})", instruments);
   for (auto &item : instruments.data) {
@@ -287,16 +280,14 @@ void Gateway::operator()(
   web_socket_.download.check(state);
 }
 
-void Gateway::operator()(
-    const json::Positions &positions, const server::TraceInfo &) {
+void Gateway::operator()(const json::Positions &positions, const server::TraceInfo &) {
   constexpr auto state = WebSocketDownload::State::POSITIONS;
   VLOG(1)(R"(positions={})", positions);
   // XXX do something
   web_socket_.download.check(state);
 }
 
-void Gateway::operator()(
-    const json::Ticker &ticker, const server::TraceInfo &trace_info) {
+void Gateway::operator()(const json::Ticker &ticker, const server::TraceInfo &trace_info) {
   VLOG(3)(R"(ticker={})", ticker);
   auto &layer = top_of_book_[ticker.instrument_name];
   TopOfBook top_of_book = {
@@ -314,8 +305,7 @@ void Gateway::operator()(
   };
   if (std::memcmp(&layer, &top_of_book.layer, sizeof(layer)) != 0) {
     layer = top_of_book.layer;
-    server::create_trace_and_dispatch(
-        trace_info, top_of_book, dispatcher_, true);
+    server::create_trace_and_dispatch(trace_info, top_of_book, dispatcher_, true);
   }
   auto trading_status = json::map(ticker.state);
   auto &item = trading_status_[ticker.instrument_name];
@@ -326,8 +316,7 @@ void Gateway::operator()(
         .symbol = ticker.instrument_name,
         .trading_status = json::map(ticker.state),
     };
-    server::create_trace_and_dispatch(
-        trace_info, market_status, dispatcher_, true);
+    server::create_trace_and_dispatch(trace_info, market_status, dispatcher_, true);
   }
 }
 
@@ -463,15 +452,13 @@ auto compute_request_status(
 }
 
 void Gateway::operator()(
-    const fix::ExecutionReport &execution_report,
-    const server::TraceInfo &trace_info) {
+    const fix::ExecutionReport &execution_report, const server::TraceInfo &trace_info) {
   DLOG(INFO)(R"(execution_report={})", execution_report);
 
   // download begin?
   switch (execution_report.mass_status_req_type) {
     case core::fix::MassStatusReqType::ORDERS:
-      fix_.download.update(
-          FIXDownload::State::ORDERS, execution_report.tot_num_reports);
+      fix_.download.update(FIXDownload::State::ORDERS, execution_report.tot_num_reports);
       return;
     default:
       break;
@@ -564,8 +551,7 @@ void Gateway::operator()(
     const server::TraceInfo &trace_info) {
   assert(gateway_status_ == GatewayStatus::READY);
   bool success = true;
-  size_t bid_length = 0, ask_length = 0, trade_length = 0,
-         statistics_length = 0;
+  size_t bid_length = 0, ask_length = 0, trade_length = 0, statistics_length = 0;
   // open interest
   new (&statistics_[statistics_length++]) Statistics{
       .type = StatisticsType::PRE_OPEN_INTEREST,
@@ -642,8 +628,7 @@ void Gateway::operator()(
     };
     VLOG(3)("market_by_price_update={}", market_by_price_update);
     auto last = trade_length == 0;
-    server::create_trace_and_dispatch(
-        trace_info, market_by_price_update, dispatcher_, last);
+    server::create_trace_and_dispatch(trace_info, market_by_price_update, dispatcher_, last);
   }
   if (trade_length > 0) {
     TradeSummary trade_summary{
@@ -657,8 +642,7 @@ void Gateway::operator()(
         .exchange_time_utc = exchange_time_utc,
     };
     VLOG(3)("trade_summary={}", trade_summary);
-    server::create_trace_and_dispatch(
-        trace_info, trade_summary, dispatcher_, true);
+    server::create_trace_and_dispatch(trace_info, trade_summary, dispatcher_, true);
   }
   if (statistics_length > 0) {
     StatisticsUpdate statistics_update{
@@ -669,13 +653,11 @@ void Gateway::operator()(
         .exchange_time_utc = exchange_time_utc,
     };
     VLOG(3)("statistics_update={}", statistics_update);
-    server::create_trace_and_dispatch(
-        trace_info, statistics_update, dispatcher_, true);
+    server::create_trace_and_dispatch(trace_info, statistics_update, dispatcher_, true);
   }
 }
 
-void Gateway::operator()(
-    const fix::MarketDataRequestReject &, const server::TraceInfo &) {
+void Gateway::operator()(const fix::MarketDataRequestReject &, const server::TraceInfo &) {
   assert(gateway_status_ == GatewayStatus::READY);
   LOG(FATAL)("Unexpected");  // don't know how to continue
 }
@@ -685,8 +667,7 @@ void Gateway::operator()(
     const server::TraceInfo &trace_info) {
   assert(gateway_status_ == GatewayStatus::READY);
   VLOG(1)
-  (R"(Received market data snapshot for symbol="{}")",
-   market_data_snapshot_full_refresh.symbol);
+  (R"(Received market data snapshot for symbol="{}")", market_data_snapshot_full_refresh.symbol);
   size_t bid_length = 0, ask_length = 0;
   for (auto &item : market_data_snapshot_full_refresh.no_md_entries) {
     switch (item.md_entry_type) {
@@ -718,13 +699,11 @@ void Gateway::operator()(
       .snapshot = true,  // reset
       .exchange_time_utc = {},
   };
-  server::create_trace_and_dispatch(
-      trace_info, market_by_price_update, dispatcher_, true);
+  server::create_trace_and_dispatch(trace_info, market_by_price_update, dispatcher_, true);
 }
 
 void Gateway::operator()(
-    const fix::OrderCancelReject &order_cancel_reject,
-    const server::TraceInfo &trace_info) {
+    const fix::OrderCancelReject &order_cancel_reject, const server::TraceInfo &trace_info) {
   assert(gateway_status_ == GatewayStatus::READY);
 
   server::OMS_Lookup order_lookup{
@@ -761,8 +740,7 @@ void Gateway::operator()(
 }
 
 void Gateway::operator()(
-    const fix::PositionReport &position_report,
-    const server::TraceInfo &trace_info) {
+    const fix::PositionReport &position_report, const server::TraceInfo &trace_info) {
   VLOG(1)(R"(position_report={})", position_report);
   switch (position_report.pos_req_result) {
     case core::fix::PosReqResult::VALID:
@@ -793,10 +771,8 @@ void Gateway::operator()(
                 .position_cost_yesterday = 0.0,
                 .external_account = {},
             };
-            server::create_trace_and_dispatch(
-                trace_info, buy, dispatcher_, false);
-            server::create_trace_and_dispatch(
-                trace_info, sell, dispatcher_, true);
+            server::create_trace_and_dispatch(trace_info, buy, dispatcher_, false);
+            server::create_trace_and_dispatch(trace_info, sell, dispatcher_, true);
           }
           break;
         }
@@ -824,8 +800,7 @@ void Gateway::operator()(const fix::Reject &reject, const server::TraceInfo &) {
 }
 
 void Gateway::operator()(
-    const fix::SecurityList &security_list,
-    const server::TraceInfo &trace_info) {
+    const fix::SecurityList &security_list, const server::TraceInfo &trace_info) {
   currencies_.clear();
   if (security_list.no_related_sym.size() > 0) {
     assert(symbols_.empty());
@@ -843,8 +818,7 @@ void Gateway::operator()(
       symbols_.emplace_back(instrument.symbol);
       auto expiry_datetime = combine(
           instrument.maturity_date,
-          core::charconv::time_from_string<std::chrono::milliseconds>(
-              instrument.maturity_time));
+          core::charconv::time_from_string<std::chrono::milliseconds>(instrument.maturity_time));
       auto expiry_datetime_utc = expiry_datetime;
       ReferenceData reference_data{
           .exchange = Flags::exchange(),
@@ -862,34 +836,29 @@ void Gateway::operator()(
           .strike_price = instrument.strike_price,
           .underlying = instrument.underlying_symbol,
           .time_zone = {},
-          .issue_date =
-              std::chrono::duration_cast<decltype(ReferenceData::issue_date)>(
-                  instrument.issue_date),
+          .issue_date = std::chrono::duration_cast<decltype(ReferenceData::issue_date)>(
+              instrument.issue_date),
           .settlement_date = {},
-          .expiry_datetime = std::chrono::duration_cast<decltype(
-              ReferenceData::expiry_datetime)>(expiry_datetime),
-          .expiry_datetime_utc = std::chrono::duration_cast<decltype(
-              ReferenceData::expiry_datetime_utc)>(expiry_datetime_utc),
+          .expiry_datetime =
+              std::chrono::duration_cast<decltype(ReferenceData::expiry_datetime)>(expiry_datetime),
+          .expiry_datetime_utc =
+              std::chrono::duration_cast<decltype(ReferenceData::expiry_datetime_utc)>(
+                  expiry_datetime_utc),
       };
-      server::create_trace_and_dispatch(
-          trace_info, reference_data, dispatcher_, true);
+      server::create_trace_and_dispatch(trace_info, reference_data, dispatcher_, true);
       ++security_count;
     }
     VLOG(1)
-    (R"(- securities: {} (/{}))",
-     security_count,
-     security_list.no_related_sym.size());
+    (R"(- securities: {} (/{}))", security_count, security_list.no_related_sym.size());
   }
   fix_.download.check(FIXDownload::State::SECURITIES);
 }
 
-void Gateway::operator()(
-    const fix::SecurityStatus &, const server::TraceInfo &) {
+void Gateway::operator()(const fix::SecurityStatus &, const server::TraceInfo &) {
 }
 
 void Gateway::operator()(
-    const fix::UserResponse &user_response,
-    const server::TraceInfo &trace_info) {
+    const fix::UserResponse &user_response, const server::TraceInfo &trace_info) {
   FundsUpdate funds_update{
       .account = account_,
       .currency = user_response.currency,
@@ -897,8 +866,7 @@ void Gateway::operator()(
       .hold = double{0.0},
       .external_account = {},
   };
-  server::create_trace_and_dispatch(
-      trace_info, funds_update, dispatcher_, true);
+  server::create_trace_and_dispatch(trace_info, funds_update, dispatcher_, true);
   fix_.download.check(FIXDownload::State::USER);
 }
 
@@ -910,14 +878,12 @@ void Gateway::update(GatewayStatus gateway_status) {
   MarketDataStatus market_data_status{
       .status = gateway_status_,
   };
-  server::create_trace_and_dispatch(
-      trace_info, market_data_status, dispatcher_, false);
+  server::create_trace_and_dispatch(trace_info, market_data_status, dispatcher_, false);
   OrderManagerStatus order_manager_status{
       .account = account_,
       .status = gateway_status_,
   };
-  server::create_trace_and_dispatch(
-      trace_info, order_manager_status, dispatcher_, true);
+  server::create_trace_and_dispatch(trace_info, order_manager_status, dispatcher_, true);
   LOG(INFO)(R"(Update: gateway_status={})", gateway_status_);
 }
 
@@ -925,8 +891,7 @@ void Gateway::download_securities() {
   auto request_id = dispatcher_.next_request_id();
   fix::SecurityListRequest security_list_request{
       .security_req_id = request_id,
-      .security_list_request_type =
-          core::fix::SecurityListRequestType::ALL_SECURITIES,
+      .security_list_request_type = core::fix::SecurityListRequestType::ALL_SECURITIES,
   };
   fix_.connection(security_list_request);
 }
@@ -936,8 +901,7 @@ void Gateway::download_positions() {
   fix::RequestForPositions request_for_positions{
       .pos_req_id = request_id,
       .pos_req_type = core::fix::PosReqType::POSITIONS,
-      .subscription_request_type =
-          roq::core::fix::SubscriptionRequestType::SNAPSHOT_UPDATES,
+      .subscription_request_type = roq::core::fix::SubscriptionRequestType::SNAPSHOT_UPDATES,
       .currency = {},
   };
   fix_.connection(request_for_positions);
@@ -958,8 +922,7 @@ void Gateway::download_user() {
     auto request_id = dispatcher_.next_request_id();
     fix::UserRequest user_request_btc{
         .user_request_id = request_id,
-        .user_request_type =
-            core::fix::UserRequestType::REQUEST_INDIVIDUAL_USER_STATUS,
+        .user_request_type = core::fix::UserRequestType::REQUEST_INDIVIDUAL_USER_STATUS,
         .username = access_key_,
         .currency = static_cast<std::string_view>(currency),
     };
@@ -984,28 +947,25 @@ void Gateway::subscribe_market_data() {
       {
           .md_entry_type = core::fix::MDEntryType::TRADE,
       }};
-  std::vector<fix::InstrmtMDReq> related_sym(
-      Flags::fix_market_data_request_max_size());
+  std::vector<fix::InstrmtMDReq> related_sym(Flags::fix_market_data_request_max_size());
   for (size_t i = 0;; ++i) {
     auto offset = i * Flags::fix_market_data_request_max_size();
     if (symbols_.size() < offset)
       break;
-    auto count = std::min<size_t>(
-        symbols_.size() - offset, Flags::fix_market_data_request_max_size());
+    auto count =
+        std::min<size_t>(symbols_.size() - offset, Flags::fix_market_data_request_max_size());
     if (count) {
       for (size_t j = 0; j < count; ++j)
         related_sym[j].symbol = symbols_[offset + j];
       auto request_id = dispatcher_.next_request_id();
       fix::MarketDataRequest market_data_request{
           .md_req_id = request_id,
-          .subscription_request_type =
-              core::fix::SubscriptionRequestType::SNAPSHOT_UPDATES,
+          .subscription_request_type = core::fix::SubscriptionRequestType::SNAPSHOT_UPDATES,
           .market_depth = 20,  // the maximum
           .md_update_type = core::fix::MDUpdateType::INCREMENTAL_REFRESH,
           .deribit_trade_amount = 0,      // none
           .deribit_since_timestamp = {},  // none
-          .no_md_entry_types =
-              roq::span(md_entry_types, std::size(md_entry_types)),
+          .no_md_entry_types = roq::span(md_entry_types, std::size(md_entry_types)),
           .no_related_sym = roq::span(related_sym.data(), count),
       };
       fix_.connection(market_data_request);

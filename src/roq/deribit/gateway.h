@@ -27,9 +27,7 @@
 namespace roq {
 namespace deribit {
 
-class Gateway final : public server::Handler,
-                      public WebSocket::Handler,
-                      public FIX::Handler {
+class Gateway final : public server::Handler, public WebSocket::Handler, public FIX::Handler {
  public:
   Gateway(server::Dispatcher &dispatcher, const Config &config);
 
@@ -61,8 +59,7 @@ class Gateway final : public server::Handler,
   void operator()(const WebSocket &) override;
 
   void operator()(const json::Currencies &, const server::TraceInfo &) override;
-  void operator()(
-      const json::Instruments &, const server::TraceInfo &) override;
+  void operator()(const json::Instruments &, const server::TraceInfo &) override;
   void operator()(const json::Positions &, const server::TraceInfo &) override;
   void operator()(const json::Ticker &, const server::TraceInfo &) override;
 
@@ -70,27 +67,16 @@ class Gateway final : public server::Handler,
 
   void operator()(const FIX &) override;
 
-  void operator()(
-      const fix::ExecutionReport &, const server::TraceInfo &) override;
-  void operator()(
-      const fix::MarketDataIncrementalRefresh &,
-      const server::TraceInfo &) override;
-  void operator()(
-      const fix::MarketDataRequestReject &, const server::TraceInfo &) override;
-  void operator()(
-      const fix::MarketDataSnapshotFullRefresh &,
-      const server::TraceInfo &) override;
-  void operator()(
-      const fix::OrderCancelReject &, const server::TraceInfo &) override;
-  void operator()(
-      const fix::PositionReport &, const server::TraceInfo &) override;
+  void operator()(const fix::ExecutionReport &, const server::TraceInfo &) override;
+  void operator()(const fix::MarketDataIncrementalRefresh &, const server::TraceInfo &) override;
+  void operator()(const fix::MarketDataRequestReject &, const server::TraceInfo &) override;
+  void operator()(const fix::MarketDataSnapshotFullRefresh &, const server::TraceInfo &) override;
+  void operator()(const fix::OrderCancelReject &, const server::TraceInfo &) override;
+  void operator()(const fix::PositionReport &, const server::TraceInfo &) override;
   void operator()(const fix::Reject &, const server::TraceInfo &) override;
-  void operator()(
-      const fix::SecurityList &, const server::TraceInfo &) override;
-  void operator()(
-      const fix::SecurityStatus &, const server::TraceInfo &) override;
-  void operator()(
-      const fix::UserResponse &, const server::TraceInfo &) override;
+  void operator()(const fix::SecurityList &, const server::TraceInfo &) override;
+  void operator()(const fix::SecurityStatus &, const server::TraceInfo &) override;
+  void operator()(const fix::UserResponse &, const server::TraceInfo &) override;
 
  private:
   using FIXDownload = server::Download<FIXState>;

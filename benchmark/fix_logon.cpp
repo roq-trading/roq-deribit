@@ -38,8 +38,7 @@ void BM_fix_logon_create_message(benchmark::State &state) {
   core::utils::Buffer buffer(4096);
   auto msg_seq_num = uint64_t{0};
   auto sending_time = std::chrono::seconds{1568702810};
-  std::string_view raw_data =
-      "1567874758168.y4/hA3i6qxm4yVL+3N7IrGcINVAFMLFhy4l7ATSehxc=";
+  std::string_view raw_data = "1567874758168.y4/hA3i6qxm4yVL+3N7IrGcINVAFMLFhy4l7ATSehxc=";
   uint64_t processed = 0;
   for (auto _ : state) {
     fix::Logon logon = {

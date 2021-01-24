@@ -1234,8 +1234,7 @@ TEST(fix_security_list, parse_message) {
         fprintf(stderr, "HEADER\n");
         ++results;
         EXPECT_EQ(message.header.msg_type, core::fix::MsgType::SECURITY_LIST);
-        /*auto security_list =*/fix::SecurityList::create(
-            message, decode_buffer);
+        /*auto security_list =*/fix::SecurityList::create(message, decode_buffer);
         /*
         EXPECT_EQ(security_list.heart_bt_int, uint32_t{10});
         EXPECT_EQ(security_list.raw_data,

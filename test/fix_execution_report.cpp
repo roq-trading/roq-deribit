@@ -24,8 +24,7 @@ TEST(fix_execution_report, parse_message) {
   auto bytes = core::fix::Reader<core::fix::Version::FIX_44>::dispatch(
       [&](const core::fix::message_t &message) {
         ++results;
-        EXPECT_EQ(
-            message.header.msg_type, core::fix::MsgType::EXECUTION_REPORT);
+        EXPECT_EQ(message.header.msg_type, core::fix::MsgType::EXECUTION_REPORT);
         auto result = fix::ExecutionReport::create(message, decode_buffer);
         EXPECT_EQ(result.order_id, "2831903667");
         EXPECT_EQ(result.cl_ord_id, "2831903667");
@@ -39,9 +38,7 @@ TEST(fix_execution_report, parse_message) {
         EXPECT_DOUBLE_EQ(result.order_qty, 1.0);
         EXPECT_EQ(result.ord_type, core::fix::OrdType::LIMIT);
         EXPECT_DOUBLE_EQ(result.price, 0.5);
-        EXPECT_EQ(
-            result.ord_rej_reason,
-            core::fix::OrdRejReason::BROKER_EXCHANGE_OPTION);
+        EXPECT_EQ(result.ord_rej_reason, core::fix::OrdRejReason::BROKER_EXCHANGE_OPTION);
         EXPECT_EQ(result.text, "success");
         EXPECT_EQ(result.security_exchange, "DERIBITSERVER");
         EXPECT_EQ(result.symbol, "BTC-27SEP19");
@@ -68,12 +65,10 @@ TEST(fix_execution_report, parse_order_mass_status) {
   auto bytes = core::fix::Reader<core::fix::Version::FIX_44>::dispatch(
       [&](const core::fix::message_t &message) {
         ++results;
-        EXPECT_EQ(
-            message.header.msg_type, core::fix::MsgType::EXECUTION_REPORT);
+        EXPECT_EQ(message.header.msg_type, core::fix::MsgType::EXECUTION_REPORT);
         auto result = fix::ExecutionReport::create(message, decode_buffer);
         EXPECT_EQ(result.mass_status_req_id, "roq-oms-005");
-        EXPECT_EQ(
-            result.mass_status_req_type, core::fix::MassStatusReqType::ORDERS);
+        EXPECT_EQ(result.mass_status_req_type, core::fix::MassStatusReqType::ORDERS);
         EXPECT_EQ(result.tot_num_reports, uint32_t{1});
         EXPECT_EQ(result.text, "total_reports");
       },
@@ -100,8 +95,7 @@ TEST(fix_execution_report, parse_fill) {
   auto bytes = core::fix::Reader<core::fix::Version::FIX_44>::dispatch(
       [&](const core::fix::message_t &message) {
         ++results;
-        EXPECT_EQ(
-            message.header.msg_type, core::fix::MsgType::EXECUTION_REPORT);
+        EXPECT_EQ(message.header.msg_type, core::fix::MsgType::EXECUTION_REPORT);
         auto result = fix::ExecutionReport::create(message, decode_buffer);
         EXPECT_EQ(result.order_id, "3026811591");
         EXPECT_EQ(result.cl_ord_id, "3026811591");
@@ -116,17 +110,14 @@ TEST(fix_execution_report, parse_fill) {
         EXPECT_DOUBLE_EQ(result.order_qty, 1.0);
         EXPECT_EQ(result.ord_type, core::fix::OrdType::LIMIT);
         EXPECT_DOUBLE_EQ(result.price, 9593.5);
-        EXPECT_EQ(
-            result.ord_rej_reason,
-            core::fix::OrdRejReason::BROKER_EXCHANGE_OPTION);
+        EXPECT_EQ(result.ord_rej_reason, core::fix::OrdRejReason::BROKER_EXCHANGE_OPTION);
         EXPECT_EQ(result.text, "notification");
         EXPECT_EQ(result.security_exchange, "DERIBITSERVER");
         EXPECT_EQ(result.symbol, "BTC-27DEC19");
         EXPECT_EQ(result.qty_type, core::fix::QtyType::CONTRACTS);
         EXPECT_DOUBLE_EQ(result.contract_multiplier, 10.0);
-        EXPECT_DOUBLE_EQ(
-            result.avg_px, 9593.504);  // TODO(thraneh): why different? not just
-                                       // the commission...
+        EXPECT_DOUBLE_EQ(result.avg_px, 9593.504);  // TODO(thraneh): why different? not just
+                                                    // the commission...
         EXPECT_DOUBLE_EQ(result.max_show, 1.0);
         EXPECT_EQ(result.deribit_label, "roq:1:1:1000");
         EXPECT_DOUBLE_EQ(result.last_qty, 1.0);
@@ -137,8 +128,7 @@ TEST(fix_execution_report, parse_fill) {
         EXPECT_EQ(item_0.fill_exec_id, "BTC-27DEC19#2350428");
         EXPECT_DOUBLE_EQ(item_0.fill_px, 9593.5);
         EXPECT_DOUBLE_EQ(item_0.fill_qty, 1.0);
-        EXPECT_EQ(
-            item_0.fill_liquidity_ind, core::fix::FillLiquidityInd::MAKER);
+        EXPECT_EQ(item_0.fill_liquidity_ind, core::fix::FillLiquidityInd::MAKER);
       },
       message,
       std::strlen(message));

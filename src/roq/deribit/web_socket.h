@@ -50,14 +50,10 @@ class WebSocket final : public core::web::Socket::Handler,
   struct Handler {
     virtual void operator()(const WebSocket &) = 0;
 
-    virtual void operator()(
-        const json::Currencies &, const server::TraceInfo &) = 0;
-    virtual void operator()(
-        const json::Instruments &, const server::TraceInfo &) = 0;
-    virtual void operator()(
-        const json::Positions &, const server::TraceInfo &) = 0;
-    virtual void operator()(
-        const json::Ticker &, const server::TraceInfo &) = 0;
+    virtual void operator()(const json::Currencies &, const server::TraceInfo &) = 0;
+    virtual void operator()(const json::Instruments &, const server::TraceInfo &) = 0;
+    virtual void operator()(const json::Positions &, const server::TraceInfo &) = 0;
+    virtual void operator()(const json::Ticker &, const server::TraceInfo &) = 0;
   };
 
   WebSocket(
@@ -104,26 +100,18 @@ class WebSocket final : public core::web::Socket::Handler,
  private:
   void parse(const std::string_view &message);
 
+  void operator()(const core::jsonrpc::Error &error, core::json::value_t &value) override;
+  void operator()(const core::jsonrpc::Result &result, core::json::value_t &value) override;
   void operator()(
-      const core::jsonrpc::Error &error, core::json::value_t &value) override;
-  void operator()(
-      const core::jsonrpc::Result &result, core::json::value_t &value) override;
-  void operator()(
-      const core::jsonrpc::Notification &notification,
-      core::json::value_t &value) override;
+      const core::jsonrpc::Notification &notification, core::json::value_t &value) override;
 
   void operator()(const json::Auth &auth, const server::TraceInfo &trace_info);
 
-  void operator()(
-      const json::Currencies &currencies, const server::TraceInfo &trace_info);
-  void operator()(
-      const json::Instruments &instruments,
-      const server::TraceInfo &trace_info);
-  void operator()(
-      const json::Positions &positions, const server::TraceInfo &trace_info);
+  void operator()(const json::Currencies &currencies, const server::TraceInfo &trace_info);
+  void operator()(const json::Instruments &instruments, const server::TraceInfo &trace_info);
+  void operator()(const json::Positions &positions, const server::TraceInfo &trace_info);
 
-  void operator()(
-      const json::Ticker &ticker, const server::TraceInfo &trace_info) override;
+  void operator()(const json::Ticker &ticker, const server::TraceInfo &trace_info) override;
 
  private:
   Handler &handler_;
@@ -141,8 +129,7 @@ class WebSocket final : public core::web::Socket::Handler,
     core::metrics::Counter disconnect;
   } counter_;
   struct {
-    core::metrics::Profile parse, auth, currencies, instruments, positions,
-        ticker;
+    core::metrics::Profile parse, auth, currencies, instruments, positions, ticker;
   } profile_;
   struct {
     core::metrics::Latency ping, heartbeat;

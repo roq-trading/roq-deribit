@@ -90,8 +90,8 @@ void WebSocket::operator()(const Event<Timer> &event) {
 
 void WebSocket::login() {
   constexpr json::RequestType request_type = json::RequestType::AUTH;
-  auto timestamp = std::chrono::duration_cast<std::chrono::milliseconds>(
-      core::get_realtime_clock());
+  auto timestamp =
+      std::chrono::duration_cast<std::chrono::milliseconds>(core::get_realtime_clock());
   auto nonce = random_.create_nonce();
   auto signature = random_.create_signature(timestamp, nonce);
   auto message = fmt::format(
@@ -159,8 +159,7 @@ void WebSocket::get_positions(const std::string_view &currency) {
 
 template <typename T>
 void WebSocket::subscribe_ticker(const roq::span<T> &symbols) {
-  constexpr json::RequestType request_type =
-      json::RequestType::SUBSCRIBE_TICKER;
+  constexpr json::RequestType request_type = json::RequestType::SUBSCRIBE_TICKER;
   auto message = fmt::format(
       R"({{)"
       R"("method":"public/subscribe",)"
@@ -180,8 +179,7 @@ template void WebSocket::subscribe_ticker(const roq::span<std::string_view> &);
 
 template <typename T>
 void WebSocket::unsubscribe_ticker(const roq::span<T> &symbols) {
-  constexpr json::RequestType request_type =
-      json::RequestType::UNSUBSCRIBE_TICKER;
+  constexpr json::RequestType request_type = json::RequestType::UNSUBSCRIBE_TICKER;
   auto message = fmt::format(
       R"({{)"
       R"("method":"public/unsubscribe",)"
@@ -197,8 +195,7 @@ void WebSocket::unsubscribe_ticker(const roq::span<T> &symbols) {
 
 template void WebSocket::unsubscribe_ticker(const roq::span<std::string> &);
 
-template void WebSocket::unsubscribe_ticker(
-    const roq::span<std::string_view> &);
+template void WebSocket::unsubscribe_ticker(const roq::span<std::string_view> &);
 
 void WebSocket::operator()(metrics::Writer &writer) {
   writer
@@ -235,8 +232,7 @@ void WebSocket::operator()(const core::web::Socket::Close &) {
 
 void WebSocket::operator()(const core::web::Socket::Latency &latency) {
   latency_.ping.update(
-      std::chrono::duration_cast<std::chrono::nanoseconds>(latency.sample)
-          .count());
+      std::chrono::duration_cast<std::chrono::nanoseconds>(latency.sample).count());
 }
 
 void WebSocket::operator()(const core::web::Socket::Text &text) {
@@ -254,16 +250,13 @@ void WebSocket::parse(const std::string_view &message) {
   });
 }
 
-void WebSocket::operator()(
-    const core::jsonrpc::Error &error, core::json::value_t &value) {
+void WebSocket::operator()(const core::jsonrpc::Error &error, core::json::value_t &value) {
   json::Error error_2(value);
   LOG(FATAL)(R"(error={}, id="{}")", error_2, error.id);
 }
 
-void WebSocket::operator()(
-    const core::jsonrpc::Result &result, core::json::value_t &value) {
-  server::TraceInfo
-      trace_info;  // XXX not correct (*parsing* has already started)
+void WebSocket::operator()(const core::jsonrpc::Result &result, core::json::value_t &value) {
+  server::TraceInfo trace_info;  // XXX not correct (*parsing* has already started)
   json::RequestType request_type(result.id);
   switch (request_type) {
     case json::RequestType::UNDEFINED:
@@ -301,10 +294,8 @@ void WebSocket::operator()(
 }
 
 void WebSocket::operator()(
-    const core::jsonrpc::Notification &notification,
-    core::json::value_t &value) {
-  server::TraceInfo
-      trace_info;  // XXX not correct (*parsing* has already started)
+    const core::jsonrpc::Notification &notification, core::json::value_t &value) {
+  server::TraceInfo trace_info;  // XXX not correct (*parsing* has already started)
   json::Method method(notification.method);
   switch (method) {
     case json::Method::UNDEFINED:
@@ -346,16 +337,14 @@ void WebSocket::operator()(
   });
 }
 
-void WebSocket::operator()(
-    const json::Positions &positions, const server::TraceInfo &trace_info) {
+void WebSocket::operator()(const json::Positions &positions, const server::TraceInfo &trace_info) {
   profile_.positions([&]() {
     VLOG(1)(R"(positions={})", positions);
     handler_(positions, trace_info);
   });
 }
 
-void WebSocket::operator()(
-    const json::Ticker &ticker, const server::TraceInfo &trace_info) {
+void WebSocket::operator()(const json::Ticker &ticker, const server::TraceInfo &trace_info) {
   profile_.ticker([&]() {
     VLOG(2)(R"(ticker={})", ticker);
     handler_(ticker, trace_info);
