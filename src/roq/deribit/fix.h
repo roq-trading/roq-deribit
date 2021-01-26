@@ -58,11 +58,7 @@ class FIX final : public core::net::Manager::Handler {
  public:
   struct Handler {
     virtual void operator()(const FIX &) = 0;
-
-    virtual void operator()(
-        const fix::Heartbeat &heartbeat,
-        const server::TraceInfo &,
-        std::chrono::nanoseconds latency) = 0;
+    virtual void operator()(const ExternalLatency &, const server::TraceInfo &) = 0;
     virtual void operator()(const fix::ExecutionReport &, const server::TraceInfo &) = 0;
     virtual void operator()(
         const fix::MarketDataIncrementalRefresh &, const server::TraceInfo &) = 0;

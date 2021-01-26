@@ -417,8 +417,13 @@ void FIX::operator()(
     auto latency =
         std::chrono::duration_cast<std::chrono::nanoseconds>(now - decltype(now){send_time}) /
         2;  // 1-way
+    server::TraceInfo trace_info;
+    ExternalLatency external_latency{
+        .name = CONNECTION,
+        .latency = latency,
+    };
+    handler_(external_latency, trace_info);
     latency_.ping.update(latency);
-    handler_(heartbeat, trace_info, latency);
   }
 }
 

@@ -219,6 +219,13 @@ void Gateway::operator()(metrics::Writer &writer) {
   fix_.connection(writer);
 }
 
+// all
+
+void Gateway::operator()(
+    const ExternalLatency &external_latency, const server::TraceInfo &trace_info) {
+  create_trace_and_dispatch(trace_info, external_latency, dispatcher_);
+}
+
 // web socket
 
 uint32_t Gateway::download(WebSocketDownload::State state) {
@@ -255,15 +262,6 @@ void Gateway::operator()(const WebSocket &) {
     currencies_2_.clear();
     symbols_2_.clear();
   }
-}
-
-void Gateway::operator()(
-    const core::web::Socket::Latency &latency, const server::TraceInfo &trace_info) {
-  ExternalLatency external_latency{
-      .name = "ws",
-      .latency = latency.sample,
-  };
-  server::create_trace_and_dispatch(trace_info, external_latency, dispatcher_);
 }
 
 void Gateway::operator()(const json::Currencies &currencies, const server::TraceInfo &) {
@@ -367,15 +365,6 @@ void Gateway::operator()(const FIX &) {
     fix_.download.reset();
     symbols_.clear();
   }
-}
-
-void Gateway::operator()(
-    const fix::Heartbeat &, const server::TraceInfo &trace_info, std::chrono::nanoseconds latency) {
-  ExternalLatency external_latency{
-      .name = "fix",
-      .latency = latency,
-  };
-  server::create_trace_and_dispatch(trace_info, external_latency, dispatcher_);
 }
 
 // execution_repot:
