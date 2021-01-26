@@ -257,6 +257,15 @@ void Gateway::operator()(const WebSocket &) {
   }
 }
 
+void Gateway::operator()(
+    const core::web::Socket::Latency &latency, const server::TraceInfo &trace_info) {
+  ExternalLatency external_latency{
+      .name = "ws",
+      .latency = latency.sample,
+  };
+  server::create_trace_and_dispatch(trace_info, external_latency, dispatcher_);
+}
+
 void Gateway::operator()(const json::Currencies &currencies, const server::TraceInfo &) {
   constexpr auto state = WebSocketDownload::State::CURRENCIES;
   VLOG(1)(R"(currencies={})", currencies);
@@ -358,6 +367,15 @@ void Gateway::operator()(const FIX &) {
     fix_.download.reset();
     symbols_.clear();
   }
+}
+
+void Gateway::operator()(
+    const fix::Heartbeat &, const server::TraceInfo &trace_info, std::chrono::nanoseconds latency) {
+  ExternalLatency external_latency{
+      .name = "fix",
+      .latency = latency,
+  };
+  server::create_trace_and_dispatch(trace_info, external_latency, dispatcher_);
 }
 
 // execution_repot:

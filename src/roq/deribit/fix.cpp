@@ -406,7 +406,9 @@ void FIX::parse_helper(const core::fix::message_t &message) {
 }
 
 void FIX::operator()(
-    const core::fix::header_t &header, const fix::Heartbeat &heartbeat, const server::TraceInfo &) {
+    const core::fix::header_t &header,
+    const fix::Heartbeat &heartbeat,
+    const server::TraceInfo &trace_info) {
   // note! get clock *before* any logging (avoid latency)
   auto now = core::get_system_clock();
   VLOG(3)(R"(event(header={}, heartbeat={}))", header, heartbeat);
@@ -415,7 +417,8 @@ void FIX::operator()(
     auto latency =
         std::chrono::duration_cast<std::chrono::nanoseconds>(now - decltype(now){send_time}) /
         2;  // 1-way
-    latency_.ping.update(latency.count());
+    latency_.ping.update(latency);
+    handler_(heartbeat, trace_info, latency);
   }
 }
 

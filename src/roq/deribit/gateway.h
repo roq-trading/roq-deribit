@@ -58,6 +58,8 @@ class Gateway final : public server::Handler, public WebSocket::Handler, public 
 
   void operator()(const WebSocket &) override;
 
+  void operator()(const core::web::Socket::Latency &, const server::TraceInfo &) override;
+
   void operator()(const json::Currencies &, const server::TraceInfo &) override;
   void operator()(const json::Instruments &, const server::TraceInfo &) override;
   void operator()(const json::Positions &, const server::TraceInfo &) override;
@@ -66,6 +68,9 @@ class Gateway final : public server::Handler, public WebSocket::Handler, public 
   // FIX::Handler
 
   void operator()(const FIX &) override;
+
+  void operator()(
+      const fix::Heartbeat &, const server::TraceInfo &, std::chrono::nanoseconds latency) override;
 
   void operator()(const fix::ExecutionReport &, const server::TraceInfo &) override;
   void operator()(const fix::MarketDataIncrementalRefresh &, const server::TraceInfo &) override;

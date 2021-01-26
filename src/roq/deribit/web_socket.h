@@ -50,6 +50,8 @@ class WebSocket final : public core::web::Socket::Handler,
   struct Handler {
     virtual void operator()(const WebSocket &) = 0;
 
+    virtual void operator()(
+        const core::web::Socket::Latency &latency, const server::TraceInfo &) = 0;
     virtual void operator()(const json::Currencies &, const server::TraceInfo &) = 0;
     virtual void operator()(const json::Instruments &, const server::TraceInfo &) = 0;
     virtual void operator()(const json::Positions &, const server::TraceInfo &) = 0;
