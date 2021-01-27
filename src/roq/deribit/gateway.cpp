@@ -25,6 +25,8 @@ constexpr auto TOLERANCE = double{1.0e-10};
 
 template <typename C, typename T>
 static bool mbp_update(C &data, size_t &offset, const T &item) {
+  if (offset >= data.size())
+    return false;
   // validate
   switch (item.md_update_action) {
     case core::fix::MDUpdateAction::UNKNOWN:
@@ -47,11 +49,13 @@ static bool mbp_update(C &data, size_t &offset, const T &item) {
       .quantity = item.md_entry_size,
   };
   ++offset;
-  return offset < data.size();
+  return offset <= data.size();
 }
 
 template <typename C, typename T>
 static bool trade_update(C &data, size_t &offset, const T &item) {
+  if (offset >= data.size())
+    return false;
   auto &obj = data[offset];
   new (&obj) Trade{
       .side = core::fix::map(item.side),
@@ -60,7 +64,7 @@ static bool trade_update(C &data, size_t &offset, const T &item) {
       .trade_id = item.deribit_trade_id,
   };
   ++offset;
-  return offset < data.size();
+  return offset <= data.size();
 }
 
 template <typename T>
@@ -605,17 +609,15 @@ void Gateway::operator()(
         break;
     }
   }
-  if (ROQ_UNLIKELY(success == false)) {
-    LOG(FATAL)
-    (R"(Insufficient bid/ask/trade array size(s): )"
-     R"(len(bid)={}/{}, len(ask)={}/{}, len(trade)={}/{})",
-     bid_length,
-     bid_.size(),
-     ask_length,
-     ask_.size(),
-     trade_length,
-     trade_.size());
-  }
+  LOG_IF(WARNING, !success)
+  (R"(Insufficient bid/ask/trade array size(s): symbol="{}", len(bid)={}/{}, len(ask)={}/{}, len(trade)={}/{})",
+   market_data_incremental_refresh.symbol,
+   bid_length,
+   bid_.size(),
+   ask_length,
+   ask_.size(),
+   trade_length,
+   trade_.size());
   if (bid_length > 0 || ask_length > 0) {
     MarketByPriceUpdate market_by_price_update{
         .exchange = Flags::exchange(),
