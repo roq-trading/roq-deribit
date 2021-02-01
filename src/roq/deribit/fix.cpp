@@ -134,10 +134,8 @@ void FIX::operator()(const fix::OrderCancelRequest &order_cancel_request) {
 }
 
 void FIX::operator()(metrics::Writer &writer) {
-  writer
-      // counter
+  writer  //
       .write(counter_.disconnect, metrics::COUNTER)
-      // profile
       .write(profile_.parse, metrics::PROFILE)
       .write(profile_.execution_report, metrics::PROFILE)
       .write(profile_.market_data_incremental_refresh, metrics::PROFILE)
@@ -149,7 +147,6 @@ void FIX::operator()(metrics::Writer &writer) {
       .write(profile_.security_list, metrics::PROFILE)
       .write(profile_.security_status, metrics::PROFILE)
       .write(profile_.user_response, metrics::PROFILE)
-      // latency
       .write(latency_.ping, metrics::LATENCY);
 }
 

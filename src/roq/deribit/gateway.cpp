@@ -622,16 +622,8 @@ void Gateway::operator()(
     MarketByPriceUpdate market_by_price_update{
         .exchange = Flags::exchange(),
         .symbol = market_data_incremental_refresh.symbol,
-        .bids =
-            {
-                .items = bid_.data(),
-                .length = bid_length,
-            },
-        .asks =
-            {
-                .items = ask_.data(),
-                .length = ask_length,
-            },
+        .bids = {bid_.data(), bid_length},
+        .asks = {ask_.data(), ask_length},
         .snapshot = false,  // incremental
         .exchange_time_utc = exchange_time_utc,
     };
@@ -643,11 +635,7 @@ void Gateway::operator()(
     TradeSummary trade_summary{
         .exchange = Flags::exchange(),
         .symbol = market_data_incremental_refresh.symbol,
-        .trades =
-            {
-                .items = trade_.data(),
-                .length = trade_length,
-            },
+        .trades = {trade_.data(), trade_length},
         .exchange_time_utc = exchange_time_utc,
     };
     VLOG(3)("trade_summary={}", trade_summary);
@@ -695,16 +683,8 @@ void Gateway::operator()(
   MarketByPriceUpdate market_by_price_update{
       .exchange = Flags::exchange(),
       .symbol = market_data_snapshot_full_refresh.symbol,
-      .bids =
-          {
-              .items = bid_.data(),
-              .length = bid_length,
-          },
-      .asks =
-          {
-              .items = ask_.data(),
-              .length = ask_length,
-          },
+      .bids = {bid_.data(), bid_length},
+      .asks = {ask_.data(), ask_length},
       .snapshot = true,  // reset
       .exchange_time_utc = {},
   };
@@ -947,15 +927,10 @@ void Gateway::subscribe_market_data() {
   }
   LOG(INFO)("Subscribe market data");
   fix::MDReq md_entry_types[] = {
-      {
-          .md_entry_type = core::fix::MDEntryType::BID,
-      },
-      {
-          .md_entry_type = core::fix::MDEntryType::OFFER,
-      },
-      {
-          .md_entry_type = core::fix::MDEntryType::TRADE,
-      }};
+      {.md_entry_type = core::fix::MDEntryType::BID},
+      {.md_entry_type = core::fix::MDEntryType::OFFER},
+      {.md_entry_type = core::fix::MDEntryType::TRADE},
+  };
   std::vector<fix::InstrmtMDReq> related_sym(Flags::fix_market_data_request_max_size());
   for (size_t i = 0;; ++i) {
     auto offset = i * Flags::fix_market_data_request_max_size();
@@ -967,11 +942,14 @@ void Gateway::subscribe_market_data() {
       for (size_t j = 0; j < count; ++j)
         related_sym[j].symbol = symbols_[offset + j];
       auto request_id = dispatcher_.next_request_id();
+      uint32_t market_depth = 20;  // XXX HANS should be flag
+      auto md_update_type = market_depth ? core::fix::MDUpdateType::INCREMENTAL_REFRESH
+                                         : core::fix::MDUpdateType::FULL_REFRESH;
       fix::MarketDataRequest market_data_request{
           .md_req_id = request_id,
           .subscription_request_type = core::fix::SubscriptionRequestType::SNAPSHOT_UPDATES,
-          .market_depth = 20,  // the maximum
-          .md_update_type = core::fix::MDUpdateType::INCREMENTAL_REFRESH,
+          .market_depth = market_depth,
+          .md_update_type = md_update_type,
           .deribit_trade_amount = 0,      // none
           .deribit_since_timestamp = {},  // none
           .no_md_entry_types = roq::span(md_entry_types, std::size(md_entry_types)),

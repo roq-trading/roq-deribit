@@ -198,17 +198,14 @@ template void WebSocket::unsubscribe_ticker(const roq::span<std::string> &);
 template void WebSocket::unsubscribe_ticker(const roq::span<std::string_view> &);
 
 void WebSocket::operator()(metrics::Writer &writer) {
-  writer
-      // counter
+  writer  //
       .write(counter_.disconnect, metrics::COUNTER)
-      // profile
       .write(profile_.parse, metrics::PROFILE)
       .write(profile_.auth, metrics::PROFILE)
       .write(profile_.currencies, metrics::PROFILE)
       .write(profile_.instruments, metrics::PROFILE)
       .write(profile_.positions, metrics::PROFILE)
       .write(profile_.ticker, metrics::PROFILE)
-      // latency
       .write(latency_.ping, metrics::LATENCY)
       .write(latency_.heartbeat, metrics::LATENCY);
 }
