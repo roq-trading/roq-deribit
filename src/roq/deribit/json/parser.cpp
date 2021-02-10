@@ -10,6 +10,8 @@
 
 #include "roq/logging.h"
 
+using namespace std::literals;  // NOLINT
+
 namespace roq {
 namespace deribit {
 namespace json {
@@ -38,10 +40,10 @@ void Parser::dispatch(
       auto field = Field(key);
       switch (field) {
         case Field::UNDEFINED:
-          LOG(FATAL)("Unexpected");
+          LOG(FATAL)("Unexpected"sv);
           break;
         case Field::UNKNOWN:
-          DLOG(FATAL)(R"(Unknown key="{}")", key);
+          DLOG(FATAL)(R"(Unknown key="{}")"sv, key);
           break;
         case Field::CHANNEL: {
           auto name = std::get<std::string_view>(value);
@@ -52,7 +54,7 @@ void Parser::dispatch(
             channel = Channel::UNKNOWN;
           }
           LOG_IF(WARNING, channel == Channel::UNKNOWN)
-          (R"(Can't parse channel="{}")", name);
+          (R"(Can't parse channel="{}")"sv, name);
           break;
         }
         case Field::DATA:
@@ -61,7 +63,7 @@ void Parser::dispatch(
               case Channel::UNDEFINED:
                 break;  // not ready
               case Channel::UNKNOWN:
-                DLOG(FATAL)("Unknown channel");
+                DLOG(FATAL)("Unknown channel"sv);
                 break;
               case Channel::TICKER:
                 dispatched = true;
@@ -75,8 +77,8 @@ void Parser::dispatch(
   }
   if (dispatched)
     return;
-  LOG(WARNING)(R"(message="{}")", message);
-  LOG(FATAL)("Unexpected");
+  LOG(WARNING)(R"(message="{}")"sv, message);
+  LOG(FATAL)("Unexpected"sv);
 }
 
 }  // namespace json

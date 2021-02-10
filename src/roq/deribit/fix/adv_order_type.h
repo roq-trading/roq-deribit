@@ -4,6 +4,8 @@
 
 #include <fmt/format.h>
 
+#include <string_view>
+
 namespace roq {
 namespace deribit {
 namespace fix {
@@ -14,7 +16,7 @@ enum class AdvOrderType : char {
   USD_ORDER = '1',
 };
 
-extern const char *EnumNameAdvOrderType(const AdvOrderType &value);
+extern std::string_view EnumNameAdvOrderType(const AdvOrderType &value);
 
 extern AdvOrderType parse_adv_order_type(const std::string_view &value);
 
@@ -30,6 +32,7 @@ struct fmt::formatter<roq::deribit::fix::AdvOrderType> {
   }
   template <typename C>
   auto format(const roq::deribit::fix::AdvOrderType &value, C &ctx) {
-    return format_to(ctx.out(), "{}", roq::deribit::fix::EnumNameAdvOrderType(value));
+    using namespace std::literals;  // NOLINT
+    return format_to(ctx.out(), "{}"sv, roq::deribit::fix::EnumNameAdvOrderType(value));
   }
 };

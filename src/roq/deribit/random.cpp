@@ -10,6 +10,8 @@
 #include "roq/core/binascii/base64.h"
 #include "roq/core/binascii/hex.h"
 
+using namespace std::literals;  // NOLINT
+
 namespace roq {
 namespace deribit {
 
@@ -44,7 +46,7 @@ std::string Random::create_nonce() {
 
 std::string Random::create_signature(
     std::chrono::milliseconds timestamp, const std::string_view &nonce) {
-  auto message = fmt::format("{}\n{}\n", timestamp.count(), nonce);
+  auto message = fmt::format("{}\n{}\n"sv, timestamp.count(), nonce);
   hmac_.clear();
   hmac_.update(message);
   std::array<char, 32> buffer;
@@ -61,7 +63,7 @@ std::string Random::create_raw_data(const std::chrono::nanoseconds now) {
     buffer[i] = DISTRIBUTION(GENERATOR);
   auto nonce = core::binascii::Base64::encode(buffer.data(), buffer.size() * sizeof(value_type));
   auto msecs = std::chrono::duration_cast<std::chrono::milliseconds>(now).count();
-  return fmt::format("{:013}.{}", msecs, nonce);
+  return fmt::format("{:013}.{}"sv, msecs, nonce);
 }
 
 std::string Random::create_password(const std::string_view &raw_data) {
