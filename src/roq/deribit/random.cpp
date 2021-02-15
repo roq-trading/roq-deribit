@@ -2,8 +2,6 @@
 
 #include "roq/deribit/random.h"
 
-#include <fmt/format.h>
-
 #include <array>
 #include <random>
 
@@ -49,7 +47,7 @@ std::string Random::create_nonce() {
 
 std::string Random::create_signature(
     std::chrono::milliseconds timestamp, const std::string_view &nonce) {
-  auto message = roq::format("{}\n{}\n"_sv, timestamp.count(), nonce);
+  auto message = roq::format("{}\n{}\n"_fmt, timestamp.count(), nonce);
   hmac_.clear();
   hmac_.update(message);
   std::array<char, 32> buffer;
@@ -66,7 +64,7 @@ std::string Random::create_raw_data(const std::chrono::nanoseconds now) {
     buffer[i] = DISTRIBUTION(GENERATOR);
   auto nonce = core::binascii::Base64::encode(buffer.data(), buffer.size() * sizeof(value_type));
   auto msecs = std::chrono::duration_cast<std::chrono::milliseconds>(now).count();
-  return roq::format("{:013}.{}"_sv, msecs, nonce);
+  return roq::format("{:013}.{}"_fmt, msecs, nonce);
 }
 
 std::string Random::create_password(const std::string_view &raw_data) {

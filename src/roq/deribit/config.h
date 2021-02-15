@@ -4,8 +4,6 @@
 
 #include <absl/container/flat_hash_map.h>
 
-#include <fmt/format.h>
-
 #include <string>
 #include <string_view>
 #include <vector>
@@ -64,7 +62,7 @@ struct fmt::formatter<roq::deribit::Config> : public roq::formatter {
         "{{"
         "users=[{}], "
         "accounts=..."
-        "}}"_sv,
-        fmt::join(value.users, ", "_sv));
+        "}}"_fmt,
+        roq::join(value.users, ", "_sv));
   }
 };

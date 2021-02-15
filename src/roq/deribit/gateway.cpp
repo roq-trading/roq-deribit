@@ -168,7 +168,7 @@ void Gateway::operator()(
   core::stack::Buffer<char, 36> buffer;
   roq::format_to(
       std::back_inserter(buffer),
-      "roq-{}-{}-{}"_sv,
+      "roq-{}-{}-{}"_fmt,
       gateway_order_id,
       message_info.source,
       create_order.order_id);

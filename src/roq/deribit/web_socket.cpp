@@ -2,8 +2,6 @@
 
 #include "roq/deribit/web_socket.h"
 
-#include <fmt/format.h>
-
 #include "roq/core/clock.h"
 
 #include "roq/deribit/flags.h"
@@ -108,7 +106,7 @@ void WebSocket::login() {
       R"("signature":"{}")"
       R"(}},)"
       R"("id":"{}")"
-      R"(}})"_sv,
+      R"(}})"_fmt,
       access_key_,
       timestamp.count(),
       nonce,
@@ -124,7 +122,7 @@ void WebSocket::get_currencies() {
       R"("method":"public/get_currencies",)"
       R"("params":{{}},)"
       R"("id":"{}")"
-      R"(}})"_sv,
+      R"(}})"_fmt,
       request_type.as_raw_text());
   connection_.send_text(message);
 }
@@ -138,7 +136,7 @@ void WebSocket::get_instruments(const std::string_view &currency) {
       R"("currency":"{}")"
       R"(}},)"
       R"("id":"{}")"
-      R"(}})"_sv,
+      R"(}})"_fmt,
       currency,
       request_type.as_raw_text());
   connection_.send_text(message);
@@ -153,7 +151,7 @@ void WebSocket::get_positions(const std::string_view &currency) {
       R"("currency":"{}")"
       R"(}},)"
       R"("id":"{}")"
-      R"(}})"_sv,
+      R"(}})"_fmt,
       currency,
       request_type.as_raw_text());
   connection_.send_text(message);
@@ -169,8 +167,8 @@ void WebSocket::subscribe_ticker(const roq::span<T> &symbols) {
       R"("channels":["ticker.{}.raw"])"
       R"(}},)"
       R"("id":"{}")"
-      R"(}})"_sv,
-      fmt::join(symbols, R"(.raw","ticker.)"_sv),
+      R"(}})"_fmt,
+      roq::join(symbols, R"(.raw","ticker.)"_sv),
       request_type.as_raw_text());
   connection_.send_text(message);
 }
@@ -189,8 +187,8 @@ void WebSocket::unsubscribe_ticker(const roq::span<T> &symbols) {
       R"("channels":["ticker.{}.raw"])"
       R"(}},)"
       R"("id":"{}")"
-      R"(}})"_sv,
-      fmt::join(symbols, R"(.raw","ticker.)"_sv),
+      R"(}})"_fmt,
+      roq::join(symbols, R"(.raw","ticker.)"_sv),
       request_type.as_raw_text());
   connection_.send_text(message);
 }
