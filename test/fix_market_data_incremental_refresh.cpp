@@ -6,8 +6,8 @@
 
 #include "roq/deribit/fix/market_data_incremental_refresh.h"
 
-using namespace roq;           // NOLINT
-using namespace roq::deribit;  // NOLINT
+using namespace roq;
+using namespace roq::deribit;
 
 TEST(fix_market_data_incremental_refresh, parse_message_1) {
   const char *message =

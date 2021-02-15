@@ -6,8 +6,8 @@
 
 #include "roq/deribit/fix/logout.h"
 
-using namespace roq;           // NOLINT
-using namespace roq::deribit;  // NOLINT
+using namespace roq;
+using namespace roq::deribit;
 
 TEST(fix_logout, parse_message) {
   const char *message =

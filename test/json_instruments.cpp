@@ -4,8 +4,8 @@
 
 #include "roq/deribit/json/instrument.h"
 
-using namespace roq;           // NOLINT
-using namespace roq::deribit;  // NOLINT
+using namespace roq;
+using namespace roq::deribit;
 
 TEST(json_instrument, parse_message) {
   const char *message = R"({)"

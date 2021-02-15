@@ -6,8 +6,8 @@
 
 #include "roq/deribit/fix/reject.h"
 
-using namespace roq;           // NOLINT
-using namespace roq::deribit;  // NOLINT
+using namespace roq;
+using namespace roq::deribit;
 
 TEST(fix_reject, parse_message) {
   const char *message =

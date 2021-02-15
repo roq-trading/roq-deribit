@@ -4,8 +4,8 @@
 
 #include "roq/deribit/fix/market_data_snapshot_full_refresh.h"
 
-using namespace roq;           // NOLINT
-using namespace roq::deribit;  // NOLINT
+using namespace roq;
+using namespace roq::deribit;
 
 namespace {
 static const char *MESSAGE =

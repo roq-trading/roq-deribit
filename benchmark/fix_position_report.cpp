@@ -4,8 +4,8 @@
 
 #include "roq/deribit/fix/position_report.h"
 
-using namespace roq;           // NOLINT
-using namespace roq::deribit;  // NOLINT
+using namespace roq;
+using namespace roq::deribit;
 
 namespace {
 static const char *MESSAGE =

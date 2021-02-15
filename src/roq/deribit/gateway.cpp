@@ -18,7 +18,7 @@
 
 #include "roq/deribit/fix/utils.h"
 
-using namespace std::literals;  // NOLINT
+using namespace roq::literals;
 
 namespace roq {
 namespace deribit {
@@ -42,7 +42,7 @@ static bool mbp_update(C &data, size_t &offset, const T &item) {
       break;
     case core::fix::MDUpdateAction::DELETE_THRU:
     case core::fix::MDUpdateAction::DELETE_FROM:
-      throw std::runtime_error("MDUpdateAction not supported"s);
+      throw std::runtime_error("MDUpdateAction not supported"_s);
       break;
   }
   auto &obj = data[offset];
@@ -115,17 +115,17 @@ Gateway::Gateway(server::Dispatcher &dispatcher, const Config &config)
       ask_(Flags::cache_mbp_max_depth()), trade_(Flags::cache_trades_max_depth()),
       statistics_(StatisticsType::MAX) {
   LOG_IF(WARNING, Flags::fix_cancel_on_disconnect() == false)
-  ("Orders will *NOT* be cancelled on disconnect"sv);
+  ("Orders will *NOT* be cancelled on disconnect"_sv);
 }
 
 void Gateway::operator()(const Event<Start> &event) {
-  LOG(INFO)("Starting the gateway..."sv);
+  LOG(INFO)("Starting the gateway..."_sv);
   web_socket_.connection(event);
   fix_.connection(event);
 }
 
 void Gateway::operator()(const Event<Stop> &event) {
-  LOG(INFO)("Stopping the gateway..."sv);
+  LOG(INFO)("Stopping the gateway..."_sv);
   web_socket_.connection(event);
   fix_.connection(event);
 }
@@ -136,7 +136,7 @@ void Gateway::operator()(const Event<Timer> &event) {
   // fix
   /*
   if (fix_.download.has_expired()) {
-    LOG(WARNING)("FIX download has timed out"sv);
+    LOG(WARNING)("FIX download has timed out"_sv);
     fix_.download.reset();
     fix_.connection.close();
   }
@@ -144,7 +144,7 @@ void Gateway::operator()(const Event<Timer> &event) {
   // web socket
   /*
   if (web_socket_.download.has_expired()) {
-    LOG(WARNING)("WebSocket download has timed out"sv);
+    LOG(WARNING)("WebSocket download has timed out"_sv);
     web_socket_.download.reset();
     web_socket_.connection.close();
   }
@@ -162,13 +162,13 @@ void Gateway::operator()(
   auto &message_info = event.message_info;
   auto &create_order = event.value;
   if (std::isfinite(create_order.stop_price))
-    throw std::runtime_error("stop_price not supported"s);
+    throw std::runtime_error("stop_price not supported"_s);
   if (std::isfinite(create_order.max_show_quantity))
-    throw std::runtime_error("max_show_quantity not supported"s);
+    throw std::runtime_error("max_show_quantity not supported"_s);
   core::stack::Buffer<char, 36> buffer;
-  fmt::format_to(
+  roq::format_to(
       std::back_inserter(buffer),
-      "roq-{}-{}-{}"sv,
+      "roq-{}-{}-{}"_sv,
       gateway_order_id,
       message_info.source,
       create_order.order_id);
@@ -252,7 +252,7 @@ uint32_t Gateway::download(WebSocketDownload::State state) {
         web_socket_.connection.get_positions(currency);
       return currencies_2_.size();
     case WebSocketDownload::State::DONE:
-      LOG(INFO)("Ready"sv);
+      LOG(INFO)("Ready"_sv);
       web_socket_.connection.subscribe_ticker(roq::span(symbols_2_.data(), symbols_2_.size()));
       return 0;
   }
@@ -272,7 +272,7 @@ void Gateway::operator()(const WebSocket &) {
 
 void Gateway::operator()(const json::Currencies &currencies, const server::TraceInfo &) {
   constexpr auto state = WebSocketDownload::State::CURRENCIES;
-  VLOG(1)(R"(currencies={})"sv, currencies);
+  VLOG(1)(R"(currencies={})"_sv, currencies);
   assert(currencies_2_.empty());
   std::transform(
       currencies.data.begin(),
@@ -284,7 +284,7 @@ void Gateway::operator()(const json::Currencies &currencies, const server::Trace
 
 void Gateway::operator()(const json::Instruments &instruments, const server::TraceInfo &) {
   constexpr auto state = WebSocketDownload::State::INSTRUMENTS;
-  VLOG(1)(R"(instruments={})"sv, instruments);
+  VLOG(1)(R"(instruments={})"_sv, instruments);
   for (auto &item : instruments.data) {
     if (dispatcher_.discard_symbol(item.instrument_name))
       continue;
@@ -295,13 +295,13 @@ void Gateway::operator()(const json::Instruments &instruments, const server::Tra
 
 void Gateway::operator()(const json::Positions &positions, const server::TraceInfo &) {
   constexpr auto state = WebSocketDownload::State::POSITIONS;
-  VLOG(1)(R"(positions={})"sv, positions);
+  VLOG(1)(R"(positions={})"_sv, positions);
   // XXX do something
   web_socket_.download.check(state);
 }
 
 void Gateway::operator()(const json::Ticker &ticker, const server::TraceInfo &trace_info) {
-  VLOG(3)(R"(ticker={})"sv, ticker);
+  VLOG(3)(R"(ticker={})"_sv, ticker);
   auto &layer = top_of_book_[ticker.instrument_name];
   TopOfBook top_of_book = {
       .exchange = Flags::exchange(),
@@ -353,7 +353,7 @@ uint32_t Gateway::download(FIXDownload::State state) {
       download_user();
       return currencies_.size();
     case FIXDownload::State::DONE:
-      LOG(INFO)("Ready"sv);
+      LOG(INFO)("Ready"_sv);
       update(GatewayStatus::READY);
       subscribe_market_data();
       return 0;
@@ -398,7 +398,7 @@ auto compute_request_status(
     case core::fix::ExecType::REJECTED: {
       switch (request_type) {
         case RequestType::UNDEFINED:
-          LOG(WARNING)("*** EXTERNAL ACTION ***"sv);
+          LOG(WARNING)("*** EXTERNAL ACTION ***"_sv);
           break;
         case RequestType::CREATE_ORDER:
         case RequestType::MODIFY_ORDER:
@@ -410,11 +410,11 @@ auto compute_request_status(
     case core::fix::ExecType::CANCELED: {
       switch (request_type) {
         case RequestType::UNDEFINED:
-          LOG(WARNING)("*** EXTERNAL ACTION ***"sv);
+          LOG(WARNING)("*** EXTERNAL ACTION ***"_sv);
           break;
         case RequestType::CREATE_ORDER:
         case RequestType::MODIFY_ORDER:
-          DLOG(FATAL)("UNEXPECTED"sv);
+          DLOG(FATAL)("UNEXPECTED"_sv);
           break;
         case RequestType::CANCEL_ORDER:
           return RequestStatus::ACCEPTED;
@@ -426,13 +426,13 @@ auto compute_request_status(
         case core::fix::OrdStatus::NEW: {
           switch (request_type) {
             case RequestType::UNDEFINED:
-              LOG_IF(WARNING, download == false)("*** EXTERNAL ACTION ***"sv);
+              LOG_IF(WARNING, download == false)("*** EXTERNAL ACTION ***"_sv);
               break;
             case RequestType::CREATE_ORDER:
             case RequestType::MODIFY_ORDER:
               return RequestStatus::ACCEPTED;
             case RequestType::CANCEL_ORDER:
-              DLOG(FATAL)("UNEXPECTED"sv);
+              DLOG(FATAL)("UNEXPECTED"_sv);
               break;
           }
           break;
@@ -446,19 +446,19 @@ auto compute_request_status(
               break;
             case RequestType::CREATE_ORDER:
             case RequestType::MODIFY_ORDER:
-              LOG(WARNING)("*** EXTERNAL ACTION ***"sv);
+              LOG(WARNING)("*** EXTERNAL ACTION ***"_sv);
               break;
             case RequestType::CANCEL_ORDER:
               return RequestStatus::ACCEPTED;
           }
           break;
         default:
-          DLOG(FATAL)("UNEXPECTED"sv);
+          DLOG(FATAL)("UNEXPECTED"_sv);
           break;
       }
       break;
     default:
-      DLOG(FATAL)("UNEXPECTED"sv);
+      DLOG(FATAL)("UNEXPECTED"_sv);
       break;
   }
   return RequestStatus::UNDEFINED;
@@ -466,7 +466,7 @@ auto compute_request_status(
 
 void Gateway::operator()(
     const fix::ExecutionReport &execution_report, const server::TraceInfo &trace_info) {
-  DLOG(INFO)(R"(execution_report={})"sv, execution_report);
+  DLOG(INFO)(R"(execution_report={})"_sv, execution_report);
 
   // download begin?
   switch (execution_report.mass_status_req_type) {
@@ -518,7 +518,7 @@ void Gateway::operator()(
         if (ROQ_UNLIKELY(success == false)) {
           LOG(FATAL)
           (R"(Insufficient fill array size(s): )"
-           R"(len(fill)={}/{}={}/{})"sv,
+           R"(len(fill)={}/{}={}/{})"_sv,
            fill_length,
            execution_report.no_fills.size());
         }
@@ -548,11 +548,11 @@ void Gateway::operator()(
   if (found == false) {
     auto external = execution_report.deribit_label.empty();
     if (external) {
-      LOG(WARNING)("*** EXTERNAL ORDER ***"sv);
+      LOG(WARNING)("*** EXTERNAL ORDER ***"_sv);
     } else {
-      LOG(WARNING)("*** UNKNOWN INTERNAL ORDER ***"sv);
+      LOG(WARNING)("*** UNKNOWN INTERNAL ORDER ***"_sv);
     }
-    LOG(WARNING)("execution_report={}"sv, execution_report);
+    LOG(WARNING)("execution_report={}"_sv, execution_report);
   }
 
   // download end?
@@ -607,13 +607,13 @@ void Gateway::operator()(
         };
         break;
       default:
-        LOG(WARNING)(R"(unsupported: {})"sv, item);
+        LOG(WARNING)(R"(unsupported: {})"_sv, item);
         break;
     }
   }
   LOG_IF(WARNING, !success)
   (R"(Insufficient bid/ask/trade array size(s): )"
-   R"(symbol="{}", len(bid)={}/{}, len(ask)={}/{}, len(trade)={}/{})"sv,
+   R"(symbol="{}", len(bid)={}/{}, len(ask)={}/{}, len(trade)={}/{})"_sv,
    market_data_incremental_refresh.symbol,
    bid_length,
    bid_.size(),
@@ -630,7 +630,7 @@ void Gateway::operator()(
         .snapshot = false,  // incremental
         .exchange_time_utc = exchange_time_utc,
     };
-    VLOG(3)("market_by_price_update={}"sv, market_by_price_update);
+    VLOG(3)("market_by_price_update={}"_sv, market_by_price_update);
     auto last = trade_length == 0;
     server::create_trace_and_dispatch(trace_info, market_by_price_update, dispatcher_, last);
   }
@@ -641,7 +641,7 @@ void Gateway::operator()(
         .trades = {trade_.data(), trade_length},
         .exchange_time_utc = exchange_time_utc,
     };
-    VLOG(3)("trade_summary={}"sv, trade_summary);
+    VLOG(3)("trade_summary={}"_sv, trade_summary);
     server::create_trace_and_dispatch(trace_info, trade_summary, dispatcher_, true);
   }
   if (statistics_length > 0) {
@@ -652,14 +652,14 @@ void Gateway::operator()(
         .snapshot = false,
         .exchange_time_utc = exchange_time_utc,
     };
-    VLOG(3)("statistics_update={}"sv, statistics_update);
+    VLOG(3)("statistics_update={}"_sv, statistics_update);
     server::create_trace_and_dispatch(trace_info, statistics_update, dispatcher_, true);
   }
 }
 
 void Gateway::operator()(const fix::MarketDataRequestReject &, const server::TraceInfo &) {
   assert(gateway_status_ == GatewayStatus::READY);
-  LOG(FATAL)("Unexpected"sv);  // don't know how to continue
+  LOG(FATAL)("Unexpected"_sv);  // don't know how to continue
 }
 
 void Gateway::operator()(
@@ -667,7 +667,7 @@ void Gateway::operator()(
     const server::TraceInfo &trace_info) {
   assert(gateway_status_ == GatewayStatus::READY);
   VLOG(1)
-  (R"(Received market data snapshot for symbol="{}")"sv, market_data_snapshot_full_refresh.symbol);
+  (R"(Received market data snapshot for symbol="{}")"_sv, market_data_snapshot_full_refresh.symbol);
   size_t bid_length = 0, ask_length = 0;
   for (auto &item : market_data_snapshot_full_refresh.no_md_entries) {
     switch (item.md_entry_type) {
@@ -717,7 +717,7 @@ void Gateway::operator()(
       trace_info,
       [&](const auto &order, auto &result) {
         DLOG_IF(FATAL, order.request_type != RequestType::MODIFY_ORDER)
-        ("UNEXPECTED"sv);
+        ("UNEXPECTED"_sv);
 
         result.origin = Origin::EXCHANGE;
         result.request_status = RequestStatus::REJECTED;
@@ -726,14 +726,14 @@ void Gateway::operator()(
       });
 
   if (found == false) {
-    LOG(WARNING)("*** EXTERNAL ORDER ***"sv);
-    LOG(WARNING)("order_cancel_reject={}"sv, order_cancel_reject);
+    LOG(WARNING)("*** EXTERNAL ORDER ***"_sv);
+    LOG(WARNING)("order_cancel_reject={}"_sv, order_cancel_reject);
   }
 }
 
 void Gateway::operator()(
     const fix::PositionReport &position_report, const server::TraceInfo &trace_info) {
-  VLOG(1)(R"(position_report={})"sv, position_report);
+  VLOG(1)(R"(position_report={})"_sv, position_report);
   switch (position_report.pos_req_result) {
     case core::fix::PosReqResult::VALID:
       switch (position_report.pos_req_type) {
@@ -769,12 +769,12 @@ void Gateway::operator()(
           break;
         }
         default:
-          DLOG(FATAL)("UNEXPECTED"sv);
+          DLOG(FATAL)("UNEXPECTED"_sv);
           break;
       }
       break;
     default:
-      DLOG(FATAL)("UNEXPECTED"sv);
+      DLOG(FATAL)("UNEXPECTED"_sv);
       break;
   }
   // note! relaxed because we receive duplicate updates
@@ -782,12 +782,12 @@ void Gateway::operator()(
 }
 
 void Gateway::operator()(const fix::Reject &reject, const server::TraceInfo &) {
-  LOG(WARNING)(R"(reject={})"sv, reject);
-  if (reject.session_reject_reason.compare("99"sv) == 0 &&
-      reject.text.compare("connection_too_slow"sv) == 0) {
+  LOG(WARNING)(R"(reject={})"_sv, reject);
+  if (reject.session_reject_reason.compare("99"_sv) == 0 &&
+      reject.text.compare("connection_too_slow"_sv) == 0) {
     fix_.connection.close();
   } else {
-    LOG(FATAL)("Unexpected"sv);
+    LOG(FATAL)("Unexpected"_sv);
   }
 }
 
@@ -799,7 +799,7 @@ void Gateway::operator()(
     size_t security_count = 0;
     symbols_.reserve(security_list.no_related_sym.size());  // note! alloc
     for (auto &instrument : security_list.no_related_sym) {
-      VLOG(1)(R"(instrument={})"sv, instrument);
+      VLOG(1)(R"(instrument={})"_sv, instrument);
       // note!
       //   USD will cause a Reject
       //   using commission currency because it requires funding
@@ -841,7 +841,7 @@ void Gateway::operator()(
       ++security_count;
     }
     VLOG(1)
-    (R"(- securities: {} (/{}))"sv, security_count, security_list.no_related_sym.size());
+    (R"(- securities: {} (/{}))"_sv, security_count, security_list.no_related_sym.size());
   }
   fix_.download.check(FIXDownload::State::SECURITIES);
 }
@@ -876,7 +876,7 @@ void Gateway::update(GatewayStatus gateway_status) {
       .status = gateway_status_,
   };
   server::create_trace_and_dispatch(trace_info, order_manager_status, dispatcher_, true);
-  LOG(INFO)(R"(Update: gateway_status={})"sv, gateway_status_);
+  LOG(INFO)(R"(Update: gateway_status={})"_sv, gateway_status_);
 }
 
 void Gateway::download_securities() {
@@ -925,10 +925,10 @@ void Gateway::download_user() {
 void Gateway::subscribe_market_data() {
   assert(gateway_status_ == GatewayStatus::READY);
   if (symbols_.empty()) {
-    LOG(WARNING)("Can't subscribe market data, reason: NO SYMBOLS"sv);
+    LOG(WARNING)("Can't subscribe market data, reason: NO SYMBOLS"_sv);
     return;
   }
-  LOG(INFO)("Subscribe market data"sv);
+  LOG(INFO)("Subscribe market data"_sv);
   fix::MDReq md_entry_types[] = {
       {.md_entry_type = core::fix::MDEntryType::BID},
       {.md_entry_type = core::fix::MDEntryType::OFFER},

@@ -2,7 +2,7 @@
 
 #include "roq/deribit/fix/adv_order_type.h"
 
-using namespace std::literals;  // NOLINT
+using namespace roq::literals;
 
 namespace roq {
 namespace deribit {
@@ -11,11 +11,11 @@ namespace fix {
 std::string_view EnumNameAdvOrderType(const AdvOrderType &value) {
   switch (value) {
     case AdvOrderType::IMPLIED_VOLATILITY_ORDER:
-      return "IMPLIED_VOLATILITY_ORDER"sv;
+      return "IMPLIED_VOLATILITY_ORDER"_sv;
     case AdvOrderType::USD_ORDER:
-      return "USD_ORDER"sv;
+      return "USD_ORDER"_sv;
     default:
-      return "UNKNOWN"sv;
+      return "UNKNOWN"_sv;
   }
 }
 

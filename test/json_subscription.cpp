@@ -4,8 +4,8 @@
 
 #include "roq/deribit/json/parser.h"
 
-using namespace roq;           // NOLINT
-using namespace roq::deribit;  // NOLINT
+using namespace roq;
+using namespace roq::deribit;
 
 struct MyHandler : public json::Parser::Handler {
   void operator()(const json::Ticker &, const server::TraceInfo &) override {}

@@ -6,6 +6,9 @@
 
 #include <string_view>
 
+#include "roq/format.h"
+#include "roq/literals.h"
+
 namespace roq {
 namespace deribit {
 namespace fix {
@@ -25,14 +28,10 @@ extern AdvOrderType parse_adv_order_type(const std::string_view &value);
 }  // namespace roq
 
 template <>
-struct fmt::formatter<roq::deribit::fix::AdvOrderType> {
-  template <typename C>
-  constexpr auto parse(C &ctx) {
-    return ctx.begin();
-  }
+struct fmt::formatter<roq::deribit::fix::AdvOrderType> : public roq::formatter {
   template <typename C>
   auto format(const roq::deribit::fix::AdvOrderType &value, C &ctx) {
-    using namespace std::literals;  // NOLINT
-    return format_to(ctx.out(), "{}"sv, roq::deribit::fix::EnumNameAdvOrderType(value));
+    using namespace roq::literals;
+    return roq::format_to(ctx.out(), "{}"_sv, roq::deribit::fix::EnumNameAdvOrderType(value));
   }
 };

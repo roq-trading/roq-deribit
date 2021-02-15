@@ -6,8 +6,8 @@
 
 #include "roq/deribit/fix/order_cancel_reject.h"
 
-using namespace roq;           // NOLINT
-using namespace roq::deribit;  // NOLINT
+using namespace roq;
+using namespace roq::deribit;
 
 TEST(fix_order_cancel_reject, parse_message) {
   const char *message =

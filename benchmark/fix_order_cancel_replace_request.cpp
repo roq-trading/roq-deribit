@@ -4,8 +4,8 @@
 
 #include "roq/deribit/fix/order_cancel_replace_request.h"
 
-using namespace roq;           // NOLINT
-using namespace roq::deribit;  // NOLINT
+using namespace roq;
+using namespace roq::deribit;
 
 void BM_fix_order_cancel_replace_request_create_message(
     benchmark::State &state) {  // cppcheck-suppress constParameterCallback

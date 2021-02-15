@@ -4,8 +4,8 @@
 
 #include "roq/deribit/json/ticker.h"
 
-using namespace roq;           // NOLINT
-using namespace roq::deribit;  // NOLINT
+using namespace roq;
+using namespace roq::deribit;
 
 TEST(json_ticker, parse_message) {
   const char *message = R"({)"

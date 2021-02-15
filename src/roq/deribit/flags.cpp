@@ -12,77 +12,77 @@
 #include "roq/core/flags/path.h"
 #include "roq/core/flags/uri.h"
 
-using namespace std::literals;  // NOLINT
+using namespace roq::literals;
 
 ABSL_FLAG(  //
     roq::core::flags::Path<std::string>,
     config_file,
     {},
-    "config file (path)"sv);
+    "config file (path)"_sv);
 
 ABSL_FLAG(  //
     roq::core::flags::NonEmpty<std::string>,
     exchange,
-    "deribit"s,
-    "exchange identifier (string)"sv);
+    "deribit"_s,
+    "exchange identifier (string)"_sv);
 
 // ws
 
 ABSL_FLAG(  //
     roq::core::flags::URI<std::string>,
     ws_uri,
-    "wss://test.deribit.com/ws/api/v2"s,
-    "WebSocket end-point (URI)"sv);
+    "wss://test.deribit.com/ws/api/v2"_s,
+    "WebSocket end-point (URI)"_sv);
 
 ABSL_FLAG(  //
     roq::core::flags::NonZero<uint32_t>,
     ws_ping_freq_secs,
     uint32_t{5},
-    "ping frequency (seconds)"sv);
+    "ping frequency (seconds)"_sv);
 
 ABSL_FLAG(  //
     uint32_t,
     ws_request_timeout_secs,
     uint32_t{15},
-    "request timeout (seconds)"sv);
+    "request timeout (seconds)"_sv);
 
 // fix
 
 ABSL_FLAG(  //
     roq::core::flags::URI<std::string>,
     fix_uri,
-    "tcp://test.deribit.com:9881"s,
-    "FIX end-point (URI)"sv);
+    "tcp://test.deribit.com:9881"_s,
+    "FIX end-point (URI)"_sv);
 
 ABSL_FLAG(  //
     roq::core::flags::NonZero<uint32_t>,
     fix_ping_freq_secs,
     uint32_t{5},
-    "ping frequency (seconds)"sv);
+    "ping frequency (seconds)"_sv);
 
 ABSL_FLAG(  //
     uint32_t,
     fix_request_timeout_secs,
     uint32_t{15},
-    "request timeout (seconds)"sv);
+    "request timeout (seconds)"_sv);
 
 ABSL_FLAG(  //
     bool,
     fix_cancel_on_disconnect,
     true,
-    "cancel orders on disconnect? (bool)"sv);
+    "cancel orders on disconnect? (bool)"_sv);
 
 ABSL_FLAG(  //
     uint32_t,
     fix_market_data_request_max_size,
     uint32_t{56},
-    "max batch size (it appears there is a limit)"sv);
+    "max batch size (it appears there is a limit)"_sv);
 
 ABSL_FLAG(  //
     bool,
     fix_debug,
     false,
-    "log fix messages?"sv);
+    "log fix messages?"_sv);
 
 // XXX review
 
@@ -90,13 +90,13 @@ ABSL_FLAG(  //
     roq::core::flags::NonZero<uint32_t>,
     encode_buffer_size,
     uint32_t{1048576},
-    "encode buffer size"sv);
+    "encode buffer size"_sv);
 
 ABSL_FLAG(  //
     roq::core::flags::NonZero<uint32_t>,
     decode_buffer_size,
     uint32_t{10485760},
-    "decode buffer size"sv);
+    "decode buffer size"_sv);
 
 // external
 

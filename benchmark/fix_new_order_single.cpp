@@ -4,8 +4,8 @@
 
 #include "roq/deribit/fix/new_order_single.h"
 
-using namespace roq;           // NOLINT
-using namespace roq::deribit;  // NOLINT
+using namespace roq;
+using namespace roq::deribit;
 
 // cppcheck-suppress constParameterCallback
 void BM_fix_new_order_single_create_message(benchmark::State &state) {

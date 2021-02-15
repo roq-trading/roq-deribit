@@ -12,13 +12,13 @@
 #include "roq/deribit/json/method.h"
 #include "roq/deribit/json/request_type.h"
 
-using namespace std::literals;  // NOLINT
+using namespace roq::literals;
 
 namespace roq {
 namespace deribit {
 
 namespace {
-constexpr std::string_view CONNECTION = "ws"sv;
+constexpr std::string_view CONNECTION = "ws"_sv;
 
 static auto create_counter(const std::string_view &function) {
   return core::metrics::Counter(Flags::name(), CONNECTION, function);
@@ -54,19 +54,19 @@ WebSocket::WebSocket(
           []() { return std::string(); }),
       decode_buffer_(Flags::decode_buffer_size()),
       counter_{
-          .disconnect = create_counter("disconnect"sv),
+          .disconnect = create_counter("disconnect"_sv),
       },
       profile_{
-          .parse = create_profile("parse"sv),
-          .auth = create_profile("auth"sv),
-          .currencies = create_profile("currencies"sv),
-          .instruments = create_profile("instruments"sv),
-          .positions = create_profile("positions"sv),
-          .ticker = create_profile("ticker"sv),
+          .parse = create_profile("parse"_sv),
+          .auth = create_profile("auth"_sv),
+          .currencies = create_profile("currencies"_sv),
+          .instruments = create_profile("instruments"_sv),
+          .positions = create_profile("positions"_sv),
+          .ticker = create_profile("ticker"_sv),
       },
       latency_{
-          .ping = create_latency("ping"sv),
-          .heartbeat = create_latency("heartbeat"sv),
+          .ping = create_latency("ping"_sv),
+          .heartbeat = create_latency("heartbeat"_sv),
       } {
 }
 
@@ -96,7 +96,7 @@ void WebSocket::login() {
       std::chrono::duration_cast<std::chrono::milliseconds>(core::get_realtime_clock());
   auto nonce = random_.create_nonce();
   auto signature = random_.create_signature(timestamp, nonce);
-  auto message = fmt::format(
+  auto message = roq::format(
       R"({{)"
       R"("method":"public/auth",)"
       R"("params":{{)"
@@ -108,7 +108,7 @@ void WebSocket::login() {
       R"("signature":"{}")"
       R"(}},)"
       R"("id":"{}")"
-      R"(}})"sv,
+      R"(}})"_sv,
       access_key_,
       timestamp.count(),
       nonce,
@@ -119,26 +119,26 @@ void WebSocket::login() {
 
 void WebSocket::get_currencies() {
   constexpr json::RequestType request_type = json::RequestType::GET_CURRENCIES;
-  auto message = fmt::format(
+  auto message = roq::format(
       R"({{)"
       R"("method":"public/get_currencies",)"
       R"("params":{{}},)"
       R"("id":"{}")"
-      R"(}})"sv,
+      R"(}})"_sv,
       request_type.as_raw_text());
   connection_.send_text(message);
 }
 
 void WebSocket::get_instruments(const std::string_view &currency) {
   constexpr json::RequestType request_type = json::RequestType::GET_INSTRUMENTS;
-  auto message = fmt::format(
+  auto message = roq::format(
       R"({{)"
       R"("method":"public/get_instruments",)"
       R"("params":{{)"
       R"("currency":"{}")"
       R"(}},)"
       R"("id":"{}")"
-      R"(}})"sv,
+      R"(}})"_sv,
       currency,
       request_type.as_raw_text());
   connection_.send_text(message);
@@ -146,14 +146,14 @@ void WebSocket::get_instruments(const std::string_view &currency) {
 
 void WebSocket::get_positions(const std::string_view &currency) {
   constexpr json::RequestType request_type = json::RequestType::GET_POSITIONS;
-  auto message = fmt::format(
+  auto message = roq::format(
       R"({{)"
       R"("method":"private/get_positions",)"
       R"("params":{{)"
       R"("currency":"{}")"
       R"(}},)"
       R"("id":"{}")"
-      R"(}})"sv,
+      R"(}})"_sv,
       currency,
       request_type.as_raw_text());
   connection_.send_text(message);
@@ -162,15 +162,15 @@ void WebSocket::get_positions(const std::string_view &currency) {
 template <typename T>
 void WebSocket::subscribe_ticker(const roq::span<T> &symbols) {
   constexpr json::RequestType request_type = json::RequestType::SUBSCRIBE_TICKER;
-  auto message = fmt::format(
+  auto message = roq::format(
       R"({{)"
       R"("method":"public/subscribe",)"
       R"("params":{{)"
       R"("channels":["ticker.{}.raw"])"
       R"(}},)"
       R"("id":"{}")"
-      R"(}})"sv,
-      fmt::join(symbols, R"(.raw","ticker.)"sv),
+      R"(}})"_sv,
+      fmt::join(symbols, R"(.raw","ticker.)"_sv),
       request_type.as_raw_text());
   connection_.send_text(message);
 }
@@ -182,15 +182,15 @@ template void WebSocket::subscribe_ticker(const roq::span<std::string_view> &);
 template <typename T>
 void WebSocket::unsubscribe_ticker(const roq::span<T> &symbols) {
   constexpr json::RequestType request_type = json::RequestType::UNSUBSCRIBE_TICKER;
-  auto message = fmt::format(
+  auto message = roq::format(
       R"({{)"
       R"("method":"public/unsubscribe",)"
       R"("params":{{)"
       R"("channels":["ticker.{}.raw"])"
       R"(}},)"
       R"("id":"{}")"
-      R"(}})"sv,
-      fmt::join(symbols, R"(.raw","ticker.)"sv),
+      R"(}})"_sv,
+      fmt::join(symbols, R"(.raw","ticker.)"_sv),
       request_type.as_raw_text());
   connection_.send_text(message);
 }
@@ -248,15 +248,15 @@ void WebSocket::parse(const std::string_view &message) {
     try {
       core::jsonrpc::Parser::dispatch(*this, message);
     } catch (std::exception &e) {
-      LOG(WARNING)(R"(message="{}")"sv, message);
-      LOG(FATAL)(R"("ERROR what="{}")"sv, e.what());
+      LOG(WARNING)(R"(message="{}")"_sv, message);
+      LOG(FATAL)(R"("ERROR what="{}")"_sv, e.what());
     }
   });
 }
 
 void WebSocket::operator()(const core::jsonrpc::Error &error, core::json::value_t &value) {
   json::Error error_2(value);
-  LOG(FATAL)(R"(error={}, id="{}")"sv, error_2, error.id);
+  LOG(FATAL)(R"(error={}, id="{}")"_sv, error_2, error.id);
 }
 
 void WebSocket::operator()(const core::jsonrpc::Result &result, core::json::value_t &value) {
@@ -266,7 +266,7 @@ void WebSocket::operator()(const core::jsonrpc::Result &result, core::json::valu
     case json::RequestType::UNDEFINED:
       break;
     case json::RequestType::UNKNOWN:
-      DLOG(FATAL)(R"(Unknown request_type="{}")"sv, result.id);
+      DLOG(FATAL)(R"(Unknown request_type="{}")"_sv, result.id);
       break;
     case json::RequestType::AUTH: {
       json::Auth auth(value);
@@ -305,7 +305,7 @@ void WebSocket::operator()(
     case json::Method::UNDEFINED:
       break;
     case json::Method::UNKNOWN:
-      DLOG(FATAL)(R"(Unknown method="{}")"sv, notification.method);
+      DLOG(FATAL)(R"(Unknown method="{}")"_sv, notification.method);
       break;
     case json::Method::SUBSCRIPTION: {
       core::json::Buffer buffer(decode_buffer_);
@@ -317,8 +317,8 @@ void WebSocket::operator()(
 
 void WebSocket::operator()(const json::Auth &auth, const server::TraceInfo &) {
   profile_.auth([&]() {
-    VLOG(1)(R"(auth={})"sv, auth);
-    LOG(INFO)("Ready"sv);
+    VLOG(1)(R"(auth={})"_sv, auth);
+    LOG(INFO)("Ready"_sv);
     assert(ready_ == false);
     ready_ = true;
     handler_(*this);
@@ -328,7 +328,7 @@ void WebSocket::operator()(const json::Auth &auth, const server::TraceInfo &) {
 void WebSocket::operator()(
     const json::Currencies &currencies, const server::TraceInfo &trace_info) {
   profile_.currencies([&]() {
-    VLOG(1)(R"(currencies={})"sv, currencies);
+    VLOG(1)(R"(currencies={})"_sv, currencies);
     handler_(currencies, trace_info);
   });
 }
@@ -336,21 +336,21 @@ void WebSocket::operator()(
 void WebSocket::operator()(
     const json::Instruments &instruments, const server::TraceInfo &trace_info) {
   profile_.instruments([&]() {
-    VLOG(1)(R"(instruments={})"sv, instruments);
+    VLOG(1)(R"(instruments={})"_sv, instruments);
     handler_(instruments, trace_info);
   });
 }
 
 void WebSocket::operator()(const json::Positions &positions, const server::TraceInfo &trace_info) {
   profile_.positions([&]() {
-    VLOG(1)(R"(positions={})"sv, positions);
+    VLOG(1)(R"(positions={})"_sv, positions);
     handler_(positions, trace_info);
   });
 }
 
 void WebSocket::operator()(const json::Ticker &ticker, const server::TraceInfo &trace_info) {
   profile_.ticker([&]() {
-    VLOG(2)(R"(ticker={})"sv, ticker);
+    VLOG(2)(R"(ticker={})"_sv, ticker);
     handler_(ticker, trace_info);
   });
 }

@@ -6,8 +6,8 @@
 
 #include "roq/deribit/fix/security_list.h"
 
-using namespace roq;           // NOLINT
-using namespace roq::deribit;  // NOLINT
+using namespace roq;
+using namespace roq::deribit;
 
 namespace {
 const char *message =

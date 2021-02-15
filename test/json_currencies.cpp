@@ -4,8 +4,8 @@
 
 #include "roq/deribit/json/currency.h"
 
-using namespace roq;           // NOLINT
-using namespace roq::deribit;  // NOLINT
+using namespace roq;
+using namespace roq::deribit;
 
 TEST(json_currency, parse_message) {
   const char *message =

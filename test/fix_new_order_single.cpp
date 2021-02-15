@@ -7,8 +7,8 @@
 
 #include "roq/deribit/fix/new_order_single.h"
 
-using namespace roq;           // NOLINT
-using namespace roq::deribit;  // NOLINT
+using namespace roq;
+using namespace roq::deribit;
 
 TEST(fix_new_order_single, create_message) {
   core::utils::Buffer buffer(4096);

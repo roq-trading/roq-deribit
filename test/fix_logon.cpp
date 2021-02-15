@@ -7,8 +7,8 @@
 
 #include "roq/deribit/fix/logon.h"
 
-using namespace roq;           // NOLINT
-using namespace roq::deribit;  // NOLINT
+using namespace roq;
+using namespace roq::deribit;
 
 TEST(fix_logon, parse_message) {
   const char *message =

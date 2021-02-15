@@ -9,14 +9,14 @@
 
 #include "roq/core/debug.h"
 
-using namespace std::literals;  // NOLINT
+using namespace roq::literals;
 
 namespace roq {
 namespace deribit {
 
-constexpr std::string_view LOGOUT_RESPONSE("LOGOUT"sv);  // XXX
+constexpr std::string_view LOGOUT_RESPONSE("LOGOUT"_sv);  // XXX
 
-constexpr std::string_view CONNECTION("fix"sv);
+constexpr std::string_view CONNECTION("fix"_sv);
 
 static auto create_counter(const std::string_view &function) {
   return core::metrics::Counter(Flags::name(), CONNECTION, function);
@@ -41,24 +41,24 @@ FIX::FIX(
       connection_(*this, connection_factory_), encode_buffer_(Flags::encode_buffer_size()),
       decode_buffer_(Flags::decode_buffer_size()),
       counter_{
-          .disconnect = create_counter("disconnect"sv),
+          .disconnect = create_counter("disconnect"_sv),
       },
       profile_{
-          .parse = create_profile("parse"sv),
-          .execution_report = create_profile("execution_report"sv),
-          .market_data_incremental_refresh = create_profile("market_data_incremental_refresh"sv),
-          .market_data_request_reject = create_profile("market_data_request_reject"sv),
+          .parse = create_profile("parse"_sv),
+          .execution_report = create_profile("execution_report"_sv),
+          .market_data_incremental_refresh = create_profile("market_data_incremental_refresh"_sv),
+          .market_data_request_reject = create_profile("market_data_request_reject"_sv),
           .market_data_snapshot_full_refresh =
-              create_profile("market_data_snapshot_full_refresh"sv),
-          .order_cancel_reject = create_profile("order_cancel_reject"sv),
-          .position_report = create_profile("position_report"sv),
-          .reject = create_profile("reject"sv),
-          .security_list = create_profile("security_list"sv),
-          .security_status = create_profile("security_status"sv),
-          .user_response = create_profile("user_response"sv),
+              create_profile("market_data_snapshot_full_refresh"_sv),
+          .order_cancel_reject = create_profile("order_cancel_reject"_sv),
+          .position_report = create_profile("position_report"_sv),
+          .reject = create_profile("reject"_sv),
+          .security_list = create_profile("security_list"_sv),
+          .security_status = create_profile("security_status"_sv),
+          .user_response = create_profile("user_response"_sv),
       },
       latency_{
-          .ping = create_latency("ping"sv),
+          .ping = create_latency("ping"_sv),
       } {
 }
 
@@ -90,49 +90,49 @@ void FIX::operator()(const Event<Timer> &event) {
 }
 
 void FIX::operator()(const fix::SecurityListRequest &security_list_request) {
-  VLOG(1)(R"(request(security_list_request={}))"sv, security_list_request);
+  VLOG(1)(R"(request(security_list_request={}))"_sv, security_list_request);
   send(security_list_request);
 }
 
 void FIX::operator()(const fix::SecurityStatusRequest &security_status_request) {
-  VLOG(1)(R"(request(security_status_request={}))"sv, security_status_request);
+  VLOG(1)(R"(request(security_status_request={}))"_sv, security_status_request);
   send(security_status_request);
 }
 
 void FIX::operator()(const fix::MarketDataRequest &market_data_request) {
-  VLOG(1)(R"(request(market_data_request={}))"sv, market_data_request);
+  VLOG(1)(R"(request(market_data_request={}))"_sv, market_data_request);
   send(market_data_request);
 }
 
 void FIX::operator()(const fix::UserRequest &user_request) {
-  VLOG(1)(R"(request(user_request={}))"sv, user_request);
+  VLOG(1)(R"(request(user_request={}))"_sv, user_request);
   send(user_request);
 }
 
 void FIX::operator()(const fix::RequestForPositions &request_for_position) {
-  VLOG(1)(R"(request(request_for_position={}))"sv, request_for_position);
+  VLOG(1)(R"(request(request_for_position={}))"_sv, request_for_position);
   send(request_for_position);
 }
 
 void FIX::operator()(const fix::OrderMassStatusRequest &order_mass_status_request) {
   VLOG(1)
-  (R"(request(order_mass_status_request={}))"sv, order_mass_status_request);
+  (R"(request(order_mass_status_request={}))"_sv, order_mass_status_request);
   send(order_mass_status_request);
 }
 
 void FIX::operator()(const fix::NewOrderSingle &new_order_single) {
-  VLOG(1)(R"(request(new_order_single={}))"sv, new_order_single);
+  VLOG(1)(R"(request(new_order_single={}))"_sv, new_order_single);
   send(new_order_single);
 }
 
 void FIX::operator()(const fix::OrderCancelReplaceRequest &order_cancel_replace_request) {
   VLOG(1)
-  (R"(request(order_cancel_replace_request={}))"sv, order_cancel_replace_request);
+  (R"(request(order_cancel_replace_request={}))"_sv, order_cancel_replace_request);
   send(order_cancel_replace_request);
 }
 
 void FIX::operator()(const fix::OrderCancelRequest &order_cancel_request) {
-  VLOG(1)(R"(request(order_cancel_request={}))"sv, order_cancel_request);
+  VLOG(1)(R"(request(order_cancel_request={}))"_sv, order_cancel_request);
   send(order_cancel_request);
 }
 
@@ -270,14 +270,14 @@ void FIX::check(const core::fix::header_t &header) {
     if (expected < current) {
       LOG(WARNING)
       (R"(*** SEQUENCE GAP *** )"
-       R"(current={} previous={} distance={})"sv,
+       R"(current={} previous={} distance={})"_sv,
        current,
        inbound_.msg_seq_num,
        current - inbound_.msg_seq_num);
     } else {
       LOG(WARNING)
       (R"(*** SEQUENCE REPLAY *** )"
-       R"(current={} previous={} distance={})"sv,
+       R"(current={} previous={} distance={})"_sv,
        current,
        inbound_.msg_seq_num,
        inbound_.msg_seq_num - current);
@@ -291,7 +291,7 @@ void FIX::parse(const core::fix::message_t &message) {
     try {
       parse_helper(message);
     } catch (std::exception &e) {
-      LOG(FATAL)(R"(ERROR what="{}")"sv, e.what());
+      LOG(FATAL)(R"(ERROR what="{}")"_sv, e.what());
     }
   });
 }
@@ -400,7 +400,7 @@ void FIX::parse_helper(const core::fix::message_t &message) {
       break;
     }
     default:
-      LOG(WARNING)(R"(Unexpected msg_type={})"sv, message.header.msg_type);
+      LOG(WARNING)(R"(Unexpected msg_type={})"_sv, message.header.msg_type);
       break;
   }
 }
@@ -409,7 +409,7 @@ void FIX::operator()(
     const core::fix::header_t &header, const fix::Heartbeat &heartbeat, const server::TraceInfo &) {
   // note! get clock *before* any logging (avoid latency)
   auto now = core::get_system_clock();
-  VLOG(3)(R"(event(header={}, heartbeat={}))"sv, header, heartbeat);
+  VLOG(3)(R"(event(header={}, heartbeat={}))"_sv, header, heartbeat);
   if (heartbeat.test_req_id.empty() == false) {
     auto send_time = core::from_chars<uint64_t>(heartbeat.test_req_id);
     auto latency =
@@ -427,8 +427,8 @@ void FIX::operator()(
 
 void FIX::operator()(
     const core::fix::header_t &header, const fix::Logon &logon, const server::TraceInfo &) {
-  VLOG(1)(R"(event(header={}, logon={}))"sv, header, logon);
-  LOG(INFO)("Ready"sv);
+  VLOG(1)(R"(event(header={}, logon={}))"_sv, header, logon);
+  LOG(INFO)("Ready"_sv);
   assert(ready_ == false);
   ready_ = true;
   handler_(*this);
@@ -436,11 +436,11 @@ void FIX::operator()(
 
 void FIX::operator()(
     const core::fix::header_t &header, const fix::Logout &logout, const server::TraceInfo &) {
-  LOG(WARNING)(R"(event(header={}, logout={}))"sv, header, logout);
+  LOG(WARNING)(R"(event(header={}, logout={}))"_sv, header, logout);
   ready_ = false;
   // note! mandated, must send a logout response
   send_logout(LOGOUT_RESPONSE);
-  LOG(INFO)("closing connection"sv);
+  LOG(INFO)("closing connection"_sv);
   connection_.close();
 }
 
@@ -449,8 +449,8 @@ void FIX::operator()(
     const fix::ResendRequest &resend_request,
     const server::TraceInfo &) {
   LOG(WARNING)
-  (R"(event(header={}, resend_request={}))"sv, header, resend_request);
-  LOG(INFO)("closing connection"sv);
+  (R"(event(header={}, resend_request={}))"_sv, header, resend_request);
+  LOG(INFO)("closing connection"_sv);
   connection_.close();
 }
 
@@ -458,7 +458,7 @@ void FIX::operator()(
     const core::fix::header_t &header,
     const fix::TestRequest &test_request,
     const server::TraceInfo &) {
-  VLOG(1)(R"(event(header={}, test_request={}))"sv, header, test_request);
+  VLOG(1)(R"(event(header={}, test_request={}))"_sv, header, test_request);
   send_heartbeat(test_request.test_req_id);
 }
 
@@ -466,7 +466,7 @@ void FIX::operator()(
     const core::fix::header_t &header,
     const fix::ExecutionReport &execution_report,
     const server::TraceInfo &trace_info) {
-  VLOG(3)(R"(event(header={}, execution_report={}))"sv, header, execution_report);
+  VLOG(3)(R"(event(header={}, execution_report={}))"_sv, header, execution_report);
   handler_(execution_report, trace_info);
 }
 
@@ -475,7 +475,7 @@ void FIX::operator()(
     const fix::MarketDataIncrementalRefresh &market_data_incremental_refresh,
     const server::TraceInfo &trace_info) {
   VLOG(3)
-  (R"(event(header={}, market_data_incremental_refresh={}))"sv,
+  (R"(event(header={}, market_data_incremental_refresh={}))"_sv,
    header,
    market_data_incremental_refresh);
   handler_(market_data_incremental_refresh, trace_info);
@@ -486,7 +486,7 @@ void FIX::operator()(
     const fix::MarketDataRequestReject &market_data_request_reject,
     const server::TraceInfo &trace_info) {
   LOG(WARNING)
-  (R"(event(header={}, market_data_request_reject={}))"sv, header, market_data_request_reject);
+  (R"(event(header={}, market_data_request_reject={}))"_sv, header, market_data_request_reject);
   handler_(market_data_request_reject, trace_info);
 }
 
@@ -495,7 +495,7 @@ void FIX::operator()(
     const fix::MarketDataSnapshotFullRefresh &market_data_snapshot_full_refresh,
     const server::TraceInfo &trace_info) {
   VLOG(3)
-  (R"(event(header={}, market_data_snapshot_full_refresh={}))"sv,
+  (R"(event(header={}, market_data_snapshot_full_refresh={}))"_sv,
    header,
    market_data_snapshot_full_refresh);
   handler_(market_data_snapshot_full_refresh, trace_info);
@@ -506,7 +506,7 @@ void FIX::operator()(
     const fix::OrderCancelReject &order_cancel_reject,
     const server::TraceInfo &trace_info) {
   VLOG(3)
-  (R"(event(header={}, order_cancel_reject={}))"sv, header, order_cancel_reject);
+  (R"(event(header={}, order_cancel_reject={}))"_sv, header, order_cancel_reject);
   handler_(order_cancel_reject, trace_info);
 }
 
@@ -514,7 +514,7 @@ void FIX::operator()(
     const core::fix::header_t &header,
     const fix::PositionReport &position_report,
     const server::TraceInfo &trace_info) {
-  VLOG(3)(R"(event(header={}, position_report={}))"sv, header, position_report);
+  VLOG(3)(R"(event(header={}, position_report={}))"_sv, header, position_report);
   handler_(position_report, trace_info);
 }
 
@@ -522,7 +522,7 @@ void FIX::operator()(
     const core::fix::header_t &header,
     const fix::Reject &reject,
     const server::TraceInfo &trace_info) {
-  VLOG(3)(R"(event(header={}, reject={}))"sv, header, reject);
+  VLOG(3)(R"(event(header={}, reject={}))"_sv, header, reject);
   handler_(reject, trace_info);
 }
 
@@ -530,7 +530,7 @@ void FIX::operator()(
     const core::fix::header_t &header,
     const fix::SecurityList &security_list,
     const server::TraceInfo &trace_info) {
-  VLOG(2)(R"(event(header={}, security_list={}))"sv, header, security_list);
+  VLOG(2)(R"(event(header={}, security_list={}))"_sv, header, security_list);
   handler_(security_list, trace_info);
 }
 
@@ -538,7 +538,7 @@ void FIX::operator()(
     const core::fix::header_t &header,
     const fix::SecurityStatus &security_status,
     const server::TraceInfo &trace_info) {
-  VLOG(2)(R"(event(header={}, security_status={}))"sv, header, security_status);
+  VLOG(2)(R"(event(header={}, security_status={}))"_sv, header, security_status);
   handler_(security_status, trace_info);
 }
 
@@ -546,7 +546,7 @@ void FIX::operator()(
     const core::fix::header_t &header,
     const fix::UserResponse &user_response,
     const server::TraceInfo &trace_info) {
-  VLOG(2)(R"(event(header={}, user_response={}))"sv, header, user_response);
+  VLOG(2)(R"(event(header={}, user_response={}))"_sv, header, user_response);
   handler_(user_response, trace_info);
 }
 

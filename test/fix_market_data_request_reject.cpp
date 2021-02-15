@@ -6,8 +6,8 @@
 
 #include "roq/deribit/fix/market_data_request_reject.h"
 
-using namespace roq;           // NOLINT
-using namespace roq::deribit;  // NOLINT
+using namespace roq;
+using namespace roq::deribit;
 
 TEST(fix_market_data_request_reject, parse_message) {
   const char *message =

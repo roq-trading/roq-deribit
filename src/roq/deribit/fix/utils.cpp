@@ -2,7 +2,7 @@
 
 #include "roq/deribit/fix/utils.h"
 
-using namespace std::literals;  // NOLINT
+using namespace roq::literals;
 
 namespace roq {
 namespace deribit {
@@ -12,11 +12,11 @@ SecurityType map_security_type(const std::string_view &value) {
   if (value.length() == 3) {
     switch (value.data()[0]) {
       case 'F':
-        if (value.compare("FUT"sv) == 0)
+        if (value.compare("FUT"_sv) == 0)
           return SecurityType::FUTURES;
         break;
       case 'O':
-        if (value.compare("OPT"sv) == 0)
+        if (value.compare("OPT"_sv) == 0)
           return SecurityType::OPTION;
         break;
     }
@@ -28,11 +28,11 @@ Error map_error(const std::string_view &value) {
   if (value.length() > 0) {
     switch (value.data()[0]) {
       case 'c':
-        if (value.compare("canceled"sv) == 0)
+        if (value.compare("canceled"_sv) == 0)
           return Error::UNDEFINED;
         break;
       case 's':
-        if (value.compare("success"sv) == 0)
+        if (value.compare("success"_sv) == 0)
           return Error::UNDEFINED;
         break;
     }
@@ -45,11 +45,11 @@ std::string_view map(ExecutionInstruction execution_instruction) {
     case ExecutionInstruction::UNDEFINED:
       return std::string_view();
     case ExecutionInstruction::PARTICIPATE_DO_NOT_INITIATE:
-      return "6"sv;
+      return "6"_sv;
     case ExecutionInstruction::DO_NOT_INCREASE:
-      return "E"sv;
+      return "E"_sv;
     default:
-      throw std::runtime_error("Not a supported execution instruction"s);
+      throw std::runtime_error("Not a supported execution instruction"_s);
   }
 }
 

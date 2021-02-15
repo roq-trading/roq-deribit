@@ -6,8 +6,8 @@
 
 #include "roq/deribit/fix/user_response.h"
 
-using namespace roq;           // NOLINT
-using namespace roq::deribit;  // NOLINT
+using namespace roq;
+using namespace roq::deribit;
 
 TEST(fix_user_response, parse_message) {
   const char *message =
