@@ -246,15 +246,15 @@ void WebSocket::parse(const std::string_view &message) {
     try {
       core::jsonrpc::Parser::dispatch(*this, message);
     } catch (std::exception &e) {
-      LOG(WARNING)(R"(message="{}")"_sv, message);
-      LOG(FATAL)(R"("ERROR what="{}")"_sv, e.what());
+      LOG(WARNING)(R"(message="{}")"_fmt, message);
+      LOG(FATAL)(R"("ERROR what="{}")"_fmt, e.what());
     }
   });
 }
 
 void WebSocket::operator()(const core::jsonrpc::Error &error, core::json::value_t &value) {
   json::Error error_2(value);
-  LOG(FATAL)(R"(error={}, id="{}")"_sv, error_2, error.id);
+  LOG(FATAL)(R"(error={}, id="{}")"_fmt, error_2, error.id);
 }
 
 void WebSocket::operator()(const core::jsonrpc::Result &result, core::json::value_t &value) {
@@ -264,7 +264,7 @@ void WebSocket::operator()(const core::jsonrpc::Result &result, core::json::valu
     case json::RequestType::UNDEFINED:
       break;
     case json::RequestType::UNKNOWN:
-      DLOG(FATAL)(R"(Unknown request_type="{}")"_sv, result.id);
+      DLOG(FATAL)(R"(Unknown request_type="{}")"_fmt, result.id);
       break;
     case json::RequestType::AUTH: {
       json::Auth auth(value);
@@ -303,7 +303,7 @@ void WebSocket::operator()(
     case json::Method::UNDEFINED:
       break;
     case json::Method::UNKNOWN:
-      DLOG(FATAL)(R"(Unknown method="{}")"_sv, notification.method);
+      DLOG(FATAL)(R"(Unknown method="{}")"_fmt, notification.method);
       break;
     case json::Method::SUBSCRIPTION: {
       core::json::Buffer buffer(decode_buffer_);
@@ -315,7 +315,7 @@ void WebSocket::operator()(
 
 void WebSocket::operator()(const json::Auth &auth, const server::TraceInfo &) {
   profile_.auth([&]() {
-    VLOG(1)(R"(auth={})"_sv, auth);
+    VLOG(1)(R"(auth={})"_fmt, auth);
     LOG(INFO)("Ready"_sv);
     assert(ready_ == false);
     ready_ = true;
@@ -326,7 +326,7 @@ void WebSocket::operator()(const json::Auth &auth, const server::TraceInfo &) {
 void WebSocket::operator()(
     const json::Currencies &currencies, const server::TraceInfo &trace_info) {
   profile_.currencies([&]() {
-    VLOG(1)(R"(currencies={})"_sv, currencies);
+    VLOG(1)(R"(currencies={})"_fmt, currencies);
     handler_(currencies, trace_info);
   });
 }
@@ -334,21 +334,21 @@ void WebSocket::operator()(
 void WebSocket::operator()(
     const json::Instruments &instruments, const server::TraceInfo &trace_info) {
   profile_.instruments([&]() {
-    VLOG(1)(R"(instruments={})"_sv, instruments);
+    VLOG(1)(R"(instruments={})"_fmt, instruments);
     handler_(instruments, trace_info);
   });
 }
 
 void WebSocket::operator()(const json::Positions &positions, const server::TraceInfo &trace_info) {
   profile_.positions([&]() {
-    VLOG(1)(R"(positions={})"_sv, positions);
+    VLOG(1)(R"(positions={})"_fmt, positions);
     handler_(positions, trace_info);
   });
 }
 
 void WebSocket::operator()(const json::Ticker &ticker, const server::TraceInfo &trace_info) {
   profile_.ticker([&]() {
-    VLOG(2)(R"(ticker={})"_sv, ticker);
+    VLOG(2)(R"(ticker={})"_fmt, ticker);
     handler_(ticker, trace_info);
   });
 }

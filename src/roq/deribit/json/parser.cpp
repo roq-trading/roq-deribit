@@ -43,7 +43,7 @@ void Parser::dispatch(
           LOG(FATAL)("Unexpected"_sv);
           break;
         case Field::UNKNOWN:
-          DLOG(FATAL)(R"(Unknown key="{}")"_sv, key);
+          DLOG(FATAL)(R"(Unknown key="{}")"_fmt, key);
           break;
         case Field::CHANNEL: {
           auto name = std::get<std::string_view>(value);
@@ -54,7 +54,7 @@ void Parser::dispatch(
             channel = Channel::UNKNOWN;
           }
           LOG_IF(WARNING, channel == Channel::UNKNOWN)
-          (R"(Can't parse channel="{}")"_sv, name);
+          (R"(Can't parse channel="{}")"_fmt, name);
           break;
         }
         case Field::DATA:
@@ -77,7 +77,7 @@ void Parser::dispatch(
   }
   if (dispatched)
     return;
-  LOG(WARNING)(R"(message="{}")"_sv, message);
+  LOG(WARNING)(R"(message="{}")"_fmt, message);
   LOG(FATAL)("Unexpected"_sv);
 }
 
