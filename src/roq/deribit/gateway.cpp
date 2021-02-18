@@ -6,6 +6,8 @@
 #include <limits>
 #include <utility>
 
+#include <magic_enum.hpp>
+
 #include "roq/compat.h"
 
 #include "roq/core/utils.h"
@@ -113,7 +115,7 @@ Gateway::Gateway(server::Dispatcher &dispatcher, const Config &config)
       },
       fill_(Flags::cache_fills_max_depth()), bid_(Flags::cache_mbp_max_depth()),
       ask_(Flags::cache_mbp_max_depth()), trade_(Flags::cache_trades_max_depth()),
-      statistics_(StatisticsType::MAX) {
+      statistics_(magic_enum::enum_count<StatisticsType::type_t>()) {
   LOG_IF(WARNING, Flags::fix_cancel_on_disconnect() == false)
   ("Orders will *NOT* be cancelled on disconnect"_sv);
 }
