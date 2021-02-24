@@ -1,7 +1,9 @@
 roq-deribit
 
-# auto-generated
+# debug
+????-W??/
 
+# auto-generated
 fix_state.cpp
 fix_state.h
 web_socket_state.cpp
