@@ -93,22 +93,27 @@ static bool fill_update(server::Dispatcher &dispatcher, C &data, size_t &offset,
 
 Gateway::Gateway(server::Dispatcher &dispatcher, const Config &config)
     : dispatcher_(dispatcher), account_(config.get_account()), access_key_(config.get_access_key()),
-      random_(config.get_access_secret()), dns_base_(base_, true),
+      random_(config.get_access_secret()),
       fix_{
           .connection =
               {
                   *this,
                   config,
                   random_,
-                  base_,
-                  dns_base_,
+                  context_,
               },
           .download = FIXDownload(
               std::chrono::seconds{Flags::fix_request_timeout_secs()},
               [this](auto state) { return download(state); }),
       },
       web_socket_{
-          .connection = {*this, config, random_, base_, dns_base_, ssl_context_},
+          .connection =
+              {
+                  *this,
+                  config,
+                  random_,
+                  context_,
+              },
           .download = WebSocketDownload(
               std::chrono::seconds{Flags::ws_request_timeout_secs()},
               [this](auto state) { return download(state); }),
@@ -151,7 +156,7 @@ void Gateway::operator()(const Event<Timer> &event) {
     web_socket_.connection.close();
   }
   */
-  base_.loop(EVLOOP_NONBLOCK);
+  context_.dispatch(true);
 }
 
 void Gateway::operator()(const Event<Connection> &) {

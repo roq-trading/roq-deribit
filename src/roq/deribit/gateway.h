@@ -11,10 +11,7 @@
 #include "roq/download.h"
 #include "roq/server.h"
 
-#include "roq/core/ssl/ssl.h"
-
-#include "roq/core/event/base.h"
-#include "roq/core/event/dns_base.h"
+#include "roq/core/io/context.h"
 
 #include "roq/deribit/config.h"
 #include "roq/deribit/fix.h"
@@ -106,11 +103,8 @@ class Gateway final : public server::Handler, public WebSocket::Handler, public 
   const std::string access_key_;
   // authentication
   Random random_;
-  // async
-  core::event::Base base_;
-  core::event::DNSBase dns_base_;
-  // crypto
-  core::ssl::Context ssl_context_;
+  // io
+  core::io::Context context_;
   // fix
   struct {
     FIX connection;

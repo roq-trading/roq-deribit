@@ -12,10 +12,7 @@
 #include "roq/core/metrics/latency.h"
 #include "roq/core/metrics/profile.h"
 
-#include "roq/core/event/base.h"
-#include "roq/core/event/dns_base.h"
-
-#include "roq/core/ssl/ssl.h"
+#include "roq/core/io/context.h"
 
 #include "roq/core/web/socket.h"
 
@@ -56,13 +53,7 @@ class WebSocket final : public core::web::Socket::Handler,
     virtual void operator()(const json::Ticker &, const server::TraceInfo &) = 0;
   };
 
-  WebSocket(
-      Handler &handler,
-      const Config &config,
-      Random &random,
-      core::event::Base &base,
-      core::event::DNSBase &dns_base,
-      core::ssl::Context &ssl_context);
+  WebSocket(Handler &handler, const Config &config, Random &random, core::io::Context &context);
 
   WebSocket(WebSocket &&) = delete;
   WebSocket(const WebSocket &) = delete;

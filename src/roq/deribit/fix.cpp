@@ -30,16 +30,10 @@ static auto create_latency(const std::string_view &function) {
   return core::metrics::Latency(Flags::name(), CONNECTION, function);
 }
 
-FIX::FIX(
-    Handler &handler,
-    const Config &config,
-    Random &random,
-    core::event::Base &base,
-    core::event::DNSBase &dns_base)
+FIX::FIX(Handler &handler, const Config &config, Random &random, core::io::Context &context)
     : handler_(handler), access_key_(config.get_access_key()), random_(random),
-      connection_factory_(base, dns_base, Flags::fix_uri()),
-      connection_(*this, connection_factory_), encode_buffer_(Flags::encode_buffer_size()),
-      decode_buffer_(Flags::decode_buffer_size()),
+      connection_factory_(context, Flags::fix_uri()), connection_(*this, connection_factory_),
+      encode_buffer_(Flags::encode_buffer_size()), decode_buffer_(Flags::decode_buffer_size()),
       counter_{
           .disconnect = create_counter("disconnect"_sv),
       },

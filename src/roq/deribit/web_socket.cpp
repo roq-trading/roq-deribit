@@ -32,18 +32,11 @@ static auto create_latency(const std::string_view &function) {
 }  // namespace
 
 WebSocket::WebSocket(
-    Handler &handler,
-    const Config &config,
-    Random &random,
-    core::event::Base &base,
-    core::event::DNSBase &dns_base,
-    core::ssl::Context &ssl_context)
+    Handler &handler, const Config &config, Random &random, core::io::Context &context)
     : handler_(handler), access_key_(config.get_access_key()), random_(random),
       connection_(
           *this,
-          base,
-          dns_base,
-          ssl_context,
+          context,
           core::URI(Flags::ws_uri()),
           std::string_view(),  // query
           std::chrono::seconds{Flags::ws_ping_freq_secs()},

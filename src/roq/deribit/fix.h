@@ -10,8 +10,7 @@
 #include "roq/core/metrics/latency.h"
 #include "roq/core/metrics/profile.h"
 
-#include "roq/core/event/base.h"
-#include "roq/core/event/dns_base.h"
+#include "roq/core/io/context.h"
 
 #include "roq/core/net/manager.h"
 #include "roq/core/net/tcp_connection_factory.h"
@@ -72,11 +71,7 @@ class FIX final : public core::net::Manager::Handler {
     virtual void operator()(const fix::SecurityStatus &, const server::TraceInfo &) = 0;
     virtual void operator()(const fix::UserResponse &, const server::TraceInfo &) = 0;
   };
-  FIX(Handler &handler,
-      const Config &config,
-      Random &random,
-      core::event::Base &base,
-      core::event::DNSBase &dns_base);
+  FIX(Handler &handler, const Config &config, Random &random, core::io::Context &context);
 
   FIX(const FIX &) = delete;
   FIX(FIX &&) = delete;
