@@ -25,7 +25,22 @@ using namespace roq::literals;
 namespace roq {
 namespace deribit {
 
-constexpr auto TOLERANCE = double{1.0e-10};
+namespace {
+constexpr auto TOLERANCE = 1.0e-10;
+
+class create_duration final {
+ public:
+  explicit create_duration(std::chrono::nanoseconds value) : value_(value) {}
+  create_duration(create_duration &&) = default;
+  create_duration(const create_duration &) = delete;
+  template <typename T>
+  operator T() const {
+    return std::chrono::duration_cast<T>(value_);
+  }
+
+ private:
+  std::chrono::nanoseconds value_;
+};
 
 template <typename C, typename T>
 static bool mbp_update(C &data, size_t &offset, const T &item) {
@@ -90,16 +105,15 @@ static bool fill_update(server::Dispatcher &dispatcher, C &data, size_t &offset,
   ++offset;
   return offset < data.size();
 }
+}  // namespace
 
 Gateway::Gateway(server::Dispatcher &dispatcher, const Config &config)
-    : dispatcher_(dispatcher), account_(config.get_account()), access_key_(config.get_access_key()),
-      random_(config.get_access_secret()),
+    : dispatcher_(dispatcher), account_(config.get_account()), security_(config),
       fix_{
           .connection =
               {
                   *this,
-                  config,
-                  random_,
+                  security_,
                   context_,
               },
           .download = FIXDownload(
@@ -110,8 +124,7 @@ Gateway::Gateway(server::Dispatcher &dispatcher, const Config &config)
           .connection =
               {
                   *this,
-                  config,
-                  random_,
+                  security_,
                   context_,
               },
           .download = WebSocketDownload(
@@ -140,22 +153,6 @@ void Gateway::operator()(const Event<Stop> &event) {
 void Gateway::operator()(const Event<Timer> &event) {
   fix_.connection(event);
   web_socket_.connection(event);
-  // fix
-  /*
-  if (fix_.download.has_expired()) {
-    LOG(WARNING)("FIX download has timed out"_sv);
-    fix_.download.reset();
-    fix_.connection.close();
-  }
-  */
-  // web socket
-  /*
-  if (web_socket_.download.has_expired()) {
-    LOG(WARNING)("WebSocket download has timed out"_sv);
-    web_socket_.download.reset();
-    web_socket_.connection.close();
-  }
-  */
   context_.dispatch(true);
 }
 
@@ -172,7 +169,7 @@ void Gateway::operator()(
     throw std::runtime_error("stop_price not supported"_s);
   if (std::isfinite(create_order.max_show_quantity))
     throw std::runtime_error("max_show_quantity not supported"_s);
-  core::stack::Buffer<char, 36> buffer;
+  core::stack::Buffer<char, 36u> buffer;
   roq::format_to(
       std::back_inserter(buffer),
       "roq-{}-{}-{}"_fmt,
@@ -248,7 +245,7 @@ uint32_t Gateway::download(WebSocketDownload::State state) {
     case WebSocketDownload::State::CURRENCIES:
       assert(currencies_2_.empty());
       web_socket_.connection.get_currencies();
-      return 1;
+      return 1u;
     case WebSocketDownload::State::INSTRUMENTS:
       assert(symbols_2_.empty());
       for (auto &currency : currencies_2_)
@@ -261,10 +258,10 @@ uint32_t Gateway::download(WebSocketDownload::State state) {
     case WebSocketDownload::State::DONE:
       LOG(INFO)("Ready"_sv);
       web_socket_.connection.subscribe_ticker(roq::span(symbols_2_.data(), symbols_2_.size()));
-      return 0;
+      return 0u;
   }
   assert(false);
-  return 0;
+  return 0u;
 }
 
 void Gateway::operator()(const WebSocket &) {
@@ -515,7 +512,7 @@ void Gateway::operator()(
           result.text = execution_report.text;
         }
 
-        size_t fill_length = 0;
+        size_t fill_length = {};
         bool success = true;
         for (auto &item : execution_report.no_fills) {
           if (success == false)
@@ -536,7 +533,7 @@ void Gateway::operator()(
               .exchange = order.exchange,
               .symbol = order.symbol,
               .side = order.side,
-              .position_effect = PositionEffect::UNDEFINED,
+              .position_effect = {},
               .order_template = {},
               .create_time_utc = execution_report.transact_time,
               .update_time_utc = execution_report.transact_time,
@@ -571,7 +568,7 @@ void Gateway::operator()(
     const server::TraceInfo &trace_info) {
   assert(gateway_status_ == GatewayStatus::READY);
   bool success = true;
-  size_t bid_length = 0, ask_length = 0, trade_length = 0, statistics_length = 0;
+  size_t bid_length = {}, ask_length = {}, trade_length = {}, statistics_length = {};
   // open interest
   new (&statistics_[statistics_length++]) Statistics{
       .type = StatisticsType::PRE_OPEN_INTEREST,
@@ -628,7 +625,7 @@ void Gateway::operator()(
    ask_.size(),
    trade_length,
    trade_.size());
-  if (bid_length > 0 || ask_length > 0) {
+  if (bid_length > 0u || ask_length > 0u) {
     MarketByPriceUpdate market_by_price_update{
         .exchange = Flags::exchange(),
         .symbol = market_data_incremental_refresh.symbol,
@@ -641,7 +638,7 @@ void Gateway::operator()(
     auto last = trade_length == 0;
     server::create_trace_and_dispatch(trace_info, market_by_price_update, dispatcher_, last);
   }
-  if (trade_length > 0) {
+  if (trade_length > 0u) {
     TradeSummary trade_summary{
         .exchange = Flags::exchange(),
         .symbol = market_data_incremental_refresh.symbol,
@@ -651,7 +648,7 @@ void Gateway::operator()(
     VLOG(3)("trade_summary={}"_fmt, trade_summary);
     server::create_trace_and_dispatch(trace_info, trade_summary, dispatcher_, true);
   }
-  if (statistics_length > 0) {
+  if (statistics_length > 0u) {
     StatisticsUpdate statistics_update{
         .exchange = Flags::exchange(),
         .symbol = market_data_incremental_refresh.symbol,
@@ -676,7 +673,7 @@ void Gateway::operator()(
   VLOG(1)
   (R"(Received market data snapshot for symbol="{}")"_fmt,
    market_data_snapshot_full_refresh.symbol);
-  size_t bid_length = 0, ask_length = 0;
+  size_t bid_length = {}, ask_length = {};
   for (auto &item : market_data_snapshot_full_refresh.no_md_entries) {
     switch (item.md_entry_type) {
       case core::fix::MDEntryType::BID: {
@@ -753,7 +750,7 @@ void Gateway::operator()(
                 .symbol = position.symbol,
                 .side = Side::BUY,
                 .position = position.long_qty,
-                .last_trade_id = 0,
+                .last_trade_id = {},
                 .position_cost = 0.0,
                 .position_yesterday = 0.0,
                 .position_cost_yesterday = 0.0,
@@ -765,7 +762,7 @@ void Gateway::operator()(
                 .symbol = position.symbol,
                 .side = Side::SELL,
                 .position = position.short_qty,
-                .last_trade_id = 0,
+                .last_trade_id = {},
                 .position_cost = 0.0,
                 .position_yesterday = 0.0,
                 .position_cost_yesterday = 0.0,
@@ -804,7 +801,7 @@ void Gateway::operator()(
   currencies_.clear();
   if (security_list.no_related_sym.size() > 0) {
     assert(symbols_.empty());
-    size_t security_count = 0;
+    size_t security_count = {};
     symbols_.reserve(security_list.no_related_sym.size());  // note! alloc
     for (auto &instrument : security_list.no_related_sym) {
       VLOG(1)(R"(instrument={})"_fmt, instrument);
@@ -836,14 +833,10 @@ void Gateway::operator()(
           .strike_price = instrument.strike_price,
           .underlying = instrument.underlying_symbol,
           .time_zone = {},
-          .issue_date = std::chrono::duration_cast<decltype(ReferenceData::issue_date)>(
-              instrument.issue_date),
+          .issue_date = create_duration(instrument.issue_date),
           .settlement_date = {},
-          .expiry_datetime =
-              std::chrono::duration_cast<decltype(ReferenceData::expiry_datetime)>(expiry_datetime),
-          .expiry_datetime_utc =
-              std::chrono::duration_cast<decltype(ReferenceData::expiry_datetime_utc)>(
-                  expiry_datetime_utc),
+          .expiry_datetime = create_duration(expiry_datetime),
+          .expiry_datetime_utc = create_duration(expiry_datetime_utc),
       };
       server::create_trace_and_dispatch(trace_info, reference_data, dispatcher_, true);
       ++security_count;
@@ -863,7 +856,7 @@ void Gateway::operator()(
       .account = account_,
       .currency = user_response.currency,
       .balance = user_response.deribit_user_balance,
-      .hold = double{0.0},
+      .hold = 0.0,
       .external_account = {},
   };
   server::create_trace_and_dispatch(trace_info, funds_update, dispatcher_, true);
@@ -923,7 +916,7 @@ void Gateway::download_user() {
     fix::UserRequest user_request_btc{
         .user_request_id = request_id,
         .user_request_type = core::fix::UserRequestType::REQUEST_INDIVIDUAL_USER_STATUS,
-        .username = access_key_,
+        .username = security_.get_access_key(),
         .currency = static_cast<std::string_view>(currency),
     };
     fix_.connection(user_request_btc);
@@ -943,17 +936,17 @@ void Gateway::subscribe_market_data() {
       {.md_entry_type = core::fix::MDEntryType::TRADE},
   };
   std::vector<fix::InstrmtMDReq> related_sym(Flags::fix_market_data_request_max_size());
-  for (size_t i = 0;; ++i) {
+  for (size_t i = {};; ++i) {
     auto offset = i * Flags::fix_market_data_request_max_size();
     if (symbols_.size() < offset)
       break;
     auto count =
         std::min<size_t>(symbols_.size() - offset, Flags::fix_market_data_request_max_size());
     if (count) {
-      for (size_t j = 0; j < count; ++j)
+      for (size_t j = {}; j < count; ++j)
         related_sym[j].symbol = symbols_[offset + j];
       auto request_id = dispatcher_.next_request_id();
-      uint32_t market_depth = 20;  // XXX HANS should be flag
+      uint32_t market_depth = 20u;  // XXX HANS should be flag
       auto md_update_type = market_depth ? core::fix::MDUpdateType::INCREMENTAL_REFRESH
                                          : core::fix::MDUpdateType::FULL_REFRESH;
       fix::MarketDataRequest market_data_request{
@@ -961,10 +954,10 @@ void Gateway::subscribe_market_data() {
           .subscription_request_type = core::fix::SubscriptionRequestType::SNAPSHOT_UPDATES,
           .market_depth = market_depth,
           .md_update_type = md_update_type,
-          .deribit_trade_amount = 0,      // none
+          .deribit_trade_amount = {},     // none
           .deribit_since_timestamp = {},  // none
-          .no_md_entry_types = roq::span(md_entry_types, std::size(md_entry_types)),
-          .no_related_sym = roq::span(related_sym.data(), count),
+          .no_md_entry_types = {md_entry_types, std::size(md_entry_types)},
+          .no_related_sym = {related_sym.data(), count},
       };
       fix_.connection(market_data_request);
     }

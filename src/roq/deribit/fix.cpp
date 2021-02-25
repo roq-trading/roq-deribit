@@ -14,45 +14,48 @@ using namespace roq::literals;
 namespace roq {
 namespace deribit {
 
-constexpr std::string_view LOGOUT_RESPONSE("LOGOUT"_sv);  // XXX
+namespace {
+static const auto LOGOUT_RESPONSE = "LOGOUT"_sv;  // XXX
+static const auto CONNECTION = "fix"_sv;
 
-constexpr std::string_view CONNECTION("fix"_sv);
+class create_metrics final {
+ public:
+  explicit create_metrics(const std::string_view &function) : function_(function) {}
+  create_metrics(create_metrics &&) = default;
+  create_metrics(const create_metrics &) = delete;
+  template <typename T>
+  operator T() {
+    return T(Flags::name(), CONNECTION, function_);
+  }
 
-static auto create_counter(const std::string_view &function) {
-  return core::metrics::Counter(Flags::name(), CONNECTION, function);
-}
+ private:
+  std::string_view function_;
+};
+}  // namespace
 
-static auto create_profile(const std::string_view &function) {
-  return core::metrics::Profile(Flags::name(), CONNECTION, function);
-}
-
-static auto create_latency(const std::string_view &function) {
-  return core::metrics::Latency(Flags::name(), CONNECTION, function);
-}
-
-FIX::FIX(Handler &handler, const Config &config, Random &random, core::io::Context &context)
-    : handler_(handler), access_key_(config.get_access_key()), random_(random),
-      connection_factory_(context, Flags::fix_uri()), connection_(*this, connection_factory_),
-      encode_buffer_(Flags::encode_buffer_size()), decode_buffer_(Flags::decode_buffer_size()),
+FIX::FIX(Handler &handler, Security &security, core::io::Context &context)
+    : handler_(handler), security_(security), connection_factory_(context, Flags::fix_uri()),
+      connection_(*this, connection_factory_), encode_buffer_(Flags::encode_buffer_size()),
+      decode_buffer_(Flags::decode_buffer_size()),
       counter_{
-          .disconnect = create_counter("disconnect"_sv),
+          .disconnect = create_metrics("disconnect"_sv),
       },
       profile_{
-          .parse = create_profile("parse"_sv),
-          .execution_report = create_profile("execution_report"_sv),
-          .market_data_incremental_refresh = create_profile("market_data_incremental_refresh"_sv),
-          .market_data_request_reject = create_profile("market_data_request_reject"_sv),
+          .parse = create_metrics("parse"_sv),
+          .execution_report = create_metrics("execution_report"_sv),
+          .market_data_incremental_refresh = create_metrics("market_data_incremental_refresh"_sv),
+          .market_data_request_reject = create_metrics("market_data_request_reject"_sv),
           .market_data_snapshot_full_refresh =
-              create_profile("market_data_snapshot_full_refresh"_sv),
-          .order_cancel_reject = create_profile("order_cancel_reject"_sv),
-          .position_report = create_profile("position_report"_sv),
-          .reject = create_profile("reject"_sv),
-          .security_list = create_profile("security_list"_sv),
-          .security_status = create_profile("security_status"_sv),
-          .user_response = create_profile("user_response"_sv),
+              create_metrics("market_data_snapshot_full_refresh"_sv),
+          .order_cancel_reject = create_metrics("order_cancel_reject"_sv),
+          .position_report = create_metrics("position_report"_sv),
+          .reject = create_metrics("reject"_sv),
+          .security_list = create_metrics("security_list"_sv),
+          .security_status = create_metrics("security_status"_sv),
+          .user_response = create_metrics("user_response"_sv),
       },
       latency_{
-          .ping = create_latency("ping"_sv),
+          .ping = create_metrics("ping"_sv),
       } {
 }
 
@@ -77,7 +80,7 @@ void FIX::operator()(const Event<Timer> &event) {
   if (connection_.refresh(event.value.now) == false)
     return;
   if (ready_ && next_heartbeat_ <= event.value.now) {
-    assert(Flags::fix_ping_freq_secs() > 0);
+    assert(Flags::fix_ping_freq_secs() > 0u);
     next_heartbeat_ = event.value.now + std::chrono::seconds{Flags::fix_ping_freq_secs()};
     send_test_request(core::get_system_clock());
   }
@@ -87,12 +90,12 @@ void FIX::operator()(const fix::SecurityListRequest &security_list_request) {
   VLOG(1)(R"(request(security_list_request={}))"_fmt, security_list_request);
   send(security_list_request);
 }
-
+/*
 void FIX::operator()(const fix::SecurityStatusRequest &security_status_request) {
   VLOG(1)(R"(request(security_status_request={}))"_fmt, security_status_request);
   send(security_status_request);
 }
-
+*/
 void FIX::operator()(const fix::MarketDataRequest &market_data_request) {
   VLOG(1)(R"(request(market_data_request={}))"_fmt, market_data_request);
   send(market_data_request);
@@ -169,13 +172,13 @@ void FIX::send(const T &event, std::chrono::nanoseconds sending_time) {
 
 void FIX::send_logon() {
   auto sending_time = core::get_realtime_clock();
-  auto raw_data = random_.create_raw_data(sending_time);
-  auto password = random_.create_password(raw_data);
+  auto raw_data = security_.create_raw_data(sending_time);
+  auto password = security_.create_password(raw_data);
   fix::Logon logon{
       .heart_bt_int = static_cast<uint16_t>(Flags::fix_ping_freq_secs()),
       .raw_data_length = static_cast<uint32_t>(raw_data.length()),
       .raw_data = raw_data,
-      .username = access_key_,
+      .username = security_.get_access_key(),
       .password = password,
       .use_wordsafe_tags = false,
       .cancel_on_disconnect = Flags::fix_cancel_on_disconnect(),

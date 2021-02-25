@@ -16,24 +16,25 @@ namespace roq {
 namespace deribit {
 
 namespace {
-constexpr std::string_view CONNECTION = "ws"_sv;
+static const auto CONNECTION = "ws"_sv;
 
-static auto create_counter(const std::string_view &function) {
-  return core::metrics::Counter(Flags::name(), CONNECTION, function);
-}
+class create_metrics final {
+ public:
+  explicit create_metrics(const std::string_view &function) : function_(function) {}
+  create_metrics(create_metrics &&) = default;
+  create_metrics(const create_metrics &) = delete;
+  template <typename T>
+  operator T() {
+    return T(Flags::name(), CONNECTION, function_);
+  }
 
-static auto create_profile(const std::string_view &function) {
-  return core::metrics::Profile(Flags::name(), CONNECTION, function);
-}
-
-static auto create_latency(const std::string_view &function) {
-  return core::metrics::Latency(Flags::name(), CONNECTION, function);
-}
+ private:
+  std::string_view function_;
+};
 }  // namespace
 
-WebSocket::WebSocket(
-    Handler &handler, const Config &config, Random &random, core::io::Context &context)
-    : handler_(handler), access_key_(config.get_access_key()), random_(random),
+WebSocket::WebSocket(Handler &handler, Security &security, core::io::Context &context)
+    : handler_(handler), security_(security),
       connection_(
           *this,
           context,
@@ -45,19 +46,19 @@ WebSocket::WebSocket(
           []() { return std::string(); }),
       decode_buffer_(Flags::decode_buffer_size()),
       counter_{
-          .disconnect = create_counter("disconnect"_sv),
+          .disconnect = create_metrics("disconnect"_sv),
       },
       profile_{
-          .parse = create_profile("parse"_sv),
-          .auth = create_profile("auth"_sv),
-          .currencies = create_profile("currencies"_sv),
-          .instruments = create_profile("instruments"_sv),
-          .positions = create_profile("positions"_sv),
-          .ticker = create_profile("ticker"_sv),
+          .parse = create_metrics("parse"_sv),
+          .auth = create_metrics("auth"_sv),
+          .currencies = create_metrics("currencies"_sv),
+          .instruments = create_metrics("instruments"_sv),
+          .positions = create_metrics("positions"_sv),
+          .ticker = create_metrics("ticker"_sv),
       },
       latency_{
-          .ping = create_latency("ping"_sv),
-          .heartbeat = create_latency("heartbeat"_sv),
+          .ping = create_metrics("ping"_sv),
+          .heartbeat = create_metrics("heartbeat"_sv),
       } {
 }
 
@@ -85,8 +86,8 @@ void WebSocket::login() {
   constexpr json::RequestType request_type = json::RequestType::AUTH;
   auto timestamp =
       std::chrono::duration_cast<std::chrono::milliseconds>(core::get_realtime_clock());
-  auto nonce = random_.create_nonce();
-  auto signature = random_.create_signature(timestamp, nonce);
+  auto nonce = security_.create_nonce();
+  auto signature = security_.create_signature(timestamp, nonce);
   auto message = roq::format(
       R"({{)"
       R"("method":"public/auth",)"
@@ -100,7 +101,7 @@ void WebSocket::login() {
       R"(}},)"
       R"("id":"{}")"
       R"(}})"_fmt,
-      access_key_,
+      security_.get_access_key(),
       timestamp.count(),
       nonce,
       signature,

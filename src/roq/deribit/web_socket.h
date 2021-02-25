@@ -20,8 +20,7 @@
 
 #include "roq/server.h"
 
-#include "roq/deribit/config.h"
-#include "roq/deribit/random.h"
+#include "roq/deribit/security.h"
 
 #include "roq/deribit/json/auth.h"
 #include "roq/deribit/json/currencies.h"
@@ -53,7 +52,7 @@ class WebSocket final : public core::web::Socket::Handler,
     virtual void operator()(const json::Ticker &, const server::TraceInfo &) = 0;
   };
 
-  WebSocket(Handler &handler, const Config &config, Random &random, core::io::Context &context);
+  WebSocket(Handler &handler, Security &security, core::io::Context &context);
 
   WebSocket(WebSocket &&) = delete;
   WebSocket(const WebSocket &) = delete;
@@ -106,10 +105,8 @@ class WebSocket final : public core::web::Socket::Handler,
 
  private:
   Handler &handler_;
-  // config
-  const std::string access_key_;
-  // authentication
-  Random &random_;
+  // security
+  Security &security_;
   // web socket
   core::web::Socket connection_;
   // buffers

@@ -8,15 +8,19 @@
 #include "roq/core/crypto/hmac.h"
 #include "roq/core/crypto/sha.h"
 
+#include "roq/deribit/config.h"
+
 namespace roq {
 namespace deribit {
 
-class Random final {
+class Security final {
  public:
-  explicit Random(const std::string_view &secret);
+  explicit Security(const Config &);
 
-  Random(Random &&) = delete;
-  Random(const Random &) = delete;
+  Security(Security &&) = delete;
+  Security(const Security &) = delete;
+
+  std::string_view get_access_key() const { return key_; }
 
   std::string create_nonce();
 
@@ -26,6 +30,7 @@ class Random final {
   std::string create_password(const std::string_view &raw_data);
 
  private:
+  const std::string key_;
   const std::string secret_;
   core::crypto::SHA256 sha_;
   core::crypto::HMAC_SHA256 hmac_;

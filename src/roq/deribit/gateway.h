@@ -15,7 +15,7 @@
 
 #include "roq/deribit/config.h"
 #include "roq/deribit/fix.h"
-#include "roq/deribit/random.h"
+#include "roq/deribit/security.h"
 #include "roq/deribit/web_socket.h"
 
 #include "roq/deribit/fix_state.h"
@@ -100,9 +100,8 @@ class Gateway final : public server::Handler, public WebSocket::Handler, public 
   server::Dispatcher &dispatcher_;
   // config
   const std::string account_;
-  const std::string access_key_;
-  // authentication
-  Random random_;
+  // security
+  Security security_;
   // io
   core::io::Context context_;
   // fix

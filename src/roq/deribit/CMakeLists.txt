@@ -10,7 +10,7 @@ set(SOURCES
     fix.cpp
     flags.cpp
     gateway.cpp
-    random.cpp
+    security.cpp
     web_socket.cpp
     main.cpp)
 

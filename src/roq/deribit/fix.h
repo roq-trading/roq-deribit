@@ -17,8 +17,7 @@
 
 #include "roq/server.h"
 
-#include "roq/deribit/config.h"
-#include "roq/deribit/random.h"
+#include "roq/deribit/security.h"
 
 // session
 #include "roq/deribit/fix/heartbeat.h"
@@ -71,7 +70,7 @@ class FIX final : public core::net::Manager::Handler {
     virtual void operator()(const fix::SecurityStatus &, const server::TraceInfo &) = 0;
     virtual void operator()(const fix::UserResponse &, const server::TraceInfo &) = 0;
   };
-  FIX(Handler &handler, const Config &config, Random &random, core::io::Context &context);
+  FIX(Handler &handler, Security &security, core::io::Context &context);
 
   FIX(const FIX &) = delete;
   FIX(FIX &&) = delete;
@@ -85,7 +84,7 @@ class FIX final : public core::net::Manager::Handler {
   void operator()(const Event<Timer> &);
 
   void operator()(const fix::SecurityListRequest &);
-  void operator()(const fix::SecurityStatusRequest &);
+  // void operator()(const fix::SecurityStatusRequest &);
   void operator()(const fix::MarketDataRequest &);
 
   void operator()(const fix::UserRequest &);
@@ -153,17 +152,15 @@ class FIX final : public core::net::Manager::Handler {
 
  private:
   Handler &handler_;
-  // config
-  const std::string access_key_;
-  // authentication
-  Random &random_;
+  // security
+  Security &security_;
   // connection
   core::net::TcpConnectionFactory connection_factory_;
   core::net::Manager connection_;
   // buffers
   core::utils::Buffer encode_buffer_;
   core::utils::Buffer decode_buffer_;
-  core::stack::Buffer<char, 32> stack_buffer_;
+  core::stack::Buffer<char, 32u> stack_buffer_;
   // metrics
   struct {
     core::metrics::Counter disconnect;
@@ -178,10 +175,10 @@ class FIX final : public core::net::Manager::Handler {
   } latency_;
   // state
   struct {
-    uint64_t msg_seq_num = 0;
+    uint64_t msg_seq_num = {};
   } outbound_;
   struct {
-    uint64_t msg_seq_num = 0;
+    uint64_t msg_seq_num = {};
   } inbound_;
   bool ready_ = false;
   std::chrono::nanoseconds next_heartbeat_ = {};

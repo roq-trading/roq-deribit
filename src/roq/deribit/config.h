@@ -21,13 +21,13 @@ class Config final : public server::Config, public server::ConfigReader::Handler
 
   auto get_access_key() const {
     using namespace roq::literals;
-    if (accounts.size() != 1)
+    if (accounts.size() != 1u)
       throw std::runtime_error("More accounts not yet supported"_s);
     return (*accounts.begin()).second.login;
   }
   auto get_access_secret() const {
     using namespace roq::literals;
-    if (accounts.size() != 1)
+    if (accounts.size() != 1u)
       throw std::runtime_error("More accounts not yet supported"_s);
     return (*accounts.begin()).second.secret;
   }
