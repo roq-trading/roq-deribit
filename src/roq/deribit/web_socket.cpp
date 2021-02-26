@@ -4,6 +4,8 @@
 
 #include "roq/core/clock.h"
 
+#include "roq/core/metrics/factory.h"
+
 #include "roq/deribit/flags.h"
 
 #include "roq/deribit/json/error.h"
@@ -18,18 +20,9 @@ namespace deribit {
 namespace {
 static const auto CONNECTION = "ws"_sv;
 
-class create_metrics final {
- public:
-  explicit create_metrics(const std::string_view &function) : function_(function) {}
-  create_metrics(create_metrics &&) = default;
-  create_metrics(const create_metrics &) = delete;
-  template <typename T>
-  operator T() {
-    return T(Flags::name(), CONNECTION, function_);
-  }
-
- private:
-  std::string_view function_;
+struct create_metrics final : public core::metrics::Factory {
+  explicit create_metrics(const std::string_view &function)
+      : core::metrics::Factory(Flags::name(), CONNECTION, function) {}
 };
 }  // namespace
 
@@ -40,7 +33,7 @@ WebSocket::WebSocket(Handler &handler, Security &security, core::io::Context &co
           context,
           core::URI(Flags::ws_uri()),
           std::string_view(),  // query
-          std::chrono::seconds{Flags::ws_ping_freq_secs()},
+          Flags::ws_ping_freq(),
           Flags::decode_buffer_size(),  // XXX need read buffer size
           Flags::encode_buffer_size(),
           []() { return std::string(); }),

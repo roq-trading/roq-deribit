@@ -7,9 +7,10 @@ set(SOURCES
     application.cpp
     common.cpp
     config.cpp
-    fix.cpp
     flags.cpp
     gateway.cpp
+    market_data.cpp
+    order_entry.cpp
     security.cpp
     web_socket.cpp
     main.cpp)

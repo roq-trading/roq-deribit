@@ -74,6 +74,12 @@ ABSL_FLAG(  //
 
 ABSL_FLAG(  //
     uint32_t,
+    fix_market_data_max_subscriptions_per_stream,
+    uint32_t{512},
+    "max subscriptions per connection (count)"_sv);
+
+ABSL_FLAG(  //
+    uint32_t,
     fix_market_data_request_max_size,
     uint32_t{56},
     "max batch size (it appears there is a limit)"_sv);
@@ -109,87 +115,92 @@ namespace roq {
 namespace deribit {
 
 std::string_view Flags::config_file() {
-  static const std::string result = absl::GetFlag(FLAGS_config_file);
+  static const std::string result{absl::GetFlag(FLAGS_config_file)};
   return result;
 }
 
 std::string_view Flags::exchange() {
-  static const std::string result = absl::GetFlag(FLAGS_exchange);
+  static const std::string result{absl::GetFlag(FLAGS_exchange)};
   return result;
 }
 
-std::string_view Flags::ws_uri() {
-  static const std::string result = absl::GetFlag(FLAGS_ws_uri);
+const core::URI &Flags::ws_uri() {
+  static const core::URI result{absl::GetFlag(FLAGS_ws_uri)};
   return result;
 }
 
-uint32_t Flags::ws_ping_freq_secs() {
-  static const uint32_t result = absl::GetFlag(FLAGS_ws_ping_freq_secs);
+std::chrono::seconds Flags::ws_ping_freq() {
+  static const std::chrono::seconds result{absl::GetFlag(FLAGS_ws_ping_freq_secs)};
   return result;
 }
 
-uint32_t Flags::ws_request_timeout_secs() {
-  static const uint32_t result = absl::GetFlag(FLAGS_ws_request_timeout_secs);
+std::chrono::seconds Flags::ws_request_timeout() {
+  static const std::chrono::seconds result{absl::GetFlag(FLAGS_ws_request_timeout_secs)};
   return result;
 }
 
-std::string_view Flags::fix_uri() {
-  static const std::string result = absl::GetFlag(FLAGS_fix_uri);
+const core::URI &Flags::fix_uri() {
+  static const core::URI result{absl::GetFlag(FLAGS_fix_uri)};
   return result;
 }
 
-uint32_t Flags::fix_ping_freq_secs() {
-  static const uint32_t result = absl::GetFlag(FLAGS_fix_ping_freq_secs);
+std::chrono::seconds Flags::fix_ping_freq() {
+  static const std::chrono::seconds result{absl::GetFlag(FLAGS_fix_ping_freq_secs)};
   return result;
 }
 
-uint32_t Flags::fix_request_timeout_secs() {
-  static const uint32_t result = absl::GetFlag(FLAGS_fix_request_timeout_secs);
+std::chrono::seconds Flags::fix_request_timeout() {
+  static const std::chrono::seconds result{absl::GetFlag(FLAGS_fix_request_timeout_secs)};
   return result;
 }
 
 bool Flags::fix_cancel_on_disconnect() {
-  static const bool result = absl::GetFlag(FLAGS_fix_cancel_on_disconnect);
+  static const bool result{absl::GetFlag(FLAGS_fix_cancel_on_disconnect)};
+  return result;
+}
+
+uint32_t Flags::fix_market_data_max_subscriptions_per_stream() {
+  static const uint32_t result{absl::GetFlag(FLAGS_fix_market_data_max_subscriptions_per_stream)};
   return result;
 }
 
 uint32_t Flags::fix_market_data_request_max_size() {
-  static const uint32_t result = absl::GetFlag(FLAGS_fix_market_data_request_max_size);
+  static const uint32_t result{absl::GetFlag(FLAGS_fix_market_data_request_max_size)};
   return result;
 }
 
 bool Flags::fix_debug() {
-  static const bool result = absl::GetFlag(FLAGS_fix_debug);
+  static const bool result{absl::GetFlag(FLAGS_fix_debug)};
   return result;
 }
 
 uint32_t Flags::encode_buffer_size() {
-  static const uint32_t result = absl::GetFlag(FLAGS_encode_buffer_size);
+  static const uint32_t result{absl::GetFlag(FLAGS_encode_buffer_size)};
   return result;
 }
 
 uint32_t Flags::decode_buffer_size() {
-  static const uint32_t result = absl::GetFlag(FLAGS_decode_buffer_size);
+  static const uint32_t result{absl::GetFlag(FLAGS_decode_buffer_size)};
   return result;
 }
 
 std::string_view Flags::name() {
-  static const std::string result = absl::GetFlag(FLAGS_name);
+  static const std::string result{absl::GetFlag(FLAGS_name)};
   return result;
 }
 
 uint32_t Flags::cache_mbp_max_depth() {
-  static const uint32_t result = absl::GetFlag(FLAGS_cache_mbp_max_depth);
+  static const uint32_t result{absl::GetFlag(FLAGS_cache_mbp_max_depth)};
   return result;
 }
 
 uint32_t Flags::cache_trades_max_depth() {
-  static const uint32_t result = absl::GetFlag(FLAGS_cache_trades_max_depth);
+  static const uint32_t result{absl::GetFlag(FLAGS_cache_trades_max_depth)};
   return result;
 }
 
 uint32_t Flags::cache_fills_max_depth() {
-  static const uint32_t result = absl::GetFlag(FLAGS_cache_fills_max_depth);
+  static const uint32_t result{absl::GetFlag(FLAGS_cache_fills_max_depth)};
   return result;
 }
 

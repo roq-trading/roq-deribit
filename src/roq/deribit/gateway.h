@@ -5,6 +5,8 @@
 #include <absl/container/flat_hash_map.h>
 #include <absl/container/flat_hash_set.h>
 
+#include <list>
+#include <memory>
 #include <string>
 #include <vector>
 
@@ -14,7 +16,8 @@
 #include "roq/core/io/context.h"
 
 #include "roq/deribit/config.h"
-#include "roq/deribit/fix.h"
+#include "roq/deribit/market_data.h"
+#include "roq/deribit/order_entry.h"
 #include "roq/deribit/security.h"
 #include "roq/deribit/web_socket.h"
 
@@ -24,7 +27,10 @@
 namespace roq {
 namespace deribit {
 
-class Gateway final : public server::Handler, public WebSocket::Handler, public FIX::Handler {
+class Gateway final : public server::Handler,
+                      public WebSocket::Handler,
+                      public OrderEntry::Handler,
+                      public MarketData::Handler {
  public:
   Gateway(server::Dispatcher &dispatcher, const Config &config);
 
@@ -63,20 +69,25 @@ class Gateway final : public server::Handler, public WebSocket::Handler, public 
   void operator()(const json::Positions &, const server::TraceInfo &) override;
   void operator()(const json::Ticker &, const server::TraceInfo &) override;
 
-  // FIX::Handler
+  // OrderRouter::Handler
 
-  void operator()(const FIX &) override;
+  void operator()(const OrderEntry &) override;
 
   void operator()(const fix::ExecutionReport &, const server::TraceInfo &) override;
-  void operator()(const fix::MarketDataIncrementalRefresh &, const server::TraceInfo &) override;
-  void operator()(const fix::MarketDataRequestReject &, const server::TraceInfo &) override;
-  void operator()(const fix::MarketDataSnapshotFullRefresh &, const server::TraceInfo &) override;
   void operator()(const fix::OrderCancelReject &, const server::TraceInfo &) override;
   void operator()(const fix::PositionReport &, const server::TraceInfo &) override;
   void operator()(const fix::Reject &, const server::TraceInfo &) override;
   void operator()(const fix::SecurityList &, const server::TraceInfo &) override;
   void operator()(const fix::SecurityStatus &, const server::TraceInfo &) override;
   void operator()(const fix::UserResponse &, const server::TraceInfo &) override;
+
+  // MarketData::Handler
+
+  void operator()(const MarketData &) override;
+
+  void operator()(const fix::MarketDataIncrementalRefresh &, const server::TraceInfo &) override;
+  void operator()(const fix::MarketDataRequestReject &, const server::TraceInfo &) override;
+  void operator()(const fix::MarketDataSnapshotFullRefresh &, const server::TraceInfo &) override;
 
  private:
   using FIXDownload = server::Download<FIXState>;
@@ -105,10 +116,14 @@ class Gateway final : public server::Handler, public WebSocket::Handler, public 
   // io
   core::io::Context context_;
   // fix
+  // - order entry
   struct {
-    FIX connection;
+    OrderEntry connection;
     FIXDownload download;
-  } fix_;
+  } order_entry_;
+  // - market data
+  uint32_t stream_id_ = {};
+  std::list<std::unique_ptr<MarketData> > market_data_;
   // web socket
   struct {
     WebSocket connection;

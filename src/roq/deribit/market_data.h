@@ -3,6 +3,7 @@
 #pragma once
 
 #include <string>
+#include <vector>
 
 #include "roq/core/stack/buffer.h"
 
@@ -27,53 +28,39 @@
 #include "roq/deribit/fix/test_request.h"
 
 // business (inbound)
-#include "roq/deribit/fix/execution_report.h"
 #include "roq/deribit/fix/market_data_incremental_refresh.h"
 #include "roq/deribit/fix/market_data_request_reject.h"
 #include "roq/deribit/fix/market_data_snapshot_full_refresh.h"
-#include "roq/deribit/fix/order_cancel_reject.h"
-#include "roq/deribit/fix/position_report.h"
-#include "roq/deribit/fix/reject.h"  // ... normally session level
-#include "roq/deribit/fix/security_list.h"
-#include "roq/deribit/fix/security_status.h"
-#include "roq/deribit/fix/user_response.h"
 
 // business (outbound)
 #include "roq/deribit/fix/market_data_request.h"
-#include "roq/deribit/fix/new_order_single.h"
-#include "roq/deribit/fix/order_cancel_replace_request.h"
-#include "roq/deribit/fix/order_cancel_request.h"
-#include "roq/deribit/fix/order_mass_status_request.h"
-#include "roq/deribit/fix/request_for_positions.h"
-#include "roq/deribit/fix/security_list_request.h"
-#include "roq/deribit/fix/security_status_request.h"
-#include "roq/deribit/fix/user_request.h"
 
 namespace roq {
 namespace deribit {
 
-class FIX final : public core::net::Manager::Handler {
+class MarketData final : public core::net::Manager::Handler {
  public:
   struct Handler {
-    virtual void operator()(const FIX &) = 0;
+    virtual void operator()(const MarketData &) = 0;
+
     virtual void operator()(const ExternalLatency &, const server::TraceInfo &) = 0;
-    virtual void operator()(const fix::ExecutionReport &, const server::TraceInfo &) = 0;
+
     virtual void operator()(
         const fix::MarketDataIncrementalRefresh &, const server::TraceInfo &) = 0;
     virtual void operator()(const fix::MarketDataRequestReject &, const server::TraceInfo &) = 0;
     virtual void operator()(
         const fix::MarketDataSnapshotFullRefresh &, const server::TraceInfo &) = 0;
-    virtual void operator()(const fix::OrderCancelReject &, const server::TraceInfo &) = 0;
-    virtual void operator()(const fix::PositionReport &, const server::TraceInfo &) = 0;
-    virtual void operator()(const fix::Reject &, const server::TraceInfo &) = 0;
-    virtual void operator()(const fix::SecurityList &, const server::TraceInfo &) = 0;
-    virtual void operator()(const fix::SecurityStatus &, const server::TraceInfo &) = 0;
-    virtual void operator()(const fix::UserResponse &, const server::TraceInfo &) = 0;
   };
-  FIX(Handler &handler, Security &security, core::io::Context &context);
 
-  FIX(const FIX &) = delete;
-  FIX(FIX &&) = delete;
+  MarketData(
+      Handler &handler,
+      Security &security,
+      core::io::Context &context,
+      uint32_t stream_id,
+      std::vector<std::string> &&symbols);
+
+  MarketData(const MarketData &) = delete;
+  MarketData(MarketData &&) = delete;
 
   bool ready() const;
 
@@ -83,17 +70,7 @@ class FIX final : public core::net::Manager::Handler {
   void operator()(const Event<Stop> &);
   void operator()(const Event<Timer> &);
 
-  void operator()(const fix::SecurityListRequest &);
-  // void operator()(const fix::SecurityStatusRequest &);
   void operator()(const fix::MarketDataRequest &);
-
-  void operator()(const fix::UserRequest &);
-  void operator()(const fix::RequestForPositions &);
-  void operator()(const fix::OrderMassStatusRequest &);
-
-  void operator()(const fix::NewOrderSingle &);
-  void operator()(const fix::OrderCancelReplaceRequest &);
-  void operator()(const fix::OrderCancelRequest &);
 
   void operator()(metrics::Writer &writer);
 
@@ -127,8 +104,6 @@ class FIX final : public core::net::Manager::Handler {
   void operator()(const core::fix::header_t &, const fix::TestRequest &, const server::TraceInfo &);
 
   void operator()(
-      const core::fix::header_t &, const fix::ExecutionReport &, const server::TraceInfo &);
-  void operator()(
       const core::fix::header_t &,
       const fix::MarketDataIncrementalRefresh &,
       const server::TraceInfo &);
@@ -138,20 +113,15 @@ class FIX final : public core::net::Manager::Handler {
       const core::fix::header_t &,
       const fix::MarketDataSnapshotFullRefresh &,
       const server::TraceInfo &);
-  void operator()(
-      const core::fix::header_t &, const fix::OrderCancelReject &, const server::TraceInfo &);
-  void operator()(
-      const core::fix::header_t &, const fix::PositionReport &, const server::TraceInfo &);
-  void operator()(const core::fix::header_t &, const fix::Reject &, const server::TraceInfo &);
-  void operator()(
-      const core::fix::header_t &, const fix::SecurityList &, const server::TraceInfo &);
-  void operator()(
-      const core::fix::header_t &, const fix::SecurityStatus &, const server::TraceInfo &);
-  void operator()(
-      const core::fix::header_t &, const fix::UserResponse &, const server::TraceInfo &);
+
+  void subscribe();
 
  private:
   Handler &handler_;
+  // config
+  const uint32_t stream_id_;
+  std::vector<std::string> symbols_;
+  const std::string name_;
   // security
   Security &security_;
   // connection
@@ -166,9 +136,8 @@ class FIX final : public core::net::Manager::Handler {
     core::metrics::Counter disconnect;
   } counter_;
   struct {
-    core::metrics::Profile parse, execution_report, market_data_incremental_refresh,
-        market_data_request_reject, market_data_snapshot_full_refresh, order_cancel_reject,
-        position_report, reject, security_list, security_status, user_response;
+    core::metrics::Profile parse, market_data_incremental_refresh, market_data_request_reject,
+        market_data_snapshot_full_refresh;
   } profile_;
   struct {
     core::metrics::Latency ping;

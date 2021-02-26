@@ -10,6 +10,7 @@
 
 #include "roq/compat.h"
 
+#include "roq/core/convert.h"
 #include "roq/core/utils.h"
 
 #include "roq/core/fix/utils.h"
@@ -27,20 +28,6 @@ namespace deribit {
 
 namespace {
 constexpr auto TOLERANCE = 1.0e-10;
-
-class create_duration final {
- public:
-  explicit create_duration(std::chrono::nanoseconds value) : value_(value) {}
-  create_duration(create_duration &&) = default;
-  create_duration(const create_duration &) = delete;
-  template <typename T>
-  operator T() const {
-    return std::chrono::duration_cast<T>(value_);
-  }
-
- private:
-  std::chrono::nanoseconds value_;
-};
 
 template <typename C, typename T>
 static bool mbp_update(C &data, size_t &offset, const T &item) {
@@ -109,7 +96,7 @@ static bool fill_update(server::Dispatcher &dispatcher, C &data, size_t &offset,
 
 Gateway::Gateway(server::Dispatcher &dispatcher, const Config &config)
     : dispatcher_(dispatcher), account_(config.get_account()), security_(config),
-      fix_{
+      order_entry_{
           .connection =
               {
                   *this,
@@ -117,8 +104,7 @@ Gateway::Gateway(server::Dispatcher &dispatcher, const Config &config)
                   context_,
               },
           .download = FIXDownload(
-              std::chrono::seconds{Flags::fix_request_timeout_secs()},
-              [this](auto state) { return download(state); }),
+              Flags::fix_request_timeout(), [this](auto state) { return download(state); }),
       },
       web_socket_{
           .connection =
@@ -128,8 +114,7 @@ Gateway::Gateway(server::Dispatcher &dispatcher, const Config &config)
                   context_,
               },
           .download = WebSocketDownload(
-              std::chrono::seconds{Flags::ws_request_timeout_secs()},
-              [this](auto state) { return download(state); }),
+              Flags::ws_request_timeout(), [this](auto state) { return download(state); }),
       },
       fill_(Flags::cache_fills_max_depth()), bid_(Flags::cache_mbp_max_depth()),
       ask_(Flags::cache_mbp_max_depth()), trade_(Flags::cache_trades_max_depth()),
@@ -141,17 +126,23 @@ Gateway::Gateway(server::Dispatcher &dispatcher, const Config &config)
 void Gateway::operator()(const Event<Start> &event) {
   LOG(INFO)("Starting the gateway..."_sv);
   web_socket_.connection(event);
-  fix_.connection(event);
+  order_entry_.connection(event);
+  assert(symbols_.empty());
+  assert(market_data_.empty());
 }
 
 void Gateway::operator()(const Event<Stop> &event) {
   LOG(INFO)("Stopping the gateway..."_sv);
   web_socket_.connection(event);
-  fix_.connection(event);
+  order_entry_.connection(event);
+  for (auto &iter : market_data_)
+    (*iter)(event);
 }
 
 void Gateway::operator()(const Event<Timer> &event) {
-  fix_.connection(event);
+  for (auto &iter : market_data_)
+    (*iter)(event);
+  order_entry_.connection(event);
   web_socket_.connection(event);
   context_.dispatch(true);
 }
@@ -189,7 +180,7 @@ void Gateway::operator()(
       .deribit_label = deribit_label,
       .deribit_adv_order_type = '\0',
   };
-  fix_.connection(new_order_single);
+  order_entry_.connection(new_order_single);
 }
 
 void Gateway::operator()(
@@ -210,7 +201,7 @@ void Gateway::operator()(
       .symbol = order.symbol,
       .exec_inst = {},
   };
-  fix_.connection(order_cancel_replace_request);
+  order_entry_.connection(order_cancel_replace_request);
 }
 
 void Gateway::operator()(
@@ -221,12 +212,14 @@ void Gateway::operator()(
       .cl_ord_id = request_id,
       .orig_cl_ord_id = order.external_order_id,
   };
-  fix_.connection(order_cancel_request);
+  order_entry_.connection(order_cancel_request);
 }
 
 void Gateway::operator()(metrics::Writer &writer) {
   web_socket_.connection(writer);
-  fix_.connection(writer);
+  order_entry_.connection(writer);
+  for (auto &iter : market_data_)
+    (*iter)(writer);
 }
 
 // all
@@ -337,7 +330,7 @@ void Gateway::operator()(const json::Ticker &ticker, const server::TraceInfo &tr
   }
 }
 
-// fix
+// order-entry
 
 uint32_t Gateway::download(FIXDownload::State state) {
   switch (state) {
@@ -359,20 +352,20 @@ uint32_t Gateway::download(FIXDownload::State state) {
     case FIXDownload::State::DONE:
       LOG(INFO)("Ready"_sv);
       update(GatewayStatus::READY);
-      subscribe_market_data();
+      subscribe_market_data();  // HANS
       return 0;
   }
   assert(false);
   return 0;
 }
 
-void Gateway::operator()(const FIX &) {
-  if (fix_.connection.ready()) {
+void Gateway::operator()(const OrderEntry &) {
+  if (order_entry_.connection.ready()) {
     update(GatewayStatus::DOWNLOADING);
-    fix_.download.begin();
+    order_entry_.download.begin();
   } else {
     update(GatewayStatus::DISCONNECTED);
-    fix_.download.reset();
+    order_entry_.download.reset();
     symbols_.clear();
   }
 }
@@ -475,7 +468,7 @@ void Gateway::operator()(
   // download begin?
   switch (execution_report.mass_status_req_type) {
     case core::fix::MassStatusReqType::ORDERS:
-      fix_.download.update(FIXDownload::State::ORDERS, execution_report.tot_num_reports);
+      order_entry_.download.update(FIXDownload::State::ORDERS, execution_report.tot_num_reports);
       return;
     default:
       break;
@@ -504,7 +497,7 @@ void Gateway::operator()(
             order.request_type,
             execution_report.exec_type,
             execution_report.ord_status,
-            fix_.download.downloading(FIXDownload::State::ORDERS));
+            order_entry_.download.downloading(FIXDownload::State::ORDERS));
 
         if (result.request_status != RequestStatus::UNDEFINED) {
           result.origin = Origin::EXCHANGE;
@@ -560,7 +553,236 @@ void Gateway::operator()(
   }
 
   // download end?
-  fix_.download.check_relaxed(FIXDownload::State::ORDERS);
+  order_entry_.download.check_relaxed(FIXDownload::State::ORDERS);
+}
+
+void Gateway::operator()(
+    const fix::OrderCancelReject &order_cancel_reject, const server::TraceInfo &trace_info) {
+  assert(gateway_status_ == GatewayStatus::READY);
+
+  server::OMS_Lookup order_lookup{
+      .symbol = {},
+      .side = Side::UNDEFINED,
+      .status = core::fix::map(order_cancel_reject.ord_status),
+      .price = NaN,
+      .remaining_quantity = NaN,
+      .traded_quantity = NaN,
+      .timestamp = {},
+      .external_account = {},
+      .external_order_id = {},
+  };
+
+  auto found = dispatcher_.find_order(
+      order_cancel_reject.cl_ord_id,
+      order_cancel_reject.orig_cl_ord_id,
+      order_lookup,
+      trace_info,
+      [&](const auto &order, auto &result) {
+        DLOG_IF(FATAL, order.request_type != RequestType::MODIFY_ORDER)
+        ("UNEXPECTED"_sv);
+
+        result.origin = Origin::EXCHANGE;
+        result.request_status = RequestStatus::REJECTED;
+        result.error = fix::map_error(order_cancel_reject.text);
+        result.text = order_cancel_reject.text;
+      });
+
+  if (found == false) {
+    LOG(WARNING)("*** EXTERNAL ORDER ***"_sv);
+    LOG(WARNING)("order_cancel_reject={}"_fmt, order_cancel_reject);
+  }
+}
+
+void Gateway::operator()(
+    const fix::PositionReport &position_report, const server::TraceInfo &trace_info) {
+  VLOG(1)(R"(position_report={})"_fmt, position_report);
+  switch (position_report.pos_req_result) {
+    case core::fix::PosReqResult::VALID:
+      switch (position_report.pos_req_type) {
+        case core::fix::PosReqType::POSITIONS: {
+          for (auto &position : position_report.no_positions) {
+            PositionUpdate buy{
+                .account = account_,
+                .exchange = Flags::exchange(),
+                .symbol = position.symbol,
+                .side = Side::BUY,
+                .position = position.long_qty,
+                .last_trade_id = {},
+                .position_cost = 0.0,
+                .position_yesterday = 0.0,
+                .position_cost_yesterday = 0.0,
+                .external_account = {},
+            };
+            PositionUpdate sell{
+                .account = account_,
+                .exchange = Flags::exchange(),
+                .symbol = position.symbol,
+                .side = Side::SELL,
+                .position = position.short_qty,
+                .last_trade_id = {},
+                .position_cost = 0.0,
+                .position_yesterday = 0.0,
+                .position_cost_yesterday = 0.0,
+                .external_account = {},
+            };
+            server::create_trace_and_dispatch(trace_info, buy, dispatcher_, false);
+            server::create_trace_and_dispatch(trace_info, sell, dispatcher_, true);
+          }
+          break;
+        }
+        default:
+          DLOG(FATAL)("UNEXPECTED"_sv);
+          break;
+      }
+      break;
+    default:
+      DLOG(FATAL)("UNEXPECTED"_sv);
+      break;
+  }
+  // note! relaxed because we receive duplicate updates
+  order_entry_.download.check_relaxed(FIXDownload::State::POSITIONS);
+}
+
+void Gateway::operator()(const fix::Reject &reject, const server::TraceInfo &) {
+  LOG(WARNING)(R"(reject={})"_fmt, reject);
+  if (reject.session_reject_reason.compare("99"_sv) == 0 &&
+      reject.text.compare("connection_too_slow"_sv) == 0) {
+    order_entry_.connection.close();
+  } else {
+    LOG(FATAL)("Unexpected"_sv);
+  }
+}
+
+void Gateway::operator()(
+    const fix::SecurityList &security_list, const server::TraceInfo &trace_info) {
+  currencies_.clear();
+  if (security_list.no_related_sym.size() > 0) {
+    assert(symbols_.empty());
+    size_t security_count = {};
+    symbols_.reserve(security_list.no_related_sym.size());  // note! alloc
+    for (auto &instrument : security_list.no_related_sym) {
+      VLOG(1)(R"(instrument={})"_fmt, instrument);
+      // note!
+      //   USD will cause a Reject
+      //   using commission currency because it requires funding
+      if (instrument.comm_currency.empty() == false)
+        currencies_.emplace(instrument.comm_currency);
+      if (dispatcher_.discard_symbol(instrument.symbol))
+        continue;
+      symbols_.emplace_back(instrument.symbol);
+      auto expiry_datetime = combine(
+          instrument.maturity_date,
+          core::charconv::time_from_string<std::chrono::milliseconds>(instrument.maturity_time));
+      auto expiry_datetime_utc = expiry_datetime;
+      ReferenceData reference_data{
+          .exchange = Flags::exchange(),
+          .symbol = instrument.symbol,
+          .description = instrument.security_desc,
+          .security_type = fix::map_security_type(instrument.security_type),
+          .currency = instrument.currency,
+          .settlement_currency = instrument.settl_currency,
+          .commission_currency = instrument.comm_currency,
+          .tick_size = instrument.min_price_increment,
+          .multiplier = instrument.contract_multiplier,
+          .min_trade_vol = instrument.min_trade_vol,
+          .option_type = core::fix::map(instrument.put_or_call),
+          .strike_currency = instrument.strike_currency,
+          .strike_price = instrument.strike_price,
+          .underlying = instrument.underlying_symbol,
+          .time_zone = {},
+          .issue_date = core::convert(instrument.issue_date),
+          .settlement_date = {},
+          .expiry_datetime = core::convert(expiry_datetime),
+          .expiry_datetime_utc = core::convert(expiry_datetime_utc),
+      };
+      server::create_trace_and_dispatch(trace_info, reference_data, dispatcher_, true);
+      ++security_count;
+    }
+    LOG(INFO)
+    (R"(- securities: {} (/{}))"_fmt, security_count, security_list.no_related_sym.size());
+  }
+  order_entry_.download.check(FIXDownload::State::SECURITIES);
+}
+
+void Gateway::operator()(const fix::SecurityStatus &, const server::TraceInfo &) {
+}
+
+void Gateway::operator()(
+    const fix::UserResponse &user_response, const server::TraceInfo &trace_info) {
+  FundsUpdate funds_update{
+      .account = account_,
+      .currency = user_response.currency,
+      .balance = user_response.deribit_user_balance,
+      .hold = 0.0,
+      .external_account = {},
+  };
+  server::create_trace_and_dispatch(trace_info, funds_update, dispatcher_, true);
+  order_entry_.download.check(FIXDownload::State::USER);
+}
+
+void Gateway::update(GatewayStatus gateway_status) {
+  if (gateway_status == gateway_status_)
+    return;
+  gateway_status_ = gateway_status;
+  server::TraceInfo trace_info;
+  MarketDataStatus market_data_status{
+      .status = gateway_status_,
+  };
+  server::create_trace_and_dispatch(trace_info, market_data_status, dispatcher_, false);
+  OrderManagerStatus order_manager_status{
+      .account = account_,
+      .status = gateway_status_,
+  };
+  server::create_trace_and_dispatch(trace_info, order_manager_status, dispatcher_, true);
+  LOG(INFO)(R"(Update: gateway_status={})"_fmt, gateway_status_);
+}
+
+void Gateway::download_securities() {
+  auto request_id = dispatcher_.next_request_id();
+  fix::SecurityListRequest security_list_request{
+      .security_req_id = request_id,
+      .security_list_request_type = core::fix::SecurityListRequestType::ALL_SECURITIES,
+  };
+  order_entry_.connection(security_list_request);
+}
+
+void Gateway::download_positions() {
+  auto request_id = dispatcher_.next_request_id();
+  fix::RequestForPositions request_for_positions{
+      .pos_req_id = request_id,
+      .pos_req_type = core::fix::PosReqType::POSITIONS,
+      .subscription_request_type = roq::core::fix::SubscriptionRequestType::SNAPSHOT_UPDATES,
+      .currency = {},
+  };
+  order_entry_.connection(request_for_positions);
+}
+
+void Gateway::download_orders() {
+  auto request_id = dispatcher_.next_request_id();
+  fix::OrderMassStatusRequest order_mass_status_request{
+      .mass_status_req_id = request_id,
+      .mass_status_req_type = core::fix::MassStatusReqType::ORDERS,
+  };
+  order_entry_.connection(order_mass_status_request);
+}
+
+void Gateway::download_user() {
+  assert(currencies_.empty() == false);
+  for (auto &currency : currencies_) {
+    auto request_id = dispatcher_.next_request_id();
+    fix::UserRequest user_request_btc{
+        .user_request_id = request_id,
+        .user_request_type = core::fix::UserRequestType::REQUEST_INDIVIDUAL_USER_STATUS,
+        .username = security_.get_access_key(),
+        .currency = static_cast<std::string_view>(currency),
+    };
+    order_entry_.connection(user_request_btc);
+  }
+}
+
+// market data
+
+void Gateway::operator()(const MarketData &) {
 }
 
 void Gateway::operator()(
@@ -699,268 +921,30 @@ void Gateway::operator()(
   server::create_trace_and_dispatch(trace_info, market_by_price_update, dispatcher_, true);
 }
 
-void Gateway::operator()(
-    const fix::OrderCancelReject &order_cancel_reject, const server::TraceInfo &trace_info) {
-  assert(gateway_status_ == GatewayStatus::READY);
-
-  server::OMS_Lookup order_lookup{
-      .symbol = {},
-      .side = Side::UNDEFINED,
-      .status = core::fix::map(order_cancel_reject.ord_status),
-      .price = NaN,
-      .remaining_quantity = NaN,
-      .traded_quantity = NaN,
-      .timestamp = {},
-      .external_account = {},
-      .external_order_id = {},
-  };
-
-  auto found = dispatcher_.find_order(
-      order_cancel_reject.cl_ord_id,
-      order_cancel_reject.orig_cl_ord_id,
-      order_lookup,
-      trace_info,
-      [&](const auto &order, auto &result) {
-        DLOG_IF(FATAL, order.request_type != RequestType::MODIFY_ORDER)
-        ("UNEXPECTED"_sv);
-
-        result.origin = Origin::EXCHANGE;
-        result.request_status = RequestStatus::REJECTED;
-        result.error = fix::map_error(order_cancel_reject.text);
-        result.text = order_cancel_reject.text;
-      });
-
-  if (found == false) {
-    LOG(WARNING)("*** EXTERNAL ORDER ***"_sv);
-    LOG(WARNING)("order_cancel_reject={}"_fmt, order_cancel_reject);
-  }
-}
-
-void Gateway::operator()(
-    const fix::PositionReport &position_report, const server::TraceInfo &trace_info) {
-  VLOG(1)(R"(position_report={})"_fmt, position_report);
-  switch (position_report.pos_req_result) {
-    case core::fix::PosReqResult::VALID:
-      switch (position_report.pos_req_type) {
-        case core::fix::PosReqType::POSITIONS: {
-          for (auto &position : position_report.no_positions) {
-            PositionUpdate buy{
-                .account = account_,
-                .exchange = Flags::exchange(),
-                .symbol = position.symbol,
-                .side = Side::BUY,
-                .position = position.long_qty,
-                .last_trade_id = {},
-                .position_cost = 0.0,
-                .position_yesterday = 0.0,
-                .position_cost_yesterday = 0.0,
-                .external_account = {},
-            };
-            PositionUpdate sell{
-                .account = account_,
-                .exchange = Flags::exchange(),
-                .symbol = position.symbol,
-                .side = Side::SELL,
-                .position = position.short_qty,
-                .last_trade_id = {},
-                .position_cost = 0.0,
-                .position_yesterday = 0.0,
-                .position_cost_yesterday = 0.0,
-                .external_account = {},
-            };
-            server::create_trace_and_dispatch(trace_info, buy, dispatcher_, false);
-            server::create_trace_and_dispatch(trace_info, sell, dispatcher_, true);
-          }
-          break;
-        }
-        default:
-          DLOG(FATAL)("UNEXPECTED"_sv);
-          break;
-      }
-      break;
-    default:
-      DLOG(FATAL)("UNEXPECTED"_sv);
-      break;
-  }
-  // note! relaxed because we receive duplicate updates
-  fix_.download.check_relaxed(FIXDownload::State::POSITIONS);
-}
-
-void Gateway::operator()(const fix::Reject &reject, const server::TraceInfo &) {
-  LOG(WARNING)(R"(reject={})"_fmt, reject);
-  if (reject.session_reject_reason.compare("99"_sv) == 0 &&
-      reject.text.compare("connection_too_slow"_sv) == 0) {
-    fix_.connection.close();
-  } else {
-    LOG(FATAL)("Unexpected"_sv);
-  }
-}
-
-void Gateway::operator()(
-    const fix::SecurityList &security_list, const server::TraceInfo &trace_info) {
-  currencies_.clear();
-  if (security_list.no_related_sym.size() > 0) {
-    assert(symbols_.empty());
-    size_t security_count = {};
-    symbols_.reserve(security_list.no_related_sym.size());  // note! alloc
-    for (auto &instrument : security_list.no_related_sym) {
-      VLOG(1)(R"(instrument={})"_fmt, instrument);
-      // note!
-      //   USD will cause a Reject
-      //   using commission currency because it requires funding
-      if (instrument.comm_currency.empty() == false)
-        currencies_.emplace(instrument.comm_currency);
-      if (dispatcher_.discard_symbol(instrument.symbol))
-        continue;
-      symbols_.emplace_back(instrument.symbol);
-      auto expiry_datetime = combine(
-          instrument.maturity_date,
-          core::charconv::time_from_string<std::chrono::milliseconds>(instrument.maturity_time));
-      auto expiry_datetime_utc = expiry_datetime;
-      ReferenceData reference_data{
-          .exchange = Flags::exchange(),
-          .symbol = instrument.symbol,
-          .description = instrument.security_desc,
-          .security_type = fix::map_security_type(instrument.security_type),
-          .currency = instrument.currency,
-          .settlement_currency = instrument.settl_currency,
-          .commission_currency = instrument.comm_currency,
-          .tick_size = instrument.min_price_increment,
-          .multiplier = instrument.contract_multiplier,
-          .min_trade_vol = instrument.min_trade_vol,
-          .option_type = core::fix::map(instrument.put_or_call),
-          .strike_currency = instrument.strike_currency,
-          .strike_price = instrument.strike_price,
-          .underlying = instrument.underlying_symbol,
-          .time_zone = {},
-          .issue_date = create_duration(instrument.issue_date),
-          .settlement_date = {},
-          .expiry_datetime = create_duration(expiry_datetime),
-          .expiry_datetime_utc = create_duration(expiry_datetime_utc),
-      };
-      server::create_trace_and_dispatch(trace_info, reference_data, dispatcher_, true);
-      ++security_count;
-    }
-    VLOG(1)
-    (R"(- securities: {} (/{}))"_fmt, security_count, security_list.no_related_sym.size());
-  }
-  fix_.download.check(FIXDownload::State::SECURITIES);
-}
-
-void Gateway::operator()(const fix::SecurityStatus &, const server::TraceInfo &) {
-}
-
-void Gateway::operator()(
-    const fix::UserResponse &user_response, const server::TraceInfo &trace_info) {
-  FundsUpdate funds_update{
-      .account = account_,
-      .currency = user_response.currency,
-      .balance = user_response.deribit_user_balance,
-      .hold = 0.0,
-      .external_account = {},
-  };
-  server::create_trace_and_dispatch(trace_info, funds_update, dispatcher_, true);
-  fix_.download.check(FIXDownload::State::USER);
-}
-
-void Gateway::update(GatewayStatus gateway_status) {
-  if (gateway_status == gateway_status_)
-    return;
-  gateway_status_ = gateway_status;
-  server::TraceInfo trace_info;
-  MarketDataStatus market_data_status{
-      .status = gateway_status_,
-  };
-  server::create_trace_and_dispatch(trace_info, market_data_status, dispatcher_, false);
-  OrderManagerStatus order_manager_status{
-      .account = account_,
-      .status = gateway_status_,
-  };
-  server::create_trace_and_dispatch(trace_info, order_manager_status, dispatcher_, true);
-  LOG(INFO)(R"(Update: gateway_status={})"_fmt, gateway_status_);
-}
-
-void Gateway::download_securities() {
-  auto request_id = dispatcher_.next_request_id();
-  fix::SecurityListRequest security_list_request{
-      .security_req_id = request_id,
-      .security_list_request_type = core::fix::SecurityListRequestType::ALL_SECURITIES,
-  };
-  fix_.connection(security_list_request);
-}
-
-void Gateway::download_positions() {
-  auto request_id = dispatcher_.next_request_id();
-  fix::RequestForPositions request_for_positions{
-      .pos_req_id = request_id,
-      .pos_req_type = core::fix::PosReqType::POSITIONS,
-      .subscription_request_type = roq::core::fix::SubscriptionRequestType::SNAPSHOT_UPDATES,
-      .currency = {},
-  };
-  fix_.connection(request_for_positions);
-}
-
-void Gateway::download_orders() {
-  auto request_id = dispatcher_.next_request_id();
-  fix::OrderMassStatusRequest order_mass_status_request{
-      .mass_status_req_id = request_id,
-      .mass_status_req_type = core::fix::MassStatusReqType::ORDERS,
-  };
-  fix_.connection(order_mass_status_request);
-}
-
-void Gateway::download_user() {
-  assert(currencies_.empty() == false);
-  for (auto &currency : currencies_) {
-    auto request_id = dispatcher_.next_request_id();
-    fix::UserRequest user_request_btc{
-        .user_request_id = request_id,
-        .user_request_type = core::fix::UserRequestType::REQUEST_INDIVIDUAL_USER_STATUS,
-        .username = security_.get_access_key(),
-        .currency = static_cast<std::string_view>(currency),
-    };
-    fix_.connection(user_request_btc);
-  }
-}
-
 void Gateway::subscribe_market_data() {
   assert(gateway_status_ == GatewayStatus::READY);
   if (symbols_.empty()) {
     LOG(WARNING)("Can't subscribe market data, reason: NO SYMBOLS"_sv);
     return;
   }
-  LOG(INFO)("Subscribe market data"_sv);
-  fix::MDReq md_entry_types[] = {
-      {.md_entry_type = core::fix::MDEntryType::BID},
-      {.md_entry_type = core::fix::MDEntryType::OFFER},
-      {.md_entry_type = core::fix::MDEntryType::TRADE},
-  };
-  std::vector<fix::InstrmtMDReq> related_sym(Flags::fix_market_data_request_max_size());
-  for (size_t i = {};; ++i) {
-    auto offset = i * Flags::fix_market_data_request_max_size();
-    if (symbols_.size() < offset)
-      break;
-    auto count =
-        std::min<size_t>(symbols_.size() - offset, Flags::fix_market_data_request_max_size());
-    if (count) {
-      for (size_t j = {}; j < count; ++j)
-        related_sym[j].symbol = symbols_[offset + j];
-      auto request_id = dispatcher_.next_request_id();
-      uint32_t market_depth = 20u;  // XXX HANS should be flag
-      auto md_update_type = market_depth ? core::fix::MDUpdateType::INCREMENTAL_REFRESH
-                                         : core::fix::MDUpdateType::FULL_REFRESH;
-      fix::MarketDataRequest market_data_request{
-          .md_req_id = request_id,
-          .subscription_request_type = core::fix::SubscriptionRequestType::SNAPSHOT_UPDATES,
-          .market_depth = market_depth,
-          .md_update_type = md_update_type,
-          .deribit_trade_amount = {},     // none
-          .deribit_since_timestamp = {},  // none
-          .no_md_entry_types = {md_entry_types, std::size(md_entry_types)},
-          .no_related_sym = {related_sym.data(), count},
-      };
-      fix_.connection(market_data_request);
+  assert(Flags::fix_market_data_max_subscriptions_per_stream() > 0);
+  size_t max_length = Flags::fix_market_data_max_subscriptions_per_stream();
+  auto iter = symbols_.begin();
+  for (size_t major = {}; major < symbols_.size(); major += max_length) {
+    auto minor_length = std::min(symbols_.size() - major, max_length);
+    assert(minor_length > 0u);
+    std::vector<std::string> symbols;
+    symbols.reserve(max_length);
+    for (size_t minor = {}; minor < minor_length; ++minor, ++iter) {
+      assert(iter != symbols_.end());
+      symbols.emplace_back(*iter);
     }
+    auto market_data_ptr =
+        std::make_unique<MarketData>(*this, security_, context_, ++stream_id_, std::move(symbols));
+    MessageInfo message_info;  // XXX something sensible
+    Start start;
+    create_event_and_dispatch(*market_data_ptr, message_info, start);
+    market_data_.emplace_back(std::move(market_data_ptr));
   }
 }
 

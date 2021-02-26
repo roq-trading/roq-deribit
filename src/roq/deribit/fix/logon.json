@@ -10,6 +10,8 @@
 	{ "tag": 9002, "name": "UseWordsafeTags", "type": "bool", "custom": true },
 	{ "tag": 9001, "name": "CancelOnDisconnect", "type": "bool", "custom": true },
 	{ "tag": 9004, "name": "DeribitAppId", "type": "std::string_view", "custom": true },
-	{ "tag": 9005, "name": "DeribitAppSig", "type": "std::string_view", "custom": true }
+	{ "tag": 9005, "name": "DeribitAppSig", "type": "std::string_view", "custom": true },
+	{ "tag": 9007, "name": "DeribitSequential", "type": "bool", "custom": true },
+	{ "tag": 9009, "name": "UnsubscribeExecutionReports", "type": "bool", "custom": true }
 ]
 }
