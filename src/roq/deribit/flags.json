@@ -1,23 +1,90 @@
 {
-"name": "Flags",
-"type": "flags",
-"values": [
-	{ "name": "config_file", "type": "uri" },
-	{ "name": "exchange", "type": "string", "default": "deribit" },
-	{ "name": "ws_uri", "type": "uri", "default":"wss://test.deribit.com/ws/api/v2" },
-	{ "name": "ws_ping_freq_secs", "type": "uint32", "default": 5 },
-	{ "name": "ws_request_timeout_secs", "type": "uint32", "default": 15 },
-	{ "name": "fix_uri", "type": "uri", "default": "tcp://test.deribit.com:9881" },
-	{ "name": "fix_ping_freq_secs", "type": "uint32", "default": 5 },
-	{ "name": "fix_request_timeout_secs", "type": "uint32", "default": 15 },
-	{ "name": "fix_cancel_on_disconnect", "type": "bool", "default": true },
-	{ "name": "fix_market_data_request_max_size", "type": "uint32","default": 56 },
-	{ "name": "fix_debug", "type": "bool", "default": false },
-	{ "name": "encode_buffer_size", "type": "uint32", "default": 1048576 },
-	{ "name": "decode_buffer_size", "type": "uint32", "default": 10485760  },
-	{ "name": "name", "type": "string", "external": true },
-	{ "name": "cache_mbp_max_depth", "type": "uint32", "external": true },
-	{ "name": "cache_trades_max_depth", "type": "uint32", "external": true },
-	{ "name": "cache_fills_max_depth", "type": "uint32", "external": true },
-]
+  "name": "Flags",
+  "type": "flags",
+  "values": [
+    {
+      "name": "config_file",
+      "type": "uri"
+    },
+    {
+      "name": "exchange",
+      "type": "string",
+      "default": "deribit"
+    },
+    {
+      "name": "ws_uri",
+      "type": "uri",
+      "default": "wss://test.deribit.com/ws/api/v2"
+    },
+    {
+      "name": "ws_ping_freq_secs",
+      "type": "uint32",
+      "default": 5
+    },
+    {
+      "name": "ws_request_timeout_secs",
+      "type": "uint32",
+      "default": 15
+    },
+    {
+      "name": "fix_uri",
+      "type": "uri",
+      "default": "tcp://test.deribit.com:9881"
+    },
+    {
+      "name": "fix_ping_freq_secs",
+      "type": "uint32",
+      "default": 5
+    },
+    {
+      "name": "fix_request_timeout_secs",
+      "type": "uint32",
+      "default": 15
+    },
+    {
+      "name": "fix_cancel_on_disconnect",
+      "type": "bool",
+      "default": true
+    },
+    {
+      "name": "fix_market_data_request_max_size",
+      "type": "uint32",
+      "default": 56
+    },
+    {
+      "name": "fix_debug",
+      "type": "bool",
+      "default": false
+    },
+    {
+      "name": "encode_buffer_size",
+      "type": "uint32",
+      "default": 1048576
+    },
+    {
+      "name": "decode_buffer_size",
+      "type": "uint32",
+      "default": 10485760
+    },
+    {
+      "name": "name",
+      "type": "string",
+      "external": true
+    },
+    {
+      "name": "cache_mbp_max_depth",
+      "type": "uint32",
+      "external": true
+    },
+    {
+      "name": "cache_trades_max_depth",
+      "type": "uint32",
+      "external": true
+    },
+    {
+      "name": "cache_fills_max_depth",
+      "type": "uint32",
+      "external": true
+    }
+  ]
 }

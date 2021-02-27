@@ -17,22 +17,15 @@ namespace roq {
 namespace deribit {
 
 namespace {
-// XXX replace with std::array
-static const char CHARSET_DATA[] =
-    "abcdefghijklmnopqrstuvwxyz"
-    "0123456789";
+static const constexpr auto CHARSET_DATA = "abcdefghijklmnopqrstuvwxyz0123456789"_sv;
+static const constexpr auto RANDOM_BYTES = 32u;
 
-static const auto CHARSET_LENGTH = sizeof(CHARSET_DATA) - 1;
-
-static_assert(CHARSET_LENGTH == 36u);
+static_assert(std::size(CHARSET_DATA) == 36u);
 
 static std::random_device GENERATOR;
 static std::uniform_int_distribution<int> CHARSET_DISTRIBUTION(
-    0,
-    CHARSET_LENGTH - 1);  // note! inclusive
+    0, std::size(CHARSET_DATA) - 1);  // note! max value is inclusive
 static std::uniform_int_distribution<uint32_t> DISTRIBUTION;
-
-static const auto RANDOM_BYTES = 32u;
 }  // namespace
 
 Security::Security(const Config &config)
