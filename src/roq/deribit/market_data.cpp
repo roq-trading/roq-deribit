@@ -160,7 +160,8 @@ void MarketData::send(const T &event, std::chrono::nanoseconds sending_time) {
 
 void MarketData::send_logon() {
   auto sending_time = core::get_realtime_clock();
-  auto raw_data = security_.create_raw_data(sending_time);
+  auto raw_data = security_.create_raw_data(
+      std::chrono::duration_cast<std::chrono::milliseconds>(sending_time));
   auto password = security_.create_password(raw_data);
   fix::Logon logon{
       .heart_bt_int = static_cast<uint16_t>(Flags::fix_ping_freq().count()),

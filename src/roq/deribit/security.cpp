@@ -41,7 +41,8 @@ std::string Security::create_nonce() {
 
 std::string Security::create_signature(
     std::chrono::milliseconds timestamp, const std::string_view &nonce) {
-  auto message = roq::format("{}\n{}\n"_fmt, timestamp.count(), nonce);
+  auto sequence = get_sequence(timestamp);
+  auto message = roq::format("{}\n{}\n"_fmt, sequence, nonce);
   hmac_.clear();
   hmac_.update(message);
   std::array<char, 32u> buffer;
@@ -50,15 +51,16 @@ std::string Security::create_signature(
   return core::binascii::Hex::encode(buffer);
 }
 
-std::string Security::create_raw_data(const std::chrono::nanoseconds now) {
+std::string Security::create_raw_data(std::chrono::milliseconds timestamp) {
+  auto sequence = get_sequence(timestamp);
+  // create nonce
   using value_type = decltype(DISTRIBUTION)::result_type;
   constexpr auto n = RANDOM_BYTES / sizeof(value_type);
   std::array<value_type, n> buffer;
   for (size_t i = {}; i < n; ++i)
     buffer[i] = DISTRIBUTION(GENERATOR);
   auto nonce = core::binascii::Base64::encode(buffer.data(), buffer.size() * sizeof(value_type));
-  auto msecs = std::chrono::duration_cast<std::chrono::milliseconds>(now).count();
-  return roq::format("{:013}.{}"_fmt, msecs, nonce);
+  return roq::format("{:013}.{}"_fmt, sequence, nonce);
 }
 
 std::string Security::create_password(const std::string_view &raw_data) {
@@ -69,6 +71,15 @@ std::string Security::create_password(const std::string_view &raw_data) {
   auto length = sha_.digest(buffer);
   assert(length == buffer.size());
   return core::binascii::Base64::encode(buffer);
+}
+
+int64_t Security::get_sequence(std::chrono::milliseconds timestamp) {
+  if (timestamp_ < timestamp) {
+    timestamp_ = timestamp;
+  } else {
+    ++timestamp_;
+  }
+  return timestamp_.count();
 }
 
 }  // namespace deribit
