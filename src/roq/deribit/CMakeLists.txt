@@ -17,7 +17,7 @@ set(SOURCES
 
 include(RoqAutogen)
 
-set(AUTOGEN_SCHEMAS fix_state.json web_socket_state.json)
+set(AUTOGEN_SCHEMAS fix_state.json web_socket_state.json flags.json)
 
 roq_autogen(
   OUTPUT

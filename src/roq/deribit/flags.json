@@ -4,86 +4,123 @@
   "values": [
     {
       "name": "config_file",
-      "type": "uri"
+      "type": "std::string",
+      "validator": "roq::core::flags::Path<std::string>",
+      "description": "config file (path)"
     },
     {
       "name": "exchange",
-      "type": "string",
-      "default": "deribit"
+      "type": "std::string",
+      "validator": "roq::core::flags::NonEmpty<std::string>",
+      "default": "deribit",
+      "description": "exchange identifier (string)"
     },
     {
       "name": "ws_uri",
-      "type": "uri",
-      "default": "wss://test.deribit.com/ws/api/v2"
+      "type": "roq::core::URI",
+      "validator": "roq::core::flags::URI<std::string>",
+      "default": "wss://test.deribit.com/ws/api/v2",
+      "description": "WebSocket end-point (URI)"
     },
     {
-      "name": "ws_ping_freq_secs",
-      "type": "uint32",
-      "default": 5
+      "name": "ws_ping_freq",
+      "flag_name": "ws_ping_freq_secs",
+      "type": "std::chrono::seconds",
+      "validator": "roq::core::flags::NonZero<uint32_t>",
+      "default": 5,
+      "description": "ping frequency (seconds)"
     },
     {
-      "name": "ws_request_timeout_secs",
-      "type": "uint32",
-      "default": 15
+      "name": "ws_request_timeout",
+      "flag_name": "ws_request_timeout_secs",
+      "type": "std::chrono::seconds",
+      "validator": "roq::core::flags::NonZero<uint32_t>",
+      "default": 15,
+      "description": "request timeout (seconds)"
     },
     {
       "name": "fix_uri",
-      "type": "uri",
-      "default": "tcp://test.deribit.com:9881"
+      "type": "roq::core::URI",
+      "validator": "roq::core::flags::URI<std::string>",
+      "default": "tcp://test.deribit.com:9881",
+      "description": "FIX end-point (URI)"
     },
     {
-      "name": "fix_ping_freq_secs",
-      "type": "uint32",
-      "default": 5
+      "name": "fix_ping_freq",
+      "flag_name": "fix_ping_freq_secs",
+      "type": "std::chrono::seconds",
+      "validator": "roq::core::flags::NonZero<uint32_t>",
+      "default": 5,
+      "description": "ping frequency (seconds)"
     },
     {
-      "name": "fix_request_timeout_secs",
-      "type": "uint32",
-      "default": 15
+      "name": "fix_request_timeout",
+      "flag_name": "fix_request_timeout_secs",
+      "type": "std::chrono::seconds",
+      "validator": "roq::core::flags::NonZero<uint32_t>",
+      "default": 15,
+      "description": "request timeout (seconds)"
     },
     {
       "name": "fix_cancel_on_disconnect",
       "type": "bool",
-      "default": true
+      "default": true,
+      "description": "cancel orders on disconnect? (bool)"
+    },
+    {
+      "name": "fix_market_data_max_subscriptions_per_stream",
+      "type": "uint32_t",
+      "default": 512,
+      "description": "max subscriptions per connection (count)"
     },
     {
       "name": "fix_market_data_request_max_size",
-      "type": "uint32",
-      "default": 56
+      "type": "uint32_t",
+      "default": 56,
+      "description": "max batch size (it appears there is a limit)"
     },
     {
       "name": "fix_debug",
       "type": "bool",
-      "default": false
+      "default": false,
+      "description": "log fix messages?"
     },
     {
       "name": "encode_buffer_size",
-      "type": "uint32",
-      "default": 1048576
+      "type": "uint32_t",
+      "validator": "roq::core::flags::NonZero<uint32_t>",
+      "default": 1048576,
+      "description": "encode buffer size"
     },
     {
       "name": "decode_buffer_size",
-      "type": "uint32",
-      "default": 10485760
+      "type": "uint32_t",
+      "validator": "roq::core::flags::NonZero<uint32_t>",
+      "default": 10485760,
+      "description": "decode buffer size"
     },
     {
       "name": "name",
-      "type": "string",
+      "type": "std::string",
+      "validator": "roq::core::flags::NonEmpty<std::string>",
       "external": true
     },
     {
       "name": "cache_mbp_max_depth",
-      "type": "uint32",
+      "type": "uint32_t",
+      "validator": "roq::core::flags::NonZero<uint32_t>",
       "external": true
     },
     {
       "name": "cache_trades_max_depth",
-      "type": "uint32",
+      "type": "uint32_t",
+      "validator": "roq::core::flags::NonZero<uint32_t>",
       "external": true
     },
     {
       "name": "cache_fills_max_depth",
-      "type": "uint32",
+      "type": "uint32_t",
+      "validator": "roq::core::flags::NonZero<uint32_t>",
       "external": true
     }
   ]

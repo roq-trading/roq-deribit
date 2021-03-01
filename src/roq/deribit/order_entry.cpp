@@ -152,12 +152,13 @@ void OrderEntry::send(const T &event, std::chrono::nanoseconds sending_time) {
 }
 
 void OrderEntry::send_logon() {
+  auto ping_freq = std::chrono::duration_cast<std::chrono::seconds>(Flags::fix_ping_freq());
   auto sending_time = core::get_realtime_clock();
   auto raw_data = security_.create_raw_data(
       std::chrono::duration_cast<std::chrono::milliseconds>(sending_time));
   auto password = security_.create_password(raw_data);
   fix::Logon logon{
-      .heart_bt_int = static_cast<uint16_t>(Flags::fix_ping_freq().count()),
+      .heart_bt_int = static_cast<uint16_t>(ping_freq.count()),
       .raw_data_length = static_cast<uint32_t>(raw_data.length()),
       .raw_data = raw_data,
       .username = security_.get_access_key(),
