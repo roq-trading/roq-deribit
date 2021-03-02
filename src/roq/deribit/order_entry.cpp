@@ -388,6 +388,7 @@ void OrderEntry::operator()(
         2;  // 1-way
     server::TraceInfo trace_info;
     ExternalLatency external_latency{
+        .stream_id = {},
         .name = CONNECTION,
         .latency = latency,
     };

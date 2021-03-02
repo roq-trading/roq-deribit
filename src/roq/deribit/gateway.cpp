@@ -301,6 +301,7 @@ void Gateway::operator()(const json::Ticker &ticker, const server::TraceInfo &tr
   VLOG(3)(R"(ticker={})"_fmt, ticker);
   auto &layer = top_of_book_[ticker.instrument_name];
   TopOfBook top_of_book = {
+      .stream_id = {},
       .exchange = Flags::exchange(),
       .symbol = ticker.instrument_name,
       .layer =
@@ -322,6 +323,7 @@ void Gateway::operator()(const json::Ticker &ticker, const server::TraceInfo &tr
   if (item != trading_status) {
     item = trading_status;
     MarketStatus market_status{
+        .stream_id = {},
         .exchange = Flags::exchange(),
         .symbol = ticker.instrument_name,
         .trading_status = json::map(ticker.state),
@@ -521,6 +523,7 @@ void Gateway::operator()(
         }
         if (fill_length) {
           TradeUpdate trade_update{
+              .stream_id = {},
               .account = order.account,
               .order_id = order.user_order_id,
               .exchange = order.exchange,
@@ -602,6 +605,7 @@ void Gateway::operator()(
         case core::fix::PosReqType::POSITIONS: {
           for (auto &position : position_report.no_positions) {
             PositionUpdate buy{
+                .stream_id = {},
                 .account = account_,
                 .exchange = Flags::exchange(),
                 .symbol = position.symbol,
@@ -614,6 +618,7 @@ void Gateway::operator()(
                 .external_account = {},
             };
             PositionUpdate sell{
+                .stream_id = {},
                 .account = account_,
                 .exchange = Flags::exchange(),
                 .symbol = position.symbol,
@@ -675,6 +680,7 @@ void Gateway::operator()(
           core::charconv::time_from_string<std::chrono::milliseconds>(instrument.maturity_time));
       auto expiry_datetime_utc = expiry_datetime;
       ReferenceData reference_data{
+          .stream_id = {},
           .exchange = Flags::exchange(),
           .symbol = instrument.symbol,
           .description = instrument.security_desc,
@@ -710,6 +716,7 @@ void Gateway::operator()(const fix::SecurityStatus &, const server::TraceInfo &)
 void Gateway::operator()(
     const fix::UserResponse &user_response, const server::TraceInfo &trace_info) {
   FundsUpdate funds_update{
+      .stream_id = {},
       .account = account_,
       .currency = user_response.currency,
       .balance = user_response.deribit_user_balance,
@@ -726,10 +733,12 @@ void Gateway::update(GatewayStatus gateway_status) {
   gateway_status_ = gateway_status;
   server::TraceInfo trace_info;
   MarketDataStatus market_data_status{
+      .stream_id = {},
       .status = gateway_status_,
   };
   server::create_trace_and_dispatch(trace_info, market_data_status, dispatcher_, false);
   OrderManagerStatus order_manager_status{
+      .stream_id = {},
       .account = account_,
       .status = gateway_status_,
   };
@@ -849,6 +858,7 @@ void Gateway::operator()(
    trade_.size());
   if (bid_length > 0u || ask_length > 0u) {
     MarketByPriceUpdate market_by_price_update{
+        .stream_id = {},
         .exchange = Flags::exchange(),
         .symbol = market_data_incremental_refresh.symbol,
         .bids = {bid_.data(), bid_length},
@@ -862,6 +872,7 @@ void Gateway::operator()(
   }
   if (trade_length > 0u) {
     TradeSummary trade_summary{
+        .stream_id = {},
         .exchange = Flags::exchange(),
         .symbol = market_data_incremental_refresh.symbol,
         .trades = {trade_.data(), trade_length},
@@ -872,6 +883,7 @@ void Gateway::operator()(
   }
   if (statistics_length > 0u) {
     StatisticsUpdate statistics_update{
+        .stream_id = {},
         .exchange = Flags::exchange(),
         .symbol = market_data_incremental_refresh.symbol,
         .statistics = roq::span(statistics_.data(), statistics_length),
@@ -911,6 +923,7 @@ void Gateway::operator()(
     }
   }
   MarketByPriceUpdate market_by_price_update{
+      .stream_id = {},
       .exchange = Flags::exchange(),
       .symbol = market_data_snapshot_full_refresh.symbol,
       .bids = {bid_.data(), bid_length},
