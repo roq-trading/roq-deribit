@@ -4,9 +4,11 @@ roq-deribit
 ????-W??/
 
 # auto-generated
-fix_state.cpp
-fix_state.h
 flags.cpp
 flags.h
+market_data_state.cpp
+market_data_state.h
+order_entry_state.cpp
+order_entry_state.h
 web_socket_state.cpp
 web_socket_state.h

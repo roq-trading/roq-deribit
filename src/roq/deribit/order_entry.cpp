@@ -2,14 +2,19 @@
 
 #include "roq/deribit/order_entry.h"
 
-#include "roq/core/stack/buffer.h"
+#include "roq/core/back_emplacer.h"
+#include "roq/core/convert.h"
+#include "roq/core/debug.h"
+#include "roq/core/update.h"
 
 #include "roq/core/metrics/factory.h"
+
+#include "roq/core/fix/utils.h"
 
 #include "roq/deribit/common.h"
 #include "roq/deribit/flags.h"
 
-#include "roq/core/debug.h"
+#include "roq/deribit/fix/utils.h"
 
 using namespace roq::literals;
 
@@ -21,40 +26,49 @@ static const auto LOGOUT_RESPONSE = "LOGOUT"_sv;  // XXX
 static const auto CONNECTION = "ord"_sv;
 
 struct create_metrics final : public core::metrics::Factory {
-  explicit create_metrics(const std::string_view &function)
-      : core::metrics::Factory(Flags::name(), CONNECTION, function) {}
+  explicit create_metrics(const std::string_view &group, const std::string_view &function)
+      : core::metrics::Factory(Flags::name(), group, function) {}
 };
+
+template <typename T>
+void emplace(Fill &update, const T &value, uint32_t trade_id) {
+  new (&update) Fill{
+      .quantity = value.fill_qty,
+      .price = value.fill_px,
+      .trade_id = trade_id,
+      .gateway_trade_id = trade_id,
+      .external_trade_id = value.fill_exec_id,
+  };
+}
 }  // namespace
 
-OrderEntry::OrderEntry(Handler &handler, Security &security, core::io::Context &context)
-    : handler_(handler), security_(security), connection_factory_(context, Flags::fix_uri()),
-      connection_(*this, connection_factory_), encode_buffer_(Flags::encode_buffer_size()),
-      decode_buffer_(Flags::decode_buffer_size()),
+OrderEntry::OrderEntry(
+    Handler &handler,
+    core::io::Context &context,
+    uint16_t stream_id,
+    Security &security,
+    Shared &shared)
+    : handler_(handler), stream_id_(stream_id),
+      name_(roq::format("{}_{}_{}"_fmt, CONNECTION, security.get_account(), stream_id_)),
+      connection_factory_(context, Flags::fix_uri()), connection_(*this, connection_factory_),
+      encode_buffer_(Flags::encode_buffer_size()), decode_buffer_(Flags::decode_buffer_size()),
       counter_{
-          .disconnect = create_metrics("disconnect"_sv),
+          .disconnect = create_metrics(name_, "disconnect"_sv),
       },
       profile_{
-          .parse = create_metrics("parse"_sv),
-          .execution_report = create_metrics("execution_report"_sv),
-          .order_cancel_reject = create_metrics("order_cancel_reject"_sv),
-          .position_report = create_metrics("position_report"_sv),
-          .reject = create_metrics("reject"_sv),
-          .security_list = create_metrics("security_list"_sv),
-          .security_status = create_metrics("security_status"_sv),
-          .user_response = create_metrics("user_response"_sv),
+          .parse = create_metrics(name_, "parse"_sv),
+          .execution_report = create_metrics(name_, "execution_report"_sv),
+          .order_cancel_reject = create_metrics(name_, "order_cancel_reject"_sv),
+          .position_report = create_metrics(name_, "position_report"_sv),
+          .reject = create_metrics(name_, "reject"_sv),
+          .security_list = create_metrics(name_, "security_list"_sv),
+          .user_response = create_metrics(name_, "user_response"_sv),
       },
       latency_{
-          .ping = create_metrics("ping"_sv),
-      } {
-}
-
-bool OrderEntry::ready() const {
-  return connection_.ready();
-}
-
-void OrderEntry::close() {
-  // XXX send_logout?
-  connection_.close();
+          .ping = create_metrics(name_, "ping"_sv),
+      },
+      security_(security), shared_(shared),
+      download_(Flags::fix_request_timeout(), [this](auto state) { return download(state); }) {
 }
 
 void OrderEntry::operator()(const Event<Start> &) {
@@ -75,45 +89,72 @@ void OrderEntry::operator()(const Event<Timer> &event) {
   }
 }
 
-void OrderEntry::operator()(const fix::SecurityListRequest &security_list_request) {
-  VLOG(1)(R"(request(security_list_request={}))"_fmt, security_list_request);
-  send(security_list_request);
-}
-/*
-void OrderEntry::operator()(const fix::SecurityStatusRequest &security_status_request) {
-  VLOG(1)(R"(request(security_status_request={}))"_fmt, security_status_request);
-  send(security_status_request);
-}
-*/
-void OrderEntry::operator()(const fix::UserRequest &user_request) {
-  VLOG(1)(R"(request(user_request={}))"_fmt, user_request);
-  send(user_request);
-}
-
-void OrderEntry::operator()(const fix::RequestForPositions &request_for_position) {
-  VLOG(1)(R"(request(request_for_position={}))"_fmt, request_for_position);
-  send(request_for_position);
-}
-
-void OrderEntry::operator()(const fix::OrderMassStatusRequest &order_mass_status_request) {
-  VLOG(1)
-  (R"(request(order_mass_status_request={}))"_fmt, order_mass_status_request);
-  send(order_mass_status_request);
-}
-
-void OrderEntry::operator()(const fix::NewOrderSingle &new_order_single) {
-  VLOG(1)(R"(request(new_order_single={}))"_fmt, new_order_single);
+void OrderEntry::operator()(
+    const Event<CreateOrder> &event,
+    const std::string_view &request_id,
+    uint32_t gateway_order_id) {
+  auto &message_info = event.message_info;
+  auto &create_order = event.value;
+  if (std::isfinite(create_order.stop_price))
+    throw std::runtime_error("stop_price not supported"_s);
+  if (std::isfinite(create_order.max_show_quantity))
+    throw std::runtime_error("max_show_quantity not supported"_s);
+  auto side = core::fix::map(create_order.side);
+  auto exec_inst = fix::map(create_order.execution_instruction);
+  auto ord_type = core::fix::map(create_order.order_type);
+  auto time_in_force = core::fix::map(create_order.time_in_force);
+  core::stack::Buffer<char, 36u> buffer;
+  roq::format_to(
+      std::back_inserter(buffer),
+      "roq-{}-{}-{}"_fmt,
+      gateway_order_id,
+      message_info.source,
+      create_order.order_id);
+  std::string_view deribit_label(buffer.data(), buffer.size());
+  fix::NewOrderSingle new_order_single{
+      .cl_ord_id = request_id,
+      .side = side,
+      .order_qty = create_order.quantity,
+      .price = create_order.price,
+      .symbol = create_order.symbol,
+      .exec_inst = exec_inst,
+      .ord_type = ord_type,
+      .time_in_force = time_in_force,
+      .deribit_label = deribit_label,
+      .deribit_adv_order_type = '\0',
+  };
   send(new_order_single);
 }
 
-void OrderEntry::operator()(const fix::OrderCancelReplaceRequest &order_cancel_replace_request) {
-  VLOG(1)
-  (R"(request(order_cancel_replace_request={}))"_fmt, order_cancel_replace_request);
+void OrderEntry::operator()(
+    const Event<ModifyOrder> &event,
+    const std::string_view &request_id,
+    const server::OMS_Order &order) {
+  const auto &modify_order = event.value;
+  auto side = core::fix::map(order.side);
+  auto ord_type = core::fix::map(order.order_type);
+  fix::OrderCancelReplaceRequest order_cancel_replace_request{
+      .orig_cl_ord_id = order.external_order_id,
+      .cl_ord_id = request_id,
+      .transact_time = core::convert(order.update_time_utc),
+      .side = side,
+      .order_qty = modify_order.quantity,
+      .ord_type = ord_type,
+      .price = modify_order.price,
+      .symbol = order.symbol,
+      .exec_inst = {},
+  };
   send(order_cancel_replace_request);
 }
 
-void OrderEntry::operator()(const fix::OrderCancelRequest &order_cancel_request) {
-  VLOG(1)(R"(request(order_cancel_request={}))"_fmt, order_cancel_request);
+void OrderEntry::operator()(
+    const Event<CancelOrder> &,
+    const std::string_view &request_id,
+    const server::OMS_Order &order) {
+  fix::OrderCancelRequest order_cancel_request{
+      .cl_ord_id = request_id,
+      .orig_cl_ord_id = order.external_order_id,
+  };
   send(order_cancel_request);
 }
 
@@ -126,29 +167,69 @@ void OrderEntry::operator()(metrics::Writer &writer) {
       .write(profile_.position_report, metrics::PROFILE)
       .write(profile_.reject, metrics::PROFILE)
       .write(profile_.security_list, metrics::PROFILE)
-      .write(profile_.security_status, metrics::PROFILE)
       .write(profile_.user_response, metrics::PROFILE)
       .write(latency_.ping, metrics::LATENCY);
 }
 
-template <typename T>
-void OrderEntry::send(const T &event) {
-  send(event, core::get_realtime_clock());
+void OrderEntry::operator()(const core::net::Manager::Connected &) {
+  send_logon();
+  (*this)(GatewayStatus::LOGIN_SENT);
 }
 
-template <typename T>
-void OrderEntry::send(const T &event, std::chrono::nanoseconds sending_time) {
-  core::fix::Writer writer(
-      encode_buffer_,
-      FIX_VERSION,
-      T::msg_type,
-      SENDER_COMP_ID,
-      TARGET_COMP_ID,
-      outbound_.msg_seq_num,
-      sending_time);
-  auto message = event.encode(writer);
-  // message.print();  // DEBUG
-  connection_.send(message);
+void OrderEntry::operator()(const core::net::Manager::Disconnected &) {
+  ++counter_.disconnect;
+  outbound_ = {};
+  inbound_ = {};
+  ready_ = false;
+  next_heartbeat_ = {};
+  download_.reset();
+}
+
+void OrderEntry::operator()(const core::net::Manager::Read &read) {
+  auto length = read.buffer.length();
+  if (length == 0u)
+    return;
+  auto buffer = read.buffer.pullup(length);
+  decltype(length) total = 0;
+  for (;;) {
+    // core::print_memory(buffer, length);  // DEBUG
+    auto bytes = core::fix::Reader<FIX_VERSION>::dispatch(
+        [&](const core::fix::message_t &message) {
+          try {
+            check(message.header);
+            parse(message);
+          } catch (std::exception &) {
+            core::print_memory(buffer, length);
+            core::print_string_with_escapes(buffer, length);
+            throw;
+          }
+        },
+        buffer,
+        length);
+    assert(bytes <= length);
+    if (bytes == 0)
+      break;
+    total += bytes;
+    buffer += bytes;
+    length -= bytes;
+    if (Flags::fix_debug())
+      core::print_string_with_escapes(buffer, bytes);  // DEBUG
+  }
+  if (total)
+    read.buffer.drain(total);
+}
+
+void OrderEntry::operator()(const GatewayStatus status) {
+  if (core::update(status_, status)) {
+    server::TraceInfo trace_info;
+    OrderManagerStatus order_manager_status{
+        .stream_id = stream_id_,
+        .account = security_.get_account(),
+        .status = status_,
+    };
+    LOG(INFO)("order_manager_status={}"_fmt, order_manager_status);
+    server::create_trace_and_dispatch(trace_info, order_manager_status, handler_);
+  }
 }
 
 void OrderEntry::send_logon() {
@@ -198,74 +279,74 @@ void OrderEntry::send_test_request(std::chrono::nanoseconds now) {
   send(test_request);
 }
 
-void OrderEntry::operator()(const core::net::Manager::Connected &) {
-  send_logon();
-}
-
-void OrderEntry::operator()(const core::net::Manager::Disconnected &) {
-  ++counter_.disconnect;
-  outbound_ = {};
-  inbound_ = {};
-  ready_ = false;
-  next_heartbeat_ = {};
-  handler_(*this);
-}
-
-void OrderEntry::operator()(const core::net::Manager::Read &read) {
-  auto length = read.buffer.length();
-  if (length == 0)
-    return;
-  auto buffer = read.buffer.pullup(length);
-  decltype(length) total = 0;
-  for (;;) {
-    // core::print_memory(buffer, length);  // DEBUG
-    auto bytes = core::fix::Reader<FIX_VERSION>::dispatch(
-        [&](const core::fix::message_t &message) {
-          try {
-            check(message.header);
-            parse(message);
-          } catch (std::exception &) {
-            core::print_memory(buffer, length);
-            core::print_string_with_escapes(buffer, length);
-            throw;
-          }
-        },
-        buffer,
-        length);
-    assert(bytes <= length);
-    if (bytes == 0)
+uint32_t OrderEntry::download(OrderEntryState state) {
+  switch (state) {
+    case OrderEntryState::UNDEFINED:
+      assert(false);
       break;
-    total += bytes;
-    buffer += bytes;
-    length -= bytes;
-    if (Flags::fix_debug())
-      core::print_string_with_escapes(buffer, bytes);  // DEBUG
+    case OrderEntryState::SECURITIES:
+      download_securities();
+      return 1;
+    case OrderEntryState::POSITIONS:
+      download_positions();
+      return 1;
+    case OrderEntryState::ORDERS:
+      download_orders();
+      return 1;  // first ExecutionReport has the real number
+    case OrderEntryState::USER:
+      download_user();
+      return currencies_.size();
+    case OrderEntryState::DONE:
+      (*this)(GatewayStatus::READY);
+      assert(!ready_);
+      ready_ = true;
+      return 0;
   }
-  if (total)
-    read.buffer.drain(total);
+  assert(false);
+  return 0;
 }
 
-void OrderEntry::check(const core::fix::header_t &header) {
-  auto current = header.msg_seq_num;
-  auto expected = inbound_.msg_seq_num + 1;
-  if (ROQ_UNLIKELY(current != expected)) {
-    if (expected < current) {
-      LOG(WARNING)
-      (R"(*** SEQUENCE GAP *** )"
-       R"(current={} previous={} distance={})"_fmt,
-       current,
-       inbound_.msg_seq_num,
-       current - inbound_.msg_seq_num);
-    } else {
-      LOG(WARNING)
-      (R"(*** SEQUENCE REPLAY *** )"
-       R"(current={} previous={} distance={})"_fmt,
-       current,
-       inbound_.msg_seq_num,
-       inbound_.msg_seq_num - current);
-    }
+void OrderEntry::download_securities() {
+  auto request_id = shared_.next_request_id();
+  fix::SecurityListRequest security_list_request{
+      .security_req_id = request_id,
+      .security_list_request_type = core::fix::SecurityListRequestType::ALL_SECURITIES,
+  };
+  send(security_list_request);
+}
+
+void OrderEntry::download_positions() {
+  auto request_id = shared_.next_request_id();
+  fix::RequestForPositions request_for_positions{
+      .pos_req_id = request_id,
+      .pos_req_type = core::fix::PosReqType::POSITIONS,
+      .subscription_request_type = roq::core::fix::SubscriptionRequestType::SNAPSHOT_UPDATES,
+      .currency = {},
+  };
+  send(request_for_positions);
+}
+
+void OrderEntry::download_orders() {
+  auto request_id = shared_.next_request_id();
+  fix::OrderMassStatusRequest order_mass_status_request{
+      .mass_status_req_id = request_id,
+      .mass_status_req_type = core::fix::MassStatusReqType::ORDERS,
+  };
+  send(order_mass_status_request);
+}
+
+void OrderEntry::download_user() {
+  assert(currencies_.empty() == false);
+  for (auto &currency : currencies_) {
+    auto request_id = shared_.next_request_id();
+    fix::UserRequest user_request_btc{
+        .user_request_id = request_id,
+        .user_request_type = core::fix::UserRequestType::REQUEST_INDIVIDUAL_USER_STATUS,
+        .username = security_.get_access_key(),
+        .currency = static_cast<std::string_view>(currency),
+    };
+    send(user_request_btc);
   }
-  inbound_.msg_seq_num = current;
 }
 
 void OrderEntry::parse(const core::fix::message_t &message) {
@@ -316,18 +397,6 @@ void OrderEntry::parse_helper(const core::fix::message_t &message) {
       });
       break;
     }
-    case core::fix::MsgType::MARKET_DATA_INCREMENTAL_REFRESH: {
-      LOG(WARNING)(R"(Unexpected msg_type={})"_fmt, message.header.msg_type);
-      break;
-    }
-    case core::fix::MsgType::MARKET_DATA_REQUEST_REJECT: {
-      LOG(WARNING)(R"(Unexpected msg_type={})"_fmt, message.header.msg_type);
-      break;
-    }
-    case core::fix::MsgType::MARKET_DATA_SNAPSHOT_FULL_REFRESH: {
-      LOG(WARNING)(R"(Unexpected msg_type={})"_fmt, message.header.msg_type);
-      break;
-    }
     case core::fix::MsgType::ORDER_CANCEL_REJECT: {
       profile_.order_cancel_reject([&]() {
         auto order_cancel_reject = fix::OrderCancelReject::create(message);
@@ -356,13 +425,6 @@ void OrderEntry::parse_helper(const core::fix::message_t &message) {
       });
       break;
     }
-    case core::fix::MsgType::SECURITY_STATUS: {
-      profile_.security_status([&]() {
-        auto security_status = fix::SecurityStatus::create(message, buffer);
-        (*this)(message.header, security_status, trace_info);
-      });
-      break;
-    }
     case core::fix::MsgType::USER_RESPONSE: {
       profile_.user_response([&]() {
         auto user_response = fix::UserResponse::create(message);
@@ -388,11 +450,11 @@ void OrderEntry::operator()(
         2;  // 1-way
     server::TraceInfo trace_info;
     ExternalLatency external_latency{
-        .stream_id = {},
-        .name = CONNECTION,
+        .stream_id = stream_id_,
+        .name = name_,
         .latency = latency,
     };
-    handler_(external_latency, trace_info);
+    server::create_trace_and_dispatch(trace_info, external_latency, handler_);
     latency_.ping.update(latency);
   }
 }
@@ -400,10 +462,8 @@ void OrderEntry::operator()(
 void OrderEntry::operator()(
     const core::fix::header_t &header, const fix::Logon &logon, const server::TraceInfo &) {
   VLOG(1)(R"(event(header={}, logon={}))"_fmt, header, logon);
-  LOG(INFO)("Ready"_sv);
-  assert(ready_ == false);
-  ready_ = true;
-  handler_(*this);
+  (*this)(GatewayStatus::DOWNLOADING);
+  download_.begin();
 }
 
 void OrderEntry::operator()(
@@ -434,12 +494,186 @@ void OrderEntry::operator()(
   send_heartbeat(test_request.test_req_id);
 }
 
+// execution_report:
+//
+// mass_status_req_type  what
+// ----------------------------------------
+//   ORDERS                begin download
+//   *                     order update
+//
+// exec_type       ord_status          what
+// ------------------------------------------------------------------
+//   REJECTED        *                   ack failure
+//   CANCELED        *                   ack success + order update
+//   ORDER_STATUS    NEW                 ack success + order update
+//   ORDER_STATUS    PARTIALLY_FILLED    order update
+//   ORDER_STATUS    FILLED              order update
+//   ORDER_STATUS    CANCELED            ack success
+
+auto compute_request_status(
+    RequestType request_type,
+    core::fix::ExecType exec_type,
+    core::fix::OrdStatus ord_status,
+    bool download) {
+  switch (exec_type) {
+    case core::fix::ExecType::REJECTED: {
+      switch (request_type) {
+        case RequestType::UNDEFINED:
+          LOG(WARNING)("*** EXTERNAL ACTION ***"_sv);
+          break;
+        case RequestType::CREATE_ORDER:
+        case RequestType::MODIFY_ORDER:
+        case RequestType::CANCEL_ORDER:
+          return RequestStatus::REJECTED;
+      }
+      break;
+    }
+    case core::fix::ExecType::CANCELED: {
+      switch (request_type) {
+        case RequestType::UNDEFINED:
+          LOG(WARNING)("*** EXTERNAL ACTION ***"_sv);
+          break;
+        case RequestType::CREATE_ORDER:
+        case RequestType::MODIFY_ORDER:
+          DLOG(FATAL)("UNEXPECTED"_sv);
+          break;
+        case RequestType::CANCEL_ORDER:
+          return RequestStatus::ACCEPTED;
+      }
+      break;
+    }
+    case core::fix::ExecType::ORDER_STATUS:
+      switch (ord_status) {
+        case core::fix::OrdStatus::NEW: {
+          switch (request_type) {
+            case RequestType::UNDEFINED:
+              LOG_IF(WARNING, download == false)("*** EXTERNAL ACTION ***"_sv);
+              break;
+            case RequestType::CREATE_ORDER:
+            case RequestType::MODIFY_ORDER:
+              return RequestStatus::ACCEPTED;
+            case RequestType::CANCEL_ORDER:
+              DLOG(FATAL)("UNEXPECTED"_sv);
+              break;
+          }
+          break;
+        }
+        case core::fix::OrdStatus::PARTIALLY_FILLED:
+        case core::fix::OrdStatus::FILLED:
+          break;
+        case core::fix::OrdStatus::CANCELED:
+          switch (request_type) {
+            case RequestType::UNDEFINED:
+              break;
+            case RequestType::CREATE_ORDER:
+            case RequestType::MODIFY_ORDER:
+              LOG(WARNING)("*** EXTERNAL ACTION ***"_sv);
+              break;
+            case RequestType::CANCEL_ORDER:
+              return RequestStatus::ACCEPTED;
+          }
+          break;
+        default:
+          DLOG(FATAL)("UNEXPECTED"_sv);
+          break;
+      }
+      break;
+    default:
+      DLOG(FATAL)("UNEXPECTED"_sv);
+      break;
+  }
+  return RequestStatus::UNDEFINED;
+}
+
 void OrderEntry::operator()(
     const core::fix::header_t &header,
     const fix::ExecutionReport &execution_report,
     const server::TraceInfo &trace_info) {
   VLOG(3)(R"(event(header={}, execution_report={}))"_fmt, header, execution_report);
-  handler_(execution_report, trace_info);
+
+  // download begin?
+  switch (execution_report.mass_status_req_type) {
+    case core::fix::MassStatusReqType::ORDERS:
+      download_.update(OrderEntryState::ORDERS, execution_report.tot_num_reports);
+      return;
+    default:
+      break;
+  }
+
+  server::OMS_Lookup order_lookup{
+      .symbol = execution_report.symbol,
+      .side = core::fix::map(execution_report.side),
+      .status = core::fix::map(execution_report.ord_status),
+      .price = execution_report.price,
+      .remaining_quantity = execution_report.leaves_qty,
+      .traded_quantity = execution_report.cum_qty,
+      .timestamp = execution_report.transact_time,
+      .external_account = {},
+      .external_order_id = execution_report.order_id,
+  };
+
+  // XXX we used to also create orders here...
+  auto found = shared_.find_order(
+      execution_report.cl_ord_id,
+      execution_report.orig_cl_ord_id,
+      order_lookup,
+      trace_info,
+      [&](const auto &order, auto &result) {
+        result.request_status = compute_request_status(
+            order.request_type,
+            execution_report.exec_type,
+            execution_report.ord_status,
+            download_.downloading(OrderEntryState::ORDERS));
+
+        if (result.request_status != RequestStatus::UNDEFINED) {
+          result.origin = Origin::EXCHANGE;
+          result.error = fix::map_error(execution_report.text);
+          result.text = execution_report.text;
+        }
+
+        core::back_emplacer fills(shared_.fills);
+        for (auto &item : execution_report.no_fills) {
+          fills.emplace_back([&](auto &update) {
+            auto trade_id = shared_.next_trade_id();
+            emplace(update, item, trade_id);
+          });
+        }
+        if (!fills.empty()) {
+          TradeUpdate trade_update{
+              .stream_id = stream_id_,
+              .account = order.account,
+              .order_id = order.user_order_id,
+              .exchange = order.exchange,
+              .symbol = order.symbol,
+              .side = order.side,
+              .position_effect = {},
+              .order_template = {},
+              .create_time_utc = execution_report.transact_time,
+              .update_time_utc = execution_report.transact_time,
+              .gateway_order_id = order.gateway_order_id,
+              .external_account = {},
+              .external_order_id = order.external_order_id,
+              .fills = fills,
+          };
+          server::create_trace_and_dispatch(
+              trace_info, trade_update, handler_, true, order.user_id);
+        }
+      });
+
+  // TODO(thraneh): process fills? --> maintain positions
+
+  if (found == false) {
+    auto external = execution_report.deribit_label.empty();
+    if (external) {
+      LOG(WARNING)("*** EXTERNAL ORDER ***"_sv);
+    } else {
+      LOG(WARNING)("*** UNKNOWN INTERNAL ORDER ***"_sv);
+    }
+    LOG(WARNING)("execution_report={}"_fmt, execution_report);
+  }
+
+  // download end?
+  download_.check_relaxed(OrderEntryState::ORDERS);
 }
 
 void OrderEntry::operator()(
@@ -448,7 +682,38 @@ void OrderEntry::operator()(
     const server::TraceInfo &trace_info) {
   VLOG(3)
   (R"(event(header={}, order_cancel_reject={}))"_fmt, header, order_cancel_reject);
-  handler_(order_cancel_reject, trace_info);
+
+  server::OMS_Lookup order_lookup{
+      .symbol = {},
+      .side = Side::UNDEFINED,
+      .status = core::fix::map(order_cancel_reject.ord_status),
+      .price = NaN,
+      .remaining_quantity = NaN,
+      .traded_quantity = NaN,
+      .timestamp = {},
+      .external_account = {},
+      .external_order_id = {},
+  };
+
+  auto found = shared_.find_order(
+      order_cancel_reject.cl_ord_id,
+      order_cancel_reject.orig_cl_ord_id,
+      order_lookup,
+      trace_info,
+      [&](const auto &order, auto &result) {
+        DLOG_IF(FATAL, order.request_type != RequestType::MODIFY_ORDER)
+        ("UNEXPECTED"_sv);
+
+        result.origin = Origin::EXCHANGE;
+        result.request_status = RequestStatus::REJECTED;
+        result.error = fix::map_error(order_cancel_reject.text);
+        result.text = order_cancel_reject.text;
+      });
+
+  if (found == false) {
+    LOG(WARNING)("*** EXTERNAL ORDER ***"_sv);
+    LOG(WARNING)("order_cancel_reject={}"_fmt, order_cancel_reject);
+  }
 }
 
 void OrderEntry::operator()(
@@ -456,31 +721,82 @@ void OrderEntry::operator()(
     const fix::PositionReport &position_report,
     const server::TraceInfo &trace_info) {
   VLOG(3)(R"(event(header={}, position_report={}))"_fmt, header, position_report);
-  handler_(position_report, trace_info);
+  switch (position_report.pos_req_result) {
+    case core::fix::PosReqResult::VALID:
+      switch (position_report.pos_req_type) {
+        case core::fix::PosReqType::POSITIONS: {
+          for (auto &position : position_report.no_positions) {
+            PositionUpdate buy{
+                .stream_id = stream_id_,
+                .account = security_.get_account(),
+                .exchange = Flags::exchange(),
+                .symbol = position.symbol,
+                .side = Side::BUY,
+                .position = position.long_qty,
+                .last_trade_id = {},
+                .position_cost = 0.0,
+                .position_yesterday = 0.0,
+                .position_cost_yesterday = 0.0,
+                .external_account = {},
+            };
+            server::create_trace_and_dispatch(trace_info, buy, handler_, false);
+            PositionUpdate sell{
+                .stream_id = stream_id_,
+                .account = security_.get_account(),
+                .exchange = Flags::exchange(),
+                .symbol = position.symbol,
+                .side = Side::SELL,
+                .position = position.short_qty,
+                .last_trade_id = {},
+                .position_cost = 0.0,
+                .position_yesterday = 0.0,
+                .position_cost_yesterday = 0.0,
+                .external_account = {},
+            };
+            server::create_trace_and_dispatch(trace_info, sell, handler_, true);
+          }
+          break;
+        }
+        default:
+          DLOG(FATAL)("UNEXPECTED"_sv);
+          break;
+      }
+      break;
+    default:
+      DLOG(FATAL)("UNEXPECTED"_sv);
+      break;
+  }
+  // note! relaxed because we receive duplicate updates
+  download_.check_relaxed(OrderEntryState::POSITIONS);
 }
 
 void OrderEntry::operator()(
-    const core::fix::header_t &header,
-    const fix::Reject &reject,
-    const server::TraceInfo &trace_info) {
+    const core::fix::header_t &header, const fix::Reject &reject, const server::TraceInfo &) {
   VLOG(3)(R"(event(header={}, reject={}))"_fmt, header, reject);
-  handler_(reject, trace_info);
+  LOG(WARNING)(R"(reject={})"_fmt, reject);
+  if (reject.session_reject_reason.compare("99"_sv) == 0 &&
+      reject.text.compare("connection_too_slow"_sv) == 0) {
+    connection_.close();
+  } else {
+    LOG(FATAL)("Unexpected"_sv);
+  }
 }
 
 void OrderEntry::operator()(
     const core::fix::header_t &header,
     const fix::SecurityList &security_list,
-    const server::TraceInfo &trace_info) {
+    const server::TraceInfo &) {
   VLOG(2)(R"(event(header={}, security_list={}))"_fmt, header, security_list);
-  handler_(security_list, trace_info);
-}
-
-void OrderEntry::operator()(
-    const core::fix::header_t &header,
-    const fix::SecurityStatus &security_status,
-    const server::TraceInfo &trace_info) {
-  VLOG(2)(R"(event(header={}, security_status={}))"_fmt, header, security_status);
-  handler_(security_status, trace_info);
+  currencies_.clear();
+  for (auto &instrument : security_list.no_related_sym) {
+    // note!
+    //   USD will cause a Reject
+    //   using commission currency because it requires funding
+    if (instrument.comm_currency.empty() == false)
+      currencies_.emplace(instrument.comm_currency);
+  }
+  LOG(INFO)("- currencies: {}"_fmt, std::size(currencies_));
+  download_.check(OrderEntryState::SECURITIES);
 }
 
 void OrderEntry::operator()(
@@ -488,7 +804,59 @@ void OrderEntry::operator()(
     const fix::UserResponse &user_response,
     const server::TraceInfo &trace_info) {
   VLOG(2)(R"(event(header={}, user_response={}))"_fmt, header, user_response);
-  handler_(user_response, trace_info);
+  FundsUpdate funds_update{
+      .stream_id = stream_id_,
+      .account = security_.get_account(),
+      .currency = user_response.currency,
+      .balance = user_response.deribit_user_balance,
+      .hold = 0.0,
+      .external_account = {},
+  };
+  server::create_trace_and_dispatch(trace_info, funds_update, handler_, true);
+  download_.check(OrderEntryState::USER);
+}
+
+template <typename T>
+void OrderEntry::send(const T &event) {
+  send(event, core::get_realtime_clock());
+}
+
+template <typename T>
+void OrderEntry::send(const T &event, std::chrono::nanoseconds sending_time) {
+  core::fix::Writer writer(
+      encode_buffer_,
+      FIX_VERSION,
+      T::msg_type,
+      SENDER_COMP_ID,
+      TARGET_COMP_ID,
+      outbound_.msg_seq_num,
+      sending_time);
+  auto message = event.encode(writer);
+  // message.print();  // DEBUG
+  connection_.send(message);
+}
+
+void OrderEntry::check(const core::fix::header_t &header) {
+  auto current = header.msg_seq_num;
+  auto expected = inbound_.msg_seq_num + 1;
+  if (ROQ_UNLIKELY(current != expected)) {
+    if (expected < current) {
+      LOG(WARNING)
+      (R"(*** SEQUENCE GAP *** )"
+       R"(current={} previous={} distance={})"_fmt,
+       current,
+       inbound_.msg_seq_num,
+       current - inbound_.msg_seq_num);
+    } else {
+      LOG(WARNING)
+      (R"(*** SEQUENCE REPLAY *** )"
+       R"(current={} previous={} distance={})"_fmt,
+       current,
+       inbound_.msg_seq_num,
+       inbound_.msg_seq_num - current);
+    }
+  }
+  inbound_.msg_seq_num = current;
 }
 
 }  // namespace deribit

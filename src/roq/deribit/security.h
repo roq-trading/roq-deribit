@@ -15,10 +15,12 @@ namespace deribit {
 
 class Security final {
  public:
-  explicit Security(const Config &);
+  explicit Security(const Config &, const std::string_view &account);
 
   Security(Security &&) = delete;
   Security(const Security &) = delete;
+
+  std::string_view get_account() const { return account_; }
 
   std::string_view get_access_key() const { return key_; }
 
@@ -33,6 +35,7 @@ class Security final {
   int64_t get_sequence(std::chrono::milliseconds timestamp);
 
  private:
+  const std::string account_;
   const std::string key_;
   const std::string secret_;
   core::crypto::SHA256 sha_;

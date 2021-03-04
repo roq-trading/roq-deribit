@@ -4,6 +4,11 @@ All notable changes will be documented in this file.
 
 ## Head
 
+### Changed
+
+* Support many accounts for order management
+* Support many market data streams for load balancing
+
 ## 0.6.1 &ndash; 2021-02-19
 
 ## 0.6.0 &ndash; 2021-02-02

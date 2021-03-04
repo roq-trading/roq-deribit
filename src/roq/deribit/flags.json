@@ -70,6 +70,7 @@
     {
       "name": "fix_market_data_max_subscriptions_per_stream",
       "type": "uint32_t",
+      "validator": "roq::core::flags::NonZero<uint32_t>",
       "default": 512,
       "description": "max subscriptions per connection (count)"
     },
@@ -78,6 +79,12 @@
       "type": "uint32_t",
       "default": 56,
       "description": "max batch size (it appears there is a limit)"
+    },
+    {
+      "name": "fix_market_data_market_depth",
+      "type": "uint32_t",
+      "default": 20,
+      "description": "market depth (see deribit documentation)"
     },
     {
       "name": "fix_debug",

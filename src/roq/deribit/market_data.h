@@ -2,6 +2,8 @@
 
 #pragma once
 
+#include <absl/container/flat_hash_set.h>
+
 #include <string>
 #include <vector>
 
@@ -16,9 +18,12 @@
 #include "roq/core/net/manager.h"
 #include "roq/core/net/tcp_connection_factory.h"
 
+#include "roq/download.h"
 #include "roq/server.h"
 
+#include "roq/deribit/market_data_state.h"
 #include "roq/deribit/security.h"
+#include "roq/deribit/shared.h"
 
 // session
 #include "roq/deribit/fix/heartbeat.h"
@@ -31,67 +36,71 @@
 #include "roq/deribit/fix/market_data_incremental_refresh.h"
 #include "roq/deribit/fix/market_data_request_reject.h"
 #include "roq/deribit/fix/market_data_snapshot_full_refresh.h"
+#include "roq/deribit/fix/security_list.h"
+#include "roq/deribit/fix/security_status.h"
 
 // business (outbound)
 #include "roq/deribit/fix/market_data_request.h"
+#include "roq/deribit/fix/security_list_request.h"
+#include "roq/deribit/fix/security_status_request.h"
 
 namespace roq {
 namespace deribit {
 
 class MarketData final : public core::net::Manager::Handler {
  public:
-  struct Handler {
-    virtual void operator()(const MarketData &) = 0;
-
-    virtual void operator()(const ExternalLatency &, const server::TraceInfo &) = 0;
-
-    virtual void operator()(
-        const fix::MarketDataIncrementalRefresh &, const server::TraceInfo &) = 0;
-    virtual void operator()(const fix::MarketDataRequestReject &, const server::TraceInfo &) = 0;
-    virtual void operator()(
-        const fix::MarketDataSnapshotFullRefresh &, const server::TraceInfo &) = 0;
+  struct Refresh final {
+    std::vector<std::string> &symbols;
   };
 
-  MarketData(
-      Handler &handler,
-      Security &security,
-      core::io::Context &context,
-      uint32_t stream_id,
-      std::vector<std::string> &&symbols);
+  struct Handler {
+    virtual void operator()(const server::Trace<ExternalLatency> &) = 0;
+
+    virtual void operator()(const server::Trace<MarketDataStatus> &) = 0;
+
+    virtual void operator()(const server::Trace<ReferenceData> &, bool is_last) = 0;
+    virtual void operator()(const server::Trace<MarketByPriceUpdate> &, bool is_last) = 0;
+    virtual void operator()(const server::Trace<TradeSummary> &, bool is_last) = 0;
+    virtual void operator()(const server::Trace<StatisticsUpdate> &, bool is_last) = 0;
+
+    virtual void operator()(Refresh &) = 0;
+  };
+
+  MarketData(Handler &, core::io::Context &, uint16_t stream_id, Security &, Shared &);
+  MarketData(Handler &, core::io::Context &, uint16_t stream_id, Security &, Shared &, Refresh &);
 
   MarketData(const MarketData &) = delete;
   MarketData(MarketData &&) = delete;
-
-  bool ready() const;
-
-  void close();
 
   void operator()(const Event<Start> &);
   void operator()(const Event<Stop> &);
   void operator()(const Event<Timer> &);
 
-  void operator()(const fix::MarketDataRequest &);
-
   void operator()(metrics::Writer &writer);
 
+  void operator()(Refresh &);
+
  protected:
+  MarketData(
+      Handler &, core::io::Context &, uint16_t stream_id, Security &, Shared &, bool is_master);
+
   void operator()(const core::net::Manager::Connected &) override;
   void operator()(const core::net::Manager::Disconnected &) override;
   void operator()(const core::net::Manager::Read &) override;
 
  private:
-  template <typename T>
-  void send(const T &event);
-
-  template <typename T>
-  void send(const T &event, std::chrono::nanoseconds sending_time);
+  void operator()(const GatewayStatus);
 
   void send_logon();
   void send_logout(const std::string_view &text);
   void send_heartbeat(const std::string_view &test_req_id);
   void send_test_request(std::chrono::nanoseconds now);
 
-  void check(const core::fix::header_t &header);
+  uint32_t download(MarketDataState);
+
+  void download_securities();
+
+  void subscribe(const roq::span<std::string> &symbols);
 
   void parse(const core::fix::message_t &message);
   void parse_helper(const core::fix::message_t &message);
@@ -104,6 +113,11 @@ class MarketData final : public core::net::Manager::Handler {
   void operator()(const core::fix::header_t &, const fix::TestRequest &, const server::TraceInfo &);
 
   void operator()(
+      const core::fix::header_t &, const fix::SecurityList &, const server::TraceInfo &);
+  void operator()(
+      const core::fix::header_t &, const fix::SecurityStatus &, const server::TraceInfo &);
+
+  void operator()(
       const core::fix::header_t &,
       const fix::MarketDataIncrementalRefresh &,
       const server::TraceInfo &);
@@ -114,16 +128,22 @@ class MarketData final : public core::net::Manager::Handler {
       const fix::MarketDataSnapshotFullRefresh &,
       const server::TraceInfo &);
 
-  void subscribe();
+  // utilities
+
+  template <typename T>
+  void send(const T &event);
+
+  template <typename T>
+  void send(const T &event, std::chrono::nanoseconds sending_time);
+
+  void check(const core::fix::header_t &header);
 
  private:
   Handler &handler_;
   // config
-  const uint32_t stream_id_;
-  std::vector<std::string> symbols_;
+  const uint16_t stream_id_;
   const std::string name_;
-  // security
-  Security &security_;
+  const bool is_master_;
   // connection
   core::net::TcpConnectionFactory connection_factory_;
   core::net::Manager connection_;
@@ -136,8 +156,8 @@ class MarketData final : public core::net::Manager::Handler {
     core::metrics::Counter disconnect;
   } counter_;
   struct {
-    core::metrics::Profile parse, market_data_incremental_refresh, market_data_request_reject,
-        market_data_snapshot_full_refresh;
+    core::metrics::Profile parse, security_list, security_status, market_data_incremental_refresh,
+        market_data_request_reject, market_data_snapshot_full_refresh;
   } profile_;
   struct {
     core::metrics::Latency ping;
@@ -149,8 +169,17 @@ class MarketData final : public core::net::Manager::Handler {
   struct {
     uint64_t msg_seq_num = {};
   } inbound_;
+  // security
+  Security &security_;
+  // cache
+  Shared &shared_;
+  absl::flat_hash_set<std::string> all_symbols_;  // only used by master
+  std::vector<std::string> symbols_;
+  // state
   bool ready_ = false;
   std::chrono::nanoseconds next_heartbeat_ = {};
+  GatewayStatus status_ = {};
+  server::Download<MarketDataState> download_;
 };
 
 }  // namespace deribit

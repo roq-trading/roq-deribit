@@ -5,6 +5,7 @@
 	{ "name": "currencies" },
 	{ "name": "instruments" },
 	{ "name": "positions" },
+	{ "name": "tickers" },
 	{ "name": "done" }
 ]
 }

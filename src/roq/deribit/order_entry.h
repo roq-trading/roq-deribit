@@ -2,6 +2,8 @@
 
 #pragma once
 
+#include <absl/container/flat_hash_set.h>
+
 #include <string>
 
 #include "roq/core/stack/buffer.h"
@@ -15,9 +17,12 @@
 #include "roq/core/net/manager.h"
 #include "roq/core/net/tcp_connection_factory.h"
 
+#include "roq/download.h"
 #include "roq/server.h"
 
+#include "roq/deribit/order_entry_state.h"
 #include "roq/deribit/security.h"
+#include "roq/deribit/shared.h"
 
 // session
 #include "roq/deribit/fix/heartbeat.h"
@@ -32,7 +37,6 @@
 #include "roq/deribit/fix/position_report.h"
 #include "roq/deribit/fix/reject.h"  // ... normally session level
 #include "roq/deribit/fix/security_list.h"
-#include "roq/deribit/fix/security_status.h"
 #include "roq/deribit/fix/user_response.h"
 
 // business (outbound)
@@ -42,7 +46,6 @@
 #include "roq/deribit/fix/order_mass_status_request.h"
 #include "roq/deribit/fix/request_for_positions.h"
 #include "roq/deribit/fix/security_list_request.h"
-#include "roq/deribit/fix/security_status_request.h"
 #include "roq/deribit/fix/user_request.h"
 
 namespace roq {
@@ -51,41 +54,37 @@ namespace deribit {
 class OrderEntry final : public core::net::Manager::Handler {
  public:
   struct Handler {
-    virtual void operator()(const OrderEntry &) = 0;
-    virtual void operator()(const ExternalLatency &, const server::TraceInfo &) = 0;
+    virtual void operator()(const server::Trace<ExternalLatency> &) = 0;
 
-    virtual void operator()(const fix::ExecutionReport &, const server::TraceInfo &) = 0;
-    virtual void operator()(const fix::OrderCancelReject &, const server::TraceInfo &) = 0;
-    virtual void operator()(const fix::PositionReport &, const server::TraceInfo &) = 0;
-    virtual void operator()(const fix::Reject &, const server::TraceInfo &) = 0;
-    virtual void operator()(const fix::SecurityList &, const server::TraceInfo &) = 0;
-    virtual void operator()(const fix::SecurityStatus &, const server::TraceInfo &) = 0;
-    virtual void operator()(const fix::UserResponse &, const server::TraceInfo &) = 0;
+    virtual void operator()(const server::Trace<OrderManagerStatus> &) = 0;
+
+    virtual void operator()(const server::Trace<OrderAck> &, bool is_last, uint8_t user_id) = 0;
+    virtual void operator()(const server::Trace<OrderUpdate> &, bool is_last, uint8_t user_id) = 0;
+    virtual void operator()(const server::Trace<TradeUpdate> &, bool is_last, uint8_t user_id) = 0;
+
+    virtual void operator()(const server::Trace<PositionUpdate> &, bool is_last) = 0;
+    virtual void operator()(const server::Trace<FundsUpdate> &, bool is_last) = 0;
   };
 
-  OrderEntry(Handler &handler, Security &security, core::io::Context &context);
+  OrderEntry(Handler &, core::io::Context &, uint16_t stream_id, Security &, Shared &);
 
   OrderEntry(const OrderEntry &) = delete;
   OrderEntry(OrderEntry &&) = delete;
-
-  bool ready() const;
-
-  void close();
 
   void operator()(const Event<Start> &);
   void operator()(const Event<Stop> &);
   void operator()(const Event<Timer> &);
 
-  void operator()(const fix::SecurityListRequest &);
-  // void operator()(const fix::SecurityStatusRequest &);
-
-  void operator()(const fix::UserRequest &);
-  void operator()(const fix::RequestForPositions &);
-  void operator()(const fix::OrderMassStatusRequest &);
-
-  void operator()(const fix::NewOrderSingle &);
-  void operator()(const fix::OrderCancelReplaceRequest &);
-  void operator()(const fix::OrderCancelRequest &);
+  void operator()(
+      const Event<CreateOrder> &, const std::string_view &request_id, uint32_t gateway_order_id);
+  void operator()(
+      const Event<ModifyOrder> &,
+      const std::string_view &request_id,
+      const server::OMS_Order &order);
+  void operator()(
+      const Event<CancelOrder> &,
+      const std::string_view &request_id,
+      const server::OMS_Order &order);
 
   void operator()(metrics::Writer &writer);
 
@@ -95,18 +94,19 @@ class OrderEntry final : public core::net::Manager::Handler {
   void operator()(const core::net::Manager::Read &) override;
 
  private:
-  template <typename T>
-  void send(const T &event);
-
-  template <typename T>
-  void send(const T &event, std::chrono::nanoseconds sending_time);
+  void operator()(const GatewayStatus);
 
   void send_logon();
   void send_logout(const std::string_view &text);
   void send_heartbeat(const std::string_view &test_req_id);
   void send_test_request(std::chrono::nanoseconds now);
 
-  void check(const core::fix::header_t &header);
+  uint32_t download(OrderEntryState);
+
+  void download_securities();
+  void download_positions();
+  void download_orders();
+  void download_user();
 
   void parse(const core::fix::message_t &message);
   void parse_helper(const core::fix::message_t &message);
@@ -128,14 +128,23 @@ class OrderEntry final : public core::net::Manager::Handler {
   void operator()(
       const core::fix::header_t &, const fix::SecurityList &, const server::TraceInfo &);
   void operator()(
-      const core::fix::header_t &, const fix::SecurityStatus &, const server::TraceInfo &);
-  void operator()(
       const core::fix::header_t &, const fix::UserResponse &, const server::TraceInfo &);
+
+  // utilities
+
+  template <typename T>
+  void send(const T &event);
+
+  template <typename T>
+  void send(const T &event, std::chrono::nanoseconds sending_time);
+
+  void check(const core::fix::header_t &header);
 
  private:
   Handler &handler_;
-  // security
-  Security &security_;
+  // config
+  const uint16_t stream_id_;
+  const std::string name_;
   // connection
   core::net::TcpConnectionFactory connection_factory_;
   core::net::Manager connection_;
@@ -149,7 +158,7 @@ class OrderEntry final : public core::net::Manager::Handler {
   } counter_;
   struct {
     core::metrics::Profile parse, execution_report, order_cancel_reject, position_report, reject,
-        security_list, security_status, user_response;
+        security_list, user_response;
   } profile_;
   struct {
     core::metrics::Latency ping;
@@ -161,8 +170,16 @@ class OrderEntry final : public core::net::Manager::Handler {
   struct {
     uint64_t msg_seq_num = {};
   } inbound_;
+  // security
+  Security &security_;
+  // cache
+  Shared &shared_;
+  absl::flat_hash_set<std::string> currencies_;
+  // state
   bool ready_ = false;
   std::chrono::nanoseconds next_heartbeat_ = {};
+  GatewayStatus status_ = {};
+  server::Download<OrderEntryState> download_;
 };
 
 }  // namespace deribit

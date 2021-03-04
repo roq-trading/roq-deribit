@@ -3,14 +3,11 @@
 #pragma once
 
 #include <absl/container/flat_hash_map.h>
-#include <absl/container/flat_hash_set.h>
 
 #include <list>
 #include <memory>
 #include <string>
-#include <vector>
 
-#include "roq/download.h"
 #include "roq/server.h"
 
 #include "roq/core/io/context.h"
@@ -19,10 +16,8 @@
 #include "roq/deribit/market_data.h"
 #include "roq/deribit/order_entry.h"
 #include "roq/deribit/security.h"
+#include "roq/deribit/shared.h"
 #include "roq/deribit/web_socket.h"
-
-#include "roq/deribit/fix_state.h"
-#include "roq/deribit/web_socket_state.h"
 
 namespace roq {
 namespace deribit {
@@ -33,6 +28,9 @@ class Gateway final : public server::Handler,
                       public MarketData::Handler {
  public:
   Gateway(server::Dispatcher &dispatcher, const Config &config);
+
+  Gateway(Gateway &&) = delete;
+  Gateway(const Gateway &) = delete;
 
  protected:
   // server::Handler
@@ -57,94 +55,47 @@ class Gateway final : public server::Handler,
 
   void operator()(metrics::Writer &writer) override;
 
-  // all
-  void operator()(const ExternalLatency &, const server::TraceInfo &) override;
+  // many
 
-  // WebSocket::Handler
+  void operator()(const server::Trace<ExternalLatency> &) override;
 
-  void operator()(const WebSocket &) override;
+  void operator()(const server::Trace<MarketDataStatus> &) override;
+  void operator()(const server::Trace<ReferenceData> &, bool is_last) override;
+  void operator()(const server::Trace<MarketStatus> &, bool is_last) override;
+  void operator()(const server::Trace<TopOfBook> &, bool is_last) override;
+  void operator()(const server::Trace<MarketByPriceUpdate> &, bool is_last) override;
+  void operator()(const server::Trace<TradeSummary> &, bool is_last) override;
+  void operator()(const server::Trace<StatisticsUpdate> &, bool is_last) override;
 
-  void operator()(const json::Currencies &, const server::TraceInfo &) override;
-  void operator()(const json::Instruments &, const server::TraceInfo &) override;
-  void operator()(const json::Positions &, const server::TraceInfo &) override;
-  void operator()(const json::Ticker &, const server::TraceInfo &) override;
+  void operator()(const server::Trace<OrderManagerStatus> &) override;
+  void operator()(const server::Trace<OrderAck> &, bool is_last, uint8_t user_id) override;
+  void operator()(const server::Trace<OrderUpdate> &, bool is_last, uint8_t user_id) override;
+  void operator()(const server::Trace<TradeUpdate> &, bool is_last, uint8_t user_id) override;
+  void operator()(const server::Trace<PositionUpdate> &, bool is_last) override;
+  void operator()(const server::Trace<FundsUpdate> &, bool is_last) override;
 
-  // OrderRouter::Handler
+  void operator()(MarketData::Refresh &) override;
 
-  void operator()(const OrderEntry &) override;
+  // utility
 
-  void operator()(const fix::ExecutionReport &, const server::TraceInfo &) override;
-  void operator()(const fix::OrderCancelReject &, const server::TraceInfo &) override;
-  void operator()(const fix::PositionReport &, const server::TraceInfo &) override;
-  void operator()(const fix::Reject &, const server::TraceInfo &) override;
-  void operator()(const fix::SecurityList &, const server::TraceInfo &) override;
-  void operator()(const fix::SecurityStatus &, const server::TraceInfo &) override;
-  void operator()(const fix::UserResponse &, const server::TraceInfo &) override;
-
-  // MarketData::Handler
-
-  void operator()(const MarketData &) override;
-
-  void operator()(const fix::MarketDataIncrementalRefresh &, const server::TraceInfo &) override;
-  void operator()(const fix::MarketDataRequestReject &, const server::TraceInfo &) override;
-  void operator()(const fix::MarketDataSnapshotFullRefresh &, const server::TraceInfo &) override;
-
- private:
-  using FIXDownload = server::Download<FIXState>;
-
-  uint32_t download(FIXDownload::State state);
-
-  using WebSocketDownload = server::Download<WebSocketState>;
-
-  uint32_t download(WebSocketDownload::State state);
-
-  void update(GatewayStatus gateway_status);
-
-  void download_securities();
-  void download_positions();
-  void download_orders();
-  void download_user();
-
-  void subscribe_market_data();
+  OrderEntry &get_order_entry(const std::string_view &account);
 
  private:
   server::Dispatcher &dispatcher_;
   // config
-  const std::string account_;
+  const std::string master_account_;
   // security
-  Security security_;
+  absl::flat_hash_map<std::string, std::unique_ptr<Security>> security_;
   // io
   core::io::Context context_;
-  // fix
-  // - order entry
-  struct {
-    OrderEntry connection;
-    FIXDownload download;
-  } order_entry_;
-  // - market data
-  uint32_t stream_id_ = {};
-  std::list<std::unique_ptr<MarketData> > market_data_;
-  // web socket
-  struct {
-    WebSocket connection;
-    WebSocketDownload download;
-  } web_socket_;
-  // download (fix)
-  absl::flat_hash_set<std::string> currencies_;
-  std::vector<std::string> symbols_;
-  // download (web socket)
-  std::vector<std::string> currencies_2_;
-  std::vector<std::string> symbols_2_;
-  absl::flat_hash_map<std::string, roq::Layer> top_of_book_;
-  absl::flat_hash_map<std::string, TradingStatus> trading_status_;
-  // market data + order manager
-  GatewayStatus gateway_status_ = GatewayStatus::DISCONNECTED;
-  // order manager
-  core::page_aligned_vector<Fill> fill_;
-  // market data
-  core::page_aligned_vector<MBPUpdate> bid_, ask_;
-  core::page_aligned_vector<Trade> trade_;
-  core::page_aligned_vector<Statistics> statistics_;
+  // shared
+  Shared shared_;
+  // seed
+  uint16_t stream_id_ = {};
+  // streams
+  WebSocket web_socket_;
+  absl::flat_hash_map<std::string, std::unique_ptr<OrderEntry>> order_entry_;
+  std::list<std::unique_ptr<MarketData>> market_data_;
 };
 
 }  // namespace deribit

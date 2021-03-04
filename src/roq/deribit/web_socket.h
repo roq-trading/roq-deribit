@@ -2,7 +2,8 @@
 
 #pragma once
 
-#include <chrono>
+#include <absl/container/flat_hash_map.h>
+
 #include <memory>
 #include <string>
 #include <string_view>
@@ -18,9 +19,12 @@
 
 #include "roq/core/jsonrpc/parser.h"
 
+#include "roq/download.h"
 #include "roq/server.h"
 
 #include "roq/deribit/security.h"
+#include "roq/deribit/shared.h"
+#include "roq/deribit/web_socket_state.h"
 
 #include "roq/deribit/json/auth.h"
 #include "roq/deribit/json/currencies.h"
@@ -35,47 +39,24 @@ namespace deribit {
 class WebSocket final : public core::web::Socket::Handler,
                         public core::jsonrpc::Parser::Handler,
                         public json::Parser::Handler {
-  enum class State {
-    DISCONNECTED,
-    LOGON_SENT,
-    DOWNLOAD,
-    READY,
-  };
-
  public:
   struct Handler {
-    virtual void operator()(const WebSocket &) = 0;
-    virtual void operator()(const ExternalLatency &, const server::TraceInfo &) = 0;
-    virtual void operator()(const json::Currencies &, const server::TraceInfo &) = 0;
-    virtual void operator()(const json::Instruments &, const server::TraceInfo &) = 0;
-    virtual void operator()(const json::Positions &, const server::TraceInfo &) = 0;
-    virtual void operator()(const json::Ticker &, const server::TraceInfo &) = 0;
+    virtual void operator()(const server::Trace<ExternalLatency> &) = 0;
+
+    virtual void operator()(const server::Trace<MarketDataStatus> &) = 0;
+
+    virtual void operator()(const server::Trace<TopOfBook> &, bool is_last) = 0;
+    virtual void operator()(const server::Trace<MarketStatus> &, bool is_last) = 0;
   };
 
-  WebSocket(Handler &handler, Security &security, core::io::Context &context);
+  WebSocket(Handler &, core::io::Context &, uint16_t stream_id, Security &, Shared &);
 
   WebSocket(WebSocket &&) = delete;
   WebSocket(const WebSocket &) = delete;
 
-  bool ready() const;
-
-  void close();
-
   void operator()(const Event<Start> &);
   void operator()(const Event<Stop> &);
   void operator()(const Event<Timer> &);
-
-  void login();
-
-  void get_currencies();
-  void get_instruments(const std::string_view &currency);
-  void get_positions(const std::string_view &currency);
-
-  template <typename T>
-  void subscribe_ticker(const roq::span<T> &symbols);
-
-  template <typename T>
-  void unsubscribe_ticker(const roq::span<T> &symbols);
 
   void operator()(metrics::Writer &writer);
 
@@ -88,6 +69,25 @@ class WebSocket final : public core::web::Socket::Handler,
   void operator()(const core::web::Socket::Text &) override;
 
  private:
+  void operator()(const GatewayStatus);
+
+  void login();
+
+  uint32_t download(WebSocketState);
+
+  uint32_t download_currencies();
+  uint32_t download_instruments();
+  uint32_t download_positions();
+  uint32_t download_tickers();
+
+  void get_currencies();
+  void get_instruments(const std::string_view &currency);
+  void get_positions(const std::string_view &currency);
+
+  void subscribe_ticker(const roq::span<std::string> &symbols);
+
+  void unsubscribe_ticker(const roq::span<std::string> &symbols);
+
   void parse(const std::string_view &message);
 
   void operator()(const core::jsonrpc::Error &error, core::json::value_t &value) override;
@@ -105,13 +105,13 @@ class WebSocket final : public core::web::Socket::Handler,
 
  private:
   Handler &handler_;
-  // security
-  Security &security_;
+  // config
+  const uint16_t stream_id_;
+  const std::string name_;
   // web socket
   core::web::Socket connection_;
   // buffers
   core::utils::Buffer decode_buffer_;
-  // core::stack::Buffer<char, 32> stack_buffer_;
   // metrics
   struct {
     core::metrics::Counter disconnect;
@@ -122,8 +122,18 @@ class WebSocket final : public core::web::Socket::Handler,
   struct {
     core::metrics::Latency ping, heartbeat;
   } latency_;
+  // security
+  Security &security_;
+  // cache
+  Shared &shared_;
+  std::vector<std::string> currencies_;
+  std::vector<std::string> symbols_;
+  absl::flat_hash_map<std::string, roq::Layer> top_of_book_;
+  absl::flat_hash_map<std::string, TradingStatus> trading_status_;
   // state
   bool ready_ = false;
+  GatewayStatus status_ = {};
+  server::Download<WebSocketState> download_;
 };
 
 }  // namespace deribit

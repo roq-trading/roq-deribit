@@ -1,5 +1,5 @@
 {
-"name": "FIXState",
+"name": "OrderEntryState",
 "type": "enum",
 "values": [
 	{ "name": "securities" },

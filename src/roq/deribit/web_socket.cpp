@@ -2,7 +2,8 @@
 
 #include "roq/deribit/web_socket.h"
 
-#include "roq/core/clock.h"
+#include "roq/core/compare.h"
+#include "roq/core/update.h"
 
 #include "roq/core/metrics/factory.h"
 
@@ -11,6 +12,7 @@
 #include "roq/deribit/json/error.h"
 #include "roq/deribit/json/method.h"
 #include "roq/deribit/json/request_type.h"
+#include "roq/deribit/json/utils.h"
 
 using namespace roq::literals;
 
@@ -21,13 +23,19 @@ namespace {
 static const auto CONNECTION = "ws"_sv;
 
 struct create_metrics final : public core::metrics::Factory {
-  explicit create_metrics(const std::string_view &function)
-      : core::metrics::Factory(Flags::name(), CONNECTION, function) {}
+  explicit create_metrics(const std::string_view &group, const std::string_view &function)
+      : core::metrics::Factory(Flags::name(), group, function) {}
 };
 }  // namespace
 
-WebSocket::WebSocket(Handler &handler, Security &security, core::io::Context &context)
-    : handler_(handler), security_(security),
+WebSocket::WebSocket(
+    Handler &handler,
+    core::io::Context &context,
+    uint16_t stream_id,
+    Security &security,
+    Shared &shared)
+    : handler_(handler), stream_id_(stream_id),
+      name_(roq::format("{}_{}"_fmt, CONNECTION, stream_id_)),
       connection_(
           *this,
           context,
@@ -39,28 +47,22 @@ WebSocket::WebSocket(Handler &handler, Security &security, core::io::Context &co
           []() { return std::string(); }),
       decode_buffer_(Flags::decode_buffer_size()),
       counter_{
-          .disconnect = create_metrics("disconnect"_sv),
+          .disconnect = create_metrics(name_, "disconnect"_sv),
       },
       profile_{
-          .parse = create_metrics("parse"_sv),
-          .auth = create_metrics("auth"_sv),
-          .currencies = create_metrics("currencies"_sv),
-          .instruments = create_metrics("instruments"_sv),
-          .positions = create_metrics("positions"_sv),
-          .ticker = create_metrics("ticker"_sv),
+          .parse = create_metrics(name_, "parse"_sv),
+          .auth = create_metrics(name_, "auth"_sv),
+          .currencies = create_metrics(name_, "currencies"_sv),
+          .instruments = create_metrics(name_, "instruments"_sv),
+          .positions = create_metrics(name_, "positions"_sv),
+          .ticker = create_metrics(name_, "ticker"_sv),
       },
       latency_{
-          .ping = create_metrics("ping"_sv),
-          .heartbeat = create_metrics("heartbeat"_sv),
-      } {
-}
-
-bool WebSocket::ready() const {
-  return connection_.ready();
-}
-
-void WebSocket::close() {
-  connection_.close();
+          .ping = create_metrics(name_, "ping"_sv),
+          .heartbeat = create_metrics(name_, "heartbeat"_sv),
+      },
+      security_(security), shared_(shared),
+      download_(Flags::ws_request_timeout(), [this](auto state) { return download(state); }) {
 }
 
 void WebSocket::operator()(const Event<Start> &) {
@@ -73,6 +75,67 @@ void WebSocket::operator()(const Event<Stop> &) {
 
 void WebSocket::operator()(const Event<Timer> &event) {
   connection_.refresh(event.value.now);
+}
+
+void WebSocket::operator()(metrics::Writer &writer) {
+  writer  //
+      .write(counter_.disconnect, metrics::COUNTER)
+      .write(profile_.parse, metrics::PROFILE)
+      .write(profile_.auth, metrics::PROFILE)
+      .write(profile_.currencies, metrics::PROFILE)
+      .write(profile_.instruments, metrics::PROFILE)
+      .write(profile_.positions, metrics::PROFILE)
+      .write(profile_.ticker, metrics::PROFILE)
+      .write(latency_.ping, metrics::LATENCY)
+      .write(latency_.heartbeat, metrics::LATENCY);
+}
+
+void WebSocket::operator()(const core::web::Socket::Connected &) {
+  // note! wait for upgrade
+}
+
+void WebSocket::operator()(const core::web::Socket::Disconnected &) {
+  ++counter_.disconnect;
+  ready_ = false;
+  (*this)(GatewayStatus::DISCONNECTED);
+  download_.reset();
+  currencies_.clear();
+  symbols_.clear();
+}
+
+void WebSocket::operator()(const core::web::Socket::Ready &) {
+  login();
+  (*this)(GatewayStatus::LOGIN_SENT);
+}
+
+void WebSocket::operator()(const core::web::Socket::Close &) {
+}
+
+void WebSocket::operator()(const core::web::Socket::Latency &latency) {
+  server::TraceInfo trace_info;
+  ExternalLatency external_latency{
+      .stream_id = stream_id_,
+      .name = name_,
+      .latency = latency.sample,
+  };
+  server::create_trace_and_dispatch(trace_info, external_latency, handler_);
+  latency_.ping.update(latency.sample);
+}
+
+void WebSocket::operator()(const core::web::Socket::Text &text) {
+  parse(text.payload);
+}
+
+void WebSocket::operator()(const GatewayStatus status) {
+  if (core::update(status_, status)) {
+    server::TraceInfo trace_info;
+    MarketDataStatus market_data_status{
+        .stream_id = stream_id_,
+        .status = status_,
+    };
+    LOG(INFO)("market_data_status={}"_fmt, market_data_status);
+    server::create_trace_and_dispatch(trace_info, market_data_status, handler_);
+  }
 }
 
 void WebSocket::login() {
@@ -100,6 +163,52 @@ void WebSocket::login() {
       signature,
       request_type.as_raw_text());
   connection_.send_text(message);
+}
+
+uint32_t WebSocket::download(WebSocketState state) {
+  switch (state) {
+    case WebSocketState::UNDEFINED:
+      break;
+    case WebSocketState::CURRENCIES:
+      return download_currencies();
+    case WebSocketState::INSTRUMENTS:
+      return download_instruments();
+    case WebSocketState::POSITIONS:
+      return download_positions();
+    case WebSocketState::TICKERS:
+      return download_tickers();
+    case WebSocketState::DONE:
+      (*this)(GatewayStatus::READY);
+      assert(!ready_);
+      ready_ = true;
+      return 0u;
+  }
+  assert(false);
+  return 0u;
+}
+
+uint32_t WebSocket::download_currencies() {
+  assert(currencies_.empty());
+  get_currencies();
+  return 1u;
+}
+
+uint32_t WebSocket::download_instruments() {
+  assert(symbols_.empty());
+  for (auto &currency : currencies_)
+    get_instruments(currency);
+  return currencies_.size();
+}
+
+uint32_t WebSocket::download_positions() {
+  for (auto &currency : currencies_)
+    get_positions(currency);
+  return currencies_.size();
+}
+
+uint32_t WebSocket::download_tickers() {
+  subscribe_ticker(symbols_);
+  return 0u;
 }
 
 void WebSocket::get_currencies() {
@@ -144,8 +253,7 @@ void WebSocket::get_positions(const std::string_view &currency) {
   connection_.send_text(message);
 }
 
-template <typename T>
-void WebSocket::subscribe_ticker(const roq::span<T> &symbols) {
+void WebSocket::subscribe_ticker(const roq::span<std::string> &symbols) {
   constexpr json::RequestType request_type = json::RequestType::SUBSCRIBE_TICKER;
   auto message = roq::format(
       R"({{)"
@@ -160,12 +268,7 @@ void WebSocket::subscribe_ticker(const roq::span<T> &symbols) {
   connection_.send_text(message);
 }
 
-template void WebSocket::subscribe_ticker(const roq::span<std::string> &);
-
-template void WebSocket::subscribe_ticker(const roq::span<std::string_view> &);
-
-template <typename T>
-void WebSocket::unsubscribe_ticker(const roq::span<T> &symbols) {
+void WebSocket::unsubscribe_ticker(const roq::span<std::string> &symbols) {
   constexpr json::RequestType request_type = json::RequestType::UNSUBSCRIBE_TICKER;
   auto message = roq::format(
       R"({{)"
@@ -178,55 +281,6 @@ void WebSocket::unsubscribe_ticker(const roq::span<T> &symbols) {
       roq::join(symbols, R"(.raw","ticker.)"_sv),
       request_type.as_raw_text());
   connection_.send_text(message);
-}
-
-template void WebSocket::unsubscribe_ticker(const roq::span<std::string> &);
-
-template void WebSocket::unsubscribe_ticker(const roq::span<std::string_view> &);
-
-void WebSocket::operator()(metrics::Writer &writer) {
-  writer  //
-      .write(counter_.disconnect, metrics::COUNTER)
-      .write(profile_.parse, metrics::PROFILE)
-      .write(profile_.auth, metrics::PROFILE)
-      .write(profile_.currencies, metrics::PROFILE)
-      .write(profile_.instruments, metrics::PROFILE)
-      .write(profile_.positions, metrics::PROFILE)
-      .write(profile_.ticker, metrics::PROFILE)
-      .write(latency_.ping, metrics::LATENCY)
-      .write(latency_.heartbeat, metrics::LATENCY);
-}
-
-void WebSocket::operator()(const core::web::Socket::Connected &) {
-  // note! wait for upgrade
-}
-
-void WebSocket::operator()(const core::web::Socket::Disconnected &) {
-  ++counter_.disconnect;
-  ready_ = false;
-  handler_(*this);
-}
-
-void WebSocket::operator()(const core::web::Socket::Ready &) {
-  login();
-}
-
-void WebSocket::operator()(const core::web::Socket::Close &) {
-}
-
-void WebSocket::operator()(const core::web::Socket::Latency &latency) {
-  server::TraceInfo trace_info;
-  ExternalLatency external_latency{
-      .stream_id = {},
-      .name = CONNECTION,
-      .latency = latency.sample,
-  };
-  handler_(external_latency, trace_info);
-  latency_.ping.update(latency.sample);
-}
-
-void WebSocket::operator()(const core::web::Socket::Text &text) {
-  parse(text.payload);
 }
 
 void WebSocket::parse(const std::string_view &message) {
@@ -304,40 +358,77 @@ void WebSocket::operator()(
 void WebSocket::operator()(const json::Auth &auth, const server::TraceInfo &) {
   profile_.auth([&]() {
     VLOG(1)(R"(auth={})"_fmt, auth);
-    LOG(INFO)("Ready"_sv);
-    assert(ready_ == false);
-    ready_ = true;
-    handler_(*this);
+    (*this)(GatewayStatus::DOWNLOADING);
+    download_.begin();
   });
 }
 
-void WebSocket::operator()(
-    const json::Currencies &currencies, const server::TraceInfo &trace_info) {
+void WebSocket::operator()(const json::Currencies &currencies, const server::TraceInfo &) {
   profile_.currencies([&]() {
     VLOG(1)(R"(currencies={})"_fmt, currencies);
-    handler_(currencies, trace_info);
+    assert(currencies_.empty());
+    std::transform(
+        currencies.data.begin(),
+        currencies.data.end(),
+        std::back_inserter(currencies_),
+        [](const auto &item) { return std::string(item.currency); });
+    download_.check(WebSocketState::CURRENCIES);
   });
 }
 
-void WebSocket::operator()(
-    const json::Instruments &instruments, const server::TraceInfo &trace_info) {
+void WebSocket::operator()(const json::Instruments &instruments, const server::TraceInfo &) {
   profile_.instruments([&]() {
     VLOG(1)(R"(instruments={})"_fmt, instruments);
-    handler_(instruments, trace_info);
+    for (auto &item : instruments.data) {
+      if (shared_.discard_symbol(item.instrument_name))
+        continue;
+      symbols_.emplace_back(item.instrument_name);
+    }
+    download_.check(WebSocketState::INSTRUMENTS);
   });
 }
 
-void WebSocket::operator()(const json::Positions &positions, const server::TraceInfo &trace_info) {
+void WebSocket::operator()(const json::Positions &positions, const server::TraceInfo &) {
   profile_.positions([&]() {
     VLOG(1)(R"(positions={})"_fmt, positions);
-    handler_(positions, trace_info);
+    // XXX do something
+    download_.check(WebSocketState::POSITIONS);
   });
 }
 
 void WebSocket::operator()(const json::Ticker &ticker, const server::TraceInfo &trace_info) {
   profile_.ticker([&]() {
     VLOG(2)(R"(ticker={})"_fmt, ticker);
-    handler_(ticker, trace_info);
+    auto snapshot = status_ != GatewayStatus::READY;
+    auto &layer = top_of_book_[ticker.instrument_name];
+    TopOfBook top_of_book = {
+        .stream_id = stream_id_,
+        .exchange = Flags::exchange(),
+        .symbol = ticker.instrument_name,
+        .layer{
+            .bid_price = ticker.best_bid_price,
+            .bid_quantity = ticker.best_bid_amount,
+            .ask_price = ticker.best_ask_price,
+            .ask_quantity = ticker.best_ask_amount,
+        },
+        .snapshot = snapshot,
+        .exchange_time_utc = ticker.timestamp,
+    };
+    if (core::compare(layer, top_of_book.layer) != 0) {
+      layer = top_of_book.layer;
+      server::create_trace_and_dispatch(trace_info, top_of_book, handler_, true);
+    }
+    auto trading_status = json::map(ticker.state);
+    auto &item = trading_status_[ticker.instrument_name];
+    if (core::update(item, trading_status)) {
+      MarketStatus market_status{
+          .stream_id = stream_id_,
+          .exchange = Flags::exchange(),
+          .symbol = ticker.instrument_name,
+          .trading_status = trading_status,
+      };
+      server::create_trace_and_dispatch(trace_info, market_status, handler_, true);
+    }
   });
 }
 

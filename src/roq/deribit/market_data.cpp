@@ -3,16 +3,23 @@
 #include "roq/deribit/market_data.h"
 
 #include <algorithm>
-#include <utility>
 
-#include "roq/core/stack/buffer.h"
+#include "roq/core/back_emplacer.h"
+#include "roq/core/compare.h"
+#include "roq/core/convert.h"
+#include "roq/core/debug.h"
+#include "roq/core/update.h"
+
+#include "roq/core/charconv/datetime.h"
 
 #include "roq/core/metrics/factory.h"
+
+#include "roq/core/fix/utils.h"
 
 #include "roq/deribit/common.h"
 #include "roq/deribit/flags.h"
 
-#include "roq/core/debug.h"
+#include "roq/deribit/fix/utils.h"
 
 using namespace roq::literals;
 
@@ -23,24 +30,63 @@ namespace {
 static const auto LOGOUT_RESPONSE = "LOGOUT"_sv;  // XXX
 static const auto CONNECTION = "mkt"_sv;
 
-static auto create_connection_name(uint32_t market_stream_id) {
-  return roq::format("{}_{}"_fmt, CONNECTION, market_stream_id);
-}
-
 struct create_metrics final : public core::metrics::Factory {
   explicit create_metrics(const std::string_view &group, const std::string_view &function)
       : core::metrics::Factory(Flags::name(), group, function) {}
 };
+
+template <typename T>
+static T combine(T date_part, T time_part) {
+  return date_part < T::max() ? date_part + time_part : T::max();
+}
+
+template <typename T>
+static void validate(const T &value) {
+  switch (value.md_update_action) {
+    case core::fix::MDUpdateAction::UNKNOWN:
+      break;
+    case core::fix::MDUpdateAction::NEW:
+    case core::fix::MDUpdateAction::CHANGE:
+      assert(core::compare(value.md_entry_size, 0.0) > 0);
+      break;
+    case core::fix::MDUpdateAction::DELETE:
+      assert(core::compare(value.md_entry_size, 0.0) == 0);
+      break;
+    case core::fix::MDUpdateAction::DELETE_THRU:
+    case core::fix::MDUpdateAction::DELETE_FROM:
+      LOG(FATAL)("MDUpdateAction not supported: {}"_fmt, value);
+      break;
+  }
+}
+
+template <typename T>
+void emplace(MBPUpdate &update, const T &value) {
+  new (&update) MBPUpdate{
+      .price = value.md_entry_px,
+      .quantity = value.md_entry_size,
+  };
+}
+
+template <typename T>
+void emplace(Trade &update, const T &value) {
+  new (&update) Trade{
+      .side = core::fix::map(value.side),
+      .price = value.md_entry_px,
+      .quantity = value.md_entry_size,
+      .trade_id = value.deribit_trade_id,
+  };
+}
 }  // namespace
 
 MarketData::MarketData(
     Handler &handler,
-    Security &security,
     core::io::Context &context,
-    uint32_t stream_id,
-    std::vector<std::string> &&symbols)
-    : handler_(handler), stream_id_(stream_id), symbols_(std::move(symbols)),
-      name_(create_connection_name(stream_id)), security_(security),
+    uint16_t stream_id,
+    Security &security,
+    Shared &shared,
+    bool is_master)
+    : handler_(handler), stream_id_(stream_id),
+      name_(roq::format("{}_{}"_fmt, CONNECTION, stream_id_)), is_master_(is_master),
       connection_factory_(context, Flags::fix_uri()), connection_(*this, connection_factory_),
       encode_buffer_(Flags::encode_buffer_size()), decode_buffer_(Flags::decode_buffer_size()),
       counter_{
@@ -48,6 +94,8 @@ MarketData::MarketData(
       },
       profile_{
           .parse = create_metrics(name_, "parse"_sv),
+          .security_list = create_metrics(name_, "security_list"_sv),
+          .security_status = create_metrics(name_, "security_status"_sv),
           .market_data_incremental_refresh =
               create_metrics(name_, "market_data_incremental_refresh"_sv),
           .market_data_request_reject = create_metrics(name_, "market_data_request_reject"_sv),
@@ -56,16 +104,29 @@ MarketData::MarketData(
       },
       latency_{
           .ping = create_metrics(name_, "ping"_sv),
-      } {
+      },
+      security_(security), shared_(shared),
+      download_(Flags::fix_request_timeout(), [this](auto state) { return download(state); }) {
 }
 
-bool MarketData::ready() const {
-  return connection_.ready();
+MarketData::MarketData(
+    Handler &handler,
+    core::io::Context &context,
+    uint16_t stream_id,
+    Security &security,
+    Shared &shared)
+    : MarketData(handler, context, stream_id, security, shared, true) {
 }
 
-void MarketData::close() {
-  // XXX send_logout?
-  connection_.close();
+MarketData::MarketData(
+    Handler &handler,
+    core::io::Context &context,
+    uint16_t stream_id,
+    Security &security,
+    Shared &shared,
+    Refresh &refresh)
+    : MarketData(handler, context, stream_id, security, shared, false) {
+  (*this)(refresh);
 }
 
 void MarketData::operator()(const Event<Start> &) {
@@ -79,93 +140,82 @@ void MarketData::operator()(const Event<Stop> &) {
 void MarketData::operator()(const Event<Timer> &event) {
   if (connection_.refresh(event.value.now) == false)
     return;
-  if (ready_ && next_heartbeat_ <= event.value.now) {
+  if (status_ == GatewayStatus::READY && next_heartbeat_ <= event.value.now) {
     assert(Flags::fix_ping_freq().count() > 0);
     next_heartbeat_ = event.value.now + Flags::fix_ping_freq();
     send_test_request(core::get_system_clock());
   }
 }
 
-void MarketData::operator()(const fix::MarketDataRequest &market_data_request) {
-  VLOG(1)(R"(request(market_data_request={}))"_fmt, market_data_request);
-  send(market_data_request);
+void MarketData::operator()(const core::net::Manager::Connected &) {
+  send_logon();
+  (*this)(GatewayStatus::LOGIN_SENT);
 }
 
-void MarketData::operator()(metrics::Writer &writer) {
-  writer  //
-      .write(counter_.disconnect, metrics::COUNTER)
-      .write(profile_.parse, metrics::PROFILE)
-      .write(profile_.market_data_incremental_refresh, metrics::PROFILE)
-      .write(profile_.market_data_request_reject, metrics::PROFILE)
-      .write(profile_.market_data_snapshot_full_refresh, metrics::PROFILE)
-      .write(latency_.ping, metrics::LATENCY);
+void MarketData::operator()(const core::net::Manager::Disconnected &) {
+  ++counter_.disconnect;
+  outbound_ = {};
+  inbound_ = {};
+  ready_ = false;
+  next_heartbeat_ = {};
+  (*this)(GatewayStatus::DISCONNECTED);
+  download_.reset();
 }
 
-void MarketData::subscribe() {
-  LOG(INFO)("Subscribe market data"_sv);
-  assert(!symbols_.empty());
-  fix::MDReq md_entry_types[] = {
-      {.md_entry_type = core::fix::MDEntryType::BID},
-      {.md_entry_type = core::fix::MDEntryType::OFFER},
-      {.md_entry_type = core::fix::MDEntryType::TRADE},
-  };
-  std::vector<fix::InstrmtMDReq> related_sym(Flags::fix_market_data_request_max_size());
-  for (size_t i = {};; ++i) {
-    auto offset = i * Flags::fix_market_data_request_max_size();
-    if (symbols_.size() < offset)
+void MarketData::operator()(const core::net::Manager::Read &read) {
+  auto length = read.buffer.length();
+  if (length == 0)
+    return;
+  auto buffer = read.buffer.pullup(length);
+  decltype(length) total = 0;
+  for (;;) {
+    // core::print_memory(buffer, length);  // DEBUG
+    auto bytes = core::fix::Reader<FIX_VERSION>::dispatch(
+        [&](const core::fix::message_t &message) {
+          try {
+            check(message.header);
+            parse(message);
+          } catch (std::exception &) {
+            core::print_memory(buffer, length);
+            core::print_string_with_escapes(buffer, length);
+            throw;
+          }
+        },
+        buffer,
+        length);
+    assert(bytes <= length);
+    if (bytes == 0)
       break;
-    auto count =
-        std::min<size_t>(symbols_.size() - offset, Flags::fix_market_data_request_max_size());
-    if (count) {
-      for (size_t j = {}; j < count; ++j)
-        related_sym[j].symbol = symbols_[offset + j];
-      auto request_id = "test"_sv;  // XXX HANS ???
-      uint32_t market_depth = 20u;  // XXX HANS should be flag
-      auto md_update_type = market_depth ? core::fix::MDUpdateType::INCREMENTAL_REFRESH
-                                         : core::fix::MDUpdateType::FULL_REFRESH;
-      fix::MarketDataRequest market_data_request{
-          .md_req_id = request_id,
-          .subscription_request_type = core::fix::SubscriptionRequestType::SNAPSHOT_UPDATES,
-          .market_depth = market_depth,
-          .md_update_type = md_update_type,
-          .deribit_trade_amount = {},     // none
-          .deribit_since_timestamp = {},  // none
-          .no_md_entry_types = {md_entry_types, std::size(md_entry_types)},
-          .no_related_sym = {related_sym.data(), count},
-      };
-      (*this)(market_data_request);
-    }
+    total += bytes;
+    buffer += bytes;
+    length -= bytes;
+    if (Flags::fix_debug())
+      core::print_string_with_escapes(buffer, bytes);  // DEBUG
+  }
+  if (total)
+    read.buffer.drain(total);
+}
+
+void MarketData::operator()(const GatewayStatus status) {
+  if (core::update(status_, status)) {
+    server::TraceInfo trace_info;
+    MarketDataStatus market_data_status{
+        .stream_id = stream_id_,
+        .status = status_,
+    };
+    LOG(INFO)("market_data_status={}"_fmt, market_data_status);
+    server::create_trace_and_dispatch(trace_info, market_data_status, handler_);
   }
 }
 
-template <typename T>
-void MarketData::send(const T &event) {
-  send(event, core::get_realtime_clock());
-}
-
-template <typename T>
-void MarketData::send(const T &event, std::chrono::nanoseconds sending_time) {
-  core::fix::Writer writer(
-      encode_buffer_,
-      FIX_VERSION,
-      T::msg_type,
-      SENDER_COMP_ID,
-      TARGET_COMP_ID,
-      outbound_.msg_seq_num,
-      sending_time);
-  auto message = event.encode(writer);
-  // message.print();  // DEBUG
-  connection_.send(message);
-}
-
 void MarketData::send_logon() {
-  auto ping_freq = std::chrono::duration_cast<std::chrono::seconds>(Flags::fix_ping_freq());
+  auto heart_bt_int = std::chrono::duration_cast<std::chrono::seconds>(Flags::fix_ping_freq());
   auto sending_time = core::get_realtime_clock();
   auto raw_data = security_.create_raw_data(
       std::chrono::duration_cast<std::chrono::milliseconds>(sending_time));
   auto password = security_.create_password(raw_data);
   fix::Logon logon{
-      .heart_bt_int = static_cast<uint16_t>(ping_freq.count()),
+      .heart_bt_int = static_cast<uint16_t>(heart_bt_int.count()),
       .raw_data_length = static_cast<uint32_t>(raw_data.length()),
       .raw_data = raw_data,
       .username = security_.get_access_key(),
@@ -205,74 +255,108 @@ void MarketData::send_test_request(std::chrono::nanoseconds now) {
   send(test_request);
 }
 
-void MarketData::operator()(const core::net::Manager::Connected &) {
-  send_logon();
-}
-
-void MarketData::operator()(const core::net::Manager::Disconnected &) {
-  ++counter_.disconnect;
-  outbound_ = {};
-  inbound_ = {};
-  ready_ = false;
-  next_heartbeat_ = {};
-  handler_(*this);
-}
-
-void MarketData::operator()(const core::net::Manager::Read &read) {
-  auto length = read.buffer.length();
-  if (length == 0)
-    return;
-  auto buffer = read.buffer.pullup(length);
-  decltype(length) total = 0;
-  for (;;) {
-    // core::print_memory(buffer, length);  // DEBUG
-    auto bytes = core::fix::Reader<FIX_VERSION>::dispatch(
-        [&](const core::fix::message_t &message) {
-          try {
-            check(message.header);
-            parse(message);
-          } catch (std::exception &) {
-            core::print_memory(buffer, length);
-            core::print_string_with_escapes(buffer, length);
-            throw;
-          }
-        },
-        buffer,
-        length);
-    assert(bytes <= length);
-    if (bytes == 0)
+uint32_t MarketData::download(MarketDataState state) {
+  switch (state) {
+    case MarketDataState::UNDEFINED:
+      assert(false);
       break;
-    total += bytes;
-    buffer += bytes;
-    length -= bytes;
-    if (Flags::fix_debug())
-      core::print_string_with_escapes(buffer, bytes);  // DEBUG
+    case MarketDataState::SECURITIES:
+      if (is_master_) {
+        download_securities();
+        return 1;
+      } else {
+        return 0;
+      }
+    case MarketDataState::DONE:
+      (*this)(GatewayStatus::READY);
+      assert(!ready_);
+      ready_ = true;
+      subscribe(symbols_);
+      return 0;
   }
-  if (total)
-    read.buffer.drain(total);
+  assert(false);
+  return 0;
 }
 
-void MarketData::check(const core::fix::header_t &header) {
-  auto current = header.msg_seq_num;
-  auto expected = inbound_.msg_seq_num + 1;
-  if (ROQ_UNLIKELY(current != expected)) {
-    if (expected < current) {
-      LOG(WARNING)
-      (R"(*** SEQUENCE GAP *** )"
-       R"(current={} previous={} distance={})"_fmt,
-       current,
-       inbound_.msg_seq_num,
-       current - inbound_.msg_seq_num);
-    } else {
-      LOG(WARNING)
-      (R"(*** SEQUENCE REPLAY *** )"
-       R"(current={} previous={} distance={})"_fmt,
-       current,
-       inbound_.msg_seq_num,
-       inbound_.msg_seq_num - current);
-    }
+void MarketData::download_securities() {
+  auto request_id = shared_.next_request_id();
+  fix::SecurityListRequest security_list_request{
+      .security_req_id = request_id,
+      .security_list_request_type = core::fix::SecurityListRequestType::ALL_SECURITIES,
+  };
+  send(security_list_request);
+}
+
+void MarketData::operator()(metrics::Writer &writer) {
+  writer  //
+      .write(counter_.disconnect, metrics::COUNTER)
+      .write(profile_.parse, metrics::PROFILE)
+      .write(profile_.security_list, metrics::PROFILE)
+      .write(profile_.security_status, metrics::PROFILE)
+      .write(profile_.market_data_incremental_refresh, metrics::PROFILE)
+      .write(profile_.market_data_request_reject, metrics::PROFILE)
+      .write(profile_.market_data_snapshot_full_refresh, metrics::PROFILE)
+      .write(latency_.ping, metrics::LATENCY);
+}
+
+void MarketData::operator()(Refresh &refresh) {
+  auto max_size = Flags::fix_market_data_max_subscriptions_per_stream();
+  auto offset = symbols_.size();
+  if (max_size <= offset)
+    return;
+  auto &symbols = refresh.symbols;
+  if (symbols.empty())
+    return;
+  symbols_.reserve(max_size);
+  auto length = std::min(max_size - offset, symbols.size());
+  assert(length > 0);
+  for (size_t i = {}; i < length; ++i) {
+    symbols_.emplace_back(symbols.back());
+    symbols.pop_back();
   }
-  inbound_.msg_seq_num = current;
+  assert(length == (symbols_.size() - offset));
+  if (ready_)
+    subscribe({&symbols_[offset], length});
+}
+
+void MarketData::subscribe(const roq::span<std::string> &symbols) {
+  LOG(INFO)("Subscribe market data"_sv);
+  assert(!symbols.empty());
+  auto market_depth = Flags::fix_market_data_market_depth();
+  auto md_update_type = market_depth ? core::fix::MDUpdateType::INCREMENTAL_REFRESH
+                                     : core::fix::MDUpdateType::FULL_REFRESH;
+  fix::MDReq md_entry_types[] = {
+      {.md_entry_type = core::fix::MDEntryType::BID},
+      {.md_entry_type = core::fix::MDEntryType::OFFER},
+      {.md_entry_type = core::fix::MDEntryType::TRADE},
+  };
+  // deribit has acknowledged a limit on # of symbols per request
+  auto max_size = Flags::fix_market_data_request_max_size()
+                      ? Flags::fix_market_data_request_max_size()
+                      : symbols.size();
+  std::vector<fix::InstrmtMDReq> related_sym(max_size);
+  for (size_t offset = {};; offset += max_size) {
+    if (symbols.size() <= offset)
+      break;
+    auto length = std::min<size_t>(symbols.size() - offset, max_size);
+    assert(length > 0u);
+    for (size_t i = {}; i < length; ++i)
+      new (&related_sym[i]) fix::InstrmtMDReq{
+          .symbol = symbols[offset + i],
+      };
+    auto request_id = shared_.next_request_id();
+    fix::MarketDataRequest market_data_request{
+        .md_req_id = request_id,
+        .subscription_request_type = core::fix::SubscriptionRequestType::SNAPSHOT_UPDATES,
+        .market_depth = market_depth,
+        .md_update_type = md_update_type,
+        .deribit_trade_amount = {},     // none
+        .deribit_since_timestamp = {},  // none
+        .no_md_entry_types = md_entry_types,
+        .no_related_sym = {related_sym.data(), length},
+    };
+    send(market_data_request);
+  }
 }
 
 void MarketData::parse(const core::fix::message_t &message) {
@@ -316,10 +400,6 @@ void MarketData::parse_helper(const core::fix::message_t &message) {
       break;
     }
     // ...
-    case core::fix::MsgType::EXECUTION_REPORT: {
-      LOG(WARNING)(R"(Unexpected msg_type={})"_fmt, message.header.msg_type);
-      break;
-    }
     case core::fix::MsgType::MARKET_DATA_INCREMENTAL_REFRESH: {
       profile_.market_data_incremental_refresh([&]() {
         auto market_data_incremental_referesh =
@@ -343,28 +423,18 @@ void MarketData::parse_helper(const core::fix::message_t &message) {
       });
       break;
     }
-    case core::fix::MsgType::ORDER_CANCEL_REJECT: {
-      LOG(WARNING)(R"(Unexpected msg_type={})"_fmt, message.header.msg_type);
-      break;
-    }
-    case core::fix::MsgType::POSITION_REPORT: {
-      LOG(WARNING)(R"(Unexpected msg_type={})"_fmt, message.header.msg_type);
-      break;
-    }
-    case core::fix::MsgType::REJECT: {
-      LOG(WARNING)(R"(Unexpected msg_type={})"_fmt, message.header.msg_type);
-      break;
-    }
     case core::fix::MsgType::SECURITY_LIST: {
-      LOG(WARNING)(R"(Unexpected msg_type={})"_fmt, message.header.msg_type);
+      profile_.security_list([&]() {
+        auto security_list = fix::SecurityList::create(message, buffer);
+        (*this)(message.header, security_list, trace_info);
+      });
       break;
     }
     case core::fix::MsgType::SECURITY_STATUS: {
-      LOG(WARNING)(R"(Unexpected msg_type={})"_fmt, message.header.msg_type);
-      break;
-    }
-    case core::fix::MsgType::USER_RESPONSE: {
-      LOG(WARNING)(R"(Unexpected msg_type={})"_fmt, message.header.msg_type);
+      profile_.security_status([&]() {
+        auto security_status = fix::SecurityStatus::create(message, buffer);
+        (*this)(message.header, security_status, trace_info);
+      });
       break;
     }
     default:
@@ -385,11 +455,11 @@ void MarketData::operator()(
         2;  // 1-way
     server::TraceInfo trace_info;
     ExternalLatency external_latency{
-        .stream_id = {},
-        .name = CONNECTION,
+        .stream_id = stream_id_,
+        .name = name_,
         .latency = latency,
     };
-    handler_(external_latency, trace_info);
+    server::create_trace_and_dispatch(trace_info, external_latency, handler_);
     latency_.ping.update(latency);
   }
 }
@@ -397,17 +467,14 @@ void MarketData::operator()(
 void MarketData::operator()(
     const core::fix::header_t &header, const fix::Logon &logon, const server::TraceInfo &) {
   VLOG(1)(R"(event(header={}, logon={}))"_fmt, header, logon);
-  LOG(INFO)("Ready"_sv);
-  assert(ready_ == false);
-  ready_ = true;
-  handler_(*this);
-  //
-  subscribe();
+  (*this)(GatewayStatus::DOWNLOADING);
+  download_.begin();
 }
 
 void MarketData::operator()(
     const core::fix::header_t &header, const fix::Logout &logout, const server::TraceInfo &) {
   LOG(WARNING)(R"(event(header={}, logout={}))"_fmt, header, logout);
+  (*this)(GatewayStatus::LOGGED_OUT);
   ready_ = false;
   // note! mandated, must send a logout response
   send_logout(LOGOUT_RESPONSE);
@@ -435,22 +502,181 @@ void MarketData::operator()(
 
 void MarketData::operator()(
     const core::fix::header_t &header,
+    const fix::SecurityList &security_list,
+    const server::TraceInfo &trace_info) {
+  VLOG(2)(R"(event(header={}, security_list={}))"_fmt, header, security_list);
+  if (security_list.no_related_sym.size() > 0u) {
+    size_t counter = {};
+    std::vector<std::string> symbols;
+    symbols.reserve(security_list.no_related_sym.size());
+    for (auto &instrument : security_list.no_related_sym) {
+      VLOG(1)(R"(instrument={})"_fmt, instrument);
+      auto &symbol = instrument.symbol;
+      if (shared_.discard_symbol(symbol))
+        continue;
+      if (all_symbols_.emplace(symbol).second) {  // only include new
+        symbols.emplace_back(symbol);
+      }
+      auto expiry_datetime = combine(
+          instrument.maturity_date,
+          core::charconv::time_from_string<std::chrono::milliseconds>(instrument.maturity_time));
+      auto expiry_datetime_utc = expiry_datetime;
+      ReferenceData reference_data{
+          .stream_id = stream_id_,
+          .exchange = Flags::exchange(),
+          .symbol = symbol,
+          .description = instrument.security_desc,
+          .security_type = fix::map_security_type(instrument.security_type),
+          .currency = instrument.currency,
+          .settlement_currency = instrument.settl_currency,
+          .commission_currency = instrument.comm_currency,
+          .tick_size = instrument.min_price_increment,
+          .multiplier = instrument.contract_multiplier,
+          .min_trade_vol = instrument.min_trade_vol,
+          .option_type = core::fix::map(instrument.put_or_call),
+          .strike_currency = instrument.strike_currency,
+          .strike_price = instrument.strike_price,
+          .underlying = instrument.underlying_symbol,
+          .time_zone = {},
+          .issue_date = core::convert(instrument.issue_date),
+          .settlement_date = {},
+          .expiry_datetime = core::convert(expiry_datetime),
+          .expiry_datetime_utc = core::convert(expiry_datetime_utc),
+      };
+      server::create_trace_and_dispatch(trace_info, reference_data, handler_, true);
+      ++counter;
+    }
+    LOG(INFO)
+    (R"(- securities: {} (/{}))"_fmt, counter, security_list.no_related_sym.size());
+    if (!symbols.empty()) {
+      Refresh refresh{
+          .symbols = symbols,
+      };
+      handler_(refresh);
+    }
+  }
+  download_.check(MarketDataState::SECURITIES);
+}
+
+void MarketData::operator()(
+    const core::fix::header_t &header,
+    const fix::SecurityStatus &security_status,
+    const server::TraceInfo &) {
+  VLOG(2)(R"(event(header={}, security_status={}))"_fmt, header, security_status);
+  // XXX should we use it or not?
+}
+
+void MarketData::operator()(
+    const core::fix::header_t &header,
     const fix::MarketDataIncrementalRefresh &market_data_incremental_refresh,
     const server::TraceInfo &trace_info) {
   VLOG(3)
   (R"(event(header={}, market_data_incremental_refresh={}))"_fmt,
    header,
    market_data_incremental_refresh);
-  handler_(market_data_incremental_refresh, trace_info);
+
+  core::back_emplacer bids(shared_.bids), asks(shared_.asks);
+  core::back_emplacer trades(shared_.trades);
+  core::back_emplacer statistics(shared_.statistics);
+
+  // open interest
+  statistics.emplace_back([&](auto &update) {
+    new (&update) Statistics{
+        .type = StatisticsType::PRE_OPEN_INTEREST,
+        .value = market_data_incremental_refresh.open_interest,
+    };
+  });
+  // mark price
+  statistics.emplace_back([&](auto &update) {
+    new (&update) Statistics{
+        .type = StatisticsType::PRE_SETTLEMENT_PRICE,
+        .value = market_data_incremental_refresh.mark_price,
+    };
+  });
+  std::chrono::nanoseconds exchange_time_utc = {};
+  for (auto &item : market_data_incremental_refresh.no_md_entries) {
+    if (exchange_time_utc < item.md_entry_date)
+      exchange_time_utc = item.md_entry_date;
+    switch (item.md_entry_type) {
+      case core::fix::MDEntryType::BID: {
+        validate(item);
+        bids.emplace_back([&item](auto &update) { emplace(update, item); });
+        break;
+      }
+      case core::fix::MDEntryType::OFFER: {
+        validate(item);
+        asks.emplace_back([&item](auto &update) { emplace(update, item); });
+        break;
+      }
+      case core::fix::MDEntryType::TRADE: {
+        trades.emplace_back([&item](auto &update) { emplace(update, item); });
+        break;
+      }
+      case core::fix::MDEntryType::INDEX_VALUE:
+        statistics.emplace_back([&](auto &update) {
+          new (&update) Statistics{
+              .type = StatisticsType::INDEX_VALUE,
+              .value = item.md_entry_px,
+          };
+        });
+        break;
+      case core::fix::MDEntryType::SETTLEMENT_PRICE:
+        statistics.emplace_back([&](auto &update) {
+          new (&update) Statistics{
+              .type = StatisticsType::SETTLEMENT_PRICE,
+              .value = item.md_entry_px,
+          };
+        });
+        break;
+      default:
+        LOG(WARNING)(R"(unsupported: {})"_fmt, item);
+        break;
+    }
+  }
+  if (!(bids.empty() && asks.empty())) {
+    MarketByPriceUpdate market_by_price_update{
+        .stream_id = stream_id_,
+        .exchange = Flags::exchange(),
+        .symbol = market_data_incremental_refresh.symbol,
+        .bids = bids,
+        .asks = asks,
+        .snapshot = false,  // incremental
+        .exchange_time_utc = exchange_time_utc,
+    };
+    auto is_last = statistics.empty() && trades.empty();
+    server::create_trace_and_dispatch(trace_info, market_by_price_update, handler_, is_last);
+  }
+  if (!trades.empty()) {
+    TradeSummary trade_summary{
+        .stream_id = stream_id_,
+        .exchange = Flags::exchange(),
+        .symbol = market_data_incremental_refresh.symbol,
+        .trades = trades,
+        .exchange_time_utc = exchange_time_utc,
+    };
+    auto is_last = statistics.empty();
+    server::create_trace_and_dispatch(trace_info, trade_summary, handler_, is_last);
+  }
+  if (!statistics.empty()) {
+    StatisticsUpdate statistics_update{
+        .stream_id = stream_id_,
+        .exchange = Flags::exchange(),
+        .symbol = market_data_incremental_refresh.symbol,
+        .statistics = statistics,
+        .snapshot = false,
+        .exchange_time_utc = exchange_time_utc,
+    };
+    server::create_trace_and_dispatch(trace_info, statistics_update, handler_, true);
+  }
 }
 
 void MarketData::operator()(
     const core::fix::header_t &header,
     const fix::MarketDataRequestReject &market_data_request_reject,
-    const server::TraceInfo &trace_info) {
+    const server::TraceInfo &) {
   LOG(WARNING)
   (R"(event(header={}, market_data_request_reject={}))"_fmt, header, market_data_request_reject);
-  handler_(market_data_request_reject, trace_info);
+  LOG(FATAL)("Unexpected"_sv);  // don't know how to continue
 }
 
 void MarketData::operator()(
@@ -461,7 +687,112 @@ void MarketData::operator()(
   (R"(event(header={}, market_data_snapshot_full_refresh={}))"_fmt,
    header,
    market_data_snapshot_full_refresh);
-  handler_(market_data_snapshot_full_refresh, trace_info);
+  core::back_emplacer bids(shared_.bids), asks(shared_.asks);
+  core::back_emplacer statistics(shared_.statistics);
+  for (auto &item : market_data_snapshot_full_refresh.no_md_entries) {
+    switch (item.md_entry_type) {
+      case core::fix::MDEntryType::BID: {
+        validate(item);
+        bids.emplace_back([&item](auto &update) { emplace(update, item); });
+        break;
+      }
+      case core::fix::MDEntryType::OFFER: {
+        validate(item);
+        asks.emplace_back([&item](auto &update) { emplace(update, item); });
+        break;
+      }
+      case core::fix::MDEntryType::TRADE:
+        break;  // drop
+      case core::fix::MDEntryType::INDEX_VALUE:
+        statistics.emplace_back([&](auto &update) {
+          new (&update) Statistics{
+              .type = StatisticsType::INDEX_VALUE,
+              .value = item.md_entry_px,
+          };
+        });
+        break;
+      case core::fix::MDEntryType::SETTLEMENT_PRICE:
+        statistics.emplace_back([&](auto &update) {
+          new (&update) Statistics{
+              .type = StatisticsType::SETTLEMENT_PRICE,
+              .value = item.md_entry_px,
+          };
+        });
+        break;
+      default:
+        LOG(WARNING)(R"(unsupported: {})"_fmt, item);
+        break;
+    }
+  }
+  if (!(bids.empty() && asks.empty())) {
+    auto is_last = statistics.empty();
+    MarketByPriceUpdate market_by_price_update{
+        .stream_id = stream_id_,
+        .exchange = Flags::exchange(),
+        .symbol = market_data_snapshot_full_refresh.symbol,
+        .bids = bids,
+        .asks = asks,
+        .snapshot = true,
+        .exchange_time_utc = {},
+    };
+    server::create_trace_and_dispatch(trace_info, market_by_price_update, handler_, is_last);
+  }
+  if (!statistics.empty()) {
+    StatisticsUpdate statistics_update{
+        .stream_id = stream_id_,
+        .exchange = Flags::exchange(),
+        .symbol = market_data_snapshot_full_refresh.symbol,
+        .statistics = statistics,
+        .snapshot = true,
+        .exchange_time_utc = {},
+    };
+    server::create_trace_and_dispatch(trace_info, statistics_update, handler_, true);
+  }
+}
+
+// utilities
+
+template <typename T>
+void MarketData::send(const T &event) {
+  send(event, core::get_realtime_clock());
+}
+
+template <typename T>
+void MarketData::send(const T &event, std::chrono::nanoseconds sending_time) {
+  core::fix::Writer writer(
+      encode_buffer_,
+      FIX_VERSION,
+      T::msg_type,
+      SENDER_COMP_ID,
+      TARGET_COMP_ID,
+      outbound_.msg_seq_num,
+      sending_time);
+  auto message = event.encode(writer);
+  // message.print();  // DEBUG
+  connection_.send(message);
+}
+
+void MarketData::check(const core::fix::header_t &header) {
+  auto current = header.msg_seq_num;
+  auto expected = inbound_.msg_seq_num + 1;
+  if (ROQ_UNLIKELY(current != expected)) {
+    if (expected < current) {
+      LOG(WARNING)
+      (R"(*** SEQUENCE GAP *** )"
+       R"(current={} previous={} distance={})"_fmt,
+       current,
+       inbound_.msg_seq_num,
+       current - inbound_.msg_seq_num);
+    } else {
+      LOG(WARNING)
+      (R"(*** SEQUENCE REPLAY *** )"
+       R"(current={} previous={} distance={})"_fmt,
+       current,
+       inbound_.msg_seq_num,
+       inbound_.msg_seq_num - current);
+    }
+  }
+  inbound_.msg_seq_num = current;
 }
 
 }  // namespace deribit
