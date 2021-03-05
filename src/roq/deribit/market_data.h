@@ -66,8 +66,8 @@ class MarketData final : public core::net::Manager::Handler {
     virtual void operator()(Refresh &) = 0;
   };
 
-  MarketData(Handler &, core::io::Context &, uint16_t stream_id, Security &, Shared &);
-  MarketData(Handler &, core::io::Context &, uint16_t stream_id, Security &, Shared &, Refresh &);
+  MarketData(
+      Handler &, core::io::Context &, uint16_t stream_id, Security &, Shared &, bool is_master);
 
   MarketData(const MarketData &) = delete;
   MarketData(MarketData &&) = delete;
@@ -76,20 +76,17 @@ class MarketData final : public core::net::Manager::Handler {
   void operator()(const Event<Stop> &);
   void operator()(const Event<Timer> &);
 
-  void operator()(metrics::Writer &writer);
+  void operator()(metrics::Writer &);
 
-  void operator()(Refresh &);
+  void update_subscriptions(std::vector<std::string> &symbols);
 
  protected:
-  MarketData(
-      Handler &, core::io::Context &, uint16_t stream_id, Security &, Shared &, bool is_master);
-
   void operator()(const core::net::Manager::Connected &) override;
   void operator()(const core::net::Manager::Disconnected &) override;
   void operator()(const core::net::Manager::Read &) override;
 
  private:
-  void operator()(const GatewayStatus);
+  void operator()(GatewayStatus);
 
   void send_logon();
   void send_logout(const std::string_view &text);
@@ -102,8 +99,8 @@ class MarketData final : public core::net::Manager::Handler {
 
   void subscribe(const roq::span<std::string> &symbols);
 
-  void parse(const core::fix::message_t &message);
-  void parse_helper(const core::fix::message_t &message);
+  void parse(const core::fix::message_t &);
+  void parse_helper(const core::fix::message_t &);
 
   void operator()(const core::fix::header_t &, const fix::Heartbeat &, const server::TraceInfo &);
   void operator()(const core::fix::header_t &, const fix::Logon &, const server::TraceInfo &);
@@ -136,7 +133,7 @@ class MarketData final : public core::net::Manager::Handler {
   template <typename T>
   void send(const T &event, std::chrono::nanoseconds sending_time);
 
-  void check(const core::fix::header_t &header);
+  void check(const core::fix::header_t &);
 
  private:
   Handler &handler_;

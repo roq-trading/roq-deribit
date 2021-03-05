@@ -15,7 +15,7 @@ namespace deribit {
 
 class Security final {
  public:
-  explicit Security(const Config &, const std::string_view &account);
+  Security(const Config &, const std::string_view &account);
 
   Security(Security &&) = delete;
   Security(const Security &) = delete;

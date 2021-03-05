@@ -28,7 +28,7 @@ namespace deribit {
 
 namespace {
 static const auto LOGOUT_RESPONSE = "LOGOUT"_sv;  // XXX
-static const auto CONNECTION = "mkt"_sv;
+static const auto CONNECTION = "MD"_sv;
 
 struct create_metrics final : public core::metrics::Factory {
   explicit create_metrics(const std::string_view &group, const std::string_view &function)
@@ -109,26 +109,6 @@ MarketData::MarketData(
       download_(Flags::fix_request_timeout(), [this](auto state) { return download(state); }) {
 }
 
-MarketData::MarketData(
-    Handler &handler,
-    core::io::Context &context,
-    uint16_t stream_id,
-    Security &security,
-    Shared &shared)
-    : MarketData(handler, context, stream_id, security, shared, true) {
-}
-
-MarketData::MarketData(
-    Handler &handler,
-    core::io::Context &context,
-    uint16_t stream_id,
-    Security &security,
-    Shared &shared,
-    Refresh &refresh)
-    : MarketData(handler, context, stream_id, security, shared, false) {
-  (*this)(refresh);
-}
-
 void MarketData::operator()(const Event<Start> &) {
   connection_.start();
 }
@@ -196,7 +176,7 @@ void MarketData::operator()(const core::net::Manager::Read &read) {
     read.buffer.drain(total);
 }
 
-void MarketData::operator()(const GatewayStatus status) {
+void MarketData::operator()(GatewayStatus status) {
   if (core::update(status_, status)) {
     server::TraceInfo trace_info;
     MarketDataStatus market_data_status{
@@ -272,10 +252,10 @@ uint32_t MarketData::download(MarketDataState state) {
       assert(!ready_);
       ready_ = true;
       subscribe(symbols_);
-      return 0;
+      return {};
   }
   assert(false);
-  return 0;
+  return {};
 }
 
 void MarketData::download_securities() {
@@ -299,17 +279,17 @@ void MarketData::operator()(metrics::Writer &writer) {
       .write(latency_.ping, metrics::LATENCY);
 }
 
-void MarketData::operator()(Refresh &refresh) {
+void MarketData::update_subscriptions(std::vector<std::string> &symbols) {
+  assert(&symbols != &symbols_);
   auto max_size = Flags::fix_market_data_max_subscriptions_per_stream();
   auto offset = symbols_.size();
   if (max_size <= offset)
     return;
-  auto &symbols = refresh.symbols;
   if (symbols.empty())
     return;
   symbols_.reserve(max_size);
   auto length = std::min(max_size - offset, symbols.size());
-  assert(length > 0);
+  assert(length > 0u);
   for (size_t i = {}; i < length; ++i) {
     symbols_.emplace_back(symbols.back());
     symbols.pop_back();
@@ -514,9 +494,8 @@ void MarketData::operator()(
       auto &symbol = instrument.symbol;
       if (shared_.discard_symbol(symbol))
         continue;
-      if (all_symbols_.emplace(symbol).second) {  // only include new
+      if (all_symbols_.emplace(symbol).second)  // only include new
         symbols.emplace_back(symbol);
-      }
       auto expiry_datetime = combine(
           instrument.maturity_date,
           core::charconv::time_from_string<std::chrono::milliseconds>(instrument.maturity_time));

@@ -23,7 +23,7 @@ namespace deribit {
 
 namespace {
 static const auto LOGOUT_RESPONSE = "LOGOUT"_sv;  // XXX
-static const auto CONNECTION = "ord"_sv;
+static const auto CONNECTION = "OM"_sv;
 
 struct create_metrics final : public core::metrics::Factory {
   explicit create_metrics(const std::string_view &group, const std::string_view &function)
@@ -49,7 +49,7 @@ OrderEntry::OrderEntry(
     Security &security,
     Shared &shared)
     : handler_(handler), stream_id_(stream_id),
-      name_(roq::format("{}_{}_{}"_fmt, CONNECTION, security.get_account(), stream_id_)),
+      name_(roq::format("{}_{}_{}"_fmt, CONNECTION, stream_id_, security.get_account())),
       connection_factory_(context, Flags::fix_uri()), connection_(*this, connection_factory_),
       encode_buffer_(Flags::encode_buffer_size()), decode_buffer_(Flags::decode_buffer_size()),
       counter_{
@@ -182,6 +182,7 @@ void OrderEntry::operator()(const core::net::Manager::Disconnected &) {
   inbound_ = {};
   ready_ = false;
   next_heartbeat_ = {};
+  (*this)(GatewayStatus::DISCONNECTED);
   download_.reset();
 }
 
@@ -219,7 +220,7 @@ void OrderEntry::operator()(const core::net::Manager::Read &read) {
     read.buffer.drain(total);
 }
 
-void OrderEntry::operator()(const GatewayStatus status) {
+void OrderEntry::operator()(GatewayStatus status) {
   if (core::update(status_, status)) {
     server::TraceInfo trace_info;
     OrderManagerStatus order_manager_status{
@@ -300,10 +301,10 @@ uint32_t OrderEntry::download(OrderEntryState state) {
       (*this)(GatewayStatus::READY);
       assert(!ready_);
       ready_ = true;
-      return 0;
+      return {};
   }
   assert(false);
-  return 0;
+  return {};
 }
 
 void OrderEntry::download_securities() {
@@ -494,6 +495,7 @@ void OrderEntry::operator()(
   send_heartbeat(test_request.test_req_id);
 }
 
+namespace {
 // execution_report:
 //
 // mass_status_req_type  what
@@ -584,13 +586,13 @@ auto compute_request_status(
   }
   return RequestStatus::UNDEFINED;
 }
+}  // namespace
 
 void OrderEntry::operator()(
     const core::fix::header_t &header,
     const fix::ExecutionReport &execution_report,
     const server::TraceInfo &trace_info) {
   VLOG(3)(R"(event(header={}, execution_report={}))"_fmt, header, execution_report);
-
   // download begin?
   switch (execution_report.mass_status_req_type) {
     case core::fix::MassStatusReqType::ORDERS:
@@ -599,7 +601,7 @@ void OrderEntry::operator()(
     default:
       break;
   }
-
+  // find order
   server::OMS_Lookup order_lookup{
       .symbol = execution_report.symbol,
       .side = core::fix::map(execution_report.side),
@@ -611,7 +613,6 @@ void OrderEntry::operator()(
       .external_account = {},
       .external_order_id = execution_report.order_id,
   };
-
   // XXX we used to also create orders here...
   auto found = shared_.find_order(
       execution_report.cl_ord_id,
@@ -624,13 +625,11 @@ void OrderEntry::operator()(
             execution_report.exec_type,
             execution_report.ord_status,
             download_.downloading(OrderEntryState::ORDERS));
-
         if (result.request_status != RequestStatus::UNDEFINED) {
           result.origin = Origin::EXCHANGE;
           result.error = fix::map_error(execution_report.text);
           result.text = execution_report.text;
         }
-
         core::back_emplacer fills(shared_.fills);
         for (auto &item : execution_report.no_fills) {
           fills.emplace_back([&](auto &update) {
@@ -659,10 +658,8 @@ void OrderEntry::operator()(
               trace_info, trade_update, handler_, true, order.user_id);
         }
       });
-
   // TODO(thraneh): process fills? --> maintain positions
-
-  if (found == false) {
+  if (!found) {
     auto external = execution_report.deribit_label.empty();
     if (external) {
       LOG(WARNING)("*** EXTERNAL ORDER ***"_sv);
@@ -671,7 +668,6 @@ void OrderEntry::operator()(
     }
     LOG(WARNING)("execution_report={}"_fmt, execution_report);
   }
-
   // download end?
   download_.check_relaxed(OrderEntryState::ORDERS);
 }
@@ -682,7 +678,6 @@ void OrderEntry::operator()(
     const server::TraceInfo &trace_info) {
   VLOG(3)
   (R"(event(header={}, order_cancel_reject={}))"_fmt, header, order_cancel_reject);
-
   server::OMS_Lookup order_lookup{
       .symbol = {},
       .side = Side::UNDEFINED,
@@ -694,7 +689,6 @@ void OrderEntry::operator()(
       .external_account = {},
       .external_order_id = {},
   };
-
   auto found = shared_.find_order(
       order_cancel_reject.cl_ord_id,
       order_cancel_reject.orig_cl_ord_id,
@@ -709,8 +703,7 @@ void OrderEntry::operator()(
         result.error = fix::map_error(order_cancel_reject.text);
         result.text = order_cancel_reject.text;
       });
-
-  if (found == false) {
+  if (!found) {
     LOG(WARNING)("*** EXTERNAL ORDER ***"_sv);
     LOG(WARNING)("order_cancel_reject={}"_fmt, order_cancel_reject);
   }

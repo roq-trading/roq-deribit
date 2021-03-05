@@ -20,7 +20,7 @@ namespace roq {
 namespace deribit {
 
 namespace {
-static const auto CONNECTION = "ws"_sv;
+static const auto CONNECTION = "WS"_sv;
 
 struct create_metrics final : public core::metrics::Factory {
   explicit create_metrics(const std::string_view &group, const std::string_view &function)
@@ -126,7 +126,7 @@ void WebSocket::operator()(const core::web::Socket::Text &text) {
   parse(text.payload);
 }
 
-void WebSocket::operator()(const GatewayStatus status) {
+void WebSocket::operator()(GatewayStatus status) {
   if (core::update(status_, status)) {
     server::TraceInfo trace_info;
     MarketDataStatus market_data_status{
@@ -181,10 +181,10 @@ uint32_t WebSocket::download(WebSocketState state) {
       (*this)(GatewayStatus::READY);
       assert(!ready_);
       ready_ = true;
-      return 0u;
+      return {};
   }
   assert(false);
-  return 0u;
+  return {};
 }
 
 uint32_t WebSocket::download_currencies() {

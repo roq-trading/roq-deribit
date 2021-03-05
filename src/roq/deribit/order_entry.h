@@ -78,13 +78,9 @@ class OrderEntry final : public core::net::Manager::Handler {
   void operator()(
       const Event<CreateOrder> &, const std::string_view &request_id, uint32_t gateway_order_id);
   void operator()(
-      const Event<ModifyOrder> &,
-      const std::string_view &request_id,
-      const server::OMS_Order &order);
+      const Event<ModifyOrder> &, const std::string_view &request_id, const server::OMS_Order &);
   void operator()(
-      const Event<CancelOrder> &,
-      const std::string_view &request_id,
-      const server::OMS_Order &order);
+      const Event<CancelOrder> &, const std::string_view &request_id, const server::OMS_Order &);
 
   void operator()(metrics::Writer &writer);
 
@@ -94,7 +90,7 @@ class OrderEntry final : public core::net::Manager::Handler {
   void operator()(const core::net::Manager::Read &) override;
 
  private:
-  void operator()(const GatewayStatus);
+  void operator()(GatewayStatus);
 
   void send_logon();
   void send_logout(const std::string_view &text);
@@ -108,8 +104,8 @@ class OrderEntry final : public core::net::Manager::Handler {
   void download_orders();
   void download_user();
 
-  void parse(const core::fix::message_t &message);
-  void parse_helper(const core::fix::message_t &message);
+  void parse(const core::fix::message_t &);
+  void parse_helper(const core::fix::message_t &);
 
   void operator()(const core::fix::header_t &, const fix::Heartbeat &, const server::TraceInfo &);
   void operator()(const core::fix::header_t &, const fix::Logon &, const server::TraceInfo &);
@@ -138,7 +134,7 @@ class OrderEntry final : public core::net::Manager::Handler {
   template <typename T>
   void send(const T &event, std::chrono::nanoseconds sending_time);
 
-  void check(const core::fix::header_t &header);
+  void check(const core::fix::header_t &);
 
  private:
   Handler &handler_;

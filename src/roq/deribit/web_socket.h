@@ -58,7 +58,7 @@ class WebSocket final : public core::web::Socket::Handler,
   void operator()(const Event<Stop> &);
   void operator()(const Event<Timer> &);
 
-  void operator()(metrics::Writer &writer);
+  void operator()(metrics::Writer &);
 
  protected:
   void operator()(const core::web::Socket::Connected &) override;
@@ -69,7 +69,7 @@ class WebSocket final : public core::web::Socket::Handler,
   void operator()(const core::web::Socket::Text &) override;
 
  private:
-  void operator()(const GatewayStatus);
+  void operator()(GatewayStatus);
 
   void login();
 
@@ -90,18 +90,17 @@ class WebSocket final : public core::web::Socket::Handler,
 
   void parse(const std::string_view &message);
 
-  void operator()(const core::jsonrpc::Error &error, core::json::value_t &value) override;
-  void operator()(const core::jsonrpc::Result &result, core::json::value_t &value) override;
-  void operator()(
-      const core::jsonrpc::Notification &notification, core::json::value_t &value) override;
+  void operator()(const core::jsonrpc::Error &, core::json::value_t &) override;
+  void operator()(const core::jsonrpc::Result &, core::json::value_t &) override;
+  void operator()(const core::jsonrpc::Notification &, core::json::value_t &) override;
 
-  void operator()(const json::Auth &auth, const server::TraceInfo &trace_info);
+  void operator()(const json::Auth &, const server::TraceInfo &);
 
-  void operator()(const json::Currencies &currencies, const server::TraceInfo &trace_info);
-  void operator()(const json::Instruments &instruments, const server::TraceInfo &trace_info);
-  void operator()(const json::Positions &positions, const server::TraceInfo &trace_info);
+  void operator()(const json::Currencies &, const server::TraceInfo &);
+  void operator()(const json::Instruments &, const server::TraceInfo &);
+  void operator()(const json::Positions &, const server::TraceInfo &);
 
-  void operator()(const json::Ticker &ticker, const server::TraceInfo &trace_info) override;
+  void operator()(const json::Ticker &, const server::TraceInfo &) override;
 
  private:
   Handler &handler_;

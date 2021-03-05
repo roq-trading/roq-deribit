@@ -42,7 +42,8 @@ static auto create_market_data(
     Security &security,
     Shared &shared) {
   std::list<std::unique_ptr<MarketData>> result;
-  result.emplace_back(std::make_unique<MarketData>(gateway, context, stream_id, security, shared));
+  result.emplace_back(
+      std::make_unique<MarketData>(gateway, context, stream_id, security, shared, true));
   return result;
 }
 }  // namespace
@@ -183,14 +184,14 @@ void Gateway::operator()(MarketData::Refresh &refresh) {
   for (auto &iter : market_data_) {
     if (symbols.empty())
       break;
-    (*iter)(refresh);
+    (*iter).update_subscriptions(symbols);
   }
   for (;;) {
     if (symbols.empty())
       break;
-    assert(!market_data_.empty());
     auto market_data = std::make_unique<MarketData>(
-        *this, context_, ++stream_id_, *security_[master_account_], shared_, refresh);
+        *this, context_, ++stream_id_, *security_[master_account_], shared_, false);
+    (*market_data).update_subscriptions(symbols);
     MessageInfo message_info;  // XXX something sensible
     Start start;
     create_event_and_dispatch(*market_data, message_info, start);

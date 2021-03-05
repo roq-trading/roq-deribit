@@ -27,7 +27,7 @@ class Gateway final : public server::Handler,
                       public OrderEntry::Handler,
                       public MarketData::Handler {
  public:
-  Gateway(server::Dispatcher &dispatcher, const Config &config);
+  Gateway(server::Dispatcher &, const Config &);
 
   Gateway(Gateway &&) = delete;
   Gateway(const Gateway &) = delete;
@@ -41,19 +41,19 @@ class Gateway final : public server::Handler,
   void operator()(const Event<Connection> &) override;
 
   void operator()(
-      const Event<CreateOrder> &event,
+      const Event<CreateOrder> &,
       const std::string_view &request_id,
       uint32_t gateway_order_id) override;
   void operator()(
-      const Event<ModifyOrder> &event,
+      const Event<ModifyOrder> &,
       const std::string_view &request_id,
-      const server::OMS_Order &order) override;
+      const server::OMS_Order &) override;
   void operator()(
-      const Event<CancelOrder> &event,
+      const Event<CancelOrder> &,
       const std::string_view &request_id,
-      const server::OMS_Order &order) override;
+      const server::OMS_Order &) override;
 
-  void operator()(metrics::Writer &writer) override;
+  void operator()(metrics::Writer &) override;
 
   // many
 
@@ -76,7 +76,7 @@ class Gateway final : public server::Handler,
 
   void operator()(MarketData::Refresh &) override;
 
-  // utility
+  // utilities
 
   OrderEntry &get_order_entry(const std::string_view &account);
 
