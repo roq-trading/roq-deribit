@@ -20,7 +20,7 @@ namespace roq {
 namespace deribit {
 
 namespace {
-static const auto CONNECTION = "WS"_sv;
+static const auto CONNECTION = "ws"_sv;
 
 struct create_metrics final : public core::metrics::Factory {
   explicit create_metrics(const std::string_view &group, const std::string_view &function)
@@ -306,7 +306,7 @@ void WebSocket::operator()(const core::jsonrpc::Result &result, core::json::valu
     case json::RequestType::UNDEFINED:
       break;
     case json::RequestType::UNKNOWN:
-      DLOG(FATAL)(R"(Unknown request_type="{}")"_fmt, result.id);
+      DLOG(FATAL)(R"(DEBUG: Unknown request_type="{}")"_fmt, result.id);
       break;
     case json::RequestType::AUTH: {
       json::Auth auth(value);
@@ -345,7 +345,7 @@ void WebSocket::operator()(
     case json::Method::UNDEFINED:
       break;
     case json::Method::UNKNOWN:
-      DLOG(FATAL)(R"(Unknown method="{}")"_fmt, notification.method);
+      DLOG(FATAL)(R"(DEBUG: Unknown method="{}")"_fmt, notification.method);
       break;
     case json::Method::SUBSCRIPTION: {
       core::json::Buffer buffer(decode_buffer_);

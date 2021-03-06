@@ -28,7 +28,7 @@ namespace deribit {
 
 namespace {
 static const auto LOGOUT_RESPONSE = "LOGOUT"_sv;  // XXX
-static const auto CONNECTION = "MD"_sv;
+static const auto CONNECTION = "md"_sv;
 
 struct create_metrics final : public core::metrics::Factory {
   explicit create_metrics(const std::string_view &group, const std::string_view &function)
@@ -60,16 +60,16 @@ static void validate(const T &value) {
 }
 
 template <typename T>
-void emplace(MBPUpdate &update, const T &value) {
-  new (&update) MBPUpdate{
+void emplace(MBPUpdate &result, const T &value) {
+  new (&result) MBPUpdate{
       .price = value.md_entry_px,
       .quantity = value.md_entry_size,
   };
 }
 
 template <typename T>
-void emplace(Trade &update, const T &value) {
-  new (&update) Trade{
+void emplace(Trade &result, const T &value) {
+  new (&result) Trade{
       .side = core::fix::map(value.side),
       .price = value.md_entry_px,
       .quantity = value.md_entry_size,
@@ -559,15 +559,15 @@ void MarketData::operator()(
   core::back_emplacer statistics(shared_.statistics);
 
   // open interest
-  statistics.emplace_back([&](auto &update) {
-    new (&update) Statistics{
+  statistics.emplace_back([&](auto &result) {
+    new (&result) Statistics{
         .type = StatisticsType::PRE_OPEN_INTEREST,
         .value = market_data_incremental_refresh.open_interest,
     };
   });
   // mark price
-  statistics.emplace_back([&](auto &update) {
-    new (&update) Statistics{
+  statistics.emplace_back([&](auto &result) {
+    new (&result) Statistics{
         .type = StatisticsType::PRE_SETTLEMENT_PRICE,
         .value = market_data_incremental_refresh.mark_price,
     };
@@ -579,29 +579,29 @@ void MarketData::operator()(
     switch (item.md_entry_type) {
       case core::fix::MDEntryType::BID: {
         validate(item);
-        bids.emplace_back([&item](auto &update) { emplace(update, item); });
+        bids.emplace_back([&item](auto &result) { emplace(result, item); });
         break;
       }
       case core::fix::MDEntryType::OFFER: {
         validate(item);
-        asks.emplace_back([&item](auto &update) { emplace(update, item); });
+        asks.emplace_back([&item](auto &result) { emplace(result, item); });
         break;
       }
       case core::fix::MDEntryType::TRADE: {
-        trades.emplace_back([&item](auto &update) { emplace(update, item); });
+        trades.emplace_back([&item](auto &result) { emplace(result, item); });
         break;
       }
       case core::fix::MDEntryType::INDEX_VALUE:
-        statistics.emplace_back([&](auto &update) {
-          new (&update) Statistics{
+        statistics.emplace_back([&](auto &result) {
+          new (&result) Statistics{
               .type = StatisticsType::INDEX_VALUE,
               .value = item.md_entry_px,
           };
         });
         break;
       case core::fix::MDEntryType::SETTLEMENT_PRICE:
-        statistics.emplace_back([&](auto &update) {
-          new (&update) Statistics{
+        statistics.emplace_back([&](auto &result) {
+          new (&result) Statistics{
               .type = StatisticsType::SETTLEMENT_PRICE,
               .value = item.md_entry_px,
           };
@@ -672,27 +672,27 @@ void MarketData::operator()(
     switch (item.md_entry_type) {
       case core::fix::MDEntryType::BID: {
         validate(item);
-        bids.emplace_back([&item](auto &update) { emplace(update, item); });
+        bids.emplace_back([&item](auto &result) { emplace(result, item); });
         break;
       }
       case core::fix::MDEntryType::OFFER: {
         validate(item);
-        asks.emplace_back([&item](auto &update) { emplace(update, item); });
+        asks.emplace_back([&item](auto &result) { emplace(result, item); });
         break;
       }
       case core::fix::MDEntryType::TRADE:
         break;  // drop
       case core::fix::MDEntryType::INDEX_VALUE:
-        statistics.emplace_back([&](auto &update) {
-          new (&update) Statistics{
+        statistics.emplace_back([&](auto &result) {
+          new (&result) Statistics{
               .type = StatisticsType::INDEX_VALUE,
               .value = item.md_entry_px,
           };
         });
         break;
       case core::fix::MDEntryType::SETTLEMENT_PRICE:
-        statistics.emplace_back([&](auto &update) {
-          new (&update) Statistics{
+        statistics.emplace_back([&](auto &result) {
+          new (&result) Statistics{
               .type = StatisticsType::SETTLEMENT_PRICE,
               .value = item.md_entry_px,
           };

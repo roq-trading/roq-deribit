@@ -23,7 +23,7 @@ namespace deribit {
 
 namespace {
 static const auto LOGOUT_RESPONSE = "LOGOUT"_sv;  // XXX
-static const auto CONNECTION = "OM"_sv;
+static const auto CONNECTION = "om"_sv;
 
 struct create_metrics final : public core::metrics::Factory {
   explicit create_metrics(const std::string_view &group, const std::string_view &function)
@@ -31,8 +31,8 @@ struct create_metrics final : public core::metrics::Factory {
 };
 
 template <typename T>
-void emplace(Fill &update, const T &value, uint32_t trade_id) {
-  new (&update) Fill{
+void emplace(Fill &result, const T &value, uint32_t trade_id) {
+  new (&result) Fill{
       .quantity = value.fill_qty,
       .price = value.fill_px,
       .trade_id = trade_id,
@@ -537,7 +537,7 @@ auto compute_request_status(
           break;
         case RequestType::CREATE_ORDER:
         case RequestType::MODIFY_ORDER:
-          DLOG(FATAL)("UNEXPECTED"_sv);
+          DLOG(FATAL)("DEBUG: UNEXPECTED"_sv);
           break;
         case RequestType::CANCEL_ORDER:
           return RequestStatus::ACCEPTED;
@@ -555,7 +555,7 @@ auto compute_request_status(
             case RequestType::MODIFY_ORDER:
               return RequestStatus::ACCEPTED;
             case RequestType::CANCEL_ORDER:
-              DLOG(FATAL)("UNEXPECTED"_sv);
+              DLOG(FATAL)("DEBUG: UNEXPECTED"_sv);
               break;
           }
           break;
@@ -576,12 +576,12 @@ auto compute_request_status(
           }
           break;
         default:
-          DLOG(FATAL)("UNEXPECTED"_sv);
+          DLOG(FATAL)("DEBUG: UNEXPECTED"_sv);
           break;
       }
       break;
     default:
-      DLOG(FATAL)("UNEXPECTED"_sv);
+      DLOG(FATAL)("DEBUG: UNEXPECTED"_sv);
       break;
   }
   return RequestStatus::UNDEFINED;
@@ -632,9 +632,9 @@ void OrderEntry::operator()(
         }
         core::back_emplacer fills(shared_.fills);
         for (auto &item : execution_report.no_fills) {
-          fills.emplace_back([&](auto &update) {
+          fills.emplace_back([&](auto &result) {
             auto trade_id = shared_.next_trade_id();
-            emplace(update, item, trade_id);
+            emplace(result, item, trade_id);
           });
         }
         if (!fills.empty()) {
@@ -696,7 +696,7 @@ void OrderEntry::operator()(
       trace_info,
       [&](const auto &order, auto &result) {
         DLOG_IF(FATAL, order.request_type != RequestType::MODIFY_ORDER)
-        ("UNEXPECTED"_sv);
+        ("DEBUG: UNEXPECTED"_sv);
 
         result.origin = Origin::EXCHANGE;
         result.request_status = RequestStatus::REJECTED;
@@ -751,12 +751,12 @@ void OrderEntry::operator()(
           break;
         }
         default:
-          DLOG(FATAL)("UNEXPECTED"_sv);
+          DLOG(FATAL)("DEBUG: UNEXPECTED"_sv);
           break;
       }
       break;
     default:
-      DLOG(FATAL)("UNEXPECTED"_sv);
+      DLOG(FATAL)("DEBUG: UNEXPECTED"_sv);
       break;
   }
   // note! relaxed because we receive duplicate updates
