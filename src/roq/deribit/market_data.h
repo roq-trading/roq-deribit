@@ -49,21 +49,19 @@ namespace deribit {
 
 class MarketData final : public core::net::Manager::Handler {
  public:
-  struct Refresh final {
+  struct SymbolsUpdate final {
     std::vector<std::string> &symbols;
   };
 
   struct Handler {
     virtual void operator()(const server::Trace<ExternalLatency> &) = 0;
-
     virtual void operator()(const server::Trace<MarketDataStatus> &) = 0;
-
     virtual void operator()(const server::Trace<ReferenceData> &, bool is_last) = 0;
     virtual void operator()(const server::Trace<MarketByPriceUpdate> &, bool is_last) = 0;
     virtual void operator()(const server::Trace<TradeSummary> &, bool is_last) = 0;
     virtual void operator()(const server::Trace<StatisticsUpdate> &, bool is_last) = 0;
-
-    virtual void operator()(Refresh &) = 0;
+    // cross-communication
+    virtual void operator()(SymbolsUpdate &) = 0;
   };
 
   MarketData(

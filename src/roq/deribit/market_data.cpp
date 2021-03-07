@@ -528,10 +528,10 @@ void MarketData::operator()(
     LOG(INFO)
     (R"(- securities: {} (/{}))"_fmt, counter, security_list.no_related_sym.size());
     if (!symbols.empty()) {
-      Refresh refresh{
+      SymbolsUpdate symbols_update{
           .symbols = symbols,
       };
-      handler_(refresh);
+      handler_(symbols_update);
     }
   }
   download_.check(MarketDataState::SECURITIES);

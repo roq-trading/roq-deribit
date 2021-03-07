@@ -74,7 +74,7 @@ class Gateway final : public server::Handler,
   void operator()(const server::Trace<PositionUpdate> &, bool is_last) override;
   void operator()(const server::Trace<FundsUpdate> &, bool is_last) override;
 
-  void operator()(MarketData::Refresh &) override;
+  void operator()(MarketData::SymbolsUpdate &) override;
 
   // utilities
 

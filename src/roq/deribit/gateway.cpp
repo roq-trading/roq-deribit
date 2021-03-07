@@ -179,8 +179,8 @@ void Gateway::operator()(const server::Trace<FundsUpdate> &event, bool is_last) 
   dispatcher_(event, is_last);
 }
 
-void Gateway::operator()(MarketData::Refresh &refresh) {
-  auto &symbols = refresh.symbols;
+void Gateway::operator()(MarketData::SymbolsUpdate &symbols_update) {
+  auto &symbols = symbols_update.symbols;
   for (auto &iter : market_data_) {
     if (symbols.empty())
       break;
