@@ -243,9 +243,9 @@ uint32_t MarketData::download(MarketDataState state) {
     case MarketDataState::SECURITIES:
       if (is_master_) {
         download_securities();
-        return 1;
+        return 1u;
       } else {
-        return 0;
+        return {};
       }
     case MarketDataState::DONE:
       (*this)(GatewayStatus::READY);
