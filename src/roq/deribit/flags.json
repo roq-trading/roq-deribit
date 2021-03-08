@@ -71,7 +71,7 @@
       "name": "fix_market_data_max_subscriptions_per_stream",
       "type": "uint32_t",
       "validator": "roq::core::flags::NonZero<uint32_t>",
-      "default": 512,
+      "default": 256,
       "description": "max subscriptions per connection (count)"
     },
     {
