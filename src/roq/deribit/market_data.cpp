@@ -247,11 +247,13 @@ uint32_t MarketData::download(MarketDataState state) {
       } else {
         return {};
       }
+    case MarketDataState::SUBSCRIBE:
+      subscribe(symbols_);
+      return {};
     case MarketDataState::DONE:
-      (*this)(GatewayStatus::READY);
       assert(!ready_);
       ready_ = true;
-      subscribe(symbols_);
+      (*this)(GatewayStatus::READY);
       return {};
   }
   assert(false);
