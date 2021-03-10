@@ -4,8 +4,6 @@ roq-deribit
 ????-W??/
 
 # auto-generated
-flags.cpp
-flags.h
 market_data_state.cpp
 market_data_state.h
 order_entry_state.cpp

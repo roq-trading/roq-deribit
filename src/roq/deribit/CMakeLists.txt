@@ -2,6 +2,7 @@ set(TARGET_NAME "${PROJECT_NAME}")
 
 add_subdirectory("fix")
 add_subdirectory("json")
+add_subdirectory(flags)
 
 set(SOURCES
     application.cpp
@@ -18,7 +19,7 @@ set(SOURCES
 
 include(RoqAutogen)
 
-set(AUTOGEN_SCHEMAS market_data_state.json order_entry_state.json web_socket_state.json flags.json)
+set(AUTOGEN_SCHEMAS market_data_state.json order_entry_state.json web_socket_state.json)
 
 roq_autogen(
   OUTPUT
@@ -54,6 +55,7 @@ target_link_libraries(
   "${TARGET_NAME}"
   "${PROJECT_NAME}-fix"
   "${PROJECT_NAME}-json"
+  "${PROJECT_NAME}-flags"
   roq-server::roq-server
   roq-core::roq-core
   roq-api::roq-api
