@@ -8,7 +8,12 @@ using namespace roq;
 using namespace roq::deribit;
 
 struct MyHandler : public json::Parser::Handler {
-  void operator()(const json::Ticker &, const server::TraceInfo &) override {}
+  void operator()(const server::Trace<json::PlatformState> &) {}
+  void operator()(const server::Trace<json::InstrumentState> &) {}
+  void operator()(const server::Trace<json::Quote> &) {}
+  void operator()(const server::Trace<json::Ticker> &) {}
+  void operator()(const server::Trace<json::Portfolio> &) {}
+  void operator()(const server::Trace<json::Changes> &) {}
 };
 
 TEST(json_subscription, parse_message) {

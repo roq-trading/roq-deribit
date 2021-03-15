@@ -39,6 +39,20 @@
       "description": "request timeout (seconds)"
     },
     {
+      "name": "ws_market_data_max_subscriptions_per_stream",
+      "type": "uint32_t",
+      "validator": "roq::core::flags::NonZero<uint32_t>",
+      "default": 256,
+      "description": "max subscriptions per connection (count)"
+    },
+    {
+      "name": "ws_max_trades",
+      "type": "uint32_t",
+      "validator": "roq::core::flags::NonZero<uint32_t>",
+      "default": 100,
+      "description": "max number of trades for historical lookup (count)"
+    },
+    {
       "name": "fix_uri",
       "type": "roq::core::URI",
       "validator": "roq::core::flags::URI<std::string>",

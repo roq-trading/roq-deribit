@@ -1,0 +1,8 @@
+{
+"name": "PlatformState",
+"type": "item",
+"values": [
+	{ "name": "currency", "type": "std::string_view" },
+	{ "name": "locked", "type": "bool" }
+]
+}

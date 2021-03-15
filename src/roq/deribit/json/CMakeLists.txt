@@ -6,6 +6,7 @@ include(RoqAutogen)
 
 set(AUTOGEN_SCHEMAS
     auth.json
+    changes.json
     channel.json
     currencies.json
     currency.json
@@ -13,16 +14,27 @@ set(AUTOGEN_SCHEMAS
     error.json
     field.json
     instrument.json
+    instrument_state.json
     instruments.json
     kind.json
     method.json
     option_type.json
+    order.json
     order_book.json
+    order_state.json
+    order_type.json
+    orders.json
+    platform_state.json
+    portfolio.json
     position.json
     positions.json
+    quote.json
     request_type.json
     state.json
-    ticker.json)
+    ticker.json
+    time_in_force.json
+    trade.json
+    trades.json)
 
 roq_autogen(
   OUTPUT

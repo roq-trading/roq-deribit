@@ -13,9 +13,13 @@ namespace deribit {
 
 namespace {
 static auto create_security(const Config &config) {
-  auto account = config.get_account();
   absl::flat_hash_map<std::string, std::unique_ptr<Security>> result;
-  result.try_emplace(account, std::make_unique<Security>(config, account));
+  for (auto &[_, iter] : config.accounts) {
+    auto &account = iter.name;
+    auto &access_key = iter.login;
+    auto &access_secret = iter.secret;
+    result.try_emplace(account, std::make_unique<Security>(account, access_key, access_secret));
+  }
   return result;
 }
 
@@ -25,13 +29,38 @@ static auto create_order_entry(
     core::io::Context &context,
     uint16_t &stream_id,
     T &security,
-    Shared &shared) {
+    Shared &shared,
+    const std::string_view &master_account) {
   absl::flat_hash_map<std::string, std::unique_ptr<OrderEntry>> result;
+  for (auto &iter : security) {
+    auto master = iter.first == master_account;
+    result.try_emplace(
+        iter.first,
+        std::make_unique<OrderEntry>(gateway, context, ++stream_id, *iter.second, shared, master));
+  }
+  return result;
+}
+
+template <typename T>
+static auto create_drop_copy(
+    Gateway &gateway,
+    core::io::Context &context,
+    uint16_t &stream_id,
+    T &security,
+    Shared &shared) {
+  absl::flat_hash_map<std::string, std::unique_ptr<DropCopy>> result;
   for (auto &iter : security) {
     result.try_emplace(
         iter.first,
-        std::make_unique<OrderEntry>(gateway, context, ++stream_id, *iter.second, shared));
+        std::make_unique<DropCopy>(gateway, context, ++stream_id, *iter.second, shared));
   }
+  return result;
+}
+
+static auto create_web_socket(
+    Gateway &gateway, core::io::Context &context, uint16_t &stream_id, Shared &shared) {
+  std::list<std::unique_ptr<WebSocket>> result;
+  result.emplace_back(std::make_unique<WebSocket>(gateway, context, ++stream_id, shared, true));
   return result;
 }
 
@@ -49,10 +78,12 @@ static auto create_market_data(
 }  // namespace
 
 Gateway::Gateway(server::Dispatcher &dispatcher, const Config &config)
-    : dispatcher_(dispatcher), master_account_(config.get_account()),
+    : dispatcher_(dispatcher), master_account_(config.get_master_account()),
       security_(create_security(config)), shared_(dispatcher_),
-      web_socket_(*this, context_, ++stream_id_, *security_[master_account_], shared_),
-      order_entry_(create_order_entry(*this, context_, stream_id_, security_, shared_)),
+      order_entry_(
+          create_order_entry(*this, context_, stream_id_, security_, shared_, master_account_)),
+      drop_copy_(create_drop_copy(*this, context_, stream_id_, security_, shared_)),
+      web_socket_(create_web_socket(*this, context_, stream_id_, shared_)),
       market_data_(
           create_market_data(*this, context_, ++stream_id_, *security_[master_account_], shared_)) {
   LOG_IF(WARNING, Flags::fix_cancel_on_disconnect() == false)
@@ -61,8 +92,11 @@ Gateway::Gateway(server::Dispatcher &dispatcher, const Config &config)
 
 void Gateway::operator()(const Event<Start> &event) {
   LOG(INFO)("Starting the gateway..."_sv);
-  web_socket_(event);
   for (auto &[_, iter] : order_entry_)
+    (*iter)(event);
+  for (auto &[_, iter] : drop_copy_)
+    (*iter)(event);
+  for (auto &iter : web_socket_)
     (*iter)(event);
   for (auto &iter : market_data_)
     (*iter)(event);
@@ -70,19 +104,25 @@ void Gateway::operator()(const Event<Start> &event) {
 
 void Gateway::operator()(const Event<Stop> &event) {
   LOG(INFO)("Stopping the gateway..."_sv);
-  web_socket_(event);
-  for (auto &[_, iter] : order_entry_)
-    (*iter)(event);
   for (auto &iter : market_data_)
+    (*iter)(event);
+  for (auto &iter : web_socket_)
+    (*iter)(event);
+  for (auto &[_, iter] : drop_copy_)
+    (*iter)(event);
+  for (auto &[_, iter] : order_entry_)
     (*iter)(event);
 }
 
 void Gateway::operator()(const Event<Timer> &event) {
-  for (auto &iter : market_data_)
-    (*iter)(event);
   for (auto &[_, iter] : order_entry_)
     (*iter)(event);
-  web_socket_(event);
+  for (auto &[_, iter] : drop_copy_)
+    (*iter)(event);
+  for (auto &iter : web_socket_)
+    (*iter)(event);
+  for (auto &iter : market_data_)
+    (*iter)(event);
   context_.dispatch(true);
 }
 
@@ -116,8 +156,11 @@ void Gateway::operator()(
 }
 
 void Gateway::operator()(metrics::Writer &writer) {
-  web_socket_(writer);
   for (auto &[_, iter] : order_entry_)
+    (*iter)(writer);
+  for (auto &[_, iter] : drop_copy_)
+    (*iter)(writer);
+  for (auto &iter : web_socket_)
     (*iter)(writer);
   for (auto &iter : market_data_)
     (*iter)(writer);
@@ -159,14 +202,6 @@ void Gateway::operator()(const server::Trace<OrderManagerStatus> &event) {
   dispatcher_(event, true);
 }
 
-void Gateway::operator()(const server::Trace<OrderAck> &event, bool is_last, uint8_t user_id) {
-  dispatcher_(event, is_last, user_id);
-}
-
-void Gateway::operator()(const server::Trace<OrderUpdate> &event, bool is_last, uint8_t user_id) {
-  dispatcher_(event, is_last, user_id);
-}
-
 void Gateway::operator()(const server::Trace<TradeUpdate> &event, bool is_last, uint8_t user_id) {
   dispatcher_(event, is_last, user_id);
 }
@@ -177,6 +212,32 @@ void Gateway::operator()(const server::Trace<PositionUpdate> &event, bool is_las
 
 void Gateway::operator()(const server::Trace<FundsUpdate> &event, bool is_last) {
   dispatcher_(event, is_last);
+}
+
+void Gateway::operator()(WebSocket::SymbolsUpdate &symbols_update) {
+  auto &symbols = symbols_update.symbols;
+  for (auto &iter : web_socket_) {
+    if (symbols.empty())
+      break;
+    (*iter).update_subscriptions(symbols);
+  }
+  for (;;) {
+    if (symbols.empty())
+      break;
+    auto web_socket = std::make_unique<WebSocket>(*this, context_, ++stream_id_, shared_, false);
+    (*web_socket).update_subscriptions(symbols);
+    MessageInfo message_info;  // XXX something sensible
+    Start start;
+    create_event_and_dispatch(*web_socket, message_info, start);
+    web_socket_.emplace_back(std::move(web_socket));
+  }
+}
+
+void Gateway::operator()(WebSocket::CurrenciesUpdate &currencies_update) {
+  auto &currencies = currencies_update.currencies;
+  for (auto &[_, iter] : drop_copy_) {
+    (*iter).update_subscriptions(currencies);
+  }
 }
 
 void Gateway::operator()(MarketData::SymbolsUpdate &symbols_update) {

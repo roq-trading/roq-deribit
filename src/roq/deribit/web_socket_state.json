@@ -4,8 +4,7 @@
 "values": [
 	{ "name": "currencies" },
 	{ "name": "instruments" },
-	{ "name": "positions" },
-	{ "name": "tickers" },
+	{ "name": "subscribe" },
 	{ "name": "done" }
 ]
 }

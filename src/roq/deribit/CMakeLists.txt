@@ -8,6 +8,7 @@ set(SOURCES
     application.cpp
     common.cpp
     config.cpp
+    drop_copy.cpp
     flags.cpp
     gateway.cpp
     market_data.cpp
@@ -19,7 +20,8 @@ set(SOURCES
 
 include(RoqAutogen)
 
-set(AUTOGEN_SCHEMAS market_data_state.json order_entry_state.json web_socket_state.json)
+set(AUTOGEN_SCHEMAS market_data_state.json order_entry_state.json web_socket_state.json
+                    drop_copy_state.json)
 
 roq_autogen(
   OUTPUT

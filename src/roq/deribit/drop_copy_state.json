@@ -1,0 +1,12 @@
+{
+"name": "DropCopyState",
+"type": "enum",
+"values": [
+	{ "name": "subscribe_portfolios" },
+	{ "name": "subscribe_changes" },
+	{ "name": "get_account_summary" },
+	{ "name": "get_trades" },
+	{ "name": "get_positions" },
+	{ "name": "done" }
+]
+}

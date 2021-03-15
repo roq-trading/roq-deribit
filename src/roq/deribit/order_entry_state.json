@@ -2,10 +2,7 @@
 "name": "OrderEntryState",
 "type": "enum",
 "values": [
-	{ "name": "securities" },
-	{ "name": "positions" },
 	{ "name": "orders" },
-	{ "name": "user" },
 	{ "name": "done" }
 ]
 }

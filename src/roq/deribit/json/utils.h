@@ -13,7 +13,10 @@
 #include "roq/deribit/json/direction.h"
 #include "roq/deribit/json/kind.h"
 #include "roq/deribit/json/option_type.h"
+#include "roq/deribit/json/order_state.h"
+#include "roq/deribit/json/order_type.h"
 #include "roq/deribit/json/state.h"
+#include "roq/deribit/json/time_in_force.h"
 
 namespace roq {
 namespace deribit {
@@ -48,12 +51,44 @@ inline void update(OptionType &result, const core::json::value_t &value) {
 }
 
 template <>
+inline void update(OrderState &result, const core::json::value_t &value) {
+  using result_type = std::remove_reference<decltype(result)>::type;
+  result = result_type(core::json::get<std::string_view>(value));
+}
+
+template <>
+inline void update(OrderType &result, const core::json::value_t &value) {
+  using result_type = std::remove_reference<decltype(result)>::type;
+  result = result_type(core::json::get<std::string_view>(value));
+}
+
+template <>
 inline void update(State &result, const core::json::value_t &value) {
   using result_type = std::remove_reference<decltype(result)>::type;
   result = result_type(core::json::get<std::string_view>(value));
 }
 
+template <>
+inline void update(TimeInForce &result, const core::json::value_t &value) {
+  using result_type = std::remove_reference<decltype(result)>::type;
+  result = result_type(core::json::get<std::string_view>(value));
+}
+
 // ...
+
+inline Side map(Direction direction) {
+  switch (direction) {
+    case Direction::UNDEFINED:
+      break;
+    case Direction::UNKNOWN:
+      break;
+    case Direction::BUY:
+      return Side::BUY;
+    case Direction::SELL:
+      return Side::SELL;
+  }
+  return Side::UNDEFINED;
+}
 
 inline TradingStatus map(State state) {
   switch (state) {

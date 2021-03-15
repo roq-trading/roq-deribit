@@ -84,9 +84,9 @@ MarketData::MarketData(
     uint16_t stream_id,
     Security &security,
     Shared &shared,
-    bool is_master)
+    bool master)
     : handler_(handler), stream_id_(stream_id),
-      name_(roq::format("{}_{}"_fmt, CONNECTION, stream_id_)), is_master_(is_master),
+      name_(roq::format("{}:{}"_fmt, stream_id_, CONNECTION)), master_(master),
       connection_factory_(context, Flags::fix_uri()), connection_(*this, connection_factory_),
       encode_buffer_(Flags::encode_buffer_size()), decode_buffer_(Flags::decode_buffer_size()),
       counter_{
@@ -241,7 +241,7 @@ uint32_t MarketData::download(MarketDataState state) {
       assert(false);
       break;
     case MarketDataState::SECURITIES:
-      if (is_master_) {
+      if (master_) {
         download_securities();
         return 1u;
       } else {

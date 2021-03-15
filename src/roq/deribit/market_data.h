@@ -64,8 +64,7 @@ class MarketData final : public core::net::Manager::Handler {
     virtual void operator()(SymbolsUpdate &) = 0;
   };
 
-  MarketData(
-      Handler &, core::io::Context &, uint16_t stream_id, Security &, Shared &, bool is_master);
+  MarketData(Handler &, core::io::Context &, uint16_t stream_id, Security &, Shared &, bool master);
 
   MarketData(const MarketData &) = delete;
   MarketData(MarketData &&) = delete;
@@ -138,7 +137,7 @@ class MarketData final : public core::net::Manager::Handler {
   // config
   const uint16_t stream_id_;
   const std::string name_;
-  const bool is_master_;
+  const bool master_;
   // connection
   core::net::TcpConnectionFactory connection_factory_;
   core::net::Manager connection_;

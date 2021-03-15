@@ -1,0 +1,9 @@
+{
+"name": "Changes",
+"type": "comp",
+"values": [
+	{ "name": "trades", "type": "roq::span<Trade>" },
+	{ "name": "positions", "type": "roq::span<Position>" },
+	{ "name": "orders", "type": "roq::span<Order>" }
+]
+}

@@ -5,8 +5,14 @@
 	{ "name": "auth" },
 	{ "name": "get_currencies" },
 	{ "name": "get_instruments" },
-	{ "name": "get_positions" },
+	{ "name": "subscribe_platform_state" },
+	{ "name": "subscribe_instrument_state" },
+	{ "name": "subscribe_quote" },
 	{ "name": "subscribe_ticker" },
-	{ "name": "unsubscribe_ticker" }
+	{ "name": "subscribe_portfolio" },
+	{ "name": "subscribe_changes" },
+	{ "name": "get_account_summary" },
+	{ "name": "get_trades" },
+	{ "name": "get_positions" }
 ]
 }

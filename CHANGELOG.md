@@ -8,6 +8,7 @@ All notable changes will be documented in this file.
 
 * Support many accounts for order management
 * Support many market data streams for load balancing
+* Using web-socket for funds and positions
 
 ## 0.6.1 &ndash; 2021-02-19
 

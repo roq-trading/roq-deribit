@@ -1,0 +1,27 @@
+{
+"name": "Trade",
+"type": "item",
+"values": [
+	{ "name": "trade_seq", "type": "int64_t" },
+	{ "name": "trade_id", "type": "std::string_view" },
+	{ "name": "timestamp", "type": "std::chrono::milliseconds" },
+	{ "name": "tick_direction", "type": "uint32_t" },
+	{ "name": "state", "type": "OrderState" },
+	{ "name": "self_trade", "type": "bool" },
+	{ "name": "reduce_only", "type": "bool" },
+	{ "name": "profit_loss", "type": "double" },
+	{ "name": "price", "type": "double" },
+	{ "name": "post_only", "type": "bool" },
+	{ "name": "order_type", "type": "OrderType" },
+	{ "name": "order_id", "type": "std::string_view" },
+	{ "name": "matching_id" },
+	{ "name": "mark_price", "type": "double" },
+	{ "name": "liquidity", "type": "std::string_view" },
+	{ "name": "instrument_name", "type": "std::string_view" },
+	{ "name": "index_price", "type": "double" },
+	{ "name": "fee_currency", "type": "std::string_view" },
+	{ "name": "fee", "type": "double" },
+	{ "name": "direction", "type": "Direction" },
+	{ "name": "amount", "type": "double" }
+]
+}

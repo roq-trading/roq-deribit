@@ -28,9 +28,11 @@ static std::uniform_int_distribution<int> CHARSET_DISTRIBUTION(
 static std::uniform_int_distribution<uint32_t> DISTRIBUTION;
 }  // namespace
 
-Security::Security(const Config &config, const std::string_view &account)
-    : account_(account), key_(config.get_access_key()), secret_(config.get_access_secret()),
-      hmac_(secret_) {
+Security::Security(
+    const std::string_view &account,
+    const std::string_view &access_key,
+    const std::string_view &access_secret)
+    : account_(account), key_(access_key), secret_(access_secret), hmac_(secret_) {
 }
 
 std::string Security::create_nonce() {

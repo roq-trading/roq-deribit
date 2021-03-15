@@ -3,7 +3,6 @@
 #pragma once
 
 #include <absl/container/flat_hash_map.h>
-#include <absl/container/flat_hash_set.h>
 
 #include <memory>
 #include <string>
@@ -23,45 +22,36 @@
 #include "roq/download.h"
 #include "roq/server.h"
 
+#include "roq/deribit/drop_copy_state.h"
 #include "roq/deribit/security.h"
 #include "roq/deribit/shared.h"
-#include "roq/deribit/web_socket_state.h"
 
 #include "roq/deribit/json/auth.h"
-#include "roq/deribit/json/currencies.h"
-#include "roq/deribit/json/instruments.h"
+#include "roq/deribit/json/changes.h"
+#include "roq/deribit/json/orders.h"
 #include "roq/deribit/json/parser.h"
+#include "roq/deribit/json/portfolio.h"
 #include "roq/deribit/json/positions.h"
-#include "roq/deribit/json/ticker.h"
+#include "roq/deribit/json/trades.h"
 
 namespace roq {
 namespace deribit {
 
-class WebSocket final : public core::web::Socket::Handler,
-                        public core::jsonrpc::Parser::Handler,
-                        public json::Parser::Handler {
+class DropCopy final : public core::web::Socket::Handler,
+                       public core::jsonrpc::Parser::Handler,
+                       public json::Parser::Handler {
  public:
-  struct CurrenciesUpdate final {
-    std::vector<std::string> &currencies;
-  };
-  struct SymbolsUpdate final {
-    std::vector<std::string> &symbols;
-  };
-
   struct Handler {
     virtual void operator()(const server::Trace<ExternalLatency> &) = 0;
-    virtual void operator()(const server::Trace<MarketDataStatus> &) = 0;
-    virtual void operator()(const server::Trace<TopOfBook> &, bool is_last) = 0;
-    virtual void operator()(const server::Trace<MarketStatus> &, bool is_last) = 0;
-    // cross-communication
-    virtual void operator()(CurrenciesUpdate &) = 0;
-    virtual void operator()(SymbolsUpdate &) = 0;
+    virtual void operator()(const server::Trace<OrderManagerStatus> &) = 0;
+    virtual void operator()(const server::Trace<FundsUpdate> &, bool is_last) = 0;
+    virtual void operator()(const server::Trace<PositionUpdate> &, bool is_last) = 0;
   };
 
-  WebSocket(Handler &, core::io::Context &, uint16_t stream_id, Shared &, bool master);
+  DropCopy(Handler &, core::io::Context &, uint16_t stream_id, Security &, Shared &);
 
-  WebSocket(WebSocket &&) = delete;
-  WebSocket(const WebSocket &) = delete;
+  DropCopy(DropCopy &&) = delete;
+  DropCopy(const DropCopy &) = delete;
 
   void operator()(const Event<Start> &);
   void operator()(const Event<Stop> &);
@@ -69,7 +59,7 @@ class WebSocket final : public core::web::Socket::Handler,
 
   void operator()(metrics::Writer &);
 
-  void update_subscriptions(std::vector<std::string> &symbols);
+  void update_subscriptions(const roq::span<std::string> &currencies);
 
  protected:
   void operator()(const core::web::Socket::Connected &) override;
@@ -82,19 +72,16 @@ class WebSocket final : public core::web::Socket::Handler,
  private:
   void operator()(GatewayStatus);
 
-  uint32_t download(WebSocketState);
+  void login();
 
-  uint32_t download_currencies();
-  uint32_t download_instruments();
+  uint32_t download(DropCopyState);
 
-  void get_currencies();
-  void get_instruments(const std::string_view &currency);
+  void subscribe_portfolios(const roq::span<std::string> &currencies);
+  void subscribe_changes();
 
-  void subscribe_platform_state();
-  void subscribe_instrument_state();
-
-  void subscribe_quote(const roq::span<std::string> &symbols);
-  void subscribe_ticker(const roq::span<std::string> &symbols);
+  void get_account_summary(const roq::span<std::string> &currencies);
+  void get_trades(const roq::span<std::string> &currencies);
+  void get_positions(const roq::span<std::string> &currencies);
 
   void parse(const std::string_view &message);
 
@@ -104,10 +91,7 @@ class WebSocket final : public core::web::Socket::Handler,
 
   void operator()(const json::Auth &, const server::TraceInfo &);
 
-  void operator()(const json::Currencies &, const server::TraceInfo &);
-  void operator()(const json::Instruments &, const server::TraceInfo &);
-  void operator()(const json::Positions &, const server::TraceInfo &);
-
+ public:
   void operator()(const server::Trace<json::PlatformState> &) override;
   void operator()(const server::Trace<json::InstrumentState> &) override;
   void operator()(const server::Trace<json::Quote> &) override;
@@ -115,12 +99,18 @@ class WebSocket final : public core::web::Socket::Handler,
   void operator()(const server::Trace<json::Portfolio> &) override;
   void operator()(const server::Trace<json::Changes> &) override;
 
+  void operator()(const server::Trace<json::Trades> &);
+  void operator()(const server::Trace<json::Positions> &);
+  void operator()(const server::Trace<json::Orders> &);
+
+  void operator()(const server::Trace<json::Trade> &, bool is_last);
+  void operator()(const server::Trace<json::Position> &, bool is_last);
+
  private:
   Handler &handler_;
   // config
   const uint16_t stream_id_;
   const std::string name_;
-  const bool master_;
   // web socket
   core::web::Socket connection_;
   // buffers
@@ -130,22 +120,20 @@ class WebSocket final : public core::web::Socket::Handler,
     core::metrics::Counter disconnect;
   } counter_;
   struct {
-    core::metrics::Profile parse, auth, currencies, instruments, quote, ticker;
+    core::metrics::Profile parse, auth, positions;
   } profile_;
   struct {
     core::metrics::Latency ping, heartbeat;
   } latency_;
+  // security
+  Security &security_;
   // cache
   Shared &shared_;
-  absl::flat_hash_set<std::string> all_currencies_;  // only used by master
-  absl::flat_hash_set<std::string> all_symbols_;     // only used by master
-  std::vector<std::string> symbols_;
-  absl::flat_hash_map<std::string, roq::Layer> top_of_book_;
-  absl::flat_hash_map<std::string, TradingStatus> trading_status_;
+  std::vector<std::string> currencies_;
   // state
   bool ready_ = false;
   GatewayStatus status_ = {};
-  server::Download<WebSocketState> download_;
+  server::Download<DropCopyState> download_;
 };
 
 }  // namespace deribit

@@ -13,6 +13,7 @@
 #include "roq/core/io/context.h"
 
 #include "roq/deribit/config.h"
+#include "roq/deribit/drop_copy.h"
 #include "roq/deribit/market_data.h"
 #include "roq/deribit/order_entry.h"
 #include "roq/deribit/security.h"
@@ -23,8 +24,9 @@ namespace roq {
 namespace deribit {
 
 class Gateway final : public server::Handler,
-                      public WebSocket::Handler,
                       public OrderEntry::Handler,
+                      public DropCopy::Handler,
+                      public WebSocket::Handler,
                       public MarketData::Handler {
  public:
   Gateway(server::Dispatcher &, const Config &);
@@ -68,11 +70,12 @@ class Gateway final : public server::Handler,
   void operator()(const server::Trace<StatisticsUpdate> &, bool is_last) override;
 
   void operator()(const server::Trace<OrderManagerStatus> &) override;
-  void operator()(const server::Trace<OrderAck> &, bool is_last, uint8_t user_id) override;
-  void operator()(const server::Trace<OrderUpdate> &, bool is_last, uint8_t user_id) override;
   void operator()(const server::Trace<TradeUpdate> &, bool is_last, uint8_t user_id) override;
   void operator()(const server::Trace<PositionUpdate> &, bool is_last) override;
   void operator()(const server::Trace<FundsUpdate> &, bool is_last) override;
+
+  void operator()(WebSocket::CurrenciesUpdate &) override;
+  void operator()(WebSocket::SymbolsUpdate &) override;
 
   void operator()(MarketData::SymbolsUpdate &) override;
 
@@ -93,8 +96,9 @@ class Gateway final : public server::Handler,
   // seed
   uint16_t stream_id_ = {};
   // streams
-  WebSocket web_socket_;
   absl::flat_hash_map<std::string, std::unique_ptr<OrderEntry>> order_entry_;
+  absl::flat_hash_map<std::string, std::unique_ptr<DropCopy>> drop_copy_;
+  std::list<std::unique_ptr<WebSocket>> web_socket_;
   std::list<std::unique_ptr<MarketData>> market_data_;
 };
 

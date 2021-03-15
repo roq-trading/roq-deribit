@@ -10,6 +10,11 @@
   secret = "8XC2sDXtrGFtVdOFKCU2eg3uE1oOntCoJCM3abpNBmI"
   symbols = ".*"
 
+#  [accounts.A2]
+#  login = "5lsDhumZ"
+#  secret = "G_zfAoiRpKe-kLsfhc5_L1XAnsCztRio-mZguE83Dr0"
+#  symbols = ".*"
+
 [users]
 
   [users.test]

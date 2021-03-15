@@ -47,11 +47,13 @@ OrderEntry::OrderEntry(
     core::io::Context &context,
     uint16_t stream_id,
     Security &security,
-    Shared &shared)
+    Shared &shared,
+    bool master)
     : handler_(handler), stream_id_(stream_id),
-      name_(roq::format("{}_{}_{}"_fmt, CONNECTION, stream_id_, security.get_account())),
-      connection_factory_(context, Flags::fix_uri()), connection_(*this, connection_factory_),
-      encode_buffer_(Flags::encode_buffer_size()), decode_buffer_(Flags::decode_buffer_size()),
+      name_(roq::format("{}:{}:{}"_fmt, stream_id_, CONNECTION, security.get_account())),
+      master_(master), connection_factory_(context, Flags::fix_uri()),
+      connection_(*this, connection_factory_), encode_buffer_(Flags::encode_buffer_size()),
+      decode_buffer_(Flags::decode_buffer_size()),
       counter_{
           .disconnect = create_metrics(name_, "disconnect"_sv),
       },
@@ -59,10 +61,7 @@ OrderEntry::OrderEntry(
           .parse = create_metrics(name_, "parse"_sv),
           .execution_report = create_metrics(name_, "execution_report"_sv),
           .order_cancel_reject = create_metrics(name_, "order_cancel_reject"_sv),
-          .position_report = create_metrics(name_, "position_report"_sv),
           .reject = create_metrics(name_, "reject"_sv),
-          .security_list = create_metrics(name_, "security_list"_sv),
-          .user_response = create_metrics(name_, "user_response"_sv),
       },
       latency_{
           .ping = create_metrics(name_, "ping"_sv),
@@ -164,10 +163,7 @@ void OrderEntry::operator()(metrics::Writer &writer) {
       .write(profile_.parse, metrics::PROFILE)
       .write(profile_.execution_report, metrics::PROFILE)
       .write(profile_.order_cancel_reject, metrics::PROFILE)
-      .write(profile_.position_report, metrics::PROFILE)
       .write(profile_.reject, metrics::PROFILE)
-      .write(profile_.security_list, metrics::PROFILE)
-      .write(profile_.user_response, metrics::PROFILE)
       .write(latency_.ping, metrics::LATENCY);
 }
 
@@ -285,18 +281,9 @@ uint32_t OrderEntry::download(OrderEntryState state) {
     case OrderEntryState::UNDEFINED:
       assert(false);
       break;
-    case OrderEntryState::SECURITIES:
-      download_securities();
-      return 1;
-    case OrderEntryState::POSITIONS:
-      download_positions();
-      return 1;
     case OrderEntryState::ORDERS:
       download_orders();
-      return 1;  // first ExecutionReport has the real number
-    case OrderEntryState::USER:
-      download_user();
-      return currencies_.size();
+      return 1u;  // first ExecutionReport has the real number
     case OrderEntryState::DONE:
       (*this)(GatewayStatus::READY);
       assert(!ready_);
@@ -307,26 +294,6 @@ uint32_t OrderEntry::download(OrderEntryState state) {
   return {};
 }
 
-void OrderEntry::download_securities() {
-  auto request_id = shared_.next_request_id();
-  fix::SecurityListRequest security_list_request{
-      .security_req_id = request_id,
-      .security_list_request_type = core::fix::SecurityListRequestType::ALL_SECURITIES,
-  };
-  send(security_list_request);
-}
-
-void OrderEntry::download_positions() {
-  auto request_id = shared_.next_request_id();
-  fix::RequestForPositions request_for_positions{
-      .pos_req_id = request_id,
-      .pos_req_type = core::fix::PosReqType::POSITIONS,
-      .subscription_request_type = roq::core::fix::SubscriptionRequestType::SNAPSHOT_UPDATES,
-      .currency = {},
-  };
-  send(request_for_positions);
-}
-
 void OrderEntry::download_orders() {
   auto request_id = shared_.next_request_id();
   fix::OrderMassStatusRequest order_mass_status_request{
@@ -334,20 +301,6 @@ void OrderEntry::download_orders() {
       .mass_status_req_type = core::fix::MassStatusReqType::ORDERS,
   };
   send(order_mass_status_request);
-}
-
-void OrderEntry::download_user() {
-  assert(currencies_.empty() == false);
-  for (auto &currency : currencies_) {
-    auto request_id = shared_.next_request_id();
-    fix::UserRequest user_request_btc{
-        .user_request_id = request_id,
-        .user_request_type = core::fix::UserRequestType::REQUEST_INDIVIDUAL_USER_STATUS,
-        .username = security_.get_access_key(),
-        .currency = static_cast<std::string_view>(currency),
-    };
-    send(user_request_btc);
-  }
 }
 
 void OrderEntry::parse(const core::fix::message_t &message) {
@@ -405,31 +358,10 @@ void OrderEntry::parse_helper(const core::fix::message_t &message) {
       });
       break;
     }
-    case core::fix::MsgType::POSITION_REPORT: {
-      profile_.position_report([&]() {
-        auto position_report = fix::PositionReport::create(message, buffer);
-        (*this)(message.header, position_report, trace_info);
-      });
-      break;
-    }
     case core::fix::MsgType::REJECT: {
       profile_.reject([&]() {
         auto reject = fix::Reject::create(message);
         (*this)(message.header, reject, trace_info);
-      });
-      break;
-    }
-    case core::fix::MsgType::SECURITY_LIST: {
-      profile_.security_list([&]() {
-        auto security_list = fix::SecurityList::create(message, buffer);
-        (*this)(message.header, security_list, trace_info);
-      });
-      break;
-    }
-    case core::fix::MsgType::USER_RESPONSE: {
-      profile_.user_response([&]() {
-        auto user_response = fix::UserResponse::create(message);
-        (*this)(message.header, user_response, trace_info);
       });
       break;
     }
@@ -710,60 +642,6 @@ void OrderEntry::operator()(
 }
 
 void OrderEntry::operator()(
-    const core::fix::header_t &header,
-    const fix::PositionReport &position_report,
-    const server::TraceInfo &trace_info) {
-  VLOG(3)(R"(event(header={}, position_report={}))"_fmt, header, position_report);
-  switch (position_report.pos_req_result) {
-    case core::fix::PosReqResult::VALID:
-      switch (position_report.pos_req_type) {
-        case core::fix::PosReqType::POSITIONS: {
-          for (auto &position : position_report.no_positions) {
-            PositionUpdate buy{
-                .stream_id = stream_id_,
-                .account = security_.get_account(),
-                .exchange = Flags::exchange(),
-                .symbol = position.symbol,
-                .side = Side::BUY,
-                .position = position.long_qty,
-                .last_trade_id = {},
-                .position_cost = 0.0,
-                .position_yesterday = 0.0,
-                .position_cost_yesterday = 0.0,
-                .external_account = {},
-            };
-            server::create_trace_and_dispatch(trace_info, buy, handler_, false);
-            PositionUpdate sell{
-                .stream_id = stream_id_,
-                .account = security_.get_account(),
-                .exchange = Flags::exchange(),
-                .symbol = position.symbol,
-                .side = Side::SELL,
-                .position = position.short_qty,
-                .last_trade_id = {},
-                .position_cost = 0.0,
-                .position_yesterday = 0.0,
-                .position_cost_yesterday = 0.0,
-                .external_account = {},
-            };
-            server::create_trace_and_dispatch(trace_info, sell, handler_, true);
-          }
-          break;
-        }
-        default:
-          DLOG(FATAL)("DEBUG: UNEXPECTED"_sv);
-          break;
-      }
-      break;
-    default:
-      DLOG(FATAL)("DEBUG: UNEXPECTED"_sv);
-      break;
-  }
-  // note! relaxed because we receive duplicate updates
-  download_.check_relaxed(OrderEntryState::POSITIONS);
-}
-
-void OrderEntry::operator()(
     const core::fix::header_t &header, const fix::Reject &reject, const server::TraceInfo &) {
   VLOG(3)(R"(event(header={}, reject={}))"_fmt, header, reject);
   LOG(WARNING)(R"(reject={})"_fmt, reject);
@@ -773,40 +651,6 @@ void OrderEntry::operator()(
   } else {
     LOG(FATAL)("Unexpected"_sv);
   }
-}
-
-void OrderEntry::operator()(
-    const core::fix::header_t &header,
-    const fix::SecurityList &security_list,
-    const server::TraceInfo &) {
-  VLOG(2)(R"(event(header={}, security_list={}))"_fmt, header, security_list);
-  currencies_.clear();
-  for (auto &instrument : security_list.no_related_sym) {
-    // note!
-    //   USD will cause a Reject
-    //   using commission currency because it requires funding
-    if (instrument.comm_currency.empty() == false)
-      currencies_.emplace(instrument.comm_currency);
-  }
-  LOG(INFO)("- currencies: {}"_fmt, std::size(currencies_));
-  download_.check(OrderEntryState::SECURITIES);
-}
-
-void OrderEntry::operator()(
-    const core::fix::header_t &header,
-    const fix::UserResponse &user_response,
-    const server::TraceInfo &trace_info) {
-  VLOG(2)(R"(event(header={}, user_response={}))"_fmt, header, user_response);
-  FundsUpdate funds_update{
-      .stream_id = stream_id_,
-      .account = security_.get_account(),
-      .currency = user_response.currency,
-      .balance = user_response.deribit_user_balance,
-      .hold = 0.0,
-      .external_account = {},
-  };
-  server::create_trace_and_dispatch(trace_info, funds_update, handler_, true);
-  download_.check(OrderEntryState::USER);
 }
 
 template <typename T>

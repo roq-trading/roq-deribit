@@ -4,6 +4,7 @@
 "values": [
 	{ "name": "code", "type": "int32_t" },
 	{ "name": "message", "type": "std::string_view" },
-	{ "name": "description", "type": "std::string_view" }
+	{ "name": "description", "type": "std::string_view" },
+	{ "name": "data" }
 ]
 }

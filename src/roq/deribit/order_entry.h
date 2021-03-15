@@ -34,19 +34,13 @@
 // business (inbound)
 #include "roq/deribit/fix/execution_report.h"
 #include "roq/deribit/fix/order_cancel_reject.h"
-#include "roq/deribit/fix/position_report.h"
 #include "roq/deribit/fix/reject.h"  // ... normally session level
-#include "roq/deribit/fix/security_list.h"
-#include "roq/deribit/fix/user_response.h"
 
 // business (outbound)
 #include "roq/deribit/fix/new_order_single.h"
 #include "roq/deribit/fix/order_cancel_replace_request.h"
 #include "roq/deribit/fix/order_cancel_request.h"
 #include "roq/deribit/fix/order_mass_status_request.h"
-#include "roq/deribit/fix/request_for_positions.h"
-#include "roq/deribit/fix/security_list_request.h"
-#include "roq/deribit/fix/user_request.h"
 
 namespace roq {
 namespace deribit {
@@ -56,14 +50,10 @@ class OrderEntry final : public core::net::Manager::Handler {
   struct Handler {
     virtual void operator()(const server::Trace<ExternalLatency> &) = 0;
     virtual void operator()(const server::Trace<OrderManagerStatus> &) = 0;
-    virtual void operator()(const server::Trace<OrderAck> &, bool is_last, uint8_t user_id) = 0;
-    virtual void operator()(const server::Trace<OrderUpdate> &, bool is_last, uint8_t user_id) = 0;
     virtual void operator()(const server::Trace<TradeUpdate> &, bool is_last, uint8_t user_id) = 0;
-    virtual void operator()(const server::Trace<PositionUpdate> &, bool is_last) = 0;
-    virtual void operator()(const server::Trace<FundsUpdate> &, bool is_last) = 0;
   };
 
-  OrderEntry(Handler &, core::io::Context &, uint16_t stream_id, Security &, Shared &);
+  OrderEntry(Handler &, core::io::Context &, uint16_t stream_id, Security &, Shared &, bool master);
 
   OrderEntry(const OrderEntry &) = delete;
   OrderEntry(OrderEntry &&) = delete;
@@ -96,10 +86,7 @@ class OrderEntry final : public core::net::Manager::Handler {
 
   uint32_t download(OrderEntryState);
 
-  void download_securities();
-  void download_positions();
   void download_orders();
-  void download_user();
 
   void parse(const core::fix::message_t &);
   void parse_helper(const core::fix::message_t &);
@@ -115,13 +102,7 @@ class OrderEntry final : public core::net::Manager::Handler {
       const core::fix::header_t &, const fix::ExecutionReport &, const server::TraceInfo &);
   void operator()(
       const core::fix::header_t &, const fix::OrderCancelReject &, const server::TraceInfo &);
-  void operator()(
-      const core::fix::header_t &, const fix::PositionReport &, const server::TraceInfo &);
   void operator()(const core::fix::header_t &, const fix::Reject &, const server::TraceInfo &);
-  void operator()(
-      const core::fix::header_t &, const fix::SecurityList &, const server::TraceInfo &);
-  void operator()(
-      const core::fix::header_t &, const fix::UserResponse &, const server::TraceInfo &);
 
   // utilities
 
@@ -138,6 +119,7 @@ class OrderEntry final : public core::net::Manager::Handler {
   // config
   const uint16_t stream_id_;
   const std::string name_;
+  const bool master_;
   // connection
   core::net::TcpConnectionFactory connection_factory_;
   core::net::Manager connection_;
@@ -150,8 +132,7 @@ class OrderEntry final : public core::net::Manager::Handler {
     core::metrics::Counter disconnect;
   } counter_;
   struct {
-    core::metrics::Profile parse, execution_report, order_cancel_reject, position_report, reject,
-        security_list, user_response;
+    core::metrics::Profile parse, execution_report, order_cancel_reject, reject;
   } profile_;
   struct {
     core::metrics::Latency ping;
@@ -167,7 +148,7 @@ class OrderEntry final : public core::net::Manager::Handler {
   Security &security_;
   // cache
   Shared &shared_;
-  absl::flat_hash_set<std::string> currencies_;
+  absl::flat_hash_set<std::string> all_currencies_;  // only master
   // state
   bool ready_ = false;
   std::chrono::nanoseconds next_heartbeat_ = {};

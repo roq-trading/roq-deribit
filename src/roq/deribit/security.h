@@ -8,14 +8,15 @@
 #include "roq/core/crypto/hmac.h"
 #include "roq/core/crypto/sha.h"
 
-#include "roq/deribit/config.h"
-
 namespace roq {
 namespace deribit {
 
 class Security final {
  public:
-  Security(const Config &, const std::string_view &account);
+  Security(
+      const std::string_view &account,
+      const std::string_view &access_key,
+      const std::string_view &access_secret);
 
   Security(Security &&) = delete;
   Security(const Security &) = delete;
