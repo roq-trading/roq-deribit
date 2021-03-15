@@ -10,8 +10,8 @@ namespace roq {
 namespace deribit {
 
 Shared::Shared(server::Dispatcher &dispatcher)
-    : fills(Flags::cache_fills_max_depth()), bids(Flags::cache_mbp_max_depth()),
-      asks(Flags::cache_mbp_max_depth()), trades(Flags::cache_trades_max_depth()),
+    : fills(server::Flags::cache_fills_max_depth()), bids(server::Flags::cache_mbp_max_depth()),
+      asks(server::Flags::cache_mbp_max_depth()), trades(server::Flags::cache_trades_max_depth()),
       statistics(magic_enum::enum_count<StatisticsType::type_t>()), dispatcher_(dispatcher) {
 }
 
