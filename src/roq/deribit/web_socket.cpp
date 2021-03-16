@@ -4,8 +4,8 @@
 
 #include <algorithm>
 
-#include "roq/core/compare.h"
-#include "roq/core/update.h"
+#include "roq/compare.h"
+#include "roq/update.h"
 
 #include "roq/core/metrics/factory.h"
 
@@ -145,7 +145,7 @@ void WebSocket::operator()(const core::web::Socket::Text &text) {
 }
 
 void WebSocket::operator()(GatewayStatus status) {
-  if (core::update(status_, status)) {
+  if (update(status_, status)) {
     server::TraceInfo trace_info;
     MarketDataStatus market_data_status{
         .stream_id = stream_id_,
@@ -427,7 +427,7 @@ void WebSocket::operator()(const server::Trace<json::Quote> &event) {
         .snapshot = false,
         .exchange_time_utc = quote.timestamp,
     };
-    if (core::compare(layer, top_of_book.layer) != 0) {
+    if (compare(layer, top_of_book.layer) != 0) {
       layer = top_of_book.layer;
       server::create_trace_and_dispatch(trace_info, top_of_book, handler_, true);
     }
@@ -441,7 +441,7 @@ void WebSocket::operator()(const server::Trace<json::Ticker> &event) {
     VLOG(2)(R"(ticker={})"_fmt, ticker);
     auto trading_status = json::map(ticker.state);
     auto &item = trading_status_[ticker.instrument_name];
-    if (core::update(item, trading_status)) {
+    if (update(item, trading_status)) {
       MarketStatus market_status{
           .stream_id = stream_id_,
           .exchange = Flags::exchange(),

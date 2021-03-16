@@ -4,11 +4,12 @@
 
 #include <algorithm>
 
+#include "roq/compare.h"
+#include "roq/update.h"
+
 #include "roq/core/back_emplacer.h"
-#include "roq/core/compare.h"
 #include "roq/core/convert.h"
 #include "roq/core/debug.h"
-#include "roq/core/update.h"
 
 #include "roq/core/charconv/datetime.h"
 
@@ -47,10 +48,10 @@ static void validate(const T &value) {
       break;
     case core::fix::MDUpdateAction::NEW:
     case core::fix::MDUpdateAction::CHANGE:
-      assert(core::compare(value.md_entry_size, 0.0) > 0);
+      assert(compare(value.md_entry_size, 0.0) > 0);
       break;
     case core::fix::MDUpdateAction::DELETE:
-      assert(core::compare(value.md_entry_size, 0.0) == 0);
+      assert(compare(value.md_entry_size, 0.0) == 0);
       break;
     case core::fix::MDUpdateAction::DELETE_THRU:
     case core::fix::MDUpdateAction::DELETE_FROM:
@@ -177,7 +178,7 @@ void MarketData::operator()(const core::net::Manager::Read &read) {
 }
 
 void MarketData::operator()(GatewayStatus status) {
-  if (core::update(status_, status)) {
+  if (update(status_, status)) {
     server::TraceInfo trace_info;
     MarketDataStatus market_data_status{
         .stream_id = stream_id_,
