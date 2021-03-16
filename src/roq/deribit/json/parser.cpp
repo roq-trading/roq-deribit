@@ -17,29 +17,39 @@ namespace deribit {
 namespace json {
 
 namespace {
-Channel parse_channel(const std::string_view &name) {
+constexpr std::string_view get_token(const std::string_view &name) {
   auto delim = name.find_first_of('.');
   auto part = name.substr(0, delim);
-  if (part.compare("user"_sv) == 0) {
+  if (ROQ_UNLIKELY(part.compare("user"_sv) == 0 && delim != name.npos)) {
     ++delim;
     auto delim_2 = name.find_first_of('.', delim);
-    if (delim_2 != name.npos) {
-      part = name.substr(delim, delim_2);
-      return Channel(part);
-    }
-  } else if (part.compare("instrument"_sv) == 0) {
+    auto length = delim_2 == name.npos ? name.npos : (delim_2 - delim);
+    return name.substr(delim, length);
+  } else if (ROQ_UNLIKELY(part.compare("instrument"_sv) == 0 && delim != name.npos)) {
     ++delim;
     auto delim_2 = name.find_first_of('.', delim);
-    if (delim_2 != name.npos) {
-      auto name_2 = name.substr(delim, delim_2);
-      DLOG(INFO)(R"(DEBUG: name="{}", name_2="{}")"_fmt, name, name_2);
-      if (name_2.compare("state"_sv) == 0)
-        return Channel::INSTRUMENT_STATE;
-    }
+    auto length = delim_2 == name.npos ? name.npos : (delim_2 - delim);
+    auto name_2 = name.substr(delim, length);
+    if (name_2.compare("state"_sv) == 0)
+      return "instrument_state"_sv;
   } else {
-    return Channel(part);
+    return part;
   }
-  return Channel::UNKNOWN;
+  return ""_sv;
+}
+
+static_assert(get_token("ticker"_sv) == "ticker"_sv);
+static_assert(get_token("ticker.123"_sv) == "ticker"_sv);
+static_assert(get_token("user.changes"_sv) == "changes"_sv);
+static_assert(get_token("user.changes.123"_sv) == "changes"_sv);
+static_assert(get_token("instrument.state"_sv) == "instrument_state"_sv);
+static_assert(get_token("instrument.state.123"_sv) == "instrument_state"_sv);
+
+Channel parse_channel(const std::string_view &name) {
+  auto token = get_token(name);
+  if (ROQ_UNLIKELY(token.empty()))
+    return Channel::UNKNOWN;
+  return Channel(token);
 }
 
 template <typename T>
