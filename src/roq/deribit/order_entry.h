@@ -48,12 +48,12 @@ namespace deribit {
 class OrderEntry final : public core::net::Manager::Handler {
  public:
   struct Handler {
+    virtual void operator()(const server::Trace<StreamUpdate> &) = 0;
     virtual void operator()(const server::Trace<ExternalLatency> &) = 0;
-    virtual void operator()(const server::Trace<OrderManagerStatus> &) = 0;
     virtual void operator()(const server::Trace<TradeUpdate> &, bool is_last, uint8_t user_id) = 0;
   };
 
-  OrderEntry(Handler &, core::io::Context &, uint16_t stream_id, Security &, Shared &, bool master);
+  OrderEntry(Handler &, core::io::Context &, uint16_t stream_id, Security &, Shared &);
 
   OrderEntry(const OrderEntry &) = delete;
   OrderEntry(OrderEntry &&) = delete;
@@ -119,7 +119,6 @@ class OrderEntry final : public core::net::Manager::Handler {
   // config
   const uint16_t stream_id_;
   const std::string name_;
-  const bool master_;
   // connection
   core::net::TcpConnectionFactory connection_factory_;
   core::net::Manager connection_;

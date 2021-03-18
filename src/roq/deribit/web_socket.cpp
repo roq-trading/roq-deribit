@@ -5,6 +5,7 @@
 #include <algorithm>
 
 #include "roq/compare.h"
+#include "roq/mask.h"
 #include "roq/update.h"
 
 #include "roq/core/metrics/factory.h"
@@ -22,7 +23,14 @@ namespace roq {
 namespace deribit {
 
 namespace {
-static const auto CONNECTION = "ws"_sv;
+static const auto NAME = "ws"_sv;
+static const auto SUPPORTS = Mask{
+    SupportType::TOP_OF_BOOK,
+};
+static const auto SUPPORTS_MASTER = Mask{
+    SUPPORTS,
+    SupportType::MARKET_STATUS,
+};
 
 struct create_metrics final : public core::metrics::Factory {
   explicit create_metrics(const std::string_view &group, const std::string_view &function)
@@ -32,17 +40,16 @@ struct create_metrics final : public core::metrics::Factory {
 
 WebSocket::WebSocket(
     Handler &handler, core::io::Context &context, uint16_t stream_id, Shared &shared, bool master)
-    : handler_(handler), stream_id_(stream_id),
-      name_(roq::format("{}:{}"_fmt, stream_id_, CONNECTION)), master_(master),
-      connection_(
-          *this,
-          context,
-          core::URI(Flags::ws_uri()),
-          std::string_view(),  // query
-          Flags::ws_ping_freq(),
-          Flags::decode_buffer_size(),  // XXX need read buffer size
-          Flags::encode_buffer_size(),
-          []() { return std::string(); }),
+    : handler_(handler), stream_id_(stream_id), name_(roq::format("{}:{}"_fmt, stream_id_, NAME)),
+      master_(master), connection_(
+                           *this,
+                           context,
+                           core::URI(Flags::ws_uri()),
+                           {},  // query
+                           Flags::ws_ping_freq(),
+                           Flags::decode_buffer_size(),  // XXX need read buffer size
+                           Flags::encode_buffer_size(),
+                           []() { return std::string(); }),
       decode_buffer_(Flags::decode_buffer_size()),
       counter_{
           .disconnect = create_metrics(name_, "disconnect"_sv),
@@ -147,12 +154,16 @@ void WebSocket::operator()(const core::web::Socket::Text &text) {
 void WebSocket::operator()(GatewayStatus status) {
   if (update(status_, status)) {
     server::TraceInfo trace_info;
-    MarketDataStatus market_data_status{
+    StreamUpdate stream_update{
         .stream_id = stream_id_,
+        .type = StreamType::WEB_SOCKET,
+        .supports = (master_ ? SUPPORTS_MASTER : SUPPORTS).get(),
+        .account = {},
+        .priority = Priority::PRIMARY,
         .status = status_,
     };
-    LOG(INFO)("market_data_status={}"_fmt, market_data_status);
-    server::create_trace_and_dispatch(trace_info, market_data_status, handler_);
+    LOG(INFO)("stream_update={}"_fmt, stream_update);
+    server::create_trace_and_dispatch(trace_info, stream_update, handler_);
   }
 }
 

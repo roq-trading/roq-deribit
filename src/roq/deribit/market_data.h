@@ -54,8 +54,8 @@ class MarketData final : public core::net::Manager::Handler {
   };
 
   struct Handler {
+    virtual void operator()(const server::Trace<StreamUpdate> &) = 0;
     virtual void operator()(const server::Trace<ExternalLatency> &) = 0;
-    virtual void operator()(const server::Trace<MarketDataStatus> &) = 0;
     virtual void operator()(const server::Trace<ReferenceData> &, bool is_last) = 0;
     virtual void operator()(const server::Trace<MarketByPriceUpdate> &, bool is_last) = 0;
     virtual void operator()(const server::Trace<TradeSummary> &, bool is_last) = 0;

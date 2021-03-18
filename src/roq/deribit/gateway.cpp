@@ -29,14 +29,12 @@ static auto create_order_entry(
     core::io::Context &context,
     uint16_t &stream_id,
     T &security,
-    Shared &shared,
-    const std::string_view &master_account) {
+    Shared &shared) {
   absl::flat_hash_map<std::string, std::unique_ptr<OrderEntry>> result;
   for (auto &iter : security) {
-    auto master = iter.first == master_account;
     result.try_emplace(
         iter.first,
-        std::make_unique<OrderEntry>(gateway, context, ++stream_id, *iter.second, shared, master));
+        std::make_unique<OrderEntry>(gateway, context, ++stream_id, *iter.second, shared));
   }
   return result;
 }
@@ -80,8 +78,7 @@ static auto create_market_data(
 Gateway::Gateway(server::Dispatcher &dispatcher, const Config &config)
     : dispatcher_(dispatcher), master_account_(config.get_master_account()),
       security_(create_security(config)), shared_(dispatcher_),
-      order_entry_(
-          create_order_entry(*this, context_, stream_id_, security_, shared_, master_account_)),
+      order_entry_(create_order_entry(*this, context_, stream_id_, security_, shared_)),
       drop_copy_(create_drop_copy(*this, context_, stream_id_, security_, shared_)),
       web_socket_(create_web_socket(*this, context_, stream_id_, shared_)),
       market_data_(
@@ -166,12 +163,12 @@ void Gateway::operator()(metrics::Writer &writer) {
     (*iter)(writer);
 }
 
-void Gateway::operator()(const server::Trace<ExternalLatency> &event) {
+void Gateway::operator()(const server::Trace<StreamUpdate> &event) {
   dispatcher_(event);
 }
 
-void Gateway::operator()(const server::Trace<MarketDataStatus> &event) {
-  dispatcher_(event, true);
+void Gateway::operator()(const server::Trace<ExternalLatency> &event) {
+  dispatcher_(event);
 }
 
 void Gateway::operator()(const server::Trace<ReferenceData> &event, bool is_last) {
@@ -196,10 +193,6 @@ void Gateway::operator()(const server::Trace<TradeSummary> &event, bool is_last)
 
 void Gateway::operator()(const server::Trace<StatisticsUpdate> &event, bool is_last) {
   dispatcher_(event, is_last);
-}
-
-void Gateway::operator()(const server::Trace<OrderManagerStatus> &event) {
-  dispatcher_(event, true);
 }
 
 void Gateway::operator()(const server::Trace<TradeUpdate> &event, bool is_last, uint8_t user_id) {

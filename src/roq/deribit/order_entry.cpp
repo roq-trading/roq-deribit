@@ -2,6 +2,7 @@
 
 #include "roq/deribit/order_entry.h"
 
+#include "roq/mask.h"
 #include "roq/update.h"
 
 #include "roq/core/back_emplacer.h"
@@ -24,7 +25,16 @@ namespace deribit {
 
 namespace {
 static const auto LOGOUT_RESPONSE = "LOGOUT"_sv;  // XXX
-static const auto CONNECTION = "om"_sv;
+
+static const auto NAME = "om"_sv;
+static const auto SUPPORTS = Mask{
+    SupportType::CREATE_ORDER,
+    SupportType::MODIFY_ORDER,
+    SupportType::CANCEL_ORDER,
+    SupportType::ORDER_ACK,
+    SupportType::ORDER,
+    SupportType::TRADE,
+};
 
 struct create_metrics final : public core::metrics::Factory {
   explicit create_metrics(const std::string_view &group, const std::string_view &function)
@@ -48,13 +58,11 @@ OrderEntry::OrderEntry(
     core::io::Context &context,
     uint16_t stream_id,
     Security &security,
-    Shared &shared,
-    bool master)
+    Shared &shared)
     : handler_(handler), stream_id_(stream_id),
-      name_(roq::format("{}:{}:{}"_fmt, stream_id_, CONNECTION, security.get_account())),
-      master_(master), connection_factory_(context, Flags::fix_uri()),
-      connection_(*this, connection_factory_), encode_buffer_(Flags::encode_buffer_size()),
-      decode_buffer_(Flags::decode_buffer_size()),
+      name_(roq::format("{}:{}:{}"_fmt, stream_id_, NAME, security.get_account())),
+      connection_factory_(context, Flags::fix_uri()), connection_(*this, connection_factory_),
+      encode_buffer_(Flags::encode_buffer_size()), decode_buffer_(Flags::decode_buffer_size()),
       counter_{
           .disconnect = create_metrics(name_, "disconnect"_sv),
       },
@@ -220,13 +228,16 @@ void OrderEntry::operator()(const core::net::Manager::Read &read) {
 void OrderEntry::operator()(GatewayStatus status) {
   if (update(status_, status)) {
     server::TraceInfo trace_info;
-    OrderManagerStatus order_manager_status{
+    StreamUpdate stream_update{
         .stream_id = stream_id_,
+        .type = StreamType::FIX,
+        .supports = SUPPORTS.get(),
         .account = security_.get_account(),
+        .priority = Priority::PRIMARY,
         .status = status_,
     };
-    LOG(INFO)("order_manager_status={}"_fmt, order_manager_status);
-    server::create_trace_and_dispatch(trace_info, order_manager_status, handler_);
+    LOG(INFO)("stream_update={}"_fmt, stream_update);
+    server::create_trace_and_dispatch(trace_info, stream_update, handler_);
   }
 }
 

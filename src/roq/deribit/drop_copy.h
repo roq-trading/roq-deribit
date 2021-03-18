@@ -42,8 +42,8 @@ class DropCopy final : public core::web::Socket::Handler,
                        public json::Parser::Handler {
  public:
   struct Handler {
+    virtual void operator()(const server::Trace<StreamUpdate> &) = 0;
     virtual void operator()(const server::Trace<ExternalLatency> &) = 0;
-    virtual void operator()(const server::Trace<OrderManagerStatus> &) = 0;
     virtual void operator()(const server::Trace<FundsUpdate> &, bool is_last) = 0;
     virtual void operator()(const server::Trace<PositionUpdate> &, bool is_last) = 0;
   };

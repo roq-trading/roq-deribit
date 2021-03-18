@@ -5,6 +5,7 @@
 #include <algorithm>
 
 #include "roq/compare.h"
+#include "roq/mask.h"
 #include "roq/update.h"
 
 #include "roq/core/back_emplacer.h"
@@ -29,7 +30,17 @@ namespace deribit {
 
 namespace {
 static const auto LOGOUT_RESPONSE = "LOGOUT"_sv;  // XXX
-static const auto CONNECTION = "md"_sv;
+
+static const auto NAME = "md"_sv;
+static const auto SUPPORTS = Mask{
+    SupportType::MARKET_BY_PRICE,
+    SupportType::TRADE_SUMMARY,
+    SupportType::STATISTICS,
+};
+static const auto SUPPORTS_MASTER = Mask{
+    SUPPORTS,
+    SupportType::REFERENCE_DATA,
+};
 
 struct create_metrics final : public core::metrics::Factory {
   explicit create_metrics(const std::string_view &group, const std::string_view &function)
@@ -86,10 +97,10 @@ MarketData::MarketData(
     Security &security,
     Shared &shared,
     bool master)
-    : handler_(handler), stream_id_(stream_id),
-      name_(roq::format("{}:{}"_fmt, stream_id_, CONNECTION)), master_(master),
-      connection_factory_(context, Flags::fix_uri()), connection_(*this, connection_factory_),
-      encode_buffer_(Flags::encode_buffer_size()), decode_buffer_(Flags::decode_buffer_size()),
+    : handler_(handler), stream_id_(stream_id), name_(roq::format("{}:{}"_fmt, stream_id_, NAME)),
+      master_(master), connection_factory_(context, Flags::fix_uri()),
+      connection_(*this, connection_factory_), encode_buffer_(Flags::encode_buffer_size()),
+      decode_buffer_(Flags::decode_buffer_size()),
       counter_{
           .disconnect = create_metrics(name_, "disconnect"_sv),
       },
@@ -180,12 +191,16 @@ void MarketData::operator()(const core::net::Manager::Read &read) {
 void MarketData::operator()(GatewayStatus status) {
   if (update(status_, status)) {
     server::TraceInfo trace_info;
-    MarketDataStatus market_data_status{
+    StreamUpdate stream_update{
         .stream_id = stream_id_,
+        .type = StreamType::FIX,
+        .supports = (master_ ? SUPPORTS_MASTER : SUPPORTS).get(),
+        .account = {},
+        .priority = Priority::PRIMARY,
         .status = status_,
     };
-    LOG(INFO)("market_data_status={}"_fmt, market_data_status);
-    server::create_trace_and_dispatch(trace_info, market_data_status, handler_);
+    LOG(INFO)("stream_update={}"_fmt, stream_update);
+    server::create_trace_and_dispatch(trace_info, stream_update, handler_);
   }
 }
 
