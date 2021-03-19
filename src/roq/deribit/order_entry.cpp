@@ -396,7 +396,6 @@ void OrderEntry::operator()(
     server::TraceInfo trace_info;
     ExternalLatency external_latency{
         .stream_id = stream_id_,
-        .name = name_,
         .latency = latency,
     };
     server::create_trace_and_dispatch(trace_info, external_latency, handler_);
