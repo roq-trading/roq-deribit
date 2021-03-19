@@ -100,6 +100,8 @@ inline TradingStatus map(State state) {
       return TradingStatus::OPEN;
     case State::OPEN:
       return TradingStatus::OPEN;
+    case State::CREATED:  // XXX don't know how to map
+      break;
   }
   return TradingStatus::UNDEFINED;
 }

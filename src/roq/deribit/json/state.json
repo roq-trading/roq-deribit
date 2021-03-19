@@ -3,6 +3,7 @@
 "type": "enum",
 "values": [
 	{ "name": "closed" },
-	{ "name": "open" }
+	{ "name": "open" },
+	{ "name": "created" }
 ]
 }
