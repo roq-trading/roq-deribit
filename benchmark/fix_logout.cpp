@@ -21,7 +21,7 @@ void BM_fix_logout_parse_message(benchmark::State &state) {
     core::fix::Reader<core::fix::Version::FIX_44>::dispatch(
         [&](const core::fix::message_t &message) {
           auto logout = fix::Logout::create(message);
-          if (logout.text.empty() == false)
+          if (!logout.text.empty())
             ++processed;
         },
         MESSAGE,

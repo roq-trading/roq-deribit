@@ -104,7 +104,7 @@ void Parser::dispatch(
   auto message = core::json::get<std::string_view>(value);
   auto channel = Channel::UNDEFINED;
   bool dispatched = false;
-  for (int i = {}; i < 2 && dispatched == false; ++i) {
+  for (int i = {}; i < 2 && !dispatched; ++i) {
     core::json::Parser parser(message);
     auto root = parser.root();
     for (auto [key, value] : std::get<core::json::object_t>(root)) {

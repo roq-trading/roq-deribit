@@ -130,7 +130,7 @@ void MarketData::operator()(const Event<Stop> &) {
 }
 
 void MarketData::operator()(const Event<Timer> &event) {
-  if (connection_.refresh(event.value.now) == false)
+  if (!connection_.refresh(event.value.now))
     return;
   if (status_ == GatewayStatus::READY && next_heartbeat_ <= event.value.now) {
     assert(Flags::fix_ping_freq().count() > 0);
@@ -446,7 +446,7 @@ void MarketData::operator()(
   // note! get clock *before* any logging (avoid latency)
   auto now = core::get_system_clock();
   VLOG(3)(R"(event(header={}, heartbeat={}))"_fmt, header, heartbeat);
-  if (heartbeat.test_req_id.empty() == false) {
+  if (!heartbeat.test_req_id.empty()) {
     auto send_time = core::from_chars<uint64_t>(heartbeat.test_req_id);
     auto latency =
         std::chrono::duration_cast<std::chrono::nanoseconds>(now - decltype(now){send_time}) /
