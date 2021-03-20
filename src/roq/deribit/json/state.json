@@ -4,6 +4,7 @@
 "values": [
 	{ "name": "closed" },
 	{ "name": "open" },
-	{ "name": "created" }
+	{ "name": "created" },
+	{ "name": "settled" }
 ]
 }
