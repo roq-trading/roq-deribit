@@ -83,12 +83,12 @@ Gateway::Gateway(server::Dispatcher &dispatcher, const Config &config)
       web_socket_(create_web_socket(*this, context_, stream_id_, shared_)),
       market_data_(
           create_market_data(*this, context_, ++stream_id_, *security_[master_account_], shared_)) {
-  LOG_IF(WARNING, !Flags::fix_cancel_on_disconnect())
-  ("Orders will *NOT* be cancelled on disconnect"_sv);
+  if (ROQ_UNLIKELY(!Flags::fix_cancel_on_disconnect()))
+    log::warn("Orders will *NOT* be cancelled on disconnect"_sv);
 }
 
 void Gateway::operator()(const Event<Start> &event) {
-  LOG(INFO)("Starting the gateway..."_sv);
+  log::info("Starting the gateway..."_sv);
   for (auto &[_, iter] : order_entry_)
     (*iter)(event);
   for (auto &[_, iter] : drop_copy_)
@@ -100,7 +100,7 @@ void Gateway::operator()(const Event<Start> &event) {
 }
 
 void Gateway::operator()(const Event<Stop> &event) {
-  LOG(INFO)("Stopping the gateway..."_sv);
+  log::info("Stopping the gateway..."_sv);
   for (auto &iter : market_data_)
     (*iter)(event);
   for (auto &iter : web_socket_)

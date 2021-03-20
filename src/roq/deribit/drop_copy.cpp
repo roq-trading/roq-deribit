@@ -144,7 +144,7 @@ void DropCopy::operator()(GatewayStatus status) {
         .priority = Priority::PRIMARY,
         .status = status_,
     };
-    LOG(INFO)("stream_update={}"_fmt, stream_update);
+    log::info("stream_update={}"_fmt, stream_update);
     server::create_trace_and_dispatch(trace_info, stream_update, handler_);
   }
 }
@@ -293,15 +293,15 @@ void DropCopy::parse(const std::string_view &message) {
     try {
       core::jsonrpc::Parser::dispatch(*this, message);
     } catch (std::exception &e) {
-      LOG(WARNING)(R"(message="{}")"_fmt, message);
-      LOG(FATAL)(R"("ERROR what="{}")"_fmt, e.what());
+      log::warn(R"(message="{}")"_fmt, message);
+      log::fatal(R"("ERROR what="{}")"_fmt, e.what());
     }
   });
 }
 
 void DropCopy::operator()(const core::jsonrpc::Error &error, core::json::value_t &value) {
   json::Error error_2(value);
-  LOG(FATAL)(R"(error={}, id="{}")"_fmt, error_2, error.id);
+  log::fatal(R"(error={}, id="{}")"_fmt, error_2, error.id);
 }
 
 void DropCopy::operator()(const core::jsonrpc::Result &result, core::json::value_t &value) {
@@ -311,7 +311,7 @@ void DropCopy::operator()(const core::jsonrpc::Result &result, core::json::value
     case json::RequestType::UNDEFINED:
       break;
     case json::RequestType::UNKNOWN:
-      DLOG(FATAL)(R"(DEBUG: Unknown request_type="{}")"_fmt, result.id);
+      log::fatal(R"(DEBUG: Unknown request_type="{}")"_fmt, result.id);
       break;
     case json::RequestType::AUTH: {
       json::Auth auth(value);
@@ -342,7 +342,7 @@ void DropCopy::operator()(const core::jsonrpc::Result &result, core::json::value
       break;
     }
     default:
-      LOG(FATAL)("Unexpected: request_type={}"_fmt, request_type);
+      log::fatal("Unexpected: request_type={}"_fmt, request_type);
   }
 }
 
@@ -354,7 +354,7 @@ void DropCopy::operator()(
     case json::Method::UNDEFINED:
       break;
     case json::Method::UNKNOWN:
-      DLOG(FATAL)(R"(DEBUG: Unknown method="{}")"_fmt, notification.method);
+      log::fatal(R"(DEBUG: Unknown method="{}")"_fmt, notification.method);
       break;
     case json::Method::SUBSCRIPTION: {
       core::json::Buffer buffer(decode_buffer_);
@@ -366,26 +366,26 @@ void DropCopy::operator()(
 
 void DropCopy::operator()(const json::Auth &auth, const server::TraceInfo &) {
   profile_.auth([&]() {
-    VLOG(1)(R"(auth={})"_fmt, auth);
+    log::trace_1(R"(auth={})"_fmt, auth);
     (*this)(GatewayStatus::DOWNLOADING);
     download_.begin();
   });
 }
 
 void DropCopy::operator()(const server::Trace<json::PlatformState> &) {
-  LOG(FATAL)("Unexpected"_sv);
+  log::fatal("Unexpected"_sv);
 }
 
 void DropCopy::operator()(const server::Trace<json::InstrumentState> &) {
-  LOG(FATAL)("Unexpected"_sv);
+  log::fatal("Unexpected"_sv);
 }
 
 void DropCopy::operator()(const server::Trace<json::Quote> &) {
-  LOG(FATAL)("Unexpected"_sv);
+  log::fatal("Unexpected"_sv);
 }
 
 void DropCopy::operator()(const server::Trace<json::Ticker> &) {
-  LOG(FATAL)("Unexpected"_sv);
+  log::fatal("Unexpected"_sv);
 }
 
 void DropCopy::operator()(const server::Trace<json::Portfolio> &event) {
@@ -429,7 +429,7 @@ void DropCopy::operator()(const server::Trace<json::Positions> &event) {
 }
 
 void DropCopy::operator()(const server::Trace<json::Trade> &event, [[maybe_unused]] bool is_last) {
-  DLOG(INFO)("DEBUG: trade={}"_fmt, event.value);
+  log::debug("DEBUG: trade={}"_fmt, event.value);
   // do nothing?
 }
 

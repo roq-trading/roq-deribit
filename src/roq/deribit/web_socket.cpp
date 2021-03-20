@@ -161,7 +161,7 @@ void WebSocket::operator()(GatewayStatus status) {
         .priority = Priority::PRIMARY,
         .status = status_,
     };
-    LOG(INFO)("stream_update={}"_fmt, stream_update);
+    log::info("stream_update={}"_fmt, stream_update);
     server::create_trace_and_dispatch(trace_info, stream_update, handler_);
   }
 }
@@ -297,15 +297,15 @@ void WebSocket::parse(const std::string_view &message) {
     try {
       core::jsonrpc::Parser::dispatch(*this, message);
     } catch (std::exception &e) {
-      LOG(WARNING)(R"(message="{}")"_fmt, message);
-      LOG(FATAL)(R"("ERROR what="{}")"_fmt, e.what());
+      log::warn(R"(message="{}")"_fmt, message);
+      log::fatal(R"("ERROR what="{}")"_fmt, e.what());
     }
   });
 }
 
 void WebSocket::operator()(const core::jsonrpc::Error &error, core::json::value_t &value) {
   json::Error error_2(value);
-  LOG(FATAL)(R"(error={}, id="{}")"_fmt, error_2, error.id);
+  log::fatal(R"(error={}, id="{}")"_fmt, error_2, error.id);
 }
 
 void WebSocket::operator()(const core::jsonrpc::Result &result, core::json::value_t &value) {
@@ -315,7 +315,7 @@ void WebSocket::operator()(const core::jsonrpc::Result &result, core::json::valu
     case json::RequestType::UNDEFINED:
       break;
     case json::RequestType::UNKNOWN:
-      DLOG(FATAL)(R"(DEBUG: Unknown request_type="{}")"_fmt, result.id);
+      log::fatal(R"(DEBUG: Unknown request_type="{}")"_fmt, result.id);
       break;
     case json::RequestType::GET_CURRENCIES: {
       core::json::Buffer buffer(decode_buffer_);
@@ -335,7 +335,7 @@ void WebSocket::operator()(const core::jsonrpc::Result &result, core::json::valu
     case json::RequestType::SUBSCRIBE_TICKER:
       break;
     default:
-      LOG(FATAL)("Unexpected: request_type={}"_fmt, request_type);
+      log::fatal("Unexpected: request_type={}"_fmt, request_type);
   }
 }
 
@@ -347,7 +347,7 @@ void WebSocket::operator()(
     case json::Method::UNDEFINED:
       break;
     case json::Method::UNKNOWN:
-      DLOG(FATAL)(R"(DEBUG: Unknown method="{}")"_fmt, notification.method);
+      log::fatal(R"(DEBUG: Unknown method="{}")"_fmt, notification.method);
       break;
     case json::Method::SUBSCRIPTION: {
       core::json::Buffer buffer(decode_buffer_);
@@ -358,12 +358,12 @@ void WebSocket::operator()(
 }
 
 void WebSocket::operator()(const json::Auth &, const server::TraceInfo &) {
-  LOG(FATAL)("Unexpected"_sv);
+  log::fatal("Unexpected"_sv);
 }
 
 void WebSocket::operator()(const json::Currencies &currencies, const server::TraceInfo &) {
   profile_.currencies([&]() {
-    VLOG(1)(R"(currencies={})"_fmt, currencies);
+    log::trace_1(R"(currencies={})"_fmt, currencies);
     auto &data = currencies.data;
     std::vector<std::string> currencies;
     if (!data.empty())
@@ -385,7 +385,7 @@ void WebSocket::operator()(const json::Currencies &currencies, const server::Tra
 
 void WebSocket::operator()(const json::Instruments &instruments, const server::TraceInfo &) {
   profile_.instruments([&]() {
-    VLOG(1)(R"(instruments={})"_fmt, instruments);
+    log::trace_1(R"(instruments={})"_fmt, instruments);
     auto &data = instruments.data;
     std::vector<std::string> symbols;
     if (!data.empty())
@@ -408,7 +408,7 @@ void WebSocket::operator()(const json::Instruments &instruments, const server::T
 }
 
 void WebSocket::operator()(const json::Positions &, const server::TraceInfo &) {
-  LOG(FATAL)("Unexpected"_sv);
+  log::fatal("Unexpected"_sv);
 }
 
 void WebSocket::operator()(const server::Trace<json::PlatformState> &) {
@@ -422,7 +422,7 @@ void WebSocket::operator()(const server::Trace<json::Quote> &event) {
   profile_.quote([&]() {
     auto &trace_info = event.trace_info;
     auto &quote = event.value;
-    VLOG(2)(R"(quote={})"_fmt, quote);
+    log::trace_2(R"(quote={})"_fmt, quote);
     auto &layer = top_of_book_[quote.instrument_name];
     TopOfBook top_of_book = {
         .stream_id = stream_id_,
@@ -448,7 +448,7 @@ void WebSocket::operator()(const server::Trace<json::Ticker> &event) {
   profile_.ticker([&]() {
     auto &trace_info = event.trace_info;
     auto &ticker = event.value;
-    VLOG(2)(R"(ticker={})"_fmt, ticker);
+    log::trace_2(R"(ticker={})"_fmt, ticker);
     auto trading_status = json::map(ticker.state);
     auto &item = trading_status_[ticker.instrument_name];
     if (update(item, trading_status)) {
@@ -464,11 +464,11 @@ void WebSocket::operator()(const server::Trace<json::Ticker> &event) {
 }
 
 void WebSocket::operator()(const server::Trace<json::Portfolio> &) {
-  LOG(FATAL)("Unexpected"_sv);
+  log::fatal("Unexpected"_sv);
 }
 
 void WebSocket::operator()(const server::Trace<json::Changes> &) {
-  LOG(FATAL)("Unexpected"_sv);
+  log::fatal("Unexpected"_sv);
 }
 
 }  // namespace deribit

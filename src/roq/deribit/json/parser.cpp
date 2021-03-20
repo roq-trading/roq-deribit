@@ -111,16 +111,16 @@ void Parser::dispatch(
       auto field = Field(key);
       switch (field) {
         case Field::UNDEFINED:
-          LOG(FATAL)("Unexpected"_sv);
+          log::fatal("Unexpected"_sv);
           break;
         case Field::UNKNOWN:
-          DLOG(FATAL)(R"(Unknown key="{}")"_fmt, key);
+          log::fatal(R"(Unknown key="{}")"_fmt, key);
           break;
         case Field::CHANNEL: {
           auto name = std::get<std::string_view>(value);
           channel = parse_channel(name);
-          LOG_IF(WARNING, channel == Channel::UNKNOWN)
-          (R"(Can't parse channel="{}")"_fmt, name);
+          if (ROQ_UNLIKELY(channel == Channel::UNKNOWN))
+            log::warn(R"(Can't parse channel="{}")"_fmt, name);
           break;
         }
         case Field::DATA:
@@ -129,7 +129,7 @@ void Parser::dispatch(
               case Channel::UNDEFINED:
                 break;  // not ready
               case Channel::UNKNOWN:
-                DLOG(FATAL)("Unknown channel"_sv);
+                log::fatal("Unknown channel"_sv);
                 break;
               // public
               case Channel::PLATFORM_STATE:
@@ -165,8 +165,8 @@ void Parser::dispatch(
   }
   if (dispatched)
     return;
-  LOG(WARNING)(R"(message="{}")"_fmt, message);
-  LOG(FATAL)("Unexpected"_sv);
+  log::warn(R"(message="{}")"_fmt, message);
+  log::fatal("Unexpected"_sv);
 }
 
 }  // namespace json
