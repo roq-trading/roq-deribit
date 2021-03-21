@@ -8,13 +8,13 @@ using namespace roq;
 using namespace roq::deribit;
 
 namespace {
-static const char *MESSAGE =
+const auto MESSAGE =
     "8=FIX.4.4\0019=245\00135=AP\00149=DERIBITSERVER\00156=ROQ_TRAD"
     "ING\00134=5\00152=20190920-17:10:28.595\001721=3221109\001710="
     "roq-pos-003\001724=0\001728=0\001702=1\001703=TQ\001704=0\0017"
     "05=0\00155=BTC-27SEP19\001854=1\001231=10.0000\001883=10184.50"
     "00\001730=0.0000\00195=11\00196=0.0;0.0;0.0\001100088=0.0000\001"
-    "100089=0.00000000\00110=026\001";
+    "100089=0.00000000\00110=026\001"_sv;
 }  // namespace
 
 // cppcheck-suppress constParameterCallback
@@ -29,8 +29,8 @@ void BM_fix_position_report_parse_message(benchmark::State &state) {
           if (!position_report.pos_req_id.empty())
             ++processed;
         },
-        MESSAGE,
-        std::strlen(MESSAGE));
+        MESSAGE.data(),
+        MESSAGE.size());
   }
 }
 

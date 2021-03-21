@@ -15,15 +15,15 @@ void BM_fix_order_cancel_request_create_message(benchmark::State &state) {
   uint64_t processed = 0;
   for (auto _ : state) {
     fix::OrderCancelRequest order_cancel_request = {
-        .cl_ord_id = "123",
-        .orig_cl_ord_id = "123",
+        .cl_ord_id = "123"_sv,
+        .orig_cl_ord_id = "123"_sv,
     };
     core::fix::Writer writer(
         buffer,
         core::fix::Version::FIX_44,
         decltype(order_cancel_request)::msg_type,
-        "ROQ_TRADING",
-        "DERIBITSERVER",
+        "ROQ_TRADING"_sv,
+        "DERIBITSERVER"_sv,
         msg_seq_num,
         sending_time);
     auto message = order_cancel_request.encode(writer);

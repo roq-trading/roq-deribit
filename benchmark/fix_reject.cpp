@@ -8,10 +8,10 @@ using namespace roq;
 using namespace roq::deribit;
 
 namespace {
-static const char *MESSAGE =
+const auto MESSAGE =
     "8=FIX.4.4\0019=98\00135=3\00149=DERIBITSERVER\00156=ROQ_TRADIN"
     "G\00134=5\00152=20190908-08:47:31.543\00145=5\001372=AN\00158="
-    "not_implemented\00110=092\001";
+    "not_implemented\00110=092\001"_sv;
 }  // namespace
 
 // cppcheck-suppress constParameterCallback
@@ -24,8 +24,8 @@ void BM_fix_reject_parse_message(benchmark::State &state) {
           if (!reject.text.empty())
             ++processed;
         },
-        MESSAGE,
-        std::strlen(MESSAGE));
+        MESSAGE.data(),
+        MESSAGE.size());
   }
 }
 

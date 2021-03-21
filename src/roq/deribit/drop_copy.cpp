@@ -215,7 +215,7 @@ void DropCopy::subscribe_portfolios(const roq::span<std::string> &currencies) {
       R"(}},)"
       R"("id":"{}")"
       R"(}})"_fmt,
-      roq::join(currencies, R"(,user.portfolio.)"_sv),
+      roq::join(currencies, R"(","user.portfolio.)"_sv),
       request_type.as_raw_text());
   connection_.send_text(message);
 }
@@ -366,7 +366,7 @@ void DropCopy::operator()(
 
 void DropCopy::operator()(const json::Auth &auth, const server::TraceInfo &) {
   profile_.auth([&]() {
-    log::trace_1(R"(auth={})"_fmt, auth);
+    log::trace_1("auth={}"_fmt, auth);
     (*this)(GatewayStatus::DOWNLOADING);
     download_.begin();
   });

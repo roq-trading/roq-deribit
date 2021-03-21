@@ -205,19 +205,21 @@ void MarketData::operator()(GatewayStatus status) {
 }
 
 void MarketData::send_logon() {
-  auto heart_bt_int = std::chrono::duration_cast<std::chrono::seconds>(Flags::fix_ping_freq());
+  auto heart_bt_int =
+      std::chrono::duration_cast<std::chrono::seconds>(Flags::fix_ping_freq()).count();
   auto sending_time = core::get_realtime_clock();
   auto raw_data = security_.create_raw_data(
       std::chrono::duration_cast<std::chrono::milliseconds>(sending_time));
   auto password = security_.create_password(raw_data);
+  auto cancel_on_disconnect = Flags::fix_cancel_on_disconnect();
   fix::Logon logon{
-      .heart_bt_int = static_cast<uint16_t>(heart_bt_int.count()),
-      .raw_data_length = static_cast<uint32_t>(raw_data.length()),
+      .heart_bt_int = core::convert(heart_bt_int),
+      .raw_data_length = core::convert(raw_data.length()),
       .raw_data = raw_data,
       .username = security_.get_access_key(),
       .password = password,
       .use_wordsafe_tags = false,
-      .cancel_on_disconnect = Flags::fix_cancel_on_disconnect(),
+      .cancel_on_disconnect = cancel_on_disconnect,
       .deribit_app_id = {},
       .deribit_app_sig = {},
       .deribit_sequential = false,
@@ -348,8 +350,8 @@ void MarketData::subscribe(const roq::span<std::string> &symbols) {
         .subscription_request_type = core::fix::SubscriptionRequestType::SNAPSHOT_UPDATES,
         .market_depth = market_depth,
         .md_update_type = md_update_type,
-        .deribit_trade_amount = {},     // none
-        .deribit_since_timestamp = {},  // none
+        .deribit_trade_amount = {},     // 0=none
+        .deribit_since_timestamp = {},  // 0=none
         .no_md_entry_types = md_entry_types,
         .no_related_sym = {related_sym.data(), length},
     };
@@ -436,7 +438,7 @@ void MarketData::parse_helper(const core::fix::message_t &message) {
       break;
     }
     default:
-      log::warn(R"(Unexpected msg_type={})"_fmt, message.header.msg_type);
+      log::warn("Unexpected msg_type={}"_fmt, message.header.msg_type);
       break;
   }
 }
@@ -445,7 +447,7 @@ void MarketData::operator()(
     const core::fix::header_t &header, const fix::Heartbeat &heartbeat, const server::TraceInfo &) {
   // note! get clock *before* any logging (avoid latency)
   auto now = core::get_system_clock();
-  log::trace_3(R"(event(header={}, heartbeat={}))"_fmt, header, heartbeat);
+  log::trace_3("event(header={}, heartbeat={})"_fmt, header, heartbeat);
   if (!heartbeat.test_req_id.empty()) {
     auto send_time = core::from_chars<uint64_t>(heartbeat.test_req_id);
     auto latency =
@@ -463,14 +465,14 @@ void MarketData::operator()(
 
 void MarketData::operator()(
     const core::fix::header_t &header, const fix::Logon &logon, const server::TraceInfo &) {
-  log::trace_1(R"(event(header={}, logon={}))"_fmt, header, logon);
+  log::trace_1("event(header={}, logon={})"_fmt, header, logon);
   (*this)(GatewayStatus::DOWNLOADING);
   download_.begin();
 }
 
 void MarketData::operator()(
     const core::fix::header_t &header, const fix::Logout &logout, const server::TraceInfo &) {
-  log::warn(R"(event(header={}, logout={}))"_fmt, header, logout);
+  log::warn("event(header={}, logout={})"_fmt, header, logout);
   (*this)(GatewayStatus::LOGGED_OUT);
   ready_ = false;
   // note! mandated, must send a logout response
@@ -483,7 +485,7 @@ void MarketData::operator()(
     const core::fix::header_t &header,
     const fix::ResendRequest &resend_request,
     const server::TraceInfo &) {
-  log::warn(R"(event(header={}, resend_request={}))"_fmt, header, resend_request);
+  log::warn("event(header={}, resend_request={})"_fmt, header, resend_request);
   log::info("closing connection"_sv);
   connection_.close();
 }
@@ -492,7 +494,7 @@ void MarketData::operator()(
     const core::fix::header_t &header,
     const fix::TestRequest &test_request,
     const server::TraceInfo &) {
-  log::trace_1(R"(event(header={}, test_request={}))"_fmt, header, test_request);
+  log::trace_1("event(header={}, test_request={})"_fmt, header, test_request);
   send_heartbeat(test_request.test_req_id);
 }
 
@@ -500,13 +502,13 @@ void MarketData::operator()(
     const core::fix::header_t &header,
     const fix::SecurityList &security_list,
     const server::TraceInfo &trace_info) {
-  log::trace_2(R"(event(header={}, security_list={}))"_fmt, header, security_list);
+  log::trace_2("event(header={}, security_list={})"_fmt, header, security_list);
   if (security_list.no_related_sym.size() > 0u) {
     size_t counter = {};
     std::vector<std::string> symbols;
     symbols.reserve(security_list.no_related_sym.size());
     for (auto &instrument : security_list.no_related_sym) {
-      log::trace_1(R"(instrument={})"_fmt, instrument);
+      log::trace_1("instrument={}"_fmt, instrument);
       auto &symbol = instrument.symbol;
       if (shared_.discard_symbol(symbol))
         continue;
@@ -541,7 +543,7 @@ void MarketData::operator()(
       server::create_trace_and_dispatch(trace_info, reference_data, handler_, true);
       ++counter;
     }
-    log::info(R"(- securities: {} (/{}))"_fmt, counter, security_list.no_related_sym.size());
+    log::info("- securities: {} (/{})"_fmt, counter, security_list.no_related_sym.size());
     if (!symbols.empty()) {
       SymbolsUpdate symbols_update{
           .symbols = symbols,
@@ -556,7 +558,7 @@ void MarketData::operator()(
     const core::fix::header_t &header,
     const fix::SecurityStatus &security_status,
     const server::TraceInfo &) {
-  log::trace_2(R"(event(header={}, security_status={}))"_fmt, header, security_status);
+  log::trace_2("event(header={}, security_status={})"_fmt, header, security_status);
   // XXX should we use it or not?
 }
 
@@ -565,7 +567,7 @@ void MarketData::operator()(
     const fix::MarketDataIncrementalRefresh &market_data_incremental_refresh,
     const server::TraceInfo &trace_info) {
   log::trace_3(
-      R"(event(header={}, market_data_incremental_refresh={}))"_fmt,
+      "event(header={}, market_data_incremental_refresh={})"_fmt,
       header,
       market_data_incremental_refresh);
 
@@ -623,7 +625,7 @@ void MarketData::operator()(
         });
         break;
       default:
-        log::warn(R"(unsupported: {})"_fmt, item);
+        log::warn("unsupported: {}"_fmt, item);
         break;
     }
   }
@@ -669,7 +671,7 @@ void MarketData::operator()(
     const fix::MarketDataRequestReject &market_data_request_reject,
     const server::TraceInfo &) {
   log::warn(
-      R"(event(header={}, market_data_request_reject={}))"_fmt, header, market_data_request_reject);
+      "event(header={}, market_data_request_reject={})"_fmt, header, market_data_request_reject);
   log::fatal("Unexpected"_sv);  // don't know how to continue
 }
 
@@ -678,7 +680,7 @@ void MarketData::operator()(
     const fix::MarketDataSnapshotFullRefresh &market_data_snapshot_full_refresh,
     const server::TraceInfo &trace_info) {
   log::trace_3(
-      R"(event(header={}, market_data_snapshot_full_refresh={}))"_fmt,
+      "event(header={}, market_data_snapshot_full_refresh={})"_fmt,
       header,
       market_data_snapshot_full_refresh);
   core::back_emplacer bids(shared_.bids), asks(shared_.asks);
@@ -714,7 +716,7 @@ void MarketData::operator()(
         });
         break;
       default:
-        log::warn(R"(unsupported: {})"_fmt, item);
+        log::warn("unsupported: {}"_fmt, item);
         break;
     }
   }
@@ -772,15 +774,15 @@ void MarketData::check(const core::fix::header_t &header) {
   if (ROQ_UNLIKELY(current != expected)) {
     if (expected < current) {
       log::warn(
-          R"(*** SEQUENCE GAP *** )"
-          R"(current={} previous={} distance={})"_fmt,
+          "*** SEQUENCE GAP *** "
+          "current={} previous={} distance={}"_fmt,
           current,
           inbound_.msg_seq_num,
           current - inbound_.msg_seq_num);
     } else {
       log::warn(
-          R"(*** SEQUENCE REPLAY *** )"
-          R"(current={} previous={} distance={})"_fmt,
+          "*** SEQUENCE REPLAY *** "
+          "current={} previous={} distance={}"_fmt,
           current,
           inbound_.msg_seq_num,
           inbound_.msg_seq_num - current);

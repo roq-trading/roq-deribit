@@ -10,7 +10,7 @@ using namespace roq;
 using namespace roq::deribit;
 
 namespace {
-const char *message =
+const auto message =
     "8=FIX.4.4\0019=60307\00135=y\00149=DERIBITSERVER\00156=ROQ_TRA"
     "DING\00134=2\00152=20190907-17:00:36.162\001320=123\001322=123"
     "\001560=0\001146=285\00155=BTC-27SEP19-10500-P\001107=option\001"
@@ -1222,7 +1222,7 @@ const char *message =
     "231=1\00155=BTC-DERIBIT-INDEX\001107=Deribit Bitcoin Price Ind"
     "ex\001167=INDEX\00115=USD\0012576=2\001969=0.0100\00155=ETH-DE"
     "RIBIT-INDEX\001107=Deribit Ethereum Price Index\001167=INDEX\001"
-    "15=USD\0012576=2\001969=0.0100\00110=083\001";
+    "15=USD\0012576=2\001969=0.0100\00110=083\001"_sv;
 }  // namespace
 
 TEST(fix_security_list, parse_message) {
@@ -1246,8 +1246,8 @@ TEST(fix_security_list, parse_message) {
         EXPECT_EQ(security_list.deribit_use_wordsafe_tags, false);
         */
       },
-      message,
-      std::strlen(message));
-  EXPECT_EQ(bytes, std::strlen(message));
+      message.data(),
+      message.size());
+  EXPECT_EQ(bytes, message.size());
   EXPECT_EQ(results, 1);
 }

@@ -8,7 +8,7 @@ using namespace roq;
 using namespace roq::deribit;
 
 TEST(json_currency, parse_message) {
-  const char *message =
+  const auto message =
       R"({)"
       R"("jsonrpc":"2.0",)"
       R"("result":[)"
@@ -36,13 +36,13 @@ TEST(json_currency, parse_message) {
       R"("usOut":1566823367410971,)"
       R"("usDiff":800,)"
       R"("testnet":true)"
-      R"(})";
+      R"(})"_sv;
 
   int results = 0, currencies = 0;
   core::json::Parser parser(message);
   auto root = parser.root();
   for (auto [key, value] : std::get<core::json::object_t>(root)) {
-    if (key.compare("result") == 0) {
+    if (key.compare("result"_sv) == 0) {
       ++results;
       for (auto iter : std::get<core::json::array_t>(value)) {
         ++currencies;
@@ -53,18 +53,18 @@ TEST(json_currency, parse_message) {
             EXPECT_DOUBLE_EQ(currency.min_withdrawal_fee, 0.0001);
             EXPECT_EQ(currency.min_confirmations, uint32_t{4});
             EXPECT_EQ(currency.fee_precision, uint32_t{4});
-            EXPECT_EQ(currency.currency_long, "Ethereum");
-            EXPECT_EQ(currency.currency, "ETH");
-            EXPECT_EQ(currency.coin_type, "ETHER");
+            EXPECT_EQ(currency.currency_long, "Ethereum"_sv);
+            EXPECT_EQ(currency.currency, "ETH"_sv);
+            EXPECT_EQ(currency.coin_type, "ETHER"_sv);
             break;
           case 2:
             EXPECT_DOUBLE_EQ(currency.withdrawal_fee, 0.0001);
             EXPECT_DOUBLE_EQ(currency.min_withdrawal_fee, 0.0001);
             EXPECT_EQ(currency.min_confirmations, uint32_t{1});
             EXPECT_EQ(currency.fee_precision, uint32_t{4});
-            EXPECT_EQ(currency.currency_long, "Bitcoin");
-            EXPECT_EQ(currency.currency, "BTC");
-            EXPECT_EQ(currency.coin_type, "BITCOIN");
+            EXPECT_EQ(currency.currency_long, "Bitcoin"_sv);
+            EXPECT_EQ(currency.currency, "BTC"_sv);
+            EXPECT_EQ(currency.coin_type, "BITCOIN"_sv);
             break;
         }
       }

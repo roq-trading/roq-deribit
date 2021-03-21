@@ -10,10 +10,10 @@ using namespace roq;
 using namespace roq::deribit;
 
 TEST(fix_reject, parse_message) {
-  const char *message =
+  const auto message =
       "8=FIX.4.4\0019=98\00135=3\00149=DERIBITSERVER\00156=ROQ_TRADIN"
       "G\00134=5\00152=20190908-08:47:31.543\00145=5\001372=AN\00158="
-      "not_implemented\00110=092\001";
+      "not_implemented\00110=092\001"_sv;
   int results = 0;
   auto bytes = core::fix::Reader<core::fix::Version::FIX_44>::dispatch(
       [&](const core::fix::message_t &message) {
@@ -21,11 +21,11 @@ TEST(fix_reject, parse_message) {
         EXPECT_EQ(message.header.msg_type, core::fix::MsgType::REJECT);
         auto reject = fix::Reject::create(message);
         EXPECT_EQ(reject.ref_seq_num, uint64_t{5});
-        EXPECT_EQ(reject.ref_msg_type, "AN");
-        EXPECT_EQ(reject.text, "not_implemented");
+        EXPECT_EQ(reject.ref_msg_type, "AN"_sv);
+        EXPECT_EQ(reject.text, "not_implemented"_sv);
       },
-      message,
-      std::strlen(message));
-  EXPECT_EQ(bytes, std::strlen(message));
+      message.data(),
+      message.size());
+  EXPECT_EQ(bytes, message.size());
   EXPECT_EQ(results, 1);
 }

@@ -15,22 +15,22 @@ void BM_fix_order_cancel_replace_request_create_message(
   uint64_t processed = 0;
   for (auto _ : state) {
     fix::OrderCancelReplaceRequest order_cancel_replace_request = {
-        .orig_cl_ord_id = "123",
-        .cl_ord_id = "123",
+        .orig_cl_ord_id = "123"_sv,
+        .cl_ord_id = "123"_sv,
         .transact_time = sending_time,
         .side = core::fix::Side::BUY,
         .order_qty = 1.0,
         .ord_type = core::fix::OrdType::LIMIT,
         .price = 1.0,
-        .symbol = "BTC-27SEP19",
+        .symbol = "BTC-27SEP19"_sv,
         .exec_inst = {},
     };
     core::fix::Writer writer(
         buffer,
         core::fix::Version::FIX_44,
         decltype(order_cancel_replace_request)::msg_type,
-        "ROQ_TRADING",
-        "DERIBITSERVER",
+        "ROQ_TRADING"_sv,
+        "DERIBITSERVER"_sv,
         msg_seq_num,
         sending_time);
     auto message = order_cancel_replace_request.encode(writer);

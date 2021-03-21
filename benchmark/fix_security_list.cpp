@@ -8,7 +8,7 @@ using namespace roq;
 using namespace roq::deribit;
 
 namespace {
-static const char *MESSAGE =
+const auto MESSAGE =
     "8=FIX.4.4\0019=60307\00135=y\00149=DERIBITSERVER\00156=ROQ_TRA"
     "DING\00134=2\00152=20190907-17:00:36.162\001320=123\001322=123"
     "\001560=0\001146=285\00155=BTC-27SEP19-10500-P\001107=option\001"
@@ -1220,7 +1220,7 @@ static const char *MESSAGE =
     "231=1\00155=BTC-DERIBIT-INDEX\001107=Deribit Bitcoin Price Ind"
     "ex\001167=INDEX\00115=USD\0012576=2\001969=0.0100\00155=ETH-DE"
     "RIBIT-INDEX\001107=Deribit Ethereum Price Index\001167=INDEX\001"
-    "15=USD\0012576=2\001969=0.0100\00110=083\001";
+    "15=USD\0012576=2\001969=0.0100\00110=083\001"_sv;
 }  // namespace
 
 // cppcheck-suppress constParameterCallback
@@ -1235,8 +1235,8 @@ void BM_fix_security_list_parse_message(benchmark::State &state) {
           if (security_list.no_related_sym.size() > 0)
             ++processed;
         },
-        MESSAGE,
-        std::strlen(MESSAGE));
+        MESSAGE.data(),
+        MESSAGE.size());
   }
 }
 

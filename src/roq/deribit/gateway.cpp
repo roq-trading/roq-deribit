@@ -83,7 +83,7 @@ Gateway::Gateway(server::Dispatcher &dispatcher, const Config &config)
       web_socket_(create_web_socket(*this, context_, stream_id_, shared_)),
       market_data_(
           create_market_data(*this, context_, ++stream_id_, *security_[master_account_], shared_)) {
-  if (ROQ_UNLIKELY(!Flags::fix_cancel_on_disconnect()))
+  if (!Flags::fix_cancel_on_disconnect())
     log::warn("Orders will *NOT* be cancelled on disconnect"_sv);
 }
 

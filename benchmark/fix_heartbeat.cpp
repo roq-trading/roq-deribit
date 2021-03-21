@@ -8,10 +8,10 @@ using namespace roq;
 using namespace roq::deribit;
 
 namespace {
-static const char *MESSAGE =
+const auto MESSAGE =
     "8=FIX.4.4\0019=89\00135=0\00149=DERIBITSERVER\00156=ROQ_TRADIN"
     "G\00134=2\00152=20190908-08:47:31.503\001112=anybody in there?"
-    "\00110=084\001";
+    "\00110=084\001"_sv;
 }  // namespace
 
 // cppcheck-suppress constParameterCallback
@@ -24,8 +24,8 @@ void BM_fix_heartbeat_parse_message(benchmark::State &state) {
           if (heartbeat.test_req_id.empty())
             ++processed;
         },
-        MESSAGE,
-        std::strlen(MESSAGE));
+        MESSAGE.data(),
+        MESSAGE.size());
   }
 }
 

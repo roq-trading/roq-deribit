@@ -8,7 +8,7 @@ using namespace roq;
 using namespace roq::deribit;
 
 namespace {
-static const char *MESSAGE =
+const auto MESSAGE =
     "8=FIX.4.4\0019=8056\00135=W\00149=DERIBITSERVER\00156=ROQ_TRAD"
     "ING\00134=3\00152=20190907-17:49:56.581\00155=BTC-27SEP19\0012"
     "31=10.0000\001100087=11767531\001100090=10594.7700\001746=9474"
@@ -164,7 +164,7 @@ static const char *MESSAGE =
     "\001269=1\001270=15000.0000\001271=3294.0000\001272=20190907-1"
     "7:49:56.053\001269=1\001270=30000.0000\001271=112.0000\001272="
     "20190907-17:49:56.053\001269=1\001270=100000.0000\001271=9364."
-    "0000\001272=20190907-17:49:56.053\00110=037\001";
+    "0000\001272=20190907-17:49:56.053\00110=037\001"_sv;
 }  // namespace
 
 void BM_fix_market_data_snapshot_full_refresh_parse_message(
@@ -179,8 +179,8 @@ void BM_fix_market_data_snapshot_full_refresh_parse_message(
           if (market_data.no_md_entries.size() > 0)
             ++processed;
         },
-        MESSAGE,
-        std::strlen(MESSAGE));
+        MESSAGE.data(),
+        MESSAGE.size());
   }
 }
 

@@ -8,10 +8,10 @@ using namespace roq;
 using namespace roq::deribit;
 
 namespace {
-static const char *MESSAGE =
+const auto MESSAGE =
     "8=FIX.4.4\0019=90\00135=5\00149=DERIBITSERVER\00156=ROQ_TRADIN"
     "G\00134=1\00152=20190907-16:56:43.398\00158=invalid_credential"
-    "s\00110=166\001";
+    "s\00110=166\001"_sv;
 }  // namespace
 
 // cppcheck-suppress constParameterCallback
@@ -24,8 +24,8 @@ void BM_fix_logout_parse_message(benchmark::State &state) {
           if (!logout.text.empty())
             ++processed;
         },
-        MESSAGE,
-        std::strlen(MESSAGE));
+        MESSAGE.data(),
+        MESSAGE.size());
   }
 }
 

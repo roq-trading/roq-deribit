@@ -378,7 +378,7 @@ void OrderEntry::parse_helper(const core::fix::message_t &message) {
       break;
     }
     default:
-      log::warn(R"(Unexpected msg_type={})"_fmt, message.header.msg_type);
+      log::warn("Unexpected msg_type={}"_fmt, message.header.msg_type);
       break;
   }
 }
@@ -387,7 +387,7 @@ void OrderEntry::operator()(
     const core::fix::header_t &header, const fix::Heartbeat &heartbeat, const server::TraceInfo &) {
   // note! get clock *before* any logging (avoid latency)
   auto now = core::get_system_clock();
-  log::trace_3(R"(event(header={}, heartbeat={}))"_fmt, header, heartbeat);
+  log::trace_3("event(header={}, heartbeat={})"_fmt, header, heartbeat);
   if (!heartbeat.test_req_id.empty()) {
     auto send_time = core::from_chars<uint64_t>(heartbeat.test_req_id);
     auto latency =
@@ -405,14 +405,14 @@ void OrderEntry::operator()(
 
 void OrderEntry::operator()(
     const core::fix::header_t &header, const fix::Logon &logon, const server::TraceInfo &) {
-  log::trace_1(R"(event(header={}, logon={}))"_fmt, header, logon);
+  log::trace_1("event(header={}, logon={})"_fmt, header, logon);
   (*this)(GatewayStatus::DOWNLOADING);
   download_.begin();
 }
 
 void OrderEntry::operator()(
     const core::fix::header_t &header, const fix::Logout &logout, const server::TraceInfo &) {
-  log::warn(R"(event(header={}, logout={}))"_fmt, header, logout);
+  log::warn("event(header={}, logout={})"_fmt, header, logout);
   ready_ = false;
   // note! mandated, must send a logout response
   send_logout(LOGOUT_RESPONSE);
@@ -424,7 +424,7 @@ void OrderEntry::operator()(
     const core::fix::header_t &header,
     const fix::ResendRequest &resend_request,
     const server::TraceInfo &) {
-  log::warn(R"(event(header={}, resend_request={}))"_fmt, header, resend_request);
+  log::warn("event(header={}, resend_request={})"_fmt, header, resend_request);
   log::info("closing connection"_sv);
   connection_.close();
 }
@@ -433,7 +433,7 @@ void OrderEntry::operator()(
     const core::fix::header_t &header,
     const fix::TestRequest &test_request,
     const server::TraceInfo &) {
-  log::trace_1(R"(event(header={}, test_request={}))"_fmt, header, test_request);
+  log::trace_1("event(header={}, test_request={})"_fmt, header, test_request);
   send_heartbeat(test_request.test_req_id);
 }
 
@@ -535,7 +535,7 @@ void OrderEntry::operator()(
     const core::fix::header_t &header,
     const fix::ExecutionReport &execution_report,
     const server::TraceInfo &trace_info) {
-  log::trace_3(R"(event(header={}, execution_report={}))"_fmt, header, execution_report);
+  log::trace_3("event(header={}, execution_report={})"_fmt, header, execution_report);
   // download begin?
   switch (execution_report.mass_status_req_type) {
     case core::fix::MassStatusReqType::ORDERS:
@@ -619,7 +619,7 @@ void OrderEntry::operator()(
     const core::fix::header_t &header,
     const fix::OrderCancelReject &order_cancel_reject,
     const server::TraceInfo &trace_info) {
-  log::trace_3(R"(event(header={}, order_cancel_reject={}))"_fmt, header, order_cancel_reject);
+  log::trace_3("event(header={}, order_cancel_reject={})"_fmt, header, order_cancel_reject);
   server::OMS_Lookup order_lookup{
       .symbol = {},
       .side = Side::UNDEFINED,
@@ -652,8 +652,8 @@ void OrderEntry::operator()(
 
 void OrderEntry::operator()(
     const core::fix::header_t &header, const fix::Reject &reject, const server::TraceInfo &) {
-  log::trace_3(R"(event(header={}, reject={}))"_fmt, header, reject);
-  log::warn(R"(reject={})"_fmt, reject);
+  log::trace_3("event(header={}, reject={})"_fmt, header, reject);
+  log::warn("reject={}"_fmt, reject);
   if (reject.session_reject_reason.compare("99"_sv) == 0 &&
       reject.text.compare("connection_too_slow"_sv) == 0) {
     connection_.close();
@@ -688,15 +688,15 @@ void OrderEntry::check(const core::fix::header_t &header) {
   if (ROQ_UNLIKELY(current != expected)) {
     if (expected < current) {
       log::warn(
-          R"(*** SEQUENCE GAP *** )"
-          R"(current={} previous={} distance={})"_fmt,
+          "*** SEQUENCE GAP *** "
+          "current={} previous={} distance={}"_fmt,
           current,
           inbound_.msg_seq_num,
           current - inbound_.msg_seq_num);
     } else {
       log::warn(
-          R"(*** SEQUENCE REPLAY *** )"
-          R"(current={} previous={} distance={})"_fmt,
+          "*** SEQUENCE REPLAY *** "
+          "current={} previous={} distance={}"_fmt,
           current,
           inbound_.msg_seq_num,
           inbound_.msg_seq_num - current);

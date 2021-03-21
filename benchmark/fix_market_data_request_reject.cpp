@@ -8,10 +8,10 @@ using namespace roq;
 using namespace roq::deribit;
 
 namespace {
-static const char *MESSAGE =
+const auto MESSAGE =
     "8=FIX.4.4\0019=102\00135=Y\00149=DERIBITSERVER\00156=ROQ_TRADI"
     "NG\00134=4\00152=20190908-10:54:45.738\001262=123\00158=unknow"
-    "n Symbol: BTC-XXX\00110=152\001";
+    "n Symbol: BTC-XXX\00110=152\001"_sv;
 }  // namespace
 
 // cppcheck-suppress constParameterCallback
@@ -24,8 +24,8 @@ void BM_fix_market_data_request_reject_parse_message(benchmark::State &state) {
           if (!market_data_request_reject.text.empty())
             ++processed;
         },
-        MESSAGE,
-        std::strlen(MESSAGE));
+        MESSAGE.data(),
+        MESSAGE.size());
   }
 }
 

@@ -8,12 +8,12 @@ using namespace roq;
 using namespace roq::deribit;
 
 namespace {
-static const char *MESSAGE =
+const auto MESSAGE =
     "8=FIX.4.4\0019=211\00135=A\00149=DERIBITSERVER\00156=ROQ_TRADI"
     "NG\00134=1\00152=20190907-16:45:58.192\001108=10\00195=58\0019"
     "6=1567874758168.y4/hA3i6qxm4yVL+3N7IrGcINVAFMLFhy4l7ATSehxc=\001"
     "553=5MP40u9h\001554=j/tVe9IsQuc+RjegscnHcJ6czMVNM1+ib7vjbY3UV0"
-    "M=\0019001=Y\00110=115\001";
+    "M=\0019001=Y\00110=115\001"_sv;
 }  // namespace
 
 // cppcheck-suppress constParameterCallback
@@ -26,8 +26,8 @@ void BM_fix_logon_parse_message(benchmark::State &state) {
           if (result.heart_bt_int > 0)
             ++processed;
         },
-        MESSAGE,
-        std::strlen(MESSAGE));
+        MESSAGE.data(),
+        MESSAGE.size());
   }
 }
 
@@ -45,8 +45,8 @@ void BM_fix_logon_create_message(benchmark::State &state) {
         .heart_bt_int = uint16_t{10},
         .raw_data_length = static_cast<uint32_t>(raw_data.size()),
         .raw_data = raw_data.data(),
-        .username = "5MP40u9h",
-        .password = "j/tVe9IsQuc+RjegscnHcJ6czMVNM1+ib7vjbY3UV0M=",
+        .username = "5MP40u9h"_sv,
+        .password = "j/tVe9IsQuc+RjegscnHcJ6czMVNM1+ib7vjbY3UV0M="_sv,
         .use_wordsafe_tags = false,
         .cancel_on_disconnect = true,
         .deribit_app_id = {},
@@ -56,8 +56,8 @@ void BM_fix_logon_create_message(benchmark::State &state) {
         buffer,
         core::fix::Version::FIX_44,
         decltype(logon)::msg_type,
-        "ROQ_TRADING",
-        "DERIBITSERVER",
+        "ROQ_TRADING"_sv,
+        "DERIBITSERVER"_sv,
         msg_seq_num,
         sending_time);
     auto message = logon.encode(writer);
