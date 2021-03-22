@@ -4,12 +4,12 @@
 
 #include <algorithm>
 
-#include "roq/compare.h"
-#include "roq/mask.h"
-#include "roq/update.h"
+#include "roq/utils/compare.h"
+#include "roq/utils/mask.h"
+#include "roq/utils/safe_cast.h"
+#include "roq/utils/update.h"
 
 #include "roq/core/back_emplacer.h"
-#include "roq/core/convert.h"
 #include "roq/core/debug.h"
 
 #include "roq/core/charconv/datetime.h"
@@ -32,12 +32,12 @@ namespace {
 static const auto LOGOUT_RESPONSE = "LOGOUT"_sv;  // XXX
 
 static const auto NAME = "md"_sv;
-static const auto SUPPORTS = Mask{
+static const auto SUPPORTS = utils::Mask{
     SupportType::MARKET_BY_PRICE,
     SupportType::TRADE_SUMMARY,
     SupportType::STATISTICS,
 };
-static const auto SUPPORTS_MASTER = Mask{
+static const auto SUPPORTS_MASTER = utils::Mask{
     SUPPORTS,
     SupportType::REFERENCE_DATA,
 };
@@ -59,10 +59,10 @@ static void validate(const T &value) {
       break;
     case core::fix::MDUpdateAction::NEW:
     case core::fix::MDUpdateAction::CHANGE:
-      assert(compare(value.md_entry_size, 0.0) > 0);
+      assert(utils::compare(value.md_entry_size, 0.0) > 0);
       break;
     case core::fix::MDUpdateAction::DELETE:
-      assert(compare(value.md_entry_size, 0.0) == 0);
+      assert(utils::compare(value.md_entry_size, 0.0) == 0);
       break;
     case core::fix::MDUpdateAction::DELETE_THRU:
     case core::fix::MDUpdateAction::DELETE_FROM:
@@ -189,7 +189,7 @@ void MarketData::operator()(const core::net::Manager::Read &read) {
 }
 
 void MarketData::operator()(GatewayStatus status) {
-  if (update(status_, status)) {
+  if (utils::update(status_, status)) {
     server::TraceInfo trace_info;
     StreamUpdate stream_update{
         .stream_id = stream_id_,
@@ -213,8 +213,8 @@ void MarketData::send_logon() {
   auto password = security_.create_password(raw_data);
   auto cancel_on_disconnect = Flags::fix_cancel_on_disconnect();
   fix::Logon logon{
-      .heart_bt_int = core::convert(heart_bt_int),
-      .raw_data_length = core::convert(raw_data.length()),
+      .heart_bt_int = utils::safe_cast(heart_bt_int),
+      .raw_data_length = utils::safe_cast(raw_data.length()),
       .raw_data = raw_data,
       .username = security_.get_access_key(),
       .password = password,
@@ -535,10 +535,10 @@ void MarketData::operator()(
           .strike_price = instrument.strike_price,
           .underlying = instrument.underlying_symbol,
           .time_zone = {},
-          .issue_date = core::convert(instrument.issue_date),
+          .issue_date = utils::safe_cast(instrument.issue_date),
           .settlement_date = {},
-          .expiry_datetime = core::convert(expiry_datetime),
-          .expiry_datetime_utc = core::convert(expiry_datetime_utc),
+          .expiry_datetime = utils::safe_cast(expiry_datetime),
+          .expiry_datetime_utc = utils::safe_cast(expiry_datetime_utc),
       };
       server::create_trace_and_dispatch(trace_info, reference_data, handler_, true);
       ++counter;

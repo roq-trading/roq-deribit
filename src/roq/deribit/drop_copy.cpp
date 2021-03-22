@@ -2,9 +2,9 @@
 
 #include "roq/deribit/drop_copy.h"
 
-#include "roq/compare.h"
-#include "roq/mask.h"
-#include "roq/update.h"
+#include "roq/utils/compare.h"
+#include "roq/utils/mask.h"
+#include "roq/utils/update.h"
 
 #include "roq/core/metrics/factory.h"
 
@@ -22,7 +22,7 @@ namespace deribit {
 
 namespace {
 static const auto NAME = "ex"_sv;
-static const auto SUPPORTS = Mask{
+static const auto SUPPORTS = utils::Mask{
     SupportType::FUNDS,
     SupportType::POSITION,
 };
@@ -134,7 +134,7 @@ void DropCopy::operator()(const core::web::Socket::Text &text) {
 }
 
 void DropCopy::operator()(GatewayStatus status) {
-  if (update(status_, status)) {
+  if (utils::update(status_, status)) {
     server::TraceInfo trace_info;
     StreamUpdate stream_update{
         .stream_id = stream_id_,

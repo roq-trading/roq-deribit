@@ -2,11 +2,11 @@
 
 #include "roq/deribit/order_entry.h"
 
-#include "roq/mask.h"
-#include "roq/update.h"
+#include "roq/utils/mask.h"
+#include "roq/utils/safe_cast.h"
+#include "roq/utils/update.h"
 
 #include "roq/core/back_emplacer.h"
-#include "roq/core/convert.h"
 #include "roq/core/debug.h"
 
 #include "roq/core/metrics/factory.h"
@@ -27,7 +27,7 @@ namespace {
 static const auto LOGOUT_RESPONSE = "LOGOUT"_sv;  // XXX
 
 static const auto NAME = "om"_sv;
-static const auto SUPPORTS = Mask{
+static const auto SUPPORTS = utils::Mask{
     SupportType::CREATE_ORDER,
     SupportType::MODIFY_ORDER,
     SupportType::CANCEL_ORDER,
@@ -144,7 +144,7 @@ void OrderEntry::operator()(
   fix::OrderCancelReplaceRequest order_cancel_replace_request{
       .orig_cl_ord_id = order.external_order_id,
       .cl_ord_id = request_id,
-      .transact_time = core::convert(order.update_time_utc),
+      .transact_time = utils::safe_cast(order.update_time_utc),
       .side = side,
       .order_qty = modify_order.quantity,
       .ord_type = ord_type,
@@ -226,7 +226,7 @@ void OrderEntry::operator()(const core::net::Manager::Read &read) {
 }
 
 void OrderEntry::operator()(GatewayStatus status) {
-  if (update(status_, status)) {
+  if (utils::update(status_, status)) {
     server::TraceInfo trace_info;
     StreamUpdate stream_update{
         .stream_id = stream_id_,
