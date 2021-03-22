@@ -44,7 +44,9 @@ void Config::dispatch(server::Config::Handler &handler) const {
     handler(iter.second);
   for (auto &user : users)
     handler(user);
-  server::Settings settings{};
+  server::Settings settings{
+      .mbp_allow_fractional_tick_size = true,
+  };
   handler(settings);
 }
 
