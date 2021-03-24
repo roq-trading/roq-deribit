@@ -5,6 +5,7 @@
 	{ "name": "closed" },
 	{ "name": "open" },
 	{ "name": "created" },
-	{ "name": "settled" }
+	{ "name": "settled" },
+	{ "name": "terminated" }
 ]
 }
