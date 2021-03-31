@@ -35,7 +35,7 @@ BENCHMARK(BM_fix_logon_parse_message);
 
 // cppcheck-suppress constParameterCallback
 void BM_fix_logon_create_message(benchmark::State &state) {
-  core::utils::Buffer buffer(4096);
+  core::Buffer buffer(4096);
   auto msg_seq_num = uint64_t{0};
   auto sending_time = std::chrono::seconds{1568702810};
   std::string_view raw_data = "1567874758168.y4/hA3i6qxm4yVL+3N7IrGcINVAFMLFhy4l7ATSehxc=";

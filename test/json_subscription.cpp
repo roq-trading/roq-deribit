@@ -104,7 +104,7 @@ TEST(json_subscription, parse_message) {
                        R"("ask_iv":500.0)"
                        R"(})"
                        R"(})"_sv;
-  core::utils::Buffer buffer(4096);
+  core::Buffer buffer(4096);
   core::json::Buffer buffer_(buffer);
   core::json::Parser parser(message);
   auto root = parser.root();

@@ -9,7 +9,7 @@ using namespace roq::deribit;
 
 // cppcheck-suppress constParameterCallback
 void BM_fix_new_order_single_create_message(benchmark::State &state) {
-  core::utils::Buffer buffer(4096);
+  core::Buffer buffer(4096);
   auto msg_seq_num = uint64_t{0};
   auto sending_time = std::chrono::seconds{1568702810};
   uint64_t processed = 0;

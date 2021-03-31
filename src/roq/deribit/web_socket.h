@@ -124,7 +124,7 @@ class WebSocket final : public core::web::Socket::Handler,
   // web socket
   core::web::Socket connection_;
   // buffers
-  core::utils::Buffer decode_buffer_;
+  core::Buffer decode_buffer_;
   // metrics
   struct {
     core::metrics::Counter disconnect;

@@ -167,7 +167,7 @@ TEST(fix_market_data_snapshot_full_refresh, parse_message) {
       "7:49:56.053\001269=1\001270=30000.0000\001271=112.0000\001272="
       "20190907-17:49:56.053\001269=1\001270=100000.0000\001271=9364."
       "0000\001272=20190907-17:49:56.053\00110=037\001"_sv;
-  core::utils::Buffer buffer(1024 * 1024);
+  core::Buffer buffer(1024 * 1024);
   core::fix::Buffer decode_buffer(buffer);
   int results = 0;
   auto bytes = core::fix::Reader<core::fix::Version::FIX_44>::dispatch(

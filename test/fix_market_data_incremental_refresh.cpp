@@ -16,7 +16,7 @@ TEST(fix_market_data_incremental_refresh, parse_message_1) {
       "100087=10831047\001100090=10517.4400\001746=9465994.0000\00126"
       "2=123\001268=1\001279=0\001269=1\001270=10523.0000\001271=1000"
       ".0000\001272=20190907-15:37:00.896\00110=241\001"_sv;
-  core::utils::Buffer buffer(4096);
+  core::Buffer buffer(4096);
   core::fix::Buffer decode_buffer(buffer);
   int results = 0;
   auto bytes = core::fix::Reader<core::fix::Version::FIX_44>::dispatch(
@@ -62,7 +62,7 @@ TEST(fix_market_data_incremental_refresh, parse_message_2) {
       "0520.0000\001271=27.0000\001272=20190907-15:37:00.378\00110000"
       "9=18254685\00154=1\00137=0\001198=0\00139=2\00144=10445.9300\001"
       "58=2889358\00110=087\001"_sv;
-  core::utils::Buffer buffer(4096);
+  core::Buffer buffer(4096);
   core::fix::Buffer decode_buffer(buffer);
   int results = 0;
   auto bytes = core::fix::Reader<core::fix::Version::FIX_44>::dispatch(
@@ -156,7 +156,7 @@ TEST(fix_market_data_incremental_refresh, parse_message_3) {
       "\001268=1\001279=0\001269=2\001270=170.1500\001271=22.0000\001"
       "272=20190928-15:48:12.830\001100009=ETH-1192275\00154=1\00137="
       "0\001198=0\00139=1\00144=170.3600\00158=586940\00110=030\001"_sv;
-  core::utils::Buffer buffer(4096);
+  core::Buffer buffer(4096);
   core::fix::Buffer decode_buffer(buffer);
   int results = 0;
   auto bytes = core::fix::Reader<core::fix::Version::FIX_44>::dispatch(

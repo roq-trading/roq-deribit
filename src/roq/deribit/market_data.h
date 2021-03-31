@@ -142,8 +142,8 @@ class MarketData final : public core::net::Manager::Handler {
   core::net::TcpConnectionFactory connection_factory_;
   core::net::Manager connection_;
   // buffers
-  core::utils::Buffer encode_buffer_;
-  core::utils::Buffer decode_buffer_;
+  core::Buffer encode_buffer_;
+  core::Buffer decode_buffer_;
   core::stack::Buffer<char, 32u> stack_buffer_;
   // metrics
   struct {

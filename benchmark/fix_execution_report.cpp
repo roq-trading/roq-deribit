@@ -20,7 +20,7 @@ const auto MESSAGE =
 
 // cppcheck-suppress constParameterCallback
 void BM_fix_execution_report_parse_message(benchmark::State &state) {
-  core::utils::Buffer buffer(8192);
+  core::Buffer buffer(8192);
   uint64_t processed = 0;
   for (auto _ : state) {
     core::fix::Buffer decode_buffer(buffer);

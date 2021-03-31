@@ -11,7 +11,7 @@ using namespace roq;
 using namespace roq::deribit;
 
 TEST(fix_order_cancel_replace_request, create_message) {
-  core::utils::Buffer buffer(4096);
+  core::Buffer buffer(4096);
   auto msg_seq_num = uint64_t{0};
   auto sending_time = std::chrono::seconds{1568702810};
   fix::OrderCancelReplaceRequest order_cancel_replace_request = {
