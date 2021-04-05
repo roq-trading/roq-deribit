@@ -104,9 +104,9 @@ void OrderEntry::operator()(
   auto &message_info = event.message_info;
   auto &create_order = event.value;
   if (std::isfinite(create_order.stop_price))
-    throw std::runtime_error("stop_price not supported"_s);
+    throw RuntimeErrorException("stop_price not supported"_sv);
   if (std::isfinite(create_order.max_show_quantity))
-    throw std::runtime_error("max_show_quantity not supported"_s);
+    throw RuntimeErrorException("max_show_quantity not supported"_sv);
   auto side = core::fix::map(create_order.side);
   auto exec_inst = fix::map(create_order.execution_instruction);
   auto ord_type = core::fix::map(create_order.order_type);

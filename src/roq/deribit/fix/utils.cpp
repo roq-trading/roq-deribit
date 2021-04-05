@@ -49,7 +49,7 @@ std::string_view map(ExecutionInstruction execution_instruction) {
     case ExecutionInstruction::DO_NOT_INCREASE:
       return "E"_sv;
     default:
-      throw std::runtime_error("Not a supported execution instruction"_s);
+      throw RuntimeErrorException("Not a supported execution instruction"_sv);
   }
 }
 
