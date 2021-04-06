@@ -132,7 +132,7 @@ void MarketData::operator()(const Event<Stop> &) {
 void MarketData::operator()(const Event<Timer> &event) {
   if (!connection_.refresh(event.value.now))
     return;
-  if (status_ == GatewayStatus::READY && next_heartbeat_ <= event.value.now) {
+  if (status_ == ConnectionStatus::READY && next_heartbeat_ <= event.value.now) {
     assert(Flags::fix_ping_freq().count() > 0);
     next_heartbeat_ = event.value.now + Flags::fix_ping_freq();
     send_test_request(core::get_system_clock());
@@ -141,7 +141,7 @@ void MarketData::operator()(const Event<Timer> &event) {
 
 void MarketData::operator()(const core::net::Manager::Connected &) {
   send_logon();
-  (*this)(GatewayStatus::LOGIN_SENT);
+  (*this)(ConnectionStatus::LOGIN_SENT);
 }
 
 void MarketData::operator()(const core::net::Manager::Disconnected &) {
@@ -150,7 +150,7 @@ void MarketData::operator()(const core::net::Manager::Disconnected &) {
   inbound_ = {};
   ready_ = false;
   next_heartbeat_ = {};
-  (*this)(GatewayStatus::DISCONNECTED);
+  (*this)(ConnectionStatus::DISCONNECTED);
   download_.reset();
 }
 
@@ -188,7 +188,7 @@ void MarketData::operator()(const core::net::Manager::Read &read) {
     read.buffer.drain(total);
 }
 
-void MarketData::operator()(GatewayStatus status) {
+void MarketData::operator()(ConnectionStatus status) {
   if (utils::update(status_, status)) {
     server::TraceInfo trace_info;
     StreamUpdate stream_update{
@@ -271,7 +271,7 @@ uint32_t MarketData::download(MarketDataState state) {
     case MarketDataState::DONE:
       assert(!ready_);
       ready_ = true;
-      (*this)(GatewayStatus::READY);
+      (*this)(ConnectionStatus::READY);
       return {};
   }
   assert(false);
@@ -466,14 +466,14 @@ void MarketData::operator()(
 void MarketData::operator()(
     const core::fix::header_t &header, const fix::Logon &logon, const server::TraceInfo &) {
   log::trace_1("event(header={}, logon={})"_fmt, header, logon);
-  (*this)(GatewayStatus::DOWNLOADING);
+  (*this)(ConnectionStatus::DOWNLOADING);
   download_.begin();
 }
 
 void MarketData::operator()(
     const core::fix::header_t &header, const fix::Logout &logout, const server::TraceInfo &) {
   log::warn("event(header={}, logout={})"_fmt, header, logout);
-  (*this)(GatewayStatus::LOGGED_OUT);
+  (*this)(ConnectionStatus::LOGGED_OUT);
   ready_ = false;
   // note! mandated, must send a logout response
   send_logout(LOGOUT_RESPONSE);

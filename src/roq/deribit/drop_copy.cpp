@@ -107,13 +107,13 @@ void DropCopy::operator()(const core::web::Socket::Connected &) {
 void DropCopy::operator()(const core::web::Socket::Disconnected &) {
   ++counter_.disconnect;
   ready_ = false;
-  (*this)(GatewayStatus::DISCONNECTED);
+  (*this)(ConnectionStatus::DISCONNECTED);
   download_.reset();
 }
 
 void DropCopy::operator()(const core::web::Socket::Ready &) {
   login();
-  (*this)(GatewayStatus::LOGIN_SENT);
+  (*this)(ConnectionStatus::LOGIN_SENT);
 }
 
 void DropCopy::operator()(const core::web::Socket::Close &) {
@@ -133,7 +133,7 @@ void DropCopy::operator()(const core::web::Socket::Text &text) {
   parse(text.payload);
 }
 
-void DropCopy::operator()(GatewayStatus status) {
+void DropCopy::operator()(ConnectionStatus status) {
   if (utils::update(status_, status)) {
     server::TraceInfo trace_info;
     StreamUpdate stream_update{
@@ -196,7 +196,7 @@ uint32_t DropCopy::download(DropCopyState state) {
       get_positions(currencies_);
       return {};
     case DropCopyState::DONE:
-      (*this)(GatewayStatus::READY);
+      (*this)(ConnectionStatus::READY);
       assert(!ready_);
       ready_ = true;
       return {};
@@ -367,7 +367,7 @@ void DropCopy::operator()(
 void DropCopy::operator()(const json::Auth &auth, const server::TraceInfo &) {
   profile_.auth([&]() {
     log::trace_1("auth={}"_fmt, auth);
-    (*this)(GatewayStatus::DOWNLOADING);
+    (*this)(ConnectionStatus::DOWNLOADING);
     download_.begin();
   });
 }

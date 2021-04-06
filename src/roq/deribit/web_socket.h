@@ -80,7 +80,7 @@ class WebSocket final : public core::web::Socket::Handler,
   void operator()(const core::web::Socket::Text &) override;
 
  private:
-  void operator()(GatewayStatus);
+  void operator()(ConnectionStatus);
 
   uint32_t download(WebSocketState);
 
@@ -144,7 +144,7 @@ class WebSocket final : public core::web::Socket::Handler,
   absl::flat_hash_map<std::string, TradingStatus> trading_status_;
   // state
   bool ready_ = false;
-  GatewayStatus status_ = {};
+  ConnectionStatus status_ = {};
   server::Download<WebSocketState> download_;
 };
 

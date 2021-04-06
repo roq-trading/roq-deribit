@@ -77,7 +77,7 @@ class OrderEntry final : public core::net::Manager::Handler {
   void operator()(const core::net::Manager::Read &) override;
 
  private:
-  void operator()(GatewayStatus);
+  void operator()(ConnectionStatus);
 
   void send_logon();
   void send_logout(const std::string_view &text);
@@ -151,7 +151,7 @@ class OrderEntry final : public core::net::Manager::Handler {
   // state
   bool ready_ = false;
   std::chrono::nanoseconds next_heartbeat_ = {};
-  GatewayStatus status_ = {};
+  ConnectionStatus status_ = {};
   server::Download<OrderEntryState> download_;
 };
 

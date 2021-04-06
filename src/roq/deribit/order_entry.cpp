@@ -178,7 +178,7 @@ void OrderEntry::operator()(metrics::Writer &writer) {
 
 void OrderEntry::operator()(const core::net::Manager::Connected &) {
   send_logon();
-  (*this)(GatewayStatus::LOGIN_SENT);
+  (*this)(ConnectionStatus::LOGIN_SENT);
 }
 
 void OrderEntry::operator()(const core::net::Manager::Disconnected &) {
@@ -187,7 +187,7 @@ void OrderEntry::operator()(const core::net::Manager::Disconnected &) {
   inbound_ = {};
   ready_ = false;
   next_heartbeat_ = {};
-  (*this)(GatewayStatus::DISCONNECTED);
+  (*this)(ConnectionStatus::DISCONNECTED);
   download_.reset();
 }
 
@@ -225,7 +225,7 @@ void OrderEntry::operator()(const core::net::Manager::Read &read) {
     read.buffer.drain(total);
 }
 
-void OrderEntry::operator()(GatewayStatus status) {
+void OrderEntry::operator()(ConnectionStatus status) {
   if (utils::update(status_, status)) {
     server::TraceInfo trace_info;
     StreamUpdate stream_update{
@@ -297,7 +297,7 @@ uint32_t OrderEntry::download(OrderEntryState state) {
       download_orders();
       return 1u;  // first ExecutionReport has the real number
     case OrderEntryState::DONE:
-      (*this)(GatewayStatus::READY);
+      (*this)(ConnectionStatus::READY);
       assert(!ready_);
       ready_ = true;
       return {};
@@ -406,7 +406,7 @@ void OrderEntry::operator()(
 void OrderEntry::operator()(
     const core::fix::header_t &header, const fix::Logon &logon, const server::TraceInfo &) {
   log::trace_1("event(header={}, logon={})"_fmt, header, logon);
-  (*this)(GatewayStatus::DOWNLOADING);
+  (*this)(ConnectionStatus::DOWNLOADING);
   download_.begin();
 }
 

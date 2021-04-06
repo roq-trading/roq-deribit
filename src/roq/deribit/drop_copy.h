@@ -70,7 +70,7 @@ class DropCopy final : public core::web::Socket::Handler,
   void operator()(const core::web::Socket::Text &) override;
 
  private:
-  void operator()(GatewayStatus);
+  void operator()(ConnectionStatus);
 
   void login();
 
@@ -132,7 +132,7 @@ class DropCopy final : public core::web::Socket::Handler,
   std::vector<std::string> currencies_;
   // state
   bool ready_ = false;
-  GatewayStatus status_ = {};
+  ConnectionStatus status_ = {};
   server::Download<DropCopyState> download_;
 };
 

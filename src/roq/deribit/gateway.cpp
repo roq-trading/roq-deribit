@@ -123,7 +123,10 @@ void Gateway::operator()(const Event<Timer> &event) {
   context_.dispatch(true);
 }
 
-void Gateway::operator()(const Event<Connection> &) {
+void Gateway::operator()(const Event<Connected> &) {
+}
+
+void Gateway::operator()(const Event<Disconnected> &) {
 }
 
 void Gateway::operator()(
