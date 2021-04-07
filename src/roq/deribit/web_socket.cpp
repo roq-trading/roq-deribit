@@ -155,11 +155,11 @@ void WebSocket::operator()(ConnectionStatus status) {
     server::TraceInfo trace_info;
     StreamStatus stream_status{
         .stream_id = stream_id_,
-        .type = StreamType::WEB_SOCKET,
-        .supports = (master_ ? SUPPORTS_MASTER : SUPPORTS).get(),
         .account = {},
-        .priority = Priority::PRIMARY,
+        .supports = (master_ ? SUPPORTS_MASTER : SUPPORTS).get(),
         .status = status_,
+        .type = StreamType::WEB_SOCKET,
+        .priority = Priority::PRIMARY,
     };
     log::info("stream_status={}"_fmt, stream_status);
     server::create_trace_and_dispatch(trace_info, stream_status, handler_);
