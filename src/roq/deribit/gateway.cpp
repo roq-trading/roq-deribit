@@ -57,7 +57,7 @@ static auto create_drop_copy(
 
 static auto create_web_socket(
     Gateway &gateway, core::io::Context &context, uint16_t &stream_id, Shared &shared) {
-  std::list<std::unique_ptr<WebSocket>> result;
+  std::vector<std::unique_ptr<WebSocket>> result;
   result.emplace_back(std::make_unique<WebSocket>(gateway, context, ++stream_id, shared, true));
   return result;
 }
@@ -68,7 +68,7 @@ static auto create_market_data(
     uint16_t &stream_id,
     Security &security,
     Shared &shared) {
-  std::list<std::unique_ptr<MarketData>> result;
+  std::vector<std::unique_ptr<MarketData>> result;
   result.emplace_back(
       std::make_unique<MarketData>(gateway, context, stream_id, security, shared, true));
   return result;
@@ -166,7 +166,7 @@ void Gateway::operator()(metrics::Writer &writer) {
     (*iter)(writer);
 }
 
-void Gateway::operator()(const server::Trace<StreamUpdate> &event) {
+void Gateway::operator()(const server::Trace<StreamStatus> &event) {
   dispatcher_(event);
 }
 

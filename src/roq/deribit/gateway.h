@@ -4,9 +4,9 @@
 
 #include <absl/container/flat_hash_map.h>
 
-#include <list>
 #include <memory>
 #include <string>
+#include <vector>
 
 #include "roq/server.h"
 
@@ -60,7 +60,7 @@ class Gateway final : public server::Handler,
 
   // many
 
-  void operator()(const server::Trace<StreamUpdate> &) override;
+  void operator()(const server::Trace<StreamStatus> &) override;
   void operator()(const server::Trace<ExternalLatency> &) override;
   void operator()(const server::Trace<ReferenceData> &, bool is_last) override;
   void operator()(const server::Trace<MarketStatus> &, bool is_last) override;
@@ -96,8 +96,8 @@ class Gateway final : public server::Handler,
   // streams
   absl::flat_hash_map<std::string, std::unique_ptr<OrderEntry>> order_entry_;
   absl::flat_hash_map<std::string, std::unique_ptr<DropCopy>> drop_copy_;
-  std::list<std::unique_ptr<WebSocket>> web_socket_;
-  std::list<std::unique_ptr<MarketData>> market_data_;
+  std::vector<std::unique_ptr<WebSocket>> web_socket_;
+  std::vector<std::unique_ptr<MarketData>> market_data_;
 };
 
 }  // namespace deribit
