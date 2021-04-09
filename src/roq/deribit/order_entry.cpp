@@ -319,8 +319,8 @@ void OrderEntry::parse(const core::fix::message_t &message) {
   profile_.parse([&]() {
     try {
       parse_helper(message);
-    } catch (std::exception &e) {
-      log::fatal(R"(ERROR what="{}")"_fmt, e.what());
+    } catch (...) {
+      core::tools::UnhandledException::terminate();
     }
   });
 }
