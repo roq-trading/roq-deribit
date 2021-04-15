@@ -4,10 +4,15 @@ All notable changes will be documented in this file.
 
 ## Head
 
+## 0.7.0 &ndash; 2021-04-15
+
+### Added
+
+* Multi-account support
+
 ### Changed
 
-* Support many accounts for order management
-* Support many market data streams for load balancing
+* Streams to support load-balancing
 * Using web-socket for funds and positions
 
 ## 0.6.1 &ndash; 2021-02-19
