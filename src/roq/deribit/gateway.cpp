@@ -155,6 +155,11 @@ void Gateway::operator()(
   get_order_entry(event.value.account)(event, request_id, order);
 }
 
+void Gateway::operator()(const Event<CancelAllOrders> &event, const std::string_view &request_id) {
+  assert(!event.value.account.empty());
+  get_order_entry(event.value.account)(event, request_id);
+}
+
 void Gateway::operator()(metrics::Writer &writer) {
   for (auto &[_, iter] : order_entry_)
     (*iter)(writer);

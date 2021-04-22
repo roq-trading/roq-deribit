@@ -166,6 +166,11 @@ void OrderEntry::operator()(
   send(order_cancel_request);
 }
 
+void OrderEntry::operator()(
+    const Event<CancelAllOrders> &, [[maybe_unused]] const std::string_view &request_id) {
+  log::fatal("NOT IMPLEMENTED"_sv);
+}
+
 void OrderEntry::operator()(metrics::Writer &writer) {
   writer  //
       .write(counter_.disconnect, metrics::COUNTER)
