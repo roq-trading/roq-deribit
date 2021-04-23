@@ -18,9 +18,9 @@ namespace deribit {
 
 namespace {
 static const constexpr auto CHARSET_DATA = "abcdefghijklmnopqrstuvwxyz0123456789"_sv;
-static const constexpr auto RANDOM_BYTES = 32u;
+static const constexpr auto RANDOM_BYTES = 32;
 
-static_assert(std::size(CHARSET_DATA) == 36u);
+static_assert(std::size(CHARSET_DATA) == 36);
 
 static std::random_device GENERATOR;
 static std::uniform_int_distribution<int> CHARSET_DISTRIBUTION(
@@ -48,7 +48,7 @@ std::string Security::create_signature(
   auto message = roq::format("{}\n{}\n"_fmt, sequence, nonce);
   hmac_.clear();
   hmac_.update(message);
-  std::array<char, 32u> buffer;
+  std::array<char, 32> buffer;
   auto length = hmac_.digest(buffer);
   assert(length == buffer.size());
   return core::binascii::Hex::encode(buffer);
@@ -70,7 +70,7 @@ std::string Security::create_password(const std::string_view &raw_data) {
   sha_.clear();
   sha_.update(raw_data);
   sha_.update(secret_);
-  std::array<char, 32u> buffer;
+  std::array<char, 32> buffer;
   auto length = sha_.digest(buffer);
   assert(length == buffer.size());
   return core::binascii::Base64::encode(buffer);

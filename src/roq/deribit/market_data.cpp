@@ -261,7 +261,7 @@ uint32_t MarketData::download(MarketDataState state) {
     case MarketDataState::SECURITIES:
       if (master_) {
         download_securities();
-        return 1u;
+        return 1;
       } else {
         return {};
       }
@@ -309,7 +309,7 @@ void MarketData::update_subscriptions(std::vector<std::string> &symbols) {
     return;
   symbols_.reserve(max_size);
   auto length = std::min(max_size - offset, symbols.size());
-  assert(length > 0u);
+  assert(length > 0);
   for (size_t i = {}; i < length; ++i) {
     symbols_.emplace_back(symbols.back());
     symbols.pop_back();
@@ -339,7 +339,7 @@ void MarketData::subscribe(const roq::span<std::string> &symbols) {
     if (symbols.size() <= offset)
       break;
     auto length = std::min<size_t>(symbols.size() - offset, max_size);
-    assert(length > 0u);
+    assert(length > 0);
     for (size_t i = {}; i < length; ++i)
       new (&related_sym[i]) fix::InstrmtMDReq{
           .symbol = symbols[offset + i],
@@ -503,7 +503,7 @@ void MarketData::operator()(
     const fix::SecurityList &security_list,
     const server::TraceInfo &trace_info) {
   log::trace_2("event(header={}, security_list={})"_fmt, header, security_list);
-  if (security_list.no_related_sym.size() > 0u) {
+  if (security_list.no_related_sym.size() > 0) {
     size_t counter = {};
     std::vector<std::string> symbols;
     symbols.reserve(security_list.no_related_sym.size());

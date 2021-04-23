@@ -105,7 +105,7 @@ void WebSocket::update_subscriptions(std::vector<std::string> &symbols) {
     return;
   symbols_.reserve(max_size);
   auto length = std::min(max_size - offset, symbols.size());
-  assert(length > 0u);
+  assert(length > 0);
   for (size_t i = {}; i < length; ++i) {
     symbols_.emplace_back(symbols.back());
     symbols.pop_back();
@@ -198,7 +198,7 @@ uint32_t WebSocket::download(WebSocketState state) {
 
 uint32_t WebSocket::download_currencies() {
   get_currencies();
-  return 1u;
+  return 1;
 }
 
 uint32_t WebSocket::download_instruments() {

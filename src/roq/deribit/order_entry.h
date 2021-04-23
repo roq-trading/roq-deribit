@@ -126,7 +126,7 @@ class OrderEntry final : public core::net::Manager::Handler {
   // buffers
   core::Buffer encode_buffer_;
   core::Buffer decode_buffer_;
-  core::stack::Buffer<char, 32u> stack_buffer_;
+  core::stack::Buffer<char, 32> stack_buffer_;
   // metrics
   struct {
     core::metrics::Counter disconnect;

@@ -111,7 +111,7 @@ void OrderEntry::operator()(
   auto exec_inst = fix::map(create_order.execution_instruction);
   auto ord_type = core::fix::map(create_order.order_type);
   auto time_in_force = core::fix::map(create_order.time_in_force);
-  core::stack::Buffer<char, 36u> buffer;
+  core::stack::Buffer<char, 36> buffer;
   roq::format_to(
       std::back_inserter(buffer),
       "roq-{}-{}-{}"_fmt,
@@ -198,7 +198,7 @@ void OrderEntry::operator()(const core::net::Manager::Disconnected &) {
 
 void OrderEntry::operator()(const core::net::Manager::Read &read) {
   auto length = read.buffer.length();
-  if (length == 0u)
+  if (length == 0)
     return;
   auto buffer = read.buffer.pullup(length);
   decltype(length) total = 0;
@@ -300,7 +300,7 @@ uint32_t OrderEntry::download(OrderEntryState state) {
       break;
     case OrderEntryState::ORDERS:
       download_orders();
-      return 1u;  // first ExecutionReport has the real number
+      return 1;  // first ExecutionReport has the real number
     case OrderEntryState::DONE:
       (*this)(ConnectionStatus::READY);
       assert(!ready_);
