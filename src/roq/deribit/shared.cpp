@@ -15,5 +15,12 @@ Shared::Shared(server::Dispatcher &dispatcher)
       statistics(magic_enum::enum_count<StatisticsType::type_t>()), dispatcher_(dispatcher) {
 }
 
+std::string_view Shared::next_request_id() {
+  auto request_id = ++request_id_;
+  stack_buffer_.clear();
+  roq::format_to(std::back_inserter(stack_buffer_), "roq-{}"_fmt, request_id);
+  return std::string_view{stack_buffer_.data(), stack_buffer_.size()};
+}
+
 }  // namespace deribit
 }  // namespace roq

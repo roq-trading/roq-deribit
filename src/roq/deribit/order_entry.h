@@ -62,8 +62,7 @@ class OrderEntry final : public core::net::Manager::Handler {
   void operator()(const Event<Stop> &);
   void operator()(const Event<Timer> &);
 
-  void operator()(
-      const Event<CreateOrder> &, const std::string_view &request_id, uint32_t gateway_order_id);
+  void operator()(const Event<CreateOrder> &, const std::string_view &request_id);
   void operator()(
       const Event<ModifyOrder> &, const std::string_view &request_id, const server::OMS_Order &);
   void operator()(

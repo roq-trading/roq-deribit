@@ -97,10 +97,7 @@ void OrderEntry::operator()(const Event<Timer> &event) {
   }
 }
 
-void OrderEntry::operator()(
-    const Event<CreateOrder> &event,
-    const std::string_view &request_id,
-    uint32_t gateway_order_id) {
+void OrderEntry::operator()(const Event<CreateOrder> &event, const std::string_view &request_id) {
   auto &message_info = event.message_info;
   auto &create_order = event.value;
   if (std::isfinite(create_order.stop_price))
@@ -113,11 +110,7 @@ void OrderEntry::operator()(
   auto time_in_force = core::fix::map(create_order.time_in_force);
   core::stack::Buffer<char, 36> buffer;
   roq::format_to(
-      std::back_inserter(buffer),
-      "roq-{}-{}-{}"_fmt,
-      gateway_order_id,
-      message_info.source,
-      create_order.order_id);
+      std::back_inserter(buffer), "roq-{}-{}"_fmt, message_info.source, create_order.order_id);
   std::string_view deribit_label(buffer.data(), buffer.size());
   fix::NewOrderSingle new_order_single{
       .cl_ord_id = request_id,
@@ -593,12 +586,12 @@ void OrderEntry::operator()(
               .exchange = order.exchange,
               .symbol = order.symbol,
               .side = order.side,
-              .position_effect = {},
-              .order_template = {},
+              .position_effect = order.position_effect,
+              .order_template = order.order_template,
               .create_time_utc = execution_report.transact_time,
               .update_time_utc = execution_report.transact_time,
               .gateway_order_id = order.gateway_order_id,
-              .external_account = {},
+              .external_account = order.external_account,
               .external_order_id = order.external_order_id,
               .routing_id = order.routing_id,
               .fills = fills,
