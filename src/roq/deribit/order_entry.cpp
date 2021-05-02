@@ -97,7 +97,8 @@ void OrderEntry::operator()(const Event<Timer> &event) {
   }
 }
 
-void OrderEntry::operator()(const Event<CreateOrder> &event, const std::string_view &request_id) {
+uint16_t OrderEntry::operator()(
+    const Event<CreateOrder> &event, const std::string_view &request_id) {
   auto &message_info = event.message_info;
   auto &create_order = event.value;
   if (std::isfinite(create_order.stop_price))
@@ -125,9 +126,10 @@ void OrderEntry::operator()(const Event<CreateOrder> &event, const std::string_v
       .deribit_adv_order_type = '\0',
   };
   send(new_order_single);
+  return stream_id_;
 }
 
-void OrderEntry::operator()(
+uint16_t OrderEntry::operator()(
     const Event<ModifyOrder> &event,
     const std::string_view &request_id,
     const server::OMS_Order &order) {
@@ -146,9 +148,10 @@ void OrderEntry::operator()(
       .exec_inst = {},
   };
   send(order_cancel_replace_request);
+  return stream_id_;
 }
 
-void OrderEntry::operator()(
+uint16_t OrderEntry::operator()(
     const Event<CancelOrder> &,
     const std::string_view &request_id,
     const server::OMS_Order &order) {
@@ -157,9 +160,10 @@ void OrderEntry::operator()(
       .orig_cl_ord_id = order.external_order_id,
   };
   send(order_cancel_request);
+  return stream_id_;
 }
 
-void OrderEntry::operator()(
+uint16_t OrderEntry::operator()(
     const Event<CancelAllOrders> &, [[maybe_unused]] const std::string_view &request_id) {
   log::fatal("NOT IMPLEMENTED"_sv);
 }
@@ -543,23 +547,35 @@ void OrderEntry::operator()(
       break;
   }
   // find order
-  server::OMS_Lookup order_lookup{
+  auto side = core::fix::map(execution_report.side);
+  auto status = core::fix::map(execution_report.ord_status);
+  OrderUpdate order_update{
+      .stream_id = stream_id_,
+      .account = security_.get_account(),
+      .order_id = {},
+      .exchange = Flags::exchange(),
       .symbol = execution_report.symbol,
-      .side = core::fix::map(execution_report.side),
-      .status = core::fix::map(execution_report.ord_status),
+      .status = status,
+      .side = side,
       .price = execution_report.price,
       .remaining_quantity = execution_report.leaves_qty,
       .traded_quantity = execution_report.cum_qty,
-      .timestamp = execution_report.transact_time,
+      .position_effect = {},
+      .order_template = {},
+      .create_time_utc = {},
+      .update_time_utc = execution_report.transact_time,
+      .gateway_order_id = {},
       .external_account = {},
       .external_order_id = execution_report.order_id,
+      .routing_id = {},
   };
   // XXX we used to also create orders here...
   auto found = shared_.find_order(
+      stream_id_,
+      trace_info,
+      order_update,
       execution_report.cl_ord_id,
       execution_report.orig_cl_ord_id,
-      order_lookup,
-      trace_info,
       [&](const auto &order, auto &result) {
         result.request_status = compute_request_status(
             order.request_type,
@@ -619,22 +635,33 @@ void OrderEntry::operator()(
     const fix::OrderCancelReject &order_cancel_reject,
     const server::TraceInfo &trace_info) {
   log::trace_3("event(header={}, order_cancel_reject={})"_fmt, header, order_cancel_reject);
-  server::OMS_Lookup order_lookup{
+  auto status = core::fix::map(order_cancel_reject.ord_status);
+  OrderUpdate order_update{
+      .stream_id = stream_id_,
+      .account = security_.get_account(),
+      .order_id = {},
+      .exchange = Flags::exchange(),
       .symbol = {},
-      .side = Side::UNDEFINED,
-      .status = core::fix::map(order_cancel_reject.ord_status),
+      .status = status,
+      .side = {},
       .price = NaN,
       .remaining_quantity = NaN,
       .traded_quantity = NaN,
-      .timestamp = {},
+      .position_effect = {},
+      .order_template = {},
+      .create_time_utc = {},
+      .update_time_utc = {},
+      .gateway_order_id = {},
       .external_account = {},
       .external_order_id = {},
+      .routing_id = {},
   };
   auto found = shared_.find_order(
+      stream_id_,
+      trace_info,
+      order_update,
       order_cancel_reject.cl_ord_id,
       order_cancel_reject.orig_cl_ord_id,
-      order_lookup,
-      trace_info,
       [&](const auto &order, auto &result) {
         if (ROQ_UNLIKELY(order.request_type != RequestType::MODIFY_ORDER))
           log::fatal("DEBUG: UNEXPECTED"_sv);
