@@ -23,6 +23,7 @@ set(AUTOGEN_SCHEMAS
     order_cancel_reject.json
     order_cancel_replace_request.json
     order_cancel_request.json
+    order_mass_cancel_request.json
     order_mass_status_request.json
     position_qty.json
     position_report.json

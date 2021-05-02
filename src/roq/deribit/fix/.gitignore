@@ -34,6 +34,8 @@ order_cancel_replace_request.h
 order_cancel_replace_request.cpp
 order_cancel_request.h
 order_cancel_request.cpp
+order_mass_cancel_request.h
+order_mass_cancel_request.cpp
 order_mass_status_request.h
 order_mass_status_request.cpp
 position_qty.h
