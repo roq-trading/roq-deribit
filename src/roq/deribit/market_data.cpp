@@ -580,6 +580,8 @@ void MarketData::operator()(
     new (&result) Statistics{
         .type = StatisticsType::PRE_OPEN_INTEREST,
         .value = market_data_incremental_refresh.open_interest,
+        .begin_time_utc = {},
+        .end_time_utc = {},
     };
   });
   // mark price
@@ -587,6 +589,8 @@ void MarketData::operator()(
     new (&result) Statistics{
         .type = StatisticsType::PRE_SETTLEMENT_PRICE,
         .value = market_data_incremental_refresh.mark_price,
+        .begin_time_utc = {},
+        .end_time_utc = {},
     };
   });
   std::chrono::nanoseconds exchange_time_utc = {};
@@ -613,6 +617,8 @@ void MarketData::operator()(
           new (&result) Statistics{
               .type = StatisticsType::INDEX_VALUE,
               .value = item.md_entry_px,
+              .begin_time_utc = {},
+              .end_time_utc = {},
           };
         });
         break;
@@ -621,6 +627,8 @@ void MarketData::operator()(
           new (&result) Statistics{
               .type = StatisticsType::SETTLEMENT_PRICE,
               .value = item.md_entry_px,
+              .begin_time_utc = {},
+              .end_time_utc = {},
           };
         });
         break;
@@ -704,6 +712,8 @@ void MarketData::operator()(
           new (&result) Statistics{
               .type = StatisticsType::INDEX_VALUE,
               .value = item.md_entry_px,
+              .begin_time_utc = {},
+              .end_time_utc = {},
           };
         });
         break;
@@ -712,6 +722,8 @@ void MarketData::operator()(
           new (&result) Statistics{
               .type = StatisticsType::SETTLEMENT_PRICE,
               .value = item.md_entry_px,
+              .begin_time_utc = {},
+              .end_time_utc = {},
           };
         });
         break;
