@@ -3,6 +3,8 @@
 "type": "item",
 "values": [
 	{ "name": "currency", "type": "std::string_view" },
-	{ "name": "locked", "type": "bool" }
+	{ "name": "locked", "type": "bool" },
+	{ "name": "type", "comment": "undoc" },
+	{ "name": "currency_pair", "comment": "undoc" }
 ]
 }
