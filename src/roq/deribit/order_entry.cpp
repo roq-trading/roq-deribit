@@ -549,6 +549,8 @@ void OrderEntry::operator()(
   // find order
   auto side = core::fix::map(execution_report.side);
   auto status = core::fix::map(execution_report.ord_status);
+  auto order_type = core::fix::map(execution_report.ord_type);
+  // XXX TODO(thraneh): exec_inst
   OrderUpdate order_update{
       .stream_id = stream_id_,
       .account = security_.get_account(),
@@ -567,7 +569,16 @@ void OrderEntry::operator()(
       .gateway_order_id = {},
       .external_account = {},
       .external_order_id = execution_report.order_id,
-      .routing_id = {},
+      .routing_id = {},  // XXX TODO(thraneh)
+      .order_type = order_type,
+      .time_in_force = {},
+      .execution_instruction = {},  // XXX TODO(thraneh)
+      .stop_price = execution_report.stop_px,
+      .max_show_quantity = execution_report.max_show,
+      .average_traded_price = execution_report.avg_px,
+      .last_traded_price = execution_report.last_px,
+      .last_traded_quantity = execution_report.last_qty,
+      .last_liquidity = {},
   };
   // XXX we used to also create orders here...
   auto found = shared_.find_order(
@@ -655,6 +666,15 @@ void OrderEntry::operator()(
       .external_account = {},
       .external_order_id = {},
       .routing_id = {},
+      .order_type = {},
+      .time_in_force = {},
+      .execution_instruction = {},
+      .stop_price = NaN,
+      .max_show_quantity = NaN,
+      .average_traded_price = NaN,
+      .last_traded_price = NaN,
+      .last_traded_quantity = NaN,
+      .last_liquidity = {},
   };
   auto found = shared_.find_order(
       stream_id_,
