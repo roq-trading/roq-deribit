@@ -330,6 +330,8 @@ void OrderEntry::parse(const core::fix::message_t &message) {
 void OrderEntry::parse_helper(const core::fix::message_t &message) {
   server::TraceInfo trace_info;
   core::fix::Buffer buffer(decode_buffer_);
+  if (Flags::fix_debug())
+    log::info("Parsing: msg_type={}"_fmt, message.header.msg_type);
   switch (message.header.msg_type) {
     // session
     case core::fix::MsgType::HEARTBEAT: {
