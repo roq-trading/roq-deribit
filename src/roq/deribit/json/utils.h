@@ -86,6 +86,8 @@ inline Side map(Direction direction) {
       return Side::BUY;
     case Direction::SELL:
       return Side::SELL;
+    case Direction::ZERO:
+      return Side::UNDEFINED;
   }
   return Side::UNDEFINED;
 }
