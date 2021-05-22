@@ -548,6 +548,20 @@ void OrderEntry::operator()(
     default:
       break;
   }
+  auto liquidity_ind = core::fix::FillLiquidityInd::UNDEFINED;
+  auto liquidity_ind_found = false;
+  for (auto &item : execution_report.no_fills) {
+    if (item.fill_liquidity_ind != core::fix::FillLiquidityInd::UNDEFINED) {
+      if (!liquidity_ind_found) {
+        liquidity_ind = item.fill_liquidity_ind;
+        liquidity_ind_found = true;
+      } else if (item.fill_liquidity_ind != liquidity_ind) {
+        liquidity_ind = core::fix::FillLiquidityInd::UNDEFINED;
+        break;
+      }
+    }
+  }
+  auto last_liquidity = core::fix::map(liquidity_ind);
   // find order
   auto side = core::fix::map(execution_report.side);
   auto status = core::fix::map(execution_report.ord_status);
@@ -580,7 +594,7 @@ void OrderEntry::operator()(
       .average_traded_price = execution_report.avg_px,
       .last_traded_price = execution_report.last_px,
       .last_traded_quantity = execution_report.last_qty,
-      .last_liquidity = {},
+      .last_liquidity = last_liquidity,
   };
   // XXX we used to also create orders here...
   auto found = shared_.find_order(

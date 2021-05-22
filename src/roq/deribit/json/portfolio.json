@@ -41,6 +41,7 @@
 	{ "name": "total_pl", "type": "double" },
 	{ "name": "type", "type": "std::string_view" },
 	{ "name": "username", "type": "std::string_view" },
-	{ "name": "estimated_liquidation_ratio_list", "comment": "undoc" }
+	{ "name": "estimated_liquidation_ratio_list", "comment": "undoc - replaced with map?" },
+	{ "name": "estimated_liquidation_ratio_map", "comment": "undoc" }
 ]
 }
