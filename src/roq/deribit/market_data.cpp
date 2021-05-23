@@ -158,34 +158,35 @@ void MarketData::operator()(const core::net::Manager::Read &read) {
   auto length = read.buffer.length();
   if (length == 0)
     return;
-  auto buffer = read.buffer.pullup(length);
-  decltype(length) total = 0;
+  auto buffer = read.buffer.pullup_new();
+  size_t total_bytes = 0;
   for (;;) {
-    // core::print_memory(buffer, length);  // DEBUG
+    // core::print_memory(buffer);  // DEBUG
     auto bytes = core::fix::Reader<FIX_VERSION>::dispatch(
         [&](const core::fix::message_t &message) {
           try {
             check(message.header);
             parse(message);
           } catch (std::exception &) {
-            core::print_memory(buffer, length);
-            core::print_string_with_escapes(buffer, length);
+            core::print_memory(buffer);
+            core::print_string_with_escapes(buffer);
             throw;
           }
         },
-        buffer,
-        length);
-    assert(bytes <= length);
+        buffer);
     if (bytes == 0)
       break;
-    total += bytes;
-    buffer += bytes;
-    length -= bytes;
-    if (Flags::fix_debug())
-      core::print_string_with_escapes(buffer, bytes);  // DEBUG
+    assert(bytes <= std::size(buffer));
+    if (Flags::fix_debug()) {
+      log::info("Received:"_sv);
+      auto message = buffer.first(bytes);
+      core::print_string_with_escapes(message);  // DEBUG
+    }
+    total_bytes += bytes;
+    buffer = buffer.subspan(bytes);
   }
-  if (total)
-    read.buffer.drain(total);
+  if (total_bytes)
+    read.buffer.drain(total_bytes);
 }
 
 void MarketData::operator()(ConnectionStatus status) {

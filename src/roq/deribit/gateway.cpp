@@ -128,6 +128,10 @@ void Gateway::operator()(const Event<Connected> &) {
 
 void Gateway::operator()(const Event<Disconnected> &event) {
   const auto &[message_info, disconnected] = event;
+  log::warn(
+      R"(Disconnected: source="{}", cancel_policy={})"_fmt,
+      message_info.source_name,
+      disconnected.cancel_policy);
   switch (disconnected.cancel_policy) {
     case CancelPolicy::UNDEFINED:
       break;
@@ -135,8 +139,10 @@ void Gateway::operator()(const Event<Disconnected> &event) {
       log::warn("*** CANCEL MANAGED ORDERS NOT IMPLEMENTED ***"_sv);
       break;
     case CancelPolicy::BY_ACCOUNT:
+      log::warn("*** CANCEL ALL ACCOUNT ORDERS ***"_sv);
       for (auto &[account, order_entry] : order_entry_) {
         if (dispatcher_.can_user_trade_account(account, message_info.source)) {
+          log::warn(R"(- account="{}")"_fmt, account);
           CancelAllOrders cancel_all_orders{
               .account = account,
           };

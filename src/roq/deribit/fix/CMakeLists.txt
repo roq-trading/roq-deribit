@@ -5,6 +5,7 @@ set(SOURCES adv_order_type.cpp utils.cpp)
 include(RoqAutogen)
 
 set(AUTOGEN_SCHEMAS
+    affected_ord.json
     execution_report.json
     fill.json
     heartbeat.json
