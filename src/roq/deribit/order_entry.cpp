@@ -16,8 +16,14 @@
 #include "roq/deribit/common.h"
 #include "roq/deribit/flags.h"
 
-#include "roq/deribit/fix/order_mass_cancel_request.h"
 #include "roq/deribit/fix/utils.h"
+
+// business (outbound)
+#include "roq/deribit/fix/new_order_single.h"
+#include "roq/deribit/fix/order_cancel_replace_request.h"
+#include "roq/deribit/fix/order_cancel_request.h"
+#include "roq/deribit/fix/order_mass_cancel_request.h"
+#include "roq/deribit/fix/order_mass_status_request.h"
 
 using namespace roq::literals;
 
@@ -751,7 +757,8 @@ void OrderEntry::operator()(
   switch (order_mass_cancel_report.mass_cancel_response) {
     case core::fix::MassCancelResponse::CANCEL_REQUEST_REJECTED:
       log::warn(
-          R"(*** CANCEL ALL ORDERS FAILED, REASON="{}" ***)"_fmt, order_mass_cancel_report.text);
+          R"(*** CANCEL ALL ORDERS FAILED, REASON="{}" ***)"_fmt,
+          order_mass_cancel_report.mass_cancel_reject_reason);
       break;
     default:
       log::info(
