@@ -1,0 +1,11 @@
+{
+"name": "OrderMassCancelReport",
+"type": "comp",
+"values": [
+	{ "tag": 11, "name": "ClOrdID", "type": "std::string_view", "required": true },
+	{ "tag": 530, "name": "MassCancelRequestType", "type": "roq::core::fix::MassCancelRequestType", "required": true },
+	{ "tag": 531, "name": "MassCancelResponse", "type": "roq::core::fix::MassCancelResponse" },
+	{ "tag": 58, "name": "Text", "type": "std::string_view" },
+	{ "tag": 532, "name": "MassCancelRejectReason", "type": "std::string_view" }
+]
+}

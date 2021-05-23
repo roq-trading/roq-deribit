@@ -34,6 +34,7 @@
 // business (inbound)
 #include "roq/deribit/fix/execution_report.h"
 #include "roq/deribit/fix/order_cancel_reject.h"
+#include "roq/deribit/fix/order_mass_cancel_report.h"
 #include "roq/deribit/fix/reject.h"  // ... normally session level
 
 // business (outbound)
@@ -103,6 +104,8 @@ class OrderEntry final : public core::net::Manager::Handler {
   void operator()(
       const core::fix::header_t &, const fix::OrderCancelReject &, const server::TraceInfo &);
   void operator()(const core::fix::header_t &, const fix::Reject &, const server::TraceInfo &);
+  void operator()(
+      const core::fix::header_t &, const fix::OrderMassCancelReport &, const server::TraceInfo &);
 
   // utilities
 
@@ -131,7 +134,8 @@ class OrderEntry final : public core::net::Manager::Handler {
     core::metrics::Counter disconnect;
   } counter_;
   struct {
-    core::metrics::Profile parse, execution_report, order_cancel_reject, reject;
+    core::metrics::Profile parse, execution_report, order_cancel_reject, reject,
+        order_mass_cancel_report;
   } profile_;
   struct {
     core::metrics::Latency ping;

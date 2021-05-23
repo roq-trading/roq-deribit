@@ -16,6 +16,7 @@
 #include "roq/deribit/common.h"
 #include "roq/deribit/flags.h"
 
+#include "roq/deribit/fix/order_mass_cancel_request.h"
 #include "roq/deribit/fix/utils.h"
 
 using namespace roq::literals;
@@ -71,6 +72,7 @@ OrderEntry::OrderEntry(
           .execution_report = create_metrics(name_, "execution_report"_sv),
           .order_cancel_reject = create_metrics(name_, "order_cancel_reject"_sv),
           .reject = create_metrics(name_, "reject"_sv),
+          .order_mass_cancel_report = create_metrics(name_, "order_mass_cancel_report"_sv),
       },
       latency_{
           .ping = create_metrics(name_, "ping"_sv),
@@ -99,8 +101,7 @@ void OrderEntry::operator()(const Event<Timer> &event) {
 
 uint16_t OrderEntry::operator()(
     const Event<CreateOrder> &event, const std::string_view &request_id) {
-  auto &message_info = event.message_info;
-  auto &create_order = event.value;
+  auto &[message_info, create_order] = event;
   if (std::isfinite(create_order.stop_price))
     throw RuntimeErrorException("stop_price not supported"_sv);
   if (std::isfinite(create_order.max_show_quantity))
@@ -165,7 +166,15 @@ uint16_t OrderEntry::operator()(
 
 uint16_t OrderEntry::operator()(
     const Event<CancelAllOrders> &, [[maybe_unused]] const std::string_view &request_id) {
-  log::fatal("NOT IMPLEMENTED"_sv);
+  fix::OrderMassCancelRequest order_mass_cancel_request{
+      .cl_ord_id = request_id,
+      .mass_cancel_request_type = core::fix::MassCancelRequestType::CANCEL_ALL_ORDERS,
+      .security_type = {},
+      .symbol = {},
+      .currency = {},
+  };
+  send(order_mass_cancel_request);
+  return stream_id_;
 }
 
 void OrderEntry::operator()(metrics::Writer &writer) {
@@ -175,6 +184,7 @@ void OrderEntry::operator()(metrics::Writer &writer) {
       .write(profile_.execution_report, metrics::PROFILE)
       .write(profile_.order_cancel_reject, metrics::PROFILE)
       .write(profile_.reject, metrics::PROFILE)
+      .write(profile_.order_mass_cancel_report, metrics::PROFILE)
       .write(latency_.ping, metrics::LATENCY);
 }
 
@@ -378,6 +388,13 @@ void OrderEntry::parse_helper(const core::fix::message_t &message) {
       profile_.reject([&]() {
         auto reject = fix::Reject::create(message);
         (*this)(message.header, reject, trace_info);
+      });
+      break;
+    }
+    case core::fix::MsgType::ORDER_MASS_CANCEL_REPORT: {
+      profile_.order_mass_cancel_report([&]() {
+        auto order_mass_cancel_report = fix::OrderMassCancelReport::create(message, buffer);
+        (*this)(message.header, order_mass_cancel_report, trace_info);
       });
       break;
     }
@@ -721,6 +738,19 @@ void OrderEntry::operator()(
     connection_.close();
   } else {
     log::fatal("Unexpected"_sv);
+  }
+}
+
+void OrderEntry::operator()(
+    const core::fix::header_t &header,
+    const fix::OrderMassCancelReport &order_mass_cancel_report,
+    const server::TraceInfo &) {
+  log::trace_3(
+      "event(header={}, order_mass_cancel_report={})"_fmt, header, order_mass_cancel_report);
+  if (order_mass_cancel_report.mass_cancel_response ==
+      core::fix::MassCancelResponse::CANCEL_REQUEST_REJECTED) {
+    log::warn(
+        R"(*** CANCEL ALL ORDERS FAILED, REASON="{}" ***)"_fmt, order_mass_cancel_report.text);
   }
 }
 
