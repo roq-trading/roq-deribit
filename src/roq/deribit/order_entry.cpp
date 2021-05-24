@@ -11,6 +11,7 @@
 
 #include "roq/core/metrics/factory.h"
 
+#include "roq/core/fix/debug.h"
 #include "roq/core/fix/utils.h"
 
 #include "roq/deribit/common.h"
@@ -230,9 +231,9 @@ void OrderEntry::operator()(const core::net::Manager::Read &read) {
       break;
     assert(bytes <= std::size(buffer));
     if (Flags::fix_debug()) {
-      log::info("Received:"_sv);
       auto message = buffer.first(bytes);
-      core::print_string_with_escapes(message);  // DEBUG
+      log::info("Received: {}"_fmt, core::fix::Debug(message));
+      // core::print_string_with_escapes(message);  // DEBUG
     }
     total_bytes += bytes;
     buffer = buffer.subspan(bytes);
