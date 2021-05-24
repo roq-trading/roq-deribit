@@ -210,12 +210,9 @@ void OrderEntry::operator()(const core::net::Manager::Disconnected &) {
 }
 
 void OrderEntry::operator()(const core::net::Manager::Read &read) {
-  auto length = read.buffer.length();
-  if (length == 0)
-    return;
-  auto buffer = read.buffer.pullup_new(length);
+  auto buffer = read.buffer.pullup_new();
   size_t total_bytes = 0;
-  for (;;) {
+  while (!buffer.empty()) {
     // core::print_memory(buffer);  // DEBUG
     auto bytes = core::fix::Reader<FIX_VERSION>::dispatch(
         [&](const core::fix::message_t &message) {
@@ -240,8 +237,7 @@ void OrderEntry::operator()(const core::net::Manager::Read &read) {
     total_bytes += bytes;
     buffer = buffer.subspan(bytes);
   }
-  if (total_bytes)
-    read.buffer.drain(total_bytes);
+  read.buffer.drain(total_bytes);
 }
 
 void OrderEntry::operator()(ConnectionStatus status) {
