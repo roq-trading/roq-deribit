@@ -38,9 +38,8 @@ TEST(fix_market_data_incremental_refresh, parse_message_1) {
         EXPECT_DOUBLE_EQ(item_0.md_entry_size, 1000.0);
         EXPECT_EQ(item_0.md_entry_date, std::chrono::milliseconds{1567870620896});
       },
-      message.data(),
-      message.size());
-  EXPECT_EQ(bytes, message.size());
+      message);
+  EXPECT_EQ(bytes, std::size(message));
   EXPECT_EQ(results, 1);
 }
 
@@ -143,9 +142,8 @@ TEST(fix_market_data_incremental_refresh, parse_message_2) {
         EXPECT_DOUBLE_EQ(item_4.index_price, 10445.93);
         EXPECT_EQ(item_4.text, "2889358"_sv);
       },
-      message.data(),
-      message.size());
-  EXPECT_EQ(bytes, message.size());
+      message);
+  EXPECT_EQ(bytes, std::size(message));
   EXPECT_EQ(results, 1);
 }
 
@@ -181,8 +179,7 @@ TEST(fix_market_data_incremental_refresh, parse_message_3) {
         EXPECT_DOUBLE_EQ(item_0.index_price, 170.36);
         EXPECT_EQ(item_0.text, "586940"_sv);
       },
-      message.data(),
-      message.size());
-  EXPECT_EQ(bytes, message.size());
+      message);
+  EXPECT_EQ(bytes, std::size(message));
   EXPECT_EQ(results, 1);
 }

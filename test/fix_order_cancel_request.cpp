@@ -32,7 +32,7 @@ TEST(fix_order_cancel_request, create_message) {
       "8=FIX.4.4\0019=0000081\00135=F\00149=ROQ_TRADING\00156=DERIBIT"
       "SERVER\00134=1\00152=20190917-06:46:50.000\00111=123\00141=123"
       "\00110=128\001"_sv;
-  ASSERT_EQ(message.length(), expected.size());
-  for (size_t i = 0; i < message.length(); ++i)
+  ASSERT_EQ(std::size(message), std::size(expected));
+  for (size_t i = 0; i < std::size(message); ++i)
     EXPECT_EQ(static_cast<char>(message.data()[i]), expected[i]);
 }

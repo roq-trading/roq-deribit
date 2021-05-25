@@ -30,8 +30,7 @@ void BM_fix_execution_report_parse_message(benchmark::State &state) {
           if (!result.order_id.empty())
             ++processed;
         },
-        MESSAGE.data(),
-        MESSAGE.size());
+        MESSAGE);
   }
 }
 

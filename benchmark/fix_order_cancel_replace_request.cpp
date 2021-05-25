@@ -34,7 +34,7 @@ void BM_fix_order_cancel_replace_request_create_message(
         msg_seq_num,
         sending_time);
     auto message = order_cancel_replace_request.encode(writer);
-    if (message.length())
+    if (std::size(message))
       ++processed;
   }
 }

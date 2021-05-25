@@ -25,8 +25,7 @@ TEST(fix_order_cancel_reject, parse_message) {
         EXPECT_EQ(result.ord_status, core::fix::OrdStatus::REJECTED);
         EXPECT_EQ(result.text, "not_found"_sv);
       },
-      message.data(),
-      message.size());
-  EXPECT_EQ(bytes, message.size());
+      message);
+  EXPECT_EQ(bytes, std::size(message));
   EXPECT_EQ(results, 1);
 }

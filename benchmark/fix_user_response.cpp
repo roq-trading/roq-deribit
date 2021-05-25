@@ -26,8 +26,7 @@ void BM_fix_user_response_parse_message(benchmark::State &state) {
           if (!user_response.user_request_id.empty())
             ++processed;
         },
-        MESSAGE.data(),
-        MESSAGE.size());
+        MESSAGE);
   }
 }
 

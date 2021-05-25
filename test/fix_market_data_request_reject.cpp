@@ -24,8 +24,7 @@ TEST(fix_market_data_request_reject, parse_message) {
         EXPECT_EQ(reject.md_req_rej_reason, core::fix::MDReqRejReason::UNKNOWN);
         EXPECT_EQ(reject.text, "unknown Symbol: BTC-XXX"_sv);
       },
-      message.data(),
-      message.size());
-  EXPECT_EQ(bytes, message.size());
+      message);
+  EXPECT_EQ(bytes, std::size(message));
   EXPECT_EQ(results, 1);
 }

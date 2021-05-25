@@ -41,7 +41,7 @@ TEST(fix_new_order_single, create_message) {
       "SERVER\00134=1\00152=20190917-06:46:50.000\00111=roq-ord-006\001"
       "54=1\00138=2.00000000\00144=0.50000000\00155=BTC-27SEP19\00140"
       "=2\00159=1\001100010=roq;123;345\00110=154\001"_sv;
-  ASSERT_EQ(message.length(), expected.size());
-  for (size_t i = 0; i < message.length(); ++i)
+  ASSERT_EQ(std::size(message), std::size(expected));
+  for (size_t i = 0; i < std::size(message); ++i)
     EXPECT_EQ(static_cast<char>(message.data()[i]), expected[i]);
 }

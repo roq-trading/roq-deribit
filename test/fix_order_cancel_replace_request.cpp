@@ -40,7 +40,7 @@ TEST(fix_order_cancel_replace_request, create_message) {
       "SERVER\00134=1\00152=20190917-06:46:50.000\00141=123\00111=123"
       "\00160=20190917-06:46:50.000\00154=1\00138=1.00000000\00140=2\001"
       "44=1.00000000\00155=BTC-27SEP19\00110=126\001"_sv;
-  ASSERT_EQ(message.length(), expected.size());
-  for (size_t i = 0; i < message.length(); ++i)
+  ASSERT_EQ(std::size(message), std::size(expected));
+  for (size_t i = 0; i < std::size(message); ++i)
     EXPECT_EQ(static_cast<char>(message.data()[i]), expected[i]);
 }

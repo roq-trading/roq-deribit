@@ -24,8 +24,7 @@ void BM_fix_heartbeat_parse_message(benchmark::State &state) {
           if (heartbeat.test_req_id.empty())
             ++processed;
         },
-        MESSAGE.data(),
-        MESSAGE.size());
+        MESSAGE);
   }
 }
 

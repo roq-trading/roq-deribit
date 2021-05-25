@@ -24,8 +24,7 @@ void BM_fix_reject_parse_message(benchmark::State &state) {
           if (!reject.text.empty())
             ++processed;
         },
-        MESSAGE.data(),
-        MESSAGE.size());
+        MESSAGE);
   }
 }
 

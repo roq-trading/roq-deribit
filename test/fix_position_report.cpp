@@ -39,8 +39,7 @@ TEST(fix_position_report, parse_message) {
         EXPECT_DOUBLE_EQ(item.underlying_end_price, 10184.50);
         EXPECT_DOUBLE_EQ(item.settl_price, 0.0);
       },
-      message.data(),
-      message.size());
-  EXPECT_EQ(bytes, message.size());
+      message);
+  EXPECT_EQ(bytes, std::size(message));
   EXPECT_EQ(results, 1);
 }

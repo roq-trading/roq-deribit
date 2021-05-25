@@ -27,7 +27,7 @@ void BM_fix_order_cancel_request_create_message(benchmark::State &state) {
         msg_seq_num,
         sending_time);
     auto message = order_cancel_request.encode(writer);
-    if (message.length())
+    if (std::size(message))
       ++processed;
   }
 }

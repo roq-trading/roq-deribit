@@ -24,8 +24,7 @@ void BM_fix_order_cancel_reject_parse_message(benchmark::State &state) {
           if (!result.text.empty())
             ++processed;
         },
-        MESSAGE.data(),
-        MESSAGE.size());
+        MESSAGE);
   }
 }
 

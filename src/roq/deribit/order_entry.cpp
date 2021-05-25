@@ -226,15 +226,11 @@ void OrderEntry::operator()(const core::net::Manager::Read &read) {
             throw;
           }
         },
-        buffer);
+        buffer,
+        Flags::fix_debug());
     if (bytes == 0)
       break;
     assert(bytes <= std::size(buffer));
-    if (Flags::fix_debug()) {
-      auto message = buffer.first(bytes);
-      log::info("Received: {}"_fmt, core::fix::Debug(message));
-      // core::print_string_with_escapes(message);  // DEBUG
-    }
     total_bytes += bytes;
     buffer = buffer.subspan(bytes);
   }
@@ -344,8 +340,6 @@ void OrderEntry::parse(const core::fix::message_t &message) {
 void OrderEntry::parse_helper(const core::fix::message_t &message) {
   server::TraceInfo trace_info;
   core::fix::Buffer buffer(decode_buffer_);
-  if (Flags::fix_debug())
-    log::info("Parsing: msg_type={}"_fmt, message.header.msg_type);
   switch (message.header.msg_type) {
     // session
     case core::fix::MsgType::HEARTBEAT: {
@@ -780,7 +774,8 @@ void OrderEntry::send(const T &event, std::chrono::nanoseconds sending_time) {
       outbound_.msg_seq_num,
       sending_time);
   auto message = event.encode(writer);
-  // message.print();  // DEBUG
+  if (ROQ_UNLIKELY(Flags::fix_debug()))
+    log::info("{}"_fmt, core::fix::Debug(message));
   connection_.send(message);
 }
 

@@ -24,8 +24,7 @@ void BM_fix_market_data_request_reject_parse_message(benchmark::State &state) {
           if (!market_data_request_reject.text.empty())
             ++processed;
         },
-        MESSAGE.data(),
-        MESSAGE.size());
+        MESSAGE);
   }
 }
 

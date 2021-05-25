@@ -30,9 +30,8 @@ TEST(fix_logon, parse_message) {
         EXPECT_EQ(result.cancel_on_disconnect, true);
         EXPECT_EQ(result.use_wordsafe_tags, false);
       },
-      message.data(),
-      message.size());
-  EXPECT_EQ(bytes, message.size());
+      message);
+  EXPECT_EQ(bytes, std::size(message));
   EXPECT_EQ(results, 1);
 }
 
@@ -68,7 +67,7 @@ TEST(fix_logon, create_message) {
       "96=1567874758168.y4/hA3i6qxm4yVL+3N7IrGcINVAFMLFhy4l7ATSehxc=\001"
       "553=5MP40u9h\001554=j/tVe9IsQuc+RjegscnHcJ6czMVNM1+ib7vjbY3UV0"
       "M=\0019001=Y\00110=032\001"_sv;
-  ASSERT_EQ(message.length(), expected.size());
-  for (size_t i = 0; i < message.length(); ++i)
+  ASSERT_EQ(std::size(message), std::size(expected));
+  for (size_t i = 0; i < std::size(message); ++i)
     EXPECT_EQ(static_cast<char>(message.data()[i]), expected[i]);
 }

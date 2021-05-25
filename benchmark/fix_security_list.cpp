@@ -1235,8 +1235,7 @@ void BM_fix_security_list_parse_message(benchmark::State &state) {
           if (security_list.no_related_sym.size() > 0)
             ++processed;
         },
-        MESSAGE.data(),
-        MESSAGE.size());
+        MESSAGE);
   }
 }
 

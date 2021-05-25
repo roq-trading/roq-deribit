@@ -26,8 +26,7 @@ void BM_fix_logon_parse_message(benchmark::State &state) {
           if (result.heart_bt_int > 0)
             ++processed;
         },
-        MESSAGE.data(),
-        MESSAGE.size());
+        MESSAGE);
   }
 }
 
@@ -61,7 +60,7 @@ void BM_fix_logon_create_message(benchmark::State &state) {
         msg_seq_num,
         sending_time);
     auto message = logon.encode(writer);
-    if (message.length())
+    if (std::size(message))
       ++processed;
   }
 }

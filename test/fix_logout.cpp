@@ -22,8 +22,7 @@ TEST(fix_logout, parse_message) {
         auto logout = fix::Logout::create(message);
         EXPECT_EQ(logout.text, "invalid_credentials");
       },
-      message.data(),
-      message.size());
-  EXPECT_EQ(bytes, message.size());
+      message);
+  EXPECT_EQ(bytes, std::size(message));
   EXPECT_EQ(results, 1);
 }

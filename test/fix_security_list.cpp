@@ -1246,8 +1246,7 @@ TEST(fix_security_list, parse_message) {
         EXPECT_EQ(security_list.deribit_use_wordsafe_tags, false);
         */
       },
-      message.data(),
-      message.size());
-  EXPECT_EQ(bytes, message.size());
+      message);
+  EXPECT_EQ(bytes, std::size(message));
   EXPECT_EQ(results, 1);
 }

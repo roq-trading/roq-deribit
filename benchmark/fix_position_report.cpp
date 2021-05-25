@@ -29,8 +29,7 @@ void BM_fix_position_report_parse_message(benchmark::State &state) {
           if (!position_report.pos_req_id.empty())
             ++processed;
         },
-        MESSAGE.data(),
-        MESSAGE.size());
+        MESSAGE);
   }
 }
 

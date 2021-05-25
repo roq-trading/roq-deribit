@@ -48,9 +48,8 @@ TEST(fix_execution_report, parse_message) {
         EXPECT_DOUBLE_EQ(result.max_show, 1.0);
         EXPECT_EQ(result.deribit_label, "roq;123;345"_sv);
       },
-      message.data(),
-      message.size());
-  EXPECT_EQ(bytes, message.size());
+      message);
+  EXPECT_EQ(bytes, std::size(message));
   EXPECT_EQ(results, 1);
 }
 
@@ -72,9 +71,8 @@ TEST(fix_execution_report, parse_order_mass_status) {
         EXPECT_EQ(result.tot_num_reports, uint32_t{1});
         EXPECT_EQ(result.text, "total_reports"_sv);
       },
-      message.data(),
-      message.size());
-  EXPECT_EQ(bytes, message.size());
+      message);
+  EXPECT_EQ(bytes, std::size(message));
   EXPECT_EQ(results, 1);
 }
 
@@ -130,8 +128,7 @@ TEST(fix_execution_report, parse_fill) {
         EXPECT_DOUBLE_EQ(item_0.fill_qty, 1.0);
         EXPECT_EQ(item_0.fill_liquidity_ind, core::fix::FillLiquidityInd::MAKER);
       },
-      message.data(),
-      message.size());
-  EXPECT_EQ(bytes, message.size());
+      message);
+  EXPECT_EQ(bytes, std::size(message));
   EXPECT_EQ(results, 1);
 }

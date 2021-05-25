@@ -179,8 +179,7 @@ void BM_fix_market_data_snapshot_full_refresh_parse_message(
           if (market_data.no_md_entries.size() > 0)
             ++processed;
         },
-        MESSAGE.data(),
-        MESSAGE.size());
+        MESSAGE);
   }
 }
 

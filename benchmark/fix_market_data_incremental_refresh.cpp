@@ -45,8 +45,7 @@ void BM_fix_market_data_increment_refresh_parse_message_1(
           if (!result.md_req_id.empty())
             ++processed;
         },
-        message_1.data(),
-        message_1.size());
+        message_1);
   }
 }
 
@@ -64,8 +63,7 @@ void BM_fix_market_data_increment_refresh_parse_message_2(
           if (!result.md_req_id.empty())
             ++processed;
         },
-        message_2.data(),
-        message_2.size());
+        message_2);
   }
 }
 

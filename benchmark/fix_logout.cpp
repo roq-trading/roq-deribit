@@ -24,8 +24,7 @@ void BM_fix_logout_parse_message(benchmark::State &state) {
           if (!logout.text.empty())
             ++processed;
         },
-        MESSAGE.data(),
-        MESSAGE.size());
+        MESSAGE);
   }
 }
 

@@ -22,8 +22,7 @@ TEST(fix_heartbeat, parse_message) {
         auto heartbeat = fix::Heartbeat::create(message);
         EXPECT_EQ(heartbeat.test_req_id, "anybody in there?");
       },
-      message.data(),
-      message.size());
-  EXPECT_EQ(bytes, message.size());
+      message);
+  EXPECT_EQ(bytes, std::size(message));
   EXPECT_EQ(results, 1);
 }

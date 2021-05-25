@@ -35,8 +35,7 @@ TEST(fix_user_response, parse_message) {
         EXPECT_DOUBLE_EQ(user_response.deribit_user_total_pl, 0.0);
         EXPECT_DOUBLE_EQ(user_response.deribit_user_margin_balance, 10.0);
       },
-      message.data(),
-      message.size());
-  EXPECT_EQ(bytes, message.size());
+      message);
+  EXPECT_EQ(bytes, std::size(message));
   EXPECT_EQ(results, 1);
 }

@@ -24,8 +24,7 @@ TEST(fix_reject, parse_message) {
         EXPECT_EQ(reject.ref_msg_type, "AN"_sv);
         EXPECT_EQ(reject.text, "not_implemented"_sv);
       },
-      message.data(),
-      message.size());
-  EXPECT_EQ(bytes, message.size());
+      message);
+  EXPECT_EQ(bytes, std::size(message));
   EXPECT_EQ(results, 1);
 }
