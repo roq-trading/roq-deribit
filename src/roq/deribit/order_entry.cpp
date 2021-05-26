@@ -171,8 +171,8 @@ uint16_t OrderEntry::operator()(
   return stream_id_;
 }
 
-uint16_t OrderEntry::operator()(
-    const Event<CancelAllOrders> &, [[maybe_unused]] const std::string_view &request_id) {
+uint16_t OrderEntry::operator()(const Event<CancelAllOrders> &) {
+  auto request_id = shared_.next_request_id();
   fix::OrderMassCancelRequest order_mass_cancel_request{
       .cl_ord_id = request_id,
       .mass_cancel_request_type = core::fix::MassCancelRequestType::CANCEL_ALL_ORDERS,
