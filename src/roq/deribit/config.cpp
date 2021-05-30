@@ -45,10 +45,6 @@ void Config::dispatch(server::Config::Handler &handler) const {
   for (auto &user : users)
     handler(user);
   server::Settings settings{
-      .mbp_max_depth = {},
-      .mbp_allow_price_inversion = {},
-      .mbp_allow_fractional_tick_size = true,
-      .mbp_allow_remove_non_existing = {},
       .supports{
           SupportType::REFERENCE_DATA,
           SupportType::MARKET_STATUS,
@@ -65,6 +61,10 @@ void Config::dispatch(server::Config::Handler &handler) const {
           SupportType::POSITION,
           SupportType::FUNDS,
       },
+      .mbp_max_depth = {},
+      .mbp_allow_price_inversion = {},
+      .mbp_allow_fractional_tick_size = true,
+      .mbp_allow_remove_non_existing = {},
   };
   handler(settings);
 }
