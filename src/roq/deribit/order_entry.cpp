@@ -620,16 +620,19 @@ void OrderEntry::operator()(
       order_update,
       execution_report.cl_ord_id,
       execution_report.orig_cl_ord_id,
-      [&](const auto &order, auto &result) {
-        result.request_status = compute_request_status(
+      [&](const auto &order, auto callback) {
+        auto request_status = compute_request_status(
             order.request_type,
             execution_report.exec_type,
             execution_report.ord_status,
             download_.downloading(OrderEntryState::ORDERS));
-        if (result.request_status != RequestStatus::UNDEFINED) {
-          result.origin = Origin::EXCHANGE;
-          result.error = fix::map_error(execution_report.text);
-          result.text = execution_report.text;
+        if (request_status != RequestStatus{}) {
+          callback(server::Ack{
+              .request_status = request_status,
+              .origin = Origin::EXCHANGE,
+              .error = fix::map_error(execution_report.text),
+              .text = execution_report.text,
+          });
         }
         core::back_emplacer fills(shared_.fills);
         for (auto &item : execution_report.no_fills) {
@@ -713,13 +716,15 @@ void OrderEntry::operator()(
       order_update,
       order_cancel_reject.cl_ord_id,
       order_cancel_reject.orig_cl_ord_id,
-      [&](const auto &order, auto &result) {
+      [&](const auto &order, auto callback) {
         if (ROQ_UNLIKELY(order.request_type != RequestType::MODIFY_ORDER))
           log::fatal("DEBUG: UNEXPECTED"_sv);
-        result.origin = Origin::EXCHANGE;
-        result.request_status = RequestStatus::REJECTED;
-        result.error = fix::map_error(order_cancel_reject.text);
-        result.text = order_cancel_reject.text;
+        callback(server::Ack{
+            .request_status = RequestStatus::REJECTED,
+            .origin = Origin::EXCHANGE,
+            .error = fix::map_error(order_cancel_reject.text),
+            .text = order_cancel_reject.text,
+        });
       });
   if (!found) {
     log::warn("*** EXTERNAL ORDER ***"_sv);
