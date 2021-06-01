@@ -139,8 +139,9 @@ uint16_t OrderEntry::operator()(
 
 uint16_t OrderEntry::operator()(
     const Event<ModifyOrder> &event,
+    const server::Order &order,
     const std::string_view &request_id,
-    const server::OMS_Order &order) {
+    [[maybe_unused]] const std::string_view &previous_request_id) {
   const auto &modify_order = event.value;
   auto side = core::fix::map(order.side);
   auto ord_type = core::fix::map(order.order_type);
@@ -161,8 +162,9 @@ uint16_t OrderEntry::operator()(
 
 uint16_t OrderEntry::operator()(
     const Event<CancelOrder> &,
+    const server::Order &order,
     const std::string_view &request_id,
-    const server::OMS_Order &order) {
+    [[maybe_unused]] const std::string_view &previous_request_id) {
   fix::OrderCancelRequest order_cancel_request{
       .cl_ord_id = request_id,
       .orig_cl_ord_id = order.external_order_id,
@@ -640,7 +642,7 @@ void OrderEntry::operator()(
           TradeUpdate trade_update{
               .stream_id = stream_id_,
               .account = order.account,
-              .order_id = order.user_order_id,
+              .order_id = order.order_id,
               .exchange = order.exchange,
               .symbol = order.symbol,
               .side = order.side,
