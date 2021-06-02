@@ -628,10 +628,12 @@ void OrderEntry::operator()(
             download_.downloading(OrderEntryState::ORDERS));
         if (request_status != RequestStatus{}) {
           callback(server::Ack{
-              .request_status = request_status,
               .origin = Origin::EXCHANGE,
+              .request_status = request_status,
               .error = fix::map_error(execution_report.text),
               .text = execution_report.text,
+              .request_id = {},
+              .previous_request_id = {},
           });
         }
         core::back_emplacer fills(shared_.fills);
@@ -720,10 +722,12 @@ void OrderEntry::operator()(
         if (ROQ_UNLIKELY(order.request_type != RequestType::MODIFY_ORDER))
           log::fatal("DEBUG: UNEXPECTED"_sv);
         callback(server::Ack{
-            .request_status = RequestStatus::REJECTED,
             .origin = Origin::EXCHANGE,
+            .request_status = RequestStatus::REJECTED,
             .error = fix::map_error(order_cancel_reject.text),
             .text = order_cancel_reject.text,
+            .request_id = {},
+            .previous_request_id = {},
         });
       });
   if (!found) {
