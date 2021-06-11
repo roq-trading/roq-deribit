@@ -470,85 +470,56 @@ namespace {
 // ------------------------------------------------------------------
 //   REJECTED        *                   ack failure
 //   CANCELED        *                   ack success + order update
-//   ORDER_STATUS    NEW                 ack success + order update
+//   ORDER_STATUS    NEW                 ack success + order update (create + modify)
 //   ORDER_STATUS    PARTIALLY_FILLED    order update
 //   ORDER_STATUS    FILLED              order update
 //   ORDER_STATUS    CANCELED            ack success
 
-auto compute_request_status(
-    RequestType request_type,
-    core::fix::ExecType exec_type,
-    core::fix::OrdStatus ord_status,
-    bool download) {
+RequestType compute_request_type(core::fix::ExecType exec_type, core::fix::OrdStatus ord_status) {
   switch (exec_type) {
-    case core::fix::ExecType::REJECTED: {
-      switch (request_type) {
-        case RequestType::UNDEFINED:
-          log::warn("*** EXTERNAL ACTION ***"_sv);
-          break;
-        case RequestType::CREATE_ORDER:
-        case RequestType::MODIFY_ORDER:
-        case RequestType::CANCEL_ORDER:
-          return RequestStatus::REJECTED;
-      }
-      break;
-    }
-    case core::fix::ExecType::CANCELED: {
-      switch (request_type) {
-        case RequestType::UNDEFINED:
-          log::warn("*** EXTERNAL ACTION ***"_sv);
-          break;
-        case RequestType::CREATE_ORDER:
-        case RequestType::MODIFY_ORDER:
-          log::fatal("DEBUG: UNEXPECTED"_sv);
-          break;
-        case RequestType::CANCEL_ORDER:
-          return RequestStatus::ACCEPTED;
-      }
-      break;
-    }
+    case core::fix::ExecType::REJECTED:
+      return {};  // XXX or unknown?
+    case core::fix::ExecType::CANCELED:
+      return RequestType::CANCEL_ORDER;
     case core::fix::ExecType::ORDER_STATUS:
       switch (ord_status) {
-        case core::fix::OrdStatus::NEW: {
-          switch (request_type) {
-            case RequestType::UNDEFINED:
-              if (ROQ_UNLIKELY(!download))
-                log::warn("*** EXTERNAL ACTION ***"_sv);
-              break;
-            case RequestType::CREATE_ORDER:
-            case RequestType::MODIFY_ORDER:
-              return RequestStatus::ACCEPTED;
-            case RequestType::CANCEL_ORDER:
-              log::fatal("DEBUG: UNEXPECTED"_sv);
-              break;
-          }
+        case core::fix::OrdStatus::NEW:
+          return {};  // could be create or modify
+        case core::fix::OrdStatus::CANCELED:
+          return RequestType::CANCEL_ORDER;
           break;
-        }
+        default:
+          break;
+      }
+    default:
+      break;
+  }
+  return {};
+}
+
+RequestStatus compute_request_status(
+    core::fix::ExecType exec_type, core::fix::OrdStatus ord_status) {
+  switch (exec_type) {
+    case core::fix::ExecType::REJECTED:
+      return RequestStatus::REJECTED;
+    case core::fix::ExecType::CANCELED:
+      return RequestStatus::ACCEPTED;
+    case core::fix::ExecType::ORDER_STATUS:
+      switch (ord_status) {
+        case core::fix::OrdStatus::NEW:
+        case core::fix::OrdStatus::CANCELED:
+          return RequestStatus::ACCEPTED;
         case core::fix::OrdStatus::PARTIALLY_FILLED:
         case core::fix::OrdStatus::FILLED:
           break;
-        case core::fix::OrdStatus::CANCELED:
-          switch (request_type) {
-            case RequestType::UNDEFINED:
-              break;
-            case RequestType::CREATE_ORDER:
-            case RequestType::MODIFY_ORDER:
-              log::warn("*** EXTERNAL ACTION ***"_sv);
-              break;
-            case RequestType::CANCEL_ORDER:
-              return RequestStatus::ACCEPTED;
-          }
-          break;
         default:
-          log::fatal("DEBUG: UNEXPECTED"_sv);
           break;
       }
       break;
     default:
-      log::fatal("DEBUG: UNEXPECTED"_sv);
       break;
   }
-  return RequestStatus::UNDEFINED;
+  return {};
 }
 }  // namespace
 
@@ -557,6 +528,7 @@ void OrderEntry::operator()(
     const fix::ExecutionReport &execution_report,
     const server::TraceInfo &trace_info) {
   log::trace_3("event(header={}, execution_report={})"_fmt, header, execution_report);
+  log::debug("DEBUG: execution_report={}"_fmt, execution_report);
   // download begin?
   switch (execution_report.mass_status_req_type) {
     case core::fix::MassStatusReqType::ORDERS:
@@ -602,7 +574,6 @@ void OrderEntry::operator()(
       .update_time_utc = execution_report.transact_time,
       .external_account = {},
       .external_order_id = execution_report.order_id,
-      .routing_id = {},  // XXX TODO(thraneh)
       .status = status,
       .price = execution_report.price,
       .stop_price = execution_report.stop_px,
@@ -612,29 +583,39 @@ void OrderEntry::operator()(
       .last_traded_price = execution_report.last_px,
       .last_traded_quantity = execution_report.last_qty,
       .last_liquidity = last_liquidity,
+      .routing_id = {},  // XXX TODO(thraneh)
+      .max_request_version = {},
+      .max_response_version = {},
+      .max_accepted_version = {},
   };
-  // XXX we used to also create orders here...
   auto found = shared_.find_order(
       stream_id_,
       trace_info,
       order_update,
-      execution_report.cl_ord_id,
-      execution_report.orig_cl_ord_id,
+      execution_report.orig_cl_ord_id,  // note! *always* request id from create-order
       [&](const auto &order, auto callback) {
-        auto request_status = compute_request_status(
-            order.request_type,
-            execution_report.exec_type,
-            execution_report.ord_status,
-            download_.downloading(OrderEntryState::ORDERS));
-        if (request_status != RequestStatus{}) {
-          callback(server::Ack{
+        log::debug("DEBUG: found order={}"_fmt, order);
+        auto type = compute_request_type(execution_report.exec_type, execution_report.ord_status);
+        auto status =
+            compute_request_status(execution_report.exec_type, execution_report.ord_status);
+        // note! must resolve using heuristics unless it's a create-order response
+        auto request_id = type == RequestType::CREATE_ORDER ? execution_report.orig_cl_ord_id
+                                                            : std::string_view{};
+        if (status != RequestStatus{}) {
+          server::Ack ack{
+              .stream_id = stream_id_,
+              .account = security_.get_account(),
+              .order_id = order.order_id,
+              .type = type,
               .origin = Origin::EXCHANGE,
-              .request_status = request_status,
+              .status = status,
               .error = fix::map_error(execution_report.text),
               .text = execution_report.text,
-              .request_id = {},
-              .previous_request_id = {},
-          });
+              .version = {},
+              .request_id = request_id,
+          };
+          server::Trace event(trace_info, ack);
+          callback(event, true, order.user_id);
         }
         core::back_emplacer fills(shared_.fills);
         for (auto &item : execution_report.no_fills) {
@@ -663,6 +644,7 @@ void OrderEntry::operator()(
               trace_info, trade_update, handler_, true, order.user_id);
         }
       });
+  log::debug("DEBUG: found={}"_fmt, found);
   // TODO(thraneh): process fills? --> maintain positions
   if (!found) {
     auto external = execution_report.deribit_label.empty();
@@ -682,54 +664,30 @@ void OrderEntry::operator()(
     const fix::OrderCancelReject &order_cancel_reject,
     const server::TraceInfo &trace_info) {
   log::trace_3("event(header={}, order_cancel_reject={})"_fmt, header, order_cancel_reject);
-  auto status = core::fix::map(order_cancel_reject.ord_status);
-  OrderUpdate order_update{
-      .stream_id = stream_id_,
-      .account = security_.get_account(),
-      .order_id = {},
-      .exchange = Flags::exchange(),
-      .symbol = {},
-      .side = {},
-      .position_effect = {},
-      .quantity = NaN,
-      .max_show_quantity = NaN,
-      .order_type = {},
-      .time_in_force = {},
-      .execution_instruction = {},
-      .order_template = {},
-      .create_time_utc = {},
-      .update_time_utc = {},
-      .external_account = {},
-      .external_order_id = {},
-      .routing_id = {},
-      .status = status,
-      .price = NaN,
-      .stop_price = NaN,
-      .remaining_quantity = NaN,
-      .traded_quantity = NaN,
-      .average_traded_price = NaN,
-      .last_traded_price = NaN,
-      .last_traded_quantity = NaN,
-      .last_liquidity = {},
-  };
-  auto found = shared_.find_order(
-      stream_id_,
-      trace_info,
-      order_update,
-      order_cancel_reject.cl_ord_id,
-      order_cancel_reject.orig_cl_ord_id,
-      [&](const auto &order, auto callback) {
-        if (ROQ_UNLIKELY(order.request_type != RequestType::MODIFY_ORDER))
-          log::fatal("DEBUG: UNEXPECTED"_sv);
-        callback(server::Ack{
+  log::debug("DEBUG: order_cancel_reject={}"_fmt, order_cancel_reject);
+  auto found =
+      shared_.find_order(order_cancel_reject.orig_cl_ord_id, [&](const auto &order, auto callback) {
+        log::debug("DEBUG: found order={}"_fmt, order);
+        auto status = core::fix::map(order_cancel_reject.ord_status);
+        if (status != order.status) {
+          log::warn("Unexpected: order status received={}, expected={}"_fmt, status, order.status);
+        }
+        server::Ack ack{
+            .stream_id = stream_id_,
+            .account = security_.get_account(),
+            .order_id = order.order_id,
+            .type = RequestType::CANCEL_ORDER,
             .origin = Origin::EXCHANGE,
-            .request_status = RequestStatus::REJECTED,
+            .status = RequestStatus::REJECTED,
             .error = fix::map_error(order_cancel_reject.text),
             .text = order_cancel_reject.text,
-            .request_id = {},
-            .previous_request_id = {},
-        });
+            .version = {},
+            .request_id = {},  // note! unavailable, must use heuristics
+        };
+        server::Trace event(trace_info, ack);
+        callback(event, true, order.user_id);
       });
+  log::debug("DEBUG: found={}"_fmt, found);
   if (!found) {
     log::warn("*** EXTERNAL ORDER ***"_sv);
     log::warn("order_cancel_reject={}"_fmt, order_cancel_reject);
