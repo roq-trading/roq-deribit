@@ -315,7 +315,7 @@ void WebSocket::operator()(const core::jsonrpc::Result &result, core::json::valu
     case json::RequestType::UNDEFINED:
       break;
     case json::RequestType::UNKNOWN:
-      log::fatal(R"(DEBUG: Unknown request_type="{}")"_fmt, result.id);
+      log::fatal(R"(Unknown request_type="{}")"_fmt, result.id);
       break;
     case json::RequestType::GET_CURRENCIES: {
       core::json::Buffer buffer(decode_buffer_);
@@ -347,7 +347,7 @@ void WebSocket::operator()(
     case json::Method::UNDEFINED:
       break;
     case json::Method::UNKNOWN:
-      log::fatal(R"(DEBUG: Unknown method="{}")"_fmt, notification.method);
+      log::fatal(R"(Unknown method="{}")"_fmt, notification.method);
       break;
     case json::Method::SUBSCRIPTION: {
       core::json::Buffer buffer(decode_buffer_);

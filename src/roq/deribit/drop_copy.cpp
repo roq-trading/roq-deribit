@@ -311,7 +311,7 @@ void DropCopy::operator()(const core::jsonrpc::Result &result, core::json::value
     case json::RequestType::UNDEFINED:
       break;
     case json::RequestType::UNKNOWN:
-      log::fatal(R"(DEBUG: Unknown request_type="{}")"_fmt, result.id);
+      log::fatal(R"(Unknown request_type="{}")"_fmt, result.id);
       break;
     case json::RequestType::AUTH: {
       json::Auth auth(value);
@@ -354,7 +354,7 @@ void DropCopy::operator()(
     case json::Method::UNDEFINED:
       break;
     case json::Method::UNKNOWN:
-      log::fatal(R"(DEBUG: Unknown method="{}")"_fmt, notification.method);
+      log::fatal(R"(Unknown method="{}")"_fmt, notification.method);
       break;
     case json::Method::SUBSCRIPTION: {
       core::json::Buffer buffer(decode_buffer_);
@@ -429,7 +429,7 @@ void DropCopy::operator()(const server::Trace<json::Positions> &event) {
 }
 
 void DropCopy::operator()(const server::Trace<json::Trade> &event, [[maybe_unused]] bool is_last) {
-  log::debug("DEBUG: trade={}"_fmt, event.value);
+  log::debug("trade={}"_fmt, event.value);
   // do nothing?
 }
 

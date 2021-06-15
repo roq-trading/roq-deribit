@@ -528,7 +528,7 @@ void OrderEntry::operator()(
     const fix::ExecutionReport &execution_report,
     const server::TraceInfo &trace_info) {
   log::trace_3("event(header={}, execution_report={})"_fmt, header, execution_report);
-  log::debug("DEBUG: execution_report={}"_fmt, execution_report);
+  log::debug("execution_report={}"_fmt, execution_report);
   // download begin?
   switch (execution_report.mass_status_req_type) {
     case core::fix::MassStatusReqType::ORDERS:
@@ -594,7 +594,7 @@ void OrderEntry::operator()(
       order_update,
       execution_report.orig_cl_ord_id,  // note! *always* request id from create-order
       [&](const auto &order, auto callback) {
-        log::debug("DEBUG: found order={}"_fmt, order);
+        log::debug("found order={}"_fmt, order);
         auto type = compute_request_type(execution_report.exec_type, execution_report.ord_status);
         auto status =
             compute_request_status(execution_report.exec_type, execution_report.ord_status);
@@ -644,7 +644,7 @@ void OrderEntry::operator()(
               trace_info, trade_update, handler_, true, order.user_id);
         }
       });
-  log::debug("DEBUG: found={}"_fmt, found);
+  log::debug("found={}"_fmt, found);
   // TODO(thraneh): process fills? --> maintain positions
   if (!found) {
     auto external = execution_report.deribit_label.empty();
@@ -664,10 +664,10 @@ void OrderEntry::operator()(
     const fix::OrderCancelReject &order_cancel_reject,
     const server::TraceInfo &trace_info) {
   log::trace_3("event(header={}, order_cancel_reject={})"_fmt, header, order_cancel_reject);
-  log::debug("DEBUG: order_cancel_reject={}"_fmt, order_cancel_reject);
+  log::debug("order_cancel_reject={}"_fmt, order_cancel_reject);
   auto found =
       shared_.find_order(order_cancel_reject.orig_cl_ord_id, [&](const auto &order, auto callback) {
-        log::debug("DEBUG: found order={}"_fmt, order);
+        log::debug("found order={}"_fmt, order);
         auto status = core::fix::map(order_cancel_reject.ord_status);
         if (status != order.status) {
           log::warn("Unexpected: order status received={}, expected={}"_fmt, status, order.status);
@@ -687,7 +687,7 @@ void OrderEntry::operator()(
         server::Trace event(trace_info, ack);
         callback(event, true, order.user_id);
       });
-  log::debug("DEBUG: found={}"_fmt, found);
+  log::debug("found={}"_fmt, found);
   if (!found) {
     log::warn("*** EXTERNAL ORDER ***"_sv);
     log::warn("order_cancel_reject={}"_fmt, order_cancel_reject);
