@@ -52,11 +52,10 @@ struct create_metrics final : public core::metrics::Factory {
 template <typename T>
 void emplace(Fill &result, const T &value, uint32_t trade_id) {
   new (&result) Fill{
+      .external_trade_id = value.fill_exec_id,
       .quantity = value.fill_qty,
       .price = value.fill_px,
-      .trade_id = trade_id,
-      .gateway_trade_id = trade_id,
-      .external_trade_id = value.fill_exec_id,
+      .liquidity = {},
   };
 }
 }  // namespace
@@ -580,8 +579,8 @@ void OrderEntry::operator()(
       .remaining_quantity = execution_report.leaves_qty,
       .traded_quantity = execution_report.cum_qty,
       .average_traded_price = execution_report.avg_px,
-      .last_traded_price = execution_report.last_px,
       .last_traded_quantity = execution_report.last_qty,
+      .last_traded_price = execution_report.last_px,
       .last_liquidity = last_liquidity,
       .routing_id = {},  // XXX TODO(thraneh)
       .max_request_version = {},
@@ -637,8 +636,8 @@ void OrderEntry::operator()(
               .update_time_utc = execution_report.transact_time,
               .external_account = order.external_account,
               .external_order_id = order.external_order_id,
-              .routing_id = order.routing_id,
               .fills = fills,
+              .routing_id = order.routing_id,
           };
           server::create_trace_and_dispatch(
               trace_info, trade_update, handler_, true, order.user_id);
