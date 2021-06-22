@@ -50,7 +50,7 @@ struct create_metrics final : public core::metrics::Factory {
 };
 
 template <typename T>
-void emplace(Fill &result, const T &value, [[maybe_unused]] uint32_t trade_id) {
+void emplace(Fill &result, const T &value) {
   new (&result) Fill{
       .external_trade_id = value.fill_exec_id,
       .quantity = value.fill_qty,
@@ -618,10 +618,7 @@ void OrderEntry::operator()(
         }
         core::back_emplacer fills(shared_.fills);
         for (auto &item : execution_report.no_fills) {
-          fills.emplace_back([&](auto &result) {
-            auto trade_id = shared_.next_trade_id();
-            emplace(result, item, trade_id);
-          });
+          fills.emplace_back([&](auto &result) { emplace(result, item); });
         }
         if (!fills.empty()) {
           TradeUpdate trade_update{
