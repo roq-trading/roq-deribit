@@ -50,7 +50,7 @@ struct create_metrics final : public core::metrics::Factory {
 };
 
 template <typename T>
-void emplace(Fill &result, const T &value, uint32_t trade_id) {
+void emplace(Fill &result, const T &value, [[maybe_unused]] uint32_t trade_id) {
   new (&result) Fill{
       .external_trade_id = value.fill_exec_id,
       .quantity = value.fill_qty,
