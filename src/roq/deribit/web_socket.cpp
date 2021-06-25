@@ -40,7 +40,7 @@ struct create_metrics final : public core::metrics::Factory {
 
 WebSocket::WebSocket(
     Handler &handler, core::io::Context &context, uint16_t stream_id, Shared &shared, bool master)
-    : handler_(handler), stream_id_(stream_id), name_(roq::format("{}:{}"_fmt, stream_id_, NAME)),
+    : handler_(handler), stream_id_(stream_id), name_(roq::format("{}:{}"_sv, stream_id_, NAME)),
       master_(master), connection_(
                            *this,
                            context,
@@ -161,7 +161,7 @@ void WebSocket::operator()(ConnectionStatus status) {
         .type = StreamType::WEB_SOCKET,
         .priority = Priority::PRIMARY,
     };
-    log::info("stream_status={}"_fmt, stream_status);
+    log::info("stream_status={}"_sv, stream_status);
     server::create_trace_and_dispatch(trace_info, stream_status, handler_);
   }
 }
@@ -214,7 +214,7 @@ void WebSocket::get_currencies() {
       R"("method":"public/get_currencies",)"
       R"("params":{{}},)"
       R"("id":"{}")"
-      R"(}})"_fmt,
+      R"(}})"_sv,
       request_type.as_raw_text());
   connection_.send_text(message);
 }
@@ -228,7 +228,7 @@ void WebSocket::get_instruments(const std::string_view &currency) {
       R"("currency":"{}")"
       R"(}},)"
       R"("id":"{}")"
-      R"(}})"_fmt,
+      R"(}})"_sv,
       currency,
       request_type.as_raw_text());
   connection_.send_text(message);
@@ -243,7 +243,7 @@ void WebSocket::subscribe_platform_state() {
       R"("channels":["platform_state"])"
       R"(}},)"
       R"("id":"{}")"
-      R"(}})"_fmt,
+      R"(}})"_sv,
       request_type.as_raw_text());
   connection_.send_text(message);
 }
@@ -257,7 +257,7 @@ void WebSocket::subscribe_instrument_state() {
       R"("channels":["instrument.state.any.any"])"
       R"(}},)"
       R"("id":"{}")"
-      R"(}})"_fmt,
+      R"(}})"_sv,
       request_type.as_raw_text());
   connection_.send_text(message);
 }
@@ -271,7 +271,7 @@ void WebSocket::subscribe_quote(const roq::span<std::string> &symbols) {
       R"("channels":["quote.{}"])"
       R"(}},)"
       R"("id":"{}")"
-      R"(}})"_fmt,
+      R"(}})"_sv,
       roq::join(symbols, R"(","quote.)"_sv),
       request_type.as_raw_text());
   connection_.send_text(message);
@@ -286,7 +286,7 @@ void WebSocket::subscribe_ticker(const roq::span<std::string> &symbols) {
       R"("channels":["ticker.{}.raw"])"
       R"(}},)"
       R"("id":"{}")"
-      R"(}})"_fmt,
+      R"(}})"_sv,
       roq::join(symbols, R"(.raw","ticker.)"_sv),
       request_type.as_raw_text());
   connection_.send_text(message);
@@ -297,7 +297,7 @@ void WebSocket::parse(const std::string_view &message) {
     try {
       core::jsonrpc::Parser::dispatch(*this, message);
     } catch (...) {
-      log::warn(R"(message="{}")"_fmt, message);
+      log::warn(R"(message="{}")"_sv, message);
       core::tools::UnhandledException::terminate();
     }
   });
@@ -305,7 +305,7 @@ void WebSocket::parse(const std::string_view &message) {
 
 void WebSocket::operator()(const core::jsonrpc::Error &error, core::json::value_t &value) {
   json::Error error_2(value);
-  log::fatal(R"(error={}, id="{}")"_fmt, error_2, error.id);
+  log::fatal(R"(error={}, id="{}")"_sv, error_2, error.id);
 }
 
 void WebSocket::operator()(const core::jsonrpc::Result &result, core::json::value_t &value) {
@@ -315,7 +315,7 @@ void WebSocket::operator()(const core::jsonrpc::Result &result, core::json::valu
     case json::RequestType::UNDEFINED:
       break;
     case json::RequestType::UNKNOWN:
-      log::fatal(R"(Unknown request_type="{}")"_fmt, result.id);
+      log::fatal(R"(Unknown request_type="{}")"_sv, result.id);
       break;
     case json::RequestType::GET_CURRENCIES: {
       core::json::Buffer buffer(decode_buffer_);
@@ -335,7 +335,7 @@ void WebSocket::operator()(const core::jsonrpc::Result &result, core::json::valu
     case json::RequestType::SUBSCRIBE_TICKER:
       break;
     default:
-      log::fatal("Unexpected: request_type={}"_fmt, request_type);
+      log::fatal("Unexpected: request_type={}"_sv, request_type);
   }
 }
 
@@ -347,7 +347,7 @@ void WebSocket::operator()(
     case json::Method::UNDEFINED:
       break;
     case json::Method::UNKNOWN:
-      log::fatal(R"(Unknown method="{}")"_fmt, notification.method);
+      log::fatal(R"(Unknown method="{}")"_sv, notification.method);
       break;
     case json::Method::SUBSCRIPTION: {
       core::json::Buffer buffer(decode_buffer_);
@@ -363,7 +363,7 @@ void WebSocket::operator()(const json::Auth &, const server::TraceInfo &) {
 
 void WebSocket::operator()(const json::Currencies &currencies, const server::TraceInfo &) {
   profile_.currencies([&]() {
-    log::trace_1("currencies={}"_fmt, currencies);
+    log::info<1>("currencies={}"_sv, currencies);
     auto &data = currencies.data;
     std::vector<std::string> currencies;
     if (!data.empty())
@@ -385,7 +385,7 @@ void WebSocket::operator()(const json::Currencies &currencies, const server::Tra
 
 void WebSocket::operator()(const json::Instruments &instruments, const server::TraceInfo &) {
   profile_.instruments([&]() {
-    log::trace_1("instruments={}"_fmt, instruments);
+    log::info<1>("instruments={}"_sv, instruments);
     auto &data = instruments.data;
     std::vector<std::string> symbols;
     if (!data.empty())
@@ -422,7 +422,7 @@ void WebSocket::operator()(const server::Trace<json::Quote> &event) {
   profile_.quote([&]() {
     auto &trace_info = event.trace_info;
     auto &quote = event.value;
-    log::trace_2("quote={}"_fmt, quote);
+    log::info<2>("quote={}"_sv, quote);
     auto &layer = top_of_book_[quote.instrument_name];
     TopOfBook top_of_book = {
         .stream_id = stream_id_,
@@ -448,7 +448,7 @@ void WebSocket::operator()(const server::Trace<json::Ticker> &event) {
   profile_.ticker([&]() {
     auto &trace_info = event.trace_info;
     auto &ticker = event.value;
-    log::trace_2("ticker={}"_fmt, ticker);
+    log::info<2>("ticker={}"_sv, ticker);
     auto trading_status = json::map(ticker.state);
     auto &item = trading_status_[ticker.instrument_name];
     if (trading_status && utils::update(item, trading_status)) {

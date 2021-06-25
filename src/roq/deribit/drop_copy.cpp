@@ -40,7 +40,7 @@ DropCopy::DropCopy(
     Security &security,
     Shared &shared)
     : handler_(handler), stream_id_(stream_id),
-      name_(roq::format("{}:{}:{}"_fmt, stream_id_, NAME, security.get_account())),
+      name_(roq::format("{}:{}:{}"_sv, stream_id_, NAME, security.get_account())),
       connection_(
           *this,
           context,
@@ -144,7 +144,7 @@ void DropCopy::operator()(ConnectionStatus status) {
         .type = StreamType::WEB_SOCKET,
         .priority = Priority::PRIMARY,
     };
-    log::info("stream_status={}"_fmt, stream_status);
+    log::info("stream_status={}"_sv, stream_status);
     server::create_trace_and_dispatch(trace_info, stream_status, handler_);
   }
 }
@@ -167,7 +167,7 @@ void DropCopy::login() {
       R"("signature":"{}")"
       R"(}},)"
       R"("id":"{}")"
-      R"(}})"_fmt,
+      R"(}})"_sv,
       security_.get_access_key(),
       timestamp.count(),
       nonce,
@@ -214,7 +214,7 @@ void DropCopy::subscribe_portfolios(const roq::span<std::string> &currencies) {
       R"("channels":["user.portfolio.{}"])"
       R"(}},)"
       R"("id":"{}")"
-      R"(}})"_fmt,
+      R"(}})"_sv,
       roq::join(currencies, R"(","user.portfolio.)"_sv),
       request_type.as_raw_text());
   connection_.send_text(message);
@@ -229,7 +229,7 @@ void DropCopy::subscribe_changes() {
       R"("channels":["user.changes.any.any.raw"])"
       R"(}},)"
       R"("id":"{}")"
-      R"(}})"_fmt,
+      R"(}})"_sv,
       request_type.as_raw_text());
   connection_.send_text(message);
 }
@@ -245,7 +245,7 @@ void DropCopy::get_account_summary(const roq::span<std::string> &currencies) {
         R"("extended":true)"
         R"(}},)"
         R"("id":"{}")"
-        R"(}})"_fmt,
+        R"(}})"_sv,
         currency,
         request_type.as_raw_text());
     connection_.send_text(message);
@@ -263,7 +263,7 @@ void DropCopy::get_trades(const roq::span<std::string> &currencies) {
         R"("count":{})"
         R"(}},)"
         R"("id":"{}")"
-        R"(}})"_fmt,
+        R"(}})"_sv,
         currency,
         Flags::ws_max_trades(),
         request_type.as_raw_text());
@@ -281,7 +281,7 @@ void DropCopy::get_positions(const roq::span<std::string> &currencies) {
         R"("currency":"{}")"
         R"(}},)"
         R"("id":"{}")"
-        R"(}})"_fmt,
+        R"(}})"_sv,
         currency,
         request_type.as_raw_text());
     connection_.send_text(message);
@@ -293,7 +293,7 @@ void DropCopy::parse(const std::string_view &message) {
     try {
       core::jsonrpc::Parser::dispatch(*this, message);
     } catch (...) {
-      log::warn(R"(message="{}")"_fmt, message);
+      log::warn(R"(message="{}")"_sv, message);
       core::tools::UnhandledException::terminate();
     }
   });
@@ -301,7 +301,7 @@ void DropCopy::parse(const std::string_view &message) {
 
 void DropCopy::operator()(const core::jsonrpc::Error &error, core::json::value_t &value) {
   json::Error error_2(value);
-  log::fatal(R"(error={}, id="{}")"_fmt, error_2, error.id);
+  log::fatal(R"(error={}, id="{}")"_sv, error_2, error.id);
 }
 
 void DropCopy::operator()(const core::jsonrpc::Result &result, core::json::value_t &value) {
@@ -311,7 +311,7 @@ void DropCopy::operator()(const core::jsonrpc::Result &result, core::json::value
     case json::RequestType::UNDEFINED:
       break;
     case json::RequestType::UNKNOWN:
-      log::fatal(R"(Unknown request_type="{}")"_fmt, result.id);
+      log::fatal(R"(Unknown request_type="{}")"_sv, result.id);
       break;
     case json::RequestType::AUTH: {
       json::Auth auth(value);
@@ -342,7 +342,7 @@ void DropCopy::operator()(const core::jsonrpc::Result &result, core::json::value
       break;
     }
     default:
-      log::fatal("Unexpected: request_type={}"_fmt, request_type);
+      log::fatal("Unexpected: request_type={}"_sv, request_type);
   }
 }
 
@@ -354,7 +354,7 @@ void DropCopy::operator()(
     case json::Method::UNDEFINED:
       break;
     case json::Method::UNKNOWN:
-      log::fatal(R"(Unknown method="{}")"_fmt, notification.method);
+      log::fatal(R"(Unknown method="{}")"_sv, notification.method);
       break;
     case json::Method::SUBSCRIPTION: {
       core::json::Buffer buffer(decode_buffer_);
@@ -366,7 +366,7 @@ void DropCopy::operator()(
 
 void DropCopy::operator()(const json::Auth &auth, const server::TraceInfo &) {
   profile_.auth([&]() {
-    log::trace_1("auth={}"_fmt, auth);
+    log::info<1>("auth={}"_sv, auth);
     (*this)(ConnectionStatus::DOWNLOADING);
     download_.begin();
   });
@@ -429,7 +429,7 @@ void DropCopy::operator()(const server::Trace<json::Positions> &event) {
 }
 
 void DropCopy::operator()(const server::Trace<json::Trade> &event, [[maybe_unused]] bool is_last) {
-  log::debug("trade={}"_fmt, event.value);
+  log::debug("trade={}"_sv, event.value);
   // do nothing?
 }
 

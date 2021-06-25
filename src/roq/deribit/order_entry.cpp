@@ -67,7 +67,7 @@ OrderEntry::OrderEntry(
     Security &security,
     Shared &shared)
     : handler_(handler), stream_id_(stream_id),
-      name_(roq::format("{}:{}:{}"_fmt, stream_id_, NAME, security.get_account())),
+      name_(roq::format("{}:{}:{}"_sv, stream_id_, NAME, security.get_account())),
       connection_factory_(context, Flags::fix_uri()), connection_(*this, connection_factory_),
       encode_buffer_(Flags::encode_buffer_size()), decode_buffer_(Flags::decode_buffer_size()),
       counter_{
@@ -118,7 +118,7 @@ uint16_t OrderEntry::operator()(
   auto time_in_force = core::fix::map(create_order.time_in_force);
   core::stack::Buffer<char, 36> buffer;
   roq::format_to(
-      std::back_inserter(buffer), "roq-{}-{}"_fmt, message_info.source, create_order.order_id);
+      std::back_inserter(buffer), "roq-{}-{}"_sv, message_info.source, create_order.order_id);
   std::string_view deribit_label(buffer.data(), buffer.size());
   fix::NewOrderSingle new_order_single{
       .cl_ord_id = request_id,
@@ -249,7 +249,7 @@ void OrderEntry::operator()(ConnectionStatus status) {
         .type = StreamType::FIX,
         .priority = Priority::PRIMARY,
     };
-    log::info("stream_status={}"_fmt, stream_status);
+    log::info("stream_status={}"_sv, stream_status);
     server::create_trace_and_dispatch(trace_info, stream_status, handler_);
   }
 }
@@ -398,7 +398,7 @@ void OrderEntry::parse_helper(const core::fix::message_t &message) {
       break;
     }
     default:
-      log::warn("Unexpected msg_type={}"_fmt, message.header.msg_type);
+      log::warn("Unexpected msg_type={}"_sv, message.header.msg_type);
       break;
   }
 }
@@ -407,7 +407,7 @@ void OrderEntry::operator()(
     const core::fix::header_t &header, const fix::Heartbeat &heartbeat, const server::TraceInfo &) {
   // note! get clock *before* any logging (avoid latency)
   auto now = core::get_system_clock();
-  log::trace_3("event(header={}, heartbeat={})"_fmt, header, heartbeat);
+  log::info<3>("event(header={}, heartbeat={})"_sv, header, heartbeat);
   if (!heartbeat.test_req_id.empty()) {
     auto send_time = core::from_chars<uint64_t>(heartbeat.test_req_id);
     auto latency =
@@ -425,14 +425,14 @@ void OrderEntry::operator()(
 
 void OrderEntry::operator()(
     const core::fix::header_t &header, const fix::Logon &logon, const server::TraceInfo &) {
-  log::trace_1("event(header={}, logon={})"_fmt, header, logon);
+  log::info<1>("event(header={}, logon={})"_sv, header, logon);
   (*this)(ConnectionStatus::DOWNLOADING);
   download_.begin();
 }
 
 void OrderEntry::operator()(
     const core::fix::header_t &header, const fix::Logout &logout, const server::TraceInfo &) {
-  log::warn("event(header={}, logout={})"_fmt, header, logout);
+  log::warn("event(header={}, logout={})"_sv, header, logout);
   ready_ = false;
   // note! mandated, must send a logout response
   send_logout(LOGOUT_RESPONSE);
@@ -444,7 +444,7 @@ void OrderEntry::operator()(
     const core::fix::header_t &header,
     const fix::ResendRequest &resend_request,
     const server::TraceInfo &) {
-  log::warn("event(header={}, resend_request={})"_fmt, header, resend_request);
+  log::warn("event(header={}, resend_request={})"_sv, header, resend_request);
   log::info("closing connection"_sv);
   connection_.close();
 }
@@ -453,7 +453,7 @@ void OrderEntry::operator()(
     const core::fix::header_t &header,
     const fix::TestRequest &test_request,
     const server::TraceInfo &) {
-  log::trace_1("event(header={}, test_request={})"_fmt, header, test_request);
+  log::info<1>("event(header={}, test_request={})"_sv, header, test_request);
   send_heartbeat(test_request.test_req_id);
 }
 
@@ -526,8 +526,8 @@ void OrderEntry::operator()(
     const core::fix::header_t &header,
     const fix::ExecutionReport &execution_report,
     const server::TraceInfo &trace_info) {
-  log::trace_3("event(header={}, execution_report={})"_fmt, header, execution_report);
-  log::debug("execution_report={}"_fmt, execution_report);
+  log::info<3>("event(header={}, execution_report={})"_sv, header, execution_report);
+  log::debug("execution_report={}"_sv, execution_report);
   // download begin?
   switch (execution_report.mass_status_req_type) {
     case core::fix::MassStatusReqType::ORDERS:
@@ -593,7 +593,7 @@ void OrderEntry::operator()(
       order_update,
       execution_report.orig_cl_ord_id,  // note! *always* request id from create-order
       [&](const auto &order, auto callback) {
-        log::debug("found order={}"_fmt, order);
+        log::debug("found order={}"_sv, order);
         auto type = compute_request_type(execution_report.exec_type, execution_report.ord_status);
         auto status =
             compute_request_status(execution_report.exec_type, execution_report.ord_status);
@@ -640,7 +640,7 @@ void OrderEntry::operator()(
               trace_info, trade_update, handler_, true, order.user_id);
         }
       });
-  log::debug("found={}"_fmt, found);
+  log::debug("found={}"_sv, found);
   // TODO(thraneh): process fills? --> maintain positions
   if (!found) {
     auto external = execution_report.deribit_label.empty();
@@ -649,7 +649,7 @@ void OrderEntry::operator()(
     } else {
       log::warn("*** UNKNOWN INTERNAL ORDER ***"_sv);
     }
-    log::warn("execution_report={}"_fmt, execution_report);
+    log::warn("execution_report={}"_sv, execution_report);
   }
   // download end?
   download_.check_relaxed(OrderEntryState::ORDERS);
@@ -659,14 +659,14 @@ void OrderEntry::operator()(
     const core::fix::header_t &header,
     const fix::OrderCancelReject &order_cancel_reject,
     const server::TraceInfo &trace_info) {
-  log::trace_3("event(header={}, order_cancel_reject={})"_fmt, header, order_cancel_reject);
-  log::debug("order_cancel_reject={}"_fmt, order_cancel_reject);
+  log::info<3>("event(header={}, order_cancel_reject={})"_sv, header, order_cancel_reject);
+  log::debug("order_cancel_reject={}"_sv, order_cancel_reject);
   auto found =
       shared_.find_order(order_cancel_reject.orig_cl_ord_id, [&](const auto &order, auto callback) {
-        log::debug("found order={}"_fmt, order);
+        log::debug("found order={}"_sv, order);
         auto status = core::fix::map(order_cancel_reject.ord_status);
         if (status != order.status) {
-          log::warn("Unexpected: order status received={}, expected={}"_fmt, status, order.status);
+          log::warn("Unexpected: order status received={}, expected={}"_sv, status, order.status);
         }
         server::Ack ack{
             .stream_id = stream_id_,
@@ -683,17 +683,17 @@ void OrderEntry::operator()(
         server::Trace event(trace_info, ack);
         callback(event, true, order.user_id);
       });
-  log::debug("found={}"_fmt, found);
+  log::debug("found={}"_sv, found);
   if (!found) {
     log::warn("*** EXTERNAL ORDER ***"_sv);
-    log::warn("order_cancel_reject={}"_fmt, order_cancel_reject);
+    log::warn("order_cancel_reject={}"_sv, order_cancel_reject);
   }
 }
 
 void OrderEntry::operator()(
     const core::fix::header_t &header, const fix::Reject &reject, const server::TraceInfo &) {
-  log::trace_3("event(header={}, reject={})"_fmt, header, reject);
-  log::warn("reject={}"_fmt, reject);
+  log::info<3>("event(header={}, reject={})"_sv, header, reject);
+  log::warn("reject={}"_sv, reject);
   if (reject.session_reject_reason.compare("99"_sv) == 0 &&
       reject.text.compare("connection_too_slow"_sv) == 0) {
     connection_.close();
@@ -706,17 +706,17 @@ void OrderEntry::operator()(
     const core::fix::header_t &header,
     const fix::OrderMassCancelReport &order_mass_cancel_report,
     const server::TraceInfo &) {
-  log::trace_1(
-      "event(header={}, order_mass_cancel_report={})"_fmt, header, order_mass_cancel_report);
+  log::info<1>(
+      "event(header={}, order_mass_cancel_report={})"_sv, header, order_mass_cancel_report);
   switch (order_mass_cancel_report.mass_cancel_response) {
     case core::fix::MassCancelResponse::CANCEL_REQUEST_REJECTED:
       log::warn(
-          R"(*** CANCEL ALL ORDERS FAILED, REASON="{}" ***)"_fmt,
+          R"(*** CANCEL ALL ORDERS FAILED, REASON="{}" ***)"_sv,
           order_mass_cancel_report.mass_cancel_reject_reason);
       break;
     default:
       log::info(
-          "*** CANCEL ALL ORDERS SUCCEEDED, TOTAL_AFFECTED_ORDERS={} ***"_fmt,
+          "*** CANCEL ALL ORDERS SUCCEEDED, TOTAL_AFFECTED_ORDERS={} ***"_sv,
           order_mass_cancel_report.total_affected_orders);
   }
 }
@@ -738,7 +738,7 @@ void OrderEntry::send(const T &event, std::chrono::nanoseconds sending_time) {
       sending_time);
   auto message = event.encode(writer);
   if (ROQ_UNLIKELY(Flags::fix_debug()))
-    log::info("{}"_fmt, core::fix::Debug(message));
+    log::info("{}"_sv, core::fix::Debug(message));
   connection_.send(message);
 }
 
@@ -749,14 +749,14 @@ void OrderEntry::check(const core::fix::header_t &header) {
     if (expected < current) {
       log::warn(
           "*** SEQUENCE GAP *** "
-          "current={} previous={} distance={}"_fmt,
+          "current={} previous={} distance={}"_sv,
           current,
           inbound_.msg_seq_num,
           current - inbound_.msg_seq_num);
     } else {
       log::warn(
           "*** SEQUENCE REPLAY *** "
-          "current={} previous={} distance={}"_fmt,
+          "current={} previous={} distance={}"_sv,
           current,
           inbound_.msg_seq_num,
           inbound_.msg_seq_num - current);

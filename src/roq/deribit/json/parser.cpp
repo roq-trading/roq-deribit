@@ -114,13 +114,13 @@ void Parser::dispatch(
           log::fatal("Unexpected"_sv);
           break;
         case Field::UNKNOWN:
-          log::fatal(R"(Unknown key="{}")"_fmt, key);
+          log::fatal(R"(Unknown key="{}")"_sv, key);
           break;
         case Field::CHANNEL: {
           auto name = std::get<std::string_view>(value);
           channel = parse_channel(name);
           if (ROQ_UNLIKELY(channel == Channel::UNKNOWN))
-            log::warn(R"(Can't parse channel="{}")"_fmt, name);
+            log::warn(R"(Can't parse channel="{}")"_sv, name);
           break;
         }
         case Field::DATA:
@@ -165,7 +165,7 @@ void Parser::dispatch(
   }
   if (dispatched)
     return;
-  log::warn(R"(message="{}")"_fmt, message);
+  log::warn(R"(message="{}")"_sv, message);
   log::fatal("Unexpected"_sv);
 }
 

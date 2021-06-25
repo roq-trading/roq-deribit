@@ -67,7 +67,7 @@ static void validate(const T &value) {
       break;
     case core::fix::MDUpdateAction::DELETE_THRU:
     case core::fix::MDUpdateAction::DELETE_FROM:
-      log::fatal("MDUpdateAction not supported: {}"_fmt, value);
+      log::fatal("MDUpdateAction not supported: {}"_sv, value);
       break;
   }
 }
@@ -101,7 +101,7 @@ MarketData::MarketData(
     Security &security,
     Shared &shared,
     bool master)
-    : handler_(handler), stream_id_(stream_id), name_(roq::format("{}:{}"_fmt, stream_id_, NAME)),
+    : handler_(handler), stream_id_(stream_id), name_(roq::format("{}:{}"_sv, stream_id_, NAME)),
       master_(master), connection_factory_(context, Flags::fix_uri()),
       connection_(*this, connection_factory_), encode_buffer_(Flags::encode_buffer_size()),
       decode_buffer_(Flags::decode_buffer_size()),
@@ -196,7 +196,7 @@ void MarketData::operator()(ConnectionStatus status) {
         .type = StreamType::FIX,
         .priority = Priority::PRIMARY,
     };
-    log::info("stream_status={}"_fmt, stream_status);
+    log::info("stream_status={}"_sv, stream_status);
     server::create_trace_and_dispatch(trace_info, stream_status, handler_);
   }
 }
@@ -435,7 +435,7 @@ void MarketData::parse_helper(const core::fix::message_t &message) {
       break;
     }
     default:
-      log::warn("Unexpected msg_type={}"_fmt, message.header.msg_type);
+      log::warn("Unexpected msg_type={}"_sv, message.header.msg_type);
       break;
   }
 }
@@ -444,7 +444,7 @@ void MarketData::operator()(
     const core::fix::header_t &header, const fix::Heartbeat &heartbeat, const server::TraceInfo &) {
   // note! get clock *before* any logging (avoid latency)
   auto now = core::get_system_clock();
-  log::trace_3("event(header={}, heartbeat={})"_fmt, header, heartbeat);
+  log::info<3>("event(header={}, heartbeat={})"_sv, header, heartbeat);
   if (!heartbeat.test_req_id.empty()) {
     auto send_time = core::from_chars<uint64_t>(heartbeat.test_req_id);
     auto latency =
@@ -462,14 +462,14 @@ void MarketData::operator()(
 
 void MarketData::operator()(
     const core::fix::header_t &header, const fix::Logon &logon, const server::TraceInfo &) {
-  log::trace_1("event(header={}, logon={})"_fmt, header, logon);
+  log::info<1>("event(header={}, logon={})"_sv, header, logon);
   (*this)(ConnectionStatus::DOWNLOADING);
   download_.begin();
 }
 
 void MarketData::operator()(
     const core::fix::header_t &header, const fix::Logout &logout, const server::TraceInfo &) {
-  log::warn("event(header={}, logout={})"_fmt, header, logout);
+  log::warn("event(header={}, logout={})"_sv, header, logout);
   (*this)(ConnectionStatus::LOGGED_OUT);
   ready_ = false;
   // note! mandated, must send a logout response
@@ -482,7 +482,7 @@ void MarketData::operator()(
     const core::fix::header_t &header,
     const fix::ResendRequest &resend_request,
     const server::TraceInfo &) {
-  log::warn("event(header={}, resend_request={})"_fmt, header, resend_request);
+  log::warn("event(header={}, resend_request={})"_sv, header, resend_request);
   log::info("closing connection"_sv);
   connection_.close();
 }
@@ -491,7 +491,7 @@ void MarketData::operator()(
     const core::fix::header_t &header,
     const fix::TestRequest &test_request,
     const server::TraceInfo &) {
-  log::trace_1("event(header={}, test_request={})"_fmt, header, test_request);
+  log::info<1>("event(header={}, test_request={})"_sv, header, test_request);
   send_heartbeat(test_request.test_req_id);
 }
 
@@ -499,13 +499,13 @@ void MarketData::operator()(
     const core::fix::header_t &header,
     const fix::SecurityList &security_list,
     const server::TraceInfo &trace_info) {
-  log::trace_2("event(header={}, security_list={})"_fmt, header, security_list);
+  log::info<2>("event(header={}, security_list={})"_sv, header, security_list);
   if (security_list.no_related_sym.size() > 0) {
     size_t counter = {};
     std::vector<std::string> symbols;
     symbols.reserve(security_list.no_related_sym.size());
     for (auto &instrument : security_list.no_related_sym) {
-      log::trace_1("instrument={}"_fmt, instrument);
+      log::info<1>("instrument={}"_sv, instrument);
       auto &symbol = instrument.symbol;
       if (shared_.discard_symbol(symbol))
         continue;
@@ -540,7 +540,7 @@ void MarketData::operator()(
       server::create_trace_and_dispatch(trace_info, reference_data, handler_, true);
       ++counter;
     }
-    log::info("- securities: {} (/{})"_fmt, counter, security_list.no_related_sym.size());
+    log::info("- securities: {} (/{})"_sv, counter, security_list.no_related_sym.size());
     if (!symbols.empty()) {
       SymbolsUpdate symbols_update{
           .symbols = symbols,
@@ -555,7 +555,7 @@ void MarketData::operator()(
     const core::fix::header_t &header,
     const fix::SecurityStatus &security_status,
     const server::TraceInfo &) {
-  log::trace_2("event(header={}, security_status={})"_fmt, header, security_status);
+  log::info<2>("event(header={}, security_status={})"_sv, header, security_status);
   // XXX should we use it or not?
 }
 
@@ -563,8 +563,8 @@ void MarketData::operator()(
     const core::fix::header_t &header,
     const fix::MarketDataIncrementalRefresh &market_data_incremental_refresh,
     const server::TraceInfo &trace_info) {
-  log::trace_3(
-      "event(header={}, market_data_incremental_refresh={})"_fmt,
+  log::info<3>(
+      "event(header={}, market_data_incremental_refresh={})"_sv,
       header,
       market_data_incremental_refresh);
 
@@ -630,7 +630,7 @@ void MarketData::operator()(
         });
         break;
       default:
-        log::warn("unsupported: {}"_fmt, item);
+        log::warn("unsupported: {}"_sv, item);
         break;
     }
   }
@@ -676,7 +676,7 @@ void MarketData::operator()(
     const fix::MarketDataRequestReject &market_data_request_reject,
     const server::TraceInfo &) {
   log::warn(
-      "event(header={}, market_data_request_reject={})"_fmt, header, market_data_request_reject);
+      "event(header={}, market_data_request_reject={})"_sv, header, market_data_request_reject);
   log::fatal("Unexpected"_sv);  // don't know how to continue
 }
 
@@ -684,8 +684,8 @@ void MarketData::operator()(
     const core::fix::header_t &header,
     const fix::MarketDataSnapshotFullRefresh &market_data_snapshot_full_refresh,
     const server::TraceInfo &trace_info) {
-  log::trace_3(
-      "event(header={}, market_data_snapshot_full_refresh={})"_fmt,
+  log::info<3>(
+      "event(header={}, market_data_snapshot_full_refresh={})"_sv,
       header,
       market_data_snapshot_full_refresh);
   core::back_emplacer bids(shared_.bids), asks(shared_.asks);
@@ -725,7 +725,7 @@ void MarketData::operator()(
         });
         break;
       default:
-        log::warn("unsupported: {}"_fmt, item);
+        log::warn("unsupported: {}"_sv, item);
         break;
     }
   }
@@ -774,7 +774,7 @@ void MarketData::send(const T &event, std::chrono::nanoseconds sending_time) {
       sending_time);
   auto message = event.encode(writer);
   if (ROQ_UNLIKELY(Flags::fix_debug()))
-    log::info("{}"_fmt, core::fix::Debug(message));
+    log::info("{}"_sv, core::fix::Debug(message));
   connection_.send(message);
 }
 
@@ -785,14 +785,14 @@ void MarketData::check(const core::fix::header_t &header) {
     if (expected < current) {
       log::warn(
           "*** SEQUENCE GAP *** "
-          "current={} previous={} distance={}"_fmt,
+          "current={} previous={} distance={}"_sv,
           current,
           inbound_.msg_seq_num,
           current - inbound_.msg_seq_num);
     } else {
       log::warn(
           "*** SEQUENCE REPLAY *** "
-          "current={} previous={} distance={}"_fmt,
+          "current={} previous={} distance={}"_sv,
           current,
           inbound_.msg_seq_num,
           inbound_.msg_seq_num - current);
