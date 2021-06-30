@@ -175,7 +175,10 @@ void MarketData::operator()(const core::net::Manager::Read &read) {
           }
         },
         buffer,
-        Flags::fix_debug());
+        [](auto &message) {
+          if (ROQ_UNLIKELY(Flags::fix_debug()))
+            log::info("{}"_sv, core::fix::Debug(message));
+        });
     if (bytes == 0)
       break;
     assert(bytes <= std::size(buffer));
