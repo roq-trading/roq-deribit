@@ -8,6 +8,7 @@
 #include <memory>
 #include <string>
 #include <string_view>
+#include <utility>
 #include <vector>
 
 #include "roq/core/metrics/counter.h"
@@ -115,6 +116,19 @@ class WebSocket final : public core::web::Socket::Handler,
   void operator()(const server::Trace<json::Portfolio> &) override;
   void operator()(const server::Trace<json::Changes> &) override;
 
+  template <typename C>
+  bool get_top_of_book(const std::string_view &symbol, C callback) {
+    auto iter = top_of_book_.find(symbol);
+    if (iter == top_of_book_.end()) {
+      auto iter_2 = all_symbols_.find(symbol);
+      if (iter_2 == all_symbols_.end())
+        return false;
+      iter = top_of_book_.emplace(symbol, std::make_pair(roq::Layer{}, (*iter_2).second)).first;
+    }
+    callback((*iter).second.first, (*iter).second.second);
+    return true;
+  }
+
  private:
   Handler &handler_;
   // config
@@ -138,9 +152,10 @@ class WebSocket final : public core::web::Socket::Handler,
   // cache
   Shared &shared_;
   absl::flat_hash_set<std::string> all_currencies_;  // only used by master
-  absl::flat_hash_set<std::string> all_symbols_;     // only used by master
+  absl::flat_hash_map<std::string, double>
+      all_symbols_;  // only used by master (value is multiplier)
   std::vector<std::string> symbols_;
-  absl::flat_hash_map<std::string, roq::Layer> top_of_book_;
+  absl::flat_hash_map<std::string, std::pair<roq::Layer, double> > top_of_book_;
   absl::flat_hash_map<std::string, TradingStatus> trading_status_;
   // state
   bool ready_ = false;

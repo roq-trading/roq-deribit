@@ -4,6 +4,11 @@ All notable changes will be documented in this file.
 
 ## Head
 
+### Changed
+
+* `TopOfBook` now convert `Quote.best_bid_amount` and `Quote.best_ask_amount`
+  to number of contracts
+
 ## 0.7.2 &ndash; 2021-06-20
 
 ## 0.7.1 &ndash; 2021-05-30

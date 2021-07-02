@@ -394,7 +394,9 @@ void WebSocket::operator()(const json::Instruments &instruments, const server::T
       auto &symbol = item.instrument_name;
       if (shared_.discard_symbol(symbol))
         continue;
-      if (all_symbols_.emplace(symbol).second)
+      auto multiplier =
+          utils::compare(item.contract_size, 0.0) == 0 ? 1.0 : (1.0 / item.contract_size);
+      if (all_symbols_.emplace(symbol, multiplier).second)
         symbols.emplace_back(symbol);
     }
     download_.check(WebSocketState::INSTRUMENTS);
@@ -423,24 +425,27 @@ void WebSocket::operator()(const server::Trace<json::Quote> &event) {
     auto &trace_info = event.trace_info;
     auto &quote = event.value;
     log::info<2>("quote={}"_sv, quote);
-    auto &layer = top_of_book_[quote.instrument_name];
-    TopOfBook top_of_book = {
-        .stream_id = stream_id_,
-        .exchange = Flags::exchange(),
-        .symbol = quote.instrument_name,
-        .layer{
-            .bid_price = quote.best_bid_price,
-            .bid_quantity = quote.best_bid_amount,
-            .ask_price = quote.best_ask_price,
-            .ask_quantity = quote.best_ask_amount,
-        },
-        .snapshot = false,
-        .exchange_time_utc = quote.timestamp,
-    };
-    if (utils::compare(layer, top_of_book.layer) != 0) {
-      layer = top_of_book.layer;
-      server::create_trace_and_dispatch(trace_info, top_of_book, handler_, true);
-    }
+    get_top_of_book(quote.instrument_name, [&](auto &layer, auto multiplier) {
+      auto bid_quantity = multiplier * quote.best_bid_amount;
+      auto ask_quantity = multiplier * quote.best_ask_amount;
+      TopOfBook top_of_book = {
+          .stream_id = stream_id_,
+          .exchange = Flags::exchange(),
+          .symbol = quote.instrument_name,
+          .layer{
+              .bid_price = quote.best_bid_price,
+              .bid_quantity = bid_quantity,
+              .ask_price = quote.best_ask_price,
+              .ask_quantity = ask_quantity,
+          },
+          .snapshot = false,
+          .exchange_time_utc = quote.timestamp,
+      };
+      if (utils::compare(layer, top_of_book.layer) != 0) {
+        layer = top_of_book.layer;
+        server::create_trace_and_dispatch(trace_info, top_of_book, handler_, true);
+      }
+    });
   });
 }
 
