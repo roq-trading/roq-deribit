@@ -107,6 +107,8 @@ void OrderEntry::operator()(const Event<Timer> &event) {
 
 uint16_t OrderEntry::operator()(
     const Event<CreateOrder> &event, const std::string_view &request_id) {
+  if (!ready())
+    throw server::OMS_ErrorException(Error::GATEWAY_NOT_READY);
   auto &[message_info, create_order] = event;
   if (std::isfinite(create_order.stop_price))
     throw RuntimeErrorException("stop_price not supported"_sv);
@@ -116,7 +118,7 @@ uint16_t OrderEntry::operator()(
   auto exec_inst = fix::map(create_order.execution_instruction);
   auto ord_type = core::fix::map(create_order.order_type);
   auto time_in_force = core::fix::map(create_order.time_in_force);
-  core::stack::Buffer<char, 36> buffer;
+  core::stack::Buffer<char, MAX_LENGTH_REQUEST_ID> buffer;
   roq::format_to(
       std::back_inserter(buffer), "roq-{}-{}"_sv, message_info.source, create_order.order_id);
   std::string_view deribit_label(buffer.data(), buffer.size());
@@ -141,6 +143,8 @@ uint16_t OrderEntry::operator()(
     const server::Order &order,
     const std::string_view &request_id,
     [[maybe_unused]] const std::string_view &previous_request_id) {
+  if (!ready())
+    throw server::OMS_ErrorException(Error::GATEWAY_NOT_READY, order);
   const auto &modify_order = event.value;
   auto side = core::fix::map(order.side);
   auto ord_type = core::fix::map(order.order_type);
@@ -164,6 +168,8 @@ uint16_t OrderEntry::operator()(
     const server::Order &order,
     const std::string_view &request_id,
     [[maybe_unused]] const std::string_view &previous_request_id) {
+  if (!ready())
+    throw server::OMS_ErrorException(Error::GATEWAY_NOT_READY, order);
   fix::OrderCancelRequest order_cancel_request{
       .cl_ord_id = request_id,
       .orig_cl_ord_id = order.external_order_id,
@@ -172,16 +178,23 @@ uint16_t OrderEntry::operator()(
   return stream_id_;
 }
 
-uint16_t OrderEntry::operator()(const Event<CancelAllOrders> &) {
-  auto request_id = shared_.next_request_id();
-  fix::OrderMassCancelRequest order_mass_cancel_request{
-      .cl_ord_id = request_id,
-      .mass_cancel_request_type = core::fix::MassCancelRequestType::CANCEL_ALL_ORDERS,
-      .security_type = {},
-      .symbol = {},
-      .currency = {},
-  };
-  send(order_mass_cancel_request);
+uint16_t OrderEntry::operator()(const Event<CancelAllOrders> &event) {
+  if (ready()) {
+    auto request_id = shared_.next_request_id();
+    fix::OrderMassCancelRequest order_mass_cancel_request{
+        .cl_ord_id = request_id,
+        .mass_cancel_request_type = core::fix::MassCancelRequestType::CANCEL_ALL_ORDERS,
+        .security_type = {},
+        .symbol = {},
+        .currency = {},
+    };
+    send(order_mass_cancel_request);
+  } else {
+    auto &[message_info, cancel_all_orders] = event;
+    log::warn(
+        R"(*** NOT CONNECTED! UNABLE TO CANCEL ALL ORDERS FOR ACCOUNT="{}")"_sv,
+        cancel_all_orders.account);
+  }
   return stream_id_;
 }
 
