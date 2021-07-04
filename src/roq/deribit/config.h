@@ -24,13 +24,13 @@ class Config final : public server::Config, public server::ConfigReader::Handler
 
  protected:
   // server::Config
-  void dispatch(server::Config::Handler &handler) const override;
+  void dispatch(server::Config::Handler &) const override;
 
   // server::ConfigReader::Handler
-  void operator()(server::Symbols &&symbols) override;
-  void operator()(server::Account &&account) override;
-  void operator()(server::User &&user) override;
-  void operator()(const std::string_view &key, cpptoml::base &base) override;
+  void operator()(server::Symbols &&) override;
+  void operator()(server::Account &&) override;
+  void operator()(server::User &&) override;
+  void operator()(const std::string_view &key, toml::node &) override;
 
  public:
   std::vector<server::User> users;
@@ -47,13 +47,17 @@ struct fmt::formatter<roq::deribit::Config> : public roq::formatter {
   template <typename C>
   auto format(const roq::deribit::Config &value, C &ctx) {
     using namespace roq::literals;
-    // FIXME(thraneh): proper
     return roq::format_to(
         ctx.out(),
-        "{{"
-        "users=[{}], "
-        "accounts=..."
-        "}}"_sv,
-        roq::join(value.users, ", "_sv));
+        R"({{)"
+        R"(symbols={}, )"
+        R"(users=[{}], )"
+        R"(accounts=[{}], )"
+        R"(master_account="{}")"
+        R"(}})"_sv,
+        value.symbols,
+        roq::join(value.users, ", "_sv),
+        roq::join(value.accounts, ", "_sv),
+        value.master_account_);
   }
 };
