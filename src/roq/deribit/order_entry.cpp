@@ -565,11 +565,18 @@ void OrderEntry::operator()(
       }
     }
   }
-  auto last_liquidity = core::fix::map(liquidity_ind);
+  // note! https://stackoverflow.com/a/46115028
+  const auto &exec_type = execution_report.exec_type;
+  const auto &ord_status = execution_report.ord_status;
+  const auto &orig_cl_ord_id = execution_report.orig_cl_ord_id;
+  const auto &text = execution_report.text;
+  const auto &no_fills = execution_report.no_fills;
+  const auto &transact_time = execution_report.transact_time;
   // find order
   auto side = core::fix::map(execution_report.side);
   auto status = core::fix::map(execution_report.ord_status);
   auto order_type = core::fix::map(execution_report.ord_type);
+  auto last_liquidity = core::fix::map(liquidity_ind);
   // XXX TODO(thraneh): exec_inst
   OrderUpdate order_update{
       .stream_id = stream_id_,
@@ -610,12 +617,10 @@ void OrderEntry::operator()(
       execution_report.orig_cl_ord_id,  // note! *always* request id from create-order
       [&](const auto &order, auto callback) {
         log::debug("found order={}"_sv, order);
-        auto type = compute_request_type(execution_report.exec_type, execution_report.ord_status);
-        auto status =
-            compute_request_status(execution_report.exec_type, execution_report.ord_status);
+        auto type = compute_request_type(exec_type, ord_status);
+        auto status = compute_request_status(exec_type, ord_status);
         // note! must resolve using heuristics unless it's a create-order response
-        auto request_id = type == RequestType::CREATE_ORDER ? execution_report.orig_cl_ord_id
-                                                            : std::string_view{};
+        auto request_id = type == RequestType::CREATE_ORDER ? orig_cl_ord_id : std::string_view{};
         if (status != RequestStatus{}) {
           server::Ack ack{
               .stream_id = stream_id_,
@@ -624,8 +629,8 @@ void OrderEntry::operator()(
               .type = type,
               .origin = Origin::EXCHANGE,
               .status = status,
-              .error = fix::map_error(execution_report.text),
-              .text = execution_report.text,
+              .error = fix::map_error(text),
+              .text = text,
               .version = {},
               .request_id = request_id,
           };
@@ -633,7 +638,7 @@ void OrderEntry::operator()(
           callback(event, true, order.user_id);
         }
         core::back_emplacer fills(shared_.fills);
-        for (auto &item : execution_report.no_fills) {
+        for (auto &item : no_fills) {
           fills.emplace_back([&](auto &result) { emplace(result, item); });
         }
         if (!fills.empty()) {
@@ -645,8 +650,8 @@ void OrderEntry::operator()(
               .symbol = order.symbol,
               .side = order.side,
               .position_effect = order.position_effect,
-              .create_time_utc = execution_report.transact_time,
-              .update_time_utc = execution_report.transact_time,
+              .create_time_utc = transact_time,
+              .update_time_utc = transact_time,
               .external_account = order.external_account,
               .external_order_id = order.external_order_id,
               .fills = fills,
@@ -676,10 +681,13 @@ void OrderEntry::operator()(
   auto &[header, order_cancel_reject] = event;
   log::info<3>("event(header={}, order_cancel_reject={})"_sv, header, order_cancel_reject);
   log::debug("order_cancel_reject={}"_sv, order_cancel_reject);
+  // note! https://stackoverflow.com/a/46115028
+  const auto &ord_status = order_cancel_reject.ord_status;
+  const auto &text = order_cancel_reject.text;
   auto found =
       shared_.find_order(order_cancel_reject.orig_cl_ord_id, [&](const auto &order, auto callback) {
         log::debug("found order={}"_sv, order);
-        auto status = core::fix::map(order_cancel_reject.ord_status);
+        auto status = core::fix::map(ord_status);
         if (status != order.status) {
           log::warn("Unexpected: order status received={}, expected={}"_sv, status, order.status);
         }
@@ -690,8 +698,8 @@ void OrderEntry::operator()(
             .type = RequestType::CANCEL_ORDER,
             .origin = Origin::EXCHANGE,
             .status = RequestStatus::REJECTED,
-            .error = fix::map_error(order_cancel_reject.text),
-            .text = order_cancel_reject.text,
+            .error = fix::map_error(text),
+            .text = text,
             .version = {},
             .request_id = {},  // note! unavailable, must use heuristics
         };

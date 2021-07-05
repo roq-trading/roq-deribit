@@ -575,11 +575,15 @@ void MarketData::operator()(
   core::back_emplacer trades(shared_.trades);
   core::back_emplacer statistics(shared_.statistics);
 
+  // note! https://stackoverflow.com/a/46115028
+  const auto open_interest = market_data_incremental_refresh.open_interest;
+  const auto mark_price = market_data_incremental_refresh.mark_price;
+
   // open interest
   statistics.emplace_back([&](auto &result) {
     new (&result) Statistics{
         .type = StatisticsType::PRE_OPEN_INTEREST,
-        .value = market_data_incremental_refresh.open_interest,
+        .value = open_interest,
         .begin_time_utc = {},
         .end_time_utc = {},
     };
@@ -588,7 +592,7 @@ void MarketData::operator()(
   statistics.emplace_back([&](auto &result) {
     new (&result) Statistics{
         .type = StatisticsType::PRE_SETTLEMENT_PRICE,
-        .value = market_data_incremental_refresh.mark_price,
+        .value = mark_price,
         .begin_time_utc = {},
         .end_time_utc = {},
     };
