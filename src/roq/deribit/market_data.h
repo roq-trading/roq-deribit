@@ -77,6 +77,22 @@ class MarketData final : public core::net::Manager::Handler {
 
   void update_subscriptions(std::vector<std::string> &symbols);
 
+  void operator()(const core::fix::Event<fix::Heartbeat> &, const server::TraceInfo &);
+  void operator()(const core::fix::Event<fix::Logon> &, const server::TraceInfo &);
+  void operator()(const core::fix::Event<fix::Logout> &, const server::TraceInfo &);
+  void operator()(const core::fix::Event<fix::ResendRequest> &, const server::TraceInfo &);
+  void operator()(const core::fix::Event<fix::TestRequest> &, const server::TraceInfo &);
+
+  void operator()(const core::fix::Event<fix::SecurityList> &, const server::TraceInfo &);
+  void operator()(const core::fix::Event<fix::SecurityStatus> &, const server::TraceInfo &);
+
+  void operator()(
+      const core::fix::Event<fix::MarketDataIncrementalRefresh> &, const server::TraceInfo &);
+  void operator()(
+      const core::fix::Event<fix::MarketDataRequestReject> &, const server::TraceInfo &);
+  void operator()(
+      const core::fix::Event<fix::MarketDataSnapshotFullRefresh> &, const server::TraceInfo &);
+
  protected:
   void operator()(const core::net::Manager::Connected &) override;
   void operator()(const core::net::Manager::Disconnected &) override;
@@ -98,29 +114,6 @@ class MarketData final : public core::net::Manager::Handler {
 
   void parse(const core::fix::message_t &);
   void parse_helper(const core::fix::message_t &);
-
-  void operator()(const core::fix::header_t &, const fix::Heartbeat &, const server::TraceInfo &);
-  void operator()(const core::fix::header_t &, const fix::Logon &, const server::TraceInfo &);
-  void operator()(const core::fix::header_t &, const fix::Logout &, const server::TraceInfo &);
-  void operator()(
-      const core::fix::header_t &, const fix::ResendRequest &, const server::TraceInfo &);
-  void operator()(const core::fix::header_t &, const fix::TestRequest &, const server::TraceInfo &);
-
-  void operator()(
-      const core::fix::header_t &, const fix::SecurityList &, const server::TraceInfo &);
-  void operator()(
-      const core::fix::header_t &, const fix::SecurityStatus &, const server::TraceInfo &);
-
-  void operator()(
-      const core::fix::header_t &,
-      const fix::MarketDataIncrementalRefresh &,
-      const server::TraceInfo &);
-  void operator()(
-      const core::fix::header_t &, const fix::MarketDataRequestReject &, const server::TraceInfo &);
-  void operator()(
-      const core::fix::header_t &,
-      const fix::MarketDataSnapshotFullRefresh &,
-      const server::TraceInfo &);
 
   // utilities
 

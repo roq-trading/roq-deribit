@@ -75,6 +75,17 @@ class OrderEntry final : public core::net::Manager::Handler {
 
   void operator()(metrics::Writer &);
 
+  void operator()(const core::fix::Event<fix::Heartbeat> &, const server::TraceInfo &);
+  void operator()(const core::fix::Event<fix::Logon> &, const server::TraceInfo &);
+  void operator()(const core::fix::Event<fix::Logout> &, const server::TraceInfo &);
+  void operator()(const core::fix::Event<fix::ResendRequest> &, const server::TraceInfo &);
+  void operator()(const core::fix::Event<fix::TestRequest> &, const server::TraceInfo &);
+
+  void operator()(const core::fix::Event<fix::ExecutionReport> &, const server::TraceInfo &);
+  void operator()(const core::fix::Event<fix::OrderCancelReject> &, const server::TraceInfo &);
+  void operator()(const core::fix::Event<fix::Reject> &, const server::TraceInfo &);
+  void operator()(const core::fix::Event<fix::OrderMassCancelReport> &, const server::TraceInfo &);
+
  protected:
   void operator()(const core::net::Manager::Connected &) override;
   void operator()(const core::net::Manager::Disconnected &) override;
@@ -94,21 +105,6 @@ class OrderEntry final : public core::net::Manager::Handler {
 
   void parse(const core::fix::message_t &);
   void parse_helper(const core::fix::message_t &);
-
-  void operator()(const core::fix::header_t &, const fix::Heartbeat &, const server::TraceInfo &);
-  void operator()(const core::fix::header_t &, const fix::Logon &, const server::TraceInfo &);
-  void operator()(const core::fix::header_t &, const fix::Logout &, const server::TraceInfo &);
-  void operator()(
-      const core::fix::header_t &, const fix::ResendRequest &, const server::TraceInfo &);
-  void operator()(const core::fix::header_t &, const fix::TestRequest &, const server::TraceInfo &);
-
-  void operator()(
-      const core::fix::header_t &, const fix::ExecutionReport &, const server::TraceInfo &);
-  void operator()(
-      const core::fix::header_t &, const fix::OrderCancelReject &, const server::TraceInfo &);
-  void operator()(const core::fix::header_t &, const fix::Reject &, const server::TraceInfo &);
-  void operator()(
-      const core::fix::header_t &, const fix::OrderMassCancelReport &, const server::TraceInfo &);
 
   // utilities
 
