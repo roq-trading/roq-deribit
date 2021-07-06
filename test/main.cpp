@@ -6,7 +6,8 @@
 
 int main(int argc, char **argv) {
   ::testing::InitGoogleTest(&argc, argv);
-  roq::Logger::initialize(argv[0]);
+  roq::Logger::Config config;
+  roq::Logger::initialize(argv[0], config);
   auto result = RUN_ALL_TESTS();
   roq::Logger::shutdown();
   return result;
