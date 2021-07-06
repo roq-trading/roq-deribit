@@ -4,6 +4,8 @@ All notable changes will be documented in this file.
 
 ## Head
 
+## 0.7.3 &ndash; 2021-07-06
+
 ### Changed
 
 * `TopOfBook` now convert `Quote.best_bid_amount` and `Quote.best_ask_amount`
