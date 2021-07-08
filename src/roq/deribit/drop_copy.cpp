@@ -186,6 +186,9 @@ uint32_t DropCopy::download(DropCopyState state) {
     case DropCopyState::SUBSCRIBE_CHANGES:
       subscribe_changes();
       return {};
+    case DropCopyState::SUBSCRIBE_ORDERS:
+      subscribe_orders();
+      return {};
     case DropCopyState::GET_ACCOUNT_SUMMARY:
       get_account_summary(currencies_);
       return {};
@@ -227,6 +230,20 @@ void DropCopy::subscribe_changes() {
       R"("method":"private/subscribe",)"
       R"("params":{{)"
       R"("channels":["user.changes.any.any.raw"])"
+      R"(}},)"
+      R"("id":"{}")"
+      R"(}})"_sv,
+      request_type.as_raw_text());
+  connection_.send_text(message);
+}
+
+void DropCopy::subscribe_orders() {
+  constexpr json::RequestType request_type = json::RequestType::SUBSCRIBE_ORDERS;
+  auto message = roq::format(
+      R"({{)"
+      R"("method":"private/subscribe",)"
+      R"("params":{{)"
+      R"("channels":["user.orders.any.any.raw"])"
       R"(}},)"
       R"("id":"{}")"
       R"(}})"_sv,
@@ -322,6 +339,9 @@ void DropCopy::operator()(const core::jsonrpc::Result &result, core::json::value
       break;
     }
     case json::RequestType::SUBSCRIBE_CHANGES: {
+      break;
+    }
+    case json::RequestType::SUBSCRIBE_ORDERS: {
       break;
     }
     case json::RequestType::GET_ACCOUNT_SUMMARY: {
@@ -428,8 +448,13 @@ void DropCopy::operator()(const server::Trace<json::Positions> &event) {
   }
 }
 
+void DropCopy::operator()(const server::Trace<json::Order> &event) {
+  log::info<1>("order={}"_sv, event.value);
+  // do nothing?
+}
+
 void DropCopy::operator()(const server::Trace<json::Trade> &event, [[maybe_unused]] bool is_last) {
-  log::debug("trade={}"_sv, event.value);
+  log::info<1>("trade={}"_sv, event.value);
   // do nothing?
 }
 

@@ -15,6 +15,7 @@
 // private
 #include "roq/deribit/json/changes.h"
 #include "roq/deribit/json/instrument_state.h"
+#include "roq/deribit/json/order.h"
 #include "roq/deribit/json/platform_state.h"
 #include "roq/deribit/json/portfolio.h"
 #include "roq/deribit/json/quote.h"
@@ -33,6 +34,7 @@ struct Parser final {
     // private
     virtual void operator()(const server::Trace<Portfolio> &) = 0;
     virtual void operator()(const server::Trace<Changes> &) = 0;
+    virtual void operator()(const server::Trace<Order> &) = 0;
   };
 
   static void dispatch(

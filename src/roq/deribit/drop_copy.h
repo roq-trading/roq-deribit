@@ -28,7 +28,7 @@
 
 #include "roq/deribit/json/auth.h"
 #include "roq/deribit/json/changes.h"
-#include "roq/deribit/json/orders.h"
+#include "roq/deribit/json/order.h"
 #include "roq/deribit/json/parser.h"
 #include "roq/deribit/json/portfolio.h"
 #include "roq/deribit/json/positions.h"
@@ -78,6 +78,7 @@ class DropCopy final : public core::web::Socket::Handler,
 
   void subscribe_portfolios(const roq::span<std::string> &currencies);
   void subscribe_changes();
+  void subscribe_orders();
 
   void get_account_summary(const roq::span<std::string> &currencies);
   void get_trades(const roq::span<std::string> &currencies);
@@ -101,7 +102,7 @@ class DropCopy final : public core::web::Socket::Handler,
 
   void operator()(const server::Trace<json::Trades> &);
   void operator()(const server::Trace<json::Positions> &);
-  void operator()(const server::Trace<json::Orders> &);
+  void operator()(const server::Trace<json::Order> &);
 
   void operator()(const server::Trace<json::Trade> &, bool is_last);
   void operator()(const server::Trace<json::Position> &, bool is_last);

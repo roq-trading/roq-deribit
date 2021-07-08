@@ -93,6 +93,13 @@ void dispatch_changes(
   Changes changes(value, buffer);
   server::create_trace_and_dispatch(trace_info, changes, handler);
 }
+
+template <typename T>
+void dispatch_orders(
+    Parser::Handler &handler, T &value, core::json::Buffer &, const server::TraceInfo &trace_info) {
+  Order order(value);
+  server::create_trace_and_dispatch(trace_info, order, handler);
+}
 }  // namespace
 
 void Parser::dispatch(
@@ -156,6 +163,10 @@ void Parser::dispatch(
               case Channel::CHANGES:
                 dispatched = true;
                 dispatch_changes(handler, value, buffer, trace_info);
+                break;
+              case Channel::ORDERS:
+                dispatched = true;
+                dispatch_orders(handler, value, buffer, trace_info);
                 break;
             }
           }

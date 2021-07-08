@@ -4,6 +4,10 @@ All notable changes will be documented in this file.
 
 ## Head
 
+### Added
+
+* Subscription to `user.orders.any.any.raw`
+
 ## 0.7.3 &ndash; 2021-07-06
 
 ### Changed

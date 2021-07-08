@@ -115,6 +115,7 @@ class WebSocket final : public core::web::Socket::Handler,
   void operator()(const server::Trace<json::Ticker> &) override;
   void operator()(const server::Trace<json::Portfolio> &) override;
   void operator()(const server::Trace<json::Changes> &) override;
+  void operator()(const server::Trace<json::Order> &) override;
 
   template <typename C>
   bool get_top_of_book(const std::string_view &symbol, C callback) {
