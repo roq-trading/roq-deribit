@@ -14,6 +14,7 @@ struct MyHandler : public json::Parser::Handler {
   void operator()(const server::Trace<json::Ticker> &) {}
   void operator()(const server::Trace<json::Portfolio> &) {}
   void operator()(const server::Trace<json::Changes> &) {}
+  void operator()(const server::Trace<json::Order> &) {}
 };
 
 TEST(json_subscription, parse_message) {
