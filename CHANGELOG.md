@@ -6,7 +6,7 @@ All notable changes will be documented in this file.
 
 ### Added
 
-* Subscription to `user.orders.any.any.raw`
+* Subsribe `user.orders.any.any.raw` and `user.trades.any.any.raw`
 
 ## 0.7.3 &ndash; 2021-07-06
 

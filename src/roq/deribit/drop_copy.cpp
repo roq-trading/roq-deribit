@@ -189,6 +189,9 @@ uint32_t DropCopy::download(DropCopyState state) {
     case DropCopyState::SUBSCRIBE_ORDERS:
       subscribe_orders();
       return {};
+    case DropCopyState::SUBSCRIBE_TRADES:
+      subscribe_trades();
+      return {};
     case DropCopyState::GET_ACCOUNT_SUMMARY:
       get_account_summary(currencies_);
       return {};
@@ -244,6 +247,20 @@ void DropCopy::subscribe_orders() {
       R"("method":"private/subscribe",)"
       R"("params":{{)"
       R"("channels":["user.orders.any.any.raw"])"
+      R"(}},)"
+      R"("id":"{}")"
+      R"(}})"_sv,
+      request_type.as_raw_text());
+  connection_.send_text(message);
+}
+
+void DropCopy::subscribe_trades() {
+  constexpr json::RequestType request_type = json::RequestType::SUBSCRIBE_TRADES;
+  auto message = roq::format(
+      R"({{)"
+      R"("method":"private/subscribe",)"
+      R"("params":{{)"
+      R"("channels":["user.trades.any.any.raw"])"
       R"(}},)"
       R"("id":"{}")"
       R"(}})"_sv,
@@ -335,15 +352,11 @@ void DropCopy::operator()(const core::jsonrpc::Result &result, core::json::value
       (*this)(auth, trace_info);
       break;
     }
-    case json::RequestType::SUBSCRIBE_PORTFOLIO: {
+    case json::RequestType::SUBSCRIBE_PORTFOLIO:
+    case json::RequestType::SUBSCRIBE_CHANGES:
+    case json::RequestType::SUBSCRIBE_ORDERS:
+    case json::RequestType::SUBSCRIBE_TRADES:
       break;
-    }
-    case json::RequestType::SUBSCRIBE_CHANGES: {
-      break;
-    }
-    case json::RequestType::SUBSCRIBE_ORDERS: {
-      break;
-    }
     case json::RequestType::GET_ACCOUNT_SUMMARY: {
       json::Portfolio portfolio(value);
       server::create_trace_and_dispatch(trace_info, portfolio, *this);
@@ -450,6 +463,11 @@ void DropCopy::operator()(const server::Trace<json::Positions> &event) {
 
 void DropCopy::operator()(const server::Trace<json::Order> &event) {
   log::info<1>("order={}"_sv, event.value);
+  // do nothing?
+}
+
+void DropCopy::operator()(const server::Trace<json::Trades2> &event) {
+  log::info<1>("trades={}"_sv, event.value);
   // do nothing?
 }
 

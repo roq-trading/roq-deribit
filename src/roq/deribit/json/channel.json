@@ -8,6 +8,7 @@
 	{ "name": "portfolio" },
 	{ "name": "quote" },
 	{ "name": "ticker" },
-	{ "name": "orders" }
+	{ "name": "orders" },
+	{ "name": "trades" }
 ]
 }

@@ -34,7 +34,8 @@ set(AUTOGEN_SCHEMAS
     ticker.json
     time_in_force.json
     trade.json
-    trades.json)
+    trades.json
+    trades_2.json)
 
 roq_autogen(
   OUTPUT

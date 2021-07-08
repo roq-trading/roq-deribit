@@ -19,6 +19,7 @@
 #include "roq/deribit/json/platform_state.h"
 #include "roq/deribit/json/portfolio.h"
 #include "roq/deribit/json/quote.h"
+#include "roq/deribit/json/trades_2.h"
 
 namespace roq {
 namespace deribit {
@@ -35,6 +36,7 @@ struct Parser final {
     virtual void operator()(const server::Trace<Portfolio> &) = 0;
     virtual void operator()(const server::Trace<Changes> &) = 0;
     virtual void operator()(const server::Trace<Order> &) = 0;
+    virtual void operator()(const server::Trace<Trades2> &) = 0;
   };
 
   static void dispatch(

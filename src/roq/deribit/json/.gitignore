@@ -58,3 +58,5 @@ trade.h
 trade.cpp
 trades.h
 trades.cpp
+trades_2.h
+trades_2.cpp

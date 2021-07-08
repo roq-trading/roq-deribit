@@ -109,13 +109,16 @@ class WebSocket final : public core::web::Socket::Handler,
   void operator()(const json::Instruments &, const server::TraceInfo &);
   void operator()(const json::Positions &, const server::TraceInfo &);
 
+  // public:
   void operator()(const server::Trace<json::PlatformState> &) override;
   void operator()(const server::Trace<json::InstrumentState> &) override;
   void operator()(const server::Trace<json::Quote> &) override;
   void operator()(const server::Trace<json::Ticker> &) override;
+  // private:
   void operator()(const server::Trace<json::Portfolio> &) override;
   void operator()(const server::Trace<json::Changes> &) override;
   void operator()(const server::Trace<json::Order> &) override;
+  void operator()(const server::Trace<json::Trades2> &) override;
 
   template <typename C>
   bool get_top_of_book(const std::string_view &symbol, C callback) {

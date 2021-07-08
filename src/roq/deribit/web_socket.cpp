@@ -480,5 +480,9 @@ void WebSocket::operator()(const server::Trace<json::Order> &) {
   log::fatal("Unexpected"_sv);
 }
 
+void WebSocket::operator()(const server::Trace<json::Trades2> &) {
+  log::fatal("Unexpected"_sv);
+}
+
 }  // namespace deribit
 }  // namespace roq

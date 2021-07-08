@@ -100,6 +100,16 @@ void dispatch_orders(
   Order order(value);
   server::create_trace_and_dispatch(trace_info, order, handler);
 }
+
+template <typename T>
+void dispatch_trades(
+    Parser::Handler &handler,
+    T &value,
+    core::json::Buffer &buffer,
+    const server::TraceInfo &trace_info) {
+  Trades2 trades(value, buffer);
+  server::create_trace_and_dispatch(trace_info, trades, handler);
+}
 }  // namespace
 
 void Parser::dispatch(
@@ -167,6 +177,10 @@ void Parser::dispatch(
               case Channel::ORDERS:
                 dispatched = true;
                 dispatch_orders(handler, value, buffer, trace_info);
+                break;
+              case Channel::TRADES:
+                dispatched = true;
+                dispatch_trades(handler, value, buffer, trace_info);
                 break;
             }
           }

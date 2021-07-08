@@ -20,6 +20,7 @@ set(SOURCES
     json_instruments.cpp
     json_subscription.cpp
     json_ticker.cpp
+    json_trades_2.cpp
     main.cpp)
 
 add_executable("${TARGET_NAME}" ${SOURCES})

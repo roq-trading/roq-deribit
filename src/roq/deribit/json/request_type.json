@@ -12,6 +12,7 @@
 	{ "name": "subscribe_portfolio" },
 	{ "name": "subscribe_changes" },
 	{ "name": "subscribe_orders" },
+	{ "name": "subscribe_trades" },
 	{ "name": "get_account_summary" },
 	{ "name": "get_trades" },
 	{ "name": "get_positions" }
