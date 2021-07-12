@@ -79,6 +79,34 @@ void DropCopy::operator()(const Event<Timer> &event) {
   connection_.refresh(event.value.now);
 }
 
+uint16_t DropCopy::operator()(const Event<CreateOrder> &event, const std::string_view &request_id) {
+  throw server::OMS_ErrorException(Error::NOT_SUPPORTED);
+  return stream_id_;
+}
+
+uint16_t DropCopy::operator()(
+    const Event<ModifyOrder> &event,
+    const server::Order &order,
+    const std::string_view &request_id,
+    [[maybe_unused]] const std::string_view &previous_request_id) {
+  throw server::OMS_ErrorException(Error::NOT_SUPPORTED);
+  return stream_id_;
+}
+
+uint16_t DropCopy::operator()(
+    const Event<CancelOrder> &,
+    const server::Order &order,
+    const std::string_view &request_id,
+    [[maybe_unused]] const std::string_view &previous_request_id) {
+  throw server::OMS_ErrorException(Error::NOT_SUPPORTED);
+  return stream_id_;
+}
+
+uint16_t DropCopy::operator()(const Event<CancelAllOrders> &event) {
+  throw server::OMS_ErrorException(Error::NOT_SUPPORTED);
+  return stream_id_;
+}
+
 void DropCopy::operator()(metrics::Writer &writer) {
   writer  //
       .write(counter_.disconnect, metrics::COUNTER)

@@ -57,6 +57,20 @@ class DropCopy final : public core::web::Socket::Handler,
   void operator()(const Event<Stop> &);
   void operator()(const Event<Timer> &);
 
+  uint16_t operator()(const Event<CreateOrder> &, const std::string_view &request_id);
+  uint16_t operator()(
+      const Event<ModifyOrder> &,
+      const server::Order &,
+      const std::string_view &request_id,
+      const std::string_view &previous_request_id);
+  uint16_t operator()(
+      const Event<CancelOrder> &,
+      const server::Order &,
+      const std::string_view &request_id,
+      const std::string_view &previous_request_id);
+
+  uint16_t operator()(const Event<CancelAllOrders> &);
+
   void operator()(metrics::Writer &);
 
   void update_subscriptions(const roq::span<std::string> &currencies);
