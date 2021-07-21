@@ -2,6 +2,7 @@
 
 #include "roq/deribit/security.h"
 
+#include <algorithm>
 #include <array>
 #include <random>
 
