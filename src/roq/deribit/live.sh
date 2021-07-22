@@ -2,7 +2,7 @@
 
 NAME="deribit"
 
-CONFIG_FILE="$CWD/config/$NAME.toml"
+CONFIG_FILE="config/$NAME.toml"
 
 URI="deribit.com"
 
@@ -31,8 +31,8 @@ fi
 $PREFIX "./roq-deribit" \
 	--name "deribit" \
 	--config_file "$CONFIG_FILE" \
-	--client_listen_address "$CWD/$NAME.sock" \
-	--metrics_listen_address "$CWD/${NAME}_metrics.sock" \
+	--client_listen_address "$NAME.sock" \
+	--metrics_listen_address "${NAME}_metrics.sock" \
 	--fix_uri "$FIX_URI" \
 	--ws_uri "$WS_URI" \
 	$@
