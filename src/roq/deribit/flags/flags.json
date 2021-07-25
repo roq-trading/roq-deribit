@@ -24,19 +24,17 @@
     },
     {
       "name": "ws_ping_freq",
-      "flag_name": "ws_ping_freq_secs",
-      "type": "std::chrono::seconds",
-      "validator": "roq::core::flags::NonZero<uint32_t>",
-      "default": 5,
-      "description": "ping frequency (seconds)"
+      "type": "std::chrono::nanoseconds",
+      "validator": "roq::core::flags::TimePeriod",
+      "default": "5s",
+      "description": "ping frequency"
     },
     {
       "name": "ws_request_timeout",
-      "flag_name": "ws_request_timeout_secs",
-      "type": "std::chrono::seconds",
-      "validator": "roq::core::flags::NonZero<uint32_t>",
-      "default": 15,
-      "description": "request timeout (seconds)"
+      "type": "std::chrono::nanoseconds",
+      "validator": "roq::core::flags::TimePeriod",
+      "default": "15s",
+      "description": "request timeout"
     },
     {
       "name": "ws_market_data_max_subscriptions_per_stream",
@@ -61,19 +59,17 @@
     },
     {
       "name": "fix_ping_freq",
-      "flag_name": "fix_ping_freq_secs",
-      "type": "std::chrono::seconds",
-      "validator": "roq::core::flags::NonZero<uint32_t>",
-      "default": 5,
-      "description": "ping frequency (seconds)"
+      "type": "std::chrono::nanoseconds",
+      "validator": "roq::core::flags::TimePeriod",
+      "default": "5s",
+      "description": "ping frequency"
     },
     {
       "name": "fix_request_timeout",
-      "flag_name": "fix_request_timeout_secs",
-      "type": "std::chrono::seconds",
-      "validator": "roq::core::flags::NonZero<uint32_t>",
-      "default": 15,
-      "description": "request timeout (seconds)"
+      "type": "std::chrono::nanoseconds",
+      "validator": "roq::core::flags::TimePeriod",
+      "default": "15s",
+      "description": "request timeout"
     },
     {
       "name": "fix_cancel_on_disconnect",
