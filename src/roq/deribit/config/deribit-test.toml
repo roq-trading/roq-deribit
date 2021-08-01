@@ -31,7 +31,7 @@
   [rate_limits.global]
   type = "ORDER_ACTION"
   aggregate = true
-  request_limit = 1
+  request_limit = 50
   monitor_period = "120s"
   ban_period = "5m"
 
