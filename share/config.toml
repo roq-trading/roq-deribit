@@ -12,10 +12,6 @@
 
 [users]
 
-  [users.test]
-  password = "1234"
-  symbols = ".*"
-
   [users.trader]
   password = "secret"
   accounts = [ "A1" ]
