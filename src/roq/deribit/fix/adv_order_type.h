@@ -2,9 +2,10 @@
 
 #pragma once
 
+#include <fmt/format.h>
+
 #include <string_view>
 
-#include "roq/format.h"
 #include "roq/literals.h"
 
 namespace roq {
@@ -26,10 +27,14 @@ extern AdvOrderType parse_adv_order_type(const std::string_view &value);
 }  // namespace roq
 
 template <>
-struct fmt::formatter<roq::deribit::fix::AdvOrderType> : public roq::formatter {
+struct fmt::formatter<roq::deribit::fix::AdvOrderType> {
+  template <typename Context>
+  constexpr auto parse(Context &context) {
+    return context.begin();
+  }
   template <typename C>
   auto format(const roq::deribit::fix::AdvOrderType &value, C &ctx) {
     using namespace roq::literals;
-    return roq::format_to(ctx.out(), "{}"_sv, roq::deribit::fix::EnumNameAdvOrderType(value));
+    return fmt::format_to(ctx.out(), "{}"_sv, roq::deribit::fix::EnumNameAdvOrderType(value));
   }
 };

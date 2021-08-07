@@ -2,11 +2,12 @@
 
 #include "roq/deribit/security.h"
 
+#include <fmt/format.h>
+
 #include <algorithm>
 #include <array>
 #include <random>
 
-#include "roq/format.h"
 #include "roq/literals.h"
 
 #include "roq/core/binascii/base64.h"
@@ -46,7 +47,7 @@ std::string Security::create_nonce() {
 std::string Security::create_signature(
     std::chrono::milliseconds timestamp, const std::string_view &nonce) {
   auto sequence = get_sequence(timestamp);
-  auto message = roq::format("{}\n{}\n"_sv, sequence, nonce);
+  auto message = fmt::format("{}\n{}\n"_sv, sequence, nonce);
   hmac_.clear();
   hmac_.update(message);
   std::array<char, 32> buffer;
@@ -64,7 +65,7 @@ std::string Security::create_raw_data(std::chrono::milliseconds timestamp) {
   for (size_t i = {}; i < n; ++i)
     buffer[i] = DISTRIBUTION(GENERATOR);
   auto nonce = core::binascii::Base64::encode(buffer.data(), buffer.size() * sizeof(value_type));
-  return roq::format("{:013}.{}"_sv, sequence, nonce);
+  return fmt::format("{:013}.{}"_sv, sequence, nonce);
 }
 
 std::string Security::create_password(const std::string_view &raw_data) {

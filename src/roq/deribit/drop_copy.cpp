@@ -40,7 +40,7 @@ DropCopy::DropCopy(
     Security &security,
     Shared &shared)
     : handler_(handler), stream_id_(stream_id),
-      name_(roq::format("{}:{}:{}"_sv, stream_id_, NAME, security.get_account())),
+      name_(fmt::format("{}:{}:{}"_sv, stream_id_, NAME, security.get_account())),
       connection_(
           *this,
           context,
@@ -184,7 +184,7 @@ void DropCopy::login() {
       std::chrono::duration_cast<std::chrono::milliseconds>(core::get_realtime_clock());
   auto nonce = security_.create_nonce();
   auto signature = security_.create_signature(timestamp, nonce);
-  auto message = roq::format(
+  auto message = fmt::format(
       R"({{)"
       R"("method":"public/auth",)"
       R"("params":{{)"
@@ -242,7 +242,7 @@ uint32_t DropCopy::download(DropCopyState state) {
 
 void DropCopy::subscribe_portfolios(const roq::span<std::string> &currencies) {
   constexpr json::RequestType request_type = json::RequestType::SUBSCRIBE_PORTFOLIO;
-  auto message = roq::format(
+  auto message = fmt::format(
       R"({{)"
       R"("method":"private/subscribe",)"
       R"("params":{{)"
@@ -250,14 +250,14 @@ void DropCopy::subscribe_portfolios(const roq::span<std::string> &currencies) {
       R"(}},)"
       R"("id":"{}")"
       R"(}})"_sv,
-      roq::join(currencies, R"(","user.portfolio.)"_sv),
+      fmt::join(currencies, R"(","user.portfolio.)"_sv),
       request_type.as_raw_text());
   connection_.send_text(message);
 }
 
 void DropCopy::subscribe_changes() {
   constexpr json::RequestType request_type = json::RequestType::SUBSCRIBE_CHANGES;
-  auto message = roq::format(
+  auto message = fmt::format(
       R"({{)"
       R"("method":"private/subscribe",)"
       R"("params":{{)"
@@ -271,7 +271,7 @@ void DropCopy::subscribe_changes() {
 
 void DropCopy::subscribe_orders() {
   constexpr json::RequestType request_type = json::RequestType::SUBSCRIBE_ORDERS;
-  auto message = roq::format(
+  auto message = fmt::format(
       R"({{)"
       R"("method":"private/subscribe",)"
       R"("params":{{)"
@@ -285,7 +285,7 @@ void DropCopy::subscribe_orders() {
 
 void DropCopy::subscribe_trades() {
   constexpr json::RequestType request_type = json::RequestType::SUBSCRIBE_TRADES;
-  auto message = roq::format(
+  auto message = fmt::format(
       R"({{)"
       R"("method":"private/subscribe",)"
       R"("params":{{)"
@@ -300,7 +300,7 @@ void DropCopy::subscribe_trades() {
 void DropCopy::get_account_summary(const roq::span<std::string> &currencies) {
   constexpr json::RequestType request_type = json::RequestType::GET_ACCOUNT_SUMMARY;
   for (auto currency : currencies) {
-    auto message = roq::format(
+    auto message = fmt::format(
         R"({{)"
         R"("method":"private/get_account_summary",)"
         R"("params":{{)"
@@ -318,7 +318,7 @@ void DropCopy::get_account_summary(const roq::span<std::string> &currencies) {
 void DropCopy::get_trades(const roq::span<std::string> &currencies) {
   constexpr json::RequestType request_type = json::RequestType::GET_TRADES;
   for (auto currency : currencies) {
-    auto message = roq::format(
+    auto message = fmt::format(
         R"({{)"
         R"("method":"private/get_user_trades_by_currency",)"
         R"("params":{{)"
@@ -337,7 +337,7 @@ void DropCopy::get_trades(const roq::span<std::string> &currencies) {
 void DropCopy::get_positions(const roq::span<std::string> &currencies) {
   constexpr json::RequestType request_type = json::RequestType::GET_POSITIONS;
   for (auto currency : currencies) {
-    auto message = roq::format(
+    auto message = fmt::format(
         R"({{)"
         R"("method":"private/get_positions",)"
         R"("params":{{)"

@@ -101,7 +101,7 @@ MarketData::MarketData(
     Security &security,
     Shared &shared,
     bool master)
-    : handler_(handler), stream_id_(stream_id), name_(roq::format("{}:{}"_sv, stream_id_, NAME)),
+    : handler_(handler), stream_id_(stream_id), name_(fmt::format("{}:{}"_sv, stream_id_, NAME)),
       master_(master), connection_factory_(context, Flags::fix_uri()),
       connection_(*this, connection_factory_), encode_buffer_(Flags::encode_buffer_size()),
       decode_buffer_(Flags::decode_buffer_size()),

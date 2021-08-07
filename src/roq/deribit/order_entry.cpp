@@ -67,7 +67,7 @@ OrderEntry::OrderEntry(
     Security &security,
     Shared &shared)
     : handler_(handler), stream_id_(stream_id),
-      name_(roq::format("{}:{}:{}"_sv, stream_id_, NAME, security.get_account())),
+      name_(fmt::format("{}:{}:{}"_sv, stream_id_, NAME, security.get_account())),
       connection_factory_(context, Flags::fix_uri()), connection_(*this, connection_factory_),
       encode_buffer_(Flags::encode_buffer_size()), decode_buffer_(Flags::decode_buffer_size()),
       counter_{
@@ -119,7 +119,7 @@ uint16_t OrderEntry::operator()(
   auto ord_type = core::fix::map(create_order.order_type);
   auto time_in_force = core::fix::map(create_order.time_in_force);
   core::stack::Buffer<char, MAX_LENGTH_REQUEST_ID> buffer;
-  roq::format_to(
+  fmt::format_to(
       std::back_inserter(buffer), "roq-{}-{}"_sv, message_info.source, create_order.order_id);
   std::string_view deribit_label(buffer.data(), buffer.size());
   fix::NewOrderSingle new_order_single{
