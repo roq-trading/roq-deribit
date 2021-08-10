@@ -7,7 +7,7 @@
   [accounts.A1]
   master = true
   login = "5MP40u9h"
-  secret = "8XC2sDXtrGFtVdOFKCU2eg3uE1oOntCoJCM3abpNBmI"
+  # secret = "8XC2sDXtrGFtVdOFKCU2eg3uE1oOntCoJCM3abpNBmI"
   symbols = ".*"
 
 #  [accounts.A2]

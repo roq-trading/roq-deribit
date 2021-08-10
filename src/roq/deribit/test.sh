@@ -4,6 +4,8 @@ NAME="deribit-test"
 
 CONFIG_FILE="config/$NAME.toml"
 
+SECRETS_FILE="config/$NAME-secrets.toml"
+
 URI="test.deribit.com"
 
 FIX_URI="tcp://$URI:9881"
@@ -31,6 +33,7 @@ fi
 $PREFIX "./roq-deribit" \
 	--name "deribit" \
 	--config_file "$CONFIG_FILE" \
+	--secrets_file "$SECRETS_FILE" \
 	--client_listen_address "$NAME.sock" \
 	--metrics_listen_address "${NAME}_metrics.sock" \
 	--fix_uri "$FIX_URI" \
