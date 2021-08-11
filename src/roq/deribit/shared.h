@@ -37,6 +37,8 @@ struct Shared final {
   core::page_aligned_vector<Trade> trades;
   core::page_aligned_vector<Statistics> statistics;
 
+  absl::flat_hash_map<std::string, double> multiplier;
+
  private:
   server::Dispatcher &dispatcher_;
   uint32_t request_id_ = 0;

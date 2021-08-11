@@ -4,6 +4,11 @@ All notable changes will be documented in this file.
 
 ## Head
 
+### Fixed
+
+* `TopOfBook` was only published from the primary WS connection due to
+  non-shared multiplier. (This bug was introduced with release 0.7.3.)
+
 ## 0.7.5 &ndash; 2021-08-08
 
 ## 0.7.4 &ndash; 2021-07-20
