@@ -81,30 +81,30 @@ void DropCopy::operator()(const Event<Timer> &event) {
 
 uint16_t DropCopy::operator()(
     const Event<CreateOrder> &, [[maybe_unused]] const std::string_view &request_id) {
-  throw server::OMS_ErrorException(Error::NOT_SUPPORTED);
+  throw server::OMS_ErrorException(Origin::GATEWAY, RequestStatus::REJECTED, Error::NOT_SUPPORTED);
   return stream_id_;
 }
 
 uint16_t DropCopy::operator()(
     const Event<ModifyOrder> &,
-    const server::Order &order,
+    const server::OMS_Order &,
     [[maybe_unused]] const std::string_view &request_id,
     [[maybe_unused]] const std::string_view &previous_request_id) {
-  throw server::OMS_ErrorException(Error::NOT_SUPPORTED, order);
+  throw server::OMS_ErrorException(Origin::GATEWAY, RequestStatus::REJECTED, Error::NOT_SUPPORTED);
   return stream_id_;
 }
 
 uint16_t DropCopy::operator()(
     const Event<CancelOrder> &,
-    const server::Order &order,
+    const server::OMS_Order &,
     [[maybe_unused]] const std::string_view &request_id,
     [[maybe_unused]] const std::string_view &previous_request_id) {
-  throw server::OMS_ErrorException(Error::NOT_SUPPORTED, order);
+  throw server::OMS_ErrorException(Origin::GATEWAY, RequestStatus::REJECTED, Error::NOT_SUPPORTED);
   return stream_id_;
 }
 
 uint16_t DropCopy::operator()(const Event<CancelAllOrders> &) {
-  throw server::OMS_ErrorException(Error::NOT_SUPPORTED);
+  throw server::OMS_ErrorException(Origin::GATEWAY, RequestStatus::REJECTED, Error::NOT_SUPPORTED);
   return stream_id_;
 }
 

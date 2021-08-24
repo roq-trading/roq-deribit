@@ -108,7 +108,8 @@ void OrderEntry::operator()(const Event<Timer> &event) {
 uint16_t OrderEntry::operator()(
     const Event<CreateOrder> &event, const std::string_view &request_id) {
   if (!ready())
-    throw server::OMS_ErrorException(Error::GATEWAY_NOT_READY);
+    throw server::OMS_ErrorException(
+        Origin::GATEWAY, RequestStatus::REJECTED, Error::GATEWAY_NOT_READY);
   auto &[message_info, create_order] = event;
   if (std::isfinite(create_order.stop_price))
     throw RuntimeErrorException("stop_price not supported"_sv);
@@ -140,11 +141,12 @@ uint16_t OrderEntry::operator()(
 
 uint16_t OrderEntry::operator()(
     const Event<ModifyOrder> &event,
-    const server::Order &order,
+    const server::OMS_Order &order,
     const std::string_view &request_id,
     [[maybe_unused]] const std::string_view &previous_request_id) {
   if (!ready())
-    throw server::OMS_ErrorException(Error::GATEWAY_NOT_READY, order);
+    throw server::OMS_ErrorException(
+        Origin::GATEWAY, RequestStatus::REJECTED, Error::GATEWAY_NOT_READY);
   const auto &modify_order = event.value;
   auto side = core::fix::map(order.side);
   auto ord_type = core::fix::map(order.order_type);
@@ -165,11 +167,12 @@ uint16_t OrderEntry::operator()(
 
 uint16_t OrderEntry::operator()(
     const Event<CancelOrder> &,
-    const server::Order &order,
+    const server::OMS_Order &order,
     const std::string_view &request_id,
     [[maybe_unused]] const std::string_view &previous_request_id) {
   if (!ready())
-    throw server::OMS_ErrorException(Error::GATEWAY_NOT_READY, order);
+    throw server::OMS_ErrorException(
+        Origin::GATEWAY, RequestStatus::REJECTED, Error::GATEWAY_NOT_READY);
   fix::OrderCancelRequest order_cancel_request{
       .cl_ord_id = request_id,
       .orig_cl_ord_id = order.external_order_id,
@@ -494,13 +497,13 @@ namespace {
 RequestType compute_request_type(core::fix::ExecType exec_type, core::fix::OrdStatus ord_status) {
   switch (exec_type) {
     case core::fix::ExecType::REJECTED:
-      return {};  // XXX or unknown?
+      return {};  // any
     case core::fix::ExecType::CANCELED:
       return RequestType::CANCEL_ORDER;
     case core::fix::ExecType::ORDER_STATUS:
       switch (ord_status) {
         case core::fix::OrdStatus::NEW:
-          return {};  // could be create or modify
+          return {};  // create or modify
         case core::fix::OrdStatus::CANCELED:
           return RequestType::CANCEL_ORDER;
           break;
@@ -578,6 +581,23 @@ void OrderEntry::operator()(
   auto order_type = core::fix::map(execution_report.ord_type);
   auto last_liquidity = core::fix::map(liquidity_ind);
   // XXX TODO(thraneh): exec_inst
+  auto request_type = compute_request_type(exec_type, ord_status);
+  auto request_status = compute_request_status(exec_type, ord_status);
+  // note!
+  // we have very little information to match requests as we can't rewrite ClOrdID
+  // - create and modify both have exec_type=ORDER_STATUS and ord_status=NEW
+  // - reject has nothing
+  server::OMS_Ack ack{
+      .type = request_type,
+      .origin = Origin::EXCHANGE,
+      .status = request_status,
+      .error = fix::map_error(text),
+      .text = text,
+      .version = {},
+      .request_id = {},
+      .quantity = execution_report.order_qty,
+      .price = execution_report.price,
+  };
   OrderUpdate order_update{
       .stream_id = stream_id_,
       .account = security_.get_account(),
@@ -610,66 +630,41 @@ void OrderEntry::operator()(
       .max_response_version = {},
       .max_accepted_version = {},
   };
-  auto found = shared_.find_order(
-      stream_id_,
-      trace_info,
-      order_update,
-      execution_report.orig_cl_ord_id,  // note! *always* request id from create-order
-      [&](const auto &order, auto callback) {
-        log::debug("found order={}"_sv, order);
-        auto type = compute_request_type(exec_type, ord_status);
-        auto status = compute_request_status(exec_type, ord_status);
-        // note! must resolve using heuristics unless it's a create-order response
-        auto request_id = type == RequestType::CREATE_ORDER ? orig_cl_ord_id : std::string_view{};
-        if (status != RequestStatus{}) {
-          server::Ack ack{
-              .stream_id = stream_id_,
-              .account = security_.get_account(),
-              .order_id = order.order_id,
-              .type = type,
-              .origin = Origin::EXCHANGE,
-              .status = status,
-              .error = fix::map_error(text),
-              .text = text,
-              .version = {},
-              .request_id = request_id,
-          };
-          server::Trace event(trace_info, ack);
-          callback(event, true, order.user_id);
-        }
-        core::back_emplacer fills(shared_.fills);
-        for (auto &item : no_fills) {
-          fills.emplace_back([&](auto &result) { emplace(result, item); });
-        }
-        if (!fills.empty()) {
-          TradeUpdate trade_update{
-              .stream_id = stream_id_,
-              .account = order.account,
-              .order_id = order.order_id,
-              .exchange = order.exchange,
-              .symbol = order.symbol,
-              .side = order.side,
-              .position_effect = order.position_effect,
-              .create_time_utc = transact_time,
-              .update_time_utc = transact_time,
-              .external_account = order.external_account,
-              .external_order_id = order.external_order_id,
-              .fills = fills,
-              .routing_id = order.routing_id,
-          };
-          server::create_trace_and_dispatch(
-              trace_info, trade_update, handler_, true, order.user_id);
-        }
-      });
-  log::debug("found={}"_sv, found);
-  // TODO(thraneh): process fills? --> maintain positions
-  if (!found) {
+  if (shared_.update_order(
+          orig_cl_ord_id,  // note! *always* from create order (can't rewrite)
+          stream_id_,
+          trace_info,
+          ack,
+          order_update,
+          [&](auto &order) {
+            log::debug("found order={}"_sv, order);
+            core::back_emplacer fills(shared_.fills);
+            for (auto &item : no_fills) {
+              fills.emplace_back([&](auto &result) { emplace(result, item); });
+            }
+            if (!fills.empty()) {
+              TradeUpdate trade_update{
+                  .stream_id = stream_id_,
+                  .account = order.account,
+                  .order_id = order.order_id,
+                  .exchange = order.exchange,
+                  .symbol = order.symbol,
+                  .side = order.side,
+                  .position_effect = order.position_effect,
+                  .create_time_utc = transact_time,
+                  .update_time_utc = transact_time,
+                  .external_account = order.external_account,
+                  .external_order_id = order.external_order_id,
+                  .fills = fills,
+                  .routing_id = order.routing_id,
+              };
+              server::create_trace_and_dispatch(
+                  trace_info, trade_update, handler_, true, order.user_id);
+            }
+          })) {
+  } else {
     auto external = execution_report.deribit_label.empty();
-    if (external) {
-      log::warn("*** EXTERNAL ORDER ***"_sv);
-    } else {
-      log::warn("*** UNKNOWN INTERNAL ORDER ***"_sv);
-    }
+    log::warn(external ? "*** EXTERNAL ORDER ***"_sv : "*** UNKNOWN INTERNAL ORDER ***"_sv);
     log::warn("execution_report={}"_sv, execution_report);
   }
   // download end?
@@ -681,33 +676,29 @@ void OrderEntry::operator()(
   auto &[header, order_cancel_reject] = event;
   log::info<3>("event(header={}, order_cancel_reject={})"_sv, header, order_cancel_reject);
   log::debug("order_cancel_reject={}"_sv, order_cancel_reject);
-  // note! https://stackoverflow.com/a/46115028
   const auto &ord_status = order_cancel_reject.ord_status;
   const auto &text = order_cancel_reject.text;
-  auto found =
-      shared_.find_order(order_cancel_reject.orig_cl_ord_id, [&](const auto &order, auto callback) {
-        log::debug("found order={}"_sv, order);
-        auto status = core::fix::map(ord_status);
-        if (status != order.status) {
-          log::warn("Unexpected: order status received={}, expected={}"_sv, status, order.status);
-        }
-        server::Ack ack{
-            .stream_id = stream_id_,
-            .account = security_.get_account(),
-            .order_id = order.order_id,
-            .type = RequestType::CANCEL_ORDER,
-            .origin = Origin::EXCHANGE,
-            .status = RequestStatus::REJECTED,
-            .error = fix::map_error(text),
-            .text = text,
-            .version = {},
-            .request_id = {},  // note! unavailable, must use heuristics
-        };
-        server::Trace event(trace_info, ack);
-        callback(event, true, order.user_id);
-      });
-  log::debug("found={}"_sv, found);
-  if (!found) {
+  server::OMS_Ack ack{
+      .type = {},  // modify or cancel
+      .origin = Origin::EXCHANGE,
+      .status = RequestStatus::REJECTED,
+      .error = fix::map_error(text),
+      .text = text,
+      .version = {},
+      .request_id = {},
+      .quantity = NaN,
+      .price = NaN,
+  };
+  if (shared_.update_order(
+          order_cancel_reject.orig_cl_ord_id, stream_id_, trace_info, ack, [&](auto &order) {
+            log::debug("found order={}"_sv, order);
+            auto status = core::fix::map(ord_status);
+            if (status != order.status) {
+              log::warn(
+                  "Unexpected: order status received={}, expected={}"_sv, status, order.status);
+            }
+          })) {
+  } else {
     log::warn("*** EXTERNAL ORDER ***"_sv);
     log::warn("order_cancel_reject={}"_sv, order_cancel_reject);
   }
