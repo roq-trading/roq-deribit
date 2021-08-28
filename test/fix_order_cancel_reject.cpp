@@ -29,3 +29,25 @@ TEST(fix_order_cancel_reject, parse_message) {
   EXPECT_EQ(bytes, std::size(message));
   EXPECT_EQ(results, 1);
 }
+
+TEST(fix_order_cancel_reject, already_cancelled) {
+  const auto message =
+      "8=FIX.4.4\0019=146\00135=9\00149=DERIBITSERVER\00156=ROQ_TRADI"
+      "NG\00134=58\00152=20210828-03:55:00.570\00141=5wAC6QMAAwAACDaI"
+      "JMsS\00111=6446518867\00139=4\00158=already_cancelled\001151=1"
+      "\0016=0.000\00110=180\001"_sv;
+  int results = 0;
+  auto bytes = core::fix::Reader<core::fix::Version::FIX_44>::dispatch(
+      [&](const core::fix::message_t &message) {
+        ++results;
+        EXPECT_EQ(message.header.msg_type, core::fix::MsgType::ORDER_CANCEL_REJECT);
+        auto result = fix::OrderCancelReject::create(message);
+        EXPECT_EQ(result.orig_cl_ord_id, "5wAC6QMAAwAACDaIJMsS"_sv);
+        EXPECT_EQ(result.cl_ord_id, "6446518867"_sv);
+        EXPECT_EQ(result.ord_status, core::fix::OrdStatus::CANCELED);
+        EXPECT_EQ(result.text, "already_cancelled"_sv);
+      },
+      message);
+  EXPECT_EQ(bytes, std::size(message));
+  EXPECT_EQ(results, 1);
+}

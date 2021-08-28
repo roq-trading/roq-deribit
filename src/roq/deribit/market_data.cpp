@@ -162,15 +162,17 @@ void MarketData::operator()(const core::net::Manager::Read &read) {
   auto buffer = read.buffer.pullup_new();
   size_t total_bytes = 0;
   while (!buffer.empty()) {
-    // core::print_memory(buffer);  // DEBUG
     auto bytes = core::fix::Reader<FIX_VERSION>::dispatch(
         [&](const core::fix::message_t &message) {
           try {
             check(message.header);
             parse(message);
           } catch (std::exception &) {
+            log::warn("{}"_sv, core::fix::Debug(buffer));
+#if !defined(NDEBUG)
             core::print_memory(buffer);
             core::print_string_with_escapes(buffer);
+#endif
             throw;
           }
         },
@@ -360,13 +362,7 @@ void MarketData::subscribe(const roq::span<std::string> &symbols) {
 }
 
 void MarketData::parse(const core::fix::message_t &message) {
-  profile_.parse([&]() {
-    try {
-      parse_helper(message);
-    } catch (...) {
-      core::tools::UnhandledException::terminate();
-    }
-  });
+  profile_.parse([&]() { parse_helper(message); });
 }
 
 void MarketData::parse_helper(const core::fix::message_t &message) {

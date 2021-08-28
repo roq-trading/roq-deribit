@@ -178,6 +178,7 @@ uint16_t OrderEntry::operator()(
       .orig_cl_ord_id = order.external_order_id,
   };
   send(order_cancel_request);
+  send(order_cancel_request);
   return stream_id_;
 }
 
@@ -231,15 +232,17 @@ void OrderEntry::operator()(const core::net::Manager::Read &read) {
   auto buffer = read.buffer.pullup_new();
   size_t total_bytes = 0;
   while (!buffer.empty()) {
-    // core::print_memory(buffer);  // DEBUG
     auto bytes = core::fix::Reader<FIX_VERSION>::dispatch(
         [&](const core::fix::message_t &message) {
           try {
             check(message.header);
             parse(message);
           } catch (std::exception &) {
+            log::warn("{}"_sv, core::fix::Debug(buffer));
+#if !defined(NDEBUG)
             core::print_memory(buffer);
             core::print_string_with_escapes(buffer);
+#endif
             throw;
           }
         },
@@ -348,13 +351,7 @@ void OrderEntry::download_orders() {
 }
 
 void OrderEntry::parse(const core::fix::message_t &message) {
-  profile_.parse([&]() {
-    try {
-      parse_helper(message);
-    } catch (...) {
-      core::tools::UnhandledException::terminate();
-    }
-  });
+  profile_.parse([&]() { parse_helper(message); });
 }
 
 void OrderEntry::parse_helper(const core::fix::message_t &message) {
