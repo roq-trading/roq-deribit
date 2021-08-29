@@ -544,14 +544,17 @@ void OrderEntry::operator()(
   auto &[header, execution_report] = event;
   log::info<3>("event(header={}, execution_report={})"_sv, header, execution_report);
   log::debug("execution_report={}"_sv, execution_report);
+  auto download = false;
   // download begin?
   switch (execution_report.mass_status_req_type) {
     case core::fix::MassStatusReqType::ORDERS:
+      download = true;
       download_.update(OrderEntryState::ORDERS, execution_report.tot_num_reports);
       return;
     default:
       break;
   }
+  // liquidity indicator
   auto liquidity_ind = core::fix::FillLiquidityInd::UNDEFINED;
   auto liquidity_ind_found = false;
   for (auto &item : execution_report.no_fills) {
@@ -627,42 +630,55 @@ void OrderEntry::operator()(
       .max_response_version = {},
       .max_accepted_version = {},
   };
-  if (shared_.update_order(
-          orig_cl_ord_id,  // note! *always* from create order (can't rewrite)
-          stream_id_,
-          trace_info,
-          ack,
-          order_update,
-          [&](auto &order) {
-            log::debug("found order={}"_sv, order);
-            core::back_emplacer fills(shared_.fills);
-            for (auto &item : no_fills) {
-              fills.emplace_back([&](auto &result) { emplace(result, item); });
-            }
-            if (!fills.empty()) {
-              TradeUpdate trade_update{
-                  .stream_id = stream_id_,
-                  .account = order.account,
-                  .order_id = order.order_id,
-                  .exchange = order.exchange,
-                  .symbol = order.symbol,
-                  .side = order.side,
-                  .position_effect = order.position_effect,
-                  .create_time_utc = transact_time,
-                  .update_time_utc = transact_time,
-                  .external_account = order.external_account,
-                  .external_order_id = order.external_order_id,
-                  .fills = fills,
-                  .routing_id = order.routing_id,
-              };
-              server::create_trace_and_dispatch(
-                  trace_info, trade_update, handler_, true, order.user_id);
-            }
-          })) {
+  if (download) {
+    if (shared_.create_order(
+            orig_cl_ord_id,  // note! *always* from create order (can't rewrite)
+            stream_id_,
+            trace_info,
+            order_update)) {
+    } else {
+      auto external = execution_report.deribit_label.empty();
+      log::warn(external ? "*** EXTERNAL ORDER ***"_sv : "*** UNKNOWN INTERNAL ORDER ***"_sv);
+      log::warn("execution_report={}"_sv, execution_report);
+    }
   } else {
-    auto external = execution_report.deribit_label.empty();
-    log::warn(external ? "*** EXTERNAL ORDER ***"_sv : "*** UNKNOWN INTERNAL ORDER ***"_sv);
-    log::warn("execution_report={}"_sv, execution_report);
+    if (shared_.update_order(
+            orig_cl_ord_id,  // note! *always* from create order (can't rewrite)
+            stream_id_,
+            trace_info,
+            ack,
+            order_update,
+            [&](auto &order) {
+              log::debug("found order={}"_sv, order);
+              core::back_emplacer fills(shared_.fills);
+              for (auto &item : no_fills) {
+                fills.emplace_back([&](auto &result) { emplace(result, item); });
+              }
+              if (!fills.empty()) {
+                TradeUpdate trade_update{
+                    .stream_id = stream_id_,
+                    .account = order.account,
+                    .order_id = order.order_id,
+                    .exchange = order.exchange,
+                    .symbol = order.symbol,
+                    .side = order.side,
+                    .position_effect = order.position_effect,
+                    .create_time_utc = transact_time,
+                    .update_time_utc = transact_time,
+                    .external_account = order.external_account,
+                    .external_order_id = order.external_order_id,
+                    .fills = fills,
+                    .routing_id = order.routing_id,
+                };
+                server::create_trace_and_dispatch(
+                    trace_info, trade_update, handler_, true, order.user_id);
+              }
+            })) {
+    } else {
+      auto external = execution_report.deribit_label.empty();
+      log::warn(external ? "*** EXTERNAL ORDER ***"_sv : "*** UNKNOWN INTERNAL ORDER ***"_sv);
+      log::warn("execution_report={}"_sv, execution_report);
+    }
   }
   // download end?
   download_.check_relaxed(OrderEntryState::ORDERS);

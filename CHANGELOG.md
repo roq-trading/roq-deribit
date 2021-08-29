@@ -6,6 +6,7 @@ All notable changes will be documented in this file.
 
 ### Changed
 
+* Download orders (#39)
 * FIX message now logged for parse errors (#36)
 * OrderCancelReject (sometimes) has undoc tag 151 and 6 (#36)
 * New order management interface (#25)
