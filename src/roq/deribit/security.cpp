@@ -9,6 +9,7 @@
 #include <random>
 
 #include "roq/literals.h"
+#include "roq/span.h"
 
 #include "roq/core/binascii/base64.h"
 #include "roq/core/binascii/hex.h"
@@ -64,7 +65,9 @@ std::string Security::create_raw_data(std::chrono::milliseconds timestamp) {
   std::array<value_type, n> buffer;
   for (size_t i = {}; i < n; ++i)
     buffer[i] = DISTRIBUTION(GENERATOR);
-  auto nonce = core::binascii::Base64::encode(buffer.data(), buffer.size() * sizeof(value_type));
+  roq::span tmp{
+      reinterpret_cast<std::byte *>(std::data(buffer)), std::size(buffer) * sizeof(value_type)};
+  auto nonce = core::binascii::Base64::encode(tmp, false);
   return fmt::format("{:013}.{}"_sv, sequence, nonce);
 }
 
@@ -75,7 +78,7 @@ std::string Security::create_password(const std::string_view &raw_data) {
   std::array<char, 32> buffer;
   auto length = sha_.digest(buffer);
   assert(length == buffer.size());
-  return core::binascii::Base64::encode(buffer);
+  return core::binascii::Base64::encode(buffer, false);
 }
 
 int64_t Security::get_sequence(std::chrono::milliseconds timestamp) {

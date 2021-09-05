@@ -4,6 +4,10 @@ All notable changes will be documented in this file.
 
 ## Head
 
+### Changed
+
+* Base64 clean-up to support web-safe (#43)
+
 ## 0.7.6 &ndash; 2021-09-02
 
 ### Changed
