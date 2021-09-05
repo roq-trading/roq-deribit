@@ -108,8 +108,7 @@ void OrderEntry::operator()(const Event<Timer> &event) {
 uint16_t OrderEntry::operator()(
     const Event<CreateOrder> &event, const std::string_view &request_id) {
   if (!ready())
-    throw server::OMS_ErrorException(
-        Origin::GATEWAY, RequestStatus::REJECTED, Error::GATEWAY_NOT_READY);
+    throw oms::NotReadyException();
   auto &[message_info, create_order] = event;
   if (std::isfinite(create_order.stop_price))
     throw RuntimeErrorException("stop_price not supported"_sv);
@@ -141,12 +140,11 @@ uint16_t OrderEntry::operator()(
 
 uint16_t OrderEntry::operator()(
     const Event<ModifyOrder> &event,
-    const server::OMS_Order &order,
+    const oms::Order &order,
     const std::string_view &request_id,
     [[maybe_unused]] const std::string_view &previous_request_id) {
   if (!ready())
-    throw server::OMS_ErrorException(
-        Origin::GATEWAY, RequestStatus::REJECTED, Error::GATEWAY_NOT_READY);
+    throw oms::NotReadyException();
   const auto &modify_order = event.value;
   auto side = core::fix::map(order.side);
   auto ord_type = core::fix::map(order.order_type);
@@ -167,12 +165,11 @@ uint16_t OrderEntry::operator()(
 
 uint16_t OrderEntry::operator()(
     const Event<CancelOrder> &,
-    const server::OMS_Order &order,
+    const oms::Order &order,
     const std::string_view &request_id,
     [[maybe_unused]] const std::string_view &previous_request_id) {
   if (!ready())
-    throw server::OMS_ErrorException(
-        Origin::GATEWAY, RequestStatus::REJECTED, Error::GATEWAY_NOT_READY);
+    throw oms::NotReadyException();
   fix::OrderCancelRequest order_cancel_request{
       .cl_ord_id = request_id,
       .orig_cl_ord_id = order.external_order_id,
@@ -587,7 +584,7 @@ void OrderEntry::operator()(
   // we have very little information to match requests as we can't rewrite ClOrdID
   // - create and modify both have exec_type=ORDER_STATUS and ord_status=NEW
   // - reject has nothing
-  server::OMS_Ack ack{
+  oms::Response response{
       .type = request_type,
       .origin = Origin::EXCHANGE,
       .status = request_status,
@@ -598,10 +595,8 @@ void OrderEntry::operator()(
       .quantity = execution_report.order_qty,
       .price = execution_report.price,
   };
-  OrderUpdate order_update{
-      .stream_id = stream_id_,
+  oms::OrderUpdate order_update{
       .account = security_.get_account(),
-      .order_id = {},
       .exchange = Flags::exchange(),
       .symbol = execution_report.symbol,
       .side = side,
@@ -625,10 +620,6 @@ void OrderEntry::operator()(
       .last_traded_quantity = execution_report.last_qty,
       .last_traded_price = execution_report.last_px,
       .last_liquidity = last_liquidity,
-      .routing_id = {},  // XXX TODO(thraneh)
-      .max_request_version = {},
-      .max_response_version = {},
-      .max_accepted_version = {},
   };
   if (download) {
     if (shared_.create_order(
@@ -646,7 +637,7 @@ void OrderEntry::operator()(
             orig_cl_ord_id,  // note! *always* from create order (can't rewrite)
             stream_id_,
             trace_info,
-            ack,
+            response,
             order_update,
             [&](auto &order) {
               log::debug("found order={}"_sv, order);
@@ -691,7 +682,7 @@ void OrderEntry::operator()(
   log::debug("order_cancel_reject={}"_sv, order_cancel_reject);
   const auto &ord_status = order_cancel_reject.ord_status;
   const auto &text = order_cancel_reject.text;
-  server::OMS_Ack ack{
+  oms::Response response{
       .type = {},  // modify or cancel
       .origin = Origin::EXCHANGE,
       .status = RequestStatus::REJECTED,
@@ -703,7 +694,7 @@ void OrderEntry::operator()(
       .price = NaN,
   };
   if (shared_.update_order(
-          order_cancel_reject.orig_cl_ord_id, stream_id_, trace_info, ack, [&](auto &order) {
+          order_cancel_reject.orig_cl_ord_id, stream_id_, trace_info, response, [&](auto &order) {
             log::debug("found order={}"_sv, order);
             auto status = core::fix::map(ord_status);
             if (status != order.status) {
