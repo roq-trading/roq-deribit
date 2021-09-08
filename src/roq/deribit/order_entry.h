@@ -71,7 +71,7 @@ class OrderEntry final : public core::net::Manager::Handler {
       const std::string_view &request_id,
       const std::string_view &previous_request_id);
 
-  uint16_t operator()(const Event<CancelAllOrders> &);
+  uint16_t operator()(const Event<CancelAllOrders> &, const std::string_view &request_id);
 
   void operator()(metrics::Writer &);
 
