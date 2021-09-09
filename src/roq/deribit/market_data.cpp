@@ -638,7 +638,7 @@ void MarketData::operator()(
     }
   }
   if (!(bids.empty() && asks.empty())) {
-    MarketByPriceUpdate market_by_price_update{
+    const MarketByPriceUpdate market_by_price_update{
         .stream_id = stream_id_,
         .exchange = Flags::exchange(),
         .symbol = market_data_incremental_refresh.symbol,
@@ -648,10 +648,14 @@ void MarketData::operator()(
         .exchange_time_utc = exchange_time_utc,
     };
     auto is_last = statistics.empty() && trades.empty();
-    server::create_trace_and_dispatch(trace_info, market_by_price_update, handler_, is_last);
+    try {
+      server::create_trace_and_dispatch(trace_info, market_by_price_update, handler_, is_last);
+    } catch (market::BadState &) {
+      log::fatal("*** RESUBSCRIBE REQUIRED HERE ***"_sv);
+    }
   }
   if (!trades.empty()) {
-    TradeSummary trade_summary{
+    const TradeSummary trade_summary{
         .stream_id = stream_id_,
         .exchange = Flags::exchange(),
         .symbol = market_data_incremental_refresh.symbol,
@@ -662,7 +666,7 @@ void MarketData::operator()(
     server::create_trace_and_dispatch(trace_info, trade_summary, handler_, is_last);
   }
   if (!statistics.empty()) {
-    StatisticsUpdate statistics_update{
+    const StatisticsUpdate statistics_update{
         .stream_id = stream_id_,
         .exchange = Flags::exchange(),
         .symbol = market_data_incremental_refresh.symbol,
@@ -733,7 +737,7 @@ void MarketData::operator()(
   }
   if (!(bids.empty() && asks.empty())) {
     auto is_last = statistics.empty();
-    MarketByPriceUpdate market_by_price_update{
+    const MarketByPriceUpdate market_by_price_update{
         .stream_id = stream_id_,
         .exchange = Flags::exchange(),
         .symbol = market_data_snapshot_full_refresh.symbol,
@@ -742,10 +746,14 @@ void MarketData::operator()(
         .snapshot = true,
         .exchange_time_utc = {},
     };
-    server::create_trace_and_dispatch(trace_info, market_by_price_update, handler_, is_last);
+    try {
+      server::create_trace_and_dispatch(trace_info, market_by_price_update, handler_, is_last);
+    } catch (market::BadState &) {
+      log::fatal("*** RESUBSCRIBE REQUIRED HERE ***"_sv);
+    }
   }
   if (!statistics.empty()) {
-    StatisticsUpdate statistics_update{
+    const StatisticsUpdate statistics_update{
         .stream_id = stream_id_,
         .exchange = Flags::exchange(),
         .symbol = market_data_snapshot_full_refresh.symbol,
