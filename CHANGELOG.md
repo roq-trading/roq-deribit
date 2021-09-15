@@ -6,6 +6,7 @@ All notable changes will be documented in this file.
 
 ### Changed
 
+* Subscribe to reference data changes (FIX) (#65)
 * Added HTTP `request_id` (#55)
 * Base64 clean-up to support web-safe (#43)
 

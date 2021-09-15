@@ -60,6 +60,8 @@ security_status.h
 security_status.cpp
 security_status_request.h
 security_status_request.cpp
+sequence_reset.h
+sequence_reset.cpp
 test_request.h
 test_request.cpp
 user_request.h

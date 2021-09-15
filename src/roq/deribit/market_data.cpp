@@ -285,6 +285,7 @@ void MarketData::download_securities() {
   fix::SecurityListRequest security_list_request{
       .security_req_id = request_id,
       .security_list_request_type = core::fix::SecurityListRequestType::ALL_SECURITIES,
+      .subscription_request_type = core::fix::SubscriptionRequestType::SNAPSHOT_UPDATES,
   };
   send(security_list_request);
 }
@@ -548,7 +549,7 @@ void MarketData::operator()(
       handler_(symbols_update);
     }
   }
-  download_.check(MarketDataState::SECURITIES);
+  download_.check_relaxed(MarketDataState::SECURITIES);
 }
 
 void MarketData::operator()(

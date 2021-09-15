@@ -36,6 +36,7 @@ set(AUTOGEN_SCHEMAS
     security_list_request.json
     security_status.json
     security_status_request.json
+    sequence_reset.json
     test_request.json
     user_request.json
     user_response.json)
