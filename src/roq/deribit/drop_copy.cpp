@@ -428,7 +428,7 @@ void DropCopy::operator()(
 
 void DropCopy::operator()(const json::Auth &auth, const server::TraceInfo &) {
   profile_.auth([&]() {
-    log::info<1>("auth={}"_sv, auth);
+    log::info<2>("auth={}"_sv, auth);
     (*this)(ConnectionStatus::DOWNLOADING);
     download_.begin();
   });

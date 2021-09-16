@@ -201,7 +201,7 @@ void MarketData::operator()(ConnectionStatus status) {
         .type = StreamType::FIX,
         .priority = Priority::PRIMARY,
     };
-    log::info("stream_status={}"_sv, stream_status);
+    log::info<1>("stream_status={}"_sv, stream_status);
     server::create_trace_and_dispatch(trace_info, stream_status, handler_);
   }
 }
@@ -466,7 +466,7 @@ void MarketData::operator()(
 
 void MarketData::operator()(const core::fix::Event<fix::Logon> &event, const server::TraceInfo &) {
   auto &[header, logon] = event;
-  log::info<1>("event(header={}, logon={})"_sv, header, logon);
+  log::info<2>("event(header={}, logon={})"_sv, header, logon);
   (*this)(ConnectionStatus::DOWNLOADING);
   download_.begin();
 }
@@ -506,7 +506,7 @@ void MarketData::operator()(
     std::vector<std::string> symbols;
     symbols.reserve(security_list.no_related_sym.size());
     for (auto &instrument : security_list.no_related_sym) {
-      log::info<1>("instrument={}"_sv, instrument);
+      log::info<2>("instrument={}"_sv, instrument);
       auto &symbol = instrument.symbol;
       if (shared_.discard_symbol(symbol))
         continue;
@@ -541,7 +541,7 @@ void MarketData::operator()(
       server::create_trace_and_dispatch(trace_info, reference_data, handler_, true);
       ++counter;
     }
-    log::info("- securities: {} (/{})"_sv, counter, security_list.no_related_sym.size());
+    log::info<2>("- securities: {} (/{})"_sv, counter, security_list.no_related_sym.size());
     if (!symbols.empty()) {
       SymbolsUpdate symbols_update{
           .symbols = symbols,
@@ -682,7 +682,7 @@ void MarketData::operator()(
 void MarketData::operator()(
     const core::fix::Event<fix::MarketDataRequestReject> &event, const server::TraceInfo &) {
   auto &[header, market_data_request_reject] = event;
-  log::warn(
+  log::warn<1>(
       "event(header={}, market_data_request_reject={})"_sv, header, market_data_request_reject);
   log::fatal("Unexpected"_sv);  // don't know how to continue
 }

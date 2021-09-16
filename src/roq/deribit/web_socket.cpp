@@ -363,7 +363,7 @@ void WebSocket::operator()(const json::Auth &, const server::TraceInfo &) {
 
 void WebSocket::operator()(const json::Currencies &currencies, const server::TraceInfo &) {
   profile_.currencies([&]() {
-    log::info<1>("currencies={}"_sv, currencies);
+    log::info<2>("currencies={}"_sv, currencies);
     auto &data = currencies.data;
     std::vector<std::string> currencies;
     if (!data.empty())
@@ -385,7 +385,7 @@ void WebSocket::operator()(const json::Currencies &currencies, const server::Tra
 
 void WebSocket::operator()(const json::Instruments &instruments, const server::TraceInfo &) {
   profile_.instruments([&]() {
-    log::info<1>("instruments={}"_sv, instruments);
+    log::info<2>("instruments={}"_sv, instruments);
     auto &data = instruments.data;
     std::vector<std::string> symbols;
     if (!data.empty())
@@ -428,7 +428,7 @@ void WebSocket::operator()(const server::Trace<json::Quote> &event) {
   profile_.quote([&]() {
     auto &trace_info = event.trace_info;
     auto &quote = event.value;
-    log::info<2>("quote={}"_sv, quote);
+    log::info<3>("quote={}"_sv, quote);
     if (get_top_of_book(quote.instrument_name, [&](auto &layer, auto multiplier) {
           auto bid_quantity = multiplier * quote.best_bid_amount;
           auto ask_quantity = multiplier * quote.best_ask_amount;
@@ -461,7 +461,7 @@ void WebSocket::operator()(const server::Trace<json::Ticker> &event) {
   profile_.ticker([&]() {
     auto &trace_info = event.trace_info;
     auto &ticker = event.value;
-    log::info<2>("ticker={}"_sv, ticker);
+    log::info<3>("ticker={}"_sv, ticker);
     auto trading_status = json::map(ticker.state);
     auto &item = trading_status_[ticker.instrument_name];
     if (trading_status && utils::update(item, trading_status)) {

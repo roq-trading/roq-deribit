@@ -156,6 +156,7 @@ class OrderEntry final : public core::net::Manager::Handler {
   std::chrono::nanoseconds next_heartbeat_ = {};
   ConnectionStatus status_ = {};
   server::Download<OrderEntryState> download_;
+  std::chrono::nanoseconds last_logon_or_heartbeat_ = {};
 };
 
 }  // namespace deribit

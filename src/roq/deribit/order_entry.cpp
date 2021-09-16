@@ -98,10 +98,17 @@ void OrderEntry::operator()(const Event<Stop> &) {
 void OrderEntry::operator()(const Event<Timer> &event) {
   if (!connection_.refresh(event.value.now))
     return;
-  if (ready_ && next_heartbeat_ <= event.value.now) {
-    assert(Flags::fix_ping_freq().count() > 0);
-    next_heartbeat_ = event.value.now + Flags::fix_ping_freq();
-    send_test_request(core::get_system_clock());
+  if (last_logon_or_heartbeat_.count() && Flags::fix_request_timeout().count() &&
+      (event.value.now - last_logon_or_heartbeat_) > Flags::fix_request_timeout()) {
+    log::warn("*** DETECTED TIMEOUT ***"_sv);
+    log::info("closing connection"_sv);
+    connection_.close();
+  } else {
+    if (ready_ && next_heartbeat_ <= event.value.now) {
+      assert(Flags::fix_ping_freq().count() > 0);
+      next_heartbeat_ = event.value.now + Flags::fix_ping_freq();
+      send_test_request(core::get_system_clock());
+    }
   }
 }
 
@@ -293,6 +300,7 @@ void OrderEntry::send_logon() {
       .unsubscribe_execution_reports = false,
   };
   send(logon);
+  last_logon_or_heartbeat_ = core::get_system_clock();
 }
 
 void OrderEntry::send_logout(const std::string_view &text) {
@@ -318,6 +326,8 @@ void OrderEntry::send_test_request(std::chrono::nanoseconds now) {
       .test_req_id = request_id,
   };
   send(test_request);
+  if (!last_logon_or_heartbeat_.count())
+    last_logon_or_heartbeat_ = now;
 }
 
 uint32_t OrderEntry::download(OrderEntryState state) {
@@ -424,6 +434,7 @@ void OrderEntry::operator()(
   auto now = core::get_system_clock();
   auto &[header, heartbeat] = event;
   log::info<3>("event(header={}, heartbeat={})"_sv, header, heartbeat);
+  last_logon_or_heartbeat_ = {};
   if (!heartbeat.test_req_id.empty()) {
     auto send_time = core::from_chars<uint64_t>(heartbeat.test_req_id);
     auto latency =
@@ -441,14 +452,15 @@ void OrderEntry::operator()(
 
 void OrderEntry::operator()(const core::fix::Event<fix::Logon> &event, const server::TraceInfo &) {
   auto &[header, logon] = event;
-  log::info<1>("event(header={}, logon={})"_sv, header, logon);
+  log::info<2>("event(header={}, logon={})"_sv, header, logon);
+  last_logon_or_heartbeat_ = {};
   (*this)(ConnectionStatus::DOWNLOADING);
   download_.begin();
 }
 
 void OrderEntry::operator()(const core::fix::Event<fix::Logout> &event, const server::TraceInfo &) {
   auto &[header, logout] = event;
-  log::warn("event(header={}, logout={})"_sv, header, logout);
+  log::warn<2>("event(header={}, logout={})"_sv, header, logout);
   ready_ = false;
   // note! mandated, must send a logout response
   send_logout(LOGOUT_RESPONSE);
