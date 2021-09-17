@@ -53,6 +53,12 @@ std::string_view map(ExecutionInstruction execution_instruction) {
   }
 }
 
+Error reject_to_error(const std::string_view &reason, const std::string_view &text) {
+  if (reason.empty() && text.compare("rate_limit_exceeded"_sv) == 0)
+    return Error::REQUEST_RATE_LIMIT_REACHED;
+  return {};
+}
+
 }  // namespace fix
 }  // namespace deribit
 }  // namespace roq

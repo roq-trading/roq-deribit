@@ -2,6 +2,7 @@
 
 #pragma once
 
+#include <string>
 #include <utility>
 
 #include "roq/api.h"

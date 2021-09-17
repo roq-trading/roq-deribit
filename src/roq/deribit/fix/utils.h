@@ -22,6 +22,8 @@ Error map_error(const std::string_view &value);
 
 std::string_view map(ExecutionInstruction execution_instruction);
 
+extern Error reject_to_error(const std::string_view &reason, const std::string_view &text);
+
 }  // namespace fix
 }  // namespace deribit
 }  // namespace roq

@@ -141,7 +141,10 @@ uint16_t OrderEntry::operator()(
       .deribit_label = deribit_label,
       .deribit_adv_order_type = '\0',
   };
-  send(new_order_single);
+  auto msg_seq_num = send(new_order_single);
+  // XXX HANS EXPERIMENTAL -- it's a leak / currently no way to clean up
+  log::info(R"(DEBUG: msg_seq_num={} --> request_id="{}")"_sv, msg_seq_num, request_id);
+  msg_seq_num_to_request_id_.emplace(msg_seq_num, request_id);
   return stream_id_;
 }
 
@@ -166,7 +169,10 @@ uint16_t OrderEntry::operator()(
       .symbol = order.symbol,
       .exec_inst = {},
   };
-  send(order_cancel_replace_request);
+  auto msg_seq_num = send(order_cancel_replace_request);
+  // XXX HANS EXPERIMENTAL -- it's a leak / currently no way to clean up
+  log::info(R"(DEBUG: msg_seq_num={} --> request_id="{}")"_sv, msg_seq_num, request_id);
+  msg_seq_num_to_request_id_.emplace(msg_seq_num, request_id);
   return stream_id_;
 }
 
@@ -181,8 +187,10 @@ uint16_t OrderEntry::operator()(
       .cl_ord_id = request_id,
       .orig_cl_ord_id = order.external_order_id,
   };
-  send(order_cancel_request);
-  send(order_cancel_request);
+  auto msg_seq_num = send(order_cancel_request);
+  // XXX HANS EXPERIMENTAL -- it's a leak / currently no way to clean up
+  log::info(R"(DEBUG: msg_seq_num={} --> request_id="{}")"_sv, msg_seq_num, request_id);
+  msg_seq_num_to_request_id_.emplace(msg_seq_num, request_id);
   return stream_id_;
 }
 
@@ -690,8 +698,7 @@ void OrderEntry::operator()(
 void OrderEntry::operator()(
     const core::fix::Event<fix::OrderCancelReject> &event, const server::TraceInfo &trace_info) {
   auto &[header, order_cancel_reject] = event;
-  log::info<3>("event(header={}, order_cancel_reject={})"_sv, header, order_cancel_reject);
-  log::debug("order_cancel_reject={}"_sv, order_cancel_reject);
+  log::warn<1>("event(header={}, order_cancel_reject={})"_sv, header, order_cancel_reject);
   const auto &ord_status = order_cancel_reject.ord_status;
   const auto &text = order_cancel_reject.text;
   oms::Response response{
@@ -720,12 +727,54 @@ void OrderEntry::operator()(
   }
 }
 
-void OrderEntry::operator()(const core::fix::Event<fix::Reject> &event, const server::TraceInfo &) {
+namespace {
+static RequestType message_type_to_request_type(core::fix::MsgType msg_type) {
+  switch (msg_type) {
+    case core::fix::MsgType::NEW_ORDER_SINGLE:
+      return RequestType::CREATE_ORDER;
+    case core::fix::MsgType::ORDER_CANCEL_REPLACE_REQUEST:
+      return RequestType::MODIFY_ORDER;
+    case core::fix::MsgType::ORDER_CANCEL_REQUEST:
+      return RequestType::CANCEL_ORDER;
+    default:
+      return {};
+  }
+}
+}  // namespace
+
+void OrderEntry::operator()(
+    const core::fix::Event<fix::Reject> &event, const server::TraceInfo &trace_info) {
   auto &[header, reject] = event;
-  log::info<3>("event(header={}, reject={})"_sv, header, reject);
-  log::warn("reject={}"_sv, reject);
-  if (reject.session_reject_reason.compare("99"_sv) == 0 &&
+  log::warn<1>("event(header={}, reject={})"_sv, header, reject);
+  auto request_type = message_type_to_request_type(reject.ref_msg_type);
+  if (request_type != RequestType{}) {
+    auto iter = msg_seq_num_to_request_id_.find(reject.ref_seq_num);
+    if (iter != msg_seq_num_to_request_id_.end()) {
+      auto &request_id = (*iter).second;
+      auto error = fix::reject_to_error(reject.session_reject_reason, reject.text);
+      oms::Response response{
+          .type = request_type,
+          .origin = Origin::EXCHANGE,
+          .status = RequestStatus::REJECTED,
+          .error = error,
+          .text = reject.text,
+          .version = {},
+          .request_id = request_id,
+          .quantity = NaN,
+          .price = NaN,
+      };
+      if (shared_.update_order(
+              request_id, stream_id_, trace_info, response, []([[maybe_unused]] auto &order) {})) {
+      } else {
+        log::warn<1>(R"(*** NO ORDER WITH REQUEST_ID="{}" ***)"_sv, request_id);
+      }
+    } else {
+      log::warn<1>(R"(*** NO REQUEST FOR MSG_SEQ_NUM="{}" ***)"_sv, reject.ref_seq_num);
+    }
+  } else if (
+      reject.session_reject_reason.compare("99"_sv) == 0 &&
       reject.text.compare("connection_too_slow"_sv) == 0) {
+    log::info("closing connection"_sv);
     connection_.close();
   } else {
     log::fatal("Unexpected"_sv);
@@ -751,12 +800,12 @@ void OrderEntry::operator()(
 }
 
 template <typename T>
-void OrderEntry::send(const T &event) {
-  send(event, core::get_realtime_clock());
+uint64_t OrderEntry::send(const T &event) {
+  return send(event, core::get_realtime_clock());
 }
 
 template <typename T>
-void OrderEntry::send(const T &event, std::chrono::nanoseconds sending_time) {
+uint64_t OrderEntry::send(const T &event, std::chrono::nanoseconds sending_time) {
   core::fix::Writer writer(
       encode_buffer_,
       FIX_VERSION,
@@ -769,6 +818,7 @@ void OrderEntry::send(const T &event, std::chrono::nanoseconds sending_time) {
   if (ROQ_UNLIKELY(Flags::fix_debug()))
     log::info("{}"_sv, core::fix::Debug(message));
   connection_.send(message);
+  return outbound_.msg_seq_num;
 }
 
 void OrderEntry::check(const core::fix::header_t &header) {

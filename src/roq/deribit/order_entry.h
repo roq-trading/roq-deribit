@@ -2,6 +2,7 @@
 
 #pragma once
 
+#include <absl/container/flat_hash_map.h>
 #include <absl/container/flat_hash_set.h>
 
 #include <string>
@@ -109,10 +110,10 @@ class OrderEntry final : public core::net::Manager::Handler {
   // utilities
 
   template <typename T>
-  void send(const T &event);
+  uint64_t send(const T &event);
 
   template <typename T>
-  void send(const T &event, std::chrono::nanoseconds sending_time);
+  uint64_t send(const T &event, std::chrono::nanoseconds sending_time);
 
   void check(const core::fix::header_t &);
 
@@ -157,6 +158,8 @@ class OrderEntry final : public core::net::Manager::Handler {
   ConnectionStatus status_ = {};
   server::Download<OrderEntryState> download_;
   std::chrono::nanoseconds last_logon_or_heartbeat_ = {};
+  // EXPERIMENTAL
+  absl::flat_hash_map<uint64_t, std::string> msg_seq_num_to_request_id_;
 };
 
 }  // namespace deribit

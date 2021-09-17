@@ -21,7 +21,7 @@ TEST(fix_reject, parse_message) {
         EXPECT_EQ(message.header.msg_type, core::fix::MsgType::REJECT);
         auto reject = fix::Reject::create(message);
         EXPECT_EQ(reject.ref_seq_num, uint64_t{5});
-        EXPECT_EQ(reject.ref_msg_type, "AN"_sv);
+        EXPECT_EQ(reject.ref_msg_type, core::fix::MsgType::REQUEST_FOR_POSITIONS);
         EXPECT_EQ(reject.text, "not_implemented"_sv);
       },
       message);

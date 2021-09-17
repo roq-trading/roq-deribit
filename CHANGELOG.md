@@ -6,6 +6,7 @@ All notable changes will be documented in this file.
 
 ### Changed
 
+* Reject message with `rate_limit_exceeded` (#73)
 * Reduced logging (#72)
 * Logon timeout (#70)
 * Subscribe to reference data changes (FIX) (#65)
