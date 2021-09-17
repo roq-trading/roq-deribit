@@ -4,6 +4,7 @@
 "values": [
 	{ "name": "fill_or_kill" },
 	{ "name": "good_til_cancelled" },
-	{ "name": "immediate_or_cancel" }
+	{ "name": "immediate_or_cancel" },
+	{ "name": "good_til_day" }
 ]
 }
