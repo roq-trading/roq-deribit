@@ -167,6 +167,7 @@ class MarketData final : public core::net::Manager::Handler {
   std::chrono::nanoseconds next_heartbeat_ = {};
   ConnectionStatus status_ = {};
   server::Download<MarketDataState> download_;
+  std::chrono::nanoseconds last_logon_or_heartbeat_ = {};
 };
 
 }  // namespace deribit

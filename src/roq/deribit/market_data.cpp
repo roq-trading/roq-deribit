@@ -136,10 +136,17 @@ void MarketData::operator()(const Event<Stop> &) {
 void MarketData::operator()(const Event<Timer> &event) {
   if (!connection_.refresh(event.value.now))
     return;
-  if (status_ == ConnectionStatus::READY && next_heartbeat_ <= event.value.now) {
-    assert(Flags::fix_ping_freq().count() > 0);
-    next_heartbeat_ = event.value.now + Flags::fix_ping_freq();
-    send_test_request(core::get_system_clock());
+  if (last_logon_or_heartbeat_.count() && Flags::fix_request_timeout().count() &&
+      (event.value.now - last_logon_or_heartbeat_) > Flags::fix_request_timeout()) {
+    log::warn("*** DETECTED TIMEOUT ***"_sv);
+    log::info("closing connection"_sv);
+    connection_.close();
+  } else {
+    if (status_ == ConnectionStatus::READY && next_heartbeat_ <= event.value.now) {
+      assert(Flags::fix_ping_freq().count() > 0);
+      next_heartbeat_ = event.value.now + Flags::fix_ping_freq();
+      send_test_request(core::get_system_clock());
+    }
   }
 }
 
@@ -228,6 +235,7 @@ void MarketData::send_logon() {
       .unsubscribe_execution_reports = true,
   };
   send(logon);
+  last_logon_or_heartbeat_ = core::get_system_clock();
 }
 
 void MarketData::send_logout(const std::string_view &text) {
@@ -253,6 +261,8 @@ void MarketData::send_test_request(std::chrono::nanoseconds now) {
       .test_req_id = request_id,
   };
   send(test_request);
+  if (!last_logon_or_heartbeat_.count())
+    last_logon_or_heartbeat_ = now;
 }
 
 uint32_t MarketData::download(MarketDataState state) {
@@ -449,6 +459,7 @@ void MarketData::operator()(
   auto now = core::get_system_clock();
   auto &[header, heartbeat] = event;
   log::info<3>("event(header={}, heartbeat={})"_sv, header, heartbeat);
+  last_logon_or_heartbeat_ = {};
   if (!heartbeat.test_req_id.empty()) {
     auto send_time = core::from_chars<uint64_t>(heartbeat.test_req_id);
     auto latency =
