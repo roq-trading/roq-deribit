@@ -25,6 +25,7 @@
 #include "roq/deribit/fix/order_cancel_request.h"
 #include "roq/deribit/fix/order_mass_cancel_request.h"
 #include "roq/deribit/fix/order_mass_status_request.h"
+#include "roq/deribit/fix/request_for_positions.h"
 
 using namespace roq::literals;
 
@@ -42,6 +43,7 @@ static const auto SUPPORTS = utils::Mask{
     SupportType::ORDER_ACK,
     SupportType::ORDER,
     SupportType::TRADE,
+    SupportType::POSITION,
 };
 
 struct create_metrics final : public core::metrics::Factory {
@@ -75,6 +77,7 @@ OrderEntry::OrderEntry(
       },
       profile_{
           .parse = create_metrics(name_, "parse"_sv),
+          .position_report = create_metrics(name_, "position_report"_sv),
           .execution_report = create_metrics(name_, "execution_report"_sv),
           .order_cancel_reject = create_metrics(name_, "order_cancel_reject"_sv),
           .reject = create_metrics(name_, "reject"_sv),
@@ -343,6 +346,9 @@ uint32_t OrderEntry::download(OrderEntryState state) {
     case OrderEntryState::UNDEFINED:
       assert(false);
       break;
+    case OrderEntryState::POSITIONS:
+      subscribe_positions();
+      return 1;
     case OrderEntryState::ORDERS:
       download_orders();
       return 1;  // first ExecutionReport has the real number
@@ -354,6 +360,17 @@ uint32_t OrderEntry::download(OrderEntryState state) {
   }
   assert(false);
   return {};
+}
+
+void OrderEntry::subscribe_positions() {
+  auto request_id = shared_.next_request_id();
+  fix::RequestForPositions request_for_positions{
+      .pos_req_id = request_id,
+      .pos_req_type = roq::core::fix::PosReqType::POSITIONS,
+      .subscription_request_type = roq::core::fix::SubscriptionRequestType::SNAPSHOT_UPDATES,
+      .currency = {},
+  };
+  send(request_for_positions);
 }
 
 void OrderEntry::download_orders() {
@@ -400,6 +417,13 @@ void OrderEntry::parse_helper(const core::fix::message_t &message) {
       break;
     }
     // ...
+    case core::fix::MsgType::POSITION_REPORT: {
+      profile_.position_report([&]() {
+        auto position_report = fix::PositionReport::create(message, buffer);
+        core::fix::create_event_and_dispatch(*this, message.header, position_report, trace_info);
+      });
+      break;
+    }
     case core::fix::MsgType::EXECUTION_REPORT: {
       profile_.execution_report([&]() {
         auto execution_report = fix::ExecutionReport::create(message, buffer);
@@ -441,7 +465,7 @@ void OrderEntry::operator()(
   // note! get clock *before* any logging (avoid latency)
   auto now = core::get_system_clock();
   auto &[header, heartbeat] = event;
-  log::info<3>("event(header={}, heartbeat={})"_sv, header, heartbeat);
+  log::info<3>("event={{header={}, heartbeat={}}}"_sv, header, heartbeat);
   last_logon_or_heartbeat_ = {};
   if (!heartbeat.test_req_id.empty()) {
     auto send_time = core::from_chars<uint64_t>(heartbeat.test_req_id);
@@ -460,7 +484,7 @@ void OrderEntry::operator()(
 
 void OrderEntry::operator()(const core::fix::Event<fix::Logon> &event, const server::TraceInfo &) {
   auto &[header, logon] = event;
-  log::info<2>("event(header={}, logon={})"_sv, header, logon);
+  log::info<2>("event={{header={}, logon={}}}"_sv, header, logon);
   last_logon_or_heartbeat_ = {};
   (*this)(ConnectionStatus::DOWNLOADING);
   download_.begin();
@@ -468,7 +492,7 @@ void OrderEntry::operator()(const core::fix::Event<fix::Logon> &event, const ser
 
 void OrderEntry::operator()(const core::fix::Event<fix::Logout> &event, const server::TraceInfo &) {
   auto &[header, logout] = event;
-  log::warn<2>("event(header={}, logout={})"_sv, header, logout);
+  log::warn<2>("event={{header={}, logout={}}}"_sv, header, logout);
   ready_ = false;
   // note! mandated, must send a logout response
   send_logout(LOGOUT_RESPONSE);
@@ -479,7 +503,7 @@ void OrderEntry::operator()(const core::fix::Event<fix::Logout> &event, const se
 void OrderEntry::operator()(
     const core::fix::Event<fix::ResendRequest> &event, const server::TraceInfo &) {
   auto &[header, resend_request] = event;
-  log::warn("event(header={}, resend_request={})"_sv, header, resend_request);
+  log::warn("event={{header={}, resend_request={}}}"_sv, header, resend_request);
   log::info("closing connection"_sv);
   connection_.close();
 }
@@ -487,8 +511,47 @@ void OrderEntry::operator()(
 void OrderEntry::operator()(
     const core::fix::Event<fix::TestRequest> &event, const server::TraceInfo &) {
   auto &[header, test_request] = event;
-  log::info<1>("event(header={}, test_request={})"_sv, header, test_request);
+  log::info<1>("event={{header={}, test_request={}}}"_sv, header, test_request);
   send_heartbeat(test_request.test_req_id);
+}
+
+void OrderEntry::operator()(
+    const core::fix::Event<fix::PositionReport> &event, const server::TraceInfo &trace_info) {
+  auto &[header, position_report] = event;
+  log::info<2>("event={{header={}, position_report={}}}"_sv, header, position_report);
+  for (size_t i = 0; i < std::size(position_report.no_positions); ++i) {
+    auto is_last = std::size(position_report.no_positions) == (i + 1);
+    auto &position_qty = position_report.no_positions[i];
+    PositionUpdate position_update_buy{
+        .stream_id = stream_id_,
+        .account = security_.get_account(),
+        .exchange = Flags::exchange(),
+        .symbol = position_qty.symbol,
+        .side = Side::BUY,
+        .position = position_qty.long_qty,  // * position_qty.contract_multiplier,
+        .last_trade_id = {},
+        .position_cost = 0.0,
+        .position_yesterday = 0.0,
+        .position_cost_yesterday = 0.0,
+        .external_account = {},
+    };
+    server::create_trace_and_dispatch(trace_info, position_update_buy, handler_, false);
+    PositionUpdate position_update_sell{
+        .stream_id = stream_id_,
+        .account = security_.get_account(),
+        .exchange = Flags::exchange(),
+        .symbol = position_qty.symbol,
+        .side = Side::SELL,
+        .position = position_qty.short_qty,  // * position_qty.contract_multiplier,
+        .last_trade_id = {},
+        .position_cost = 0.0,
+        .position_yesterday = 0.0,
+        .position_cost_yesterday = 0.0,
+        .external_account = {},
+    };
+    server::create_trace_and_dispatch(trace_info, position_update_sell, handler_, is_last);
+  }
+  download_.check_relaxed(OrderEntryState::POSITIONS);
 }
 
 namespace {
@@ -559,8 +622,7 @@ RequestStatus compute_request_status(
 void OrderEntry::operator()(
     const core::fix::Event<fix::ExecutionReport> &event, const server::TraceInfo &trace_info) {
   auto &[header, execution_report] = event;
-  log::info<3>("event(header={}, execution_report={})"_sv, header, execution_report);
-  log::debug("execution_report={}"_sv, execution_report);
+  log::info<2>("event={{header={}, execution_report={}}}"_sv, header, execution_report);
   auto download = false;
   // download begin?
   switch (execution_report.mass_status_req_type) {
@@ -698,7 +760,7 @@ void OrderEntry::operator()(
 void OrderEntry::operator()(
     const core::fix::Event<fix::OrderCancelReject> &event, const server::TraceInfo &trace_info) {
   auto &[header, order_cancel_reject] = event;
-  log::warn<1>("event(header={}, order_cancel_reject={})"_sv, header, order_cancel_reject);
+  log::warn<1>("event={{header={}, order_cancel_reject={}}}"_sv, header, order_cancel_reject);
   const auto &ord_status = order_cancel_reject.ord_status;
   const auto &text = order_cancel_reject.text;
   oms::Response response{
@@ -745,7 +807,7 @@ static RequestType message_type_to_request_type(core::fix::MsgType msg_type) {
 void OrderEntry::operator()(
     const core::fix::Event<fix::Reject> &event, const server::TraceInfo &trace_info) {
   auto &[header, reject] = event;
-  log::warn<1>("event(header={}, reject={})"_sv, header, reject);
+  log::warn<1>("event={{header={}, reject={}}}"_sv, header, reject);
   auto request_type = message_type_to_request_type(reject.ref_msg_type);
   if (request_type != RequestType{}) {
     auto iter = msg_seq_num_to_request_id_.find(reject.ref_seq_num);
@@ -785,7 +847,7 @@ void OrderEntry::operator()(
     const core::fix::Event<fix::OrderMassCancelReport> &event, const server::TraceInfo &) {
   auto &[header, order_mass_cancel_report] = event;
   log::info<1>(
-      "event(header={}, order_mass_cancel_report={})"_sv, header, order_mass_cancel_report);
+      "event={{header={}, order_mass_cancel_report={}}}"_sv, header, order_mass_cancel_report);
   switch (order_mass_cancel_report.mass_cancel_response) {
     case core::fix::MassCancelResponse::CANCEL_REQUEST_REJECTED:
       log::warn(

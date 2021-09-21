@@ -4,6 +4,10 @@ All notable changes will be documented in this file.
 
 ## Head
 
+### Changed
+
+* Now subscribing to position updates (FIX) (#79)
+
 ## 0.7.7 &ndash; 2021-09-20
 
 ### Changed

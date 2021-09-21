@@ -451,6 +451,7 @@ void DropCopy::operator()(const server::Trace<json::Ticker> &) {
 }
 
 void DropCopy::operator()(const server::Trace<json::Portfolio> &event) {
+  log::info<2>("portfolio={}"_sv, event.value);
   auto &portfolio = event.value;
   FundsUpdate funds_update{
       .stream_id = stream_id_,
@@ -505,7 +506,10 @@ void DropCopy::operator()(const server::Trace<json::Trade> &event, [[maybe_unuse
   // do nothing?
 }
 
-void DropCopy::operator()(const server::Trace<json::Position> &event, bool is_last) {
+void DropCopy::operator()(
+    const server::Trace<json::Position> &event, [[maybe_unused]] bool is_last) {
+  log::info<2>("position={}"_sv, event.value);
+  /*
   auto &position = event.value;
   PositionUpdate position_update{
       .stream_id = stream_id_,
@@ -521,6 +525,7 @@ void DropCopy::operator()(const server::Trace<json::Position> &event, bool is_la
       .external_account = {},
   };
   server::create_trace_and_dispatch(event.trace_info, position_update, handler_, is_last);
+  */
 }
 
 }  // namespace deribit

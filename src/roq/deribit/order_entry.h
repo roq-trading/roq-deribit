@@ -36,6 +36,7 @@
 #include "roq/deribit/fix/execution_report.h"
 #include "roq/deribit/fix/order_cancel_reject.h"
 #include "roq/deribit/fix/order_mass_cancel_report.h"
+#include "roq/deribit/fix/position_report.h"
 #include "roq/deribit/fix/reject.h"  // ... normally session level
 
 namespace roq {
@@ -47,6 +48,7 @@ class OrderEntry final : public core::net::Manager::Handler {
     virtual void operator()(const server::Trace<StreamStatus> &) = 0;
     virtual void operator()(const server::Trace<ExternalLatency> &) = 0;
     virtual void operator()(const server::Trace<TradeUpdate> &, bool is_last, uint8_t user_id) = 0;
+    virtual void operator()(const server::Trace<PositionUpdate> &, bool is_last) = 0;
   };
 
   OrderEntry(Handler &, core::io::Context &, uint16_t stream_id, Security &, Shared &);
@@ -82,6 +84,8 @@ class OrderEntry final : public core::net::Manager::Handler {
   void operator()(const core::fix::Event<fix::ResendRequest> &, const server::TraceInfo &);
   void operator()(const core::fix::Event<fix::TestRequest> &, const server::TraceInfo &);
 
+  void operator()(const core::fix::Event<fix::PositionReport> &, const server::TraceInfo &);
+
   void operator()(const core::fix::Event<fix::ExecutionReport> &, const server::TraceInfo &);
   void operator()(const core::fix::Event<fix::OrderCancelReject> &, const server::TraceInfo &);
   void operator()(const core::fix::Event<fix::Reject> &, const server::TraceInfo &);
@@ -102,6 +106,7 @@ class OrderEntry final : public core::net::Manager::Handler {
 
   uint32_t download(OrderEntryState);
 
+  void subscribe_positions();
   void download_orders();
 
   void parse(const core::fix::message_t &);
@@ -134,7 +139,7 @@ class OrderEntry final : public core::net::Manager::Handler {
     core::metrics::Counter disconnect;
   } counter_;
   struct {
-    core::metrics::Profile parse, execution_report, order_cancel_reject, reject,
+    core::metrics::Profile parse, position_report, execution_report, order_cancel_reject, reject,
         order_mass_cancel_report;
   } profile_;
   struct {

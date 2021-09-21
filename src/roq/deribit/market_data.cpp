@@ -458,7 +458,7 @@ void MarketData::operator()(
   // note! get clock *before* any logging (avoid latency)
   auto now = core::get_system_clock();
   auto &[header, heartbeat] = event;
-  log::info<3>("event(header={}, heartbeat={})"_sv, header, heartbeat);
+  log::info<3>("event={{header={}, heartbeat={}}}"_sv, header, heartbeat);
   last_logon_or_heartbeat_ = {};
   if (!heartbeat.test_req_id.empty()) {
     auto send_time = core::from_chars<uint64_t>(heartbeat.test_req_id);
@@ -477,14 +477,14 @@ void MarketData::operator()(
 
 void MarketData::operator()(const core::fix::Event<fix::Logon> &event, const server::TraceInfo &) {
   auto &[header, logon] = event;
-  log::info<2>("event(header={}, logon={})"_sv, header, logon);
+  log::info<2>("event={{header={}, logon={}}}"_sv, header, logon);
   (*this)(ConnectionStatus::DOWNLOADING);
   download_.begin();
 }
 
 void MarketData::operator()(const core::fix::Event<fix::Logout> &event, const server::TraceInfo &) {
   auto &[header, logout] = event;
-  log::warn("event(header={}, logout={})"_sv, header, logout);
+  log::warn("event={{header={}, logout={}}}"_sv, header, logout);
   (*this)(ConnectionStatus::LOGGED_OUT);
   ready_ = false;
   // note! mandated, must send a logout response
@@ -496,7 +496,7 @@ void MarketData::operator()(const core::fix::Event<fix::Logout> &event, const se
 void MarketData::operator()(
     const core::fix::Event<fix::ResendRequest> &event, const server::TraceInfo &) {
   auto &[header, resend_request] = event;
-  log::warn("event(header={}, resend_request={})"_sv, header, resend_request);
+  log::warn("event={{header={}, resend_request={}}}"_sv, header, resend_request);
   log::info("closing connection"_sv);
   connection_.close();
 }
@@ -504,14 +504,14 @@ void MarketData::operator()(
 void MarketData::operator()(
     const core::fix::Event<fix::TestRequest> &event, const server::TraceInfo &) {
   auto &[header, test_request] = event;
-  log::info<1>("event(header={}, test_request={})"_sv, header, test_request);
+  log::info<1>("event={{header={}, test_request={}}}"_sv, header, test_request);
   send_heartbeat(test_request.test_req_id);
 }
 
 void MarketData::operator()(
     const core::fix::Event<fix::SecurityList> &event, const server::TraceInfo &trace_info) {
   auto &[header, security_list] = event;
-  log::info<2>("event(header={}, security_list={})"_sv, header, security_list);
+  log::info<2>("event={{header={}, security_list={}}}"_sv, header, security_list);
   if (security_list.no_related_sym.size() > 0) {
     size_t counter = {};
     std::vector<std::string> symbols;
@@ -566,7 +566,7 @@ void MarketData::operator()(
 void MarketData::operator()(
     const core::fix::Event<fix::SecurityStatus> &event, const server::TraceInfo &) {
   auto &[header, security_status] = event;
-  log::info<2>("event(header={}, security_status={})"_sv, header, security_status);
+  log::info<2>("event={{header={}, security_status={}}}"_sv, header, security_status);
   // XXX should we use it or not?
 }
 
@@ -575,7 +575,7 @@ void MarketData::operator()(
     const server::TraceInfo &trace_info) {
   auto &[header, market_data_incremental_refresh] = event;
   log::info<3>(
-      "event(header={}, market_data_incremental_refresh={})"_sv,
+      "event={{header={}, market_data_incremental_refresh={}}}"_sv,
       header,
       market_data_incremental_refresh);
 
@@ -694,7 +694,7 @@ void MarketData::operator()(
     const core::fix::Event<fix::MarketDataRequestReject> &event, const server::TraceInfo &) {
   auto &[header, market_data_request_reject] = event;
   log::warn<1>(
-      "event(header={}, market_data_request_reject={})"_sv, header, market_data_request_reject);
+      "event={{header={}, market_data_request_reject={}}}"_sv, header, market_data_request_reject);
   log::fatal("Unexpected"_sv);  // don't know how to continue
 }
 
@@ -703,7 +703,7 @@ void MarketData::operator()(
     const server::TraceInfo &trace_info) {
   auto &[header, market_data_snapshot_full_refresh] = event;
   log::info<3>(
-      "event(header={}, market_data_snapshot_full_refresh={})"_sv,
+      "event={{header={}, market_data_snapshot_full_refresh={}}}"_sv,
       header,
       market_data_snapshot_full_refresh);
   core::back_emplacer bids(shared_.bids), asks(shared_.asks);
