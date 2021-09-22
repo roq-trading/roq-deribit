@@ -6,6 +6,7 @@ All notable changes will be documented in this file.
 
 ### Changed
 
+* DropCopy doesn't need to subscribe positions (#79)
 * Now subscribing to position updates (FIX) (#79)
 
 ## 0.7.7 &ndash; 2021-09-20

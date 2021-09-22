@@ -57,7 +57,6 @@ DropCopy::DropCopy(
       profile_{
           .parse = create_metrics(name_, "parse"_sv),
           .auth = create_metrics(name_, "auth"_sv),
-          .positions = create_metrics(name_, "positions"_sv),
       },
       latency_{
           .ping = create_metrics(name_, "ping"_sv),
@@ -113,7 +112,6 @@ void DropCopy::operator()(metrics::Writer &writer) {
       .write(counter_.disconnect, metrics::COUNTER)
       .write(profile_.parse, metrics::PROFILE)
       .write(profile_.auth, metrics::PROFILE)
-      .write(profile_.positions, metrics::PROFILE)
       .write(latency_.ping, metrics::LATENCY)
       .write(latency_.heartbeat, metrics::LATENCY);
 }
@@ -125,7 +123,6 @@ void DropCopy::update_subscriptions(const roq::span<std::string> &currencies) {
     subscribe_portfolios(currencies);
     get_account_summary(currencies);
     get_trades(currencies);
-    get_positions(currencies);
   }
 }
 
@@ -226,9 +223,6 @@ uint32_t DropCopy::download(DropCopyState state) {
       return {};
     case DropCopyState::GET_TRADES:
       get_trades(currencies_);
-      return {};
-    case DropCopyState::GET_POSITIONS:
-      get_positions(currencies_);
       return {};
     case DropCopyState::DONE:
       (*this)(ConnectionStatus::READY);
@@ -334,23 +328,6 @@ void DropCopy::get_trades(const roq::span<std::string> &currencies) {
   }
 }
 
-void DropCopy::get_positions(const roq::span<std::string> &currencies) {
-  constexpr json::RequestType request_type = json::RequestType::GET_POSITIONS;
-  for (auto currency : currencies) {
-    auto message = fmt::format(
-        R"({{)"
-        R"("method":"private/get_positions",)"
-        R"("params":{{)"
-        R"("currency":"{}")"
-        R"(}},)"
-        R"("id":"{}")"
-        R"(}})"_sv,
-        currency,
-        request_type.as_raw_text());
-    connection_.send_text(message);
-  }
-}
-
 void DropCopy::parse(const std::string_view &message) {
   profile_.parse([&]() {
     try {
@@ -395,12 +372,6 @@ void DropCopy::operator()(const core::jsonrpc::Result &result, core::json::value
       core::json::Buffer buffer(decode_buffer_);
       json::Trades trades(value, buffer);
       server::create_trace_and_dispatch(trace_info, trades, *this);
-      break;
-    }
-    case json::RequestType::GET_POSITIONS: {
-      core::json::Buffer buffer(decode_buffer_);
-      json::Positions positions(value, buffer);
-      server::create_trace_and_dispatch(trace_info, positions, *this);
       break;
     }
     default:
@@ -482,15 +453,6 @@ void DropCopy::operator()(const server::Trace<json::Trades> &event) {
   }
 }
 
-void DropCopy::operator()(const server::Trace<json::Positions> &event) {
-  auto &positions = event.value;
-  for (size_t i = {}; i < positions.data.size(); ++i) {
-    auto &position = positions.data[i];
-    auto is_last = i == (positions.data.size() - 1);
-    server::create_trace_and_dispatch(event.trace_info, position, *this, is_last);
-  }
-}
-
 void DropCopy::operator()(const server::Trace<json::Order> &event) {
   log::info<1>("order={}"_sv, event.value);
   // do nothing?
@@ -504,28 +466,6 @@ void DropCopy::operator()(const server::Trace<json::Trades2> &event) {
 void DropCopy::operator()(const server::Trace<json::Trade> &event, [[maybe_unused]] bool is_last) {
   log::info<1>("trade={}"_sv, event.value);
   // do nothing?
-}
-
-void DropCopy::operator()(
-    const server::Trace<json::Position> &event, [[maybe_unused]] bool is_last) {
-  log::info<2>("position={}"_sv, event.value);
-  /*
-  auto &position = event.value;
-  PositionUpdate position_update{
-      .stream_id = stream_id_,
-      .account = security_.get_account(),
-      .exchange = Flags::exchange(),
-      .symbol = position.instrument_name,
-      .side = json::map(position.direction),
-      .position = position.size,
-      .last_trade_id = {},
-      .position_cost = 0.0,
-      .position_yesterday = 0.0,
-      .position_cost_yesterday = 0.0,
-      .external_account = {},
-  };
-  server::create_trace_and_dispatch(event.trace_info, position_update, handler_, is_last);
-  */
 }
 
 }  // namespace deribit

@@ -97,7 +97,6 @@ class DropCopy final : public core::web::Socket::Handler,
 
   void get_account_summary(const roq::span<std::string> &currencies);
   void get_trades(const roq::span<std::string> &currencies);
-  void get_positions(const roq::span<std::string> &currencies);
 
   void parse(const std::string_view &message);
 
@@ -121,7 +120,6 @@ class DropCopy final : public core::web::Socket::Handler,
   void operator()(const server::Trace<json::Trades2> &) override;
 
   void operator()(const server::Trace<json::Trade> &, bool is_last);
-  void operator()(const server::Trace<json::Position> &, bool is_last);
 
  private:
   Handler &handler_;
@@ -137,7 +135,7 @@ class DropCopy final : public core::web::Socket::Handler,
     core::metrics::Counter disconnect;
   } counter_;
   struct {
-    core::metrics::Profile parse, auth, positions;
+    core::metrics::Profile parse, auth;
   } profile_;
   struct {
     core::metrics::Latency ping, heartbeat;
