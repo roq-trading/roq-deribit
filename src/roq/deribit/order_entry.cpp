@@ -2,6 +2,8 @@
 
 #include "roq/deribit/order_entry.h"
 
+#include <utility>
+
 #include "roq/utils/mask.h"
 #include "roq/utils/safe_cast.h"
 #include "roq/utils/update.h"
@@ -580,6 +582,7 @@ RequestType compute_request_type(core::fix::ExecType exec_type, core::fix::OrdSt
     case core::fix::ExecType::ORDER_STATUS:
       switch (ord_status) {
         case core::fix::OrdStatus::NEW:
+        case core::fix::OrdStatus::PARTIALLY_FILLED:
           return {};  // create or modify
         case core::fix::OrdStatus::CANCELED:
           return RequestType::CANCEL_ORDER;
@@ -603,11 +606,10 @@ RequestStatus compute_request_status(
     case core::fix::ExecType::ORDER_STATUS:
       switch (ord_status) {
         case core::fix::OrdStatus::NEW:
-        case core::fix::OrdStatus::CANCELED:
-          return RequestStatus::ACCEPTED;
         case core::fix::OrdStatus::PARTIALLY_FILLED:
         case core::fix::OrdStatus::FILLED:
-          break;
+        case core::fix::OrdStatus::CANCELED:
+          return RequestStatus::ACCEPTED;
         default:
           break;
       }
@@ -616,6 +618,24 @@ RequestStatus compute_request_status(
       break;
   }
   return {};
+}
+
+// note!
+//   last traded is expected (downstream) to be the sum of all fills for this update
+//   Deribit reports only the *last* fill, but includes all fills as well
+//   we will therefore replace these values, when possible
+std::pair<double, double> compute_last_traded(
+    double last_traded_quantity, double last_traded_price, const roq::span<fix::Fill> &fills) {
+  if (std::empty(fills))
+    return std::make_pair(last_traded_quantity, last_traded_price);
+  double sum_quantity = 0.0, sum_quantity_price = 0.0;
+  for (auto &fill : fills) {
+    sum_quantity += fill.fill_qty;
+    sum_quantity_price += fill.fill_qty * fill.fill_px;
+  }
+  return std::make_pair(
+      sum_quantity,
+      utils::compare(sum_quantity, 0.0) == 0 ? NaN : sum_quantity_price / sum_quantity);
 }
 }  // namespace
 
@@ -656,12 +676,14 @@ void OrderEntry::operator()(
   const auto &transact_time = execution_report.transact_time;
   // find order
   auto side = core::fix::map(execution_report.side);
-  auto status = core::fix::map(execution_report.ord_status);
+  auto order_status = core::fix::map(execution_report.ord_status);
   auto order_type = core::fix::map(execution_report.ord_type);
   auto last_liquidity = core::fix::map(liquidity_ind);
   // XXX TODO(thraneh): exec_inst
   auto request_type = compute_request_type(exec_type, ord_status);
   auto request_status = compute_request_status(exec_type, ord_status);
+  auto [last_traded_quantity, last_traded_price] = compute_last_traded(
+      execution_report.last_qty, execution_report.last_px, execution_report.no_fills);
   // note!
   // we have very little information to match requests as we can't rewrite ClOrdID
   // - create and modify both have exec_type=ORDER_STATUS and ord_status=NEW
@@ -692,15 +714,15 @@ void OrderEntry::operator()(
       .update_time_utc = execution_report.transact_time,
       .external_account = {},
       .external_order_id = execution_report.order_id,
-      .status = status,
+      .status = order_status,
       .quantity = execution_report.order_qty,
       .price = execution_report.price,
       .stop_price = execution_report.stop_px,
       .remaining_quantity = execution_report.leaves_qty,
       .traded_quantity = execution_report.cum_qty,
       .average_traded_price = execution_report.avg_px,
-      .last_traded_quantity = execution_report.last_qty,
-      .last_traded_price = execution_report.last_px,
+      .last_traded_quantity = last_traded_quantity,
+      .last_traded_price = last_traded_price,
       .last_liquidity = last_liquidity,
   };
   if (download) {

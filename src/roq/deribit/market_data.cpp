@@ -663,7 +663,7 @@ void MarketData::operator()(
     try {
       server::create_trace_and_dispatch(trace_info, market_by_price_update, handler_, is_last);
     } catch (market::BadState &) {
-      log::fatal("*** RESUBSCRIBE REQUIRED HERE ***"_sv);
+      log::warn("*** RESUBSCRIBE REQUIRED HERE ***"_sv);
     }
   }
   if (!trades.empty()) {

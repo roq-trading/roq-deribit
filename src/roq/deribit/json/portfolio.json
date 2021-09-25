@@ -43,6 +43,7 @@
 	{ "name": "username", "type": "std::string_view" },
 	{ "name": "estimated_liquidation_ratio_list", "comment": "undoc - replaced with map?" },
 	{ "name": "estimated_liquidation_ratio_map", "comment": "undoc" },
-	{ "name": "delta_total_map", "comment": "undoc" }
+	{ "name": "delta_total_map", "comment": "undoc" },
+	{ "name": "fee_balance", "type": "double", "comment": "undoc" }
 ]
 }
