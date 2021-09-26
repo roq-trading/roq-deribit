@@ -117,6 +117,7 @@ MarketData::MarketData(
           .market_data_request_reject = create_metrics(name_, "market_data_request_reject"_sv),
           .market_data_snapshot_full_refresh =
               create_metrics(name_, "market_data_snapshot_full_refresh"_sv),
+          .market_data_request = create_metrics(name_, "market_data_request"_sv),
       },
       latency_{
           .ping = create_metrics(name_, "ping"_sv),
@@ -309,6 +310,7 @@ void MarketData::operator()(metrics::Writer &writer) {
       .write(profile_.market_data_incremental_refresh, metrics::PROFILE)
       .write(profile_.market_data_request_reject, metrics::PROFILE)
       .write(profile_.market_data_snapshot_full_refresh, metrics::PROFILE)
+      .write(profile_.market_data_request, metrics::PROFILE)
       .write(latency_.ping, metrics::LATENCY);
 }
 
@@ -370,6 +372,55 @@ void MarketData::subscribe(const roq::span<std::string> &symbols) {
     };
     send(market_data_request);
   }
+}
+
+void MarketData::unsubscribe(const roq::span<std::string> &symbols) {
+  log::info("Unsubscribe market data"_sv);
+  assert(!symbols.empty());
+  fix::MDReq md_entry_types[] = {
+      {.md_entry_type = core::fix::MDEntryType::BID},
+      {.md_entry_type = core::fix::MDEntryType::OFFER},
+      {.md_entry_type = core::fix::MDEntryType::TRADE},
+  };
+  // deribit has acknowledged a limit on # of symbols per request
+  auto max_size = Flags::fix_market_data_request_max_size()
+                      ? Flags::fix_market_data_request_max_size()
+                      : symbols.size();
+  std::vector<fix::InstrmtMDReq> related_sym(max_size);
+  for (size_t offset = {};; offset += max_size) {
+    if (symbols.size() <= offset)
+      break;
+    auto length = std::min<size_t>(symbols.size() - offset, max_size);
+    assert(length > 0);
+    for (size_t i = {}; i < length; ++i)
+      new (&related_sym[i]) fix::InstrmtMDReq{
+          .symbol = symbols[offset + i],
+      };
+    auto request_id = shared_.next_request_id();
+    fix::MarketDataRequest market_data_request{
+        .md_req_id = request_id,
+        .subscription_request_type = core::fix::SubscriptionRequestType::UNSUBSCRIBE,
+        .market_depth = {},
+        .md_update_type = {},
+        .deribit_trade_amount = {},
+        .deribit_since_timestamp = {},
+        .no_md_entry_types = md_entry_types,
+        .no_related_sym = {related_sym.data(), length},
+    };
+    send(market_data_request);
+  }
+}
+
+void MarketData::resubscribe(const std::string_view &symbol) {
+  log::warn<1>("*** RESUBSCRIBE ***"_sv);
+  if (latch_.find(symbol) != latch_.end())
+    return;
+  log::info<1>(R"(Latch symbol="{}")"_sv, symbol);
+  latch_.emplace(symbol);
+  std::string tmp{symbol};  // alloc
+  roq::span symbols{&tmp, 1};
+  unsubscribe(symbols);
+  subscribe(symbols);
 }
 
 void MarketData::parse(const core::fix::message_t &message) {
@@ -444,6 +495,13 @@ void MarketData::parse_helper(const core::fix::message_t &message) {
       profile_.security_status([&]() {
         auto security_status = fix::SecurityStatus::create(message, buffer);
         core::fix::create_event_and_dispatch(*this, message.header, security_status, trace_info);
+      });
+      break;
+    }
+      // weird
+    case core::fix::MsgType::MARKET_DATA_REQUEST: {
+      profile_.market_data_request([&]() {
+        // XXX HANS why do we get this message?
       });
       break;
     }
@@ -578,6 +636,7 @@ void MarketData::operator()(
       "event={{header={}, market_data_incremental_refresh={}}}"_sv,
       header,
       market_data_incremental_refresh);
+  auto &symbol = market_data_incremental_refresh.symbol;
 
   core::back_emplacer bids(shared_.bids), asks(shared_.asks);
   core::back_emplacer trades(shared_.trades);
@@ -650,27 +709,29 @@ void MarketData::operator()(
     }
   }
   if (!(bids.empty() && asks.empty())) {
-    const MarketByPriceUpdate market_by_price_update{
-        .stream_id = stream_id_,
-        .exchange = Flags::exchange(),
-        .symbol = market_data_incremental_refresh.symbol,
-        .bids = bids,
-        .asks = asks,
-        .snapshot = false,  // incremental
-        .exchange_time_utc = exchange_time_utc,
-    };
-    auto is_last = statistics.empty() && trades.empty();
-    try {
-      server::create_trace_and_dispatch(trace_info, market_by_price_update, handler_, is_last);
-    } catch (market::BadState &) {
-      log::warn("*** RESUBSCRIBE REQUIRED HERE ***"_sv);
+    if (latch_.find(symbol) == latch_.end()) {
+      const MarketByPriceUpdate market_by_price_update{
+          .stream_id = stream_id_,
+          .exchange = Flags::exchange(),
+          .symbol = symbol,
+          .bids = bids,
+          .asks = asks,
+          .snapshot = false,  // incremental
+          .exchange_time_utc = exchange_time_utc,
+      };
+      auto is_last = statistics.empty() && trades.empty();
+      try {
+        server::create_trace_and_dispatch(trace_info, market_by_price_update, handler_, is_last);
+      } catch (market::BadState &) {
+        resubscribe(symbol);
+      }
     }
   }
   if (!trades.empty()) {
     const TradeSummary trade_summary{
         .stream_id = stream_id_,
         .exchange = Flags::exchange(),
-        .symbol = market_data_incremental_refresh.symbol,
+        .symbol = symbol,
         .trades = trades,
         .exchange_time_utc = exchange_time_utc,
     };
@@ -706,6 +767,12 @@ void MarketData::operator()(
       "event={{header={}, market_data_snapshot_full_refresh={}}}"_sv,
       header,
       market_data_snapshot_full_refresh);
+  auto &symbol = market_data_snapshot_full_refresh.symbol;
+  auto iter = latch_.find(symbol);
+  if (ROQ_UNLIKELY(iter != latch_.end())) {
+    log::info<1>(R"(Unlatch symbol="{}")"_sv, symbol);
+    latch_.erase(iter);
+  }
   core::back_emplacer bids(shared_.bids), asks(shared_.asks);
   core::back_emplacer statistics(shared_.statistics);
   for (auto &item : market_data_snapshot_full_refresh.no_md_entries) {
@@ -752,7 +819,7 @@ void MarketData::operator()(
     const MarketByPriceUpdate market_by_price_update{
         .stream_id = stream_id_,
         .exchange = Flags::exchange(),
-        .symbol = market_data_snapshot_full_refresh.symbol,
+        .symbol = symbol,
         .bids = bids,
         .asks = asks,
         .snapshot = true,
@@ -768,7 +835,7 @@ void MarketData::operator()(
     const StatisticsUpdate statistics_update{
         .stream_id = stream_id_,
         .exchange = Flags::exchange(),
-        .symbol = market_data_snapshot_full_refresh.symbol,
+        .symbol = symbol,
         .statistics = statistics,
         .snapshot = true,
         .exchange_time_utc = {},

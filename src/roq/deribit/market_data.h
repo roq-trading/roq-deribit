@@ -111,6 +111,9 @@ class MarketData final : public core::net::Manager::Handler {
   void download_securities();
 
   void subscribe(const roq::span<std::string> &symbols);
+  void unsubscribe(const roq::span<std::string> &symbols);
+
+  void resubscribe(const std::string_view &symbol);
 
   void parse(const core::fix::message_t &);
   void parse_helper(const core::fix::message_t &);
@@ -144,7 +147,7 @@ class MarketData final : public core::net::Manager::Handler {
   } counter_;
   struct {
     core::metrics::Profile parse, security_list, security_status, market_data_incremental_refresh,
-        market_data_request_reject, market_data_snapshot_full_refresh;
+        market_data_request_reject, market_data_snapshot_full_refresh, market_data_request;
   } profile_;
   struct {
     core::metrics::Latency ping;
@@ -168,6 +171,7 @@ class MarketData final : public core::net::Manager::Handler {
   ConnectionStatus status_ = {};
   server::Download<MarketDataState> download_;
   std::chrono::nanoseconds last_logon_or_heartbeat_ = {};
+  absl::flat_hash_set<std::string> latch_;
 };
 
 }  // namespace deribit
