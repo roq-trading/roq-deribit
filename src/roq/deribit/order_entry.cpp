@@ -2,6 +2,7 @@
 
 #include "roq/deribit/order_entry.h"
 
+#include <algorithm>
 #include <utility>
 
 #include "roq/utils/mask.h"
@@ -524,34 +525,20 @@ void OrderEntry::operator()(
   for (size_t i = 0; i < std::size(position_report.no_positions); ++i) {
     auto is_last = std::size(position_report.no_positions) == (i + 1);
     auto &position_qty = position_report.no_positions[i];
-    PositionUpdate position_update_buy{
+    auto long_quantity = std::max(0.0, position_qty.long_qty);
+    auto short_quantity = std::max(0.0, position_qty.short_qty);
+    PositionUpdate position_update{
         .stream_id = stream_id_,
         .account = security_.get_account(),
         .exchange = Flags::exchange(),
         .symbol = position_qty.symbol,
-        .side = Side::BUY,
-        .position = position_qty.long_qty,  // * position_qty.contract_multiplier,
-        .last_trade_id = {},
-        .position_cost = 0.0,
-        .position_yesterday = 0.0,
-        .position_cost_yesterday = 0.0,
         .external_account = {},
+        .long_quantity = long_quantity,
+        .short_quantity = short_quantity,
+        .long_quantity_begin = NaN,
+        .short_quantity_begin = NaN,
     };
-    server::create_trace_and_dispatch(trace_info, position_update_buy, handler_, false);
-    PositionUpdate position_update_sell{
-        .stream_id = stream_id_,
-        .account = security_.get_account(),
-        .exchange = Flags::exchange(),
-        .symbol = position_qty.symbol,
-        .side = Side::SELL,
-        .position = position_qty.short_qty,  // * position_qty.contract_multiplier,
-        .last_trade_id = {},
-        .position_cost = 0.0,
-        .position_yesterday = 0.0,
-        .position_cost_yesterday = 0.0,
-        .external_account = {},
-    };
-    server::create_trace_and_dispatch(trace_info, position_update_sell, handler_, is_last);
+    server::create_trace_and_dispatch(trace_info, position_update, handler_, is_last);
   }
   download_.check_relaxed(OrderEntryState::POSITIONS);
 }
