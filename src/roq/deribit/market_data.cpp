@@ -721,7 +721,8 @@ void MarketData::operator()(
       };
       auto is_last = statistics.empty() && trades.empty();
       try {
-        server::create_trace_and_dispatch(trace_info, market_by_price_update, handler_, is_last);
+        server::create_trace_and_dispatch(
+            trace_info, market_by_price_update, handler_, is_last, false);
       } catch (market::BadState &) {
         resubscribe(symbol);
       }
@@ -826,7 +827,8 @@ void MarketData::operator()(
         .exchange_time_utc = {},
     };
     try {
-      server::create_trace_and_dispatch(trace_info, market_by_price_update, handler_, is_last);
+      server::create_trace_and_dispatch(
+          trace_info, market_by_price_update, handler_, is_last, false);
     } catch (market::BadState &) {
       log::fatal("*** RESUBSCRIBE REQUIRED HERE ***"_sv);
     }
