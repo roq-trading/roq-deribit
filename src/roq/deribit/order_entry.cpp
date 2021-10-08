@@ -119,7 +119,7 @@ void OrderEntry::operator()(const Event<Timer> &event) {
 }
 
 uint16_t OrderEntry::operator()(
-    const Event<CreateOrder> &event, const std::string_view &request_id) {
+    const Event<CreateOrder> &event, const oms::Order &, const std::string_view &request_id) {
   if (!ready())
     throw oms::NotReadyException();
   auto &[message_info, create_order] = event;
