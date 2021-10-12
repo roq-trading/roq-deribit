@@ -15,10 +15,7 @@ namespace {
 static auto create_security(const Config &config) {
   absl::flat_hash_map<std::string, std::unique_ptr<Security>> result;
   for (auto &[_, iter] : config.accounts) {
-    auto &account = iter.name;
-    auto &access_key = iter.login;
-    auto &access_secret = iter.secret;
-    result.try_emplace(account, std::make_unique<Security>(account, access_key, access_secret));
+    result.try_emplace(iter.name, std::make_unique<Security>(config, iter.name));
   }
   return result;
 }

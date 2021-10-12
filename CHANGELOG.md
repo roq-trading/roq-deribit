@@ -6,6 +6,7 @@ All notable changes will be documented in this file.
 
 ### Changed
 
+* Moved signature handling to tools library (chore)
 * Parse `Portfolio.security_keys_enabled` (JSON, undoc) (chore)
 * Resubscribe market data when observing "bad state" (#86)
 * Report last traded as the aggregate of all fills (#84)

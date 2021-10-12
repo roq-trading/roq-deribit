@@ -6,22 +6,19 @@
 #include <string>
 #include <string_view>
 
-#include "roq/deribit/config.h"
-
-#include "roq/deribit/tools/hasher.h"
+#include "roq/core/crypto/hmac.h"
+#include "roq/core/crypto/sha.h"
 
 namespace roq {
 namespace deribit {
+namespace tools {
 
-class Security final {
+class Hasher final {
  public:
-  Security(const Config &, const std::string_view &account);
+  explicit Hasher(const std::string_view &secret);
 
-  Security(Security &&) = delete;
-  Security(const Security &) = delete;
-
-  std::string_view get_account() const { return account_; }
-  std::string_view get_access_key() const { return key_; }
+  Hasher(Hasher &&) = delete;
+  Hasher(const Hasher &) = delete;
 
   std::string create_nonce();
 
@@ -30,11 +27,16 @@ class Security final {
   std::string create_raw_data(std::chrono::milliseconds timestamp);
   std::string create_password(const std::string_view &raw_data);
 
+ protected:
+  int64_t get_sequence(std::chrono::milliseconds timestamp);
+
  private:
-  const std::string account_;
-  const std::string key_;
-  tools::Hasher hasher_;
+  const std::string secret_;
+  core::crypto::SHA256 sha_;
+  core::crypto::HMAC_SHA256 hmac_;
+  std::chrono::milliseconds timestamp_ = {};
 };
 
+}  // namespace tools
 }  // namespace deribit
 }  // namespace roq

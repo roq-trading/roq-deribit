@@ -2,7 +2,8 @@ set(TARGET_NAME "${PROJECT_NAME}")
 
 add_subdirectory("fix")
 add_subdirectory("json")
-add_subdirectory(flags)
+add_subdirectory("flags")
+add_subdirectory("tools")
 
 set(SOURCES
     application.cpp
@@ -58,6 +59,7 @@ target_link_libraries(
   "${PROJECT_NAME}-fix"
   "${PROJECT_NAME}-json"
   "${PROJECT_NAME}-flags"
+  "${PROJECT_NAME}-tools"
   roq-server::roq-server
   roq-core::roq-core
   roq-api::roq-api
