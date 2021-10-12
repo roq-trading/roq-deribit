@@ -442,7 +442,7 @@ void WebSocket::operator()(const server::Trace<json::Quote> &event) {
                   .ask_price = quote.best_ask_price,
                   .ask_quantity = ask_quantity,
               },
-              .snapshot = false,
+              .update_type = UpdateType::INCREMENTAL,
               .exchange_time_utc = quote.timestamp,
           };
           if (utils::compare(layer, top_of_book.layer) != 0) {

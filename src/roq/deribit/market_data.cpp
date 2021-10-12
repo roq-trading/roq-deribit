@@ -716,7 +716,7 @@ void MarketData::operator()(
           .symbol = symbol,
           .bids = bids,
           .asks = asks,
-          .snapshot = false,  // incremental
+          .update_type = UpdateType::INCREMENTAL,
           .exchange_time_utc = exchange_time_utc,
       };
       auto is_last = statistics.empty() && trades.empty();
@@ -745,7 +745,7 @@ void MarketData::operator()(
         .exchange = Flags::exchange(),
         .symbol = market_data_incremental_refresh.symbol,
         .statistics = statistics,
-        .snapshot = false,
+        .update_type = UpdateType::INCREMENTAL,
         .exchange_time_utc = exchange_time_utc,
     };
     server::create_trace_and_dispatch(trace_info, statistics_update, handler_, true);
@@ -823,7 +823,7 @@ void MarketData::operator()(
         .symbol = symbol,
         .bids = bids,
         .asks = asks,
-        .snapshot = true,
+        .update_type = UpdateType::SNAPSHOT,
         .exchange_time_utc = {},
     };
     try {
@@ -839,7 +839,7 @@ void MarketData::operator()(
         .exchange = Flags::exchange(),
         .symbol = symbol,
         .statistics = statistics,
-        .snapshot = true,
+        .update_type = UpdateType::SNAPSHOT,
         .exchange_time_utc = {},
     };
     server::create_trace_and_dispatch(trace_info, statistics_update, handler_, true);
