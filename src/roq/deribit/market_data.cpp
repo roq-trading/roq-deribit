@@ -512,7 +512,7 @@ void MarketData::parse_helper(const core::fix::message_t &message) {
 }
 
 void MarketData::operator()(
-    const core::fix::Event<fix::Heartbeat> &event, const server::TraceInfo &) {
+    const core::fix::Event<fix::Heartbeat> &event, const server::TraceInfo &trace_info) {
   // note! get clock *before* any logging (avoid latency)
   auto now = core::get_system_clock();
   auto &[header, heartbeat] = event;
@@ -523,7 +523,6 @@ void MarketData::operator()(
     auto latency =
         std::chrono::duration_cast<std::chrono::nanoseconds>(now - decltype(now){send_time}) /
         2;  // 1-way
-    server::TraceInfo trace_info;
     ExternalLatency external_latency{
         .stream_id = stream_id_,
         .latency = latency,

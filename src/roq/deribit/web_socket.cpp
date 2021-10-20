@@ -320,13 +320,15 @@ void WebSocket::operator()(const core::jsonrpc::Result &result, core::json::valu
     case json::RequestType::GET_CURRENCIES: {
       core::json::Buffer buffer(decode_buffer_);
       json::Currencies currencies(value, buffer);
-      (*this)(currencies, trace_info);
+      server::Trace event(trace_info, currencies);
+      (*this)(event);
       break;
     }
     case json::RequestType::GET_INSTRUMENTS: {
       core::json::Buffer buffer(decode_buffer_);
       json::Instruments instruments(value, buffer);
-      (*this)(instruments, trace_info);
+      server::Trace event(trace_info, instruments);
+      (*this)(event);
       break;
     }
     case json::RequestType::SUBSCRIBE_PLATFORM_STATE:
@@ -357,34 +359,36 @@ void WebSocket::operator()(
   }
 }
 
-void WebSocket::operator()(const json::Auth &, const server::TraceInfo &) {
+void WebSocket::operator()(const server::Trace<json::Auth> &) {
   log::fatal("Unexpected"_sv);
 }
 
-void WebSocket::operator()(const json::Currencies &currencies, const server::TraceInfo &) {
+void WebSocket::operator()(const server::Trace<json::Currencies> &event) {
   profile_.currencies([&]() {
+    auto &[trace_info, currencies] = event;
     log::info<2>("currencies={}"_sv, currencies);
     auto &data = currencies.data;
-    std::vector<std::string> currencies;
-    if (!data.empty())
-      currencies.reserve(data.size());
+    std::vector<std::string> tmp;
+    if (!std::empty(data))
+      tmp.reserve(std::size(data));
     for (auto &item : data) {
       auto &currency = item.currency;
       if (all_currencies_.emplace(currency).second)
-        currencies.emplace_back(currency);
+        tmp.emplace_back(currency);
     }
     download_.check(WebSocketState::CURRENCIES);
-    if (!currencies.empty()) {
+    if (!std::empty(tmp)) {
       CurrenciesUpdate currencies_update{
-          .currencies = currencies,
+          .currencies = tmp,
       };
       handler_(currencies_update);
     }
   });
 }
 
-void WebSocket::operator()(const json::Instruments &instruments, const server::TraceInfo &) {
+void WebSocket::operator()(const server::Trace<json::Instruments> &event) {
   profile_.instruments([&]() {
+    auto &[trace_info, instruments] = event;
     log::info<2>("instruments={}"_sv, instruments);
     auto &data = instruments.data;
     std::vector<std::string> symbols;
@@ -413,7 +417,7 @@ void WebSocket::operator()(const json::Instruments &instruments, const server::T
   });
 }
 
-void WebSocket::operator()(const json::Positions &, const server::TraceInfo &) {
+void WebSocket::operator()(const server::Trace<json::Positions> &) {
   log::fatal("Unexpected"_sv);
 }
 

@@ -355,7 +355,8 @@ void DropCopy::operator()(const core::jsonrpc::Result &result, core::json::value
       break;
     case json::RequestType::AUTH: {
       json::Auth auth(value);
-      (*this)(auth, trace_info);
+      server::Trace event(trace_info, auth);
+      (*this)(event);
       break;
     }
     case json::RequestType::SUBSCRIBE_PORTFOLIO:
@@ -397,8 +398,9 @@ void DropCopy::operator()(
   }
 }
 
-void DropCopy::operator()(const json::Auth &auth, const server::TraceInfo &) {
+void DropCopy::operator()(const server::Trace<json::Auth> &event) {
   profile_.auth([&]() {
+    auto &[trace_info, auth] = event;
     log::info<2>("auth={}"_sv, auth);
     (*this)(ConnectionStatus::DOWNLOADING);
     download_.begin();

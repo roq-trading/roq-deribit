@@ -103,11 +103,11 @@ class WebSocket final : public core::web::Socket::Handler,
   void operator()(const core::jsonrpc::Result &, core::json::value_t &) override;
   void operator()(const core::jsonrpc::Notification &, core::json::value_t &) override;
 
-  void operator()(const json::Auth &, const server::TraceInfo &);
+  void operator()(const server::Trace<json::Auth> &);
 
-  void operator()(const json::Currencies &, const server::TraceInfo &);
-  void operator()(const json::Instruments &, const server::TraceInfo &);
-  void operator()(const json::Positions &, const server::TraceInfo &);
+  void operator()(const server::Trace<json::Currencies> &);
+  void operator()(const server::Trace<json::Instruments> &);
+  void operator()(const server::Trace<json::Positions> &);
 
   // public:
   void operator()(const server::Trace<json::PlatformState> &) override;
