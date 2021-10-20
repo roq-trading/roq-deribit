@@ -6,7 +6,8 @@ All notable changes will be documented in this file.
 
 ### Changed
 
-* Replace "snapshot" (bool) with "update_type" (UpdateType) (#97)
+* ReferenceData currencies should follow FX conventions (#99)
+* Replace `snapshot` (bool) with `update_type` (UpdateType) (#97)
 * Moved signature handling to tools library (chore)
 * Parse `Portfolio.security_keys_enabled` (JSON, undoc) (chore)
 * Resubscribe market data when observing "bad state" (#86)
