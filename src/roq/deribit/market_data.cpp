@@ -597,6 +597,8 @@ void MarketData::operator()(
           .tick_size = instrument.min_price_increment,
           .multiplier = instrument.contract_multiplier,
           .min_trade_vol = instrument.min_trade_vol,
+          .max_trade_vol = NaN,
+          .trade_vol_step_size = instrument.min_trade_vol,
           .option_type = core::fix::map(instrument.put_or_call),
           .strike_currency = instrument.strike_currency,
           .strike_price = instrument.strike_price,
