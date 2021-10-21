@@ -719,6 +719,7 @@ void MarketData::operator()(
           .asks = asks,
           .update_type = UpdateType::INCREMENTAL,
           .exchange_time_utc = exchange_time_utc,
+          .exchange_sequence = {},
       };
       auto is_last = statistics.empty() && trades.empty();
       try {
