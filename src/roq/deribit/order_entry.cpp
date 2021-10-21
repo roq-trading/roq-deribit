@@ -119,7 +119,7 @@ void OrderEntry::operator()(const Event<Timer> &event) {
 }
 
 uint16_t OrderEntry::operator()(
-    const Event<CreateOrder> &event, const oms::Order &, const std::string_view &request_id) {
+    const Event<CreateOrder> &event, const oms::Order &order, const std::string_view &request_id) {
   if (!ready())
     throw oms::NotReadyException();
   auto &[message_info, create_order] = event;
@@ -138,8 +138,8 @@ uint16_t OrderEntry::operator()(
   fix::NewOrderSingle new_order_single{
       .cl_ord_id = request_id,
       .side = side,
-      .order_qty = create_order.quantity,
-      .price = create_order.price,
+      .order_qty = {create_order.quantity, order.quantity_decimal_digits},
+      .price = {create_order.price, order.price_decimal_digits},
       .symbol = create_order.symbol,
       .exec_inst = exec_inst,
       .ord_type = ord_type,
@@ -169,9 +169,9 @@ uint16_t OrderEntry::operator()(
       .cl_ord_id = request_id,
       .transact_time = utils::safe_cast(order.update_time_utc),
       .side = side,
-      .order_qty = modify_order.quantity,
+      .order_qty = {modify_order.quantity, order.quantity_decimal_digits},
       .ord_type = ord_type,
-      .price = modify_order.price,
+      .price = {modify_order.price, order.price_decimal_digits},
       .symbol = order.symbol,
       .exec_inst = {},
   };
