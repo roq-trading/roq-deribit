@@ -17,8 +17,8 @@ TEST(fix_new_order_single, create_message) {
   fix::NewOrderSingle new_order_single = {
       .cl_ord_id = "roq-ord-006"_sv,
       .side = core::fix::Side::BUY,
-      .order_qty = 2.0,
-      .price = 0.5,
+      .order_qty = {2.0, 1},
+      .price = {0.45, 2},
       .symbol = "BTC-27SEP19"_sv,
       .exec_inst = {},
       .ord_type = core::fix::OrdType::LIMIT,
@@ -37,10 +37,10 @@ TEST(fix_new_order_single, create_message) {
   auto message = new_order_single.encode(writer);
   // core::print_string_with_escapes(message);
   const auto expected =
-      "8=FIX.4.4\0019=0000167\00135=D\00149=ROQ_TRADING\00156=DERIBIT"
+      "8=FIX.4.4\0019=0000146\00135=D\00149=ROQ_TRADING\00156=DERIBIT"
       "SERVER\00134=1\00152=20190917-06:46:50.000\00111=roq-ord-006\001"
-      "54=1\00138=2.000000000000\00144=0.500000000000\00155=BTC-27SEP"
-      "19\00140=2\00159=1\001100010=roq;123;345\00110=025\001"_sv;
+      "54=1\00138=2.0\00144=0.45\00155=BTC-27SEP19\00140=2\00159=1\001"
+      "100010=roq;123;345\00110=042\001"_sv;
   ASSERT_EQ(std::size(message), std::size(expected));
   for (size_t i = 0; i < std::size(message); ++i)
     EXPECT_EQ(static_cast<char>(message.data()[i]), expected[i]);
