@@ -17,8 +17,8 @@ void BM_fix_new_order_single_create_message(benchmark::State &state) {
     fix::NewOrderSingle new_order_single = {
         .cl_ord_id = "roq-ord-006"_sv,
         .side = core::fix::Side::BUY,
-        .order_qty = 2.0,
-        .price = 0.5,
+        .order_qty = {2.0, 1},
+        .price = {0.45, 2},
         .symbol = "BTC-27SEP19"_sv,
         .exec_inst = {},
         .ord_type = core::fix::OrdType::LIMIT,

@@ -19,9 +19,9 @@ void BM_fix_order_cancel_replace_request_create_message(
         .cl_ord_id = "123"_sv,
         .transact_time = sending_time,
         .side = core::fix::Side::BUY,
-        .order_qty = 1.0,
+        .order_qty = {1.0, 1},
         .ord_type = core::fix::OrdType::LIMIT,
-        .price = 1.0,
+        .price = {123.45, 2},
         .symbol = "BTC-27SEP19"_sv,
         .exec_inst = {},
     };
