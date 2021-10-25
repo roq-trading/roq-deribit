@@ -11,6 +11,7 @@ All notable changes will be documented in this file.
 
 ### Changed
 
+* Interface to support binary data from web::socket
 * Round quantity and price for CreateOrder/ModifyOrder (#102)
 * ReferenceData currencies should follow FX conventions (#99)
 * Replace `snapshot` (bool) with `update_type` (UpdateType) (#97)
