@@ -111,6 +111,6 @@ TEST(json_subscription, parse_message) {
   core::json::Parser parser(message);
   auto root = parser.root();
   MyHandler handler;
-  server::TraceInfo trace_info;
+  auto trace_info = server::create_trace_info();
   json::Parser::dispatch(handler, root, buffer_, trace_info);
 }

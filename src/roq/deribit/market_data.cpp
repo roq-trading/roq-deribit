@@ -200,7 +200,7 @@ void MarketData::operator()(const core::net::Manager::Read &read) {
 
 void MarketData::operator()(ConnectionStatus status) {
   if (utils::update(status_, status)) {
-    server::TraceInfo trace_info;
+    auto trace_info = server::create_trace_info();
     StreamStatus stream_status{
         .stream_id = stream_id_,
         .account = {},
@@ -210,7 +210,7 @@ void MarketData::operator()(ConnectionStatus status) {
         .priority = Priority::PRIMARY,
     };
     log::info<1>("stream_status={}"_sv, stream_status);
-    server::create_trace_and_dispatch(trace_info, stream_status, handler_);
+    server::create_trace_and_dispatch(handler_, trace_info, stream_status);
   }
 }
 
@@ -428,7 +428,7 @@ void MarketData::parse(const core::fix::message_t &message) {
 }
 
 void MarketData::parse_helper(const core::fix::message_t &message) {
-  server::TraceInfo trace_info;
+  auto trace_info = server::create_trace_info();
   core::fix::Buffer buffer(decode_buffer_);
   switch (message.header.msg_type) {
     // session
@@ -527,7 +527,7 @@ void MarketData::operator()(
         .stream_id = stream_id_,
         .latency = latency,
     };
-    server::create_trace_and_dispatch(trace_info, external_latency, handler_);
+    server::create_trace_and_dispatch(handler_, trace_info, external_latency);
     latency_.ping.update(latency);
   }
 }
@@ -608,7 +608,7 @@ void MarketData::operator()(
           .expiry_datetime = utils::safe_cast(expiry_datetime),
           .expiry_datetime_utc = utils::safe_cast(expiry_datetime_utc),
       };
-      server::create_trace_and_dispatch(trace_info, reference_data, handler_, true);
+      server::create_trace_and_dispatch(handler_, trace_info, reference_data, true);
       ++counter;
     }
     log::info<2>("- securities: {} (/{})"_sv, counter, security_list.no_related_sym.size());
@@ -724,7 +724,7 @@ void MarketData::operator()(
       auto is_last = statistics.empty() && trades.empty();
       try {
         server::create_trace_and_dispatch(
-            trace_info, market_by_price_update, handler_, is_last, false);
+            handler_, trace_info, market_by_price_update, is_last, false);
       } catch (market::BadState &) {
         resubscribe(symbol);
       }
@@ -739,7 +739,7 @@ void MarketData::operator()(
         .exchange_time_utc = exchange_time_utc,
     };
     auto is_last = statistics.empty();
-    server::create_trace_and_dispatch(trace_info, trade_summary, handler_, is_last);
+    server::create_trace_and_dispatch(handler_, trace_info, trade_summary, is_last);
   }
   if (!statistics.empty()) {
     const StatisticsUpdate statistics_update{
@@ -750,7 +750,7 @@ void MarketData::operator()(
         .update_type = UpdateType::INCREMENTAL,
         .exchange_time_utc = exchange_time_utc,
     };
-    server::create_trace_and_dispatch(trace_info, statistics_update, handler_, true);
+    server::create_trace_and_dispatch(handler_, trace_info, statistics_update, true);
   }
 }
 
@@ -830,7 +830,7 @@ void MarketData::operator()(
     };
     try {
       server::create_trace_and_dispatch(
-          trace_info, market_by_price_update, handler_, is_last, false);
+          handler_, trace_info, market_by_price_update, is_last, false);
     } catch (market::BadState &) {
       log::fatal("*** RESUBSCRIBE REQUIRED HERE ***"_sv);
     }
@@ -844,7 +844,7 @@ void MarketData::operator()(
         .update_type = UpdateType::SNAPSHOT,
         .exchange_time_utc = {},
     };
-    server::create_trace_and_dispatch(trace_info, statistics_update, handler_, true);
+    server::create_trace_and_dispatch(handler_, trace_info, statistics_update, true);
   }
 }
 

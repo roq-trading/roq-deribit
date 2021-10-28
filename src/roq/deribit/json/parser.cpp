@@ -56,32 +56,32 @@ template <typename T>
 void dispatch_platform_state(
     Parser::Handler &handler, T &value, const server::TraceInfo &trace_info) {
   PlatformState platform_state(value);
-  server::create_trace_and_dispatch(trace_info, platform_state, handler);
+  server::create_trace_and_dispatch(handler, trace_info, platform_state);
 }
 
 template <typename T>
 void dispatch_instrument_state(
     Parser::Handler &handler, T &value, const server::TraceInfo &trace_info) {
   InstrumentState instrument_state(value);
-  server::create_trace_and_dispatch(trace_info, instrument_state, handler);
+  server::create_trace_and_dispatch(handler, trace_info, instrument_state);
 }
 
 template <typename T>
 void dispatch_quote(Parser::Handler &handler, T &value, const server::TraceInfo &trace_info) {
   Quote quote(value);
-  server::create_trace_and_dispatch(trace_info, quote, handler);
+  server::create_trace_and_dispatch(handler, trace_info, quote);
 }
 
 template <typename T>
 void dispatch_ticker(Parser::Handler &handler, T &value, const server::TraceInfo &trace_info) {
   Ticker ticker(value);
-  server::create_trace_and_dispatch(trace_info, ticker, handler);
+  server::create_trace_and_dispatch(handler, trace_info, ticker);
 }
 
 template <typename T>
 void dispatch_portfolio(Parser::Handler &handler, T &value, const server::TraceInfo &trace_info) {
   Portfolio portfolio(value);
-  server::create_trace_and_dispatch(trace_info, portfolio, handler);
+  server::create_trace_and_dispatch(handler, trace_info, portfolio);
 }
 
 template <typename T>
@@ -91,14 +91,14 @@ void dispatch_changes(
     core::json::Buffer &buffer,
     const server::TraceInfo &trace_info) {
   Changes changes(value, buffer);
-  server::create_trace_and_dispatch(trace_info, changes, handler);
+  server::create_trace_and_dispatch(handler, trace_info, changes);
 }
 
 template <typename T>
 void dispatch_orders(
     Parser::Handler &handler, T &value, core::json::Buffer &, const server::TraceInfo &trace_info) {
   Order order(value);
-  server::create_trace_and_dispatch(trace_info, order, handler);
+  server::create_trace_and_dispatch(handler, trace_info, order);
 }
 
 template <typename T>
@@ -108,7 +108,7 @@ void dispatch_trades(
     core::json::Buffer &buffer,
     const server::TraceInfo &trace_info) {
   Trades2 trades(value, buffer);
-  server::create_trace_and_dispatch(trace_info, trades, handler);
+  server::create_trace_and_dispatch(handler, trace_info, trades);
 }
 }  // namespace
 

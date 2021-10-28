@@ -146,12 +146,12 @@ void DropCopy::operator()(const core::web::Socket::Close &) {
 }
 
 void DropCopy::operator()(const core::web::Socket::Latency &latency) {
-  server::TraceInfo trace_info;
+  auto trace_info = server::create_trace_info();
   ExternalLatency external_latency{
       .stream_id = stream_id_,
       .latency = latency.sample,
   };
-  server::create_trace_and_dispatch(trace_info, external_latency, handler_);
+  server::create_trace_and_dispatch(handler_, trace_info, external_latency);
   latency_.ping.update(latency.sample);
 }
 
@@ -165,7 +165,7 @@ void DropCopy::operator()(const core::web::Socket::Binary &) {
 
 void DropCopy::operator()(ConnectionStatus status) {
   if (utils::update(status_, status)) {
-    server::TraceInfo trace_info;
+    auto trace_info = server::create_trace_info();
     StreamStatus stream_status{
         .stream_id = stream_id_,
         .account = security_.get_account(),
@@ -175,7 +175,7 @@ void DropCopy::operator()(ConnectionStatus status) {
         .priority = Priority::PRIMARY,
     };
     log::info("stream_status={}"_sv, stream_status);
-    server::create_trace_and_dispatch(trace_info, stream_status, handler_);
+    server::create_trace_and_dispatch(handler_, trace_info, stream_status);
   }
 }
 
@@ -349,7 +349,7 @@ void DropCopy::operator()(const core::jsonrpc::Error &error, core::json::value_t
 }
 
 void DropCopy::operator()(const core::jsonrpc::Result &result, core::json::value_t &value) {
-  server::TraceInfo trace_info;  // XXX not correct (*parsing* has already started)
+  auto trace_info = server::create_trace_info();  // XXX not correct (*parsing* has already started)
   json::RequestType request_type(result.id);
   switch (request_type) {
     case json::RequestType::UNDEFINED:
@@ -370,13 +370,13 @@ void DropCopy::operator()(const core::jsonrpc::Result &result, core::json::value
       break;
     case json::RequestType::GET_ACCOUNT_SUMMARY: {
       json::Portfolio portfolio(value);
-      server::create_trace_and_dispatch(trace_info, portfolio, *this);
+      server::create_trace_and_dispatch(*this, trace_info, portfolio);
       break;
     }
     case json::RequestType::GET_TRADES: {
       core::json::Buffer buffer(decode_buffer_);
       json::Trades trades(value, buffer);
-      server::create_trace_and_dispatch(trace_info, trades, *this);
+      server::create_trace_and_dispatch(*this, trace_info, trades);
       break;
     }
     default:
@@ -386,7 +386,7 @@ void DropCopy::operator()(const core::jsonrpc::Result &result, core::json::value
 
 void DropCopy::operator()(
     const core::jsonrpc::Notification &notification, core::json::value_t &value) {
-  server::TraceInfo trace_info;  // XXX not correct (*parsing* has already started)
+  auto trace_info = server::create_trace_info();  // XXX not correct (*parsing* has already started)
   json::Method method(notification.method);
   switch (method) {
     case json::Method::UNDEFINED:
@@ -438,7 +438,7 @@ void DropCopy::operator()(const server::Trace<json::Portfolio> &event) {
       .hold = NaN,
       .external_account = {},
   };
-  server::create_trace_and_dispatch(event.trace_info, funds_update, handler_, true);
+  server::create_trace_and_dispatch(handler_, event.trace_info, funds_update, true);
 }
 
 void DropCopy::operator()(const server::Trace<json::Changes> &event) {
@@ -446,7 +446,7 @@ void DropCopy::operator()(const server::Trace<json::Changes> &event) {
   for (size_t i = {}; i < trades.size(); ++i) {
     auto &trade = trades[i];
     auto is_last = i == (trades.size() - 1);
-    server::create_trace_and_dispatch(event.trace_info, trade, *this, is_last);
+    server::create_trace_and_dispatch(*this, event.trace_info, trade, is_last);
   }
 }
 
@@ -455,7 +455,7 @@ void DropCopy::operator()(const server::Trace<json::Trades> &event) {
   for (size_t i = {}; i < trades.size(); ++i) {
     auto &trade = trades[i];
     auto is_last = i == (trades.size() - 1);
-    server::create_trace_and_dispatch(event.trace_info, trade, *this, is_last);
+    server::create_trace_and_dispatch(*this, event.trace_info, trade, is_last);
   }
 }
 

@@ -137,12 +137,12 @@ void WebSocket::operator()(const core::web::Socket::Close &) {
 }
 
 void WebSocket::operator()(const core::web::Socket::Latency &latency) {
-  server::TraceInfo trace_info;
+  auto trace_info = server::create_trace_info();
   ExternalLatency external_latency{
       .stream_id = stream_id_,
       .latency = latency.sample,
   };
-  server::create_trace_and_dispatch(trace_info, external_latency, handler_);
+  server::create_trace_and_dispatch(handler_, trace_info, external_latency);
   latency_.ping.update(latency.sample);
 }
 
@@ -156,7 +156,7 @@ void WebSocket::operator()(const core::web::Socket::Binary &) {
 
 void WebSocket::operator()(ConnectionStatus status) {
   if (utils::update(status_, status)) {
-    server::TraceInfo trace_info;
+    auto trace_info = server::create_trace_info();
     StreamStatus stream_status{
         .stream_id = stream_id_,
         .account = {},
@@ -166,7 +166,7 @@ void WebSocket::operator()(ConnectionStatus status) {
         .priority = Priority::PRIMARY,
     };
     log::info("stream_status={}"_sv, stream_status);
-    server::create_trace_and_dispatch(trace_info, stream_status, handler_);
+    server::create_trace_and_dispatch(handler_, trace_info, stream_status);
   }
 }
 
@@ -313,7 +313,7 @@ void WebSocket::operator()(const core::jsonrpc::Error &error, core::json::value_
 }
 
 void WebSocket::operator()(const core::jsonrpc::Result &result, core::json::value_t &value) {
-  server::TraceInfo trace_info;  // XXX not correct (*parsing* has already started)
+  auto trace_info = server::create_trace_info();  // XXX not correct (*parsing* has already started)
   json::RequestType request_type(result.id);
   switch (request_type) {
     case json::RequestType::UNDEFINED:
@@ -347,7 +347,7 @@ void WebSocket::operator()(const core::jsonrpc::Result &result, core::json::valu
 
 void WebSocket::operator()(
     const core::jsonrpc::Notification &notification, core::json::value_t &value) {
-  server::TraceInfo trace_info;  // XXX not correct (*parsing* has already started)
+  auto trace_info = server::create_trace_info();  // XXX not correct (*parsing* has already started)
   json::Method method(notification.method);
   switch (method) {
     case json::Method::UNDEFINED:
@@ -455,7 +455,7 @@ void WebSocket::operator()(const server::Trace<json::Quote> &event) {
           };
           if (utils::compare(layer, top_of_book.layer) != 0) {
             layer = top_of_book.layer;
-            server::create_trace_and_dispatch(trace_info, top_of_book, handler_, true);
+            server::create_trace_and_dispatch(handler_, trace_info, top_of_book, true);
           }
         })) {
     } else {
@@ -479,7 +479,7 @@ void WebSocket::operator()(const server::Trace<json::Ticker> &event) {
           .symbol = ticker.instrument_name,
           .trading_status = trading_status,
       };
-      server::create_trace_and_dispatch(trace_info, market_status, handler_, true);
+      server::create_trace_and_dispatch(handler_, trace_info, market_status, true);
     }
   });
 }
