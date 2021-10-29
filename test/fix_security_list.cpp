@@ -9,6 +9,8 @@
 using namespace roq;
 using namespace roq::deribit;
 
+using namespace std::literals;
+
 namespace {
 const auto message =
     "8=FIX.4.4\0019=60307\00135=y\00149=DERIBITSERVER\00156=ROQ_TRA"
@@ -1222,7 +1224,7 @@ const auto message =
     "231=1\00155=BTC-DERIBIT-INDEX\001107=Deribit Bitcoin Price Ind"
     "ex\001167=INDEX\00115=USD\0012576=2\001969=0.0100\00155=ETH-DE"
     "RIBIT-INDEX\001107=Deribit Ethereum Price Index\001167=INDEX\001"
-    "15=USD\0012576=2\001969=0.0100\00110=083\001"_sv;
+    "15=USD\0012576=2\001969=0.0100\00110=083\001"sv;
 }  // namespace
 
 TEST(fix_security_list, parse_message) {

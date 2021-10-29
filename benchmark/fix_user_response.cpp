@@ -7,13 +7,15 @@
 using namespace roq;
 using namespace roq::deribit;
 
+using namespace std::literals;
+
 namespace {
 const auto MESSAGE =
     "8=FIX.4.4\0019=199\00135=BF\00149=DERIBITSERVER\00156=ROQ_TRAD"
     "ING\00134=3\00152=20190908-08:47:31.511\001923=123\001553=5MP4"
     "0u9h\001926=1\00115=BTC\001100001=10.0\001100002=10.0\00110000"
     "3=0.0000\001100004=0.0000\001100005=0.0\001100006=0.0\00110001"
-    "1=0.0\001100013=10.0\00110=004\001"_sv;
+    "1=0.0\001100013=10.0\00110=004\001"sv;
 }  // namespace
 
 // cppcheck-suppress constParameterCallback

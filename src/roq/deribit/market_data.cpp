@@ -24,15 +24,15 @@
 
 #include "roq/deribit/fix/utils.h"
 
-using namespace roq::literals;
+using namespace std::literals;
 
 namespace roq {
 namespace deribit {
 
 namespace {
-static const auto LOGOUT_RESPONSE = "LOGOUT"_sv;  // XXX
+static const auto LOGOUT_RESPONSE = "LOGOUT"sv;  // XXX
 
-static const auto NAME = "md"_sv;
+static const auto NAME = "md"sv;
 static const auto SUPPORTS = utils::Mask{
     SupportType::MARKET_BY_PRICE,
     SupportType::TRADE_SUMMARY,
@@ -67,7 +67,7 @@ static void validate(const T &value) {
       break;
     case core::fix::MDUpdateAction::DELETE_THRU:
     case core::fix::MDUpdateAction::DELETE_FROM:
-      log::fatal("MDUpdateAction not supported: {}"_sv, value);
+      log::fatal("MDUpdateAction not supported: {}"sv, value);
       break;
   }
 }
@@ -101,26 +101,26 @@ MarketData::MarketData(
     Security &security,
     Shared &shared,
     bool master)
-    : handler_(handler), stream_id_(stream_id), name_(fmt::format("{}:{}"_sv, stream_id_, NAME)),
+    : handler_(handler), stream_id_(stream_id), name_(fmt::format("{}:{}"sv, stream_id_, NAME)),
       master_(master), connection_factory_(context, Flags::fix_uri()),
       connection_(*this, connection_factory_), encode_buffer_(Flags::encode_buffer_size()),
       decode_buffer_(Flags::decode_buffer_size()),
       counter_{
-          .disconnect = create_metrics(name_, "disconnect"_sv),
+          .disconnect = create_metrics(name_, "disconnect"sv),
       },
       profile_{
-          .parse = create_metrics(name_, "parse"_sv),
-          .security_list = create_metrics(name_, "security_list"_sv),
-          .security_status = create_metrics(name_, "security_status"_sv),
+          .parse = create_metrics(name_, "parse"sv),
+          .security_list = create_metrics(name_, "security_list"sv),
+          .security_status = create_metrics(name_, "security_status"sv),
           .market_data_incremental_refresh =
-              create_metrics(name_, "market_data_incremental_refresh"_sv),
-          .market_data_request_reject = create_metrics(name_, "market_data_request_reject"_sv),
+              create_metrics(name_, "market_data_incremental_refresh"sv),
+          .market_data_request_reject = create_metrics(name_, "market_data_request_reject"sv),
           .market_data_snapshot_full_refresh =
-              create_metrics(name_, "market_data_snapshot_full_refresh"_sv),
-          .market_data_request = create_metrics(name_, "market_data_request"_sv),
+              create_metrics(name_, "market_data_snapshot_full_refresh"sv),
+          .market_data_request = create_metrics(name_, "market_data_request"sv),
       },
       latency_{
-          .ping = create_metrics(name_, "ping"_sv),
+          .ping = create_metrics(name_, "ping"sv),
       },
       security_(security), shared_(shared),
       download_(Flags::fix_request_timeout(), [this](auto state) { return download(state); }) {
@@ -139,8 +139,8 @@ void MarketData::operator()(const Event<Timer> &event) {
     return;
   if (last_logon_or_heartbeat_.count() && Flags::fix_request_timeout().count() &&
       (event.value.now - last_logon_or_heartbeat_) > Flags::fix_request_timeout()) {
-    log::warn("*** DETECTED TIMEOUT ***"_sv);
-    log::info("closing connection"_sv);
+    log::warn("*** DETECTED TIMEOUT ***"sv);
+    log::info("closing connection"sv);
     connection_.close();
   } else {
     if (status_ == ConnectionStatus::READY && next_heartbeat_ <= event.value.now) {
@@ -176,7 +176,7 @@ void MarketData::operator()(const core::net::Manager::Read &read) {
             check(message.header);
             parse(message);
           } catch (std::exception &) {
-            log::warn("{}"_sv, core::fix::Debug(buffer));
+            log::warn("{}"sv, core::fix::Debug(buffer));
 #if !defined(NDEBUG)
             core::print_memory(buffer);
             core::print_string_with_escapes(buffer);
@@ -187,7 +187,7 @@ void MarketData::operator()(const core::net::Manager::Read &read) {
         buffer,
         [](auto &message) {
           if (ROQ_UNLIKELY(Flags::fix_debug()))
-            log::info("{}"_sv, core::fix::Debug(message));
+            log::info("{}"sv, core::fix::Debug(message));
         });
     if (bytes == 0)
       break;
@@ -209,7 +209,7 @@ void MarketData::operator()(ConnectionStatus status) {
         .type = StreamType::FIX,
         .priority = Priority::PRIMARY,
     };
-    log::info<1>("stream_status={}"_sv, stream_status);
+    log::info<1>("stream_status={}"sv, stream_status);
     server::create_trace_and_dispatch(handler_, trace_info, stream_status);
   }
 }
@@ -335,7 +335,7 @@ void MarketData::update_subscriptions(std::vector<std::string> &symbols) {
 }
 
 void MarketData::subscribe(const roq::span<std::string> &symbols) {
-  log::info("Subscribe market data"_sv);
+  log::info("Subscribe market data"sv);
   assert(!symbols.empty());
   auto market_depth = Flags::fix_market_data_market_depth();
   auto md_update_type = market_depth ? core::fix::MDUpdateType::INCREMENTAL_REFRESH
@@ -375,7 +375,7 @@ void MarketData::subscribe(const roq::span<std::string> &symbols) {
 }
 
 void MarketData::unsubscribe(const roq::span<std::string> &symbols) {
-  log::info("Unsubscribe market data"_sv);
+  log::info("Unsubscribe market data"sv);
   assert(!symbols.empty());
   fix::MDReq md_entry_types[] = {
       {.md_entry_type = core::fix::MDEntryType::BID},
@@ -412,10 +412,10 @@ void MarketData::unsubscribe(const roq::span<std::string> &symbols) {
 }
 
 void MarketData::resubscribe(const std::string_view &symbol) {
-  log::warn<1>("*** RESUBSCRIBE ***"_sv);
+  log::warn<1>("*** RESUBSCRIBE ***"sv);
   if (latch_.find(symbol) != latch_.end())
     return;
-  log::info<1>(R"(Latch symbol="{}")"_sv, symbol);
+  log::info<1>(R"(Latch symbol="{}")"sv, symbol);
   latch_.emplace(symbol);
   std::string tmp{symbol};  // alloc
   roq::span symbols{&tmp, 1};
@@ -506,7 +506,7 @@ void MarketData::parse_helper(const core::fix::message_t &message) {
       break;
     }
     default:
-      log::warn("Unexpected msg_type={}"_sv, message.header.msg_type);
+      log::warn("Unexpected msg_type={}"sv, message.header.msg_type);
       break;
   }
 }
@@ -516,7 +516,7 @@ void MarketData::operator()(
   // note! get clock *before* any logging (avoid latency)
   auto now = core::get_system_clock();
   auto &[header, heartbeat] = event;
-  log::info<3>("event={{header={}, heartbeat={}}}"_sv, header, heartbeat);
+  log::info<3>("event={{header={}, heartbeat={}}}"sv, header, heartbeat);
   last_logon_or_heartbeat_ = {};
   if (!heartbeat.test_req_id.empty()) {
     auto send_time = core::from_chars<uint64_t>(heartbeat.test_req_id);
@@ -534,47 +534,47 @@ void MarketData::operator()(
 
 void MarketData::operator()(const core::fix::Event<fix::Logon> &event, const server::TraceInfo &) {
   auto &[header, logon] = event;
-  log::info<2>("event={{header={}, logon={}}}"_sv, header, logon);
+  log::info<2>("event={{header={}, logon={}}}"sv, header, logon);
   (*this)(ConnectionStatus::DOWNLOADING);
   download_.begin();
 }
 
 void MarketData::operator()(const core::fix::Event<fix::Logout> &event, const server::TraceInfo &) {
   auto &[header, logout] = event;
-  log::warn("event={{header={}, logout={}}}"_sv, header, logout);
+  log::warn("event={{header={}, logout={}}}"sv, header, logout);
   (*this)(ConnectionStatus::LOGGED_OUT);
   ready_ = false;
   // note! mandated, must send a logout response
   send_logout(LOGOUT_RESPONSE);
-  log::info("closing connection"_sv);
+  log::info("closing connection"sv);
   connection_.close();
 }
 
 void MarketData::operator()(
     const core::fix::Event<fix::ResendRequest> &event, const server::TraceInfo &) {
   auto &[header, resend_request] = event;
-  log::warn("event={{header={}, resend_request={}}}"_sv, header, resend_request);
-  log::info("closing connection"_sv);
+  log::warn("event={{header={}, resend_request={}}}"sv, header, resend_request);
+  log::info("closing connection"sv);
   connection_.close();
 }
 
 void MarketData::operator()(
     const core::fix::Event<fix::TestRequest> &event, const server::TraceInfo &) {
   auto &[header, test_request] = event;
-  log::info<1>("event={{header={}, test_request={}}}"_sv, header, test_request);
+  log::info<1>("event={{header={}, test_request={}}}"sv, header, test_request);
   send_heartbeat(test_request.test_req_id);
 }
 
 void MarketData::operator()(
     const core::fix::Event<fix::SecurityList> &event, const server::TraceInfo &trace_info) {
   auto &[header, security_list] = event;
-  log::info<2>("event={{header={}, security_list={}}}"_sv, header, security_list);
+  log::info<2>("event={{header={}, security_list={}}}"sv, header, security_list);
   if (security_list.no_related_sym.size() > 0) {
     size_t counter = {};
     std::vector<std::string> symbols;
     symbols.reserve(security_list.no_related_sym.size());
     for (auto &instrument : security_list.no_related_sym) {
-      log::info<2>("instrument={}"_sv, instrument);
+      log::info<2>("instrument={}"sv, instrument);
       auto &symbol = instrument.symbol;
       if (shared_.discard_symbol(symbol))
         continue;
@@ -611,7 +611,7 @@ void MarketData::operator()(
       server::create_trace_and_dispatch(handler_, trace_info, reference_data, true);
       ++counter;
     }
-    log::info<2>("- securities: {} (/{})"_sv, counter, security_list.no_related_sym.size());
+    log::info<2>("- securities: {} (/{})"sv, counter, security_list.no_related_sym.size());
     if (!symbols.empty()) {
       SymbolsUpdate symbols_update{
           .symbols = symbols,
@@ -625,7 +625,7 @@ void MarketData::operator()(
 void MarketData::operator()(
     const core::fix::Event<fix::SecurityStatus> &event, const server::TraceInfo &) {
   auto &[header, security_status] = event;
-  log::info<2>("event={{header={}, security_status={}}}"_sv, header, security_status);
+  log::info<2>("event={{header={}, security_status={}}}"sv, header, security_status);
   // XXX should we use it or not?
 }
 
@@ -634,7 +634,7 @@ void MarketData::operator()(
     const server::TraceInfo &trace_info) {
   auto &[header, market_data_incremental_refresh] = event;
   log::info<3>(
-      "event={{header={}, market_data_incremental_refresh={}}}"_sv,
+      "event={{header={}, market_data_incremental_refresh={}}}"sv,
       header,
       market_data_incremental_refresh);
   auto &symbol = market_data_incremental_refresh.symbol;
@@ -705,7 +705,7 @@ void MarketData::operator()(
         });
         break;
       default:
-        log::warn("unsupported: {}"_sv, item);
+        log::warn("unsupported: {}"sv, item);
         break;
     }
   }
@@ -758,8 +758,8 @@ void MarketData::operator()(
     const core::fix::Event<fix::MarketDataRequestReject> &event, const server::TraceInfo &) {
   auto &[header, market_data_request_reject] = event;
   log::warn<1>(
-      "event={{header={}, market_data_request_reject={}}}"_sv, header, market_data_request_reject);
-  log::fatal("Unexpected"_sv);  // don't know how to continue
+      "event={{header={}, market_data_request_reject={}}}"sv, header, market_data_request_reject);
+  log::fatal("Unexpected"sv);  // don't know how to continue
 }
 
 void MarketData::operator()(
@@ -767,13 +767,13 @@ void MarketData::operator()(
     const server::TraceInfo &trace_info) {
   auto &[header, market_data_snapshot_full_refresh] = event;
   log::info<3>(
-      "event={{header={}, market_data_snapshot_full_refresh={}}}"_sv,
+      "event={{header={}, market_data_snapshot_full_refresh={}}}"sv,
       header,
       market_data_snapshot_full_refresh);
   auto &symbol = market_data_snapshot_full_refresh.symbol;
   auto iter = latch_.find(symbol);
   if (ROQ_UNLIKELY(iter != latch_.end())) {
-    log::info<1>(R"(Unlatch symbol="{}")"_sv, symbol);
+    log::info<1>(R"(Unlatch symbol="{}")"sv, symbol);
     latch_.erase(iter);
   }
   core::back_emplacer bids(shared_.bids), asks(shared_.asks);
@@ -813,7 +813,7 @@ void MarketData::operator()(
         });
         break;
       default:
-        log::warn("unsupported: {}"_sv, item);
+        log::warn("unsupported: {}"sv, item);
         break;
     }
   }
@@ -832,7 +832,7 @@ void MarketData::operator()(
       server::create_trace_and_dispatch(
           handler_, trace_info, market_by_price_update, is_last, false);
     } catch (market::BadState &) {
-      log::fatal("*** RESUBSCRIBE REQUIRED HERE ***"_sv);
+      log::fatal("*** RESUBSCRIBE REQUIRED HERE ***"sv);
     }
   }
   if (!statistics.empty()) {
@@ -867,7 +867,7 @@ void MarketData::send(const T &event, std::chrono::nanoseconds sending_time) {
       sending_time);
   auto message = event.encode(writer);
   if (ROQ_UNLIKELY(Flags::fix_debug()))
-    log::info("{}"_sv, core::fix::Debug(message));
+    log::info("{}"sv, core::fix::Debug(message));
   connection_.send(message);
 }
 
@@ -878,14 +878,14 @@ void MarketData::check(const core::fix::header_t &header) {
     if (expected < current) {
       log::warn(
           "*** SEQUENCE GAP *** "
-          "current={} previous={} distance={}"_sv,
+          "current={} previous={} distance={}"sv,
           current,
           inbound_.msg_seq_num,
           current - inbound_.msg_seq_num);
     } else {
       log::warn(
           "*** SEQUENCE REPLAY *** "
-          "current={} previous={} distance={}"_sv,
+          "current={} previous={} distance={}"sv,
           current,
           inbound_.msg_seq_num,
           inbound_.msg_seq_num - current);

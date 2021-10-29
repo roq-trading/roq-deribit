@@ -7,6 +7,8 @@
 using namespace roq;
 using namespace roq::deribit;
 
+using namespace std::literals;
+
 TEST(json_ticker, parse_message) {
   const auto message = R"({)"
                        R"("jsonrpc":"2.0",)"
@@ -37,12 +39,12 @@ TEST(json_ticker, parse_message) {
                        R"("usOut":1566822214076605,)"
                        R"("usDiff":193,)"
                        R"("testnet":true)"
-                       R"(})"_sv;
+                       R"(})"sv;
   int results = 0;
   core::json::Parser parser(message);
   auto root = parser.root();
   for (auto [key, value] : std::get<core::json::object_t>(root)) {
-    if (key.compare("result"_sv) == 0) {
+    if (key.compare("result"sv) == 0) {
       ++results;
       json::Ticker ticker(value);
       EXPECT_EQ(ticker.state, json::State::OPEN);
@@ -52,7 +54,7 @@ TEST(json_ticker, parse_message) {
       EXPECT_DOUBLE_EQ(ticker.max_price, 10450.93);
       EXPECT_DOUBLE_EQ(ticker.mark_price, 10399.67);
       EXPECT_DOUBLE_EQ(ticker.last_price, 10398.5);
-      EXPECT_EQ(ticker.instrument_name, "BTC-PERPETUAL"_sv);
+      EXPECT_EQ(ticker.instrument_name, "BTC-PERPETUAL"sv);
       EXPECT_DOUBLE_EQ(ticker.index_price, 10391.86);
       EXPECT_DOUBLE_EQ(ticker.funding_8h, 0.00011248);
       EXPECT_DOUBLE_EQ(ticker.current_funding, 0.00025155);

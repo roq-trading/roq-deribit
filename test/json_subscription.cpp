@@ -7,6 +7,8 @@
 using namespace roq;
 using namespace roq::deribit;
 
+using namespace std::literals;
+
 struct MyHandler : public json::Parser::Handler {
   void operator()(const server::Trace<json::PlatformState> &) {}
   void operator()(const server::Trace<json::InstrumentState> &) {}
@@ -105,7 +107,7 @@ TEST(json_subscription, parse_message) {
                        R"("best_ask_amount":3.0,)"
                        R"("ask_iv":500.0)"
                        R"(})"
-                       R"(})"_sv;
+                       R"(})"sv;
   core::Buffer buffer(4096);
   core::json::Buffer buffer_(buffer);
   core::json::Parser parser(message);

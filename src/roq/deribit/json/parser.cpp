@@ -10,7 +10,7 @@
 
 #include "roq/logging.h"
 
-using namespace roq::literals;
+using namespace std::literals;
 
 namespace roq {
 namespace deribit {
@@ -20,30 +20,30 @@ namespace {
 constexpr std::string_view get_token(const std::string_view &name) {
   auto delim = name.find_first_of('.');
   auto part = name.substr(0, delim);
-  if (ROQ_UNLIKELY(part.compare("user"_sv) == 0 && delim != name.npos)) {
+  if (ROQ_UNLIKELY(part.compare("user"sv) == 0 && delim != name.npos)) {
     ++delim;
     auto delim_2 = name.find_first_of('.', delim);
     auto length = delim_2 == name.npos ? name.npos : (delim_2 - delim);
     return name.substr(delim, length);
-  } else if (ROQ_UNLIKELY(part.compare("instrument"_sv) == 0 && delim != name.npos)) {
+  } else if (ROQ_UNLIKELY(part.compare("instrument"sv) == 0 && delim != name.npos)) {
     ++delim;
     auto delim_2 = name.find_first_of('.', delim);
     auto length = delim_2 == name.npos ? name.npos : (delim_2 - delim);
     auto name_2 = name.substr(delim, length);
-    if (name_2.compare("state"_sv) == 0)
-      return "instrument_state"_sv;
+    if (name_2.compare("state"sv) == 0)
+      return "instrument_state"sv;
   } else {
     return part;
   }
-  return ""_sv;
+  return ""sv;
 }
 
-static_assert(get_token("ticker"_sv) == "ticker"_sv);
-static_assert(get_token("ticker.123"_sv) == "ticker"_sv);
-static_assert(get_token("user.changes"_sv) == "changes"_sv);
-static_assert(get_token("user.changes.123"_sv) == "changes"_sv);
-static_assert(get_token("instrument.state"_sv) == "instrument_state"_sv);
-static_assert(get_token("instrument.state.123"_sv) == "instrument_state"_sv);
+static_assert(get_token("ticker"sv) == "ticker"sv);
+static_assert(get_token("ticker.123"sv) == "ticker"sv);
+static_assert(get_token("user.changes"sv) == "changes"sv);
+static_assert(get_token("user.changes.123"sv) == "changes"sv);
+static_assert(get_token("instrument.state"sv) == "instrument_state"sv);
+static_assert(get_token("instrument.state.123"sv) == "instrument_state"sv);
 
 Channel parse_channel(const std::string_view &name) {
   auto token = get_token(name);
@@ -128,16 +128,16 @@ void Parser::dispatch(
       auto field = Field(key);
       switch (field) {
         case Field::UNDEFINED:
-          log::fatal("Unexpected"_sv);
+          log::fatal("Unexpected"sv);
           break;
         case Field::UNKNOWN:
-          log::fatal(R"(Unknown key="{}")"_sv, key);
+          log::fatal(R"(Unknown key="{}")"sv, key);
           break;
         case Field::CHANNEL: {
           auto name = std::get<std::string_view>(value);
           channel = parse_channel(name);
           if (ROQ_UNLIKELY(channel == Channel::UNKNOWN))
-            log::warn(R"(Can't parse channel="{}")"_sv, name);
+            log::warn(R"(Can't parse channel="{}")"sv, name);
           break;
         }
         case Field::DATA:
@@ -146,7 +146,7 @@ void Parser::dispatch(
               case Channel::UNDEFINED:
                 break;  // not ready
               case Channel::UNKNOWN:
-                log::fatal("Unknown channel"_sv);
+                log::fatal("Unknown channel"sv);
                 break;
               // public
               case Channel::PLATFORM_STATE:
@@ -190,8 +190,8 @@ void Parser::dispatch(
   }
   if (dispatched)
     return;
-  log::warn(R"(message="{}")"_sv, message);
-  log::fatal("Unexpected"_sv);
+  log::warn(R"(message="{}")"sv, message);
+  log::fatal("Unexpected"sv);
 }
 
 }  // namespace json

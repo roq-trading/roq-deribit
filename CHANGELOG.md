@@ -11,6 +11,7 @@ All notable changes will be documented in this file.
 
 ### Changed
 
+* Remove custom literals (#110)
 * Interface to support binary data from web::socket
 * Round quantity and price for CreateOrder/ModifyOrder (#102)
 * ReferenceData currencies should follow FX conventions (#99)

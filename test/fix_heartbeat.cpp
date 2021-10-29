@@ -9,11 +9,13 @@
 using namespace roq;
 using namespace roq::deribit;
 
+using namespace std::literals;
+
 TEST(fix_heartbeat, parse_message) {
   const auto message =
       "8=FIX.4.4\0019=89\00135=0\00149=DERIBITSERVER\00156=ROQ_TRADIN"
       "G\00134=2\00152=20190908-08:47:31.503\001112=anybody in there?"
-      "\00110=084\001"_sv;
+      "\00110=084\001"sv;
   int results = 0;
   auto bytes = core::fix::Reader<core::fix::Version::FIX_44>::dispatch(
       [&](const core::fix::message_t &message) {

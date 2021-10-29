@@ -9,6 +9,8 @@
 using namespace roq;
 using namespace roq::deribit;
 
+using namespace std::literals;
+
 TEST(fix_position_report, parse_message) {
   const auto message =
       "8=FIX.4.4\0019=245\00135=AP\00149=DERIBITSERVER\00156=ROQ_TRAD"
@@ -16,7 +18,7 @@ TEST(fix_position_report, parse_message) {
       "roq-pos-003\001724=0\001728=0\001702=1\001703=TQ\001704=0\0017"
       "05=0\00155=BTC-27SEP19\001854=1\001231=10.0000\001883=10184.50"
       "00\001730=0.0000\00195=11\00196=0.0;0.0;0.0\001100088=0.0000\001"
-      "100089=0.00000000\00110=026\001"_sv;
+      "100089=0.00000000\00110=026\001"sv;
   core::Buffer buffer(1024 * 1024);
   core::fix::Buffer decode_buffer(buffer);
   int results = 0;
@@ -25,15 +27,15 @@ TEST(fix_position_report, parse_message) {
         ++results;
         EXPECT_EQ(message.header.msg_type, core::fix::MsgType::POSITION_REPORT);
         auto position_report = fix::PositionReport::create(message, decode_buffer);
-        EXPECT_EQ(position_report.pos_maint_rpt_id, "3221109"_sv);
-        EXPECT_EQ(position_report.pos_req_id, "roq-pos-003"_sv);
+        EXPECT_EQ(position_report.pos_maint_rpt_id, "3221109"sv);
+        EXPECT_EQ(position_report.pos_req_id, "roq-pos-003"sv);
         EXPECT_EQ(position_report.pos_req_type, core::fix::PosReqType::POSITIONS);
         EXPECT_EQ(position_report.pos_req_result, core::fix::PosReqResult::VALID);
         EXPECT_EQ(position_report.no_positions.size(), size_t{1});
         auto &item = position_report.no_positions[0];
         EXPECT_DOUBLE_EQ(item.long_qty, 0.0);
         EXPECT_DOUBLE_EQ(item.short_qty, 0.0);
-        EXPECT_EQ(item.symbol, "BTC-27SEP19"_sv);
+        EXPECT_EQ(item.symbol, "BTC-27SEP19"sv);
         EXPECT_EQ(item.qty_type, core::fix::QtyType::CONTRACTS);
         EXPECT_DOUBLE_EQ(item.contract_multiplier, 10.0);
         EXPECT_DOUBLE_EQ(item.underlying_end_price, 10184.50);

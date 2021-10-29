@@ -8,20 +8,19 @@
 #include <array>
 #include <random>
 
-#include "roq/literals.h"
 #include "roq/span.h"
 
 #include "roq/core/binascii/base64.h"
 #include "roq/core/binascii/hex.h"
 
-using namespace roq::literals;
+using namespace std::literals;
 
 namespace roq {
 namespace deribit {
 namespace tools {
 
 namespace {
-static const constexpr auto CHARSET_DATA = "abcdefghijklmnopqrstuvwxyz0123456789"_sv;
+static const constexpr auto CHARSET_DATA = "abcdefghijklmnopqrstuvwxyz0123456789"sv;
 static const constexpr auto RANDOM_BYTES = 32;
 
 static_assert(std::size(CHARSET_DATA) == 36);
@@ -45,7 +44,7 @@ std::string Hasher::create_nonce() {
 std::string Hasher::create_signature(
     std::chrono::milliseconds timestamp, const std::string_view &nonce) {
   auto sequence = get_sequence(timestamp);
-  auto message = fmt::format("{}\n{}\n"_sv, sequence, nonce);
+  auto message = fmt::format("{}\n{}\n"sv, sequence, nonce);
   hmac_.clear();
   hmac_.update(message);
   std::array<char, 32> buffer;
@@ -65,7 +64,7 @@ std::string Hasher::create_raw_data(std::chrono::milliseconds timestamp) {
   roq::span tmp{
       reinterpret_cast<std::byte *>(std::data(buffer)), std::size(buffer) * sizeof(value_type)};
   auto nonce = core::binascii::Base64::encode(tmp, false);
-  return fmt::format("{:013}.{}"_sv, sequence, nonce);
+  return fmt::format("{:013}.{}"sv, sequence, nonce);
 }
 
 std::string Hasher::create_password(const std::string_view &raw_data) {

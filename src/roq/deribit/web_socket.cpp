@@ -17,13 +17,13 @@
 #include "roq/deribit/json/request_type.h"
 #include "roq/deribit/json/utils.h"
 
-using namespace roq::literals;
+using namespace std::literals;
 
 namespace roq {
 namespace deribit {
 
 namespace {
-static const auto NAME = "ws"_sv;
+static const auto NAME = "ws"sv;
 static const auto SUPPORTS = utils::Mask{
     SupportType::TOP_OF_BOOK,
 };
@@ -40,7 +40,7 @@ struct create_metrics final : public core::metrics::Factory {
 
 WebSocket::WebSocket(
     Handler &handler, core::io::Context &context, uint16_t stream_id, Shared &shared, bool master)
-    : handler_(handler), stream_id_(stream_id), name_(fmt::format("{}:{}"_sv, stream_id_, NAME)),
+    : handler_(handler), stream_id_(stream_id), name_(fmt::format("{}:{}"sv, stream_id_, NAME)),
       master_(master), connection_(
                            *this,
                            context,
@@ -52,19 +52,19 @@ WebSocket::WebSocket(
                            []() { return std::string(); }),
       decode_buffer_(Flags::decode_buffer_size()),
       counter_{
-          .disconnect = create_metrics(name_, "disconnect"_sv),
+          .disconnect = create_metrics(name_, "disconnect"sv),
       },
       profile_{
-          .parse = create_metrics(name_, "parse"_sv),
-          .auth = create_metrics(name_, "auth"_sv),
-          .currencies = create_metrics(name_, "currencies"_sv),
-          .instruments = create_metrics(name_, "instruments"_sv),
-          .quote = create_metrics(name_, "quote"_sv),
-          .ticker = create_metrics(name_, "ticker"_sv),
+          .parse = create_metrics(name_, "parse"sv),
+          .auth = create_metrics(name_, "auth"sv),
+          .currencies = create_metrics(name_, "currencies"sv),
+          .instruments = create_metrics(name_, "instruments"sv),
+          .quote = create_metrics(name_, "quote"sv),
+          .ticker = create_metrics(name_, "ticker"sv),
       },
       latency_{
-          .ping = create_metrics(name_, "ping"_sv),
-          .heartbeat = create_metrics(name_, "heartbeat"_sv),
+          .ping = create_metrics(name_, "ping"sv),
+          .heartbeat = create_metrics(name_, "heartbeat"sv),
       },
       shared_(shared),
       download_(Flags::ws_request_timeout(), [this](auto state) { return download(state); }) {
@@ -151,7 +151,7 @@ void WebSocket::operator()(const core::web::Socket::Text &text) {
 }
 
 void WebSocket::operator()(const core::web::Socket::Binary &) {
-  log::fatal("Unexpected"_sv);
+  log::fatal("Unexpected"sv);
 }
 
 void WebSocket::operator()(ConnectionStatus status) {
@@ -165,7 +165,7 @@ void WebSocket::operator()(ConnectionStatus status) {
         .type = StreamType::WEB_SOCKET,
         .priority = Priority::PRIMARY,
     };
-    log::info("stream_status={}"_sv, stream_status);
+    log::info("stream_status={}"sv, stream_status);
     server::create_trace_and_dispatch(handler_, trace_info, stream_status);
   }
 }
@@ -218,7 +218,7 @@ void WebSocket::get_currencies() {
       R"("method":"public/get_currencies",)"
       R"("params":{{}},)"
       R"("id":"{}")"
-      R"(}})"_sv,
+      R"(}})"sv,
       request_type.as_raw_text());
   connection_.send_text(message);
 }
@@ -232,7 +232,7 @@ void WebSocket::get_instruments(const std::string_view &currency) {
       R"("currency":"{}")"
       R"(}},)"
       R"("id":"{}")"
-      R"(}})"_sv,
+      R"(}})"sv,
       currency,
       request_type.as_raw_text());
   connection_.send_text(message);
@@ -247,7 +247,7 @@ void WebSocket::subscribe_platform_state() {
       R"("channels":["platform_state"])"
       R"(}},)"
       R"("id":"{}")"
-      R"(}})"_sv,
+      R"(}})"sv,
       request_type.as_raw_text());
   connection_.send_text(message);
 }
@@ -261,7 +261,7 @@ void WebSocket::subscribe_instrument_state() {
       R"("channels":["instrument.state.any.any"])"
       R"(}},)"
       R"("id":"{}")"
-      R"(}})"_sv,
+      R"(}})"sv,
       request_type.as_raw_text());
   connection_.send_text(message);
 }
@@ -275,8 +275,8 @@ void WebSocket::subscribe_quote(const roq::span<std::string> &symbols) {
       R"("channels":["quote.{}"])"
       R"(}},)"
       R"("id":"{}")"
-      R"(}})"_sv,
-      fmt::join(symbols, R"(","quote.)"_sv),
+      R"(}})"sv,
+      fmt::join(symbols, R"(","quote.)"sv),
       request_type.as_raw_text());
   connection_.send_text(message);
 }
@@ -290,8 +290,8 @@ void WebSocket::subscribe_ticker(const roq::span<std::string> &symbols) {
       R"("channels":["ticker.{}.raw"])"
       R"(}},)"
       R"("id":"{}")"
-      R"(}})"_sv,
-      fmt::join(symbols, R"(.raw","ticker.)"_sv),
+      R"(}})"sv,
+      fmt::join(symbols, R"(.raw","ticker.)"sv),
       request_type.as_raw_text());
   connection_.send_text(message);
 }
@@ -301,7 +301,7 @@ void WebSocket::parse(const std::string_view &message) {
     try {
       core::jsonrpc::Parser::dispatch(*this, message);
     } catch (...) {
-      log::warn(R"(message="{}")"_sv, message);
+      log::warn(R"(message="{}")"sv, message);
       core::tools::UnhandledException::terminate();
     }
   });
@@ -309,7 +309,7 @@ void WebSocket::parse(const std::string_view &message) {
 
 void WebSocket::operator()(const core::jsonrpc::Error &error, core::json::value_t &value) {
   json::Error error_2(value);
-  log::fatal(R"(error={}, id="{}")"_sv, error_2, error.id);
+  log::fatal(R"(error={}, id="{}")"sv, error_2, error.id);
 }
 
 void WebSocket::operator()(const core::jsonrpc::Result &result, core::json::value_t &value) {
@@ -319,7 +319,7 @@ void WebSocket::operator()(const core::jsonrpc::Result &result, core::json::valu
     case json::RequestType::UNDEFINED:
       break;
     case json::RequestType::UNKNOWN:
-      log::fatal(R"(Unknown request_type="{}")"_sv, result.id);
+      log::fatal(R"(Unknown request_type="{}")"sv, result.id);
       break;
     case json::RequestType::GET_CURRENCIES: {
       core::json::Buffer buffer(decode_buffer_);
@@ -341,7 +341,7 @@ void WebSocket::operator()(const core::jsonrpc::Result &result, core::json::valu
     case json::RequestType::SUBSCRIBE_TICKER:
       break;
     default:
-      log::fatal("Unexpected: request_type={}"_sv, request_type);
+      log::fatal("Unexpected: request_type={}"sv, request_type);
   }
 }
 
@@ -353,7 +353,7 @@ void WebSocket::operator()(
     case json::Method::UNDEFINED:
       break;
     case json::Method::UNKNOWN:
-      log::fatal(R"(Unknown method="{}")"_sv, notification.method);
+      log::fatal(R"(Unknown method="{}")"sv, notification.method);
       break;
     case json::Method::SUBSCRIPTION: {
       core::json::Buffer buffer(decode_buffer_);
@@ -364,13 +364,13 @@ void WebSocket::operator()(
 }
 
 void WebSocket::operator()(const server::Trace<json::Auth> &) {
-  log::fatal("Unexpected"_sv);
+  log::fatal("Unexpected"sv);
 }
 
 void WebSocket::operator()(const server::Trace<json::Currencies> &event) {
   profile_.currencies([&]() {
     auto &[trace_info, currencies] = event;
-    log::info<2>("currencies={}"_sv, currencies);
+    log::info<2>("currencies={}"sv, currencies);
     auto &data = currencies.data;
     std::vector<std::string> tmp;
     if (!std::empty(data))
@@ -393,7 +393,7 @@ void WebSocket::operator()(const server::Trace<json::Currencies> &event) {
 void WebSocket::operator()(const server::Trace<json::Instruments> &event) {
   profile_.instruments([&]() {
     auto &[trace_info, instruments] = event;
-    log::info<2>("instruments={}"_sv, instruments);
+    log::info<2>("instruments={}"sv, instruments);
     auto &data = instruments.data;
     std::vector<std::string> symbols;
     if (!data.empty())
@@ -422,7 +422,7 @@ void WebSocket::operator()(const server::Trace<json::Instruments> &event) {
 }
 
 void WebSocket::operator()(const server::Trace<json::Positions> &) {
-  log::fatal("Unexpected"_sv);
+  log::fatal("Unexpected"sv);
 }
 
 void WebSocket::operator()(const server::Trace<json::PlatformState> &) {
@@ -436,7 +436,7 @@ void WebSocket::operator()(const server::Trace<json::Quote> &event) {
   profile_.quote([&]() {
     auto &trace_info = event.trace_info;
     auto &quote = event.value;
-    log::info<3>("quote={}"_sv, quote);
+    log::info<3>("quote={}"sv, quote);
     if (get_top_of_book(quote.instrument_name, [&](auto &layer, auto multiplier) {
           auto bid_quantity = multiplier * quote.best_bid_amount;
           auto ask_quantity = multiplier * quote.best_ask_amount;
@@ -459,8 +459,7 @@ void WebSocket::operator()(const server::Trace<json::Quote> &event) {
           }
         })) {
     } else {
-      log::warn<3>(
-          R"(Unexpected: can't find multiplier for symbol="{}")"_sv, quote.instrument_name);
+      log::warn<3>(R"(Unexpected: can't find multiplier for symbol="{}")"sv, quote.instrument_name);
     }
   });
 }
@@ -469,7 +468,7 @@ void WebSocket::operator()(const server::Trace<json::Ticker> &event) {
   profile_.ticker([&]() {
     auto &trace_info = event.trace_info;
     auto &ticker = event.value;
-    log::info<3>("ticker={}"_sv, ticker);
+    log::info<3>("ticker={}"sv, ticker);
     auto trading_status = json::map(ticker.state);
     auto &item = trading_status_[ticker.instrument_name];
     if (trading_status && utils::update(item, trading_status)) {
@@ -485,19 +484,19 @@ void WebSocket::operator()(const server::Trace<json::Ticker> &event) {
 }
 
 void WebSocket::operator()(const server::Trace<json::Portfolio> &) {
-  log::fatal("Unexpected"_sv);
+  log::fatal("Unexpected"sv);
 }
 
 void WebSocket::operator()(const server::Trace<json::Changes> &) {
-  log::fatal("Unexpected"_sv);
+  log::fatal("Unexpected"sv);
 }
 
 void WebSocket::operator()(const server::Trace<json::Order> &) {
-  log::fatal("Unexpected"_sv);
+  log::fatal("Unexpected"sv);
 }
 
 void WebSocket::operator()(const server::Trace<json::Trades2> &) {
-  log::fatal("Unexpected"_sv);
+  log::fatal("Unexpected"sv);
 }
 
 }  // namespace deribit

@@ -9,6 +9,8 @@
 using namespace roq;
 using namespace roq::deribit;
 
+using namespace std::literals;
+
 TEST(fix_market_data_snapshot_full_refresh, parse_message) {
   const auto message =
       "8=FIX.4.4\0019=8056\00135=W\00149=DERIBITSERVER\00156=ROQ_TRAD"
@@ -166,7 +168,7 @@ TEST(fix_market_data_snapshot_full_refresh, parse_message) {
       "\001269=1\001270=15000.0000\001271=3294.0000\001272=20190907-1"
       "7:49:56.053\001269=1\001270=30000.0000\001271=112.0000\001272="
       "20190907-17:49:56.053\001269=1\001270=100000.0000\001271=9364."
-      "0000\001272=20190907-17:49:56.053\00110=037\001"_sv;
+      "0000\001272=20190907-17:49:56.053\00110=037\001"sv;
   core::Buffer buffer(1024 * 1024);
   core::fix::Buffer decode_buffer(buffer);
   int results = 0;

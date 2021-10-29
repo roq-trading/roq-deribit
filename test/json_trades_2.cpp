@@ -7,6 +7,8 @@
 using namespace roq;
 using namespace roq::deribit;
 
+using namespace std::literals;
+
 TEST(json_trades_2, parse_message) {
   const auto message = R"([{)"
                        R"("trade_seq":52491427,)"
@@ -31,7 +33,7 @@ TEST(json_trades_2, parse_message) {
                        R"("fee":0.0,)"
                        R"("direction":"buy",)"
                        R"("amount":10.0)"
-                       R"(}])"_sv;
+                       R"(}])"sv;
   core::Buffer buffer(8192);
   core::json::Buffer decode_buffer(buffer);
   auto trades = core::json::Parser::create<json::Trades2>(message, decode_buffer);
