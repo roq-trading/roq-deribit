@@ -832,7 +832,8 @@ void MarketData::operator()(
       server::create_trace_and_dispatch(
           handler_, trace_info, market_by_price_update, is_last, false);
     } catch (market::BadState &) {
-      log::fatal("*** RESUBSCRIBE REQUIRED HERE ***"sv);
+      log::warn("market_by_price_update={}"sv, market_by_price_update);
+      log::fatal(R"(*** BAD SNAPSHOT *** (symbol="{}"))"sv, symbol);
     }
   }
   if (!statistics.empty()) {
