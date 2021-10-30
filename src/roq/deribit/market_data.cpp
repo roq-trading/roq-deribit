@@ -725,7 +725,7 @@ void MarketData::operator()(
       try {
         server::create_trace_and_dispatch(
             handler_, trace_info, market_by_price_update, is_last, false);
-      } catch (market::BadState &) {
+      } catch (BadState &) {
         resubscribe(symbol);
       }
     }
@@ -831,7 +831,7 @@ void MarketData::operator()(
     try {
       server::create_trace_and_dispatch(
           handler_, trace_info, market_by_price_update, is_last, false);
-    } catch (market::BadState &) {
+    } catch (BadState &) {
       log::warn("market_by_price_update={}"sv, market_by_price_update);
       log::fatal(R"(*** BAD SNAPSHOT *** (symbol="{}"))"sv, symbol);
     }

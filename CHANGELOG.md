@@ -11,6 +11,7 @@ All notable changes will be documented in this file.
 
 ### Changed
 
+* Move cache utilities to API (#111)
 * Remove custom literals (#110)
 * Interface to support binary data from web::socket
 * Round quantity and price for CreateOrder/ModifyOrder (#102)
