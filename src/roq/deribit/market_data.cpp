@@ -833,6 +833,12 @@ void MarketData::operator()(
           handler_, trace_info, market_by_price_update, is_last, false);
     } catch (BadState &) {
       log::warn("market_by_price_update={}"sv, market_by_price_update);
+      auto &bids = market_by_price_update.bids;
+      auto &asks = market_by_price_update.asks;
+      log::warn(
+          "best bid/ask={}/{}"sv,
+          std::empty(bids) ? NaN : bids[0].price,
+          std::empty(asks) ? NaN : asks[0].price);
       log::fatal(R"(*** BAD SNAPSHOT *** (symbol="{}"))"sv, symbol);
     }
   }
