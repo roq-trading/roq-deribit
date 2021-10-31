@@ -298,8 +298,9 @@ void WebSocket::subscribe_ticker(const roq::span<std::string> &symbols) {
 
 void WebSocket::parse(const std::string_view &message) {
   profile_.parse([&]() {
+    auto trace_info = server::create_trace_info();
     try {
-      core::jsonrpc::Parser::dispatch(*this, message);
+      core::jsonrpc::Parser::dispatch(*this, message, trace_info);
     } catch (...) {
       log::warn(R"(message="{}")"sv, message);
       core::tools::UnhandledException::terminate();
@@ -307,13 +308,16 @@ void WebSocket::parse(const std::string_view &message) {
   });
 }
 
-void WebSocket::operator()(const core::jsonrpc::Error &error, core::json::value_t &value) {
+void WebSocket::operator()(
+    const server::Trace<core::jsonrpc::Error> &event, core::json::value_t &value) {
+  auto &[trace_info, error] = event;
   json::Error error_2(value);
   log::fatal(R"(error={}, id="{}")"sv, error_2, error.id);
 }
 
-void WebSocket::operator()(const core::jsonrpc::Result &result, core::json::value_t &value) {
-  auto trace_info = server::create_trace_info();  // XXX not correct (*parsing* has already started)
+void WebSocket::operator()(
+    const server::Trace<core::jsonrpc::Result> &event, core::json::value_t &value) {
+  auto &[trace_info, result] = event;
   json::RequestType request_type(result.id);
   switch (request_type) {
     case json::RequestType::UNDEFINED:
@@ -346,8 +350,8 @@ void WebSocket::operator()(const core::jsonrpc::Result &result, core::json::valu
 }
 
 void WebSocket::operator()(
-    const core::jsonrpc::Notification &notification, core::json::value_t &value) {
-  auto trace_info = server::create_trace_info();  // XXX not correct (*parsing* has already started)
+    const server::Trace<core::jsonrpc::Notification> &event, core::json::value_t &value) {
+  auto &[trace_info, notification] = event;
   json::Method method(notification.method);
   switch (method) {
     case json::Method::UNDEFINED:

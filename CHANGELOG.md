@@ -11,6 +11,7 @@ All notable changes will be documented in this file.
 
 ### Changed
 
+* The jsonrpc parser now expects `server::TraceInfo`
 * Move cache utilities to API (#111)
 * Remove custom literals (#110)
 * Interface to support binary data from web::socket

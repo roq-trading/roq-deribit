@@ -335,7 +335,8 @@ void DropCopy::get_trades(const roq::span<std::string> &currencies) {
 void DropCopy::parse(const std::string_view &message) {
   profile_.parse([&]() {
     try {
-      core::jsonrpc::Parser::dispatch(*this, message);
+      auto trace_info = server::create_trace_info();
+      core::jsonrpc::Parser::dispatch(*this, message, trace_info);
     } catch (...) {
       log::warn(R"(message="{}")"sv, message);
       core::tools::UnhandledException::terminate();
@@ -343,13 +344,16 @@ void DropCopy::parse(const std::string_view &message) {
   });
 }
 
-void DropCopy::operator()(const core::jsonrpc::Error &error, core::json::value_t &value) {
+void DropCopy::operator()(
+    const server::Trace<core::jsonrpc::Error> &event, core::json::value_t &value) {
+  auto &[trace_info, error] = event;
   json::Error error_2(value);
   log::fatal(R"(error={}, id="{}")"sv, error_2, error.id);
 }
 
-void DropCopy::operator()(const core::jsonrpc::Result &result, core::json::value_t &value) {
-  auto trace_info = server::create_trace_info();  // XXX not correct (*parsing* has already started)
+void DropCopy::operator()(
+    const server::Trace<core::jsonrpc::Result> &event, core::json::value_t &value) {
+  auto &[trace_info, result] = event;
   json::RequestType request_type(result.id);
   switch (request_type) {
     case json::RequestType::UNDEFINED:
@@ -385,8 +389,8 @@ void DropCopy::operator()(const core::jsonrpc::Result &result, core::json::value
 }
 
 void DropCopy::operator()(
-    const core::jsonrpc::Notification &notification, core::json::value_t &value) {
-  auto trace_info = server::create_trace_info();  // XXX not correct (*parsing* has already started)
+    const server::Trace<core::jsonrpc::Notification> &event, core::json::value_t &value) {
+  auto &[trace_info, notification] = event;
   json::Method method(notification.method);
   switch (method) {
     case json::Method::UNDEFINED:
