@@ -4,6 +4,10 @@ All notable changes will be documented in this file.
 
 ## Head
 
+### Changed
+
+* Price inversion is possible (#115)
+
 ## 0.7.8 &ndash; 2021-11-02
 
 ### Added
