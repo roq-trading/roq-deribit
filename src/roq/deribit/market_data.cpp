@@ -720,6 +720,8 @@ void MarketData::operator()(
           .update_type = UpdateType::INCREMENTAL,
           .exchange_time_utc = exchange_time_utc,
           .exchange_sequence = {},
+          .price_decimals = {},
+          .quantity_decimals = {},
       };
       auto is_last = statistics.empty() && trades.empty();
       try {
@@ -827,6 +829,8 @@ void MarketData::operator()(
         .asks = asks,
         .update_type = UpdateType::SNAPSHOT,
         .exchange_time_utc = {},
+        .price_decimals = {},
+        .quantity_decimals = {},
     };
     try {
       server::create_trace_and_dispatch(
