@@ -722,6 +722,7 @@ void MarketData::operator()(
           .exchange_sequence = {},
           .price_decimals = {},
           .quantity_decimals = {},
+          .checksum = {},
       };
       auto is_last = statistics.empty() && trades.empty();
       try {
@@ -831,6 +832,7 @@ void MarketData::operator()(
         .exchange_time_utc = {},
         .price_decimals = {},
         .quantity_decimals = {},
+        .checksum = {},
     };
     try {
       server::create_trace_and_dispatch(
