@@ -21,9 +21,9 @@ TEST(fix_order_cancel_replace_request, create_message) {
       .cl_ord_id = "123"sv,
       .transact_time = sending_time,
       .side = core::fix::Side::BUY,
-      .order_qty = {1.0, 1},
+      .order_qty = {1.0, utils::to_decimals(1)},
       .ord_type = core::fix::OrdType::LIMIT,
-      .price = {123.45, 2},
+      .price = {123.45, utils::to_decimals(2)},
       .symbol = "BTC-27SEP19"sv,
       .exec_inst = {},
   };
