@@ -117,26 +117,26 @@ void WebSocket::update_subscriptions(std::vector<std::string> &symbols) {
   }
 }
 
-void WebSocket::operator()(const core::web::Socket::Connected &) {
+void WebSocket::operator()(const core::web::ClientSocket::Connected &) {
   // note! wait for upgrade
 }
 
-void WebSocket::operator()(const core::web::Socket::Disconnected &) {
+void WebSocket::operator()(const core::web::ClientSocket::Disconnected &) {
   ++counter_.disconnect;
   ready_ = false;
   (*this)(ConnectionStatus::DISCONNECTED);
   download_.reset();
 }
 
-void WebSocket::operator()(const core::web::Socket::Ready &) {
+void WebSocket::operator()(const core::web::ClientSocket::Ready &) {
   (*this)(ConnectionStatus::DOWNLOADING);
   download_.begin();
 }
 
-void WebSocket::operator()(const core::web::Socket::Close &) {
+void WebSocket::operator()(const core::web::ClientSocket::Close &) {
 }
 
-void WebSocket::operator()(const core::web::Socket::Latency &latency) {
+void WebSocket::operator()(const core::web::ClientSocket::Latency &latency) {
   auto trace_info = server::create_trace_info();
   ExternalLatency external_latency{
       .stream_id = stream_id_,
@@ -146,11 +146,11 @@ void WebSocket::operator()(const core::web::Socket::Latency &latency) {
   latency_.ping.update(latency.sample);
 }
 
-void WebSocket::operator()(const core::web::Socket::Text &text) {
+void WebSocket::operator()(const core::web::ClientSocket::Text &text) {
   parse(text.payload);
 }
 
-void WebSocket::operator()(const core::web::Socket::Binary &) {
+void WebSocket::operator()(const core::web::ClientSocket::Binary &) {
   log::fatal("Unexpected"sv);
 }
 

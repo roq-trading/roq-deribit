@@ -126,26 +126,26 @@ void DropCopy::update_subscriptions(const roq::span<std::string> &currencies) {
   }
 }
 
-void DropCopy::operator()(const core::web::Socket::Connected &) {
+void DropCopy::operator()(const core::web::ClientSocket::Connected &) {
   // note! wait for upgrade
 }
 
-void DropCopy::operator()(const core::web::Socket::Disconnected &) {
+void DropCopy::operator()(const core::web::ClientSocket::Disconnected &) {
   ++counter_.disconnect;
   ready_ = false;
   (*this)(ConnectionStatus::DISCONNECTED);
   download_.reset();
 }
 
-void DropCopy::operator()(const core::web::Socket::Ready &) {
+void DropCopy::operator()(const core::web::ClientSocket::Ready &) {
   login();
   (*this)(ConnectionStatus::LOGIN_SENT);
 }
 
-void DropCopy::operator()(const core::web::Socket::Close &) {
+void DropCopy::operator()(const core::web::ClientSocket::Close &) {
 }
 
-void DropCopy::operator()(const core::web::Socket::Latency &latency) {
+void DropCopy::operator()(const core::web::ClientSocket::Latency &latency) {
   auto trace_info = server::create_trace_info();
   ExternalLatency external_latency{
       .stream_id = stream_id_,
@@ -155,11 +155,11 @@ void DropCopy::operator()(const core::web::Socket::Latency &latency) {
   latency_.ping.update(latency.sample);
 }
 
-void DropCopy::operator()(const core::web::Socket::Text &text) {
+void DropCopy::operator()(const core::web::ClientSocket::Text &text) {
   parse(text.payload);
 }
 
-void DropCopy::operator()(const core::web::Socket::Binary &) {
+void DropCopy::operator()(const core::web::ClientSocket::Binary &) {
   log::fatal("Unexpected"sv);
 }
 
