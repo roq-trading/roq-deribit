@@ -1,6 +1,6 @@
 [symbols]
   include = ".*"
-  exclude = ".*USDT.*"  # [2020-09-18] workaround due to missing market data
+  exclude = ".*USD[CT].*"  # workaround due to missing market data
 
 [accounts]
 
