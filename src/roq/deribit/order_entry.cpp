@@ -297,9 +297,13 @@ void OrderEntry::operator()(ConnectionStatus status) {
 void OrderEntry::send_logon() {
   auto ping_freq = std::chrono::duration_cast<std::chrono::seconds>(Flags::fix_ping_freq());
   std::chrono::milliseconds now = utils::safe_cast(core::get_realtime_clock());
-  auto [raw_data, sending_time] = security_.create_raw_data(now);
-  log::info("DEBUG HASHER real={}, used={}, diff={}"sv, now, sending_time, (sending_time - now));
+  auto raw_data = security_.create_raw_data(now);
   auto password = security_.create_password(raw_data);
+  log::info(
+      R"(DEBUG: HASHER stream_id={}, raw_data="{}", password="{}")"sv,
+      stream_id_,
+      raw_data,
+      password);
   fix::Logon logon{
       .heart_bt_int = static_cast<uint16_t>(ping_freq.count()),
       .raw_data_length = static_cast<uint32_t>(raw_data.length()),
@@ -313,7 +317,7 @@ void OrderEntry::send_logon() {
       .deribit_sequential = false,
       .unsubscribe_execution_reports = false,
   };
-  send(logon, sending_time);
+  send(logon);
   last_logon_or_heartbeat_ = core::get_system_clock();
 }
 
@@ -495,7 +499,8 @@ void OrderEntry::operator()(const core::fix::Event<fix::Logon> &event, const ser
 
 void OrderEntry::operator()(const core::fix::Event<fix::Logout> &event, const server::TraceInfo &) {
   auto &[header, logout] = event;
-  log::warn<2>("event={{header={}, logout={}}}"sv, header, logout);
+  log::warn("event={{header={}, logout={}}}"sv, header, logout);
+  log::info("DEBUG: HASHER stream_id={} LOGOUT"sv, stream_id_);
   ready_ = false;
   // note! mandated, must send a logout response
   send_logout(LOGOUT_RESPONSE);

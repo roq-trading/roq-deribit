@@ -53,10 +53,7 @@ std::pair<std::string, std::chrono::milliseconds> Hasher::create_signature(
   return {core::binascii::Hex::encode(buffer), std::chrono::milliseconds{sequence}};
 }
 
-std::pair<std::string, std::chrono::milliseconds> Hasher::create_raw_data(
-    std::chrono::milliseconds timestamp) {
-  auto sequence = get_sequence(timestamp);
-  // create nonce
+std::string Hasher::create_raw_data(std::chrono::milliseconds timestamp) {
   using value_type = decltype(DISTRIBUTION)::result_type;
   constexpr auto n = RANDOM_BYTES / sizeof(value_type);
   std::array<value_type, n> buffer;
@@ -65,8 +62,14 @@ std::pair<std::string, std::chrono::milliseconds> Hasher::create_raw_data(
   roq::span tmp{
       reinterpret_cast<std::byte *>(std::data(buffer)), std::size(buffer) * sizeof(value_type)};
   auto nonce = core::binascii::Base64::encode(tmp, false);
+  return create_raw_data(timestamp, nonce);
+}
+
+std::string Hasher::create_raw_data(
+    std::chrono::milliseconds timestamp, const std::string_view &nonce) {
+  auto sequence = get_sequence(timestamp);
   auto raw_data = fmt::format("{:013}.{}"sv, sequence, nonce);
-  return {raw_data, std::chrono::milliseconds{sequence}};
+  return raw_data;
 }
 
 std::string Hasher::create_password(const std::string_view &raw_data) {

@@ -31,8 +31,7 @@ class Security final {
     return hasher_.create_signature(timestamp, nonce);
   }
 
-  std::pair<std::string, std::chrono::milliseconds> create_raw_data(
-      std::chrono::milliseconds timestamp) {
+  std::string create_raw_data(std::chrono::milliseconds timestamp) {
     return hasher_.create_raw_data(timestamp);
   }
 
