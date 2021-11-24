@@ -186,7 +186,7 @@ void DropCopy::login() {
   auto nonce = security_.create_nonce();
   auto [signature, timestamp] = security_.create_signature(now, nonce);
   log::info(
-      "DEBUG HASHER stream_id={}, real={}, used={}, diff={}"sv,
+      "DEBUG: HASHER stream_id={}, real={}, used={}, diff={}"sv,
       stream_id_,
       now,
       timestamp,
