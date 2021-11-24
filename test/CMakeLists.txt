@@ -16,6 +16,7 @@ set(SOURCES
     fix_reject.cpp
     fix_security_list.cpp
     fix_user_response.cpp
+    hasher.cpp
     json_currencies.cpp
     json_instruments.cpp
     json_subscription.cpp
@@ -29,6 +30,7 @@ target_link_libraries(
   "${TARGET_NAME}"
   "${PROJECT_NAME}-fix"
   "${PROJECT_NAME}-json"
+  "${PROJECT_NAME}-tools"
   roq-server::roq-server
   roq-core::roq-core
   roq-logging::roq-logging
