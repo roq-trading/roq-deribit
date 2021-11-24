@@ -41,7 +41,7 @@ std::string Hasher::create_nonce() {
   return result;
 }
 
-std::string Hasher::create_signature(
+std::pair<std::string, std::chrono::milliseconds> Hasher::create_signature(
     std::chrono::milliseconds timestamp, const std::string_view &nonce) {
   auto sequence = get_sequence(timestamp);
   auto message = fmt::format("{}\n{}\n"sv, sequence, nonce);
@@ -50,7 +50,7 @@ std::string Hasher::create_signature(
   std::array<char, 32> buffer;
   auto length = hmac_.digest(buffer);
   assert(length == buffer.size());
-  return core::binascii::Hex::encode(buffer);
+  return {core::binascii::Hex::encode(buffer), std::chrono::milliseconds{sequence}};
 }
 
 std::string Hasher::create_raw_data(std::chrono::milliseconds timestamp) {

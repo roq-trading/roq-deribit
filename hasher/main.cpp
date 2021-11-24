@@ -39,11 +39,12 @@ int main(int argc, char **argv) {
   // compute
   tools::Hasher hasher(secret);
   auto real_nonce = std::empty(nonce) ? hasher.create_nonce() : std::string{nonce};
-  auto signature = hasher.create_signature(real_timestamp, real_nonce);
+  auto [signature, used_timestamp] = hasher.create_signature(real_timestamp, real_nonce);
 
   // summary
   printf("    nonce : \"%.*s\"\n", static_cast<int>(std::size(real_nonce)), std::data(real_nonce));
   printf("signature : \"%.*s\"\n", static_cast<int>(std::size(signature)), std::data(signature));
+  printf("timestamp : %" PRId64 "\n", used_timestamp.count());
 
   return EXIT_SUCCESS;
 }

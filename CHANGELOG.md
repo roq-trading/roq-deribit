@@ -8,6 +8,10 @@ All notable changes will be documented in this file.
 
 * Price inversion is possible (#115)
 
+### Fixed
+
+* Incorrect hashing for mutliple signatures within 1ms (#133)
+
 ## 0.7.8 &ndash; 2021-11-02
 
 ### Added

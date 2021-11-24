@@ -4,6 +4,7 @@
 
 #include "roq/utils/compare.h"
 #include "roq/utils/mask.h"
+#include "roq/utils/safe_cast.h"
 #include "roq/utils/update.h"
 
 #include "roq/core/metrics/factory.h"
@@ -181,10 +182,9 @@ void DropCopy::operator()(ConnectionStatus status) {
 
 void DropCopy::login() {
   constexpr json::RequestType request_type = json::RequestType::AUTH;
-  auto timestamp =
-      std::chrono::duration_cast<std::chrono::milliseconds>(core::get_realtime_clock());
+  std::chrono::milliseconds now = utils::safe_cast(core::get_realtime_clock());
   auto nonce = security_.create_nonce();
-  auto signature = security_.create_signature(timestamp, nonce);
+  auto [signature, timestamp] = security_.create_signature(now, nonce);
   auto message = fmt::format(
       R"({{)"
       R"("method":"public/auth",)"

@@ -14,7 +14,7 @@ TEST(hasher, test_1) {  // DERIBIT'S EXAMPLE
   tools::Hasher hasher("94Qy1rwus9zxRKrvnSEbb1YCcKZunhI7g9ZHlhGUoQM"sv);
   auto timestamp = 1637681707400ms;
   auto nonce = "sfx7kglb6r2outb74dnut65vlywu4csr"sv;
-  auto signature = hasher.create_signature(timestamp, nonce);
+  auto [signature, used_timestamp] = hasher.create_signature(timestamp, nonce);
   EXPECT_EQ(signature, "64064fb648aaa12eb60e87ed3410b18039bca746a670e684783389a1cd374e93"sv);
 }
 
@@ -22,7 +22,7 @@ TEST(hasher, test_2) {  // VERIFY ON DEV BOX
   tools::Hasher hasher("94Qy1rwus9zxRKrvnSEbb1YCcKZunhI7g9ZHlhGUoQM"sv);
   auto timestamp = 1637688869368ms;
   auto nonce = "ha4sge1mygftldeh0yaw6v4zl3q5acif"sv;
-  auto signature = hasher.create_signature(timestamp, nonce);
+  auto [signature, used_timestamp] = hasher.create_signature(timestamp, nonce);
   EXPECT_EQ(signature, "3c733e856ca5eaa74d13d70e18ef7668482f9bdebe56ac0a0c78987e0f217d07"sv);
 }
 /*
