@@ -185,6 +185,7 @@ void DropCopy::login() {
   std::chrono::milliseconds now = utils::safe_cast(core::get_realtime_clock());
   auto nonce = security_.create_nonce();
   auto [signature, timestamp] = security_.create_signature(now, nonce);
+  log::info("DEBUG HASHER real={}, used={}, diff={}"sv, now, timestamp, (timestamp - now));
   auto message = fmt::format(
       R"({{)"
       R"("method":"public/auth",)"

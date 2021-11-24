@@ -26,7 +26,9 @@ class Hasher final {
   std::pair<std::string, std::chrono::milliseconds> create_signature(
       std::chrono::milliseconds timestamp, const std::string_view &nonce);
 
-  std::string create_raw_data(std::chrono::milliseconds timestamp);
+  std::pair<std::string, std::chrono::milliseconds> create_raw_data(
+      std::chrono::milliseconds timestamp);
+
   std::string create_password(const std::string_view &raw_data);
 
  protected:

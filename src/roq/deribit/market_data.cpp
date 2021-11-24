@@ -217,9 +217,9 @@ void MarketData::operator()(ConnectionStatus status) {
 void MarketData::send_logon() {
   auto heart_bt_int =
       std::chrono::duration_cast<std::chrono::seconds>(Flags::fix_ping_freq()).count();
-  auto sending_time = core::get_realtime_clock();
-  auto raw_data = security_.create_raw_data(
-      std::chrono::duration_cast<std::chrono::milliseconds>(sending_time));
+  std::chrono::milliseconds now = utils::safe_cast(core::get_realtime_clock());
+  auto [raw_data, sending_time] = security_.create_raw_data(now);
+  log::info("DEBUG HASHER real={}, used={}, diff={}"sv, now, sending_time, (sending_time - now));
   auto password = security_.create_password(raw_data);
   auto cancel_on_disconnect = Flags::fix_cancel_on_disconnect();
   fix::Logon logon{
@@ -235,7 +235,7 @@ void MarketData::send_logon() {
       .deribit_sequential = false,
       .unsubscribe_execution_reports = true,
   };
-  send(logon);
+  send(logon, sending_time);
   last_logon_or_heartbeat_ = core::get_system_clock();
 }
 

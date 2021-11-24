@@ -296,9 +296,9 @@ void OrderEntry::operator()(ConnectionStatus status) {
 
 void OrderEntry::send_logon() {
   auto ping_freq = std::chrono::duration_cast<std::chrono::seconds>(Flags::fix_ping_freq());
-  auto sending_time = core::get_realtime_clock();
-  auto raw_data = security_.create_raw_data(
-      std::chrono::duration_cast<std::chrono::milliseconds>(sending_time));
+  std::chrono::milliseconds now = utils::safe_cast(core::get_realtime_clock());
+  auto [raw_data, sending_time] = security_.create_raw_data(now);
+  log::info("DEBUG HASHER real={}, used={}, diff={}"sv, now, sending_time, (sending_time - now));
   auto password = security_.create_password(raw_data);
   fix::Logon logon{
       .heart_bt_int = static_cast<uint16_t>(ping_freq.count()),
@@ -313,7 +313,7 @@ void OrderEntry::send_logon() {
       .deribit_sequential = false,
       .unsubscribe_execution_reports = false,
   };
-  send(logon);
+  send(logon, sending_time);
   last_logon_or_heartbeat_ = core::get_system_clock();
 }
 
