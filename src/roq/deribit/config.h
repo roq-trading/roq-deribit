@@ -1,4 +1,4 @@
-/* Copyright (c) 2017-2021, Hans Erik Thrane */
+/* Copyright (c) 2017-2022, Hans Erik Thrane */
 
 #pragma once
 
@@ -49,11 +49,11 @@ class Config final : public server::Config, public server::ConfigReader::Handler
 template <>
 struct fmt::formatter<roq::deribit::Config> {
   template <typename Context>
-  constexpr auto parse(Context &context) {
-    return context.begin();
+  constexpr auto parse(Context &ctx) {
+    return std::begin(ctx);
   }
-  template <typename C>
-  auto format(const roq::deribit::Config &value, C &ctx) {
+  template <typename Context>
+  auto format(const roq::deribit::Config &value, Context &ctx) {
     using namespace std::literals;
     return fmt::format_to(
         ctx.out(),

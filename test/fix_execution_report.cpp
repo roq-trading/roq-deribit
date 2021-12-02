@@ -1,4 +1,4 @@
-/* Copyright (c) 2017-2021, Hans Erik Thrane */
+/* Copyright (c) 2017-2022, Hans Erik Thrane */
 
 #include <gtest/gtest.h>
 
@@ -122,7 +122,7 @@ TEST(fix_execution_report, parse_fill) {
         EXPECT_EQ(result.deribit_label, "roq:1:1:1000"sv);
         EXPECT_DOUBLE_EQ(result.last_qty, 1.0);
         EXPECT_DOUBLE_EQ(result.last_px, 9593.5);
-        EXPECT_EQ(result.no_fills.size(), size_t{1});
+        EXPECT_EQ(std::size(result.no_fills), size_t{1});
         // item 0
         auto &item_0 = result.no_fills[0];
         EXPECT_EQ(item_0.fill_exec_id, "BTC-27DEC19#2350428"sv);

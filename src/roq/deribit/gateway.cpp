@@ -1,4 +1,4 @@
-/* Copyright (c) 2017-2021, Hans Erik Thrane */
+/* Copyright (c) 2017-2022, Hans Erik Thrane */
 
 #include "roq/deribit/gateway.h"
 
@@ -80,7 +80,7 @@ Gateway::Gateway(server::Dispatcher &dispatcher, const Config &config)
       web_socket_(create_web_socket(*this, context_, stream_id_, shared_)),
       market_data_(
           create_market_data(*this, context_, ++stream_id_, *security_[master_account_], shared_)) {
-  if (master_account_.empty()) {
+  if (std::empty(master_account_)) {
     log::fatal("A master account is always required (due to FIX logon)"sv);
   }
   if (!Flags::fix_cancel_on_disconnect())
@@ -155,7 +155,7 @@ void Gateway::operator()(const Event<Disconnected> &event) {
 
 uint16_t Gateway::operator()(
     const Event<CreateOrder> &event, const oms::Order &order, const std::string_view &request_id) {
-  assert(!event.value.account.empty());
+  assert(!std::empty(event.value.account));
   return get_order_entry(event.value.account)(event, order, request_id);
 }
 
@@ -164,7 +164,7 @@ uint16_t Gateway::operator()(
     const oms::Order &order,
     const std::string_view &request_id,
     const std::string_view &previous_request_id) {
-  assert(!event.value.account.empty());
+  assert(!std::empty(event.value.account));
   assert(event.value.account == order.account);
   return get_order_entry(event.value.account)(event, order, request_id, previous_request_id);
 }
@@ -174,14 +174,14 @@ uint16_t Gateway::operator()(
     const oms::Order &order,
     const std::string_view &request_id,
     const std::string_view &previous_request_id) {
-  assert(!event.value.account.empty());
+  assert(!std::empty(event.value.account));
   assert(event.value.account == order.account);
   return get_order_entry(event.value.account)(event, order, request_id, previous_request_id);
 }
 
 uint16_t Gateway::operator()(
     const Event<CancelAllOrders> &event, const std::string_view &request_id) {
-  assert(!event.value.account.empty());
+  assert(!std::empty(event.value.account));
   return get_order_entry(event.value.account)(event, request_id);
 }
 
@@ -250,12 +250,12 @@ void Gateway::operator()(const server::Trace<FundsUpdate> &event, bool is_last) 
 void Gateway::operator()(WebSocket::SymbolsUpdate &symbols_update) {
   auto &symbols = symbols_update.symbols;
   for (auto &iter : web_socket_) {
-    if (symbols.empty())
+    if (std::empty(symbols))
       break;
     (*iter).update_subscriptions(symbols);
   }
   for (;;) {
-    if (symbols.empty())
+    if (std::empty(symbols))
       break;
     auto web_socket = std::make_unique<WebSocket>(*this, context_, ++stream_id_, shared_, false);
     (*web_socket).update_subscriptions(symbols);
@@ -276,12 +276,12 @@ void Gateway::operator()(WebSocket::CurrenciesUpdate &currencies_update) {
 void Gateway::operator()(MarketData::SymbolsUpdate &symbols_update) {
   auto &symbols = symbols_update.symbols;
   for (auto &iter : market_data_) {
-    if (symbols.empty())
+    if (std::empty(symbols))
       break;
     (*iter).update_subscriptions(symbols);
   }
   for (;;) {
-    if (symbols.empty())
+    if (std::empty(symbols))
       break;
     auto market_data = std::make_unique<MarketData>(
         *this, context_, ++stream_id_, *security_[master_account_], shared_, false);
@@ -295,7 +295,7 @@ void Gateway::operator()(MarketData::SymbolsUpdate &symbols_update) {
 
 OrderEntry &Gateway::get_order_entry(const std::string_view &account) {
   auto iter = order_entry_.find(account);
-  if (iter != order_entry_.end())
+  if (iter != std::end(order_entry_))
     return *(*iter).second;
   throw RuntimeErrorException(R"(Unknown account="{}")"sv, account);
 }

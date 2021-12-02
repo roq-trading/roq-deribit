@@ -1,4 +1,4 @@
-/* Copyright (c) 2017-2021, Hans Erik Thrane */
+/* Copyright (c) 2017-2022, Hans Erik Thrane */
 
 #include <benchmark/benchmark.h>
 
@@ -28,7 +28,7 @@ void BM_fix_position_report_parse_message(benchmark::State &state) {
     core::fix::Reader<core::fix::Version::FIX_44>::dispatch(
         [&](const core::fix::message_t &message) {
           auto position_report = fix::PositionReport::create(message, decode_buffer);
-          if (!position_report.pos_req_id.empty())
+          if (!std::empty(position_report.pos_req_id))
             ++processed;
         },
         MESSAGE);

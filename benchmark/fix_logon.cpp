@@ -1,4 +1,4 @@
-/* Copyright (c) 2017-2021, Hans Erik Thrane */
+/* Copyright (c) 2017-2022, Hans Erik Thrane */
 
 #include <benchmark/benchmark.h>
 
@@ -8,6 +8,7 @@ using namespace roq;
 using namespace roq::deribit;
 
 using namespace std::literals;
+using namespace std::chrono_literals;
 
 namespace {
 const auto MESSAGE =
@@ -37,15 +38,15 @@ BENCHMARK(BM_fix_logon_parse_message);
 // cppcheck-suppress constParameterCallback
 void BM_fix_logon_create_message(benchmark::State &state) {
   core::Buffer buffer(4096);
-  auto msg_seq_num = uint64_t{0};
-  auto sending_time = std::chrono::seconds{1568702810};
-  std::string_view raw_data = "1567874758168.y4/hA3i6qxm4yVL+3N7IrGcINVAFMLFhy4l7ATSehxc=";
+  uint64_t msg_seq_num = 0;
+  auto sending_time = 1568702810s;
+  auto raw_data = "1567874758168.y4/hA3i6qxm4yVL+3N7IrGcINVAFMLFhy4l7ATSehxc="sv;
   uint64_t processed = 0;
   for (auto _ : state) {
     fix::Logon logon = {
         .heart_bt_int = uint16_t{10},
-        .raw_data_length = static_cast<uint32_t>(raw_data.size()),
-        .raw_data = raw_data.data(),
+        .raw_data_length = static_cast<uint32_t>(std::size(raw_data)),
+        .raw_data = std::data(raw_data),
         .username = "5MP40u9h"sv,
         .password = "j/tVe9IsQuc+RjegscnHcJ6czMVNM1+ib7vjbY3UV0M="sv,
         .use_wordsafe_tags = false,

@@ -1,4 +1,4 @@
-/* Copyright (c) 2017-2021, Hans Erik Thrane */
+/* Copyright (c) 2017-2022, Hans Erik Thrane */
 
 #include <gtest/gtest.h>
 
@@ -8,6 +8,7 @@ using namespace roq;
 using namespace roq::deribit;
 
 using namespace std::literals;
+using namespace std::chrono_literals;
 
 TEST(json_instrument, parse_message) {
   const auto message = R"({)"
@@ -87,8 +88,8 @@ TEST(json_instrument, parse_message) {
             EXPECT_EQ(instrument.kind, json::Kind::FUTURE);
             EXPECT_EQ(instrument.is_active, true);
             EXPECT_EQ(instrument.instrument_name, "BTC-27SEP19"sv);
-            EXPECT_EQ(instrument.expiration_timestamp, std::chrono::milliseconds{1569571200000});
-            EXPECT_EQ(instrument.creation_timestamp, std::chrono::milliseconds{1553760060000});
+            EXPECT_EQ(instrument.expiration_timestamp, 1569571200000ms);
+            EXPECT_EQ(instrument.creation_timestamp, 1553760060000ms);
             EXPECT_DOUBLE_EQ(instrument.contract_size, 10.0);
             EXPECT_EQ(instrument.base_currency, "BTC"sv);
             break;
@@ -103,8 +104,8 @@ TEST(json_instrument, parse_message) {
             EXPECT_EQ(instrument.kind, json::Kind::FUTURE);
             EXPECT_EQ(instrument.is_active, true);
             EXPECT_EQ(instrument.instrument_name, "BTC-27DEC19"sv);
-            EXPECT_EQ(instrument.expiration_timestamp, std::chrono::milliseconds{1577433600000});
-            EXPECT_EQ(instrument.creation_timestamp, std::chrono::milliseconds{1561622460000});
+            EXPECT_EQ(instrument.expiration_timestamp, 1577433600000ms);
+            EXPECT_EQ(instrument.creation_timestamp, 1561622460000ms);
             EXPECT_DOUBLE_EQ(instrument.contract_size, 10.0);
             EXPECT_EQ(instrument.base_currency, "BTC"sv);
             break;
@@ -119,8 +120,8 @@ TEST(json_instrument, parse_message) {
             EXPECT_EQ(instrument.kind, json::Kind::FUTURE);
             EXPECT_EQ(instrument.is_active, true);
             EXPECT_EQ(instrument.instrument_name, "BTC-PERPETUAL"sv);
-            EXPECT_EQ(instrument.expiration_timestamp, std::chrono::milliseconds{32503734000000});
-            EXPECT_EQ(instrument.creation_timestamp, std::chrono::milliseconds{1534167754000});
+            EXPECT_EQ(instrument.expiration_timestamp, 32503734000000ms);
+            EXPECT_EQ(instrument.creation_timestamp, 1534167754000ms);
             EXPECT_DOUBLE_EQ(instrument.contract_size, 10.0);
             EXPECT_EQ(instrument.base_currency, "BTC"sv);
             break;

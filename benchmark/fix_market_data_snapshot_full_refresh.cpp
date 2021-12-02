@@ -1,4 +1,4 @@
-/* Copyright (c) 2017-2021, Hans Erik Thrane */
+/* Copyright (c) 2017-2022, Hans Erik Thrane */
 
 #include <benchmark/benchmark.h>
 
@@ -178,7 +178,7 @@ void BM_fix_market_data_snapshot_full_refresh_parse_message(
     core::fix::Reader<core::fix::Version::FIX_44>::dispatch(
         [&](const core::fix::message_t &message) {
           auto market_data = fix::MarketDataSnapshotFullRefresh::create(message, decode_buffer);
-          if (market_data.no_md_entries.size() > 0)
+          if (std::size(market_data.no_md_entries) > 0)
             ++processed;
         },
         MESSAGE);

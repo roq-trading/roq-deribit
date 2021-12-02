@@ -1,4 +1,4 @@
-/* Copyright (c) 2017-2021, Hans Erik Thrane */
+/* Copyright (c) 2017-2022, Hans Erik Thrane */
 
 #pragma once
 
@@ -125,9 +125,9 @@ class WebSocket final : public core::web::ClientSocket::Handler,
   template <typename C>
   bool get_top_of_book(const std::string_view &symbol, C callback) {
     auto iter = top_of_book_.find(symbol);
-    if (iter == top_of_book_.end()) {
+    if (iter == std::end(top_of_book_)) {
       auto iter_2 = shared_.multiplier.find(symbol);
-      if (iter_2 == shared_.multiplier.end())
+      if (iter_2 == std::end(shared_.multiplier))
         return false;
       iter = top_of_book_.emplace(symbol, std::make_pair(roq::Layer{}, (*iter_2).second)).first;
     }

@@ -1,4 +1,4 @@
-/* Copyright (c) 2017-2021, Hans Erik Thrane */
+/* Copyright (c) 2017-2022, Hans Erik Thrane */
 
 #include <benchmark/benchmark.h>
 
@@ -8,12 +8,13 @@ using namespace roq;
 using namespace roq::deribit;
 
 using namespace std::literals;
+using namespace std::chrono_literals;
 
 // cppcheck-suppress constParameterCallback
 void BM_fix_order_cancel_request_create_message(benchmark::State &state) {
   core::Buffer buffer(4096);
-  auto msg_seq_num = uint64_t{0};
-  auto sending_time = std::chrono::seconds{1568702810};
+  uint64_t msg_seq_num = 0;
+  auto sending_time = 1568702810s;
   uint64_t processed = 0;
   for (auto _ : state) {
     fix::OrderCancelRequest order_cancel_request = {

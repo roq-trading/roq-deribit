@@ -1,4 +1,4 @@
-/* Copyright (c) 2017-2021, Hans Erik Thrane */
+/* Copyright (c) 2017-2022, Hans Erik Thrane */
 
 #include <gtest/gtest.h>
 
@@ -11,6 +11,7 @@ using namespace roq;
 using namespace roq::deribit;
 
 using namespace std::literals;
+using namespace std::chrono_literals;
 
 TEST(fix_logon, parse_message) {
   const auto message =
@@ -39,13 +40,13 @@ TEST(fix_logon, parse_message) {
 
 TEST(fix_logon, create_message) {
   core::Buffer buffer(4096);
-  auto msg_seq_num = uint64_t{0};
-  auto sending_time = std::chrono::seconds{1568702810};
+  uint64_t msg_seq_num = 0;
+  auto sending_time = 1568702810s;
   std::string_view raw_data = "1567874758168.y4/hA3i6qxm4yVL+3N7IrGcINVAFMLFhy4l7ATSehxc="sv;
   fix::Logon logon = {
       .heart_bt_int = uint16_t{10},
-      .raw_data_length = static_cast<uint32_t>(raw_data.size()),
-      .raw_data = raw_data.data(),
+      .raw_data_length = static_cast<uint32_t>(std::size(raw_data)),
+      .raw_data = std::data(raw_data),
       .username = "5MP40u9h"sv,
       .password = "j/tVe9IsQuc+RjegscnHcJ6czMVNM1+ib7vjbY3UV0M="sv,
       .use_wordsafe_tags = false,
@@ -62,7 +63,7 @@ TEST(fix_logon, create_message) {
       msg_seq_num,
       sending_time);
   auto message = logon.encode(writer);
-  // core::print_string_with_escapes(message.data(), message.length());
+  // core::print_string_with_escapes(std::data(message), std::size(message));
   const auto expected =
       "8=FIX.4.4\0019=0000211\00135=A\00149=ROQ_TRADING\00156=DERIBIT"
       "SERVER\00134=1\00152=20190917-06:46:50.000\001108=10\00195=58\001"
@@ -71,5 +72,5 @@ TEST(fix_logon, create_message) {
       "M=\0019001=Y\00110=032\001"sv;
   ASSERT_EQ(std::size(message), std::size(expected));
   for (size_t i = 0; i < std::size(message); ++i)
-    EXPECT_EQ(static_cast<char>(message.data()[i]), expected[i]);
+    EXPECT_EQ(static_cast<char>(std::data(message)[i]), expected[i]);
 }

@@ -1,4 +1,4 @@
-/* Copyright (c) 2017-2021, Hans Erik Thrane */
+/* Copyright (c) 2017-2022, Hans Erik Thrane */
 
 #include <gtest/gtest.h>
 
@@ -31,7 +31,7 @@ TEST(fix_position_report, parse_message) {
         EXPECT_EQ(position_report.pos_req_id, "roq-pos-003"sv);
         EXPECT_EQ(position_report.pos_req_type, core::fix::PosReqType::POSITIONS);
         EXPECT_EQ(position_report.pos_req_result, core::fix::PosReqResult::VALID);
-        EXPECT_EQ(position_report.no_positions.size(), size_t{1});
+        EXPECT_EQ(std::size(position_report.no_positions), size_t{1});
         auto &item = position_report.no_positions[0];
         EXPECT_DOUBLE_EQ(item.long_qty, 0.0);
         EXPECT_DOUBLE_EQ(item.short_qty, 0.0);

@@ -1,4 +1,4 @@
-/* Copyright (c) 2017-2021, Hans Erik Thrane */
+/* Copyright (c) 2017-2022, Hans Erik Thrane */
 
 #include "roq/deribit/json/parser.h"
 
@@ -47,7 +47,7 @@ static_assert(get_token("instrument.state.123"sv) == "instrument_state"sv);
 
 Channel parse_channel(const std::string_view &name) {
   auto token = get_token(name);
-  if (ROQ_UNLIKELY(token.empty()))
+  if (ROQ_UNLIKELY(std::empty(token)))
     return Channel::UNKNOWN;
   return Channel(token);
 }
@@ -121,7 +121,7 @@ void Parser::dispatch(
   auto message = core::json::get<std::string_view>(value);
   auto channel = Channel::UNDEFINED;
   bool dispatched = false;
-  for (int i = {}; i < 2 && !dispatched; ++i) {
+  for (int i = 0; i < 2 && !dispatched; ++i) {
     core::json::Parser parser(message);
     auto root = parser.root();
     for (auto [key, value] : std::get<core::json::object_t>(root)) {

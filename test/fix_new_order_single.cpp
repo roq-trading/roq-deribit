@@ -1,4 +1,4 @@
-/* Copyright (c) 2017-2021, Hans Erik Thrane */
+/* Copyright (c) 2017-2022, Hans Erik Thrane */
 
 #include <gtest/gtest.h>
 
@@ -11,11 +11,12 @@ using namespace roq;
 using namespace roq::deribit;
 
 using namespace std::literals;
+using namespace std::chrono_literals;
 
 TEST(fix_new_order_single, create_message) {
   core::Buffer buffer(4096);
   auto msg_seq_num = uint64_t{0};
-  auto sending_time = std::chrono::seconds{1568702810};
+  auto sending_time = 1568702810s;
   fix::NewOrderSingle new_order_single = {
       .cl_ord_id = "roq-ord-006"sv,
       .side = core::fix::Side::BUY,
@@ -45,5 +46,5 @@ TEST(fix_new_order_single, create_message) {
       "100010=roq;123;345\00110=042\001"sv;
   ASSERT_EQ(std::size(message), std::size(expected));
   for (size_t i = 0; i < std::size(message); ++i)
-    EXPECT_EQ(static_cast<char>(message.data()[i]), expected[i]);
+    EXPECT_EQ(static_cast<char>(std::data(message)[i]), expected[i]);
 }

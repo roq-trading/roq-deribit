@@ -1,4 +1,4 @@
-/* Copyright (c) 2017-2021, Hans Erik Thrane */
+/* Copyright (c) 2017-2022, Hans Erik Thrane */
 
 #include <benchmark/benchmark.h>
 
@@ -23,7 +23,7 @@ void BM_fix_order_cancel_reject_parse_message(benchmark::State &state) {
     core::fix::Reader<core::fix::Version::FIX_44>::dispatch(
         [&](const core::fix::message_t &message) {
           auto result = fix::OrderCancelReject::create(message);
-          if (!result.text.empty())
+          if (!std::empty(result.text))
             ++processed;
         },
         MESSAGE);

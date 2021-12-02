@@ -1,4 +1,4 @@
-/* Copyright (c) 2017-2021, Hans Erik Thrane */
+/* Copyright (c) 2017-2022, Hans Erik Thrane */
 
 #include "roq/deribit/fix/adv_order_type.h"
 
@@ -20,9 +20,9 @@ std::string_view EnumNameAdvOrderType(const AdvOrderType &value) {
 }
 
 AdvOrderType parse_adv_order_type(const std::string_view &value) {
-  if (value.empty())
+  if (std::empty(value))
     return AdvOrderType::UNKNOWN;
-  switch (value.data()[0]) {
+  switch (std::data(value)[0]) {
     case '0':
       return AdvOrderType::IMPLIED_VOLATILITY_ORDER;
     case '1':

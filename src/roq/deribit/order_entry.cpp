@@ -1,4 +1,4 @@
-/* Copyright (c) 2017-2021, Hans Erik Thrane */
+/* Copyright (c) 2017-2022, Hans Erik Thrane */
 
 #include "roq/deribit/order_entry.h"
 
@@ -134,7 +134,7 @@ uint16_t OrderEntry::operator()(
   core::stack::Buffer<char, MAX_LENGTH_REQUEST_ID> buffer;
   fmt::format_to(
       std::back_inserter(buffer), "roq-{}-{}"sv, message_info.source, create_order.order_id);
-  std::string_view deribit_label(buffer.data(), buffer.size());
+  std::string_view deribit_label(std::data(buffer), std::size(buffer));
   fix::NewOrderSingle new_order_single{
       .cl_ord_id = request_id,
       .side = side,
@@ -249,7 +249,7 @@ void OrderEntry::operator()(const core::net::Manager::Disconnected &) {
 void OrderEntry::operator()(const core::net::Manager::Read &read) {
   auto buffer = read.buffer.pullup_new();
   size_t total_bytes = 0;
-  while (!buffer.empty()) {
+  while (!std::empty(buffer)) {
     auto bytes = core::fix::Reader<FIX_VERSION>::dispatch(
         [&](const core::fix::message_t &message) {
           try {
@@ -306,7 +306,7 @@ void OrderEntry::send_logon() {
       password);
   fix::Logon logon{
       .heart_bt_int = static_cast<uint16_t>(ping_freq.count()),
-      .raw_data_length = static_cast<uint32_t>(raw_data.length()),
+      .raw_data_length = static_cast<uint32_t>(std::size(raw_data)),
       .raw_data = raw_data,
       .username = security_.get_access_key(),
       .password = password,
@@ -339,7 +339,7 @@ void OrderEntry::send_test_request(std::chrono::nanoseconds now) {
   // request_id is current time
   stack_buffer_.clear();
   core::charconv::to_string(std::back_inserter(stack_buffer_), now.count());
-  auto request_id = std::string_view(stack_buffer_.data(), stack_buffer_.size());
+  auto request_id = std::string_view(std::data(stack_buffer_), std::size(stack_buffer_));
   fix::TestRequest test_request{
       .test_req_id = request_id,
   };
@@ -474,7 +474,7 @@ void OrderEntry::operator()(
   auto &[header, heartbeat] = event;
   log::info<3>("event={{header={}, heartbeat={}}}"sv, header, heartbeat);
   last_logon_or_heartbeat_ = {};
-  if (!heartbeat.test_req_id.empty()) {
+  if (!std::empty(heartbeat.test_req_id)) {
     auto send_time = core::from_chars<uint64_t>(heartbeat.test_req_id);
     auto latency =
         std::chrono::duration_cast<std::chrono::nanoseconds>(now - decltype(now){send_time}) /
@@ -724,7 +724,7 @@ void OrderEntry::operator()(
             trace_info,
             order_update)) {
     } else {
-      auto external = execution_report.deribit_label.empty();
+      auto external = std::empty(execution_report.deribit_label);
       log::warn(external ? "*** EXTERNAL ORDER ***"sv : "*** UNKNOWN INTERNAL ORDER ***"sv);
       log::warn("execution_report={}"sv, execution_report);
     }
@@ -741,7 +741,7 @@ void OrderEntry::operator()(
               for (auto &item : no_fills) {
                 fills.emplace_back([&](auto &result) { emplace(result, item); });
               }
-              if (!fills.empty()) {
+              if (!std::empty(fills)) {
                 TradeUpdate trade_update{
                     .stream_id = stream_id_,
                     .account = order.account,
@@ -762,7 +762,7 @@ void OrderEntry::operator()(
               }
             })) {
     } else {
-      auto external = execution_report.deribit_label.empty();
+      auto external = std::empty(execution_report.deribit_label);
       log::warn(external ? "*** EXTERNAL ORDER ***"sv : "*** UNKNOWN INTERNAL ORDER ***"sv);
       log::warn("execution_report={}"sv, execution_report);
     }
@@ -825,7 +825,7 @@ void OrderEntry::operator()(
   auto request_type = message_type_to_request_type(reject.ref_msg_type);
   if (request_type != RequestType{}) {
     auto iter = msg_seq_num_to_request_id_.find(reject.ref_seq_num);
-    if (iter != msg_seq_num_to_request_id_.end()) {
+    if (iter != std::end(msg_seq_num_to_request_id_)) {
       auto &request_id = (*iter).second;
       auto error = fix::reject_to_error(reject.session_reject_reason, reject.text);
       oms::Response response{

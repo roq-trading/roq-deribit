@@ -1,4 +1,4 @@
-/* Copyright (c) 2017-2021, Hans Erik Thrane */
+/* Copyright (c) 2017-2022, Hans Erik Thrane */
 
 #include "roq/deribit/market_data.h"
 
@@ -169,7 +169,7 @@ void MarketData::operator()(const core::net::Manager::Disconnected &) {
 void MarketData::operator()(const core::net::Manager::Read &read) {
   auto buffer = read.buffer.pullup_new();
   size_t total_bytes = 0;
-  while (!buffer.empty()) {
+  while (!std::empty(buffer)) {
     auto bytes = core::fix::Reader<FIX_VERSION>::dispatch(
         [&](const core::fix::message_t &message) {
           try {
@@ -228,7 +228,7 @@ void MarketData::send_logon() {
   auto cancel_on_disconnect = Flags::fix_cancel_on_disconnect();
   fix::Logon logon{
       .heart_bt_int = utils::safe_cast(heart_bt_int),
-      .raw_data_length = utils::safe_cast(raw_data.length()),
+      .raw_data_length = utils::safe_cast(std::size(raw_data)),
       .raw_data = raw_data,
       .username = security_.get_access_key(),
       .password = password,
@@ -261,7 +261,7 @@ void MarketData::send_test_request(std::chrono::nanoseconds now) {
   // request_id is current time
   stack_buffer_.clear();
   core::charconv::to_string(std::back_inserter(stack_buffer_), now.count());
-  auto request_id = std::string_view(stack_buffer_.data(), stack_buffer_.size());
+  auto request_id = std::string_view(std::data(stack_buffer_), std::size(stack_buffer_));
   fix::TestRequest test_request{
       .test_req_id = request_id,
   };
@@ -321,26 +321,26 @@ void MarketData::operator()(metrics::Writer &writer) {
 void MarketData::update_subscriptions(std::vector<std::string> &symbols) {
   assert(&symbols != &symbols_);
   auto max_size = Flags::fix_market_data_max_subscriptions_per_stream();
-  auto offset = symbols_.size();
+  auto offset = std::size(symbols_);
   if (max_size <= offset)
     return;
-  if (symbols.empty())
+  if (std::empty(symbols))
     return;
   symbols_.reserve(max_size);
-  auto length = std::min(max_size - offset, symbols.size());
+  auto length = std::min(max_size - offset, std::size(symbols));
   assert(length > 0);
-  for (size_t i = {}; i < length; ++i) {
+  for (size_t i = 0; i < length; ++i) {
     symbols_.emplace_back(symbols.back());
     symbols.pop_back();
   }
-  assert(length == (symbols_.size() - offset));
+  assert(length == (std::size(symbols_) - offset));
   if (ready_)
     subscribe({&symbols_[offset], length});
 }
 
 void MarketData::subscribe(const roq::span<std::string> &symbols) {
   log::info("Subscribe market data"sv);
-  assert(!symbols.empty());
+  assert(!std::empty(symbols));
   auto market_depth = Flags::fix_market_data_market_depth();
   auto md_update_type = market_depth ? core::fix::MDUpdateType::INCREMENTAL_REFRESH
                                      : core::fix::MDUpdateType::FULL_REFRESH;
@@ -352,14 +352,14 @@ void MarketData::subscribe(const roq::span<std::string> &symbols) {
   // deribit has acknowledged a limit on # of symbols per request
   auto max_size = Flags::fix_market_data_request_max_size()
                       ? Flags::fix_market_data_request_max_size()
-                      : symbols.size();
+                      : std::size(symbols);
   std::vector<fix::InstrmtMDReq> related_sym(max_size);
-  for (size_t offset = {};; offset += max_size) {
-    if (symbols.size() <= offset)
+  for (size_t offset = 0;; offset += max_size) {
+    if (std::size(symbols) <= offset)
       break;
-    auto length = std::min<size_t>(symbols.size() - offset, max_size);
+    auto length = std::min<size_t>(std::size(symbols) - offset, max_size);
     assert(length > 0);
-    for (size_t i = {}; i < length; ++i)
+    for (size_t i = 0; i < length; ++i)
       new (&related_sym[i]) fix::InstrmtMDReq{
           .symbol = symbols[offset + i],
       };
@@ -372,7 +372,7 @@ void MarketData::subscribe(const roq::span<std::string> &symbols) {
         .deribit_trade_amount = {},     // 0=none
         .deribit_since_timestamp = {},  // 0=none
         .no_md_entry_types = md_entry_types,
-        .no_related_sym = {related_sym.data(), length},
+        .no_related_sym = {std::data(related_sym), length},
     };
     send(market_data_request);
   }
@@ -380,7 +380,7 @@ void MarketData::subscribe(const roq::span<std::string> &symbols) {
 
 void MarketData::unsubscribe(const roq::span<std::string> &symbols) {
   log::info("Unsubscribe market data"sv);
-  assert(!symbols.empty());
+  assert(!std::empty(symbols));
   fix::MDReq md_entry_types[] = {
       {.md_entry_type = core::fix::MDEntryType::BID},
       {.md_entry_type = core::fix::MDEntryType::OFFER},
@@ -389,14 +389,14 @@ void MarketData::unsubscribe(const roq::span<std::string> &symbols) {
   // deribit has acknowledged a limit on # of symbols per request
   auto max_size = Flags::fix_market_data_request_max_size()
                       ? Flags::fix_market_data_request_max_size()
-                      : symbols.size();
+                      : std::size(symbols);
   std::vector<fix::InstrmtMDReq> related_sym(max_size);
-  for (size_t offset = {};; offset += max_size) {
-    if (symbols.size() <= offset)
+  for (size_t offset = 0;; offset += max_size) {
+    if (std::size(symbols) <= offset)
       break;
-    auto length = std::min<size_t>(symbols.size() - offset, max_size);
+    auto length = std::min<size_t>(std::size(symbols) - offset, max_size);
     assert(length > 0);
-    for (size_t i = {}; i < length; ++i)
+    for (size_t i = 0; i < length; ++i)
       new (&related_sym[i]) fix::InstrmtMDReq{
           .symbol = symbols[offset + i],
       };
@@ -409,7 +409,7 @@ void MarketData::unsubscribe(const roq::span<std::string> &symbols) {
         .deribit_trade_amount = {},
         .deribit_since_timestamp = {},
         .no_md_entry_types = md_entry_types,
-        .no_related_sym = {related_sym.data(), length},
+        .no_related_sym = {std::data(related_sym), length},
     };
     send(market_data_request);
   }
@@ -417,7 +417,7 @@ void MarketData::unsubscribe(const roq::span<std::string> &symbols) {
 
 void MarketData::resubscribe(const std::string_view &symbol) {
   log::warn<1>("*** RESUBSCRIBE ***"sv);
-  if (latch_.find(symbol) != latch_.end())
+  if (latch_.find(symbol) != std::end(latch_))
     return;
   log::info<1>(R"(Latch symbol="{}")"sv, symbol);
   latch_.emplace(symbol);
@@ -522,7 +522,7 @@ void MarketData::operator()(
   auto &[header, heartbeat] = event;
   log::info<3>("event={{header={}, heartbeat={}}}"sv, header, heartbeat);
   last_logon_or_heartbeat_ = {};
-  if (!heartbeat.test_req_id.empty()) {
+  if (!std::empty(heartbeat.test_req_id)) {
     auto send_time = core::from_chars<uint64_t>(heartbeat.test_req_id);
     auto latency =
         std::chrono::duration_cast<std::chrono::nanoseconds>(now - decltype(now){send_time}) /
@@ -574,10 +574,10 @@ void MarketData::operator()(
     const core::fix::Event<fix::SecurityList> &event, const server::TraceInfo &trace_info) {
   auto &[header, security_list] = event;
   log::info<2>("event={{header={}, security_list={}}}"sv, header, security_list);
-  if (security_list.no_related_sym.size() > 0) {
+  if (std::size(security_list.no_related_sym) > 0) {
     size_t counter = {};
     std::vector<std::string> symbols;
-    symbols.reserve(security_list.no_related_sym.size());
+    symbols.reserve(std::size(security_list.no_related_sym));
     for (auto &instrument : security_list.no_related_sym) {
       log::info<2>("instrument={}"sv, instrument);
       auto &symbol = instrument.symbol;
@@ -616,8 +616,8 @@ void MarketData::operator()(
       server::create_trace_and_dispatch(handler_, trace_info, reference_data, true);
       ++counter;
     }
-    log::info<2>("- securities: {} (/{})"sv, counter, security_list.no_related_sym.size());
-    if (!symbols.empty()) {
+    log::info<2>("- securities: {} (/{})"sv, counter, std::size(security_list.no_related_sym));
+    if (!std::empty(symbols)) {
       SymbolsUpdate symbols_update{
           .symbols = symbols,
       };
@@ -714,8 +714,8 @@ void MarketData::operator()(
         break;
     }
   }
-  if (!(bids.empty() && asks.empty())) {
-    if (latch_.find(symbol) == latch_.end()) {
+  if (!(std::empty(bids) && std::empty(asks))) {
+    if (latch_.find(symbol) == std::end(latch_)) {
       const MarketByPriceUpdate market_by_price_update{
           .stream_id = stream_id_,
           .exchange = Flags::exchange(),
@@ -729,7 +729,7 @@ void MarketData::operator()(
           .quantity_decimals = {},
           .checksum = {},
       };
-      auto is_last = statistics.empty() && trades.empty();
+      auto is_last = std::empty(statistics) && std::empty(trades);
       try {
         server::create_trace_and_dispatch(
             handler_, trace_info, market_by_price_update, is_last, false);
@@ -738,7 +738,7 @@ void MarketData::operator()(
       }
     }
   }
-  if (!trades.empty()) {
+  if (!std::empty(trades)) {
     const TradeSummary trade_summary{
         .stream_id = stream_id_,
         .exchange = Flags::exchange(),
@@ -746,10 +746,10 @@ void MarketData::operator()(
         .trades = trades,
         .exchange_time_utc = exchange_time_utc,
     };
-    auto is_last = statistics.empty();
+    auto is_last = std::empty(statistics);
     server::create_trace_and_dispatch(handler_, trace_info, trade_summary, is_last);
   }
-  if (!statistics.empty()) {
+  if (!std::empty(statistics)) {
     const StatisticsUpdate statistics_update{
         .stream_id = stream_id_,
         .exchange = Flags::exchange(),
@@ -780,7 +780,7 @@ void MarketData::operator()(
       market_data_snapshot_full_refresh);
   auto &symbol = market_data_snapshot_full_refresh.symbol;
   auto iter = latch_.find(symbol);
-  if (ROQ_UNLIKELY(iter != latch_.end())) {
+  if (ROQ_UNLIKELY(iter != std::end(latch_))) {
     log::info<1>(R"(Unlatch symbol="{}")"sv, symbol);
     latch_.erase(iter);
   }
@@ -825,8 +825,8 @@ void MarketData::operator()(
         break;
     }
   }
-  if (!(bids.empty() && asks.empty())) {
-    auto is_last = statistics.empty();
+  if (!(std::empty(bids) && std::empty(asks))) {
+    auto is_last = std::empty(statistics);
     const MarketByPriceUpdate market_by_price_update{
         .stream_id = stream_id_,
         .exchange = Flags::exchange(),
@@ -853,7 +853,7 @@ void MarketData::operator()(
       log::fatal(R"(*** BAD SNAPSHOT *** (symbol="{}"))"sv, symbol);
     }
   }
-  if (!statistics.empty()) {
+  if (!std::empty(statistics)) {
     const StatisticsUpdate statistics_update{
         .stream_id = stream_id_,
         .exchange = Flags::exchange(),

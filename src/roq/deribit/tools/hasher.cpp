@@ -1,4 +1,4 @@
-/* Copyright (c) 2017-2021, Hans Erik Thrane */
+/* Copyright (c) 2017-2022, Hans Erik Thrane */
 
 #include "roq/deribit/tools/hasher.h"
 
@@ -36,8 +36,9 @@ Hasher::Hasher(const std::string_view &access_secret) : secret_(access_secret), 
 
 std::string Hasher::create_nonce() {
   std::string result(RANDOM_BYTES, '-');
-  std::generate(
-      result.begin(), result.end(), []() { return CHARSET_DATA[CHARSET_DISTRIBUTION(GENERATOR)]; });
+  std::generate(std::begin(result), std::end(result), []() {
+    return CHARSET_DATA[CHARSET_DISTRIBUTION(GENERATOR)];
+  });
   return result;
 }
 
@@ -49,7 +50,7 @@ std::pair<std::string, std::chrono::milliseconds> Hasher::create_signature(
   hmac_.update(message);
   std::array<char, 32> buffer;
   auto length = hmac_.digest(buffer);
-  assert(length == buffer.size());
+  assert(length == std::size(buffer));
   return {core::binascii::Hex::encode(buffer), std::chrono::milliseconds{sequence}};
 }
 
@@ -57,7 +58,7 @@ std::string Hasher::create_raw_data(std::chrono::milliseconds timestamp) {
   using value_type = decltype(DISTRIBUTION)::result_type;
   constexpr auto n = RANDOM_BYTES / sizeof(value_type);
   std::array<value_type, n> buffer;
-  for (size_t i = {}; i < n; ++i)
+  for (size_t i = 0; i < n; ++i)
     buffer[i] = DISTRIBUTION(GENERATOR);
   roq::span tmp{
       reinterpret_cast<std::byte *>(std::data(buffer)), std::size(buffer) * sizeof(value_type)};
@@ -78,7 +79,7 @@ std::string Hasher::create_password(const std::string_view &raw_data) {
   sha_.update(secret_);
   std::array<char, 32> buffer;
   auto length = sha_.digest(buffer);
-  assert(length == buffer.size());
+  assert(length == std::size(buffer));
   return core::binascii::Base64::encode(buffer, false);
 }
 

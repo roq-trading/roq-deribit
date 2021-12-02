@@ -1,4 +1,4 @@
-/* Copyright (c) 2017-2021, Hans Erik Thrane */
+/* Copyright (c) 2017-2022, Hans Erik Thrane */
 
 #include "roq/deribit/fix/utils.h"
 
@@ -9,8 +9,8 @@ namespace deribit {
 namespace fix {
 
 SecurityType map_security_type(const std::string_view &value) {
-  if (value.length() == 3) {
-    switch (value.data()[0]) {
+  if (std::size(value) == 3) {
+    switch (std::data(value)[0]) {
       case 'F':
         if (value.compare("FUT"sv) == 0)
           return SecurityType::FUTURES;
@@ -25,8 +25,8 @@ SecurityType map_security_type(const std::string_view &value) {
 }
 
 Error map_error(const std::string_view &value) {
-  if (value.length() > 0) {
-    switch (value.data()[0]) {
+  if (std::size(value) > 0) {
+    switch (std::data(value)[0]) {
       case 'c':
         if (value.compare("canceled"sv) == 0)
           return Error::UNDEFINED;
@@ -54,7 +54,7 @@ std::string_view map(ExecutionInstruction execution_instruction) {
 }
 
 Error reject_to_error(const std::string_view &reason, const std::string_view &text) {
-  if (reason.empty() && text.compare("rate_limit_exceeded"sv) == 0)
+  if (std::empty(reason) && text.compare("rate_limit_exceeded"sv) == 0)
     return Error::REQUEST_RATE_LIMIT_REACHED;
   return {};
 }

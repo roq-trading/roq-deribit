@@ -1,4 +1,4 @@
-/* Copyright (c) 2017-2021, Hans Erik Thrane */
+/* Copyright (c) 2017-2022, Hans Erik Thrane */
 
 #include <benchmark/benchmark.h>
 
@@ -44,7 +44,7 @@ void BM_fix_market_data_increment_refresh_parse_message_1(
     core::fix::Reader<core::fix::Version::FIX_44>::dispatch(
         [&](const core::fix::message_t &message) {
           auto result = fix::MarketDataIncrementalRefresh::create(message, decode_buffer);
-          if (!result.md_req_id.empty())
+          if (!std::empty(result.md_req_id))
             ++processed;
         },
         message_1);
@@ -62,7 +62,7 @@ void BM_fix_market_data_increment_refresh_parse_message_2(
     core::fix::Reader<core::fix::Version::FIX_44>::dispatch(
         [&](const core::fix::message_t &message) {
           auto result = fix::MarketDataIncrementalRefresh::create(message, decode_buffer);
-          if (!result.md_req_id.empty())
+          if (!std::empty(result.md_req_id))
             ++processed;
         },
         message_2);

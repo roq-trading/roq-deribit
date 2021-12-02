@@ -1,4 +1,4 @@
-/* Copyright (c) 2017-2021, Hans Erik Thrane */
+/* Copyright (c) 2017-2022, Hans Erik Thrane */
 
 #include <gtest/gtest.h>
 
@@ -11,11 +11,12 @@ using namespace roq;
 using namespace roq::deribit;
 
 using namespace std::literals;
+using namespace std::chrono_literals;
 
 TEST(fix_order_cancel_replace_request, create_message) {
   core::Buffer buffer(4096);
   auto msg_seq_num = uint64_t{0};
-  auto sending_time = std::chrono::seconds{1568702810};
+  auto sending_time = 1568702810s;
   fix::OrderCancelReplaceRequest order_cancel_replace_request = {
       .orig_cl_ord_id = "123"sv,
       .cl_ord_id = "123"sv,
@@ -44,5 +45,5 @@ TEST(fix_order_cancel_replace_request, create_message) {
       "23.45\00155=BTC-27SEP19\00110=122\001"sv;
   ASSERT_EQ(std::size(message), std::size(expected));
   for (size_t i = 0; i < std::size(message); ++i)
-    EXPECT_EQ(static_cast<char>(message.data()[i]), expected[i]);
+    EXPECT_EQ(static_cast<char>(std::data(message)[i]), expected[i]);
 }

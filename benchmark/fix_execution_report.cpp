@@ -1,4 +1,4 @@
-/* Copyright (c) 2017-2021, Hans Erik Thrane */
+/* Copyright (c) 2017-2022, Hans Erik Thrane */
 
 #include <benchmark/benchmark.h>
 
@@ -29,7 +29,7 @@ void BM_fix_execution_report_parse_message(benchmark::State &state) {
     core::fix::Reader<core::fix::Version::FIX_44>::dispatch(
         [&](const core::fix::message_t &message) {
           auto result = fix::ExecutionReport::create(message, decode_buffer);
-          if (!result.order_id.empty())
+          if (!std::empty(result.order_id))
             ++processed;
         },
         MESSAGE);

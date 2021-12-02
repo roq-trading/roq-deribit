@@ -1,4 +1,4 @@
-/* Copyright (c) 2017-2021, Hans Erik Thrane */
+/* Copyright (c) 2017-2022, Hans Erik Thrane */
 
 #include "roq/deribit/web_socket.h"
 
@@ -98,19 +98,19 @@ void WebSocket::operator()(metrics::Writer &writer) {
 void WebSocket::update_subscriptions(std::vector<std::string> &symbols) {
   assert(&symbols != &symbols_);
   auto max_size = Flags::ws_market_data_max_subscriptions_per_stream();
-  auto offset = symbols_.size();
+  auto offset = std::size(symbols_);
   if (max_size <= offset)
     return;
-  if (symbols.empty())
+  if (std::empty(symbols))
     return;
   symbols_.reserve(max_size);
-  auto length = std::min(max_size - offset, symbols.size());
+  auto length = std::min(max_size - offset, std::size(symbols));
   assert(length > 0);
-  for (size_t i = {}; i < length; ++i) {
+  for (size_t i = 0; i < length; ++i) {
     symbols_.emplace_back(symbols.back());
     symbols.pop_back();
   }
-  assert(length == (symbols_.size() - offset));
+  assert(length == (std::size(symbols_) - offset));
   if (ready_) {
     subscribe_quote({&symbols_[offset], length});
     subscribe_ticker({&symbols_[offset], length});
@@ -208,7 +208,7 @@ uint32_t WebSocket::download_currencies() {
 uint32_t WebSocket::download_instruments() {
   for (auto &currency : all_currencies_)
     get_instruments(currency);
-  return all_currencies_.size();
+  return std::size(all_currencies_);
 }
 
 void WebSocket::get_currencies() {
@@ -400,8 +400,8 @@ void WebSocket::operator()(const server::Trace<json::Instruments> &event) {
     log::info<2>("instruments={}"sv, instruments);
     auto &data = instruments.data;
     std::vector<std::string> symbols;
-    if (!data.empty())
-      symbols.reserve(data.size());
+    if (!std::empty(data))
+      symbols.reserve(std::size(data));
     for (auto &item : data) {
       auto &symbol = item.instrument_name;
       if (shared_.discard_symbol(symbol))
@@ -416,7 +416,7 @@ void WebSocket::operator()(const server::Trace<json::Instruments> &event) {
       }
     }
     download_.check(WebSocketState::INSTRUMENTS);
-    if (!symbols.empty()) {
+    if (!std::empty(symbols)) {
       SymbolsUpdate symbols_update{
           .symbols = symbols,
       };

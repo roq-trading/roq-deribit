@@ -1,6 +1,8 @@
-/* Copyright (c) 2017-2021, Hans Erik Thrane */
+/* Copyright (c) 2017-2022, Hans Erik Thrane */
 
 #include "roq/deribit/drop_copy.h"
+
+#include <cppitertools/enumerate.hpp>
 
 #include "roq/utils/compare.h"
 #include "roq/utils/mask.h"
@@ -453,18 +455,16 @@ void DropCopy::operator()(const server::Trace<json::Portfolio> &event) {
 
 void DropCopy::operator()(const server::Trace<json::Changes> &event) {
   auto &trades = event.value.trades;
-  for (size_t i = {}; i < trades.size(); ++i) {
-    auto &trade = trades[i];
-    auto is_last = i == (trades.size() - 1);
+  for (auto &&[i, trade] : iter::enumerate(trades)) {
+    auto is_last = i == (std::size(trades) - 1);
     server::create_trace_and_dispatch(*this, event.trace_info, trade, is_last);
   }
 }
 
 void DropCopy::operator()(const server::Trace<json::Trades> &event) {
   auto &trades = event.value.trades;
-  for (size_t i = {}; i < trades.size(); ++i) {
-    auto &trade = trades[i];
-    auto is_last = i == (trades.size() - 1);
+  for (auto &&[i, trade] : iter::enumerate(trades)) {
+    auto is_last = i == (std::size(trades) - 1);
     server::create_trace_and_dispatch(*this, event.trace_info, trade, is_last);
   }
 }
