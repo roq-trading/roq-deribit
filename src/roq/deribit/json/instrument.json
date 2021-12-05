@@ -20,6 +20,7 @@
 	{ "name": "tick_size", "type": "double" },
 	{ "name": "max_liquidation_commission", "type": "double" },
 	{ "name": "max_leverage", "type": "double" },
-	{ "name": "block_trade_commission", "type": "double" }
+	{ "name": "block_trade_commission", "type": "double" },
+	{ "name": "rfq", "type": "bool" }
 ]
 }
