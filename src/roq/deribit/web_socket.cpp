@@ -39,17 +39,22 @@ struct create_metrics final : public core::metrics::Factory {
 }  // namespace
 
 WebSocket::WebSocket(
-    Handler &handler, core::io::Context &context, uint16_t stream_id, Shared &shared, bool master)
+    Handler &handler,
+    core::io::Context &context,
+    uint16_t stream_id,
+    Shared &shared,
+    size_t index,
+    bool master)
     : handler_(handler), stream_id_(stream_id), name_(fmt::format("{}:{}"sv, stream_id_, NAME)),
-      master_(master), connection_(
-                           *this,
-                           context,
-                           core::URI(Flags::ws_uri()),
-                           {},  // query
-                           Flags::ws_ping_freq(),
-                           Flags::decode_buffer_size(),  // XXX need read buffer size
-                           Flags::encode_buffer_size(),
-                           []() { return std::string(); }),
+      index_(index), master_(master), connection_(
+                                          *this,
+                                          context,
+                                          core::URI(Flags::ws_uri()),
+                                          {},  // query
+                                          Flags::ws_ping_freq(),
+                                          Flags::decode_buffer_size(),  // XXX need read buffer size
+                                          Flags::encode_buffer_size(),
+                                          []() { return std::string(); }),
       decode_buffer_(Flags::decode_buffer_size()),
       counter_{
           .disconnect = create_metrics(name_, "disconnect"sv),
@@ -95,26 +100,9 @@ void WebSocket::operator()(metrics::Writer &writer) {
       .write(latency_.heartbeat, metrics::LATENCY);
 }
 
-void WebSocket::update_subscriptions(std::vector<std::string> &symbols) {
-  assert(&symbols != &symbols_);
-  auto max_size = Flags::ws_market_data_max_subscriptions_per_stream();
-  auto offset = std::size(symbols_);
-  if (max_size <= offset)
-    return;
-  if (std::empty(symbols))
-    return;
-  symbols_.reserve(max_size);
-  auto length = std::min(max_size - offset, std::size(symbols));
-  assert(length > 0);
-  for (size_t i = 0; i < length; ++i) {
-    symbols_.emplace_back(symbols.back());
-    symbols.pop_back();
-  }
-  assert(length == (std::size(symbols_) - offset));
-  if (ready_) {
-    subscribe_quote({&symbols_[offset], length});
-    subscribe_ticker({&symbols_[offset], length});
-  }
+void WebSocket::subscribe(size_t start_from) {
+  if (ready())
+    subscribe(shared_.symbols.get_slice(index_, start_from));
 }
 
 void WebSocket::operator()(const core::web::ClientSocket::Connected &) {
@@ -183,17 +171,16 @@ uint32_t WebSocket::download(WebSocketState state) {
         return {};
       return download_instruments();
     case WebSocketState::SUBSCRIBE:
+      assert(!ready_);
+      ready_ = true;
       if (master_) {
         subscribe_platform_state();
         subscribe_instrument_state();
       }
-      subscribe_quote(symbols_);
-      subscribe_ticker(symbols_);
+      subscribe();
       return {};
     case WebSocketState::DONE:
       (*this)(ConnectionStatus::READY);
-      assert(!ready_);
-      ready_ = true;
       return {};
   }
   assert(false);
@@ -206,9 +193,9 @@ uint32_t WebSocket::download_currencies() {
 }
 
 uint32_t WebSocket::download_instruments() {
-  for (auto &currency : all_currencies_)
+  for (auto &currency : shared_.all_currencies)
     get_instruments(currency);
-  return std::size(all_currencies_);
+  return std::size(shared_.all_currencies);
 }
 
 void WebSocket::get_currencies() {
@@ -266,7 +253,12 @@ void WebSocket::subscribe_instrument_state() {
   connection_.send_text(message);
 }
 
-void WebSocket::subscribe_quote(const roq::span<std::string> &symbols) {
+void WebSocket::subscribe(const roq::span<std::string const> &symbols) {
+  subscribe_quote(symbols);
+  subscribe_ticker(symbols);
+}
+
+void WebSocket::subscribe_quote(const roq::span<std::string const> &symbols) {
   constexpr json::RequestType request_type = json::RequestType::SUBSCRIBE_QUOTE;
   auto message = fmt::format(
       R"({{)"
@@ -281,7 +273,7 @@ void WebSocket::subscribe_quote(const roq::span<std::string> &symbols) {
   connection_.send_text(message);
 }
 
-void WebSocket::subscribe_ticker(const roq::span<std::string> &symbols) {
+void WebSocket::subscribe_ticker(const roq::span<std::string const> &symbols) {
   constexpr json::RequestType request_type = json::RequestType::SUBSCRIBE_TICKER;
   auto message = fmt::format(
       R"({{)"
@@ -381,7 +373,7 @@ void WebSocket::operator()(const server::Trace<json::Currencies> &event) {
       tmp.reserve(std::size(data));
     for (auto &item : data) {
       auto &currency = item.currency;
-      if (all_currencies_.emplace(currency).second)
+      if (shared_.all_currencies.emplace(currency).second)
         tmp.emplace_back(currency);
     }
     download_.check(WebSocketState::CURRENCIES);
@@ -406,7 +398,7 @@ void WebSocket::operator()(const server::Trace<json::Instruments> &event) {
       auto &symbol = item.instrument_name;
       if (shared_.discard_symbol(symbol))
         continue;
-      if (all_symbols_.emplace(symbol).second) {
+      if (shared_.all_symbols.emplace(symbol).second) {
         symbols.emplace_back(symbol);
         // cache multiplier so Quote (amount) can be converted to TopOfBook (lots)
         // note! the multiplier is only cached on startup!

@@ -3,7 +3,6 @@
 #pragma once
 
 #include <absl/container/flat_hash_map.h>
-#include <absl/container/flat_hash_set.h>
 
 #include <memory>
 #include <string>
@@ -59,10 +58,13 @@ class WebSocket final : public core::web::ClientSocket::Handler,
     virtual void operator()(SymbolsUpdate &) = 0;
   };
 
-  WebSocket(Handler &, core::io::Context &, uint16_t stream_id, Shared &, bool master);
+  WebSocket(
+      Handler &, core::io::Context &, uint16_t stream_id, Shared &, size_t index, bool master);
 
   WebSocket(WebSocket &&) = delete;
   WebSocket(const WebSocket &) = delete;
+
+  bool ready() const { return ready_; }
 
   void operator()(const Event<Start> &);
   void operator()(const Event<Stop> &);
@@ -70,7 +72,7 @@ class WebSocket final : public core::web::ClientSocket::Handler,
 
   void operator()(metrics::Writer &);
 
-  void update_subscriptions(std::vector<std::string> &symbols);
+  void subscribe(size_t start_from = 0);
 
  protected:
   void operator()(const core::web::ClientSocket::Connected &) override;
@@ -95,8 +97,10 @@ class WebSocket final : public core::web::ClientSocket::Handler,
   void subscribe_platform_state();
   void subscribe_instrument_state();
 
-  void subscribe_quote(const roq::span<std::string> &symbols);
-  void subscribe_ticker(const roq::span<std::string> &symbols);
+  void subscribe(const roq::span<std::string const> &symbols);
+
+  void subscribe_quote(const roq::span<std::string const> &symbols);
+  void subscribe_ticker(const roq::span<std::string const> &symbols);
 
   void parse(const std::string_view &message);
 
@@ -140,6 +144,7 @@ class WebSocket final : public core::web::ClientSocket::Handler,
   // config
   const uint16_t stream_id_;
   const std::string name_;
+  const size_t index_;
   const bool master_;
   // web socket
   core::web::ClientSocket connection_;
@@ -157,9 +162,6 @@ class WebSocket final : public core::web::ClientSocket::Handler,
   } latency_;
   // cache
   Shared &shared_;
-  absl::flat_hash_set<std::string> all_currencies_;  // only used by master
-  absl::flat_hash_set<std::string> all_symbols_;     // only used by master
-  std::vector<std::string> symbols_;
   absl::flat_hash_map<std::string, std::pair<roq::Layer, double> > top_of_book_;
   absl::flat_hash_map<std::string, TradingStatus> trading_status_;
   // state

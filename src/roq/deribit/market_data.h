@@ -65,10 +65,19 @@ class MarketData final : public core::net::Manager::Handler {
     virtual void operator()(SymbolsUpdate &) = 0;
   };
 
-  MarketData(Handler &, core::io::Context &, uint16_t stream_id, Security &, Shared &, bool master);
+  MarketData(
+      Handler &,
+      core::io::Context &,
+      uint16_t stream_id,
+      Security &,
+      Shared &,
+      size_t index,
+      bool master);
 
   MarketData(const MarketData &) = delete;
   MarketData(MarketData &&) = delete;
+
+  bool ready() const { return ready_; }
 
   void operator()(const Event<Start> &);
   void operator()(const Event<Stop> &);
@@ -76,7 +85,7 @@ class MarketData final : public core::net::Manager::Handler {
 
   void operator()(metrics::Writer &);
 
-  void update_subscriptions(std::vector<std::string> &symbols);
+  void subscribe(size_t start_from = 0);
 
   void operator()(const core::fix::Event<fix::Heartbeat> &, const server::TraceInfo &);
   void operator()(const core::fix::Event<fix::Logon> &, const server::TraceInfo &);
@@ -111,8 +120,8 @@ class MarketData final : public core::net::Manager::Handler {
 
   void download_securities();
 
-  void subscribe(const roq::span<std::string> &symbols);
-  void unsubscribe(const roq::span<std::string> &symbols);
+  void subscribe(const roq::span<std::string const> &symbols);
+  void unsubscribe(const roq::span<std::string const> &symbols);
 
   void resubscribe(const std::string_view &symbol);
 
@@ -134,6 +143,7 @@ class MarketData final : public core::net::Manager::Handler {
   // config
   const uint16_t stream_id_;
   const std::string name_;
+  const size_t index_;
   const bool master_;
   // connection
   core::net::TcpConnectionFactory connection_factory_;
@@ -164,8 +174,6 @@ class MarketData final : public core::net::Manager::Handler {
   Security &security_;
   // cache
   Shared &shared_;
-  absl::flat_hash_set<std::string> all_symbols_;  // only used by master
-  std::vector<std::string> symbols_;
   // state
   bool ready_ = false;
   std::chrono::nanoseconds next_heartbeat_ = {};

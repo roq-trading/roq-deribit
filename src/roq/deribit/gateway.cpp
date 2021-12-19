@@ -55,7 +55,8 @@ static auto create_drop_copy(
 static auto create_web_socket(
     Gateway &gateway, core::io::Context &context, uint16_t &stream_id, Shared &shared) {
   std::vector<std::unique_ptr<WebSocket>> result;
-  result.emplace_back(std::make_unique<WebSocket>(gateway, context, ++stream_id, shared, true));
+  result.emplace_back(
+      std::make_unique<WebSocket>(gateway, context, ++stream_id, shared, std::size(result), true));
   return result;
 }
 
@@ -66,8 +67,8 @@ static auto create_market_data(
     Security &security,
     Shared &shared) {
   std::vector<std::unique_ptr<MarketData>> result;
-  result.emplace_back(
-      std::make_unique<MarketData>(gateway, context, stream_id, security, shared, true));
+  result.emplace_back(std::make_unique<MarketData>(
+      gateway, context, stream_id, security, shared, std::size(result), true));
   return result;
 }
 }  // namespace
@@ -248,22 +249,12 @@ void Gateway::operator()(const server::Trace<FundsUpdate> &event, bool is_last) 
 }
 
 void Gateway::operator()(WebSocket::SymbolsUpdate &symbols_update) {
-  auto &symbols = symbols_update.symbols;
-  for (auto &iter : web_socket_) {
-    if (std::empty(symbols))
-      break;
-    (*iter).update_subscriptions(symbols);
-  }
-  for (;;) {
-    if (std::empty(symbols))
-      break;
-    auto web_socket = std::make_unique<WebSocket>(*this, context_, ++stream_id_, shared_, false);
-    (*web_socket).update_subscriptions(symbols);
-    MessageInfo message_info;  // XXX something sensible
-    Start start;
-    create_event_and_dispatch(*web_socket, message_info, start);
-    web_socket_.emplace_back(std::move(web_socket));
-  }
+  auto [size, start_from] = shared_.symbols(symbols_update.symbols);
+  ensure_symbol_slices(size);
+  for (auto &iter : market_data_)
+    (*iter).subscribe(start_from);
+  for (auto &iter : web_socket_)
+    (*iter).subscribe(start_from);
 }
 
 void Gateway::operator()(WebSocket::CurrenciesUpdate &currencies_update) {
@@ -274,22 +265,38 @@ void Gateway::operator()(WebSocket::CurrenciesUpdate &currencies_update) {
 }
 
 void Gateway::operator()(MarketData::SymbolsUpdate &symbols_update) {
-  auto &symbols = symbols_update.symbols;
-  for (auto &iter : market_data_) {
-    if (std::empty(symbols))
-      break;
-    (*iter).update_subscriptions(symbols);
-  }
-  for (;;) {
-    if (std::empty(symbols))
-      break;
+  auto [size, start_from] = shared_.symbols(symbols_update.symbols);
+  ensure_symbol_slices(size);
+  for (auto &iter : market_data_)
+    (*iter).subscribe(start_from);
+  for (auto &iter : web_socket_)
+    (*iter).subscribe(start_from);
+}
+
+void Gateway::ensure_symbol_slices(size_t size) {
+  // market data
+  while (std::size(market_data_) < size) {
+    auto stream_id = ++stream_id_;
+    auto index = std::size(market_data_);
+    log::debug("Create MarketData(stream_id={}, index={})"sv, stream_id, index);
     auto market_data = std::make_unique<MarketData>(
-        *this, context_, ++stream_id_, *security_[master_account_], shared_, false);
-    (*market_data).update_subscriptions(symbols);
-    MessageInfo message_info;  // XXX something sensible
+        *this, context_, stream_id, *security_[master_account_], shared_, index, false);
+    MessageInfo message_info;
     Start start;
     create_event_and_dispatch(*market_data, message_info, start);
     market_data_.emplace_back(std::move(market_data));
+  }
+  // web socket
+  while (std::size(web_socket_) < size) {
+    auto stream_id = ++stream_id_;
+    auto index = std::size(web_socket_);
+    log::debug("Create WebSocket (stream_id={}, index={})"sv, stream_id, index);
+    auto web_socket =
+        std::make_unique<WebSocket>(*this, context_, stream_id, shared_, index, false);
+    MessageInfo message_info;
+    Start start;
+    create_event_and_dispatch(*web_socket, message_info, start);
+    web_socket_.emplace_back(std::move(web_socket));
   }
 }
 

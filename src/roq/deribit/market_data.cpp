@@ -100,9 +100,10 @@ MarketData::MarketData(
     uint16_t stream_id,
     Security &security,
     Shared &shared,
+    size_t index,
     bool master)
     : handler_(handler), stream_id_(stream_id), name_(fmt::format("{}:{}"sv, stream_id_, NAME)),
-      master_(master), connection_factory_(context, Flags::fix_uri()),
+      index_(index), master_(master), connection_factory_(context, Flags::fix_uri()),
       connection_(*this, connection_factory_), encode_buffer_(Flags::encode_buffer_size()),
       decode_buffer_(Flags::decode_buffer_size()),
       counter_{
@@ -283,11 +284,11 @@ uint32_t MarketData::download(MarketDataState state) {
         return {};
       }
     case MarketDataState::SUBSCRIBE:
-      subscribe(symbols_);
-      return {};
-    case MarketDataState::DONE:
       assert(!ready_);
       ready_ = true;
+      subscribe();
+      return {};
+    case MarketDataState::DONE:
       (*this)(ConnectionStatus::READY);
       return {};
   }
@@ -318,27 +319,12 @@ void MarketData::operator()(metrics::Writer &writer) {
       .write(latency_.ping, metrics::LATENCY);
 }
 
-void MarketData::update_subscriptions(std::vector<std::string> &symbols) {
-  assert(&symbols != &symbols_);
-  auto max_size = Flags::fix_market_data_max_subscriptions_per_stream();
-  auto offset = std::size(symbols_);
-  if (max_size <= offset)
-    return;
-  if (std::empty(symbols))
-    return;
-  symbols_.reserve(max_size);
-  auto length = std::min(max_size - offset, std::size(symbols));
-  assert(length > 0);
-  for (size_t i = 0; i < length; ++i) {
-    symbols_.emplace_back(symbols.back());
-    symbols.pop_back();
-  }
-  assert(length == (std::size(symbols_) - offset));
-  if (ready_)
-    subscribe({&symbols_[offset], length});
+void MarketData::subscribe(size_t start_from) {
+  if (ready())
+    subscribe(shared_.symbols.get_slice(index_, start_from));
 }
 
-void MarketData::subscribe(const roq::span<std::string> &symbols) {
+void MarketData::subscribe(const roq::span<std::string const> &symbols) {
   log::info("Subscribe market data"sv);
   assert(!std::empty(symbols));
   auto market_depth = Flags::fix_market_data_market_depth();
@@ -378,7 +364,7 @@ void MarketData::subscribe(const roq::span<std::string> &symbols) {
   }
 }
 
-void MarketData::unsubscribe(const roq::span<std::string> &symbols) {
+void MarketData::unsubscribe(const roq::span<std::string const> &symbols) {
   log::info("Unsubscribe market data"sv);
   assert(!std::empty(symbols));
   fix::MDReq md_entry_types[] = {
@@ -583,7 +569,7 @@ void MarketData::operator()(
       auto &symbol = instrument.symbol;
       if (shared_.discard_symbol(symbol))
         continue;
-      if (all_symbols_.emplace(symbol).second)  // only include new
+      if (shared_.all_symbols.emplace(symbol).second)  // only include new
         symbols.emplace_back(symbol);
       auto expiry_datetime = combine(
           instrument.maturity_date,
