@@ -325,8 +325,9 @@ void MarketData::subscribe(size_t start_from) {
 }
 
 void MarketData::subscribe(const roq::span<std::string const> &symbols) {
+  if (std::empty(symbols))
+    return;
   log::info("Subscribe market data"sv);
-  assert(!std::empty(symbols));
   auto market_depth = Flags::fix_market_data_market_depth();
   auto md_update_type = market_depth ? core::fix::MDUpdateType::INCREMENTAL_REFRESH
                                      : core::fix::MDUpdateType::FULL_REFRESH;
