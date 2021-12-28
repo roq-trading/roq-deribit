@@ -203,7 +203,7 @@ uint32_t WebSocket::download_instruments() {
 }
 
 void WebSocket::get_currencies() {
-  constexpr json::RequestType request_type = json::RequestType::GET_CURRENCIES;
+  const json::RequestType request_type = json::RequestType::GET_CURRENCIES;
   auto message = fmt::format(
       R"({{)"
       R"("method":"public/get_currencies",)"
@@ -215,7 +215,7 @@ void WebSocket::get_currencies() {
 }
 
 void WebSocket::get_instruments(const std::string_view &currency) {
-  constexpr json::RequestType request_type = json::RequestType::GET_INSTRUMENTS;
+  const json::RequestType request_type = json::RequestType::GET_INSTRUMENTS;
   auto message = fmt::format(
       R"({{)"
       R"("method":"public/get_instruments",)"
@@ -230,7 +230,7 @@ void WebSocket::get_instruments(const std::string_view &currency) {
 }
 
 void WebSocket::subscribe_platform_state() {
-  constexpr json::RequestType request_type = json::RequestType::SUBSCRIBE_PLATFORM_STATE;
+  const json::RequestType request_type = json::RequestType::SUBSCRIBE_PLATFORM_STATE;
   auto message = fmt::format(
       R"({{)"
       R"("method":"public/subscribe",)"
@@ -244,7 +244,7 @@ void WebSocket::subscribe_platform_state() {
 }
 
 void WebSocket::subscribe_instrument_state() {
-  constexpr json::RequestType request_type = json::RequestType::SUBSCRIBE_INSTRUMENT_STATE;
+  const json::RequestType request_type = json::RequestType::SUBSCRIBE_INSTRUMENT_STATE;
   auto message = fmt::format(
       R"({{)"
       R"("method":"public/subscribe",)"
@@ -258,12 +258,15 @@ void WebSocket::subscribe_instrument_state() {
 }
 
 void WebSocket::subscribe(const roq::span<std::string const> &symbols) {
+  if (std::empty(symbols))
+    return;
   subscribe_quote(symbols);
   subscribe_ticker(symbols);
 }
 
 void WebSocket::subscribe_quote(const roq::span<std::string const> &symbols) {
-  constexpr json::RequestType request_type = json::RequestType::SUBSCRIBE_QUOTE;
+  assert(!std::empty(symbols));
+  const json::RequestType request_type = json::RequestType::SUBSCRIBE_QUOTE;
   auto message = fmt::format(
       R"({{)"
       R"("method":"public/subscribe",)"
@@ -278,7 +281,8 @@ void WebSocket::subscribe_quote(const roq::span<std::string const> &symbols) {
 }
 
 void WebSocket::subscribe_ticker(const roq::span<std::string const> &symbols) {
-  constexpr json::RequestType request_type = json::RequestType::SUBSCRIBE_TICKER;
+  assert(!std::empty(symbols));
+  const json::RequestType request_type = json::RequestType::SUBSCRIBE_TICKER;
   auto message = fmt::format(
       R"({{)"
       R"("method":"public/subscribe",)"
@@ -400,6 +404,7 @@ void WebSocket::operator()(const server::Trace<json::Instruments> &event) {
       symbols.reserve(std::size(data));
     for (auto &item : data) {
       auto &symbol = item.instrument_name;
+      assert(!std::empty(symbol));
       if (shared_.discard_symbol(symbol))
         continue;
       if (shared_.all_symbols.emplace(symbol).second) {
