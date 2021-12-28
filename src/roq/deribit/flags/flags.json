@@ -57,6 +57,19 @@
       "description": "max number of trades for historical lookup (count)"
     },
     {
+      "name": "request_limit",
+      "type": "uint32_t",
+      "default": "20",
+      "description": "request limit per interval"
+    },
+    {
+      "name": "request_limit_interval",
+      "type": "std::chrono::nanoseconds",
+      "validator": "roq::core::flags::TimePeriod",
+      "default": "1s",
+      "description": "request limit monitor interval"
+    },
+    {
       "name": "fix_uri",
       "type": "roq::core::URI",
       "validator": "roq::core::flags::URI<std::string>",

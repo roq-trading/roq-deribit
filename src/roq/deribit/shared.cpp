@@ -14,7 +14,9 @@ Shared::Shared(server::Dispatcher &dispatcher)
       asks(server::Flags::cache_mbp_max_depth()), final_bids(server::Flags::cache_mbp_max_depth()),
       final_asks(server::Flags::cache_mbp_max_depth()),
       trades(server::Flags::cache_trades_max_depth()), statistics(StatisticsType::count()),
-      dispatcher_(dispatcher), symbols(Flags::fix_market_data_max_subscriptions_per_stream()) {
+      dispatcher_(dispatcher),
+      rate_limiter(Flags::request_limit(), Flags::request_limit_interval()),
+      symbols(Flags::fix_market_data_max_subscriptions_per_stream()) {
 }
 
 std::string_view Shared::next_request_id() {

@@ -873,6 +873,10 @@ void MarketData::send(const T &event, std::chrono::nanoseconds sending_time) {
   auto message = event.encode(writer);
   if (ROQ_UNLIKELY(Flags::fix_debug()))
     log::info("{}"sv, core::fix::Debug(message));
+  // note!
+  //   it is desirable to use a timer queue here
+  //   however, the message header encodes seq_num and timestamp...!
+  //   so we would therefore have to enqueue a message encoded *without* the header
   connection_.send(message);
 }
 

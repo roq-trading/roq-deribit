@@ -4,6 +4,10 @@ All notable changes will be documented in this file.
 
 ## Head
 
+### Changed
+
+* WebSocket now using a rate-limited queue for subscriptions
+
 ## 0.7.9 &ndash; 2021-12-08
 
 ### Changed

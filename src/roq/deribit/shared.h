@@ -13,6 +13,8 @@
 #include "roq/core/memory.h"
 #include "roq/core/symbols.h"
 
+#include "roq/core/limit/rate_limiter.h"
+
 #include "roq/core/stack/buffer.h"
 
 namespace roq {
@@ -54,6 +56,7 @@ struct Shared final {
   core::stack::Buffer<char, 32> stack_buffer_;
 
  public:
+  core::limit::RateLimiter rate_limiter;
   absl::flat_hash_set<std::string> all_currencies;
   absl::flat_hash_set<std::string> all_symbols;
   core::Symbols symbols;

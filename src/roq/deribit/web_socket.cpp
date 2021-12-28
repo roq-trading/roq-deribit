@@ -84,7 +84,10 @@ void WebSocket::operator()(const Event<Stop> &) {
 }
 
 void WebSocket::operator()(const Event<Timer> &event) {
-  connection_.refresh(event.value.now);
+  auto now = event.value.now;
+  connection_.refresh(now);
+  if (connection_.ready())
+    check_subscribe_queue(now);
 }
 
 void WebSocket::operator()(metrics::Writer &writer) {
@@ -114,6 +117,7 @@ void WebSocket::operator()(const core::web::ClientSocket::Disconnected &) {
   ready_ = false;
   (*this)(ConnectionStatus::DISCONNECTED);
   download_.reset();
+  subscribe_queue_.clear();
 }
 
 void WebSocket::operator()(const core::web::ClientSocket::Ready &) {
@@ -207,7 +211,7 @@ void WebSocket::get_currencies() {
       R"("id":"{}")"
       R"(}})"sv,
       request_type.as_raw_text());
-  connection_.send_text(message);
+  subscribe_queue_.emplace_back(message);
 }
 
 void WebSocket::get_instruments(const std::string_view &currency) {
@@ -222,7 +226,7 @@ void WebSocket::get_instruments(const std::string_view &currency) {
       R"(}})"sv,
       currency,
       request_type.as_raw_text());
-  connection_.send_text(message);
+  subscribe_queue_.emplace_back(message);
 }
 
 void WebSocket::subscribe_platform_state() {
@@ -236,7 +240,7 @@ void WebSocket::subscribe_platform_state() {
       R"("id":"{}")"
       R"(}})"sv,
       request_type.as_raw_text());
-  connection_.send_text(message);
+  subscribe_queue_.emplace_back(message);
 }
 
 void WebSocket::subscribe_instrument_state() {
@@ -250,7 +254,7 @@ void WebSocket::subscribe_instrument_state() {
       R"("id":"{}")"
       R"(}})"sv,
       request_type.as_raw_text());
-  connection_.send_text(message);
+  subscribe_queue_.emplace_back(message);
 }
 
 void WebSocket::subscribe(const roq::span<std::string const> &symbols) {
@@ -270,7 +274,7 @@ void WebSocket::subscribe_quote(const roq::span<std::string const> &symbols) {
       R"(}})"sv,
       fmt::join(symbols, R"(","quote.)"sv),
       request_type.as_raw_text());
-  connection_.send_text(message);
+  subscribe_queue_.emplace_back(message);
 }
 
 void WebSocket::subscribe_ticker(const roq::span<std::string const> &symbols) {
@@ -285,7 +289,7 @@ void WebSocket::subscribe_ticker(const roq::span<std::string const> &symbols) {
       R"(}})"sv,
       fmt::join(symbols, R"(.raw","ticker.)"sv),
       request_type.as_raw_text());
-  connection_.send_text(message);
+  subscribe_queue_.emplace_back(message);
 }
 
 void WebSocket::parse(const std::string_view &message) {
@@ -493,6 +497,16 @@ void WebSocket::operator()(const server::Trace<json::Order> &) {
 
 void WebSocket::operator()(const server::Trace<json::Trades2> &) {
   log::fatal("Unexpected"sv);
+}
+
+void WebSocket::check_subscribe_queue(std::chrono::nanoseconds now) {
+  subscribe_queue_.dispatch(
+      [&](auto now) { return shared_.rate_limiter.can_request(now); },
+      [&](auto &message) {
+        log::debug(R"(Subscribe: "{}")"sv, message);
+        connection_.send_text(message);
+      },
+      now);
 }
 
 }  // namespace deribit

@@ -10,6 +10,8 @@
 #include <utility>
 #include <vector>
 
+#include "roq/core/timer_queue.h"
+
 #include "roq/core/metrics/counter.h"
 #include "roq/core/metrics/latency.h"
 #include "roq/core/metrics/profile.h"
@@ -139,6 +141,8 @@ class WebSocket final : public core::web::ClientSocket::Handler,
     return true;
   }
 
+  void check_subscribe_queue(std::chrono::nanoseconds now);
+
  private:
   Handler &handler_;
   // config
@@ -168,6 +172,8 @@ class WebSocket final : public core::web::ClientSocket::Handler,
   bool ready_ = false;
   ConnectionStatus status_ = {};
   server::Download<WebSocketState> download_;
+  // queue
+  core::TimerQueue subscribe_queue_;
 };
 
 }  // namespace deribit
