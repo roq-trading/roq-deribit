@@ -584,6 +584,7 @@ void MarketData::operator()(
           .security_type = fix::map_security_type(instrument.security_type),
           .base_currency = instrument.settl_currency,
           .quote_currency = instrument.currency,
+          .margin_currency = {},
           .commission_currency = instrument.comm_currency,
           .tick_size = instrument.min_price_increment,
           .multiplier = instrument.contract_multiplier,
