@@ -1,3 +1,8 @@
-# auto-generated
-flags.cpp
-flags.h
+common.h
+common.cpp
+config.h
+config.cpp
+fix.h
+fix.cpp
+web_socket.h
+web_socket.cpp

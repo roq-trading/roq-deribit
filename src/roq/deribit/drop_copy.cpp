@@ -11,7 +11,8 @@
 
 #include "roq/core/metrics/factory.h"
 
-#include "roq/deribit/flags.h"
+#include "roq/deribit/flags/common.h"
+#include "roq/deribit/flags/web_socket.h"
 
 #include "roq/deribit/json/error.h"
 #include "roq/deribit/json/method.h"
@@ -47,13 +48,13 @@ DropCopy::DropCopy(
       connection_(
           *this,
           context,
-          core::URI(Flags::ws_uri()),
+          core::URI(flags::WebSocket::ws_uri()),
           {},  // query
-          Flags::ws_ping_freq(),
-          Flags::decode_buffer_size(),  // XXX need read buffer size
-          Flags::encode_buffer_size(),
+          flags::WebSocket::ws_ping_freq(),
+          flags::Common::decode_buffer_size(),  // XXX need read buffer size
+          flags::Common::encode_buffer_size(),
           []() { return std::string(); }),
-      decode_buffer_(Flags::decode_buffer_size()),
+      decode_buffer_(flags::Common::decode_buffer_size()),
       counter_{
           .disconnect = create_metrics(name_, "disconnect"sv),
       },
@@ -66,7 +67,8 @@ DropCopy::DropCopy(
           .heartbeat = create_metrics(name_, "heartbeat"sv),
       },
       security_(security), shared_(shared),
-      download_(Flags::ws_request_timeout(), [this](auto state) { return download(state); }) {
+      download_(
+          flags::WebSocket::ws_request_timeout(), [this](auto state) { return download(state); }) {
 }
 
 void DropCopy::operator()(const Event<Start> &) {
@@ -334,7 +336,7 @@ void DropCopy::get_trades(const roq::span<std::string> &currencies) {
         R"("id":"{}")"
         R"(}})"sv,
         currency,
-        Flags::ws_max_trades(),
+        flags::WebSocket::ws_max_trades(),
         request_type.as_raw_text());
     connection_.send_text(message);
   }

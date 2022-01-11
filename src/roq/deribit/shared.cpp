@@ -2,7 +2,8 @@
 
 #include "roq/deribit/shared.h"
 
-#include "roq/deribit/flags.h"
+#include "roq/deribit/flags/common.h"
+#include "roq/deribit/flags/fix.h"
 
 using namespace std::literals;
 
@@ -15,8 +16,8 @@ Shared::Shared(server::Dispatcher &dispatcher)
       final_asks(server::Flags::cache_mbp_max_depth()),
       trades(server::Flags::cache_trades_max_depth()), statistics(StatisticsType::count()),
       dispatcher_(dispatcher),
-      rate_limiter(Flags::request_limit(), Flags::request_limit_interval()),
-      symbols(Flags::fix_market_data_max_subscriptions_per_stream()) {
+      rate_limiter(flags::Common::request_limit(), flags::Common::request_limit_interval()),
+      symbols(flags::FIX::fix_market_data_max_subscriptions_per_stream()) {
 }
 
 std::string_view Shared::next_request_id() {

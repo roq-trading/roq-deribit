@@ -18,7 +18,10 @@
 #include "roq/core/fix/utils.h"
 
 #include "roq/deribit/common.h"
-#include "roq/deribit/flags.h"
+
+#include "roq/deribit/flags/common.h"
+#include "roq/deribit/flags/config.h"
+#include "roq/deribit/flags/fix.h"
 
 #include "roq/deribit/fix/utils.h"
 
@@ -73,8 +76,9 @@ OrderEntry::OrderEntry(
     Shared &shared)
     : handler_(handler), stream_id_(stream_id),
       name_(fmt::format("{}:{}:{}"sv, stream_id_, NAME, security.get_account())),
-      connection_factory_(context, Flags::fix_uri()), connection_(*this, connection_factory_),
-      encode_buffer_(Flags::encode_buffer_size()), decode_buffer_(Flags::decode_buffer_size()),
+      connection_factory_(context, flags::FIX::fix_uri()), connection_(*this, connection_factory_),
+      encode_buffer_(flags::Common::encode_buffer_size()),
+      decode_buffer_(flags::Common::decode_buffer_size()),
       counter_{
           .disconnect = create_metrics(name_, "disconnect"sv),
       },
@@ -90,7 +94,7 @@ OrderEntry::OrderEntry(
           .ping = create_metrics(name_, "ping"sv),
       },
       security_(security), shared_(shared),
-      download_(Flags::fix_request_timeout(), [this](auto state) { return download(state); }) {
+      download_(flags::FIX::fix_request_timeout(), [this](auto state) { return download(state); }) {
 }
 
 void OrderEntry::operator()(const Event<Start> &) {
@@ -104,15 +108,15 @@ void OrderEntry::operator()(const Event<Stop> &) {
 void OrderEntry::operator()(const Event<Timer> &event) {
   if (!connection_.refresh(event.value.now))
     return;
-  if (last_logon_or_heartbeat_.count() && Flags::fix_request_timeout().count() &&
-      (event.value.now - last_logon_or_heartbeat_) > Flags::fix_request_timeout()) {
+  if (last_logon_or_heartbeat_.count() && flags::FIX::fix_request_timeout().count() &&
+      (event.value.now - last_logon_or_heartbeat_) > flags::FIX::fix_request_timeout()) {
     log::warn("*** DETECTED TIMEOUT ***"sv);
     log::info("closing connection"sv);
     connection_.close();
   } else {
     if (ready_ && next_heartbeat_ <= event.value.now) {
-      assert(Flags::fix_ping_freq().count() > 0);
-      next_heartbeat_ = event.value.now + Flags::fix_ping_freq();
+      assert(flags::FIX::fix_ping_freq().count() > 0);
+      next_heartbeat_ = event.value.now + flags::FIX::fix_ping_freq();
       send_test_request(core::get_system_clock());
     }
   }
@@ -266,7 +270,7 @@ void OrderEntry::operator()(const core::net::Manager::Read &read) {
         },
         buffer,
         [](auto &message) {
-          if (ROQ_UNLIKELY(Flags::fix_debug()))
+          if (ROQ_UNLIKELY(flags::FIX::fix_debug()))
             log::info("{}"sv, core::fix::Debug(message));
         });
     if (bytes == 0)
@@ -295,7 +299,7 @@ void OrderEntry::operator()(ConnectionStatus status) {
 }
 
 void OrderEntry::send_logon() {
-  auto ping_freq = std::chrono::duration_cast<std::chrono::seconds>(Flags::fix_ping_freq());
+  auto ping_freq = std::chrono::duration_cast<std::chrono::seconds>(flags::FIX::fix_ping_freq());
   std::chrono::milliseconds now = utils::safe_cast(core::get_realtime_clock());
   auto raw_data = security_.create_raw_data(now);
   auto password = security_.create_password(raw_data);
@@ -311,7 +315,7 @@ void OrderEntry::send_logon() {
       .username = security_.get_access_key(),
       .password = password,
       .use_wordsafe_tags = false,
-      .cancel_on_disconnect = Flags::fix_cancel_on_disconnect(),
+      .cancel_on_disconnect = flags::FIX::fix_cancel_on_disconnect(),
       .deribit_app_id = {},
       .deribit_app_sig = {},
       .deribit_sequential = false,
@@ -535,7 +539,7 @@ void OrderEntry::operator()(
     PositionUpdate position_update{
         .stream_id = stream_id_,
         .account = security_.get_account(),
-        .exchange = Flags::exchange(),
+        .exchange = flags::Config::exchange(),
         .symbol = position_qty.symbol,
         .external_account = {},
         .long_quantity = long_quantity,
@@ -693,7 +697,7 @@ void OrderEntry::operator()(
   };
   oms::OrderUpdate order_update{
       .account = security_.get_account(),
-      .exchange = Flags::exchange(),
+      .exchange = flags::Config::exchange(),
       .symbol = execution_report.symbol,
       .side = side,
       .position_effect = {},
@@ -891,7 +895,7 @@ uint64_t OrderEntry::send(const T &event, std::chrono::nanoseconds sending_time)
       outbound_.msg_seq_num,
       sending_time);
   auto message = event.encode(writer);
-  if (ROQ_UNLIKELY(Flags::fix_debug()))
+  if (ROQ_UNLIKELY(flags::FIX::fix_debug()))
     log::info("{}"sv, core::fix::Debug(message));
   connection_.send(message);
   return outbound_.msg_seq_num;

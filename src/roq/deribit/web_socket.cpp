@@ -10,7 +10,9 @@
 
 #include "roq/core/metrics/factory.h"
 
-#include "roq/deribit/flags.h"
+#include "roq/deribit/flags/common.h"
+#include "roq/deribit/flags/config.h"
+#include "roq/deribit/flags/web_socket.h"
 
 #include "roq/deribit/json/error.h"
 #include "roq/deribit/json/method.h"
@@ -46,16 +48,17 @@ WebSocket::WebSocket(
     size_t index,
     bool master)
     : handler_(handler), stream_id_(stream_id), name_(fmt::format("{}:{}"sv, stream_id_, NAME)),
-      index_(index), master_(master), connection_(
-                                          *this,
-                                          context,
-                                          core::URI(Flags::ws_uri()),
-                                          {},  // query
-                                          Flags::ws_ping_freq(),
-                                          Flags::decode_buffer_size(),  // XXX need read buffer size
-                                          Flags::encode_buffer_size(),
-                                          []() { return std::string(); }),
-      decode_buffer_(Flags::decode_buffer_size()),
+      index_(index), master_(master),
+      connection_(
+          *this,
+          context,
+          core::URI(flags::WebSocket::ws_uri()),
+          {},  // query
+          flags::WebSocket::ws_ping_freq(),
+          flags::Common::decode_buffer_size(),  // XXX need read buffer size
+          flags::Common::encode_buffer_size(),
+          []() { return std::string(); }),
+      decode_buffer_(flags::Common::decode_buffer_size()),
       counter_{
           .disconnect = create_metrics(name_, "disconnect"sv),
       },
@@ -71,8 +74,9 @@ WebSocket::WebSocket(
           .ping = create_metrics(name_, "ping"sv),
           .heartbeat = create_metrics(name_, "heartbeat"sv),
       },
-      shared_(shared),
-      download_(Flags::ws_request_timeout(), [this](auto state) { return download(state); }) {
+      shared_(shared), download_(flags::WebSocket::ws_request_timeout(), [this](auto state) {
+        return download(state);
+      }) {
 }
 
 void WebSocket::operator()(const Event<Start> &) {
@@ -283,7 +287,7 @@ void WebSocket::subscribe_quote(const roq::span<std::string const> &symbols) {
 void WebSocket::subscribe_ticker(const roq::span<std::string const> &symbols) {
   assert(!std::empty(symbols));
   const json::RequestType request_type = json::RequestType::SUBSCRIBE_TICKER;
-  auto interval = Flags::ws_ticker_interval();
+  auto interval = flags::WebSocket::ws_ticker_interval();
   auto separator = fmt::format(R"(.{}","ticker.)"sv, interval);
   auto message = fmt::format(
       R"({{)"
@@ -451,7 +455,7 @@ void WebSocket::operator()(const server::Trace<json::Quote> &event) {
           auto ask_quantity = multiplier * quote.best_ask_amount;
           TopOfBook top_of_book = {
               .stream_id = stream_id_,
-              .exchange = Flags::exchange(),
+              .exchange = flags::Config::exchange(),
               .symbol = quote.instrument_name,
               .layer{
                   .bid_price = quote.best_bid_price,
@@ -483,7 +487,7 @@ void WebSocket::operator()(const server::Trace<json::Ticker> &event) {
     if (trading_status && utils::update(item, trading_status)) {
       MarketStatus market_status{
           .stream_id = stream_id_,
-          .exchange = Flags::exchange(),
+          .exchange = flags::Config::exchange(),
           .symbol = ticker.instrument_name,
           .trading_status = trading_status,
       };

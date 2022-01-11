@@ -6,7 +6,7 @@
 
 #include "roq/logging.h"
 
-#include "roq/deribit/flags.h"
+#include "roq/deribit/flags/config.h"
 
 using namespace std::literals;
 
@@ -38,7 +38,7 @@ std::string Config::get_access_secret(const std::string_view &account) const {
 }
 
 void Config::dispatch(server::Config::Handler &handler) const {
-  handler(Flags::exchange());
+  handler(flags::Config::exchange());
   handler(symbols);
   for (auto &iter : accounts)
     handler(iter.second);
@@ -65,7 +65,7 @@ void Config::dispatch(server::Config::Handler &handler) const {
       .mbp_tick_size_multiplier = 1.0e-1,  // have seen fractional
       .mbp_min_trade_vol_multiplier = NaN,
       .mbp_allow_remove_non_existing = {},
-      .mbp_allow_price_inversion = Flags::mbp_allow_price_inversion(),
+      .mbp_allow_price_inversion = flags::Config::mbp_allow_price_inversion(),
       .oms_request_id_type = server::RequestIdType::BASE64,
       .oms_download_has_state = {},
       .oms_download_has_routing_id = {},

@@ -20,7 +20,10 @@
 #include "roq/core/fix/utils.h"
 
 #include "roq/deribit/common.h"
-#include "roq/deribit/flags.h"
+
+#include "roq/deribit/flags/common.h"
+#include "roq/deribit/flags/config.h"
+#include "roq/deribit/flags/fix.h"
 
 #include "roq/deribit/fix/utils.h"
 
@@ -103,9 +106,9 @@ MarketData::MarketData(
     size_t index,
     bool master)
     : handler_(handler), stream_id_(stream_id), name_(fmt::format("{}:{}"sv, stream_id_, NAME)),
-      index_(index), master_(master), connection_factory_(context, Flags::fix_uri()),
-      connection_(*this, connection_factory_), encode_buffer_(Flags::encode_buffer_size()),
-      decode_buffer_(Flags::decode_buffer_size()),
+      index_(index), master_(master), connection_factory_(context, flags::FIX::fix_uri()),
+      connection_(*this, connection_factory_), encode_buffer_(flags::Common::encode_buffer_size()),
+      decode_buffer_(flags::Common::decode_buffer_size()),
       counter_{
           .disconnect = create_metrics(name_, "disconnect"sv),
       },
@@ -124,7 +127,7 @@ MarketData::MarketData(
           .ping = create_metrics(name_, "ping"sv),
       },
       security_(security), shared_(shared),
-      download_(Flags::fix_request_timeout(), [this](auto state) { return download(state); }) {
+      download_(flags::FIX::fix_request_timeout(), [this](auto state) { return download(state); }) {
 }
 
 void MarketData::operator()(const Event<Start> &) {
@@ -138,15 +141,15 @@ void MarketData::operator()(const Event<Stop> &) {
 void MarketData::operator()(const Event<Timer> &event) {
   if (!connection_.refresh(event.value.now))
     return;
-  if (last_logon_or_heartbeat_.count() && Flags::fix_request_timeout().count() &&
-      (event.value.now - last_logon_or_heartbeat_) > Flags::fix_request_timeout()) {
+  if (last_logon_or_heartbeat_.count() && flags::FIX::fix_request_timeout().count() &&
+      (event.value.now - last_logon_or_heartbeat_) > flags::FIX::fix_request_timeout()) {
     log::warn("*** DETECTED TIMEOUT ***"sv);
     log::info("closing connection"sv);
     connection_.close();
   } else {
     if (status_ == ConnectionStatus::READY && next_heartbeat_ <= event.value.now) {
-      assert(Flags::fix_ping_freq().count() > 0);
-      next_heartbeat_ = event.value.now + Flags::fix_ping_freq();
+      assert(flags::FIX::fix_ping_freq().count() > 0);
+      next_heartbeat_ = event.value.now + flags::FIX::fix_ping_freq();
       send_test_request(core::get_system_clock());
     }
   }
@@ -187,7 +190,7 @@ void MarketData::operator()(const core::net::Manager::Read &read) {
         },
         buffer,
         [](auto &message) {
-          if (ROQ_UNLIKELY(Flags::fix_debug()))
+          if (ROQ_UNLIKELY(flags::FIX::fix_debug()))
             log::info("{}"sv, core::fix::Debug(message));
         });
     if (bytes == 0)
@@ -217,7 +220,7 @@ void MarketData::operator()(ConnectionStatus status) {
 
 void MarketData::send_logon() {
   auto heart_bt_int =
-      std::chrono::duration_cast<std::chrono::seconds>(Flags::fix_ping_freq()).count();
+      std::chrono::duration_cast<std::chrono::seconds>(flags::FIX::fix_ping_freq()).count();
   std::chrono::milliseconds now = utils::safe_cast(core::get_realtime_clock());
   auto raw_data = security_.create_raw_data(now);
   auto password = security_.create_password(raw_data);
@@ -226,7 +229,7 @@ void MarketData::send_logon() {
       stream_id_,
       raw_data,
       password);
-  auto cancel_on_disconnect = Flags::fix_cancel_on_disconnect();
+  auto cancel_on_disconnect = flags::FIX::fix_cancel_on_disconnect();
   fix::Logon logon{
       .heart_bt_int = utils::safe_cast(heart_bt_int),
       .raw_data_length = utils::safe_cast(std::size(raw_data)),
@@ -328,7 +331,7 @@ void MarketData::subscribe(const roq::span<std::string const> &symbols) {
   if (std::empty(symbols))
     return;
   log::info("Subscribe market data"sv);
-  auto market_depth = Flags::fix_market_data_market_depth();
+  auto market_depth = flags::FIX::fix_market_data_market_depth();
   auto md_update_type = market_depth ? core::fix::MDUpdateType::INCREMENTAL_REFRESH
                                      : core::fix::MDUpdateType::FULL_REFRESH;
   fix::MDReq md_entry_types[] = {
@@ -337,8 +340,8 @@ void MarketData::subscribe(const roq::span<std::string const> &symbols) {
       {.md_entry_type = core::fix::MDEntryType::TRADE},
   };
   // deribit has acknowledged a limit on # of symbols per request
-  auto max_size = Flags::fix_market_data_request_max_size()
-                      ? Flags::fix_market_data_request_max_size()
+  auto max_size = flags::FIX::fix_market_data_request_max_size()
+                      ? flags::FIX::fix_market_data_request_max_size()
                       : std::size(symbols);
   std::vector<fix::InstrmtMDReq> related_sym(max_size);
   for (size_t offset = 0;; offset += max_size) {
@@ -374,8 +377,8 @@ void MarketData::unsubscribe(const roq::span<std::string const> &symbols) {
       {.md_entry_type = core::fix::MDEntryType::TRADE},
   };
   // deribit has acknowledged a limit on # of symbols per request
-  auto max_size = Flags::fix_market_data_request_max_size()
-                      ? Flags::fix_market_data_request_max_size()
+  auto max_size = flags::FIX::fix_market_data_request_max_size()
+                      ? flags::FIX::fix_market_data_request_max_size()
                       : std::size(symbols);
   std::vector<fix::InstrmtMDReq> related_sym(max_size);
   for (size_t offset = 0;; offset += max_size) {
@@ -578,7 +581,7 @@ void MarketData::operator()(
       auto expiry_datetime_utc = expiry_datetime;
       ReferenceData reference_data{
           .stream_id = stream_id_,
-          .exchange = Flags::exchange(),
+          .exchange = flags::Config::exchange(),
           .symbol = symbol,
           .description = instrument.security_desc,
           .security_type = fix::map_security_type(instrument.security_type),
@@ -706,7 +709,7 @@ void MarketData::operator()(
     if (latch_.find(symbol) == std::end(latch_)) {
       const MarketByPriceUpdate market_by_price_update{
           .stream_id = stream_id_,
-          .exchange = Flags::exchange(),
+          .exchange = flags::Config::exchange(),
           .symbol = symbol,
           .bids = bids,
           .asks = asks,
@@ -729,7 +732,7 @@ void MarketData::operator()(
   if (!std::empty(trades)) {
     const TradeSummary trade_summary{
         .stream_id = stream_id_,
-        .exchange = Flags::exchange(),
+        .exchange = flags::Config::exchange(),
         .symbol = symbol,
         .trades = trades,
         .exchange_time_utc = exchange_time_utc,
@@ -740,7 +743,7 @@ void MarketData::operator()(
   if (!std::empty(statistics)) {
     const StatisticsUpdate statistics_update{
         .stream_id = stream_id_,
-        .exchange = Flags::exchange(),
+        .exchange = flags::Config::exchange(),
         .symbol = market_data_incremental_refresh.symbol,
         .statistics = statistics,
         .update_type = UpdateType::INCREMENTAL,
@@ -817,7 +820,7 @@ void MarketData::operator()(
     auto is_last = std::empty(statistics);
     const MarketByPriceUpdate market_by_price_update{
         .stream_id = stream_id_,
-        .exchange = Flags::exchange(),
+        .exchange = flags::Config::exchange(),
         .symbol = symbol,
         .bids = bids,
         .asks = asks,
@@ -844,7 +847,7 @@ void MarketData::operator()(
   if (!std::empty(statistics)) {
     const StatisticsUpdate statistics_update{
         .stream_id = stream_id_,
-        .exchange = Flags::exchange(),
+        .exchange = flags::Config::exchange(),
         .symbol = symbol,
         .statistics = statistics,
         .update_type = UpdateType::SNAPSHOT,
@@ -872,7 +875,7 @@ void MarketData::send(const T &event, std::chrono::nanoseconds sending_time) {
       outbound_.msg_seq_num,
       sending_time);
   auto message = event.encode(writer);
-  if (ROQ_UNLIKELY(Flags::fix_debug()))
+  if (ROQ_UNLIKELY(flags::FIX::fix_debug()))
     log::info("{}"sv, core::fix::Debug(message));
   // note!
   //   it is desirable to use a timer queue here

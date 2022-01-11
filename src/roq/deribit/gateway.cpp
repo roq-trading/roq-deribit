@@ -4,7 +4,7 @@
 
 #include <utility>
 
-#include "roq/deribit/flags.h"
+#include "roq/deribit/flags/fix.h"
 
 using namespace std::literals;
 
@@ -84,7 +84,7 @@ Gateway::Gateway(server::Dispatcher &dispatcher, const Config &config)
   if (std::empty(master_account_)) {
     log::fatal("A master account is always required (due to FIX logon)"sv);
   }
-  if (!Flags::fix_cancel_on_disconnect())
+  if (!flags::FIX::fix_cancel_on_disconnect())
     log::warn("Orders will *NOT* be cancelled on disconnect"sv);
 }
 
