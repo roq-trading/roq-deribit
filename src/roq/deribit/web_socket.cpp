@@ -283,16 +283,20 @@ void WebSocket::subscribe_quote(const roq::span<std::string const> &symbols) {
 void WebSocket::subscribe_ticker(const roq::span<std::string const> &symbols) {
   assert(!std::empty(symbols));
   const json::RequestType request_type = json::RequestType::SUBSCRIBE_TICKER;
+  auto interval = Flags::ws_ticker_interval();
+  auto separator = fmt::format(R"(.{}","ticker.)"sv, interval);
   auto message = fmt::format(
       R"({{)"
       R"("method":"public/subscribe",)"
       R"("params":{{)"
-      R"("channels":["ticker.{}.raw"])"
+      R"("channels":["ticker.{}.{}"])"
       R"(}},)"
       R"("id":"{}")"
       R"(}})"sv,
-      fmt::join(symbols, R"(.raw","ticker.)"sv),
+      fmt::join(symbols, separator),
+      interval,
       request_type.as_raw_text());
+  log::debug(R"(message="{}")"sv, message);
   subscribe_queue_.emplace_back(message);
 }
 

@@ -7,6 +7,7 @@ All notable changes will be documented in this file.
 ### Changed
 
 * WebSocket now using a rate-limited queue for subscriptions
+* WebSocket subscribing ticker.{instrument}.raw will break after 2022-01-15 (#155)
 
 ## 0.7.9 &ndash; 2021-12-08
 
