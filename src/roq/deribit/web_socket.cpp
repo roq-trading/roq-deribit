@@ -405,24 +405,23 @@ void WebSocket::operator()(const server::Trace<json::Currencies> &event) {
 void WebSocket::operator()(const server::Trace<json::Instruments> &event) {
   profile_.instruments([&]() {
     auto &[trace_info, instruments] = event;
-    log::info<2>("instruments={}"sv, instruments);
     auto &data = instruments.data;
     std::vector<std::string> symbols;
     if (!std::empty(data))
       symbols.reserve(std::size(data));
     for (auto &item : data) {
+      log::info<2>("instrument={}"sv, item);
       auto &symbol = item.instrument_name;
       assert(!std::empty(symbol));
       if (shared_.discard_symbol(symbol))
         continue;
-      if (shared_.all_symbols.emplace(symbol).second) {
+      if (shared_.all_symbols.emplace(symbol).second)
         symbols.emplace_back(symbol);
-        // cache multiplier so Quote (amount) can be converted to TopOfBook (lots)
-        // note! the multiplier is only cached on startup!
-        auto multiplier =
-            utils::compare(item.contract_size, 0.0) == 0 ? 1.0 : (1.0 / item.contract_size);
-        shared_.multiplier[symbol] = multiplier;
-      }
+      // cache multiplier so Quote (amount) can be converted to TopOfBook (lots)
+      // note! the multiplier is only cached on startup!
+      auto multiplier =
+          utils::compare(item.contract_size, 0.0) == 0 ? 1.0 : (1.0 / item.contract_size);
+      shared_.multiplier[symbol] = multiplier;
     }
     download_.check(WebSocketState::INSTRUMENTS);
     if (!std::empty(symbols)) {

@@ -6,6 +6,10 @@ All notable changes will be documented in this file.
 
 ## 0.8.0 &ndash; 2022-01-12
 
+### Fixed
+
+* WS TopOfBook not working if FIX seeing a symbol first (#157)
+
 ### Changed
 
 * WebSocket now using a rate-limited queue for subscriptions
