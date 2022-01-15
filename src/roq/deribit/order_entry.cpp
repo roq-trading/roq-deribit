@@ -125,12 +125,12 @@ void OrderEntry::operator()(const Event<Timer> &event) {
 uint16_t OrderEntry::operator()(
     const Event<CreateOrder> &event, const oms::Order &order, const std::string_view &request_id) {
   if (!ready())
-    throw oms::NotReadyException();
+    throw oms::NotReady("not ready"sv);
   auto &[message_info, create_order] = event;
   if (std::isfinite(create_order.stop_price))
-    throw RuntimeErrorException("stop_price not supported"sv);
+    throw RuntimeError("stop_price not supported"sv);
   if (std::isfinite(create_order.max_show_quantity))
-    throw RuntimeErrorException("max_show_quantity not supported"sv);
+    throw RuntimeError("max_show_quantity not supported"sv);
   auto side = core::fix::map(create_order.side);
   auto exec_inst = fix::map(create_order.execution_instruction);
   auto ord_type = core::fix::map(create_order.order_type);
@@ -164,7 +164,7 @@ uint16_t OrderEntry::operator()(
     const std::string_view &request_id,
     [[maybe_unused]] const std::string_view &previous_request_id) {
   if (!ready())
-    throw oms::NotReadyException();
+    throw oms::NotReady("not ready"sv);
   const auto &modify_order = event.value;
   auto side = core::fix::map(order.side);
   auto ord_type = core::fix::map(order.order_type);
@@ -192,7 +192,7 @@ uint16_t OrderEntry::operator()(
     const std::string_view &request_id,
     [[maybe_unused]] const std::string_view &previous_request_id) {
   if (!ready())
-    throw oms::NotReadyException();
+    throw oms::NotReady("not ready"sv);
   fix::OrderCancelRequest order_cancel_request{
       .cl_ord_id = request_id,
       .orig_cl_ord_id = order.external_order_id,
@@ -729,7 +729,10 @@ void OrderEntry::operator()(
             order_update)) {
     } else {
       auto external = std::empty(execution_report.deribit_label);
-      log::warn(external ? "*** EXTERNAL ORDER ***"sv : "*** UNKNOWN INTERNAL ORDER ***"sv);
+      if (external)
+        log::warn("*** EXTERNAL ORDER ***"sv);
+      else
+        log::warn("*** UNKNOWN INTERNAL ORDER ***"sv);
       log::warn("execution_report={}"sv, execution_report);
     }
   } else {
@@ -767,7 +770,10 @@ void OrderEntry::operator()(
             })) {
     } else {
       auto external = std::empty(execution_report.deribit_label);
-      log::warn(external ? "*** EXTERNAL ORDER ***"sv : "*** UNKNOWN INTERNAL ORDER ***"sv);
+      if (external)
+        log::warn("*** EXTERNAL ORDER ***"sv);
+      else
+        log::warn("*** UNKNOWN INTERNAL ORDER ***"sv);
       log::warn("execution_report={}"sv, execution_report);
     }
   }
