@@ -121,7 +121,7 @@ void DropCopy::operator()(metrics::Writer &writer) {
       .write(latency_.heartbeat, metrics::LATENCY);
 }
 
-void DropCopy::update_subscriptions(const roq::span<std::string> &currencies) {
+void DropCopy::update_subscriptions(const std::span<std::string> &currencies) {
   for (auto &currency : currencies)
     currencies_.emplace_back(currency);
   if (ready_) {
@@ -248,7 +248,7 @@ uint32_t DropCopy::download(DropCopyState state) {
   return {};
 }
 
-void DropCopy::subscribe_portfolios(const roq::span<std::string> &currencies) {
+void DropCopy::subscribe_portfolios(const std::span<std::string> &currencies) {
   constexpr json::RequestType request_type = json::RequestType::SUBSCRIBE_PORTFOLIO;
   auto message = fmt::format(
       R"({{)"
@@ -305,7 +305,7 @@ void DropCopy::subscribe_trades() {
   connection_.send_text(message);
 }
 
-void DropCopy::get_account_summary(const roq::span<std::string> &currencies) {
+void DropCopy::get_account_summary(const std::span<std::string> &currencies) {
   constexpr json::RequestType request_type = json::RequestType::GET_ACCOUNT_SUMMARY;
   for (auto currency : currencies) {
     auto message = fmt::format(
@@ -323,7 +323,7 @@ void DropCopy::get_account_summary(const roq::span<std::string> &currencies) {
   }
 }
 
-void DropCopy::get_trades(const roq::span<std::string> &currencies) {
+void DropCopy::get_trades(const std::span<std::string> &currencies) {
   constexpr json::RequestType request_type = json::RequestType::GET_TRADES;
   for (auto currency : currencies) {
     auto message = fmt::format(

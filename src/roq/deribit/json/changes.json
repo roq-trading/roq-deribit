@@ -3,8 +3,8 @@
 "type": "comp",
 "values": [
 	{ "name": "instrument_name", "type": "std::string_view" },
-	{ "name": "trades", "type": "roq::span<Trade>" },
-	{ "name": "positions", "type": "roq::span<Position>" },
-	{ "name": "orders", "type": "roq::span<Order>" }
+	{ "name": "trades", "type": "std::span<Trade>" },
+	{ "name": "positions", "type": "std::span<Position>" },
+	{ "name": "orders", "type": "std::span<Order>" }
 ]
 }

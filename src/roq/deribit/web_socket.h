@@ -99,10 +99,10 @@ class WebSocket final : public core::web::ClientSocket::Handler,
   void subscribe_platform_state();
   void subscribe_instrument_state();
 
-  void subscribe(const roq::span<std::string const> &symbols);
+  void subscribe(const std::span<std::string const> &symbols);
 
-  void subscribe_quote(const roq::span<std::string const> &symbols);
-  void subscribe_ticker(const roq::span<std::string const> &symbols);
+  void subscribe_quote(const std::span<std::string const> &symbols);
+  void subscribe_ticker(const std::span<std::string const> &symbols);
 
   void parse(const std::string_view &message);
 

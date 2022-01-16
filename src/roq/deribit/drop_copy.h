@@ -73,7 +73,7 @@ class DropCopy final : public core::web::ClientSocket::Handler,
 
   void operator()(metrics::Writer &);
 
-  void update_subscriptions(const roq::span<std::string> &currencies);
+  void update_subscriptions(const std::span<std::string> &currencies);
 
  protected:
   void operator()(const core::web::ClientSocket::Connected &) override;
@@ -91,13 +91,13 @@ class DropCopy final : public core::web::ClientSocket::Handler,
 
   uint32_t download(DropCopyState);
 
-  void subscribe_portfolios(const roq::span<std::string> &currencies);
+  void subscribe_portfolios(const std::span<std::string> &currencies);
   void subscribe_changes();
   void subscribe_orders();
   void subscribe_trades();
 
-  void get_account_summary(const roq::span<std::string> &currencies);
-  void get_trades(const roq::span<std::string> &currencies);
+  void get_account_summary(const std::span<std::string> &currencies);
+  void get_trades(const std::span<std::string> &currencies);
 
   void parse(const std::string_view &message);
 

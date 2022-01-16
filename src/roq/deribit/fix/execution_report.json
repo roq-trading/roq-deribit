@@ -28,7 +28,7 @@
 	{ "tag": 839, "name": "PeggedPrice", "type": "double" },
 	{ "tag": 31, "name": "LastPx", "type": "double" },
 	{ "tag": 32, "name": "LastQty", "type": "double" },
-	{ "tag": 1362, "name": "NoFills", "type": "roq::span<Fill>" },
+	{ "tag": 1362, "name": "NoFills", "type": "std::span<Fill>" },
 	{ "tag": 584, "name": "MassStatusReqID", "type": "std::string_view" },
 	{ "tag": 585, "name": "MassStatusReqType", "type": "roq::core::fix::MassStatusReqType", "custom": true },
 	{ "tag": 911, "name": "TotNumReports", "type": "uint32_t" },

@@ -2,6 +2,6 @@
 "name": "Currencies",
 "type": "array",
 "values": [
-	{ "name": "data", "type": "roq::span<Currency>" }
+	{ "name": "data", "type": "std::span<Currency>" }
 ]
 }

@@ -2,13 +2,12 @@
 
 #include "roq/deribit/tools/hasher.h"
 
-#include <fmt/format.h>
-
 #include <algorithm>
 #include <array>
 #include <random>
+#include <span>
 
-#include "roq/span.h"
+#include <fmt/format.h>
 
 #include "roq/core/binascii/base64.h"
 #include "roq/core/binascii/hex.h"
@@ -60,7 +59,7 @@ std::string Hasher::create_raw_data(std::chrono::milliseconds timestamp) {
   std::array<value_type, n> buffer;
   for (size_t i = 0; i < n; ++i)
     buffer[i] = DISTRIBUTION(GENERATOR);
-  roq::span tmp{
+  std::span tmp{
       reinterpret_cast<std::byte *>(std::data(buffer)), std::size(buffer) * sizeof(value_type)};
   auto nonce = core::binascii::Base64::encode(tmp, false);
   return create_raw_data(timestamp, nonce);

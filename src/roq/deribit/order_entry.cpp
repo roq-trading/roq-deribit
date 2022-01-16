@@ -621,7 +621,7 @@ RequestStatus compute_request_status(
 //   Deribit reports only the *last* fill, but includes all fills as well
 //   we will therefore replace these values, when possible
 std::pair<double, double> compute_last_traded(
-    double last_traded_quantity, double last_traded_price, const roq::span<fix::Fill> &fills) {
+    double last_traded_quantity, double last_traded_price, const std::span<fix::Fill> &fills) {
   if (std::empty(fills))
     return std::make_pair(last_traded_quantity, last_traded_price);
   double sum_quantity = 0.0, sum_quantity_price = 0.0;

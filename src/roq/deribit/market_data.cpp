@@ -327,7 +327,7 @@ void MarketData::subscribe(size_t start_from) {
     subscribe(shared_.symbols.get_slice(index_, start_from));
 }
 
-void MarketData::subscribe(const roq::span<std::string const> &symbols) {
+void MarketData::subscribe(const std::span<std::string const> &symbols) {
   if (std::empty(symbols))
     return;
   log::info("Subscribe market data"sv);
@@ -368,7 +368,7 @@ void MarketData::subscribe(const roq::span<std::string const> &symbols) {
   }
 }
 
-void MarketData::unsubscribe(const roq::span<std::string const> &symbols) {
+void MarketData::unsubscribe(const std::span<std::string const> &symbols) {
   log::info("Unsubscribe market data"sv);
   assert(!std::empty(symbols));
   fix::MDReq md_entry_types[] = {
@@ -412,7 +412,7 @@ void MarketData::resubscribe(const std::string_view &symbol) {
   log::info<1>(R"(Latch symbol="{}")"sv, symbol);
   latch_.emplace(symbol);
   std::string tmp{symbol};  // alloc
-  roq::span symbols{&tmp, 1};
+  std::span symbols{&tmp, 1};
   unsubscribe(symbols);
   subscribe(symbols);
 }

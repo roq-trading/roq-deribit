@@ -120,8 +120,8 @@ class MarketData final : public core::net::Manager::Handler {
 
   void download_securities();
 
-  void subscribe(const roq::span<std::string const> &symbols);
-  void unsubscribe(const roq::span<std::string const> &symbols);
+  void subscribe(const std::span<std::string const> &symbols);
+  void unsubscribe(const std::span<std::string const> &symbols);
 
   void resubscribe(const std::string_view &symbol);
 

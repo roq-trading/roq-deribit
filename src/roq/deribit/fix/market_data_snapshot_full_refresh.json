@@ -13,6 +13,6 @@
 	{ "tag": 746, "name": "OpenInterest", "type": "double", "custom": true },
 	{ "tag": 100092, "name": "CurrentFunding", "type": "double", "custom": true },
 	{ "tag": 100093, "name": "Funding8h", "type": "double", "custom": true },
-	{ "tag": 268, "name": "NoMdEntries", "type": "roq::span<MDFull>", "required": true }
+	{ "tag": 268, "name": "NoMdEntries", "type": "std::span<MDFull>", "required": true }
 ]
 }

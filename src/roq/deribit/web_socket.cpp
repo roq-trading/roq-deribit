@@ -261,14 +261,14 @@ void WebSocket::subscribe_instrument_state() {
   subscribe_queue_.emplace_back(message);
 }
 
-void WebSocket::subscribe(const roq::span<std::string const> &symbols) {
+void WebSocket::subscribe(const std::span<std::string const> &symbols) {
   if (std::empty(symbols))
     return;
   subscribe_quote(symbols);
   subscribe_ticker(symbols);
 }
 
-void WebSocket::subscribe_quote(const roq::span<std::string const> &symbols) {
+void WebSocket::subscribe_quote(const std::span<std::string const> &symbols) {
   assert(!std::empty(symbols));
   const json::RequestType request_type = json::RequestType::SUBSCRIBE_QUOTE;
   auto message = fmt::format(
@@ -284,7 +284,7 @@ void WebSocket::subscribe_quote(const roq::span<std::string const> &symbols) {
   subscribe_queue_.emplace_back(message);
 }
 
-void WebSocket::subscribe_ticker(const roq::span<std::string const> &symbols) {
+void WebSocket::subscribe_ticker(const std::span<std::string const> &symbols) {
   assert(!std::empty(symbols));
   const json::RequestType request_type = json::RequestType::SUBSCRIBE_TICKER;
   auto interval = flags::WebSocket::ws_ticker_interval();
