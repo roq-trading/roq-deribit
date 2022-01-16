@@ -20,12 +20,12 @@ namespace {
 constexpr std::string_view get_token(const std::string_view &name) {
   auto delim = name.find_first_of('.');
   auto part = name.substr(0, delim);
-  if (ROQ_UNLIKELY(part.compare("user"sv) == 0 && delim != name.npos)) {
+  if (part.compare("user"sv) == 0 && delim != name.npos) [[unlikely]] {
     ++delim;
     auto delim_2 = name.find_first_of('.', delim);
     auto length = delim_2 == name.npos ? name.npos : (delim_2 - delim);
     return name.substr(delim, length);
-  } else if (ROQ_UNLIKELY(part.compare("instrument"sv) == 0 && delim != name.npos)) {
+  } else if (part.compare("instrument"sv) == 0 && delim != name.npos) [[unlikely]] {
     ++delim;
     auto delim_2 = name.find_first_of('.', delim);
     auto length = delim_2 == name.npos ? name.npos : (delim_2 - delim);
@@ -47,7 +47,7 @@ static_assert(get_token("instrument.state.123"sv) == "instrument_state"sv);
 
 Channel parse_channel(const std::string_view &name) {
   auto token = get_token(name);
-  if (ROQ_UNLIKELY(std::empty(token)))
+  if (std::empty(token)) [[unlikely]]
     return Channel::UNKNOWN;
   return Channel(token);
 }
@@ -136,7 +136,7 @@ void Parser::dispatch(
         case Field::CHANNEL: {
           auto name = std::get<std::string_view>(value);
           channel = parse_channel(name);
-          if (ROQ_UNLIKELY(channel == Channel::UNKNOWN))
+          if (channel == Channel::UNKNOWN) [[unlikely]]
             log::warn(R"(Can't parse channel="{}")"sv, name);
           break;
         }

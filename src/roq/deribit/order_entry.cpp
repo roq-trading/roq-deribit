@@ -270,7 +270,7 @@ void OrderEntry::operator()(const core::net::Manager::Read &read) {
         },
         buffer,
         [](auto &message) {
-          if (ROQ_UNLIKELY(flags::FIX::fix_debug()))
+          if (flags::FIX::fix_debug()) [[unlikely]]
             log::info("{}"sv, core::fix::Debug(message));
         });
     if (bytes == 0)
@@ -901,7 +901,7 @@ uint64_t OrderEntry::send(const T &event, std::chrono::nanoseconds sending_time)
       outbound_.msg_seq_num,
       sending_time);
   auto message = event.encode(writer);
-  if (ROQ_UNLIKELY(flags::FIX::fix_debug()))
+  if (flags::FIX::fix_debug()) [[unlikely]]
     log::info("{}"sv, core::fix::Debug(message));
   connection_.send(message);
   return outbound_.msg_seq_num;
@@ -910,7 +910,7 @@ uint64_t OrderEntry::send(const T &event, std::chrono::nanoseconds sending_time)
 void OrderEntry::check(const core::fix::header_t &header) {
   auto current = header.msg_seq_num;
   auto expected = inbound_.msg_seq_num + 1;
-  if (ROQ_UNLIKELY(current != expected)) {
+  if (current != expected) [[unlikely]] {
     if (expected < current) {
       log::warn(
           "*** SEQUENCE GAP *** "

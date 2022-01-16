@@ -190,7 +190,7 @@ void MarketData::operator()(const core::net::Manager::Read &read) {
         },
         buffer,
         [](auto &message) {
-          if (ROQ_UNLIKELY(flags::FIX::fix_debug()))
+          if (flags::FIX::fix_debug()) [[unlikely]]
             log::info("{}"sv, core::fix::Debug(message));
         });
     if (bytes == 0)
@@ -771,7 +771,7 @@ void MarketData::operator()(
       market_data_snapshot_full_refresh);
   auto &symbol = market_data_snapshot_full_refresh.symbol;
   auto iter = latch_.find(symbol);
-  if (ROQ_UNLIKELY(iter != std::end(latch_))) {
+  if (iter != std::end(latch_)) [[unlikely]] {
     log::info<1>(R"(Unlatch symbol="{}")"sv, symbol);
     latch_.erase(iter);
   }
@@ -875,7 +875,7 @@ void MarketData::send(const T &event, std::chrono::nanoseconds sending_time) {
       outbound_.msg_seq_num,
       sending_time);
   auto message = event.encode(writer);
-  if (ROQ_UNLIKELY(flags::FIX::fix_debug()))
+  if (flags::FIX::fix_debug()) [[unlikely]]
     log::info("{}"sv, core::fix::Debug(message));
   // note!
   //   it is desirable to use a timer queue here
@@ -887,7 +887,7 @@ void MarketData::send(const T &event, std::chrono::nanoseconds sending_time) {
 void MarketData::check(const core::fix::header_t &header) {
   auto current = header.msg_seq_num;
   auto expected = inbound_.msg_seq_num + 1;
-  if (ROQ_UNLIKELY(current != expected)) {
+  if (current != expected) [[unlikely]] {
     if (expected < current) {
       log::warn(
           "*** SEQUENCE GAP *** "
