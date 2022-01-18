@@ -64,7 +64,7 @@ void Config::dispatch(server::Config::Handler &handler) const {
       .mbp_max_depth = {},
       .mbp_tick_size_multiplier = 1.0e-1,  // have seen fractional
       .mbp_min_trade_vol_multiplier = NaN,
-      .mbp_allow_remove_non_existing = {},
+      .mbp_allow_remove_non_existing = true,
       .mbp_allow_price_inversion = flags::Config::mbp_allow_price_inversion(),
       .oms_request_id_type = server::RequestIdType::BASE64,
       .oms_download_has_state = {},
