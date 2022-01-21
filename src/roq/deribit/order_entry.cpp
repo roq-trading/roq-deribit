@@ -270,8 +270,7 @@ void OrderEntry::operator()(const core::net::Manager::Read &read) {
         },
         buffer,
         [](auto &message) {
-          if (flags::FIX::fix_debug()) [[unlikely]]
-            log::info("{}"sv, core::fix::Debug(message));
+          log::info<0>::when(flags::FIX::fix_debug(), "{}"sv, core::fix::Debug(message));
         });
     if (bytes == 0)
       break;
@@ -901,8 +900,7 @@ uint64_t OrderEntry::send(const T &event, std::chrono::nanoseconds sending_time)
       outbound_.msg_seq_num,
       sending_time);
   auto message = event.encode(writer);
-  if (flags::FIX::fix_debug()) [[unlikely]]
-    log::info("{}"sv, core::fix::Debug(message));
+  log::info<0>::when(flags::FIX::fix_debug(), "{}"sv, core::fix::Debug(message));
   connection_.send(message);
   return outbound_.msg_seq_num;
 }
