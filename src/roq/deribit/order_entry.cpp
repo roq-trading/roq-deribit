@@ -39,10 +39,10 @@ namespace roq {
 namespace deribit {
 
 namespace {
-static const auto LOGOUT_RESPONSE = "LOGOUT"sv;  // XXX
+const auto LOGOUT_RESPONSE = "LOGOUT"sv;  // XXX
 
-static const auto NAME = "om"sv;
-static const auto SUPPORTS = utils::Mask{
+const auto NAME = "om"sv;
+const auto SUPPORTS = utils::Mask{
     SupportType::CREATE_ORDER,
     SupportType::MODIFY_ORDER,
     SupportType::CANCEL_ORDER,
@@ -813,7 +813,7 @@ void OrderEntry::operator()(
 }
 
 namespace {
-static RequestType message_type_to_request_type(core::fix::MsgType msg_type) {
+RequestType message_type_to_request_type(core::fix::MsgType msg_type) {
   switch (msg_type) {
     case core::fix::MsgType::NEW_ORDER_SINGLE:
       return RequestType::CREATE_ORDER;

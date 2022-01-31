@@ -33,15 +33,15 @@ namespace roq {
 namespace deribit {
 
 namespace {
-static const auto LOGOUT_RESPONSE = "LOGOUT"sv;  // XXX
+const auto LOGOUT_RESPONSE = "LOGOUT"sv;  // XXX
 
-static const auto NAME = "md"sv;
-static const auto SUPPORTS = utils::Mask{
+const auto NAME = "md"sv;
+const auto SUPPORTS = utils::Mask{
     SupportType::MARKET_BY_PRICE,
     SupportType::TRADE_SUMMARY,
     SupportType::STATISTICS,
 };
-static const auto SUPPORTS_MASTER = utils::Mask{
+const auto SUPPORTS_MASTER = utils::Mask{
     SUPPORTS,
     SupportType::REFERENCE_DATA,
 };
@@ -52,12 +52,12 @@ struct create_metrics final : public core::metrics::Factory {
 };
 
 template <typename T>
-static T combine(T date_part, T time_part) {
+T combine(T date_part, T time_part) {
   return date_part < T::max() ? date_part + time_part : T::max();
 }
 
 template <typename T>
-static void validate(const T &value) {
+void validate(const T &value) {
   switch (value.md_update_action) {
     case core::fix::MDUpdateAction::UNKNOWN:
       break;

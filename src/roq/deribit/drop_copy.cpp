@@ -25,8 +25,8 @@ namespace roq {
 namespace deribit {
 
 namespace {
-static const auto NAME = "ex"sv;
-static const auto SUPPORTS = utils::Mask{
+const auto NAME = "ex"sv;
+const auto SUPPORTS = utils::Mask{
     SupportType::FUNDS,
     SupportType::POSITION,
 };

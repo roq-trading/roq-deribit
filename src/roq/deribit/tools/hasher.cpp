@@ -19,15 +19,15 @@ namespace deribit {
 namespace tools {
 
 namespace {
-static const constexpr auto CHARSET_DATA = "abcdefghijklmnopqrstuvwxyz0123456789"sv;
-static const constexpr auto RANDOM_BYTES = 32;
+const constexpr auto CHARSET_DATA = "abcdefghijklmnopqrstuvwxyz0123456789"sv;
+const constexpr auto RANDOM_BYTES = 32;
 
 static_assert(std::size(CHARSET_DATA) == 36);
 
-static std::random_device GENERATOR;
-static std::uniform_int_distribution<int> CHARSET_DISTRIBUTION(
+std::random_device GENERATOR;
+std::uniform_int_distribution<int> CHARSET_DISTRIBUTION(
     0, std::size(CHARSET_DATA) - 1);  // note! max value is inclusive
-static std::uniform_int_distribution<uint32_t> DISTRIBUTION;
+std::uniform_int_distribution<uint32_t> DISTRIBUTION;
 }  // namespace
 
 Hasher::Hasher(const std::string_view &access_secret) : secret_(access_secret), hmac_(secret_) {
