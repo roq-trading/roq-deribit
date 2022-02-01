@@ -4,6 +4,10 @@ All notable changes will be documented in this file.
 
 ## Head
 
+### Changed
+
+* Drop `exec_type=CANCELED`/`ord_status=CANCELED` (#143)
+
 ## 0.8.1 &ndash; 2022-01-16
 
 ## 0.8.0 &ndash; 2022-01-12

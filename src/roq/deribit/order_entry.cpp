@@ -665,6 +665,14 @@ void OrderEntry::operator()(
   // note! https://stackoverflow.com/a/46115028
   const auto &exec_type = execution_report.exec_type;
   const auto &ord_status = execution_report.ord_status;
+  if (!flags::Common::disable_deribit_143()) {
+    // - partial fill could overlap cancel request (#143)
+    if (exec_type == core::fix::ExecType::CANCELED &&
+        ord_status == core::fix::OrdStatus::CANCELED) {
+      log::warn<1>("Drop execution report due to FIX compliance"sv);
+      return;
+    }
+  }
   const auto &orig_cl_ord_id = execution_report.orig_cl_ord_id;
   const auto &text = execution_report.text;
   const auto &no_fills = execution_report.no_fills;
