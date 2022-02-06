@@ -518,6 +518,7 @@ void MarketData::operator()(
         2;  // 1-way
     ExternalLatency external_latency{
         .stream_id = stream_id_,
+        .account = {},
         .latency = latency,
     };
     server::create_trace_and_dispatch(handler_, trace_info, external_latency);

@@ -18,6 +18,8 @@ set(SOURCES
     fix_user_response.cpp
     main.cpp)
 
+roq_gitignore(OUTPUT ".gitignore" SOURCES "${TARGET_NAME}")
+
 add_executable("${TARGET_NAME}" ${SOURCES})
 
 target_link_libraries(

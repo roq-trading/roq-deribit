@@ -1,14 +1,10 @@
+!!! THIS FILE HAS BEEN AUTO-GENERATED !!!
 roq-deribit
-
-# debug
-????-W??/
-
-# auto-generated
-drop_copy_state.cpp
+market_data_state.h
+order_entry_state.h
+web_socket_state.h
 drop_copy_state.h
 market_data_state.cpp
-market_data_state.h
 order_entry_state.cpp
-order_entry_state.h
 web_socket_state.cpp
-web_socket_state.h
+drop_copy_state.cpp

@@ -1,8 +1,10 @@
+!!! THIS FILE HAS BEEN AUTO-GENERATED !!!
+roq-deribit-flags
 common.h
-common.cpp
 config.h
-config.cpp
 fix.h
-fix.cpp
 web_socket.h
+common.cpp
+config.cpp
+fix.cpp
 web_socket.cpp
