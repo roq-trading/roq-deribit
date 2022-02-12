@@ -53,6 +53,12 @@
       "type": "bool",
       "default": false,
       "description": "log fix messages?"
+    },
+    {
+      "name": "fix_terminate_on_market_data_request_reject",
+      "type": "bool",
+      "default": false,
+      "description": "terminate if market data request has been rejected?"
     }
   ]
 }

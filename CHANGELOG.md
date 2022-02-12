@@ -6,6 +6,7 @@ All notable changes will be documented in this file.
 
 ### Changed
 
+* Make termination opt-in for MarketDataRequestReject (#182)
 * Drop `exec_type=CANCELED`/`ord_status=CANCELED` (#143)
 
 ## 0.8.1 &ndash; 2022-01-16

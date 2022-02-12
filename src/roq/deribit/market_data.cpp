@@ -758,7 +758,7 @@ void MarketData::operator()(
   auto &[header, market_data_request_reject] = event;
   log::warn<1>(
       "event={{header={}, market_data_request_reject={}}}"sv, header, market_data_request_reject);
-  log::fatal("Unexpected"sv);  // don't know how to continue
+  log::fatal::when(flags::FIX::fix_terminate_on_market_data_request_reject(), "Unexpected"sv);
 }
 
 void MarketData::operator()(
