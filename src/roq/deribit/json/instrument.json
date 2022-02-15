@@ -21,6 +21,9 @@
 	{ "name": "max_liquidation_commission", "type": "double" },
 	{ "name": "max_leverage", "type": "double" },
 	{ "name": "block_trade_commission", "type": "double" },
-	{ "name": "rfq", "type": "bool" }
+	{ "name": "rfq", "type": "bool" },
+	{ "name": "settlement_currency", "type": "std::string_view" },
+	{ "name": "counter_currency", "type": "std::string_view" },
+	{ "name": "future_type", "type": "std::string_view" }
 ]
 }
