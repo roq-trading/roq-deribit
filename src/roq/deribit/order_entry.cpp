@@ -57,6 +57,14 @@ struct create_metrics final : public core::metrics::Factory {
       : core::metrics::Factory(server::Flags::name(), group, function) {}
 };
 
+auto create_connection_factory(auto &context) {
+  core::net::ConnectionFactory::Config config{
+      .uri = flags::FIX::fix_uri(),
+      .validate_certificate = server::Flags::tls_validate_certificate(),
+  };
+  return core::net::TcpConnectionFactory{context, config};
+}
+
 template <typename T>
 void emplace(Fill &result, const T &value) {
   new (&result) Fill{
@@ -76,8 +84,8 @@ OrderEntry::OrderEntry(
     Shared &shared)
     : handler_(handler), stream_id_(stream_id),
       name_(fmt::format("{}:{}:{}"sv, stream_id_, NAME, security.get_account())),
-      connection_factory_(context, flags::FIX::fix_uri()), connection_(*this, connection_factory_),
-      encode_buffer_(flags::Common::encode_buffer_size()),
+      connection_factory_(create_connection_factory(context)),
+      connection_(*this, connection_factory_), encode_buffer_(flags::Common::encode_buffer_size()),
       decode_buffer_(flags::Common::decode_buffer_size()),
       counter_{
           .disconnect = create_metrics(name_, "disconnect"sv),

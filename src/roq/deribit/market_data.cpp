@@ -51,6 +51,14 @@ struct create_metrics final : public core::metrics::Factory {
       : core::metrics::Factory(server::Flags::name(), group, function) {}
 };
 
+auto create_connection_factory(auto &context) {
+  core::net::ConnectionFactory::Config config{
+      .uri = flags::FIX::fix_uri(),
+      .validate_certificate = server::Flags::tls_validate_certificate(),
+  };
+  return core::net::TcpConnectionFactory{context, config};
+}
+
 template <typename T>
 T combine(T date_part, T time_part) {
   return date_part < T::max() ? date_part + time_part : T::max();
@@ -106,7 +114,7 @@ MarketData::MarketData(
     size_t index,
     bool master)
     : handler_(handler), stream_id_(stream_id), name_(fmt::format("{}:{}"sv, stream_id_, NAME)),
-      index_(index), master_(master), connection_factory_(context, flags::FIX::fix_uri()),
+      index_(index), master_(master), connection_factory_(create_connection_factory(context)),
       connection_(*this, connection_factory_), encode_buffer_(flags::Common::encode_buffer_size()),
       decode_buffer_(flags::Common::decode_buffer_size()),
       counter_{
