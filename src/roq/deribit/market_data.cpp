@@ -67,6 +67,7 @@ T combine(T date_part, T time_part) {
 template <typename T>
 void validate(const T &value) {
   switch (value.md_update_action) {
+    // using enum core::fix::MDUpdateAction;  // XXX clang13
     case core::fix::MDUpdateAction::UNKNOWN:
       break;
     case core::fix::MDUpdateAction::NEW:
@@ -158,7 +159,7 @@ void MarketData::operator()(const Event<Timer> &event) {
     if (status_ == ConnectionStatus::READY && next_heartbeat_ <= event.value.now) {
       assert(flags::FIX::fix_ping_freq().count() > 0);
       next_heartbeat_ = event.value.now + flags::FIX::fix_ping_freq();
-      send_test_request(core::get_system_clock());
+      send_test_request(core::clock::GetSystem());
     }
   }
 }
@@ -228,14 +229,9 @@ void MarketData::operator()(ConnectionStatus status) {
 void MarketData::send_logon() {
   auto heart_bt_int =
       std::chrono::duration_cast<std::chrono::seconds>(flags::FIX::fix_ping_freq()).count();
-  std::chrono::milliseconds now = utils::safe_cast(core::get_realtime_clock());
+  auto now = core::clock::GetRealTime<std::chrono::milliseconds>();
   auto raw_data = security_.create_raw_data(now);
   auto password = security_.create_password(raw_data);
-  log::info(
-      R"(DEBUG: HASHER stream_id={}, raw_data="{}", password="{}")"sv,
-      stream_id_,
-      raw_data,
-      password);
   auto cancel_on_disconnect = flags::FIX::fix_cancel_on_disconnect();
   fix::Logon logon{
       .heart_bt_int = utils::safe_cast(heart_bt_int),
@@ -251,7 +247,7 @@ void MarketData::send_logon() {
       .unsubscribe_execution_reports = true,
   };
   send(logon);
-  last_logon_or_heartbeat_ = core::get_system_clock();
+  last_logon_or_heartbeat_ = core::clock::GetSystem();
 }
 
 void MarketData::send_logout(const std::string_view &text) {
@@ -436,27 +432,27 @@ void MarketData::parse_helper(const core::fix::message_t &message) {
     case core::fix::MsgType::HEARTBEAT: {
       auto heartbeat = fix::Heartbeat::create(message);
       core::fix::create_event_and_dispatch(*this, message.header, heartbeat, trace_info);
-      break;
+      return;
     }
     case core::fix::MsgType::LOGON: {
       auto logon = fix::Logon::create(message);
       core::fix::create_event_and_dispatch(*this, message.header, logon, trace_info);
-      break;
+      return;
     }
     case core::fix::MsgType::LOGOUT: {
       auto logout = fix::Logout::create(message);
       core::fix::create_event_and_dispatch(*this, message.header, logout, trace_info);
-      break;
+      return;
     }
     case core::fix::MsgType::RESEND_REQUEST: {
       auto resend_request = fix::ResendRequest::create(message);
       core::fix::create_event_and_dispatch(*this, message.header, resend_request, trace_info);
-      break;
+      return;
     }
     case core::fix::MsgType::TEST_REQUEST: {
       auto test_request = fix::TestRequest::create(message);
       core::fix::create_event_and_dispatch(*this, message.header, test_request, trace_info);
-      break;
+      return;
     }
     // ...
     case core::fix::MsgType::MARKET_DATA_INCREMENTAL_REFRESH: {
@@ -466,7 +462,7 @@ void MarketData::parse_helper(const core::fix::message_t &message) {
         core::fix::create_event_and_dispatch(
             *this, message.header, market_data_incremental_referesh, trace_info);
       });
-      break;
+      return;
     }
     case core::fix::MsgType::MARKET_DATA_REQUEST_REJECT: {
       profile_.market_data_request_reject([&]() {
@@ -474,7 +470,7 @@ void MarketData::parse_helper(const core::fix::message_t &message) {
         core::fix::create_event_and_dispatch(
             *this, message.header, market_data_request_reject, trace_info);
       });
-      break;
+      return;
     }
     case core::fix::MsgType::MARKET_DATA_SNAPSHOT_FULL_REFRESH: {
       profile_.market_data_snapshot_full_refresh([&]() {
@@ -483,47 +479,44 @@ void MarketData::parse_helper(const core::fix::message_t &message) {
         core::fix::create_event_and_dispatch(
             *this, message.header, market_data_snapshot_full_refresh, trace_info);
       });
-      break;
+      return;
     }
     case core::fix::MsgType::SECURITY_LIST: {
       profile_.security_list([&]() {
         auto security_list = fix::SecurityList::create(message, buffer);
         core::fix::create_event_and_dispatch(*this, message.header, security_list, trace_info);
       });
-      break;
+      return;
     }
     case core::fix::MsgType::SECURITY_STATUS: {
       profile_.security_status([&]() {
         auto security_status = fix::SecurityStatus::create(message, buffer);
         core::fix::create_event_and_dispatch(*this, message.header, security_status, trace_info);
       });
-      break;
+      return;
     }
-      // weird
+    // weird
     case core::fix::MsgType::MARKET_DATA_REQUEST: {
       profile_.market_data_request([&]() {
         // XXX HANS why do we get this message?
       });
-      break;
+      return;
     }
     default:
-      log::warn("Unexpected msg_type={}"sv, message.header.msg_type);
       break;
   }
+  log::warn("Unexpected msg_type={}"sv, message.header.msg_type);
 }
 
 void MarketData::operator()(
     const core::fix::Event<fix::Heartbeat> &event, const server::TraceInfo &trace_info) {
-  // note! get clock *before* any logging (avoid latency)
-  auto now = core::get_system_clock();
+  auto now = core::clock::GetSystem();
   auto &[header, heartbeat] = event;
   log::info<3>("event={{header={}, heartbeat={}}}"sv, header, heartbeat);
   last_logon_or_heartbeat_ = {};
   if (!std::empty(heartbeat.test_req_id)) {
-    auto send_time = core::from_chars<uint64_t>(heartbeat.test_req_id);
-    auto latency =
-        std::chrono::duration_cast<std::chrono::nanoseconds>(now - decltype(now){send_time}) /
-        2;  // 1-way
+    auto send_time = std::chrono::nanoseconds{core::from_chars<uint64_t>(heartbeat.test_req_id)};
+    auto latency = (now - send_time) / 2;  // 1-way
     ExternalLatency external_latency{
         .stream_id = stream_id_,
         .account = {},
@@ -544,7 +537,6 @@ void MarketData::operator()(const core::fix::Event<fix::Logon> &event, const ser
 void MarketData::operator()(const core::fix::Event<fix::Logout> &event, const server::TraceInfo &) {
   auto &[header, logout] = event;
   log::warn("event={{header={}, logout={}}}"sv, header, logout);
-  log::info("DEBUG: HASHER stream_id={} LOGOUT"sv, stream_id_);
   (*this)(ConnectionStatus::LOGGED_OUT);
   ready_ = false;
   // note! mandated, must send a logout response
@@ -583,6 +575,9 @@ void MarketData::operator()(
         continue;
       if (shared_.all_symbols.emplace(symbol).second)  // only include new
         symbols.emplace_back(symbol);
+      auto security_type = fix::map_security_type(instrument.security_type);
+      auto option_type = core::fix::map(instrument.put_or_call);
+
       auto expiry_datetime = combine(
           instrument.maturity_date,
           core::charconv::time_from_string<std::chrono::milliseconds>(instrument.maturity_time));
@@ -592,7 +587,7 @@ void MarketData::operator()(
           .exchange = flags::Config::exchange(),
           .symbol = symbol,
           .description = instrument.security_desc,
-          .security_type = fix::map_security_type(instrument.security_type),
+          .security_type = security_type,
           .base_currency = instrument.settl_currency,
           .quote_currency = instrument.currency,
           .margin_currency = {},
@@ -602,7 +597,7 @@ void MarketData::operator()(
           .min_trade_vol = instrument.min_trade_vol,
           .max_trade_vol = NaN,
           .trade_vol_step_size = instrument.min_trade_vol,
-          .option_type = core::fix::map(instrument.put_or_call),
+          .option_type = option_type,
           .strike_currency = instrument.strike_currency,
           .strike_price = instrument.strike_price,
           .underlying = instrument.underlying_symbol,
@@ -636,26 +631,22 @@ void MarketData::operator()(
 void MarketData::operator()(
     const core::fix::Event<fix::MarketDataIncrementalRefresh> &event,
     const server::TraceInfo &trace_info) {
-  auto &[header, market_data_incremental_refresh] = event;
+  // auto &[header, market_data_incremental_refresh] = event;  // XXX clang13
+  auto &header = event.header;
+  auto &market_data_incremental_refresh = event.value;
   log::info<3>(
       "event={{header={}, market_data_incremental_refresh={}}}"sv,
       header,
       market_data_incremental_refresh);
-  auto &symbol = market_data_incremental_refresh.symbol;
-
+  auto symbol = market_data_incremental_refresh.symbol;
   core::back_emplacer bids(shared_.bids), asks(shared_.asks);
   core::back_emplacer trades(shared_.trades);
   core::back_emplacer statistics(shared_.statistics);
-
-  // note! https://stackoverflow.com/a/46115028
-  const auto open_interest = market_data_incremental_refresh.open_interest;
-  const auto mark_price = market_data_incremental_refresh.mark_price;
-
   // open interest
   statistics.emplace_back([&](auto &result) {
     new (&result) Statistics{
         .type = StatisticsType::PRE_OPEN_INTEREST,
-        .value = open_interest,
+        .value = market_data_incremental_refresh.open_interest,
         .begin_time_utc = {},
         .end_time_utc = {},
     };
@@ -664,7 +655,7 @@ void MarketData::operator()(
   statistics.emplace_back([&](auto &result) {
     new (&result) Statistics{
         .type = StatisticsType::PRE_SETTLEMENT_PRICE,
-        .value = mark_price,
+        .value = market_data_incremental_refresh.mark_price,
         .begin_time_utc = {},
         .end_time_utc = {},
     };
@@ -777,7 +768,7 @@ void MarketData::operator()(
       "event={{header={}, market_data_snapshot_full_refresh={}}}"sv,
       header,
       market_data_snapshot_full_refresh);
-  auto &symbol = market_data_snapshot_full_refresh.symbol;
+  auto symbol = market_data_snapshot_full_refresh.symbol;
   auto iter = latch_.find(symbol);
   if (iter != std::end(latch_)) [[unlikely]] {
     log::info<1>(R"(Unlatch symbol="{}")"sv, symbol);
@@ -869,7 +860,8 @@ void MarketData::operator()(
 
 template <typename T>
 void MarketData::send(const T &event) {
-  send(event, core::get_realtime_clock());
+  auto now = core::clock::GetRealTime();
+  send(event, now);
 }
 
 template <typename T>

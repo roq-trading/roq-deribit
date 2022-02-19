@@ -125,7 +125,7 @@ void OrderEntry::operator()(const Event<Timer> &event) {
     if (ready_ && next_heartbeat_ <= event.value.now) {
       assert(flags::FIX::fix_ping_freq().count() > 0);
       next_heartbeat_ = event.value.now + flags::FIX::fix_ping_freq();
-      send_test_request(core::get_system_clock());
+      send_test_request(core::clock::GetSystem());
     }
   }
 }
@@ -307,14 +307,9 @@ void OrderEntry::operator()(ConnectionStatus status) {
 
 void OrderEntry::send_logon() {
   auto ping_freq = std::chrono::duration_cast<std::chrono::seconds>(flags::FIX::fix_ping_freq());
-  std::chrono::milliseconds now = utils::safe_cast(core::get_realtime_clock());
+  auto now = core::clock::GetRealTime<std::chrono::milliseconds>();
   auto raw_data = security_.create_raw_data(now);
   auto password = security_.create_password(raw_data);
-  log::info(
-      R"(DEBUG: HASHER stream_id={}, raw_data="{}", password="{}")"sv,
-      stream_id_,
-      raw_data,
-      password);
   fix::Logon logon{
       .heart_bt_int = static_cast<uint16_t>(ping_freq.count()),
       .raw_data_length = static_cast<uint32_t>(std::size(raw_data)),
@@ -329,7 +324,7 @@ void OrderEntry::send_logon() {
       .unsubscribe_execution_reports = false,
   };
   send(logon);
-  last_logon_or_heartbeat_ = core::get_system_clock();
+  last_logon_or_heartbeat_ = core::clock::GetSystem();
 }
 
 void OrderEntry::send_logout(const std::string_view &text) {
@@ -369,7 +364,7 @@ uint32_t OrderEntry::download(OrderEntryState state) {
       return 1;
     case OrderEntryState::ORDERS:
       download_orders();
-      return 1;  // first ExecutionReport has the real number
+      return 1;  // note! first report includes the true number of reports
     case OrderEntryState::DONE:
       (*this)(ConnectionStatus::READY);
       assert(!ready_);
@@ -412,27 +407,27 @@ void OrderEntry::parse_helper(const core::fix::message_t &message) {
     case core::fix::MsgType::HEARTBEAT: {
       auto heartbeat = fix::Heartbeat::create(message);
       core::fix::create_event_and_dispatch(*this, message.header, heartbeat, trace_info);
-      break;
+      return;
     }
     case core::fix::MsgType::LOGON: {
       auto logon = fix::Logon::create(message);
       core::fix::create_event_and_dispatch(*this, message.header, logon, trace_info);
-      break;
+      return;
     }
     case core::fix::MsgType::LOGOUT: {
       auto logout = fix::Logout::create(message);
       core::fix::create_event_and_dispatch(*this, message.header, logout, trace_info);
-      break;
+      return;
     }
     case core::fix::MsgType::RESEND_REQUEST: {
       auto resend_request = fix::ResendRequest::create(message);
       core::fix::create_event_and_dispatch(*this, message.header, resend_request, trace_info);
-      break;
+      return;
     }
     case core::fix::MsgType::TEST_REQUEST: {
       auto test_request = fix::TestRequest::create(message);
       core::fix::create_event_and_dispatch(*this, message.header, test_request, trace_info);
-      break;
+      return;
     }
     // ...
     case core::fix::MsgType::POSITION_REPORT: {
@@ -440,14 +435,14 @@ void OrderEntry::parse_helper(const core::fix::message_t &message) {
         auto position_report = fix::PositionReport::create(message, buffer);
         core::fix::create_event_and_dispatch(*this, message.header, position_report, trace_info);
       });
-      break;
+      return;
     }
     case core::fix::MsgType::EXECUTION_REPORT: {
       profile_.execution_report([&]() {
         auto execution_report = fix::ExecutionReport::create(message, buffer);
         core::fix::create_event_and_dispatch(*this, message.header, execution_report, trace_info);
       });
-      break;
+      return;
     }
     case core::fix::MsgType::ORDER_CANCEL_REJECT: {
       profile_.order_cancel_reject([&]() {
@@ -455,14 +450,14 @@ void OrderEntry::parse_helper(const core::fix::message_t &message) {
         core::fix::create_event_and_dispatch(
             *this, message.header, order_cancel_reject, trace_info);
       });
-      break;
+      return;
     }
     case core::fix::MsgType::REJECT: {
       profile_.reject([&]() {
         auto reject = fix::Reject::create(message);
         core::fix::create_event_and_dispatch(*this, message.header, reject, trace_info);
       });
-      break;
+      return;
     }
     case core::fix::MsgType::ORDER_MASS_CANCEL_REPORT: {
       profile_.order_mass_cancel_report([&]() {
@@ -470,26 +465,23 @@ void OrderEntry::parse_helper(const core::fix::message_t &message) {
         core::fix::create_event_and_dispatch(
             *this, message.header, order_mass_cancel_report, trace_info);
       });
-      break;
+      return;
     }
     default:
-      log::warn("Unexpected msg_type={}"sv, message.header.msg_type);
       break;
   }
+  log::warn("Unexpected msg_type={}"sv, message.header.msg_type);
 }
 
 void OrderEntry::operator()(
     const core::fix::Event<fix::Heartbeat> &event, const server::TraceInfo &) {
-  // note! get clock *before* any logging (avoid latency)
-  auto now = core::get_system_clock();
+  auto now = core::clock::GetSystem();
   auto &[header, heartbeat] = event;
   log::info<3>("event={{header={}, heartbeat={}}}"sv, header, heartbeat);
   last_logon_or_heartbeat_ = {};
   if (!std::empty(heartbeat.test_req_id)) {
-    auto send_time = core::from_chars<uint64_t>(heartbeat.test_req_id);
-    auto latency =
-        std::chrono::duration_cast<std::chrono::nanoseconds>(now - decltype(now){send_time}) /
-        2;  // 1-way
+    auto send_time = std::chrono::nanoseconds{core::from_chars<uint64_t>(heartbeat.test_req_id)};
+    auto latency = (now - send_time) / 2;  // 1-way
     auto trace_info = server::create_trace_info();
     ExternalLatency external_latency{
         .stream_id = stream_id_,
@@ -512,7 +504,6 @@ void OrderEntry::operator()(const core::fix::Event<fix::Logon> &event, const ser
 void OrderEntry::operator()(const core::fix::Event<fix::Logout> &event, const server::TraceInfo &) {
   auto &[header, logout] = event;
   log::warn("event={{header={}, logout={}}}"sv, header, logout);
-  log::info("DEBUG: HASHER stream_id={} LOGOUT"sv, stream_id_);
   ready_ = false;
   // note! mandated, must send a logout response
   send_logout(LOGOUT_RESPONSE);
@@ -577,14 +568,16 @@ namespace {
 //   ORDER_STATUS    FILLED              order update
 //   ORDER_STATUS    CANCELED            ack success
 
-RequestType compute_request_type(core::fix::ExecType exec_type, core::fix::OrdStatus ord_status) {
+RequestType compute_request_type(const auto exec_type, const auto ord_status) {
   switch (exec_type) {
+    // using enum core::fix::ExecType; // XXX clang13
     case core::fix::ExecType::REJECTED:
       return {};  // any
     case core::fix::ExecType::CANCELED:
       return RequestType::CANCEL_ORDER;
     case core::fix::ExecType::ORDER_STATUS:
       switch (ord_status) {
+        // using enum core::fix::OrdStatus; // XXX clang13
         case core::fix::OrdStatus::NEW:
         case core::fix::OrdStatus::PARTIALLY_FILLED:
           return {};  // create or modify
@@ -600,15 +593,16 @@ RequestType compute_request_type(core::fix::ExecType exec_type, core::fix::OrdSt
   return {};
 }
 
-RequestStatus compute_request_status(
-    core::fix::ExecType exec_type, core::fix::OrdStatus ord_status) {
+RequestStatus compute_request_status(const auto exec_type, const auto ord_status) {
   switch (exec_type) {
+    // using enum core::fix::ExecType;  // XXX clang13
     case core::fix::ExecType::REJECTED:
       return RequestStatus::REJECTED;
     case core::fix::ExecType::CANCELED:
       return RequestStatus::ACCEPTED;
     case core::fix::ExecType::ORDER_STATUS:
       switch (ord_status) {
+        // using enum core::fix::OrdStatus;  // XXX clang13
         case core::fix::OrdStatus::NEW:
         case core::fix::OrdStatus::PARTIALLY_FILLED:
         case core::fix::OrdStatus::FILLED:
@@ -624,76 +618,80 @@ RequestStatus compute_request_status(
   return {};
 }
 
+auto find_liquidity_ind(const auto &fills) {
+  auto result = core::fix::FillLiquidityInd::UNDEFINED;
+  auto found = false;
+  for (auto &item : fills) {
+    if (item.fill_liquidity_ind != core::fix::FillLiquidityInd::UNDEFINED) {
+      if (!found) {
+        result = item.fill_liquidity_ind;
+        found = true;
+      } else if (item.fill_liquidity_ind != result) {
+        result = core::fix::FillLiquidityInd::UNDEFINED;
+        break;
+      }
+    }
+  }
+  return result;
+}
+
 // note!
 //   last traded is expected (downstream) to be the sum of all fills for this update
 //   Deribit reports only the *last* fill, but includes all fills as well
 //   we will therefore replace these values, when possible
 std::pair<double, double> compute_last_traded(
-    double last_traded_quantity, double last_traded_price, const std::span<fix::Fill> &fills) {
+    const auto last_traded_quantity, const auto last_traded_price, const auto &fills) {
   if (std::empty(fills))
-    return std::make_pair(last_traded_quantity, last_traded_price);
+    return {last_traded_quantity, last_traded_price};
   double sum_quantity = 0.0, sum_quantity_price = 0.0;
-  for (auto &fill : fills) {
-    sum_quantity += fill.fill_qty;
-    sum_quantity_price += fill.fill_qty * fill.fill_px;
+  for (auto &item : fills) {
+    sum_quantity += item.fill_qty;
+    sum_quantity_price += item.fill_qty * item.fill_px;
   }
-  return std::make_pair(
-      sum_quantity,
-      utils::compare(sum_quantity, 0.0) == 0 ? NaN : sum_quantity_price / sum_quantity);
+  auto average_price =
+      utils::compare(sum_quantity, 0.0) == 0 ? NaN : sum_quantity_price / sum_quantity;
+  return {sum_quantity, average_price};
 }
 }  // namespace
 
 void OrderEntry::operator()(
     const core::fix::Event<fix::ExecutionReport> &event, const server::TraceInfo &trace_info) {
-  auto &[header, execution_report] = event;
+  // auto &[header, execution_report] = event;  // XXX clang13
+  auto &header = event.header;
+  auto &execution_report = event.value;
   log::info<2>("event={{header={}, execution_report={}}}"sv, header, execution_report);
   auto download = false;
   // download begin?
   switch (execution_report.mass_status_req_type) {
-    case core::fix::MassStatusReqType::ORDERS:
+    case core::fix::MassStatusReqType::ORDERS: {
       download = true;
-      download_.update(OrderEntryState::ORDERS, execution_report.tot_num_reports);
-      return;
+      auto count = execution_report.tot_num_reports;
+      log::info<1>("Downloading {} execution reports"sv, count);
+      download_.update(OrderEntryState::ORDERS, count);
+      return;  // nothing more in this execution report
+    }
     default:
       break;
   }
-  // liquidity indicator
-  auto liquidity_ind = core::fix::FillLiquidityInd::UNDEFINED;
-  auto liquidity_ind_found = false;
-  for (auto &item : execution_report.no_fills) {
-    if (item.fill_liquidity_ind != core::fix::FillLiquidityInd::UNDEFINED) {
-      if (!liquidity_ind_found) {
-        liquidity_ind = item.fill_liquidity_ind;
-        liquidity_ind_found = true;
-      } else if (item.fill_liquidity_ind != liquidity_ind) {
-        liquidity_ind = core::fix::FillLiquidityInd::UNDEFINED;
-        break;
-      }
-    }
-  }
-  // note! https://stackoverflow.com/a/46115028
-  const auto &exec_type = execution_report.exec_type;
-  const auto &ord_status = execution_report.ord_status;
+  auto exec_type = execution_report.exec_type;
+  auto ord_status = execution_report.ord_status;
+  // special case: partial fill can overlap cancel request (#143)
   if (!flags::Common::disable_deribit_143()) {
-    // - partial fill could overlap cancel request (#143)
     if (exec_type == core::fix::ExecType::CANCELED &&
         ord_status == core::fix::OrdStatus::CANCELED) {
       log::warn<1>("Drop execution report due to FIX compliance"sv);
       return;
     }
   }
-  const auto &orig_cl_ord_id = execution_report.orig_cl_ord_id;
-  const auto &text = execution_report.text;
-  const auto &no_fills = execution_report.no_fills;
-  const auto &transact_time = execution_report.transact_time;
-  // find order
   auto side = core::fix::map(execution_report.side);
   auto order_status = core::fix::map(execution_report.ord_status);
   auto order_type = core::fix::map(execution_report.ord_type);
+  auto liquidity_ind = find_liquidity_ind(execution_report.no_fills);
   auto last_liquidity = core::fix::map(liquidity_ind);
   // XXX TODO(thraneh): exec_inst
   auto request_type = compute_request_type(exec_type, ord_status);
   auto request_status = compute_request_status(exec_type, ord_status);
+  auto error = fix::map_error(execution_report.text);
   auto [last_traded_quantity, last_traded_price] = compute_last_traded(
       execution_report.last_qty, execution_report.last_px, execution_report.no_fills);
   // note!
@@ -704,8 +702,8 @@ void OrderEntry::operator()(
       .type = request_type,
       .origin = Origin::EXCHANGE,
       .status = request_status,
-      .error = fix::map_error(text),
-      .text = text,
+      .error = error,
+      .text = execution_report.text,
       .version = {},
       .request_id = {},
       .quantity = execution_report.order_qty,
@@ -739,7 +737,7 @@ void OrderEntry::operator()(
   };
   if (download) {
     if (shared_.create_order(
-            orig_cl_ord_id,  // note! *always* from create order (can't rewrite)
+            execution_report.orig_cl_ord_id,  // note! *always* from create order (can't rewrite)
             stream_id_,
             trace_info,
             order_update)) {
@@ -753,7 +751,7 @@ void OrderEntry::operator()(
     }
   } else {
     if (shared_.update_order(
-            orig_cl_ord_id,  // note! *always* from create order (can't rewrite)
+            execution_report.orig_cl_ord_id,  // note! *always* from create order (can't rewrite)
             stream_id_,
             trace_info,
             response,
@@ -761,7 +759,7 @@ void OrderEntry::operator()(
             [&](auto &order) {
               log::debug("found order={}"sv, order);
               core::back_emplacer fills(shared_.fills);
-              for (auto &item : no_fills) {
+              for (auto &item : execution_report.no_fills) {
                 fills.emplace_back([&](auto &result) { emplace(result, item); });
               }
               if (!std::empty(fills)) {
@@ -773,8 +771,8 @@ void OrderEntry::operator()(
                     .symbol = order.symbol,
                     .side = order.side,
                     .position_effect = order.position_effect,
-                    .create_time_utc = transact_time,
-                    .update_time_utc = transact_time,
+                    .create_time_utc = execution_report.transact_time,
+                    .update_time_utc = execution_report.transact_time,
                     .external_account = order.external_account,
                     .external_order_id = order.external_order_id,
                     .fills = fills,
@@ -799,16 +797,17 @@ void OrderEntry::operator()(
 
 void OrderEntry::operator()(
     const core::fix::Event<fix::OrderCancelReject> &event, const server::TraceInfo &trace_info) {
-  auto &[header, order_cancel_reject] = event;
+  // auto &[header, order_cancel_reject] = event;  // XXX clang13
+  auto &header = event.header;
+  auto &order_cancel_reject = event.value;
   log::warn<1>("event={{header={}, order_cancel_reject={}}}"sv, header, order_cancel_reject);
-  const auto &ord_status = order_cancel_reject.ord_status;
-  const auto &text = order_cancel_reject.text;
+  auto error = fix::map_error(order_cancel_reject.text);
   oms::Response response{
       .type = {},  // modify or cancel
       .origin = Origin::EXCHANGE,
       .status = RequestStatus::REJECTED,
-      .error = fix::map_error(text),
-      .text = text,
+      .error = error,
+      .text = order_cancel_reject.text,
       .version = {},
       .request_id = {},
       .quantity = NaN,
@@ -817,7 +816,7 @@ void OrderEntry::operator()(
   if (shared_.update_order(
           order_cancel_reject.orig_cl_ord_id, stream_id_, trace_info, response, [&](auto &order) {
             log::debug("found order={}"sv, order);
-            auto status = core::fix::map(ord_status);
+            auto status = core::fix::map(order_cancel_reject.ord_status);
             if (status != order.status) {
               log::warn(
                   "Unexpected: order status received={}, expected={}"sv, status, order.status);
@@ -830,8 +829,9 @@ void OrderEntry::operator()(
 }
 
 namespace {
-RequestType message_type_to_request_type(core::fix::MsgType msg_type) {
+RequestType message_type_to_request_type(const auto msg_type) {
   switch (msg_type) {
+    // using enum core::fix::MsgType;  // XXX clang13
     case core::fix::MsgType::NEW_ORDER_SINGLE:
       return RequestType::CREATE_ORDER;
     case core::fix::MsgType::ORDER_CANCEL_REPLACE_REQUEST:
@@ -903,7 +903,8 @@ void OrderEntry::operator()(
 
 template <typename T>
 uint64_t OrderEntry::send(const T &event) {
-  return send(event, core::get_realtime_clock());
+  auto now = core::clock::GetRealTime();
+  return send(event, now);
 }
 
 template <typename T>

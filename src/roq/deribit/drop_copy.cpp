@@ -191,15 +191,9 @@ void DropCopy::operator()(ConnectionStatus status) {
 
 void DropCopy::login() {
   constexpr json::RequestType request_type = json::RequestType::AUTH;
-  std::chrono::milliseconds now = utils::safe_cast(core::get_realtime_clock());
+  auto now = core::clock::GetRealTime<std::chrono::milliseconds>();
   auto nonce = security_.create_nonce();
   auto [signature, timestamp] = security_.create_signature(now, nonce);
-  log::info(
-      "DEBUG: HASHER stream_id={}, real={}, used={}, diff={}"sv,
-      stream_id_,
-      now,
-      timestamp,
-      (timestamp - now));
   auto message = fmt::format(
       R"({{)"
       R"("method":"public/auth",)"
@@ -375,32 +369,41 @@ void DropCopy::operator()(
       break;
     case json::RequestType::UNKNOWN:
       log::fatal(R"(Unknown request_type="{}")"sv, result.id);
-      break;
+      return;
     case json::RequestType::AUTH: {
       json::Auth auth(value);
       server::Trace event(trace_info, auth);
       (*this)(event);
-      break;
+      return;
     }
+    case json::RequestType::GET_CURRENCIES:
+    case json::RequestType::GET_INSTRUMENTS:
+    case json::RequestType::SUBSCRIBE_PLATFORM_STATE:
+    case json::RequestType::SUBSCRIBE_INSTRUMENT_STATE:
+    case json::RequestType::SUBSCRIBE_QUOTE:
+    case json::RequestType::SUBSCRIBE_TICKER:
+      break;  // unexpected
     case json::RequestType::SUBSCRIBE_PORTFOLIO:
     case json::RequestType::SUBSCRIBE_CHANGES:
     case json::RequestType::SUBSCRIBE_ORDERS:
     case json::RequestType::SUBSCRIBE_TRADES:
-      break;
+      // note! no need to parse
+      return;
     case json::RequestType::GET_ACCOUNT_SUMMARY: {
       json::Portfolio portfolio(value);
       server::create_trace_and_dispatch(*this, trace_info, portfolio);
-      break;
+      return;
     }
     case json::RequestType::GET_TRADES: {
       core::json::Buffer buffer(decode_buffer_);
       json::Trades trades(value, buffer);
       server::create_trace_and_dispatch(*this, trace_info, trades);
-      break;
+      return;
     }
-    default:
-      log::fatal("Unexpected: request_type={}"sv, request_type);
+    case json::RequestType::GET_POSITIONS:
+      break;  // unexpected
   }
+  log::fatal("Unexpected: request_type={}"sv, request_type);
 }
 
 void DropCopy::operator()(
@@ -448,7 +451,7 @@ void DropCopy::operator()(const server::Trace<json::Ticker> &) {
 
 void DropCopy::operator()(const server::Trace<json::Portfolio> &event) {
   log::info<2>("portfolio={}"sv, event.value);
-  auto &portfolio = event.value;
+  auto &[trace_info, portfolio] = event;
   FundsUpdate funds_update{
       .stream_id = stream_id_,
       .account = security_.get_account(),
@@ -461,7 +464,8 @@ void DropCopy::operator()(const server::Trace<json::Portfolio> &event) {
 }
 
 void DropCopy::operator()(const server::Trace<json::Changes> &event) {
-  auto &trades = event.value.trades;
+  auto &[trace_info, changes] = event;
+  auto &trades = changes.trades;
   for (auto &&[i, trade] : iter::enumerate(trades)) {
     auto is_last = i == (std::size(trades) - 1);
     server::create_trace_and_dispatch(*this, event.trace_info, trade, is_last);
@@ -469,25 +473,29 @@ void DropCopy::operator()(const server::Trace<json::Changes> &event) {
 }
 
 void DropCopy::operator()(const server::Trace<json::Trades> &event) {
-  auto &trades = event.value.trades;
-  for (auto &&[i, trade] : iter::enumerate(trades)) {
-    auto is_last = i == (std::size(trades) - 1);
+  auto &[trace_info, trades] = event;
+  auto &trades_2 = trades.trades;
+  for (auto &&[i, trade] : iter::enumerate(trades_2)) {
+    auto is_last = i == (std::size(trades_2) - 1);
     server::create_trace_and_dispatch(*this, event.trace_info, trade, is_last);
   }
 }
 
 void DropCopy::operator()(const server::Trace<json::Order> &event) {
-  log::info<1>("order={}"sv, event.value);
+  auto &[trace_info, order] = event;
+  log::info<1>("order={}"sv, order);
   // do nothing?
 }
 
 void DropCopy::operator()(const server::Trace<json::Trades2> &event) {
-  log::info<1>("trades={}"sv, event.value);
+  auto &[trace_info, trades2] = event;
+  log::info<1>("trades={}"sv, trades2);
   // do nothing?
 }
 
 void DropCopy::operator()(const server::Trace<json::Trade> &event, [[maybe_unused]] bool is_last) {
-  log::info<1>("trade={}"sv, event.value);
+  auto &[trace_info, trade] = event;
+  log::info<1>("trade={}"sv, trade);
   // do nothing?
 }
 

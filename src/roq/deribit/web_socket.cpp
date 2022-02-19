@@ -304,7 +304,7 @@ void WebSocket::subscribe_ticker(const std::span<std::string const> &symbols) {
       fmt::join(symbols, separator),
       interval,
       request_type.as_raw_text());
-  log::debug(R"(message="{}")"sv, message);
+  // log::debug(R"(message="{}")"sv, message);
   subscribe_queue_.emplace_back(message);
 }
 
@@ -336,29 +336,39 @@ void WebSocket::operator()(
       break;
     case json::RequestType::UNKNOWN:
       log::fatal(R"(Unknown request_type="{}")"sv, result.id);
-      break;
+      return;
+    case json::RequestType::AUTH:
+      break;  // unexpected
     case json::RequestType::GET_CURRENCIES: {
       core::json::Buffer buffer(decode_buffer_);
       json::Currencies currencies(value, buffer);
       server::Trace event(trace_info, currencies);
       (*this)(event);
-      break;
+      return;
     }
     case json::RequestType::GET_INSTRUMENTS: {
       core::json::Buffer buffer(decode_buffer_);
       json::Instruments instruments(value, buffer);
       server::Trace event(trace_info, instruments);
       (*this)(event);
-      break;
+      return;
     }
     case json::RequestType::SUBSCRIBE_PLATFORM_STATE:
     case json::RequestType::SUBSCRIBE_INSTRUMENT_STATE:
     case json::RequestType::SUBSCRIBE_QUOTE:
     case json::RequestType::SUBSCRIBE_TICKER:
-      break;
-    default:
-      log::fatal("Unexpected: request_type={}"sv, request_type);
+      // note! no need to parse
+      return;
+    case json::RequestType::SUBSCRIBE_PORTFOLIO:
+    case json::RequestType::SUBSCRIBE_CHANGES:
+    case json::RequestType::SUBSCRIBE_ORDERS:
+    case json::RequestType::SUBSCRIBE_TRADES:
+    case json::RequestType::GET_ACCOUNT_SUMMARY:
+    case json::RequestType::GET_TRADES:
+    case json::RequestType::GET_POSITIONS:
+      break;  // unexpected
   }
+  log::fatal("Unexpected: request_type={}"sv, request_type);
 }
 
 void WebSocket::operator()(
@@ -385,6 +395,7 @@ void WebSocket::operator()(const server::Trace<json::Auth> &) {
 
 void WebSocket::operator()(const server::Trace<json::Currencies> &event) {
   profile_.currencies([&]() {
+    log::fatal::when(!master_, "Unexpected"sv);
     auto &[trace_info, currencies] = event;
     log::info<2>("currencies={}"sv, currencies);
     auto &data = currencies.data;
@@ -408,6 +419,7 @@ void WebSocket::operator()(const server::Trace<json::Currencies> &event) {
 
 void WebSocket::operator()(const server::Trace<json::Instruments> &event) {
   profile_.instruments([&]() {
+    log::fatal::when(!master_, "Unexpected"sv);
     auto &[trace_info, instruments] = event;
     auto &data = instruments.data;
     std::vector<std::string> symbols;
@@ -442,18 +454,22 @@ void WebSocket::operator()(const server::Trace<json::Positions> &) {
 }
 
 void WebSocket::operator()(const server::Trace<json::PlatformState> &) {
+  log::fatal::when(!master_, "Unexpected"sv);
 }
 
 void WebSocket::operator()(const server::Trace<json::InstrumentState> &) {
+  log::fatal::when(!master_, "Unexpected"sv);
   // seldom updated -- also done by Ticker
 }
 
 void WebSocket::operator()(const server::Trace<json::Quote> &event) {
   profile_.quote([&]() {
+    // auto &[trace_info, quote] = event;  // XXX clang13
     auto &trace_info = event.trace_info;
     auto &quote = event.value;
     log::info<3>("quote={}"sv, quote);
     if (get_top_of_book(quote.instrument_name, [&](auto &layer, auto multiplier) {
+          // note! as real amounts to match MbP
           auto bid_quantity = multiplier * quote.best_bid_amount;
           auto ask_quantity = multiplier * quote.best_ask_amount;
           TopOfBook top_of_book = {
@@ -482,8 +498,7 @@ void WebSocket::operator()(const server::Trace<json::Quote> &event) {
 
 void WebSocket::operator()(const server::Trace<json::Ticker> &event) {
   profile_.ticker([&]() {
-    auto &trace_info = event.trace_info;
-    auto &ticker = event.value;
+    auto &[trace_info, ticker] = event;
     log::info<3>("ticker={}"sv, ticker);
     auto trading_status = json::map(ticker.state);
     auto &item = trading_status_[ticker.instrument_name];
@@ -519,7 +534,7 @@ void WebSocket::check_subscribe_queue(std::chrono::nanoseconds now) {
   subscribe_queue_.dispatch(
       [&](auto now) { return shared_.rate_limiter.can_request(now); },
       [&](auto &message) {
-        log::debug(R"(Subscribe: "{}")"sv, message);
+        // log::debug(R"(Subscribe: "{}")"sv, message);
         connection_.send_text(message);
       },
       now);
