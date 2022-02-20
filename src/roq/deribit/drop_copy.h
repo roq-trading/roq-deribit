@@ -9,6 +9,8 @@
 #include <string_view>
 #include <vector>
 
+#include "roq/core/download.h"
+
 #include "roq/core/metrics/counter.h"
 #include "roq/core/metrics/latency.h"
 #include "roq/core/metrics/profile.h"
@@ -19,7 +21,6 @@
 
 #include "roq/core/jsonrpc/parser.h"
 
-#include "roq/download.h"
 #include "roq/server.h"
 
 #include "roq/deribit/drop_copy_state.h"
@@ -150,7 +151,7 @@ class DropCopy final : public core::web::ClientSocket::Handler,
   // state
   bool ready_ = false;
   ConnectionStatus status_ = {};
-  server::Download<DropCopyState> download_;
+  core::Download<DropCopyState> download_;
 };
 
 }  // namespace deribit

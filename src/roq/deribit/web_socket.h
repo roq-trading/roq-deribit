@@ -10,6 +10,7 @@
 #include <utility>
 #include <vector>
 
+#include "roq/core/download.h"
 #include "roq/core/timer_queue.h"
 
 #include "roq/core/metrics/counter.h"
@@ -22,7 +23,6 @@
 
 #include "roq/core/jsonrpc/parser.h"
 
-#include "roq/download.h"
 #include "roq/server.h"
 
 #include "roq/deribit/security.h"
@@ -171,7 +171,7 @@ class WebSocket final : public core::web::ClientSocket::Handler,
   // state
   bool ready_ = false;
   ConnectionStatus status_ = {};
-  server::Download<WebSocketState> download_;
+  core::Download<WebSocketState> download_;
   // queue
   core::TimerQueue subscribe_queue_;
 };

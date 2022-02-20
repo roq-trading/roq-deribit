@@ -7,6 +7,8 @@
 
 #include <string>
 
+#include "roq/core/download.h"
+
 #include "roq/core/stack/buffer.h"
 
 #include "roq/core/metrics/counter.h"
@@ -18,7 +20,6 @@
 #include "roq/core/net/manager.h"
 #include "roq/core/net/tcp_connection_factory.h"
 
-#include "roq/download.h"
 #include "roq/server.h"
 
 #include "roq/deribit/order_entry_state.h"
@@ -162,7 +163,7 @@ class OrderEntry final : public core::net::Manager::Handler {
   bool ready_ = false;
   std::chrono::nanoseconds next_heartbeat_ = {};
   ConnectionStatus status_ = {};
-  server::Download<OrderEntryState> download_;
+  core::Download<OrderEntryState> download_;
   std::chrono::nanoseconds last_logon_or_heartbeat_ = {};
   // EXPERIMENTAL
   absl::flat_hash_map<uint64_t, std::string> msg_seq_num_to_request_id_;
