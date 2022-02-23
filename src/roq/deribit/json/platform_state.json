@@ -5,6 +5,7 @@
 	{ "name": "currency", "type": "std::string_view" },
 	{ "name": "locked", "type": "bool" },
 	{ "name": "type", "comment": "undoc" },
-	{ "name": "currency_pair", "comment": "undoc" }
+	{ "name": "currency_pair", "comment": "undoc" },
+	{ "name": "maintenance", "type": "bool", "comment": "undoc" }
 ]
 }

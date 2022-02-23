@@ -25,7 +25,6 @@ namespace roq {
 namespace deribit {
 
 namespace {
-const auto NAME = "ws"sv;
 const auto SUPPORTS = utils::Mask{
     SupportType::TOP_OF_BOOK,
 };
@@ -33,6 +32,11 @@ const auto SUPPORTS_MASTER = utils::Mask{
     SUPPORTS,
     SupportType::MARKET_STATUS,
 };
+
+auto create_name(const auto &stream_id) {
+  auto name = "ws"sv;
+  return fmt::format("{}:{}"sv, stream_id, name);
+}
 
 struct create_metrics final : public core::metrics::Factory {
   explicit create_metrics(const std::string_view &group, const std::string_view &function)
@@ -45,7 +49,7 @@ auto create_connection(auto &handler, auto &context) {
       .uri = flags::WebSocket::ws_uri(),
       .query = {},
       .ping_frequency = flags::WebSocket::ws_ping_freq(),
-      .read_buffer_size = flags::Common::decode_buffer_size(),  // XXX need read buffer size
+      .read_buffer_size = flags::Common::decode_buffer_size(),
       .encode_buffer_size = flags::Common::encode_buffer_size(),
   };
   return core::web::ClientSocket{handler, context, config, []() { return std::string(); }};
@@ -59,8 +63,8 @@ WebSocket::WebSocket(
     Shared &shared,
     size_t index,
     bool master)
-    : handler_(handler), stream_id_(stream_id), name_(fmt::format("{}:{}"sv, stream_id_, NAME)),
-      index_(index), master_(master), connection_(create_connection(*this, context)),
+    : handler_(handler), stream_id_(stream_id), name_(create_name(stream_id_)), index_(index),
+      master_(master), connection_(create_connection(*this, context)),
       decode_buffer_(flags::Common::decode_buffer_size()),
       counter_{
           .disconnect = create_metrics(name_, "disconnect"sv),
@@ -172,6 +176,7 @@ void WebSocket::operator()(ConnectionStatus status) {
 
 uint32_t WebSocket::download(WebSocketState state) {
   switch (state) {
+    // using enum WebSocketState::type_t;  // XXX clang13
     case WebSocketState::UNDEFINED:
       break;
     case WebSocketState::CURRENCIES:
@@ -332,6 +337,7 @@ void WebSocket::operator()(
   auto &[trace_info, result] = event;
   json::RequestType request_type(result.id);
   switch (request_type) {
+      // using enum json::RequestType::type_t;  // XXX clang13
     case json::RequestType::UNDEFINED:
       break;
     case json::RequestType::UNKNOWN:
@@ -376,6 +382,7 @@ void WebSocket::operator()(
   auto &[trace_info, notification] = event;
   json::Method method(notification.method);
   switch (method) {
+    // using enum json::Method::type_t;  // XXX clang13
     case json::Method::UNDEFINED:
       break;
     case json::Method::UNKNOWN:

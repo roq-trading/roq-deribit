@@ -25,11 +25,14 @@ namespace roq {
 namespace deribit {
 
 namespace {
-const auto NAME = "ex"sv;
 const auto SUPPORTS = utils::Mask{
     SupportType::FUNDS,
-    SupportType::POSITION,
 };
+
+auto create_name(const auto &stream_id, const auto &security) {
+  auto name = "ex"sv;
+  return fmt::format("{}:{}:{}"sv, stream_id, name, security.get_account());
+}
 
 struct create_metrics final : public core::metrics::Factory {
   explicit create_metrics(const std::string_view &group, const std::string_view &function)
@@ -42,7 +45,7 @@ auto create_connection(auto &handler, auto &context) {
       .uri = flags::WebSocket::ws_uri(),
       .query = {},
       .ping_frequency = flags::WebSocket::ws_ping_freq(),
-      .read_buffer_size = flags::Common::decode_buffer_size(),  // XXX need read buffer size
+      .read_buffer_size = flags::Common::decode_buffer_size(),
       .encode_buffer_size = flags::Common::encode_buffer_size(),
   };
   return core::web::ClientSocket{handler, context, config, []() { return std::string(); }};
@@ -55,8 +58,7 @@ DropCopy::DropCopy(
     uint16_t stream_id,
     Security &security,
     Shared &shared)
-    : handler_(handler), stream_id_(stream_id),
-      name_(fmt::format("{}:{}:{}"sv, stream_id_, NAME, security.get_account())),
+    : handler_(handler), stream_id_(stream_id), name_(create_name(stream_id_, security)),
       connection_(create_connection(*this, context)),
       decode_buffer_(flags::Common::decode_buffer_size()),
       counter_{
@@ -85,35 +87,6 @@ void DropCopy::operator()(const Event<Stop> &) {
 
 void DropCopy::operator()(const Event<Timer> &event) {
   connection_.refresh(event.value.now);
-}
-
-uint16_t DropCopy::operator()(
-    const Event<CreateOrder> &, [[maybe_unused]] const std::string_view &request_id) {
-  throw oms::NotSupported("not supported"sv);
-  return stream_id_;
-}
-
-uint16_t DropCopy::operator()(
-    const Event<ModifyOrder> &,
-    const oms::Order &,
-    [[maybe_unused]] const std::string_view &request_id,
-    [[maybe_unused]] const std::string_view &previous_request_id) {
-  throw oms::NotSupported("not supported"sv);
-  return stream_id_;
-}
-
-uint16_t DropCopy::operator()(
-    const Event<CancelOrder> &,
-    const oms::Order &,
-    [[maybe_unused]] const std::string_view &request_id,
-    [[maybe_unused]] const std::string_view &previous_request_id) {
-  throw oms::NotSupported("not supported"sv);
-  return stream_id_;
-}
-
-uint16_t DropCopy::operator()(const Event<CancelAllOrders> &) {
-  throw oms::NotSupported("not supported"sv);
-  return stream_id_;
 }
 
 void DropCopy::operator()(metrics::Writer &writer) {
@@ -217,6 +190,7 @@ void DropCopy::login() {
 
 uint32_t DropCopy::download(DropCopyState state) {
   switch (state) {
+    // using enum DropCopyState::type_t;  // XXX clang13
     case DropCopyState::UNDEFINED:
       break;
     case DropCopyState::SUBSCRIBE_PORTFOLIOS:
@@ -365,6 +339,7 @@ void DropCopy::operator()(
   auto &[trace_info, result] = event;
   json::RequestType request_type(result.id);
   switch (request_type) {
+    // using enum json::RequestType::type_t;  // XXX clang13
     case json::RequestType::UNDEFINED:
       break;
     case json::RequestType::UNKNOWN:
@@ -411,6 +386,7 @@ void DropCopy::operator()(
   auto &[trace_info, notification] = event;
   json::Method method(notification.method);
   switch (method) {
+    // using enum json::Method::type_t;  // XXX clang13
     case json::Method::UNDEFINED:
       break;
     case json::Method::UNKNOWN:

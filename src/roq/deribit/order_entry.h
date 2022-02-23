@@ -167,6 +167,8 @@ class OrderEntry final : public core::net::Manager::Handler {
   std::chrono::nanoseconds last_logon_or_heartbeat_ = {};
   // EXPERIMENTAL
   absl::flat_hash_map<uint64_t, std::string> msg_seq_num_to_request_id_;
+  std::chrono::nanoseconds test_disconnect_time_ = {};
+  std::chrono::nanoseconds test_logon_time_ = {};
 };
 
 }  // namespace deribit
