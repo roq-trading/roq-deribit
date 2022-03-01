@@ -52,8 +52,9 @@ struct create_metrics final : public core::metrics::Factory {
 };
 
 auto create_connection_factory(auto &context) {
+  auto uri = flags::FIX::fix_uri();
   core::net::ConnectionFactory::Config config{
-      .uri = flags::FIX::fix_uri(),
+      .uris = {&uri, 1},
       .validate_certificate = server::Flags::tls_validate_certificate(),
   };
   return core::net::TcpConnectionFactory{context, config};
