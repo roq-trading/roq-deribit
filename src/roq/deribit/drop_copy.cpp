@@ -40,9 +40,10 @@ struct create_metrics final : public core::metrics::Factory {
 };
 
 auto create_connection(auto &handler, auto &context) {
+  auto uri = flags::WebSocket::ws_uri();
   core::web::ClientSocket::Config config{
       .validate_certificate = server::Flags::tls_validate_certificate(),
-      .uri = flags::WebSocket::ws_uri(),
+      .uris = {&uri, 1},
       .query = {},
       .ping_frequency = flags::WebSocket::ws_ping_freq(),
       .read_buffer_size = flags::Common::decode_buffer_size(),
