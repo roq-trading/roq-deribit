@@ -1,6 +1,6 @@
 /* Copyright (c) 2017-2022, Hans Erik Thrane */
 
-#include <gtest/gtest.h>
+#include <catch2/catch.hpp>
 
 #include "roq/core/fix/reader.h"
 
@@ -11,7 +11,9 @@ using namespace roq::deribit;
 
 using namespace std::literals;
 
-TEST(fix_position_report, parse_message) {
+using namespace Catch::literals;
+
+TEST_CASE("fix_position_report_parse_message", "fix_position_report") {
   const auto message =
       "8=FIX.4.4\0019=245\00135=AP\00149=DERIBITSERVER\00156=ROQ_TRAD"
       "ING\00134=5\00152=20190920-17:10:28.595\001721=3221109\001710="
@@ -25,23 +27,23 @@ TEST(fix_position_report, parse_message) {
   auto bytes = core::fix::Reader<core::fix::Version::FIX_44>::dispatch(
       [&](const core::fix::message_t &message) {
         ++results;
-        EXPECT_EQ(message.header.msg_type, core::fix::MsgType::POSITION_REPORT);
+        CHECK(message.header.msg_type == core::fix::MsgType::POSITION_REPORT);
         auto position_report = fix::PositionReport::create(message, decode_buffer);
-        EXPECT_EQ(position_report.pos_maint_rpt_id, "3221109"sv);
-        EXPECT_EQ(position_report.pos_req_id, "roq-pos-003"sv);
-        EXPECT_EQ(position_report.pos_req_type, core::fix::PosReqType::POSITIONS);
-        EXPECT_EQ(position_report.pos_req_result, core::fix::PosReqResult::VALID);
-        EXPECT_EQ(std::size(position_report.no_positions), size_t{1});
+        CHECK(position_report.pos_maint_rpt_id == "3221109"sv);
+        CHECK(position_report.pos_req_id == "roq-pos-003"sv);
+        CHECK(position_report.pos_req_type == core::fix::PosReqType::POSITIONS);
+        CHECK(position_report.pos_req_result == core::fix::PosReqResult::VALID);
+        CHECK(std::size(position_report.no_positions) == size_t{1});
         auto &item = position_report.no_positions[0];
-        EXPECT_DOUBLE_EQ(item.long_qty, 0.0);
-        EXPECT_DOUBLE_EQ(item.short_qty, 0.0);
-        EXPECT_EQ(item.symbol, "BTC-27SEP19"sv);
-        EXPECT_EQ(item.qty_type, core::fix::QtyType::CONTRACTS);
-        EXPECT_DOUBLE_EQ(item.contract_multiplier, 10.0);
-        EXPECT_DOUBLE_EQ(item.underlying_end_price, 10184.50);
-        EXPECT_DOUBLE_EQ(item.settl_price, 0.0);
+        CHECK(item.long_qty == 0.0_a);
+        CHECK(item.short_qty == 0.0_a);
+        CHECK(item.symbol == "BTC-27SEP19"sv);
+        CHECK(item.qty_type == core::fix::QtyType::CONTRACTS);
+        CHECK(item.contract_multiplier == 10.0_a);
+        CHECK(item.underlying_end_price == 10184.50_a);
+        CHECK(item.settl_price == 0.0_a);
       },
       message);
-  EXPECT_EQ(bytes, std::size(message));
-  EXPECT_EQ(results, 1);
+  CHECK(bytes == std::size(message));
+  CHECK(results == 1);
 }

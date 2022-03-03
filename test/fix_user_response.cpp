@@ -1,6 +1,6 @@
 /* Copyright (c) 2017-2022, Hans Erik Thrane */
 
-#include <gtest/gtest.h>
+#include <catch2/catch.hpp>
 
 #include "roq/core/fix/reader.h"
 
@@ -11,7 +11,9 @@ using namespace roq::deribit;
 
 using namespace std::literals;
 
-TEST(fix_user_response, parse_message) {
+using namespace Catch::literals;
+
+TEST_CASE("fix_user_response_parse_message", "fix_user_response") {
   const auto message =
       "8=FIX.4.4\0019=199\00135=BF\00149=DERIBITSERVER\00156=ROQ_TRAD"
       "ING\00134=3\00152=20190908-08:47:31.511\001923=123\001553=5MP4"
@@ -22,22 +24,22 @@ TEST(fix_user_response, parse_message) {
   auto bytes = core::fix::Reader<core::fix::Version::FIX_44>::dispatch(
       [&](const core::fix::message_t &message) {
         ++results;
-        EXPECT_EQ(message.header.msg_type, core::fix::MsgType::USER_RESPONSE);
+        CHECK(message.header.msg_type == core::fix::MsgType::USER_RESPONSE);
         auto user_response = fix::UserResponse::create(message);
-        EXPECT_EQ(user_response.user_request_id, "123"sv);
-        EXPECT_EQ(user_response.username, "5MP40u9h"sv);
-        EXPECT_EQ(user_response.user_status, core::fix::UserStatus::LOGGED_IN);
-        EXPECT_EQ(user_response.currency, "BTC"sv);
-        EXPECT_DOUBLE_EQ(user_response.deribit_user_equity, 10.0);
-        EXPECT_DOUBLE_EQ(user_response.deribit_user_balance, 10.0);
-        EXPECT_DOUBLE_EQ(user_response.deribit_user_initial_margin, 0.0);
-        EXPECT_DOUBLE_EQ(user_response.deribit_user_maintenance_margin, 0.0);
-        EXPECT_DOUBLE_EQ(user_response.deribit_user_unrealized_pl, 0.0);
-        EXPECT_DOUBLE_EQ(user_response.deribit_user_realized_pl, 0.0);
-        EXPECT_DOUBLE_EQ(user_response.deribit_user_total_pl, 0.0);
-        EXPECT_DOUBLE_EQ(user_response.deribit_user_margin_balance, 10.0);
+        CHECK(user_response.user_request_id == "123"sv);
+        CHECK(user_response.username == "5MP40u9h"sv);
+        CHECK(user_response.user_status == core::fix::UserStatus::LOGGED_IN);
+        CHECK(user_response.currency == "BTC"sv);
+        CHECK(user_response.deribit_user_equity == 10.0_a);
+        CHECK(user_response.deribit_user_balance == 10.0_a);
+        CHECK(user_response.deribit_user_initial_margin == 0.0_a);
+        CHECK(user_response.deribit_user_maintenance_margin == 0.0_a);
+        CHECK(user_response.deribit_user_unrealized_pl == 0.0_a);
+        CHECK(user_response.deribit_user_realized_pl == 0.0_a);
+        CHECK(user_response.deribit_user_total_pl == 0.0_a);
+        CHECK(user_response.deribit_user_margin_balance == 10.0_a);
       },
       message);
-  EXPECT_EQ(bytes, std::size(message));
-  EXPECT_EQ(results, 1);
+  CHECK(bytes == std::size(message));
+  CHECK(results == 1);
 }

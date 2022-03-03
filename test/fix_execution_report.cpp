@@ -1,6 +1,6 @@
 /* Copyright (c) 2017-2022, Hans Erik Thrane */
 
-#include <gtest/gtest.h>
+#include <catch2/catch.hpp>
 
 #include "roq/core/fix/reader.h"
 
@@ -11,7 +11,9 @@ using namespace roq::deribit;
 
 using namespace std::literals;
 
-TEST(fix_execution_report, parse_message) {
+using namespace Catch::literals;
+
+TEST_CASE("fix_execution_report_parse_message", "fix_execution_report") {
   const auto message =
       "8=FIX.4.4\0019=275\00135=8\00149=DERIBITSERVER\00156=ROQ_TRADI"
       "NG\00134=2\00152=20190908-17:18:38.983\00137=2831903667\00111="
@@ -26,36 +28,36 @@ TEST(fix_execution_report, parse_message) {
   auto bytes = core::fix::Reader<core::fix::Version::FIX_44>::dispatch(
       [&](const core::fix::message_t &message) {
         ++results;
-        EXPECT_EQ(message.header.msg_type, core::fix::MsgType::EXECUTION_REPORT);
+        CHECK(message.header.msg_type == core::fix::MsgType::EXECUTION_REPORT);
         auto result = fix::ExecutionReport::create(message, decode_buffer);
-        EXPECT_EQ(result.order_id, "2831903667"sv);
-        EXPECT_EQ(result.cl_ord_id, "2831903667"sv);
-        EXPECT_EQ(result.orig_cl_ord_id, "123"sv);
-        EXPECT_EQ(result.exec_type, core::fix::ExecType::ORDER_STATUS);
-        EXPECT_EQ(result.ord_status, core::fix::OrdStatus::CANCELED);
-        EXPECT_EQ(result.side, core::fix::Side::BUY);
+        CHECK(result.order_id == "2831903667"sv);
+        CHECK(result.cl_ord_id == "2831903667"sv);
+        CHECK(result.orig_cl_ord_id == "123"sv);
+        CHECK(result.exec_type == core::fix::ExecType::ORDER_STATUS);
+        CHECK(result.ord_status == core::fix::OrdStatus::CANCELED);
+        CHECK(result.side == core::fix::Side::BUY);
         // 60
-        EXPECT_DOUBLE_EQ(result.leaves_qty, 1.0);
-        EXPECT_DOUBLE_EQ(result.cum_qty, 0.0);
-        EXPECT_DOUBLE_EQ(result.order_qty, 1.0);
-        EXPECT_EQ(result.ord_type, core::fix::OrdType::LIMIT);
-        EXPECT_DOUBLE_EQ(result.price, 0.5);
-        EXPECT_EQ(result.ord_rej_reason, core::fix::OrdRejReason::BROKER_EXCHANGE_OPTION);
-        EXPECT_EQ(result.text, "success"sv);
-        EXPECT_EQ(result.security_exchange, "DERIBITSERVER"sv);
-        EXPECT_EQ(result.symbol, "BTC-27SEP19"sv);
-        EXPECT_EQ(result.qty_type, core::fix::QtyType::CONTRACTS);
-        EXPECT_DOUBLE_EQ(result.contract_multiplier, 10.0);
-        EXPECT_DOUBLE_EQ(result.avg_px, 0.0);
-        EXPECT_DOUBLE_EQ(result.max_show, 1.0);
-        EXPECT_EQ(result.deribit_label, "roq;123;345"sv);
+        CHECK(result.leaves_qty == 1.0_a);
+        CHECK(result.cum_qty == 0.0_a);
+        CHECK(result.order_qty == 1.0_a);
+        CHECK(result.ord_type == core::fix::OrdType::LIMIT);
+        CHECK(result.price == 0.5_a);
+        CHECK(result.ord_rej_reason == core::fix::OrdRejReason::BROKER_EXCHANGE_OPTION);
+        CHECK(result.text == "success"sv);
+        CHECK(result.security_exchange == "DERIBITSERVER"sv);
+        CHECK(result.symbol == "BTC-27SEP19"sv);
+        CHECK(result.qty_type == core::fix::QtyType::CONTRACTS);
+        CHECK(result.contract_multiplier == 10.0_a);
+        CHECK(result.avg_px == 0.0_a);
+        CHECK(result.max_show == 1.0_a);
+        CHECK(result.deribit_label == "roq;123;345"sv);
       },
       message);
-  EXPECT_EQ(bytes, std::size(message));
-  EXPECT_EQ(results, 1);
+  CHECK(bytes == std::size(message));
+  CHECK(results == 1);
 }
 
-TEST(fix_execution_report, parse_order_mass_status) {
+TEST_CASE("fix_execution_report_parse_order_mass_status", "fix_execution_report") {
   const auto message =
       "8=FIX.4.4\0019=112\00135=8\00149=DERIBITSERVER\00156=ROQ_TRADI"
       "NG\00134=4\00152=20190909-07:58:54.679\001584=roq-oms-005\0015"
@@ -66,19 +68,19 @@ TEST(fix_execution_report, parse_order_mass_status) {
   auto bytes = core::fix::Reader<core::fix::Version::FIX_44>::dispatch(
       [&](const core::fix::message_t &message) {
         ++results;
-        EXPECT_EQ(message.header.msg_type, core::fix::MsgType::EXECUTION_REPORT);
+        CHECK(message.header.msg_type == core::fix::MsgType::EXECUTION_REPORT);
         auto result = fix::ExecutionReport::create(message, decode_buffer);
-        EXPECT_EQ(result.mass_status_req_id, "roq-oms-005"sv);
-        EXPECT_EQ(result.mass_status_req_type, core::fix::MassStatusReqType::ORDERS);
-        EXPECT_EQ(result.tot_num_reports, uint32_t{1});
-        EXPECT_EQ(result.text, "total_reports"sv);
+        CHECK(result.mass_status_req_id == "roq-oms-005"sv);
+        CHECK(result.mass_status_req_type == core::fix::MassStatusReqType::ORDERS);
+        CHECK(result.tot_num_reports == uint32_t{1});
+        CHECK(result.text == "total_reports"sv);
       },
       message);
-  EXPECT_EQ(bytes, std::size(message));
-  EXPECT_EQ(results, 1);
+  CHECK(bytes == std::size(message));
+  CHECK(results == 1);
 }
 
-TEST(fix_execution_report, parse_fill) {
+TEST_CASE("fix_execution_report_parse_fill", "fix_execution_report") {
   const auto message =
       "8=FIX.4.4\0019=403\00135=8\00149=DERIBITSERVER\00156=ROQ_TRADI"
       "NG\00134=598\00152=20191027-14:02:33.897\00137=3026811591\0011"
@@ -95,42 +97,42 @@ TEST(fix_execution_report, parse_fill) {
   auto bytes = core::fix::Reader<core::fix::Version::FIX_44>::dispatch(
       [&](const core::fix::message_t &message) {
         ++results;
-        EXPECT_EQ(message.header.msg_type, core::fix::MsgType::EXECUTION_REPORT);
+        CHECK(message.header.msg_type == core::fix::MsgType::EXECUTION_REPORT);
         auto result = fix::ExecutionReport::create(message, decode_buffer);
-        EXPECT_EQ(result.order_id, "3026811591"sv);
-        EXPECT_EQ(result.cl_ord_id, "3026811591"sv);
-        EXPECT_EQ(result.orig_cl_ord_id, "roq:000000014"sv);
-        EXPECT_EQ(result.exec_type, core::fix::ExecType::ORDER_STATUS);
-        EXPECT_EQ(result.ord_status, core::fix::OrdStatus::FILLED);
-        EXPECT_EQ(result.side, core::fix::Side::BUY);
+        CHECK(result.order_id == "3026811591"sv);
+        CHECK(result.cl_ord_id == "3026811591"sv);
+        CHECK(result.orig_cl_ord_id == "roq:000000014"sv);
+        CHECK(result.exec_type == core::fix::ExecType::ORDER_STATUS);
+        CHECK(result.ord_status == core::fix::OrdStatus::FILLED);
+        CHECK(result.side == core::fix::Side::BUY);
         // 60
-        EXPECT_DOUBLE_EQ(result.commission, -0.00000021);
-        EXPECT_DOUBLE_EQ(result.leaves_qty, 0.0);
-        EXPECT_DOUBLE_EQ(result.cum_qty, 1.0);
-        EXPECT_DOUBLE_EQ(result.order_qty, 1.0);
-        EXPECT_EQ(result.ord_type, core::fix::OrdType::LIMIT);
-        EXPECT_DOUBLE_EQ(result.price, 9593.5);
-        EXPECT_EQ(result.ord_rej_reason, core::fix::OrdRejReason::BROKER_EXCHANGE_OPTION);
-        EXPECT_EQ(result.text, "notification"sv);
-        EXPECT_EQ(result.security_exchange, "DERIBITSERVER"sv);
-        EXPECT_EQ(result.symbol, "BTC-27DEC19"sv);
-        EXPECT_EQ(result.qty_type, core::fix::QtyType::CONTRACTS);
-        EXPECT_DOUBLE_EQ(result.contract_multiplier, 10.0);
-        EXPECT_DOUBLE_EQ(result.avg_px, 9593.504);  // TODO(thraneh): why different? not just
-                                                    // the commission...
-        EXPECT_DOUBLE_EQ(result.max_show, 1.0);
-        EXPECT_EQ(result.deribit_label, "roq:1:1:1000"sv);
-        EXPECT_DOUBLE_EQ(result.last_qty, 1.0);
-        EXPECT_DOUBLE_EQ(result.last_px, 9593.5);
-        EXPECT_EQ(std::size(result.no_fills), size_t{1});
+        CHECK(result.commission == -0.00000021_a);
+        CHECK(result.leaves_qty == 0.0_a);
+        CHECK(result.cum_qty == 1.0_a);
+        CHECK(result.order_qty == 1.0_a);
+        CHECK(result.ord_type == core::fix::OrdType::LIMIT);
+        CHECK(result.price == 9593.5_a);
+        CHECK(result.ord_rej_reason == core::fix::OrdRejReason::BROKER_EXCHANGE_OPTION);
+        CHECK(result.text == "notification"sv);
+        CHECK(result.security_exchange == "DERIBITSERVER"sv);
+        CHECK(result.symbol == "BTC-27DEC19"sv);
+        CHECK(result.qty_type == core::fix::QtyType::CONTRACTS);
+        CHECK(result.contract_multiplier == 10.0_a);
+        CHECK(result.avg_px == 9593.504_a);  // TODO(thraneh): why different? not just
+                                             // the commission...
+        CHECK(result.max_show == 1.0_a);
+        CHECK(result.deribit_label == "roq:1:1:1000"sv);
+        CHECK(result.last_qty == 1.0_a);
+        CHECK(result.last_px == 9593.5_a);
+        CHECK(std::size(result.no_fills) == size_t{1});
         // item 0
         auto &item_0 = result.no_fills[0];
-        EXPECT_EQ(item_0.fill_exec_id, "BTC-27DEC19#2350428"sv);
-        EXPECT_DOUBLE_EQ(item_0.fill_px, 9593.5);
-        EXPECT_DOUBLE_EQ(item_0.fill_qty, 1.0);
-        EXPECT_EQ(item_0.fill_liquidity_ind, core::fix::FillLiquidityInd::MAKER);
+        CHECK(item_0.fill_exec_id == "BTC-27DEC19#2350428"sv);
+        CHECK(item_0.fill_px == 9593.5_a);
+        CHECK(item_0.fill_qty == 1.0_a);
+        CHECK(item_0.fill_liquidity_ind == core::fix::FillLiquidityInd::MAKER);
       },
       message);
-  EXPECT_EQ(bytes, std::size(message));
-  EXPECT_EQ(results, 1);
+  CHECK(bytes == std::size(message));
+  CHECK(results == 1);
 }

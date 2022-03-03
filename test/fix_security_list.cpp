@@ -1,6 +1,6 @@
 /* Copyright (c) 2017-2022, Hans Erik Thrane */
 
-#include <gtest/gtest.h>
+#include <catch2/catch.hpp>
 
 #include "roq/core/fix/reader.h"
 
@@ -10,6 +10,8 @@ using namespace roq;
 using namespace roq::deribit;
 
 using namespace std::literals;
+
+using namespace Catch::literals;
 
 namespace {
 const auto message =
@@ -1227,7 +1229,7 @@ const auto message =
     "15=USD\0012576=2\001969=0.0100\00110=083\001"sv;
 }  // namespace
 
-TEST(fix_security_list, parse_message) {
+TEST_CASE("fix_security_list_parse_message", "fix_security_list") {
   core::Buffer buffer(1024 * 1024);
   core::fix::Buffer decode_buffer(buffer);
   int results = 0;
@@ -1235,20 +1237,20 @@ TEST(fix_security_list, parse_message) {
       [&](const core::fix::message_t &message) {
         fprintf(stderr, "HEADER\n");
         ++results;
-        EXPECT_EQ(message.header.msg_type, core::fix::MsgType::SECURITY_LIST);
+        CHECK(message.header.msg_type == core::fix::MsgType::SECURITY_LIST);
         /*auto security_list =*/fix::SecurityList::create(message, decode_buffer);
         /*
-        EXPECT_EQ(security_list.heart_bt_int, uint32_t{10});
+        CHECK(security_list.heart_bt_int == uint32_t{10});
         EXPECT_EQ(security_list.raw_data,
         "1567874758168.y4/hA3i6qxm4yVL+3N7IrGcINVAFMLFhy4l7ATSehxc=");
-        EXPECT_EQ(security_list.username, "5MP40u9h");
+        CHECK(security_list.username == "5MP40u9h");
         EXPECT_EQ(security_list.password,
         "j/tVe9IsQuc+RjegscnHcJ6czMVNM1+ib7vjbY3UV0M=");
-        EXPECT_EQ(security_list.deribit_cancel_on_disconnect, true);
-        EXPECT_EQ(security_list.deribit_use_wordsafe_tags, false);
+        CHECK(security_list.deribit_cancel_on_disconnect == true);
+        CHECK(security_list.deribit_use_wordsafe_tags == false);
         */
       },
       message);
-  EXPECT_EQ(bytes, std::size(message));
-  EXPECT_EQ(results, 1);
+  CHECK(bytes == std::size(message));
+  CHECK(results == 1);
 }

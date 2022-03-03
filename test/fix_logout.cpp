@@ -1,6 +1,6 @@
 /* Copyright (c) 2017-2022, Hans Erik Thrane */
 
-#include <gtest/gtest.h>
+#include <catch2/catch.hpp>
 
 #include "roq/core/fix/reader.h"
 
@@ -11,7 +11,9 @@ using namespace roq::deribit;
 
 using namespace std::literals;
 
-TEST(fix_logout, parse_message) {
+using namespace Catch::literals;
+
+TEST_CASE("fix_logout_parse_message", "fix_logout") {
   const auto message =
       "8=FIX.4.4\0019=90\00135=5\00149=DERIBITSERVER\00156=ROQ_TRADIN"
       "G\00134=1\00152=20190907-16:56:43.398\00158=invalid_credential"
@@ -20,11 +22,11 @@ TEST(fix_logout, parse_message) {
   auto bytes = core::fix::Reader<core::fix::Version::FIX_44>::dispatch(
       [&](const core::fix::message_t &message) {
         ++results;
-        EXPECT_EQ(message.header.msg_type, core::fix::MsgType::LOGOUT);
+        CHECK(message.header.msg_type == core::fix::MsgType::LOGOUT);
         auto logout = fix::Logout::create(message);
-        EXPECT_EQ(logout.text, "invalid_credentials");
+        CHECK(logout.text == "invalid_credentials");
       },
       message);
-  EXPECT_EQ(bytes, std::size(message));
-  EXPECT_EQ(results, 1);
+  CHECK(bytes == std::size(message));
+  CHECK(results == 1);
 }

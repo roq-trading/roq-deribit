@@ -1,6 +1,6 @@
 /* Copyright (c) 2017-2022, Hans Erik Thrane */
 
-#include <gtest/gtest.h>
+#include <catch2/catch.hpp>
 
 #include "roq/core/debug.h"
 #include "roq/core/fix/reader.h"
@@ -13,7 +13,9 @@ using namespace roq::deribit;
 using namespace std::literals;
 using namespace std::chrono_literals;
 
-TEST(fix_order_cancel_replace_request, create_message) {
+using namespace Catch::literals;
+
+TEST_CASE("fix_order_cancel_replace_request_create_message", "fix_order_cancel_replace_request") {
   core::Buffer buffer(4096);
   auto msg_seq_num = uint64_t{0};
   auto sending_time = 1568702810s;
@@ -43,7 +45,7 @@ TEST(fix_order_cancel_replace_request, create_message) {
       "SERVER\00134=1\00152=20190917-06:46:50.000\00141=123\00111=123"
       "\00160=20190917-06:46:50.000\00154=1\00138=1.0\00140=2\00144=1"
       "23.45\00155=BTC-27SEP19\00110=122\001"sv;
-  ASSERT_EQ(std::size(message), std::size(expected));
+  REQUIRE(std::size(message) == std::size(expected));
   for (size_t i = 0; i < std::size(message); ++i)
-    EXPECT_EQ(static_cast<char>(std::data(message)[i]), expected[i]);
+    CHECK(static_cast<char>(std::data(message)[i]) == expected[i]);
 }

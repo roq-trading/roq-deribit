@@ -1,6 +1,6 @@
 /* Copyright (c) 2017-2022, Hans Erik Thrane */
 
-#include <gtest/gtest.h>
+#include <catch2/catch.hpp>
 
 #include "roq/deribit/json/instrument.h"
 
@@ -10,7 +10,9 @@ using namespace roq::deribit;
 using namespace std::literals;
 using namespace std::chrono_literals;
 
-TEST(json_instrument, parse_message) {
+using namespace Catch::literals;
+
+TEST_CASE("json_instrument_parse_message", "json_instrument") {
   const auto message = R"({)"
                        R"("jsonrpc":"2.0",)"
                        R"("result":[)"
@@ -78,57 +80,57 @@ TEST(json_instrument, parse_message) {
         json::Instrument instrument(iter);
         switch (instruments) {
           case 1:
-            EXPECT_DOUBLE_EQ(instrument.tick_size, 0.5);
-            EXPECT_DOUBLE_EQ(instrument.taker_commission, 0.0005);
-            EXPECT_EQ(instrument.settlement_period, "month"sv);
-            EXPECT_EQ(instrument.quote_currency, "USD"sv);
-            EXPECT_DOUBLE_EQ(instrument.min_trade_amount, 10.0);
-            EXPECT_DOUBLE_EQ(instrument.max_leverage, 100.0);
-            EXPECT_DOUBLE_EQ(instrument.maker_commission, -0.0002);
-            EXPECT_EQ(instrument.kind, json::Kind::FUTURE);
-            EXPECT_EQ(instrument.is_active, true);
-            EXPECT_EQ(instrument.instrument_name, "BTC-27SEP19"sv);
-            EXPECT_EQ(instrument.expiration_timestamp, 1569571200000ms);
-            EXPECT_EQ(instrument.creation_timestamp, 1553760060000ms);
-            EXPECT_DOUBLE_EQ(instrument.contract_size, 10.0);
-            EXPECT_EQ(instrument.base_currency, "BTC"sv);
+            CHECK(instrument.tick_size == 0.5_a);
+            CHECK(instrument.taker_commission == 0.0005_a);
+            CHECK(instrument.settlement_period == "month"sv);
+            CHECK(instrument.quote_currency == "USD"sv);
+            CHECK(instrument.min_trade_amount == 10.0_a);
+            CHECK(instrument.max_leverage == 100.0_a);
+            CHECK(instrument.maker_commission == -0.0002_a);
+            CHECK(instrument.kind == json::Kind::FUTURE);
+            CHECK(instrument.is_active == true);
+            CHECK(instrument.instrument_name == "BTC-27SEP19"sv);
+            CHECK(instrument.expiration_timestamp == 1569571200000ms);
+            CHECK(instrument.creation_timestamp == 1553760060000ms);
+            CHECK(instrument.contract_size == 10.0_a);
+            CHECK(instrument.base_currency == "BTC"sv);
             break;
           case 2:
-            EXPECT_DOUBLE_EQ(instrument.tick_size, 0.5);
-            EXPECT_DOUBLE_EQ(instrument.taker_commission, 0.0005);
-            EXPECT_EQ(instrument.settlement_period, "month"sv);
-            EXPECT_EQ(instrument.quote_currency, "USD"sv);
-            EXPECT_DOUBLE_EQ(instrument.min_trade_amount, 10.0);
-            EXPECT_DOUBLE_EQ(instrument.max_leverage, 100.0);
-            EXPECT_DOUBLE_EQ(instrument.maker_commission, -0.0002);
-            EXPECT_EQ(instrument.kind, json::Kind::FUTURE);
-            EXPECT_EQ(instrument.is_active, true);
-            EXPECT_EQ(instrument.instrument_name, "BTC-27DEC19"sv);
-            EXPECT_EQ(instrument.expiration_timestamp, 1577433600000ms);
-            EXPECT_EQ(instrument.creation_timestamp, 1561622460000ms);
-            EXPECT_DOUBLE_EQ(instrument.contract_size, 10.0);
-            EXPECT_EQ(instrument.base_currency, "BTC"sv);
+            CHECK(instrument.tick_size == 0.5_a);
+            CHECK(instrument.taker_commission == 0.0005_a);
+            CHECK(instrument.settlement_period == "month"sv);
+            CHECK(instrument.quote_currency == "USD"sv);
+            CHECK(instrument.min_trade_amount == 10.0_a);
+            CHECK(instrument.max_leverage == 100.0_a);
+            CHECK(instrument.maker_commission == -0.0002_a);
+            CHECK(instrument.kind == json::Kind::FUTURE);
+            CHECK(instrument.is_active == true);
+            CHECK(instrument.instrument_name == "BTC-27DEC19"sv);
+            CHECK(instrument.expiration_timestamp == 1577433600000ms);
+            CHECK(instrument.creation_timestamp == 1561622460000ms);
+            CHECK(instrument.contract_size == 10.0_a);
+            CHECK(instrument.base_currency == "BTC"sv);
             break;
           case 3:
-            EXPECT_DOUBLE_EQ(instrument.tick_size, 0.5);
-            EXPECT_DOUBLE_EQ(instrument.taker_commission, 0.00075);
-            EXPECT_EQ(instrument.settlement_period, "perpetual"sv);
-            EXPECT_EQ(instrument.quote_currency, "USD"sv);
-            EXPECT_DOUBLE_EQ(instrument.min_trade_amount, 10.0);
-            EXPECT_DOUBLE_EQ(instrument.max_leverage, 100.0);
-            EXPECT_DOUBLE_EQ(instrument.maker_commission, -0.00025);
-            EXPECT_EQ(instrument.kind, json::Kind::FUTURE);
-            EXPECT_EQ(instrument.is_active, true);
-            EXPECT_EQ(instrument.instrument_name, "BTC-PERPETUAL"sv);
-            EXPECT_EQ(instrument.expiration_timestamp, 32503734000000ms);
-            EXPECT_EQ(instrument.creation_timestamp, 1534167754000ms);
-            EXPECT_DOUBLE_EQ(instrument.contract_size, 10.0);
-            EXPECT_EQ(instrument.base_currency, "BTC"sv);
+            CHECK(instrument.tick_size == 0.5_a);
+            CHECK(instrument.taker_commission == 0.00075_a);
+            CHECK(instrument.settlement_period == "perpetual"sv);
+            CHECK(instrument.quote_currency == "USD"sv);
+            CHECK(instrument.min_trade_amount == 10.0_a);
+            CHECK(instrument.max_leverage == 100.0_a);
+            CHECK(instrument.maker_commission == -0.00025_a);
+            CHECK(instrument.kind == json::Kind::FUTURE);
+            CHECK(instrument.is_active == true);
+            CHECK(instrument.instrument_name == "BTC-PERPETUAL"sv);
+            CHECK(instrument.expiration_timestamp == 32503734000000ms);
+            CHECK(instrument.creation_timestamp == 1534167754000ms);
+            CHECK(instrument.contract_size == 10.0_a);
+            CHECK(instrument.base_currency == "BTC"sv);
             break;
         }
       }
     }
   }
-  EXPECT_EQ(results, 1);
-  EXPECT_EQ(instruments, 3);
+  CHECK(results == 1);
+  CHECK(instruments == 3);
 }

@@ -1,6 +1,6 @@
 /* Copyright (c) 2017-2022, Hans Erik Thrane */
 
-#include <gtest/gtest.h>
+#include <catch2/catch.hpp>
 
 #include "roq/core/debug.h"
 #include "roq/core/fix/reader.h"
@@ -13,7 +13,9 @@ using namespace roq::deribit;
 using namespace std::literals;
 using namespace std::chrono_literals;
 
-TEST(fix_logon, parse_message) {
+using namespace Catch::literals;
+
+TEST_CASE("fix_logon_parse_message", "fix_logon") {
   const auto message =
       "8=FIX.4.4\0019=211\00135=A\00149=DERIBITSERVER\00156=ROQ_TRADI"
       "NG\00134=1\00152=20190907-16:45:58.192\001108=10\00195=58\0019"
@@ -24,21 +26,21 @@ TEST(fix_logon, parse_message) {
   auto bytes = core::fix::Reader<core::fix::Version::FIX_44>::dispatch(
       [&](const core::fix::message_t &message) {
         ++results;
-        EXPECT_EQ(message.header.msg_type, core::fix::MsgType::LOGON);
+        CHECK(message.header.msg_type == core::fix::MsgType::LOGON);
         auto result = fix::Logon::create(message);
-        EXPECT_EQ(result.heart_bt_int, uint32_t{10});
-        EXPECT_EQ(result.raw_data, "1567874758168.y4/hA3i6qxm4yVL+3N7IrGcINVAFMLFhy4l7ATSehxc="sv);
-        EXPECT_EQ(result.username, "5MP40u9h"sv);
-        EXPECT_EQ(result.password, "j/tVe9IsQuc+RjegscnHcJ6czMVNM1+ib7vjbY3UV0M="sv);
-        EXPECT_EQ(result.cancel_on_disconnect, true);
-        EXPECT_EQ(result.use_wordsafe_tags, false);
+        CHECK(result.heart_bt_int == uint32_t{10});
+        CHECK(result.raw_data == "1567874758168.y4/hA3i6qxm4yVL+3N7IrGcINVAFMLFhy4l7ATSehxc="sv);
+        CHECK(result.username == "5MP40u9h"sv);
+        CHECK(result.password == "j/tVe9IsQuc+RjegscnHcJ6czMVNM1+ib7vjbY3UV0M="sv);
+        CHECK(result.cancel_on_disconnect == true);
+        CHECK(result.use_wordsafe_tags == false);
       },
       message);
-  EXPECT_EQ(bytes, std::size(message));
-  EXPECT_EQ(results, 1);
+  CHECK(bytes == std::size(message));
+  CHECK(results == 1);
 }
 
-TEST(fix_logon, create_message) {
+TEST_CASE("fix_logon_create_message", "fix_logon") {
   core::Buffer buffer(4096);
   uint64_t msg_seq_num = 0;
   auto sending_time = 1568702810s;
@@ -70,7 +72,7 @@ TEST(fix_logon, create_message) {
       "96=1567874758168.y4/hA3i6qxm4yVL+3N7IrGcINVAFMLFhy4l7ATSehxc=\001"
       "553=5MP40u9h\001554=j/tVe9IsQuc+RjegscnHcJ6czMVNM1+ib7vjbY3UV0"
       "M=\0019001=Y\00110=032\001"sv;
-  ASSERT_EQ(std::size(message), std::size(expected));
+  REQUIRE(std::size(message) == std::size(expected));
   for (size_t i = 0; i < std::size(message); ++i)
-    EXPECT_EQ(static_cast<char>(std::data(message)[i]), expected[i]);
+    CHECK(static_cast<char>(std::data(message)[i]) == expected[i]);
 }

@@ -36,7 +36,7 @@ target_link_libraries(
   roq-server::roq-server
   roq-core::roq-core
   roq-logging::roq-logging
-  gtest_main
+  Catch2::Catch2
   ${UUID_LIBRARIES}
   ${RT_LIBRARIES})
 

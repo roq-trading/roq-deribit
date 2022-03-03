@@ -1,6 +1,6 @@
 /* Copyright (c) 2017-2022, Hans Erik Thrane */
 
-#include <gtest/gtest.h>
+#include <catch2/catch.hpp>
 
 #include "roq/deribit/json/trades_2.h"
 
@@ -9,7 +9,9 @@ using namespace roq::deribit;
 
 using namespace std::literals;
 
-TEST(json_trades_2, parse_message) {
+using namespace Catch::literals;
+
+TEST_CASE("json_trades_2_parse_message", "json_trades_2") {
   const auto message = R"([{)"
                        R"("trade_seq":52491427,)"
                        R"("trade_id":"76203357",)"
@@ -37,6 +39,6 @@ TEST(json_trades_2, parse_message) {
   core::Buffer buffer(8192);
   core::json::Buffer decode_buffer(buffer);
   auto trades = core::json::Parser::create<json::Trades2>(message, decode_buffer);
-  EXPECT_EQ(std::size(trades.data), 1);
-  EXPECT_EQ(trades.data[0].trade_seq, 52491427);
+  CHECK(std::size(trades.data) == 1);
+  CHECK(trades.data[0].trade_seq == 52491427);
 }

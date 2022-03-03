@@ -1,6 +1,6 @@
 /* Copyright (c) 2017-2022, Hans Erik Thrane */
 
-#include <gtest/gtest.h>
+#include <catch2/catch.hpp>
 
 #include "roq/deribit/json/currency.h"
 
@@ -9,7 +9,9 @@ using namespace roq::deribit;
 
 using namespace std::literals;
 
-TEST(json_currency, parse_message) {
+using namespace Catch::literals;
+
+TEST_CASE("json_currency_parse_message", "json_currency") {
   const auto message =
       R"({)"
       R"("jsonrpc":"2.0",)"
@@ -51,27 +53,27 @@ TEST(json_currency, parse_message) {
         json::Currency currency(iter);
         switch (currencies) {
           case 1:
-            EXPECT_DOUBLE_EQ(currency.withdrawal_fee, 0.0004);
-            EXPECT_DOUBLE_EQ(currency.min_withdrawal_fee, 0.0001);
-            EXPECT_EQ(currency.min_confirmations, uint32_t{4});
-            EXPECT_EQ(currency.fee_precision, uint32_t{4});
-            EXPECT_EQ(currency.currency_long, "Ethereum"sv);
-            EXPECT_EQ(currency.currency, "ETH"sv);
-            EXPECT_EQ(currency.coin_type, "ETHER"sv);
+            CHECK(currency.withdrawal_fee == 0.0004_a);
+            CHECK(currency.min_withdrawal_fee == 0.0001_a);
+            CHECK(currency.min_confirmations == uint32_t{4});
+            CHECK(currency.fee_precision == uint32_t{4});
+            CHECK(currency.currency_long == "Ethereum"sv);
+            CHECK(currency.currency == "ETH"sv);
+            CHECK(currency.coin_type == "ETHER"sv);
             break;
           case 2:
-            EXPECT_DOUBLE_EQ(currency.withdrawal_fee, 0.0001);
-            EXPECT_DOUBLE_EQ(currency.min_withdrawal_fee, 0.0001);
-            EXPECT_EQ(currency.min_confirmations, uint32_t{1});
-            EXPECT_EQ(currency.fee_precision, uint32_t{4});
-            EXPECT_EQ(currency.currency_long, "Bitcoin"sv);
-            EXPECT_EQ(currency.currency, "BTC"sv);
-            EXPECT_EQ(currency.coin_type, "BITCOIN"sv);
+            CHECK(currency.withdrawal_fee == 0.0001_a);
+            CHECK(currency.min_withdrawal_fee == 0.0001_a);
+            CHECK(currency.min_confirmations == uint32_t{1});
+            CHECK(currency.fee_precision == uint32_t{4});
+            CHECK(currency.currency_long == "Bitcoin"sv);
+            CHECK(currency.currency == "BTC"sv);
+            CHECK(currency.coin_type == "BITCOIN"sv);
             break;
         }
       }
     }
   }
-  EXPECT_EQ(results, 1);
-  EXPECT_EQ(currencies, 2);
+  CHECK(results == 1);
+  CHECK(currencies == 2);
 }

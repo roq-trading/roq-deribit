@@ -1,6 +1,6 @@
 /* Copyright (c) 2017-2022, Hans Erik Thrane */
 
-#include <gtest/gtest.h>
+#include <catch2/catch.hpp>
 
 #include "roq/core/fix/reader.h"
 
@@ -11,7 +11,9 @@ using namespace roq::deribit;
 
 using namespace std::literals;
 
-TEST(fix_heartbeat, parse_message) {
+using namespace Catch::literals;
+
+TEST_CASE("fix_heartbeat_parse_message", "fix_heartbeat") {
   const auto message =
       "8=FIX.4.4\0019=89\00135=0\00149=DERIBITSERVER\00156=ROQ_TRADIN"
       "G\00134=2\00152=20190908-08:47:31.503\001112=anybody in there?"
@@ -20,11 +22,11 @@ TEST(fix_heartbeat, parse_message) {
   auto bytes = core::fix::Reader<core::fix::Version::FIX_44>::dispatch(
       [&](const core::fix::message_t &message) {
         ++results;
-        EXPECT_EQ(message.header.msg_type, core::fix::MsgType::HEARTBEAT);
+        CHECK(message.header.msg_type == core::fix::MsgType::HEARTBEAT);
         auto heartbeat = fix::Heartbeat::create(message);
-        EXPECT_EQ(heartbeat.test_req_id, "anybody in there?");
+        CHECK(heartbeat.test_req_id == "anybody in there?");
       },
       message);
-  EXPECT_EQ(bytes, std::size(message));
-  EXPECT_EQ(results, 1);
+  CHECK(bytes == std::size(message));
+  CHECK(results == 1);
 }

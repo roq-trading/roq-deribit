@@ -1,6 +1,6 @@
 /* Copyright (c) 2017-2022, Hans Erik Thrane */
 
-#include <gtest/gtest.h>
+#include <catch2/catch.hpp>
 
 #include "roq/core/fix/reader.h"
 
@@ -11,7 +11,9 @@ using namespace roq::deribit;
 
 using namespace std::literals;
 
-TEST(fix_order_cancel_reject, parse_message) {
+using namespace Catch::literals;
+
+TEST_CASE("fix_order_cancel_reject_parse_message", "fix_order_cancel_reject") {
   const auto message =
       "8=FIX.4.4\0019=99\00135=9\00149=DERIBITSERVER\00156=ROQ_TRADIN"
       "G\00134=3\00152=20190908-17:39:23.573\00141=123\00111=345\0013"
@@ -20,19 +22,19 @@ TEST(fix_order_cancel_reject, parse_message) {
   auto bytes = core::fix::Reader<core::fix::Version::FIX_44>::dispatch(
       [&](const core::fix::message_t &message) {
         ++results;
-        EXPECT_EQ(message.header.msg_type, core::fix::MsgType::ORDER_CANCEL_REJECT);
+        CHECK(message.header.msg_type == core::fix::MsgType::ORDER_CANCEL_REJECT);
         auto result = fix::OrderCancelReject::create(message);
-        EXPECT_EQ(result.orig_cl_ord_id, "123"sv);
-        EXPECT_EQ(result.cl_ord_id, "345"sv);
-        EXPECT_EQ(result.ord_status, core::fix::OrdStatus::REJECTED);
-        EXPECT_EQ(result.text, "not_found"sv);
+        CHECK(result.orig_cl_ord_id == "123"sv);
+        CHECK(result.cl_ord_id == "345"sv);
+        CHECK(result.ord_status == core::fix::OrdStatus::REJECTED);
+        CHECK(result.text == "not_found"sv);
       },
       message);
-  EXPECT_EQ(bytes, std::size(message));
-  EXPECT_EQ(results, 1);
+  CHECK(bytes == std::size(message));
+  CHECK(results == 1);
 }
 
-TEST(fix_order_cancel_reject, already_cancelled) {
+TEST_CASE("fix_order_cancel_reject_already_cancelled", "fix_order_cancel_reject") {
   const auto message =
       "8=FIX.4.4\0019=146\00135=9\00149=DERIBITSERVER\00156=ROQ_TRADI"
       "NG\00134=58\00152=20210828-03:55:00.570\00141=5wAC6QMAAwAACDaI"
@@ -42,14 +44,14 @@ TEST(fix_order_cancel_reject, already_cancelled) {
   auto bytes = core::fix::Reader<core::fix::Version::FIX_44>::dispatch(
       [&](const core::fix::message_t &message) {
         ++results;
-        EXPECT_EQ(message.header.msg_type, core::fix::MsgType::ORDER_CANCEL_REJECT);
+        CHECK(message.header.msg_type == core::fix::MsgType::ORDER_CANCEL_REJECT);
         auto result = fix::OrderCancelReject::create(message);
-        EXPECT_EQ(result.orig_cl_ord_id, "5wAC6QMAAwAACDaIJMsS"sv);
-        EXPECT_EQ(result.cl_ord_id, "6446518867"sv);
-        EXPECT_EQ(result.ord_status, core::fix::OrdStatus::CANCELED);
-        EXPECT_EQ(result.text, "already_cancelled"sv);
+        CHECK(result.orig_cl_ord_id == "5wAC6QMAAwAACDaIJMsS"sv);
+        CHECK(result.cl_ord_id == "6446518867"sv);
+        CHECK(result.ord_status == core::fix::OrdStatus::CANCELED);
+        CHECK(result.text == "already_cancelled"sv);
       },
       message);
-  EXPECT_EQ(bytes, std::size(message));
-  EXPECT_EQ(results, 1);
+  CHECK(bytes == std::size(message));
+  CHECK(results == 1);
 }

@@ -1,6 +1,6 @@
 /* Copyright (c) 2017-2022, Hans Erik Thrane */
 
-#include <gtest/gtest.h>
+#include <catch2/catch.hpp>
 
 #include "roq/deribit/json/ticker.h"
 
@@ -9,7 +9,9 @@ using namespace roq::deribit;
 
 using namespace std::literals;
 
-TEST(json_ticker, parse_message) {
+using namespace Catch::literals;
+
+TEST_CASE("json_ticker_parse_message", "json_ticker") {
   const auto message = R"({)"
                        R"("jsonrpc":"2.0",)"
                        R"("result":{)"
@@ -47,22 +49,22 @@ TEST(json_ticker, parse_message) {
     if (key.compare("result"sv) == 0) {
       ++results;
       json::Ticker ticker(value);
-      EXPECT_EQ(ticker.state, json::State::OPEN);
-      EXPECT_DOUBLE_EQ(ticker.settlement_price, 10053.92);
-      EXPECT_DOUBLE_EQ(ticker.open_interest, 422565281);
-      EXPECT_DOUBLE_EQ(ticker.min_price, 10346.94);
-      EXPECT_DOUBLE_EQ(ticker.max_price, 10450.93);
-      EXPECT_DOUBLE_EQ(ticker.mark_price, 10399.67);
-      EXPECT_DOUBLE_EQ(ticker.last_price, 10398.5);
-      EXPECT_EQ(ticker.instrument_name, "BTC-PERPETUAL"sv);
-      EXPECT_DOUBLE_EQ(ticker.index_price, 10391.86);
-      EXPECT_DOUBLE_EQ(ticker.funding_8h, 0.00011248);
-      EXPECT_DOUBLE_EQ(ticker.current_funding, 0.00025155);
-      EXPECT_DOUBLE_EQ(ticker.best_bid_price, 10398.5);
-      EXPECT_DOUBLE_EQ(ticker.best_bid_amount, 219330.0);
-      EXPECT_DOUBLE_EQ(ticker.best_ask_price, 10399.0);
-      EXPECT_DOUBLE_EQ(ticker.best_ask_amount, 97030.0);
+      CHECK(ticker.state == json::State::OPEN);
+      CHECK(ticker.settlement_price == 10053.92_a);
+      CHECK(ticker.open_interest == 422565281_a);
+      CHECK(ticker.min_price == 10346.94_a);
+      CHECK(ticker.max_price == 10450.93_a);
+      CHECK(ticker.mark_price == 10399.67_a);
+      CHECK(ticker.last_price == 10398.5_a);
+      CHECK(ticker.instrument_name == "BTC-PERPETUAL"sv);
+      CHECK(ticker.index_price == 10391.86_a);
+      CHECK(ticker.funding_8h == 0.00011248_a);
+      CHECK(ticker.current_funding == 0.00025155_a);
+      CHECK(ticker.best_bid_price == 10398.5_a);
+      CHECK(ticker.best_bid_amount == 219330.0_a);
+      CHECK(ticker.best_ask_price == 10399.0_a);
+      CHECK(ticker.best_ask_amount == 97030.0_a);
     }
   }
-  EXPECT_EQ(results, 1);
+  CHECK(results == 1);
 }

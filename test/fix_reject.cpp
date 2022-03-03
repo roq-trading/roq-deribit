@@ -1,6 +1,6 @@
 /* Copyright (c) 2017-2022, Hans Erik Thrane */
 
-#include <gtest/gtest.h>
+#include <catch2/catch.hpp>
 
 #include "roq/core/fix/reader.h"
 
@@ -11,7 +11,9 @@ using namespace roq::deribit;
 
 using namespace std::literals;
 
-TEST(fix_reject, parse_message) {
+using namespace Catch::literals;
+
+TEST_CASE("fix_reject_parse_message", "fix_reject") {
   const auto message =
       "8=FIX.4.4\0019=98\00135=3\00149=DERIBITSERVER\00156=ROQ_TRADIN"
       "G\00134=5\00152=20190908-08:47:31.543\00145=5\001372=AN\00158="
@@ -20,13 +22,13 @@ TEST(fix_reject, parse_message) {
   auto bytes = core::fix::Reader<core::fix::Version::FIX_44>::dispatch(
       [&](const core::fix::message_t &message) {
         ++results;
-        EXPECT_EQ(message.header.msg_type, core::fix::MsgType::REJECT);
+        CHECK(message.header.msg_type == core::fix::MsgType::REJECT);
         auto reject = fix::Reject::create(message);
-        EXPECT_EQ(reject.ref_seq_num, uint64_t{5});
-        EXPECT_EQ(reject.ref_msg_type, core::fix::MsgType::REQUEST_FOR_POSITIONS);
-        EXPECT_EQ(reject.text, "not_implemented"sv);
+        CHECK(reject.ref_seq_num == uint64_t{5});
+        CHECK(reject.ref_msg_type == core::fix::MsgType::REQUEST_FOR_POSITIONS);
+        CHECK(reject.text == "not_implemented"sv);
       },
       message);
-  EXPECT_EQ(bytes, std::size(message));
-  EXPECT_EQ(results, 1);
+  CHECK(bytes == std::size(message));
+  CHECK(results == 1);
 }

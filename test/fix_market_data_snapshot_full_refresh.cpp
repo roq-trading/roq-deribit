@@ -1,6 +1,6 @@
 /* Copyright (c) 2017-2022, Hans Erik Thrane */
 
-#include <gtest/gtest.h>
+#include <catch2/catch.hpp>
 
 #include "roq/core/fix/reader.h"
 
@@ -11,7 +11,11 @@ using namespace roq::deribit;
 
 using namespace std::literals;
 
-TEST(fix_market_data_snapshot_full_refresh, parse_message) {
+using namespace Catch::literals;
+
+TEST_CASE(
+    "fix_market_data_snapshot_full_refresh_parse_message",
+    "fix_market_data_snapshot_full_refresh") {
   const auto message =
       "8=FIX.4.4\0019=8056\00135=W\00149=DERIBITSERVER\00156=ROQ_TRAD"
       "ING\00134=3\00152=20190907-17:49:56.581\00155=BTC-27SEP19\0012"
@@ -175,20 +179,20 @@ TEST(fix_market_data_snapshot_full_refresh, parse_message) {
   auto bytes = core::fix::Reader<core::fix::Version::FIX_44>::dispatch(
       [&](const core::fix::message_t &message) {
         ++results;
-        EXPECT_EQ(message.header.msg_type, core::fix::MsgType::MARKET_DATA_SNAPSHOT_FULL_REFRESH);
+        CHECK(message.header.msg_type == core::fix::MsgType::MARKET_DATA_SNAPSHOT_FULL_REFRESH);
         /*auto market_data =*/fix::MarketDataSnapshotFullRefresh::create(message, decode_buffer);
         /*
-        EXPECT_EQ(result.heart_bt_int, uint32_t{10});
+        CHECK(result.heart_bt_int == uint32_t{10});
         EXPECT_EQ(result.raw_data,
         "1567874758168.y4/hA3i6qxm4yVL+3N7IrGcINVAFMLFhy4l7ATSehxc=");
-        EXPECT_EQ(result.username, "5MP40u9h");
+        CHECK(result.username == "5MP40u9h");
         EXPECT_EQ(result.password,
         "j/tVe9IsQuc+RjegscnHcJ6czMVNM1+ib7vjbY3UV0M=");
-        EXPECT_EQ(result.deribit_cancel_on_disconnect, true);
-        EXPECT_EQ(result.deribit_use_wordsafe_tags, false);
+        CHECK(result.deribit_cancel_on_disconnect == true);
+        CHECK(result.deribit_use_wordsafe_tags == false);
         */
       },
       message);
-  EXPECT_EQ(bytes, std::size(message));
-  EXPECT_EQ(results, 1);
+  CHECK(bytes == std::size(message));
+  CHECK(results == 1);
 }

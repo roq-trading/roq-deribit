@@ -1,6 +1,6 @@
 /* Copyright (c) 2017-2022, Hans Erik Thrane */
 
-#include <gtest/gtest.h>
+#include <catch2/catch.hpp>
 
 #include "roq/core/fix/reader.h"
 
@@ -12,7 +12,10 @@ using namespace roq::deribit;
 using namespace std::literals;
 using namespace std::chrono_literals;
 
-TEST(fix_market_data_incremental_refresh, parse_message_1) {
+using namespace Catch::literals;
+
+TEST_CASE(
+    "fix_market_data_incremental_refresh_parse_message_1", "fix_market_data_incremental_refresh") {
   const auto message =
       "8=FIX.4.4\0019=216\00135=X\00149=DERIBITSERVER\00156=ROQ_TRADI"
       "NG\00134=126\00152=20190907-15:37:00.896\00155=BTC-27SEP19\001"
@@ -25,28 +28,29 @@ TEST(fix_market_data_incremental_refresh, parse_message_1) {
   auto bytes = core::fix::Reader<core::fix::Version::FIX_44>::dispatch(
       [&](const core::fix::message_t &message) {
         ++results;
-        EXPECT_EQ(message.header.msg_type, core::fix::MsgType::MARKET_DATA_INCREMENTAL_REFRESH);
+        CHECK(message.header.msg_type == core::fix::MsgType::MARKET_DATA_INCREMENTAL_REFRESH);
         auto result = fix::MarketDataIncrementalRefresh::create(message, decode_buffer);
-        EXPECT_EQ(result.symbol, "BTC-27SEP19"sv);
-        EXPECT_DOUBLE_EQ(result.trade_volume24h, 10831047.0);
-        EXPECT_DOUBLE_EQ(result.mark_price, 10517.44);
-        EXPECT_DOUBLE_EQ(result.open_interest, 9465994.0);
-        EXPECT_EQ(result.md_req_id, "123"sv);
-        EXPECT_EQ(std::size(result.no_md_entries), size_t{1});
+        CHECK(result.symbol == "BTC-27SEP19"sv);
+        CHECK(result.trade_volume24h == 10831047.0_a);
+        CHECK(result.mark_price == 10517.44_a);
+        CHECK(result.open_interest == 9465994.0_a);
+        CHECK(result.md_req_id == "123"sv);
+        CHECK(std::size(result.no_md_entries) == size_t{1});
         // item 0
         auto &item_0 = result.no_md_entries[0];
-        EXPECT_EQ(item_0.md_update_action, core::fix::MDUpdateAction::NEW);
-        EXPECT_EQ(item_0.md_entry_type, core::fix::MDEntryType::OFFER);
-        EXPECT_DOUBLE_EQ(item_0.md_entry_px, 10523.0);
-        EXPECT_DOUBLE_EQ(item_0.md_entry_size, 1000.0);
-        EXPECT_EQ(item_0.md_entry_date, 1567870620896ms);
+        CHECK(item_0.md_update_action == core::fix::MDUpdateAction::NEW);
+        CHECK(item_0.md_entry_type == core::fix::MDEntryType::OFFER);
+        CHECK(item_0.md_entry_px == 10523.0_a);
+        CHECK(item_0.md_entry_size == 1000.0_a);
+        CHECK(item_0.md_entry_date == 1567870620896ms);
       },
       message);
-  EXPECT_EQ(bytes, std::size(message));
-  EXPECT_EQ(results, 1);
+  CHECK(bytes == std::size(message));
+  CHECK(results == 1);
 }
 
-TEST(fix_market_data_incremental_refresh, parse_message_2) {
+TEST_CASE(
+    "fix_market_data_incremental_refresh_parse_message_2", "fix_market_data_incremental_refresh") {
   const auto message =
       "8=FIX.4.4\0019=726\00135=X\00149=DERIBITSERVER\00156=ROQ_TRADI"
       "NG\00134=117\00152=20190907-15:37:00.384\00155=BTC-27SEP19\001"
@@ -70,87 +74,88 @@ TEST(fix_market_data_incremental_refresh, parse_message_2) {
   auto bytes = core::fix::Reader<core::fix::Version::FIX_44>::dispatch(
       [&](const core::fix::message_t &message) {
         ++results;
-        EXPECT_EQ(message.header.msg_type, core::fix::MsgType::MARKET_DATA_INCREMENTAL_REFRESH);
+        CHECK(message.header.msg_type == core::fix::MsgType::MARKET_DATA_INCREMENTAL_REFRESH);
         auto result = fix::MarketDataIncrementalRefresh::create(message, decode_buffer);
-        EXPECT_EQ(result.symbol, "BTC-27SEP19"sv);
-        EXPECT_EQ(std::size(result.no_md_entries), size_t{5});
+        CHECK(result.symbol == "BTC-27SEP19"sv);
+        CHECK(std::size(result.no_md_entries) == size_t{5});
         // item 0
         auto &item_0 = result.no_md_entries[0];
-        EXPECT_EQ(item_0.md_update_action, core::fix::MDUpdateAction::NEW);
-        EXPECT_EQ(item_0.md_entry_type, core::fix::MDEntryType::TRADE);
-        EXPECT_DOUBLE_EQ(item_0.md_entry_px, 10519.5);
-        EXPECT_DOUBLE_EQ(item_0.md_entry_size, 826.0);
-        EXPECT_EQ(item_0.md_entry_date, 1567870620378ms);
-        EXPECT_EQ(item_0.deribit_trade_id, "18254681"sv);
-        EXPECT_EQ(item_0.side, core::fix::Side::BUY);
-        EXPECT_EQ(item_0.order_id, "0"sv);
-        EXPECT_EQ(item_0.secondary_order_id, "0"sv);
-        EXPECT_EQ(item_0.ord_status, core::fix::OrdStatus::FILLED);
-        EXPECT_DOUBLE_EQ(item_0.index_price, 10445.93);
-        EXPECT_EQ(item_0.text, "2889354"sv);
+        CHECK(item_0.md_update_action == core::fix::MDUpdateAction::NEW);
+        CHECK(item_0.md_entry_type == core::fix::MDEntryType::TRADE);
+        CHECK(item_0.md_entry_px == 10519.5_a);
+        CHECK(item_0.md_entry_size == 826.0_a);
+        CHECK(item_0.md_entry_date == 1567870620378ms);
+        CHECK(item_0.deribit_trade_id == "18254681"sv);
+        CHECK(item_0.side == core::fix::Side::BUY);
+        CHECK(item_0.order_id == "0"sv);
+        CHECK(item_0.secondary_order_id == "0"sv);
+        CHECK(item_0.ord_status == core::fix::OrdStatus::FILLED);
+        CHECK(item_0.index_price == 10445.93_a);
+        CHECK(item_0.text == "2889354"sv);
         // item 1
         auto &item_1 = result.no_md_entries[1];
-        EXPECT_EQ(item_1.md_update_action, core::fix::MDUpdateAction::NEW);
-        EXPECT_EQ(item_1.md_entry_type, core::fix::MDEntryType::TRADE);
-        EXPECT_DOUBLE_EQ(item_1.md_entry_px, 10520.0);
-        EXPECT_DOUBLE_EQ(item_1.md_entry_size, 42.0);
-        EXPECT_EQ(item_1.md_entry_date, 1567870620378ms);
-        EXPECT_EQ(item_1.deribit_trade_id, "18254682"sv);
-        EXPECT_EQ(item_1.side, core::fix::Side::BUY);
-        EXPECT_EQ(item_1.order_id, "0"sv);
-        EXPECT_EQ(item_1.secondary_order_id, "0"sv);
-        EXPECT_EQ(item_1.ord_status, core::fix::OrdStatus::FILLED);
-        EXPECT_DOUBLE_EQ(item_1.index_price, 10445.93);
-        EXPECT_EQ(item_1.text, "2889355"sv);
+        CHECK(item_1.md_update_action == core::fix::MDUpdateAction::NEW);
+        CHECK(item_1.md_entry_type == core::fix::MDEntryType::TRADE);
+        CHECK(item_1.md_entry_px == 10520.0_a);
+        CHECK(item_1.md_entry_size == 42.0_a);
+        CHECK(item_1.md_entry_date == 1567870620378ms);
+        CHECK(item_1.deribit_trade_id == "18254682"sv);
+        CHECK(item_1.side == core::fix::Side::BUY);
+        CHECK(item_1.order_id == "0"sv);
+        CHECK(item_1.secondary_order_id == "0"sv);
+        CHECK(item_1.ord_status == core::fix::OrdStatus::FILLED);
+        CHECK(item_1.index_price == 10445.93_a);
+        CHECK(item_1.text == "2889355"sv);
         // item 2
         auto &item_2 = result.no_md_entries[2];
-        EXPECT_EQ(item_2.md_update_action, core::fix::MDUpdateAction::NEW);
-        EXPECT_EQ(item_2.md_entry_type, core::fix::MDEntryType::TRADE);
-        EXPECT_DOUBLE_EQ(item_2.md_entry_px, 10520.0);
-        EXPECT_DOUBLE_EQ(item_2.md_entry_size, 42.0);
-        EXPECT_EQ(item_2.md_entry_date, 1567870620378ms);
-        EXPECT_EQ(item_2.deribit_trade_id, "18254683"sv);
-        EXPECT_EQ(item_2.side, core::fix::Side::BUY);
-        EXPECT_EQ(item_2.order_id, "0"sv);
-        EXPECT_EQ(item_2.secondary_order_id, "0"sv);
-        EXPECT_EQ(item_2.ord_status, core::fix::OrdStatus::FILLED);
-        EXPECT_DOUBLE_EQ(item_2.index_price, 10445.93);
-        EXPECT_EQ(item_2.text, "2889356"sv);
+        CHECK(item_2.md_update_action == core::fix::MDUpdateAction::NEW);
+        CHECK(item_2.md_entry_type == core::fix::MDEntryType::TRADE);
+        CHECK(item_2.md_entry_px == 10520.0_a);
+        CHECK(item_2.md_entry_size == 42.0_a);
+        CHECK(item_2.md_entry_date == 1567870620378ms);
+        CHECK(item_2.deribit_trade_id == "18254683"sv);
+        CHECK(item_2.side == core::fix::Side::BUY);
+        CHECK(item_2.order_id == "0"sv);
+        CHECK(item_2.secondary_order_id == "0"sv);
+        CHECK(item_2.ord_status == core::fix::OrdStatus::FILLED);
+        CHECK(item_2.index_price == 10445.93_a);
+        CHECK(item_2.text == "2889356"sv);
         // item 3
         auto &item_3 = result.no_md_entries[3];
-        EXPECT_EQ(item_3.md_update_action, core::fix::MDUpdateAction::NEW);
-        EXPECT_EQ(item_3.md_entry_type, core::fix::MDEntryType::TRADE);
-        EXPECT_DOUBLE_EQ(item_3.md_entry_px, 10520.0);
-        EXPECT_DOUBLE_EQ(item_3.md_entry_size, 42.0);
-        EXPECT_EQ(item_3.md_entry_date, 1567870620378ms);
-        EXPECT_EQ(item_3.deribit_trade_id, "18254684"sv);
-        EXPECT_EQ(item_3.side, core::fix::Side::BUY);
-        EXPECT_EQ(item_3.order_id, "0"sv);
-        EXPECT_EQ(item_3.secondary_order_id, "0"sv);
-        EXPECT_EQ(item_3.ord_status, core::fix::OrdStatus::FILLED);
-        EXPECT_DOUBLE_EQ(item_3.index_price, 10445.93);
-        EXPECT_EQ(item_3.text, "2889357"sv);
+        CHECK(item_3.md_update_action == core::fix::MDUpdateAction::NEW);
+        CHECK(item_3.md_entry_type == core::fix::MDEntryType::TRADE);
+        CHECK(item_3.md_entry_px == 10520.0_a);
+        CHECK(item_3.md_entry_size == 42.0_a);
+        CHECK(item_3.md_entry_date == 1567870620378ms);
+        CHECK(item_3.deribit_trade_id == "18254684"sv);
+        CHECK(item_3.side == core::fix::Side::BUY);
+        CHECK(item_3.order_id == "0"sv);
+        CHECK(item_3.secondary_order_id == "0"sv);
+        CHECK(item_3.ord_status == core::fix::OrdStatus::FILLED);
+        CHECK(item_3.index_price == 10445.93_a);
+        CHECK(item_3.text == "2889357"sv);
         // item 4
         auto &item_4 = result.no_md_entries[4];
-        EXPECT_EQ(item_4.md_update_action, core::fix::MDUpdateAction::NEW);
-        EXPECT_EQ(item_4.md_entry_type, core::fix::MDEntryType::TRADE);
-        EXPECT_DOUBLE_EQ(item_4.md_entry_px, 10520.0);
-        EXPECT_DOUBLE_EQ(item_4.md_entry_size, 27.0);
-        EXPECT_EQ(item_4.md_entry_date, 1567870620378ms);
-        EXPECT_EQ(item_4.deribit_trade_id, "18254685"sv);
-        EXPECT_EQ(item_4.side, core::fix::Side::BUY);
-        EXPECT_EQ(item_4.order_id, "0"sv);
-        EXPECT_EQ(item_4.secondary_order_id, "0"sv);
-        EXPECT_EQ(item_4.ord_status, core::fix::OrdStatus::FILLED);
-        EXPECT_DOUBLE_EQ(item_4.index_price, 10445.93);
-        EXPECT_EQ(item_4.text, "2889358"sv);
+        CHECK(item_4.md_update_action == core::fix::MDUpdateAction::NEW);
+        CHECK(item_4.md_entry_type == core::fix::MDEntryType::TRADE);
+        CHECK(item_4.md_entry_px == 10520.0_a);
+        CHECK(item_4.md_entry_size == 27.0_a);
+        CHECK(item_4.md_entry_date == 1567870620378ms);
+        CHECK(item_4.deribit_trade_id == "18254685"sv);
+        CHECK(item_4.side == core::fix::Side::BUY);
+        CHECK(item_4.order_id == "0"sv);
+        CHECK(item_4.secondary_order_id == "0"sv);
+        CHECK(item_4.ord_status == core::fix::OrdStatus::FILLED);
+        CHECK(item_4.index_price == 10445.93_a);
+        CHECK(item_4.text == "2889358"sv);
       },
       message);
-  EXPECT_EQ(bytes, std::size(message));
-  EXPECT_EQ(results, 1);
+  CHECK(bytes == std::size(message));
+  CHECK(results == 1);
 }
 
-TEST(fix_market_data_incremental_refresh, parse_message_3) {
+TEST_CASE(
+    "fix_market_data_incremental_refresh_parse_message_3", "fix_market_data_incremental_refresh") {
   const auto message =
       "8=FIX.4.4\0019=219\00135=X\00149=DERIBITSERVER\00156=ROQ_TRADI"
       "NG\00134=16453\00152=20190928-15:48:12.831\00155=ETH-PERPETUAL"
@@ -163,26 +168,26 @@ TEST(fix_market_data_incremental_refresh, parse_message_3) {
   auto bytes = core::fix::Reader<core::fix::Version::FIX_44>::dispatch(
       [&](const core::fix::message_t &message) {
         ++results;
-        EXPECT_EQ(message.header.msg_type, core::fix::MsgType::MARKET_DATA_INCREMENTAL_REFRESH);
+        CHECK(message.header.msg_type == core::fix::MsgType::MARKET_DATA_INCREMENTAL_REFRESH);
         auto result = fix::MarketDataIncrementalRefresh::create(message, decode_buffer);
-        EXPECT_EQ(result.symbol, "ETH-PERPETUAL"sv);
-        EXPECT_EQ(std::size(result.no_md_entries), size_t{1});
+        CHECK(result.symbol == "ETH-PERPETUAL"sv);
+        CHECK(std::size(result.no_md_entries) == size_t{1});
         // item 0
         auto &item_0 = result.no_md_entries[0];
-        EXPECT_EQ(item_0.md_update_action, core::fix::MDUpdateAction::NEW);
-        EXPECT_EQ(item_0.md_entry_type, core::fix::MDEntryType::TRADE);
-        EXPECT_DOUBLE_EQ(item_0.md_entry_px, 170.15);
-        EXPECT_DOUBLE_EQ(item_0.md_entry_size, 22.0);
-        EXPECT_EQ(item_0.md_entry_date, 1569685692830ms);
-        EXPECT_EQ(item_0.deribit_trade_id, "ETH-1192275"sv);
-        EXPECT_EQ(item_0.side, core::fix::Side::BUY);
-        EXPECT_EQ(item_0.order_id, "0"sv);
-        EXPECT_EQ(item_0.secondary_order_id, "0"sv);
-        EXPECT_EQ(item_0.ord_status, core::fix::OrdStatus::PARTIALLY_FILLED);
-        EXPECT_DOUBLE_EQ(item_0.index_price, 170.36);
-        EXPECT_EQ(item_0.text, "586940"sv);
+        CHECK(item_0.md_update_action == core::fix::MDUpdateAction::NEW);
+        CHECK(item_0.md_entry_type == core::fix::MDEntryType::TRADE);
+        CHECK(item_0.md_entry_px == 170.15_a);
+        CHECK(item_0.md_entry_size == 22.0_a);
+        CHECK(item_0.md_entry_date == 1569685692830ms);
+        CHECK(item_0.deribit_trade_id == "ETH-1192275"sv);
+        CHECK(item_0.side == core::fix::Side::BUY);
+        CHECK(item_0.order_id == "0"sv);
+        CHECK(item_0.secondary_order_id == "0"sv);
+        CHECK(item_0.ord_status == core::fix::OrdStatus::PARTIALLY_FILLED);
+        CHECK(item_0.index_price == 170.36_a);
+        CHECK(item_0.text == "586940"sv);
       },
       message);
-  EXPECT_EQ(bytes, std::size(message));
-  EXPECT_EQ(results, 1);
+  CHECK(bytes == std::size(message));
+  CHECK(results == 1);
 }
