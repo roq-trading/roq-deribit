@@ -15,7 +15,7 @@ using namespace std::chrono_literals;
 
 using namespace Catch::literals;
 
-TEST_CASE("fix_new_order_single_create_message", "fix_new_order_single") {
+TEST_CASE("fix_new_order_single_create_message", "[fix_new_order_single]") {
   core::Buffer buffer(4096);
   auto msg_seq_num = uint64_t{0};
   auto sending_time = 1568702810s;

@@ -1229,7 +1229,7 @@ const auto message =
     "15=USD\0012576=2\001969=0.0100\00110=083\001"sv;
 }  // namespace
 
-TEST_CASE("fix_security_list_parse_message", "fix_security_list") {
+TEST_CASE("fix_security_list_parse_message", "[fix_security_list]") {
   core::Buffer buffer(1024 * 1024);
   core::fix::Buffer decode_buffer(buffer);
   int results = 0;

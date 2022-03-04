@@ -15,7 +15,7 @@ using namespace std::chrono_literals;
 
 using namespace Catch::literals;
 
-TEST_CASE("fix_order_cancel_request_create_message", "fix_order_cancel_request") {
+TEST_CASE("fix_order_cancel_request_create_message", "[fix_order_cancel_request]") {
   core::Buffer buffer(4096);
   auto msg_seq_num = uint64_t{0};
   auto sending_time = 1568702810s;

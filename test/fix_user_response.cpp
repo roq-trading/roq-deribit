@@ -13,7 +13,7 @@ using namespace std::literals;
 
 using namespace Catch::literals;
 
-TEST_CASE("fix_user_response_parse_message", "fix_user_response") {
+TEST_CASE("fix_user_response_parse_message", "[fix_user_response]") {
   const auto message =
       "8=FIX.4.4\0019=199\00135=BF\00149=DERIBITSERVER\00156=ROQ_TRAD"
       "ING\00134=3\00152=20190908-08:47:31.511\001923=123\001553=5MP4"

@@ -11,7 +11,7 @@ using namespace std::literals;
 
 using namespace Catch::literals;
 
-TEST_CASE("json_ticker_parse_message", "json_ticker") {
+TEST_CASE("json_ticker_parse_message", "[json_ticker]") {
   const auto message = R"({)"
                        R"("jsonrpc":"2.0",)"
                        R"("result":{)"

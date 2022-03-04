@@ -13,7 +13,7 @@ using namespace std::literals;
 
 using namespace Catch::literals;
 
-TEST_CASE("fix_position_report_parse_message", "fix_position_report") {
+TEST_CASE("fix_position_report_parse_message", "[fix_position_report]") {
   const auto message =
       "8=FIX.4.4\0019=245\00135=AP\00149=DERIBITSERVER\00156=ROQ_TRAD"
       "ING\00134=5\00152=20190920-17:10:28.595\001721=3221109\001710="

@@ -15,7 +15,7 @@ using namespace std::chrono_literals;
 
 using namespace Catch::literals;
 
-TEST_CASE("fix_logon_parse_message", "fix_logon") {
+TEST_CASE("fix_logon_parse_message", "[fix_logon]") {
   const auto message =
       "8=FIX.4.4\0019=211\00135=A\00149=DERIBITSERVER\00156=ROQ_TRADI"
       "NG\00134=1\00152=20190907-16:45:58.192\001108=10\00195=58\0019"
@@ -40,7 +40,7 @@ TEST_CASE("fix_logon_parse_message", "fix_logon") {
   CHECK(results == 1);
 }
 
-TEST_CASE("fix_logon_create_message", "fix_logon") {
+TEST_CASE("fix_logon_create_message", "[fix_logon]") {
   core::Buffer buffer(4096);
   uint64_t msg_seq_num = 0;
   auto sending_time = 1568702810s;

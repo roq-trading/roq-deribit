@@ -13,7 +13,7 @@ using namespace std::literals;
 
 using namespace Catch::literals;
 
-TEST_CASE("fix_market_data_request_reject_parse_message", "fix_market_data_request_reject") {
+TEST_CASE("fix_market_data_request_reject_parse_message", "[fix_market_data_request_reject]") {
   const auto message =
       "8=FIX.4.4\0019=102\00135=Y\00149=DERIBITSERVER\00156=ROQ_TRADI"
       "NG\00134=4\00152=20190908-10:54:45.738\001262=123\00158=unknow"

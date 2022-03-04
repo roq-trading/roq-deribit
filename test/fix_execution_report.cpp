@@ -13,7 +13,7 @@ using namespace std::literals;
 
 using namespace Catch::literals;
 
-TEST_CASE("fix_execution_report_parse_message", "fix_execution_report") {
+TEST_CASE("fix_execution_report_parse_message", "[fix_execution_report]") {
   const auto message =
       "8=FIX.4.4\0019=275\00135=8\00149=DERIBITSERVER\00156=ROQ_TRADI"
       "NG\00134=2\00152=20190908-17:18:38.983\00137=2831903667\00111="
@@ -57,7 +57,7 @@ TEST_CASE("fix_execution_report_parse_message", "fix_execution_report") {
   CHECK(results == 1);
 }
 
-TEST_CASE("fix_execution_report_parse_order_mass_status", "fix_execution_report") {
+TEST_CASE("fix_execution_report_parse_order_mass_status", "[fix_execution_report]") {
   const auto message =
       "8=FIX.4.4\0019=112\00135=8\00149=DERIBITSERVER\00156=ROQ_TRADI"
       "NG\00134=4\00152=20190909-07:58:54.679\001584=roq-oms-005\0015"
@@ -80,7 +80,7 @@ TEST_CASE("fix_execution_report_parse_order_mass_status", "fix_execution_report"
   CHECK(results == 1);
 }
 
-TEST_CASE("fix_execution_report_parse_fill", "fix_execution_report") {
+TEST_CASE("fix_execution_report_parse_fill", "[fix_execution_report]") {
   const auto message =
       "8=FIX.4.4\0019=403\00135=8\00149=DERIBITSERVER\00156=ROQ_TRADI"
       "NG\00134=598\00152=20191027-14:02:33.897\00137=3026811591\0011"

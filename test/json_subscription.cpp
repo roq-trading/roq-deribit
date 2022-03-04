@@ -22,7 +22,7 @@ struct MyHandler : public json::Parser::Handler {
   void operator()(const server::Trace<json::Trades2> &) {}
 };
 
-TEST_CASE("json_subscription_parse_message", "json_subscription") {
+TEST_CASE("json_subscription_parse_message", "[json_subscription]") {
   /*
   std::string xxx =
   R"({"jsonrpc":"2.0","method":"subscription","params":{"channel":"ticker.BTC-2APR20-7125-P.raw","data":{"underlying_price":6663.43,"underlying_index":"SYN.BTC-2APR20","timestamp":1585814403026,"stats":{"volume":25.6,"price_change":5.6338,"low":0.071,"high":0.075},"state":"open","settlement_price":0.12,"open_interest":25.6,"min_price":0.0385,"max_price":0.102,"mark_price":0.06926904,"mark_iv":250.0,"last_price":0.075,"interest_rate":0.0,"instrument_name":"BTC-2APR20-7125-P","index_price":6662.29,"greeks":{"vega":0.0,"theta":0.0,"rho":0.0,"gamma":0.0,"delta":0.0},"estimated_delivery_price":"expired","bid_iv":0.0,"best_bid_price":0.0005,"best_bid_amount":1.2,"best_ask_price":0.0775,"best_ask_amount":3.0,"ask_iv":500.0}}})";

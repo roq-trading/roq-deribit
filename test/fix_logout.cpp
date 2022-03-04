@@ -13,7 +13,7 @@ using namespace std::literals;
 
 using namespace Catch::literals;
 
-TEST_CASE("fix_logout_parse_message", "fix_logout") {
+TEST_CASE("fix_logout_parse_message", "[fix_logout]") {
   const auto message =
       "8=FIX.4.4\0019=90\00135=5\00149=DERIBITSERVER\00156=ROQ_TRADIN"
       "G\00134=1\00152=20190907-16:56:43.398\00158=invalid_credential"

@@ -13,7 +13,7 @@ using namespace std::literals;
 
 using namespace Catch::literals;
 
-TEST_CASE("fix_order_cancel_reject_parse_message", "fix_order_cancel_reject") {
+TEST_CASE("fix_order_cancel_reject_parse_message", "[fix_order_cancel_reject]") {
   const auto message =
       "8=FIX.4.4\0019=99\00135=9\00149=DERIBITSERVER\00156=ROQ_TRADIN"
       "G\00134=3\00152=20190908-17:39:23.573\00141=123\00111=345\0013"
@@ -34,7 +34,7 @@ TEST_CASE("fix_order_cancel_reject_parse_message", "fix_order_cancel_reject") {
   CHECK(results == 1);
 }
 
-TEST_CASE("fix_order_cancel_reject_already_cancelled", "fix_order_cancel_reject") {
+TEST_CASE("fix_order_cancel_reject_already_cancelled", "[fix_order_cancel_reject]") {
   const auto message =
       "8=FIX.4.4\0019=146\00135=9\00149=DERIBITSERVER\00156=ROQ_TRADI"
       "NG\00134=58\00152=20210828-03:55:00.570\00141=5wAC6QMAAwAACDaI"

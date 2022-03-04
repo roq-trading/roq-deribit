@@ -11,7 +11,7 @@ using namespace std::literals;
 
 using namespace Catch::literals;
 
-TEST_CASE("json_currency_parse_message", "json_currency") {
+TEST_CASE("json_currency_parse_message", "[json_currency]") {
   const auto message =
       R"({)"
       R"("jsonrpc":"2.0",)"
