@@ -4,22 +4,22 @@
 
 #include <string_view>
 
-#include "roq/core/json/buffer.h"
-#include "roq/core/json/parser.h"
+#include "roq/core/json/buffer.hpp"
+#include "roq/core/json/parser.hpp"
 
-#include "roq/server.h"
+#include "roq/server.hpp"
 
 // public
-#include "roq/deribit/json/ticker.h"
+#include "roq/deribit/json/ticker.hpp"
 
 // private
-#include "roq/deribit/json/changes.h"
-#include "roq/deribit/json/instrument_state.h"
-#include "roq/deribit/json/order.h"
-#include "roq/deribit/json/platform_state.h"
-#include "roq/deribit/json/portfolio.h"
-#include "roq/deribit/json/quote.h"
-#include "roq/deribit/json/trades_2.h"
+#include "roq/deribit/json/changes.hpp"
+#include "roq/deribit/json/instrument_state.hpp"
+#include "roq/deribit/json/order.hpp"
+#include "roq/deribit/json/platform_state.hpp"
+#include "roq/deribit/json/portfolio.hpp"
+#include "roq/deribit/json/quote.hpp"
+#include "roq/deribit/json/trades_2.hpp"
 
 namespace roq {
 namespace deribit {

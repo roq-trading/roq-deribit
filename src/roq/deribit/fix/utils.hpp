@@ -4,9 +4,9 @@
 
 #include <string_view>
 
-#include "roq/api.h"
+#include "roq/api.hpp"
 
-#include "roq/deribit/fix/adv_order_type.h"
+#include "roq/deribit/fix/adv_order_type.hpp"
 
 namespace roq {
 namespace deribit {

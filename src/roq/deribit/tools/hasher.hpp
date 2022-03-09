@@ -7,8 +7,8 @@
 #include <string_view>
 #include <utility>
 
-#include "roq/core/crypto/hmac.h"
-#include "roq/core/crypto/sha.h"
+#include "roq/core/crypto/hmac.hpp"
+#include "roq/core/crypto/sha.hpp"
 
 namespace roq {
 namespace deribit {

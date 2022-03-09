@@ -1,12 +1,12 @@
 /* Copyright (c) 2017-2022, Hans Erik Thrane */
 
-#include "roq/deribit/config.h"
+#include "roq/deribit/config.hpp"
 
 #include <utility>
 
-#include "roq/logging.h"
+#include "roq/logging.hpp"
 
-#include "roq/deribit/flags/config.h"
+#include "roq/deribit/flags/config.hpp"
 
 using namespace std::literals;
 

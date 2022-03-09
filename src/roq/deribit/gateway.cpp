@@ -1,10 +1,10 @@
 /* Copyright (c) 2017-2022, Hans Erik Thrane */
 
-#include "roq/deribit/gateway.h"
+#include "roq/deribit/gateway.hpp"
 
 #include <utility>
 
-#include "roq/deribit/flags/fix.h"
+#include "roq/deribit/flags/fix.hpp"
 
 using namespace std::literals;
 

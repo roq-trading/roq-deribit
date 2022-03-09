@@ -1,11 +1,11 @@
 /* Copyright (c) 2017-2022, Hans Erik Thrane */
 
-#include "roq/deribit/application.h"
+#include "roq/deribit/application.hpp"
 
-#include "roq/deribit/config.h"
-#include "roq/deribit/gateway.h"
+#include "roq/deribit/config.hpp"
+#include "roq/deribit/gateway.hpp"
 
-#include "roq/deribit/flags/config.h"
+#include "roq/deribit/flags/config.hpp"
 
 using namespace std::literals;
 

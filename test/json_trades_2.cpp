@@ -2,7 +2,7 @@
 
 #include <catch2/catch.hpp>
 
-#include "roq/deribit/json/trades_2.h"
+#include "roq/deribit/json/trades_2.hpp"
 
 using namespace roq;
 using namespace roq::deribit;

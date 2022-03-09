@@ -2,10 +2,10 @@
 
 #include <catch2/catch.hpp>
 
-#include "roq/core/debug.h"
-#include "roq/core/fix/reader.h"
+#include "roq/core/debug.hpp"
+#include "roq/core/fix/reader.hpp"
 
-#include "roq/deribit/fix/logon.h"
+#include "roq/deribit/fix/logon.hpp"
 
 using namespace roq;
 using namespace roq::deribit;

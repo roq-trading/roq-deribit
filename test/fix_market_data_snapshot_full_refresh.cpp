@@ -2,9 +2,9 @@
 
 #include <catch2/catch.hpp>
 
-#include "roq/core/fix/reader.h"
+#include "roq/core/fix/reader.hpp"
 
-#include "roq/deribit/fix/market_data_snapshot_full_refresh.h"
+#include "roq/deribit/fix/market_data_snapshot_full_refresh.hpp"
 
 using namespace roq;
 using namespace roq::deribit;

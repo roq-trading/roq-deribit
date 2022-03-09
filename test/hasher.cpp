@@ -2,7 +2,7 @@
 
 #include <catch2/catch.hpp>
 
-#include "roq/deribit/tools/hasher.h"
+#include "roq/deribit/tools/hasher.hpp"
 
 using namespace roq;
 using namespace roq::deribit;

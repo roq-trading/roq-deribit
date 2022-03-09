@@ -2,7 +2,7 @@
 
 #include <catch2/catch.hpp>
 
-#include "roq/deribit/json/ticker.h"
+#include "roq/deribit/json/ticker.hpp"
 
 using namespace roq;
 using namespace roq::deribit;

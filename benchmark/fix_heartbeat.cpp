@@ -2,7 +2,7 @@
 
 #include <benchmark/benchmark.h>
 
-#include "roq/deribit/fix/heartbeat.h"
+#include "roq/deribit/fix/heartbeat.hpp"
 
 using namespace roq;
 using namespace roq::deribit;

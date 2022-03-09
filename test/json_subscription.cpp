@@ -2,7 +2,7 @@
 
 #include <catch2/catch.hpp>
 
-#include "roq/deribit/json/parser.h"
+#include "roq/deribit/json/parser.hpp"
 
 using namespace roq;
 using namespace roq::deribit;

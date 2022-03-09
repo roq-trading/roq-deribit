@@ -1,9 +1,9 @@
 /* Copyright (c) 2017-2022, Hans Erik Thrane */
 
-#include "roq/deribit/shared.h"
+#include "roq/deribit/shared.hpp"
 
-#include "roq/deribit/flags/common.h"
-#include "roq/deribit/flags/fix.h"
+#include "roq/deribit/flags/common.hpp"
+#include "roq/deribit/flags/fix.hpp"
 
 using namespace std::literals;
 

@@ -8,7 +8,7 @@
 #include <charconv>
 #include <string_view>
 
-#include "roq/deribit/tools/hasher.h"
+#include "roq/deribit/tools/hasher.hpp"
 
 using namespace std::literals;
 

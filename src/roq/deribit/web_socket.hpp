@@ -10,31 +10,31 @@
 #include <utility>
 #include <vector>
 
-#include "roq/core/download.h"
-#include "roq/core/timer_queue.h"
+#include "roq/core/download.hpp"
+#include "roq/core/timer_queue.hpp"
 
-#include "roq/core/metrics/counter.h"
-#include "roq/core/metrics/latency.h"
-#include "roq/core/metrics/profile.h"
+#include "roq/core/metrics/counter.hpp"
+#include "roq/core/metrics/latency.hpp"
+#include "roq/core/metrics/profile.hpp"
 
-#include "roq/core/io/context.h"
+#include "roq/core/io/context.hpp"
 
-#include "roq/core/web/client_socket.h"
+#include "roq/core/web/client_socket.hpp"
 
-#include "roq/core/jsonrpc/parser.h"
+#include "roq/core/jsonrpc/parser.hpp"
 
-#include "roq/server.h"
+#include "roq/server.hpp"
 
-#include "roq/deribit/security.h"
-#include "roq/deribit/shared.h"
-#include "roq/deribit/web_socket_state.h"
+#include "roq/deribit/security.hpp"
+#include "roq/deribit/shared.hpp"
+#include "roq/deribit/web_socket_state.hpp"
 
-#include "roq/deribit/json/auth.h"
-#include "roq/deribit/json/currencies.h"
-#include "roq/deribit/json/instruments.h"
-#include "roq/deribit/json/parser.h"
-#include "roq/deribit/json/positions.h"
-#include "roq/deribit/json/ticker.h"
+#include "roq/deribit/json/auth.hpp"
+#include "roq/deribit/json/currencies.hpp"
+#include "roq/deribit/json/instruments.hpp"
+#include "roq/deribit/json/parser.hpp"
+#include "roq/deribit/json/positions.hpp"
+#include "roq/deribit/json/ticker.hpp"
 
 namespace roq {
 namespace deribit {

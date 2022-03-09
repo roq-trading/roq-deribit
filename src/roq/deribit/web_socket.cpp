@@ -1,23 +1,23 @@
 /* Copyright (c) 2017-2022, Hans Erik Thrane */
 
-#include "roq/deribit/web_socket.h"
+#include "roq/deribit/web_socket.hpp"
 
 #include <algorithm>
 
-#include "roq/utils/compare.h"
-#include "roq/utils/mask.h"
-#include "roq/utils/update.h"
+#include "roq/utils/compare.hpp"
+#include "roq/utils/mask.hpp"
+#include "roq/utils/update.hpp"
 
-#include "roq/core/metrics/factory.h"
+#include "roq/core/metrics/factory.hpp"
 
-#include "roq/deribit/flags/common.h"
-#include "roq/deribit/flags/config.h"
-#include "roq/deribit/flags/web_socket.h"
+#include "roq/deribit/flags/common.hpp"
+#include "roq/deribit/flags/config.hpp"
+#include "roq/deribit/flags/web_socket.hpp"
 
-#include "roq/deribit/json/error.h"
-#include "roq/deribit/json/method.h"
-#include "roq/deribit/json/request_type.h"
-#include "roq/deribit/json/utils.h"
+#include "roq/deribit/json/error.hpp"
+#include "roq/deribit/json/method.hpp"
+#include "roq/deribit/json/request_type.hpp"
+#include "roq/deribit/json/utils.hpp"
 
 using namespace std::literals;
 

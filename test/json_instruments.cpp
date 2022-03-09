@@ -2,7 +2,7 @@
 
 #include <catch2/catch.hpp>
 
-#include "roq/deribit/json/instrument.h"
+#include "roq/deribit/json/instrument.hpp"
 
 using namespace roq;
 using namespace roq::deribit;

@@ -2,7 +2,7 @@
 
 #include <catch2/catch.hpp>
 
-#include "roq/deribit/json/currency.h"
+#include "roq/deribit/json/currency.hpp"
 
 using namespace roq;
 using namespace roq::deribit;

@@ -7,9 +7,9 @@
 #include <string_view>
 #include <utility>
 
-#include "roq/deribit/config.h"
+#include "roq/deribit/config.hpp"
 
-#include "roq/deribit/tools/hasher.h"
+#include "roq/deribit/tools/hasher.hpp"
 
 namespace roq {
 namespace deribit {

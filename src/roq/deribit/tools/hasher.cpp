@@ -1,6 +1,6 @@
 /* Copyright (c) 2017-2022, Hans Erik Thrane */
 
-#include "roq/deribit/tools/hasher.h"
+#include "roq/deribit/tools/hasher.hpp"
 
 #include <algorithm>
 #include <array>
@@ -9,8 +9,8 @@
 
 #include <fmt/format.h>
 
-#include "roq/core/binascii/base64.h"
-#include "roq/core/binascii/hex.h"
+#include "roq/core/binascii/base64.hpp"
+#include "roq/core/binascii/hex.hpp"
 
 using namespace std::literals;
 

@@ -1,14 +1,14 @@
 /* Copyright (c) 2017-2022, Hans Erik Thrane */
 
-#include "roq/deribit/json/parser.h"
+#include "roq/deribit/json/parser.hpp"
 
-#include "roq/compat.h"
+#include "roq/compat.hpp"
 
-#include "roq/deribit/json/channel.h"
-#include "roq/deribit/json/field.h"
-#include "roq/deribit/json/utils.h"
+#include "roq/deribit/json/channel.hpp"
+#include "roq/deribit/json/field.hpp"
+#include "roq/deribit/json/utils.hpp"
 
-#include "roq/logging.h"
+#include "roq/logging.hpp"
 
 using namespace std::literals;
 

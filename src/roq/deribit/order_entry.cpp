@@ -1,37 +1,37 @@
 /* Copyright (c) 2017-2022, Hans Erik Thrane */
 
-#include "roq/deribit/order_entry.h"
+#include "roq/deribit/order_entry.hpp"
 
 #include <algorithm>
 #include <utility>
 
-#include "roq/utils/mask.h"
-#include "roq/utils/safe_cast.h"
-#include "roq/utils/update.h"
+#include "roq/utils/mask.hpp"
+#include "roq/utils/safe_cast.hpp"
+#include "roq/utils/update.hpp"
 
-#include "roq/core/back_emplacer.h"
-#include "roq/core/debug.h"
+#include "roq/core/back_emplacer.hpp"
+#include "roq/core/debug.hpp"
 
-#include "roq/core/metrics/factory.h"
+#include "roq/core/metrics/factory.hpp"
 
-#include "roq/core/fix/debug.h"
-#include "roq/core/fix/utils.h"
+#include "roq/core/fix/debug.hpp"
+#include "roq/core/fix/utils.hpp"
 
-#include "roq/deribit/common.h"
+#include "roq/deribit/common.hpp"
 
-#include "roq/deribit/flags/common.h"
-#include "roq/deribit/flags/config.h"
-#include "roq/deribit/flags/fix.h"
+#include "roq/deribit/flags/common.hpp"
+#include "roq/deribit/flags/config.hpp"
+#include "roq/deribit/flags/fix.hpp"
 
-#include "roq/deribit/fix/utils.h"
+#include "roq/deribit/fix/utils.hpp"
 
 // business (outbound)
-#include "roq/deribit/fix/new_order_single.h"
-#include "roq/deribit/fix/order_cancel_replace_request.h"
-#include "roq/deribit/fix/order_cancel_request.h"
-#include "roq/deribit/fix/order_mass_cancel_request.h"
-#include "roq/deribit/fix/order_mass_status_request.h"
-#include "roq/deribit/fix/request_for_positions.h"
+#include "roq/deribit/fix/new_order_single.hpp"
+#include "roq/deribit/fix/order_cancel_replace_request.hpp"
+#include "roq/deribit/fix/order_cancel_request.hpp"
+#include "roq/deribit/fix/order_mass_cancel_request.hpp"
+#include "roq/deribit/fix/order_mass_status_request.hpp"
+#include "roq/deribit/fix/request_for_positions.hpp"
 
 using namespace std::literals;
 
