@@ -6,8 +6,10 @@
 
   [accounts.A1]
   master = true
-  login = "2tZQEQRV"
-  secret = "saQaP6WmDefitTmd6DcAqnhJFtpC9eubZ3bzYm21af4"
+  #login = "2tZQEQRV"
+  #secret = "saQaP6WmDefitTmd6DcAqnhJFtpC9eubZ3bzYm21af4"
+  login = "Npu-0mAR"
+  secret = "NExsbfKHjTqisZ9qJL8c2_15yk4brIrooxQ1n9uoW7M"
   symbols = ".*"
 
 [users]

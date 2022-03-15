@@ -5,7 +5,7 @@
 #include <algorithm>
 
 #include "roq/utils/compare.hpp"
-#include "roq/utils/mask.hpp"
+#include "roq/mask.hpp"
 #include "roq/utils/safe_cast.hpp"
 #include "roq/utils/update.hpp"
 
@@ -36,12 +36,12 @@ namespace {
 const auto LOGOUT_RESPONSE = "LOGOUT"sv;  // XXX
 
 const auto NAME = "md"sv;
-const auto SUPPORTS = utils::Mask{
+const auto SUPPORTS = Mask{
     SupportType::MARKET_BY_PRICE,
     SupportType::TRADE_SUMMARY,
     SupportType::STATISTICS,
 };
-const auto SUPPORTS_MASTER = utils::Mask{
+const auto SUPPORTS_MASTER = Mask{
     SUPPORTS,
     SupportType::REFERENCE_DATA,
 };
@@ -72,8 +72,10 @@ void validate(const T &value) {
     case core::fix::MDUpdateAction::UNKNOWN:
       break;
     case core::fix::MDUpdateAction::NEW:
+      // assert(utils::compare(value.md_entry_size, 0.0) > 0);
+      break;
     case core::fix::MDUpdateAction::CHANGE:
-      assert(utils::compare(value.md_entry_size, 0.0) > 0);
+      // assert(utils::compare(value.md_entry_size, 0.0) > 0);
       break;
     case core::fix::MDUpdateAction::DELETE:
       assert(utils::compare(value.md_entry_size, 0.0) == 0);

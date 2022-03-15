@@ -5,7 +5,7 @@
 #include <algorithm>
 
 #include "roq/utils/compare.hpp"
-#include "roq/utils/mask.hpp"
+#include "roq/mask.hpp"
 #include "roq/utils/update.hpp"
 
 #include "roq/core/metrics/factory.hpp"
@@ -25,10 +25,10 @@ namespace roq {
 namespace deribit {
 
 namespace {
-const auto SUPPORTS = utils::Mask{
+const auto SUPPORTS = Mask{
     SupportType::TOP_OF_BOOK,
 };
-const auto SUPPORTS_MASTER = utils::Mask{
+const auto SUPPORTS_MASTER = Mask{
     SUPPORTS,
     SupportType::MARKET_STATUS,
 };

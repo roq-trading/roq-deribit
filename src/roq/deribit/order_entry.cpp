@@ -5,7 +5,7 @@
 #include <algorithm>
 #include <utility>
 
-#include "roq/utils/mask.hpp"
+#include "roq/mask.hpp"
 #include "roq/utils/safe_cast.hpp"
 #include "roq/utils/update.hpp"
 
@@ -41,7 +41,7 @@ namespace deribit {
 namespace {
 const auto LOGOUT_RESPONSE = "LOGOUT"sv;
 
-const auto SUPPORTS = utils::Mask{
+const auto SUPPORTS = Mask{
     SupportType::CREATE_ORDER,
     SupportType::MODIFY_ORDER,
     SupportType::CANCEL_ORDER,

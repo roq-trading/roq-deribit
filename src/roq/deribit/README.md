@@ -1,3 +1,41 @@
+
+
+
+
+2022-03-15 (testnet)
+Unexpected updates with size 0
+NEW
+```
+header={msg_type_raw="X", msg_type=MARKET_DATA_INCREMENTAL_REFRESH, sender_comp_id="DERIBITSERVER", target_comp_id="ROQ_TRADING", msg_seq_num=1454, sending_time=1647351337728ms},
+market_data_incremental_refresh={symbol="BTC-PERPETUAL", md_req_id="roq-12", contract_multiplier=10, put_or_call=UNKNOWN, mark_price=38834.98, open_interest=299006933, no_md_entries=[
+  {md_update_action=DELETE, md_entry_type=OFFER, md_entry_px=38836.5, md_entry_size=0, md_entry_date=1647351337727ms, deribit_trade_id="", side=UNKNOWN, order_id="", secondary_order_id="", ord_status=UNKNOWN, deribit_label="", index_price=nan, text="", deribit_liquidation=""},
+  {md_update_action=NEW, md_entry_type=OFFER, md_entry_px=38842, md_entry_size=0, md_entry_date=1647351337727ms, deribit_trade_id="", side=UNKNOWN, order_id="", secondary_order_id="", ord_status=UNKNOWN, deribit_label="", index_price=nan, text="", deribit_liquidation=""}
+], trade_volume24h=38833176}
+```
+CHANGE
+```
+header={msg_type_raw="X", msg_type=MARKET_DATA_INCREMENTAL_REFRESH, sender_comp_id="DERIBITSERVER", target_comp_id="ROQ_TRADING", msg_seq_num=856, sending_time=1647351208363ms},
+market_data_incremental_refresh={symbol="BTC-PERPETUAL", md_req_id="roq-12", contract_multiplier=10, put_or_call=UNKNOWN, mark_price=38854.1, open_interest=299001667, no_md_entries=[
+{md_update_action=CHANGE, md_entry_type=OFFER, md_entry_px=38865, md_entry_size=0, md_entry_date=1647351208362ms, deribit_trade_id="", side=UNKNOWN, order_id="", secondary_order_id="", ord_status=UNKNOWN, deribit_label="", index_price=nan, text="", deribit_liquidation=""}
+], trade_volume24h=38883815}
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 login="{
 "method":"public/auth"
 "params":{"grant_type":"client_signature"

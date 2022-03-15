@@ -6,7 +6,7 @@ CONFIG_FILE="config/$NAME.toml"
 
 URI="deribit.com"
 
-FIX_URI="tcp://www.$URI:9880"
+FIX_URI="tcp://www.$URI:9881"
 WS_URI="wss://www.$URI/ws/api/v2"
 
 # debug?
