@@ -4,8 +4,8 @@
 
 #include <algorithm>
 
-#include "roq/utils/compare.hpp"
 #include "roq/mask.hpp"
+#include "roq/utils/compare.hpp"
 #include "roq/utils/update.hpp"
 
 #include "roq/core/metrics/factory.hpp"
