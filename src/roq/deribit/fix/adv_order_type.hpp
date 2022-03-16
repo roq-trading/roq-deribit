@@ -27,12 +27,12 @@ extern AdvOrderType parse_adv_order_type(const std::string_view &value);
 template <>
 struct fmt::formatter<roq::deribit::fix::AdvOrderType> {
   template <typename Context>
-  constexpr auto parse(Context &ctx) {
-    return std::begin(ctx);
+  constexpr auto parse(Context &context) {
+    return std::begin(context);
   }
   template <typename Context>
-  auto format(const roq::deribit::fix::AdvOrderType &value, Context &ctx) {
+  auto format(const roq::deribit::fix::AdvOrderType &value, Context &context) {
     using namespace std::literals;
-    return fmt::format_to(ctx.out(), "{}"sv, roq::deribit::fix::EnumNameAdvOrderType(value));
+    return fmt::format_to(context.out(), "{}"sv, roq::deribit::fix::EnumNameAdvOrderType(value));
   }
 };
