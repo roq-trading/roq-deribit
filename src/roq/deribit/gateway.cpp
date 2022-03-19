@@ -12,61 +12,61 @@ namespace roq {
 namespace deribit {
 
 namespace {
+template <typename R>
 auto create_security(const Config &config) {
-  absl::flat_hash_map<std::string, std::unique_ptr<Security>> result;
-  for (auto &[_, iter] : config.accounts) {
+  R result;
+  for (auto &[_, iter] : config.accounts)
     result.try_emplace(iter.name, std::make_unique<Security>(config, iter.name));
-  }
   return result;
 }
 
-template <typename T>
+template <typename R, typename T>
 auto create_order_entry(
     Gateway &gateway,
     core::io::Context &context,
     uint16_t &stream_id,
     T &security,
     Shared &shared) {
-  absl::flat_hash_map<std::string, std::unique_ptr<OrderEntry>> result;
-  for (auto &iter : security) {
+  R result;
+  for (auto &iter : security)
     result.try_emplace(
         iter.first,
         std::make_unique<OrderEntry>(gateway, context, ++stream_id, *iter.second, shared));
-  }
   return result;
 }
 
-template <typename T>
+template <typename R, typename T>
 auto create_drop_copy(
     Gateway &gateway,
     core::io::Context &context,
     uint16_t &stream_id,
     T &security,
     Shared &shared) {
-  absl::flat_hash_map<std::string, std::unique_ptr<DropCopy>> result;
-  for (auto &iter : security) {
+  R result;
+  for (auto &iter : security)
     result.try_emplace(
         iter.first,
         std::make_unique<DropCopy>(gateway, context, ++stream_id, *iter.second, shared));
-  }
   return result;
 }
 
+template <typename R>
 auto create_web_socket(
     Gateway &gateway, core::io::Context &context, uint16_t &stream_id, Shared &shared) {
-  std::vector<std::unique_ptr<WebSocket>> result;
+  R result;
   result.emplace_back(
       std::make_unique<WebSocket>(gateway, context, ++stream_id, shared, std::size(result), true));
   return result;
 }
 
+template <typename R>
 auto create_market_data(
     Gateway &gateway,
     core::io::Context &context,
     uint16_t &stream_id,
     Security &security,
     Shared &shared) {
-  std::vector<std::unique_ptr<MarketData>> result;
+  R result;
   result.emplace_back(std::make_unique<MarketData>(
       gateway, context, stream_id, security, shared, std::size(result), true));
   return result;
@@ -75,12 +75,14 @@ auto create_market_data(
 
 Gateway::Gateway(server::Dispatcher &dispatcher, const Config &config)
     : dispatcher_(dispatcher), master_account_(config.get_master_account()),
-      security_(create_security(config)), shared_(dispatcher_),
-      order_entry_(create_order_entry(*this, context_, stream_id_, security_, shared_)),
-      drop_copy_(create_drop_copy(*this, context_, stream_id_, security_, shared_)),
-      web_socket_(create_web_socket(*this, context_, stream_id_, shared_)),
-      market_data_(
-          create_market_data(*this, context_, ++stream_id_, *security_[master_account_], shared_)) {
+      security_(create_security<decltype(security_)>(config)), shared_(dispatcher_),
+      order_entry_(create_order_entry<decltype(order_entry_)>(
+          *this, context_, stream_id_, security_, shared_)),
+      drop_copy_(
+          create_drop_copy<decltype(drop_copy_)>(*this, context_, stream_id_, security_, shared_)),
+      web_socket_(create_web_socket<decltype(web_socket_)>(*this, context_, stream_id_, shared_)),
+      market_data_(create_market_data<decltype(market_data_)>(
+          *this, context_, ++stream_id_, *security_[master_account_], shared_)) {
   if (std::empty(master_account_)) {
     log::fatal("A master account is always required (due to FIX logon)"sv);
   }

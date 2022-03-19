@@ -43,7 +43,7 @@ struct Shared final {
   core::page_aligned_vector<Trade> trades;
   core::page_aligned_vector<Statistics> statistics;
 
-  absl::flat_hash_map<std::string, double> multiplier;
+  absl::flat_hash_map<Symbol, double> multiplier;
 
  private:
   server::Dispatcher &dispatcher_;
@@ -53,7 +53,7 @@ struct Shared final {
  public:
   core::limit::RateLimiter rate_limiter;
   absl::flat_hash_set<std::string> all_currencies;
-  absl::flat_hash_set<std::string> all_symbols;
+  absl::flat_hash_set<Symbol> all_symbols;
   core::Symbols symbols;
 };
 

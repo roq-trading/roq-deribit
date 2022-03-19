@@ -271,14 +271,14 @@ void WebSocket::subscribe_instrument_state() {
   subscribe_queue_.emplace_back(message);
 }
 
-void WebSocket::subscribe(const std::span<std::string const> &symbols) {
+void WebSocket::subscribe(const std::span<Symbol const> &symbols) {
   if (std::empty(symbols))
     return;
   subscribe_quote(symbols);
   subscribe_ticker(symbols);
 }
 
-void WebSocket::subscribe_quote(const std::span<std::string const> &symbols) {
+void WebSocket::subscribe_quote(const std::span<Symbol const> &symbols) {
   assert(!std::empty(symbols));
   const json::RequestType request_type = json::RequestType::SUBSCRIBE_QUOTE;
   auto message = fmt::format(
@@ -294,7 +294,7 @@ void WebSocket::subscribe_quote(const std::span<std::string const> &symbols) {
   subscribe_queue_.emplace_back(message);
 }
 
-void WebSocket::subscribe_ticker(const std::span<std::string const> &symbols) {
+void WebSocket::subscribe_ticker(const std::span<Symbol const> &symbols) {
   assert(!std::empty(symbols));
   const json::RequestType request_type = json::RequestType::SUBSCRIBE_TICKER;
   auto interval = flags::WebSocket::ws_ticker_interval();
@@ -430,7 +430,7 @@ void WebSocket::operator()(const server::Trace<json::Instruments> &event) {
     log::fatal::when(!master_, "Unexpected"sv);
     auto &[trace_info, instruments] = event;
     auto &data = instruments.data;
-    std::vector<std::string> symbols;
+    std::vector<Symbol> symbols;
     if (!std::empty(data))
       symbols.reserve(std::size(data));
     for (auto &item : data) {

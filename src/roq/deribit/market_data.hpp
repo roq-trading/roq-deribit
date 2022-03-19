@@ -51,7 +51,7 @@ namespace deribit {
 class MarketData final : public core::net::Manager::Handler {
  public:
   struct SymbolsUpdate final {
-    std::vector<std::string> &symbols;
+    std::vector<Symbol> &symbols;
   };
 
   struct Handler {
@@ -121,8 +121,8 @@ class MarketData final : public core::net::Manager::Handler {
 
   void download_securities();
 
-  void subscribe(const std::span<std::string const> &symbols);
-  void unsubscribe(const std::span<std::string const> &symbols);
+  void subscribe(const std::span<Symbol const> &symbols);
+  void unsubscribe(const std::span<Symbol const> &symbols);
 
   void resubscribe(const std::string_view &symbol);
 
@@ -181,7 +181,7 @@ class MarketData final : public core::net::Manager::Handler {
   ConnectionStatus status_ = {};
   core::Download<MarketDataState> download_;
   std::chrono::nanoseconds last_logon_or_heartbeat_ = {};
-  absl::flat_hash_set<std::string> latch_;
+  absl::flat_hash_set<Symbol> latch_;
 };
 
 }  // namespace deribit

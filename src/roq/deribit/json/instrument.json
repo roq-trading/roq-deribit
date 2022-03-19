@@ -24,6 +24,7 @@
 	{ "name": "rfq", "type": "bool" },
 	{ "name": "settlement_currency", "type": "std::string_view" },
 	{ "name": "counter_currency", "type": "std::string_view" },
-	{ "name": "future_type", "type": "std::string_view" }
+	{ "name": "future_type", "type": "std::string_view" },
+	{ "name": "instrument_id", "type": "int32_t" }
 ]
 }

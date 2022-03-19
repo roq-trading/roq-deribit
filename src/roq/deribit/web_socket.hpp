@@ -47,7 +47,7 @@ class WebSocket final : public core::web::ClientSocket::Handler,
     std::vector<std::string> &currencies;
   };
   struct SymbolsUpdate final {
-    std::vector<std::string> &symbols;
+    std::vector<Symbol> &symbols;
   };
 
   struct Handler {
@@ -99,10 +99,10 @@ class WebSocket final : public core::web::ClientSocket::Handler,
   void subscribe_platform_state();
   void subscribe_instrument_state();
 
-  void subscribe(const std::span<std::string const> &symbols);
+  void subscribe(const std::span<Symbol const> &symbols);
 
-  void subscribe_quote(const std::span<std::string const> &symbols);
-  void subscribe_ticker(const std::span<std::string const> &symbols);
+  void subscribe_quote(const std::span<Symbol const> &symbols);
+  void subscribe_ticker(const std::span<Symbol const> &symbols);
 
   void parse(const std::string_view &message);
 
