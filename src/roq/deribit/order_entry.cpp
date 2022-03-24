@@ -501,8 +501,7 @@ void OrderEntry::parse_helper(const core::fix::message_t &message) {
   log::warn("Unexpected msg_type={}"sv, message.header.msg_type);
 }
 
-void OrderEntry::operator()(
-    const core::fix::Event<fix::Heartbeat> &event, const TraceInfo &) {
+void OrderEntry::operator()(const core::fix::Event<fix::Heartbeat> &event, const TraceInfo &) {
   auto now = core::clock::GetSystem();
   auto &[header, heartbeat] = event;
   log::info<3>("event={{header={}, heartbeat={}}}"sv, header, heartbeat);
@@ -539,16 +538,14 @@ void OrderEntry::operator()(const core::fix::Event<fix::Logout> &event, const Tr
   connection_.close();
 }
 
-void OrderEntry::operator()(
-    const core::fix::Event<fix::ResendRequest> &event, const TraceInfo &) {
+void OrderEntry::operator()(const core::fix::Event<fix::ResendRequest> &event, const TraceInfo &) {
   auto &[header, resend_request] = event;
   log::warn("event={{header={}, resend_request={}}}"sv, header, resend_request);
   log::info("closing connection"sv);
   connection_.close();
 }
 
-void OrderEntry::operator()(
-    const core::fix::Event<fix::TestRequest> &event, const TraceInfo &) {
+void OrderEntry::operator()(const core::fix::Event<fix::TestRequest> &event, const TraceInfo &) {
   auto &[header, test_request] = event;
   log::info<1>("event={{header={}, test_request={}}}"sv, header, test_request);
   send_heartbeat(test_request.test_req_id);
@@ -810,8 +807,7 @@ void OrderEntry::operator()(
                   .routing_id = order.routing_id,
                   .update_type = update_type,
               };
-              create_trace_and_dispatch(
-                  handler_, trace_info, trade_update, true, order.user_id);
+              create_trace_and_dispatch(handler_, trace_info, trade_update, true, order.user_id);
             }
           })) {
   } else {

@@ -548,16 +548,14 @@ void MarketData::operator()(const core::fix::Event<fix::Logout> &event, const Tr
   connection_.close();
 }
 
-void MarketData::operator()(
-    const core::fix::Event<fix::ResendRequest> &event, const TraceInfo &) {
+void MarketData::operator()(const core::fix::Event<fix::ResendRequest> &event, const TraceInfo &) {
   auto &[header, resend_request] = event;
   log::warn("event={{header={}, resend_request={}}}"sv, header, resend_request);
   log::info("closing connection"sv);
   connection_.close();
 }
 
-void MarketData::operator()(
-    const core::fix::Event<fix::TestRequest> &event, const TraceInfo &) {
+void MarketData::operator()(const core::fix::Event<fix::TestRequest> &event, const TraceInfo &) {
   auto &[header, test_request] = event;
   log::info<1>("event={{header={}, test_request={}}}"sv, header, test_request);
   send_heartbeat(test_request.test_req_id);
@@ -624,16 +622,14 @@ void MarketData::operator()(
   download_.check_relaxed(MarketDataState::SECURITIES);
 }
 
-void MarketData::operator()(
-    const core::fix::Event<fix::SecurityStatus> &event, const TraceInfo &) {
+void MarketData::operator()(const core::fix::Event<fix::SecurityStatus> &event, const TraceInfo &) {
   auto &[header, security_status] = event;
   log::info<2>("event={{header={}, security_status={}}}"sv, header, security_status);
   // XXX should we use it or not?
 }
 
 void MarketData::operator()(
-    const core::fix::Event<fix::MarketDataIncrementalRefresh> &event,
-    const TraceInfo &trace_info) {
+    const core::fix::Event<fix::MarketDataIncrementalRefresh> &event, const TraceInfo &trace_info) {
   // auto &[header, market_data_incremental_refresh] = event;  // XXX clang13
   auto &header = event.header;
   auto &market_data_incremental_refresh = event.value;
@@ -724,8 +720,7 @@ void MarketData::operator()(
       };
       auto is_last = std::empty(statistics) && std::empty(trades);
       try {
-        create_trace_and_dispatch(
-            handler_, trace_info, market_by_price_update, is_last, false);
+        create_trace_and_dispatch(handler_, trace_info, market_by_price_update, is_last, false);
       } catch (BadState &) {
         resubscribe(symbol);
       }
@@ -833,8 +828,7 @@ void MarketData::operator()(
         .checksum = {},
     };
     try {
-      create_trace_and_dispatch(
-          handler_, trace_info, market_by_price_update, is_last, false);
+      create_trace_and_dispatch(handler_, trace_info, market_by_price_update, is_last, false);
     } catch (BadState &) {
       log::warn("market_by_price_update={}"sv, market_by_price_update);
       auto &bids = market_by_price_update.bids;

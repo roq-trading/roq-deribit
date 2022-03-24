@@ -53,15 +53,13 @@ Channel parse_channel(const std::string_view &name) {
 }
 
 template <typename T>
-void dispatch_platform_state(
-    Parser::Handler &handler, T &value, const TraceInfo &trace_info) {
+void dispatch_platform_state(Parser::Handler &handler, T &value, const TraceInfo &trace_info) {
   PlatformState platform_state(value);
   create_trace_and_dispatch(handler, trace_info, platform_state);
 }
 
 template <typename T>
-void dispatch_instrument_state(
-    Parser::Handler &handler, T &value, const TraceInfo &trace_info) {
+void dispatch_instrument_state(Parser::Handler &handler, T &value, const TraceInfo &trace_info) {
   InstrumentState instrument_state(value);
   create_trace_and_dispatch(handler, trace_info, instrument_state);
 }
@@ -86,10 +84,7 @@ void dispatch_portfolio(Parser::Handler &handler, T &value, const TraceInfo &tra
 
 template <typename T>
 void dispatch_changes(
-    Parser::Handler &handler,
-    T &value,
-    core::json::Buffer &buffer,
-    const TraceInfo &trace_info) {
+    Parser::Handler &handler, T &value, core::json::Buffer &buffer, const TraceInfo &trace_info) {
   Changes changes(value, buffer);
   create_trace_and_dispatch(handler, trace_info, changes);
 }
@@ -103,10 +98,7 @@ void dispatch_orders(
 
 template <typename T>
 void dispatch_trades(
-    Parser::Handler &handler,
-    T &value,
-    core::json::Buffer &buffer,
-    const TraceInfo &trace_info) {
+    Parser::Handler &handler, T &value, core::json::Buffer &buffer, const TraceInfo &trace_info) {
   Trades2 trades(value, buffer);
   create_trace_and_dispatch(handler, trace_info, trades);
 }

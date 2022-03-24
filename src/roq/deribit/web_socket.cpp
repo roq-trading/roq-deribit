@@ -326,15 +326,13 @@ void WebSocket::parse(const std::string_view &message) {
   });
 }
 
-void WebSocket::operator()(
-    const Trace<core::jsonrpc::Error> &event, core::json::value_t &value) {
+void WebSocket::operator()(const Trace<core::jsonrpc::Error> &event, core::json::value_t &value) {
   auto &[trace_info, error] = event;
   json::Error error_2(value);
   log::fatal(R"(error={}, id="{}")"sv, error_2, error.id);
 }
 
-void WebSocket::operator()(
-    const Trace<core::jsonrpc::Result> &event, core::json::value_t &value) {
+void WebSocket::operator()(const Trace<core::jsonrpc::Result> &event, core::json::value_t &value) {
   auto &[trace_info, result] = event;
   json::RequestType request_type(result.id);
   switch (request_type) {
