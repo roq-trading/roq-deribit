@@ -51,10 +51,10 @@ class WebSocket final : public core::web::ClientSocket::Handler,
   };
 
   struct Handler {
-    virtual void operator()(const server::Trace<StreamStatus> &) = 0;
-    virtual void operator()(const server::Trace<ExternalLatency> &) = 0;
-    virtual void operator()(const server::Trace<TopOfBook> &, bool is_last) = 0;
-    virtual void operator()(const server::Trace<MarketStatus> &, bool is_last) = 0;
+    virtual void operator()(const Trace<StreamStatus> &) = 0;
+    virtual void operator()(const Trace<ExternalLatency> &) = 0;
+    virtual void operator()(const Trace<TopOfBook> &, bool is_last) = 0;
+    virtual void operator()(const Trace<MarketStatus> &, bool is_last) = 0;
     // cross-communication
     virtual void operator()(CurrenciesUpdate &) = 0;
     virtual void operator()(SymbolsUpdate &) = 0;
@@ -106,27 +106,27 @@ class WebSocket final : public core::web::ClientSocket::Handler,
 
   void parse(const std::string_view &message);
 
-  void operator()(const server::Trace<core::jsonrpc::Error> &, core::json::value_t &) override;
-  void operator()(const server::Trace<core::jsonrpc::Result> &, core::json::value_t &) override;
+  void operator()(const Trace<core::jsonrpc::Error> &, core::json::value_t &) override;
+  void operator()(const Trace<core::jsonrpc::Result> &, core::json::value_t &) override;
   void operator()(
-      const server::Trace<core::jsonrpc::Notification> &, core::json::value_t &) override;
+      const Trace<core::jsonrpc::Notification> &, core::json::value_t &) override;
 
-  void operator()(const server::Trace<json::Auth> &);
+  void operator()(const Trace<json::Auth> &);
 
-  void operator()(const server::Trace<json::Currencies> &);
-  void operator()(const server::Trace<json::Instruments> &);
-  void operator()(const server::Trace<json::Positions> &);
+  void operator()(const Trace<json::Currencies> &);
+  void operator()(const Trace<json::Instruments> &);
+  void operator()(const Trace<json::Positions> &);
 
   // public:
-  void operator()(const server::Trace<json::PlatformState> &) override;
-  void operator()(const server::Trace<json::InstrumentState> &) override;
-  void operator()(const server::Trace<json::Quote> &) override;
-  void operator()(const server::Trace<json::Ticker> &) override;
+  void operator()(const Trace<json::PlatformState> &) override;
+  void operator()(const Trace<json::InstrumentState> &) override;
+  void operator()(const Trace<json::Quote> &) override;
+  void operator()(const Trace<json::Ticker> &) override;
   // private:
-  void operator()(const server::Trace<json::Portfolio> &) override;
-  void operator()(const server::Trace<json::Changes> &) override;
-  void operator()(const server::Trace<json::Order> &) override;
-  void operator()(const server::Trace<json::Trades2> &) override;
+  void operator()(const Trace<json::Portfolio> &) override;
+  void operator()(const Trace<json::Changes> &) override;
+  void operator()(const Trace<json::Order> &) override;
+  void operator()(const Trace<json::Trades2> &) override;
 
   template <typename C>
   bool get_top_of_book(const std::string_view &symbol, C callback) {

@@ -46,10 +46,10 @@ namespace deribit {
 class OrderEntry final : public core::net::Manager::Handler {
  public:
   struct Handler {
-    virtual void operator()(const server::Trace<StreamStatus> &) = 0;
-    virtual void operator()(const server::Trace<ExternalLatency> &) = 0;
-    virtual void operator()(const server::Trace<TradeUpdate> &, bool is_last, uint8_t user_id) = 0;
-    virtual void operator()(const server::Trace<PositionUpdate> &, bool is_last) = 0;
+    virtual void operator()(const Trace<StreamStatus> &) = 0;
+    virtual void operator()(const Trace<ExternalLatency> &) = 0;
+    virtual void operator()(const Trace<TradeUpdate> &, bool is_last, uint8_t user_id) = 0;
+    virtual void operator()(const Trace<PositionUpdate> &, bool is_last) = 0;
   };
 
   OrderEntry(Handler &, core::io::Context &, uint16_t stream_id, Security &, Shared &);
@@ -80,18 +80,18 @@ class OrderEntry final : public core::net::Manager::Handler {
 
   void operator()(metrics::Writer &);
 
-  void operator()(const core::fix::Event<fix::Heartbeat> &, const server::TraceInfo &);
-  void operator()(const core::fix::Event<fix::Logon> &, const server::TraceInfo &);
-  void operator()(const core::fix::Event<fix::Logout> &, const server::TraceInfo &);
-  void operator()(const core::fix::Event<fix::ResendRequest> &, const server::TraceInfo &);
-  void operator()(const core::fix::Event<fix::TestRequest> &, const server::TraceInfo &);
+  void operator()(const core::fix::Event<fix::Heartbeat> &, const TraceInfo &);
+  void operator()(const core::fix::Event<fix::Logon> &, const TraceInfo &);
+  void operator()(const core::fix::Event<fix::Logout> &, const TraceInfo &);
+  void operator()(const core::fix::Event<fix::ResendRequest> &, const TraceInfo &);
+  void operator()(const core::fix::Event<fix::TestRequest> &, const TraceInfo &);
 
-  void operator()(const core::fix::Event<fix::PositionReport> &, const server::TraceInfo &);
+  void operator()(const core::fix::Event<fix::PositionReport> &, const TraceInfo &);
 
-  void operator()(const core::fix::Event<fix::ExecutionReport> &, const server::TraceInfo &);
-  void operator()(const core::fix::Event<fix::OrderCancelReject> &, const server::TraceInfo &);
-  void operator()(const core::fix::Event<fix::Reject> &, const server::TraceInfo &);
-  void operator()(const core::fix::Event<fix::OrderMassCancelReport> &, const server::TraceInfo &);
+  void operator()(const core::fix::Event<fix::ExecutionReport> &, const TraceInfo &);
+  void operator()(const core::fix::Event<fix::OrderCancelReject> &, const TraceInfo &);
+  void operator()(const core::fix::Event<fix::Reject> &, const TraceInfo &);
+  void operator()(const core::fix::Event<fix::OrderMassCancelReport> &, const TraceInfo &);
 
  protected:
   void operator()(const core::net::Manager::Connected &) override;

@@ -225,7 +225,7 @@ void MarketData::operator()(ConnectionStatus status) {
         .priority = Priority::PRIMARY,
     };
     log::info<1>("stream_status={}"sv, stream_status);
-    server::create_trace_and_dispatch(handler_, trace_info, stream_status);
+    create_trace_and_dispatch(handler_, trace_info, stream_status);
   }
 }
 
@@ -512,7 +512,7 @@ void MarketData::parse_helper(const core::fix::message_t &message) {
 }
 
 void MarketData::operator()(
-    const core::fix::Event<fix::Heartbeat> &event, const server::TraceInfo &trace_info) {
+    const core::fix::Event<fix::Heartbeat> &event, const TraceInfo &trace_info) {
   auto now = core::clock::GetSystem();
   auto &[header, heartbeat] = event;
   log::info<3>("event={{header={}, heartbeat={}}}"sv, header, heartbeat);
@@ -525,19 +525,19 @@ void MarketData::operator()(
         .account = {},
         .latency = latency,
     };
-    server::create_trace_and_dispatch(handler_, trace_info, external_latency);
+    create_trace_and_dispatch(handler_, trace_info, external_latency);
     latency_.ping.update(latency);
   }
 }
 
-void MarketData::operator()(const core::fix::Event<fix::Logon> &event, const server::TraceInfo &) {
+void MarketData::operator()(const core::fix::Event<fix::Logon> &event, const TraceInfo &) {
   auto &[header, logon] = event;
   log::info<2>("event={{header={}, logon={}}}"sv, header, logon);
   (*this)(ConnectionStatus::DOWNLOADING);
   download_.begin();
 }
 
-void MarketData::operator()(const core::fix::Event<fix::Logout> &event, const server::TraceInfo &) {
+void MarketData::operator()(const core::fix::Event<fix::Logout> &event, const TraceInfo &) {
   auto &[header, logout] = event;
   log::warn("event={{header={}, logout={}}}"sv, header, logout);
   (*this)(ConnectionStatus::LOGGED_OUT);
@@ -549,7 +549,7 @@ void MarketData::operator()(const core::fix::Event<fix::Logout> &event, const se
 }
 
 void MarketData::operator()(
-    const core::fix::Event<fix::ResendRequest> &event, const server::TraceInfo &) {
+    const core::fix::Event<fix::ResendRequest> &event, const TraceInfo &) {
   auto &[header, resend_request] = event;
   log::warn("event={{header={}, resend_request={}}}"sv, header, resend_request);
   log::info("closing connection"sv);
@@ -557,14 +557,14 @@ void MarketData::operator()(
 }
 
 void MarketData::operator()(
-    const core::fix::Event<fix::TestRequest> &event, const server::TraceInfo &) {
+    const core::fix::Event<fix::TestRequest> &event, const TraceInfo &) {
   auto &[header, test_request] = event;
   log::info<1>("event={{header={}, test_request={}}}"sv, header, test_request);
   send_heartbeat(test_request.test_req_id);
 }
 
 void MarketData::operator()(
-    const core::fix::Event<fix::SecurityList> &event, const server::TraceInfo &trace_info) {
+    const core::fix::Event<fix::SecurityList> &event, const TraceInfo &trace_info) {
   auto &[header, security_list] = event;
   log::info<2>("event={{header={}, security_list={}}}"sv, header, security_list);
   if (std::size(security_list.no_related_sym) > 0) {
@@ -610,7 +610,7 @@ void MarketData::operator()(
           .expiry_datetime = utils::safe_cast(expiry_datetime),
           .expiry_datetime_utc = utils::safe_cast(expiry_datetime_utc),
       };
-      server::create_trace_and_dispatch(handler_, trace_info, reference_data, true);
+      create_trace_and_dispatch(handler_, trace_info, reference_data, true);
       ++counter;
     }
     log::info<2>("- securities: {} (/{})"sv, counter, std::size(security_list.no_related_sym));
@@ -625,7 +625,7 @@ void MarketData::operator()(
 }
 
 void MarketData::operator()(
-    const core::fix::Event<fix::SecurityStatus> &event, const server::TraceInfo &) {
+    const core::fix::Event<fix::SecurityStatus> &event, const TraceInfo &) {
   auto &[header, security_status] = event;
   log::info<2>("event={{header={}, security_status={}}}"sv, header, security_status);
   // XXX should we use it or not?
@@ -633,7 +633,7 @@ void MarketData::operator()(
 
 void MarketData::operator()(
     const core::fix::Event<fix::MarketDataIncrementalRefresh> &event,
-    const server::TraceInfo &trace_info) {
+    const TraceInfo &trace_info) {
   // auto &[header, market_data_incremental_refresh] = event;  // XXX clang13
   auto &header = event.header;
   auto &market_data_incremental_refresh = event.value;
@@ -724,7 +724,7 @@ void MarketData::operator()(
       };
       auto is_last = std::empty(statistics) && std::empty(trades);
       try {
-        server::create_trace_and_dispatch(
+        create_trace_and_dispatch(
             handler_, trace_info, market_by_price_update, is_last, false);
       } catch (BadState &) {
         resubscribe(symbol);
@@ -740,7 +740,7 @@ void MarketData::operator()(
         .exchange_time_utc = exchange_time_utc,
     };
     auto is_last = std::empty(statistics);
-    server::create_trace_and_dispatch(handler_, trace_info, trade_summary, is_last);
+    create_trace_and_dispatch(handler_, trace_info, trade_summary, is_last);
   }
   if (!std::empty(statistics)) {
     const StatisticsUpdate statistics_update{
@@ -751,12 +751,12 @@ void MarketData::operator()(
         .update_type = UpdateType::INCREMENTAL,
         .exchange_time_utc = exchange_time_utc,
     };
-    server::create_trace_and_dispatch(handler_, trace_info, statistics_update, true);
+    create_trace_and_dispatch(handler_, trace_info, statistics_update, true);
   }
 }
 
 void MarketData::operator()(
-    const core::fix::Event<fix::MarketDataRequestReject> &event, const server::TraceInfo &) {
+    const core::fix::Event<fix::MarketDataRequestReject> &event, const TraceInfo &) {
   auto &[header, market_data_request_reject] = event;
   log::warn<1>(
       "event={{header={}, market_data_request_reject={}}}"sv, header, market_data_request_reject);
@@ -765,7 +765,7 @@ void MarketData::operator()(
 
 void MarketData::operator()(
     const core::fix::Event<fix::MarketDataSnapshotFullRefresh> &event,
-    const server::TraceInfo &trace_info) {
+    const TraceInfo &trace_info) {
   auto &[header, market_data_snapshot_full_refresh] = event;
   log::info<3>(
       "event={{header={}, market_data_snapshot_full_refresh={}}}"sv,
@@ -833,7 +833,7 @@ void MarketData::operator()(
         .checksum = {},
     };
     try {
-      server::create_trace_and_dispatch(
+      create_trace_and_dispatch(
           handler_, trace_info, market_by_price_update, is_last, false);
     } catch (BadState &) {
       log::warn("market_by_price_update={}"sv, market_by_price_update);
@@ -855,7 +855,7 @@ void MarketData::operator()(
         .update_type = UpdateType::SNAPSHOT,
         .exchange_time_utc = {},
     };
-    server::create_trace_and_dispatch(handler_, trace_info, statistics_update, true);
+    create_trace_and_dispatch(handler_, trace_info, statistics_update, true);
   }
 }
 

@@ -55,13 +55,13 @@ class MarketData final : public core::net::Manager::Handler {
   };
 
   struct Handler {
-    virtual void operator()(const server::Trace<StreamStatus> &) = 0;
-    virtual void operator()(const server::Trace<ExternalLatency> &) = 0;
-    virtual void operator()(const server::Trace<ReferenceData> &, bool is_last) = 0;
+    virtual void operator()(const Trace<StreamStatus> &) = 0;
+    virtual void operator()(const Trace<ExternalLatency> &) = 0;
+    virtual void operator()(const Trace<ReferenceData> &, bool is_last) = 0;
     virtual void operator()(
-        const server::Trace<MarketByPriceUpdate> &, bool is_last, bool refresh) = 0;
-    virtual void operator()(const server::Trace<TradeSummary> &, bool is_last) = 0;
-    virtual void operator()(const server::Trace<StatisticsUpdate> &, bool is_last) = 0;
+        const Trace<MarketByPriceUpdate> &, bool is_last, bool refresh) = 0;
+    virtual void operator()(const Trace<TradeSummary> &, bool is_last) = 0;
+    virtual void operator()(const Trace<StatisticsUpdate> &, bool is_last) = 0;
     // cross-communication
     virtual void operator()(SymbolsUpdate &) = 0;
   };
@@ -88,21 +88,21 @@ class MarketData final : public core::net::Manager::Handler {
 
   void subscribe(size_t start_from = 0);
 
-  void operator()(const core::fix::Event<fix::Heartbeat> &, const server::TraceInfo &);
-  void operator()(const core::fix::Event<fix::Logon> &, const server::TraceInfo &);
-  void operator()(const core::fix::Event<fix::Logout> &, const server::TraceInfo &);
-  void operator()(const core::fix::Event<fix::ResendRequest> &, const server::TraceInfo &);
-  void operator()(const core::fix::Event<fix::TestRequest> &, const server::TraceInfo &);
+  void operator()(const core::fix::Event<fix::Heartbeat> &, const TraceInfo &);
+  void operator()(const core::fix::Event<fix::Logon> &, const TraceInfo &);
+  void operator()(const core::fix::Event<fix::Logout> &, const TraceInfo &);
+  void operator()(const core::fix::Event<fix::ResendRequest> &, const TraceInfo &);
+  void operator()(const core::fix::Event<fix::TestRequest> &, const TraceInfo &);
 
-  void operator()(const core::fix::Event<fix::SecurityList> &, const server::TraceInfo &);
-  void operator()(const core::fix::Event<fix::SecurityStatus> &, const server::TraceInfo &);
+  void operator()(const core::fix::Event<fix::SecurityList> &, const TraceInfo &);
+  void operator()(const core::fix::Event<fix::SecurityStatus> &, const TraceInfo &);
 
   void operator()(
-      const core::fix::Event<fix::MarketDataIncrementalRefresh> &, const server::TraceInfo &);
+      const core::fix::Event<fix::MarketDataIncrementalRefresh> &, const TraceInfo &);
   void operator()(
-      const core::fix::Event<fix::MarketDataRequestReject> &, const server::TraceInfo &);
+      const core::fix::Event<fix::MarketDataRequestReject> &, const TraceInfo &);
   void operator()(
-      const core::fix::Event<fix::MarketDataSnapshotFullRefresh> &, const server::TraceInfo &);
+      const core::fix::Event<fix::MarketDataSnapshotFullRefresh> &, const TraceInfo &);
 
  protected:
   void operator()(const core::net::Manager::Connected &) override;
