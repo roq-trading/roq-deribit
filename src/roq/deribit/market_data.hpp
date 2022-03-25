@@ -58,8 +58,7 @@ class MarketData final : public core::net::Manager::Handler {
     virtual void operator()(const Trace<StreamStatus> &) = 0;
     virtual void operator()(const Trace<ExternalLatency> &) = 0;
     virtual void operator()(const Trace<ReferenceData> &, bool is_last) = 0;
-    virtual void operator()(
-        const Trace<MarketByPriceUpdate> &, bool is_last, bool refresh) = 0;
+    virtual void operator()(const Trace<MarketByPriceUpdate> &, bool is_last, bool refresh) = 0;
     virtual void operator()(const Trace<TradeSummary> &, bool is_last) = 0;
     virtual void operator()(const Trace<StatisticsUpdate> &, bool is_last) = 0;
     // cross-communication
@@ -97,12 +96,9 @@ class MarketData final : public core::net::Manager::Handler {
   void operator()(const core::fix::Event<fix::SecurityList> &, const TraceInfo &);
   void operator()(const core::fix::Event<fix::SecurityStatus> &, const TraceInfo &);
 
-  void operator()(
-      const core::fix::Event<fix::MarketDataIncrementalRefresh> &, const TraceInfo &);
-  void operator()(
-      const core::fix::Event<fix::MarketDataRequestReject> &, const TraceInfo &);
-  void operator()(
-      const core::fix::Event<fix::MarketDataSnapshotFullRefresh> &, const TraceInfo &);
+  void operator()(const core::fix::Event<fix::MarketDataIncrementalRefresh> &, const TraceInfo &);
+  void operator()(const core::fix::Event<fix::MarketDataRequestReject> &, const TraceInfo &);
+  void operator()(const core::fix::Event<fix::MarketDataSnapshotFullRefresh> &, const TraceInfo &);
 
  protected:
   void operator()(const core::net::Manager::Connected &) override;

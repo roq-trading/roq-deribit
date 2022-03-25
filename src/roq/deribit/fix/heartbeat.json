@@ -1,7 +1,11 @@
 {
-"name": "Heartbeat",
-"type": "simple2",
-"values": [
-	{ "tag": 112, "name": "TestReqId", "type": "std::string_view" }
-]
+  "name": "Heartbeat",
+  "type": "simple2",
+  "values": [
+    {
+      "tag": 112,
+      "name": "TestReqId",
+      "type": "std::string_view"
+    }
+  ]
 }

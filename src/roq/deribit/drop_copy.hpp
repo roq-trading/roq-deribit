@@ -90,8 +90,7 @@ class DropCopy final : public core::web::ClientSocket::Handler,
 
   void operator()(const Trace<core::jsonrpc::Error> &, core::json::value_t &) override;
   void operator()(const Trace<core::jsonrpc::Result> &, core::json::value_t &) override;
-  void operator()(
-      const Trace<core::jsonrpc::Notification> &, core::json::value_t &) override;
+  void operator()(const Trace<core::jsonrpc::Notification> &, core::json::value_t &) override;
 
   void operator()(const Trace<json::Auth> &);
 

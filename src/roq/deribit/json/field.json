@@ -1,8 +1,12 @@
 {
-"name": "Field",
-"type": "enum",
-"values": [
-	{ "name": "channel" },
-	{ "name": "data" }
-]
+  "name": "Field",
+  "type": "enum",
+  "values": [
+    {
+      "name": "channel"
+    },
+    {
+      "name": "data"
+    }
+  ]
 }

@@ -1,7 +1,12 @@
 {
-"name": "SequenceReset",
-"type": "struct",
-"values": [
-	{ "tag": 36, "name": "NewSeqNo", "type": "uint64_t", "required": true }
-]
+  "name": "SequenceReset",
+  "type": "struct",
+  "values": [
+    {
+      "tag": 36,
+      "name": "NewSeqNo",
+      "type": "uint64_t",
+      "required": true
+    }
+  ]
 }
