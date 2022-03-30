@@ -40,17 +40,14 @@ Error map_error(const std::string_view &value) {
   return Error::UNKNOWN;
 }
 
-std::string_view map(ExecutionInstruction execution_instruction) {
-  switch (execution_instruction) {
-    case ExecutionInstruction::UNDEFINED:
-      return std::string_view();
-    case ExecutionInstruction::PARTICIPATE_DO_NOT_INITIATE:
-      return "6"sv;
-    case ExecutionInstruction::DO_NOT_INCREASE:
-      return "E"sv;
-    default:
-      throw RuntimeError("Not a supported execution instruction"sv);
-  }
+std::string_view map(const Mask<ExecutionInstruction> &execution_instructions) {
+  if (std::empty(execution_instructions))
+    return {};
+  if (execution_instructions.has(ExecutionInstruction::PARTICIPATE_DO_NOT_INITIATE))
+    return "6"sv;
+  if (execution_instructions.has(ExecutionInstruction::DO_NOT_INCREASE))
+    return "E"sv;
+  throw RuntimeError("Not a supported execution instruction"sv);
 }
 
 Error reject_to_error(const std::string_view &reason, const std::string_view &text) {

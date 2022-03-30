@@ -25,7 +25,7 @@ namespace roq {
 namespace deribit {
 
 namespace {
-const auto SUPPORTS = Mask{
+const Mask<SupportType> SUPPORTS{
     SupportType::FUNDS,
 };
 
@@ -153,7 +153,7 @@ void DropCopy::operator()(ConnectionStatus status) {
     StreamStatus stream_status{
         .stream_id = stream_id_,
         .account = security_.get_account(),
-        .supports = SUPPORTS.get(),
+        .supports = SUPPORTS,
         .status = status_,
         .type = StreamType::WEB_SOCKET,
         .priority = Priority::PRIMARY,

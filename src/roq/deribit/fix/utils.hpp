@@ -20,7 +20,7 @@ SecurityType map_security_type(const std::string_view &value);
 
 Error map_error(const std::string_view &value);
 
-std::string_view map(ExecutionInstruction execution_instruction);
+std::string_view map(const Mask<ExecutionInstruction> &);
 
 extern Error reject_to_error(const std::string_view &reason, const std::string_view &text);
 

@@ -36,7 +36,7 @@ namespace {
 const auto LOGOUT_RESPONSE = "LOGOUT"sv;  // XXX
 
 const auto NAME = "md"sv;
-const auto SUPPORTS = Mask{
+const Mask<SupportType> SUPPORTS{
     SupportType::MARKET_BY_PRICE,
     SupportType::TRADE_SUMMARY,
     SupportType::STATISTICS,
@@ -219,7 +219,7 @@ void MarketData::operator()(ConnectionStatus status) {
     StreamStatus stream_status{
         .stream_id = stream_id_,
         .account = {},
-        .supports = (master_ ? SUPPORTS_MASTER : SUPPORTS).get(),
+        .supports = master_ ? SUPPORTS_MASTER : SUPPORTS,
         .status = status_,
         .type = StreamType::FIX,
         .priority = Priority::PRIMARY,

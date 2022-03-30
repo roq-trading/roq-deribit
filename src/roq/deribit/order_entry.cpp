@@ -41,7 +41,7 @@ namespace deribit {
 namespace {
 const auto LOGOUT_RESPONSE = "LOGOUT"sv;
 
-const auto SUPPORTS = Mask{
+const Mask<SupportType> SUPPORTS{
     SupportType::CREATE_ORDER,
     SupportType::MODIFY_ORDER,
     SupportType::CANCEL_ORDER,
@@ -160,7 +160,7 @@ uint16_t OrderEntry::operator()(
   if (std::isfinite(create_order.max_show_quantity))
     throw RuntimeError("max_show_quantity not supported"sv);
   auto side = core::fix::map(create_order.side);
-  auto exec_inst = fix::map(create_order.execution_instruction);
+  auto exec_inst = fix::map(create_order.execution_instructions);
   auto ord_type = core::fix::map(create_order.order_type);
   auto time_in_force = core::fix::map(create_order.time_in_force);
   core::stack::Buffer<char, MAX_LENGTH_REQUEST_ID> buffer;
@@ -321,7 +321,7 @@ void OrderEntry::operator()(ConnectionStatus status) {
     StreamStatus stream_status{
         .stream_id = stream_id_,
         .account = security_.get_account(),
-        .supports = SUPPORTS.get(),
+        .supports = SUPPORTS,
         .status = status_,
         .type = StreamType::FIX,
         .priority = Priority::PRIMARY,
@@ -760,7 +760,7 @@ void OrderEntry::operator()(
       .max_show_quantity = execution_report.max_show,
       .order_type = order_type,
       .time_in_force = {},
-      .execution_instruction = {},
+      .execution_instructions = {},
       .order_template = {},
       .create_time_utc = {},
       .update_time_utc = execution_report.transact_time,
