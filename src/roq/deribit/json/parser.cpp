@@ -116,7 +116,7 @@ void Parser::dispatch(
   for (int i = 0; i < 2 && !dispatched; ++i) {
     core::json::Parser parser(message);
     auto root = parser.root();
-    for (auto [key, value] : std::get<core::json::object_t>(root)) {
+    for (auto [key, value_] : std::get<core::json::object_t>(root)) {
       auto field = Field(key);
       switch (field) {
         case Field::UNDEFINED:
@@ -126,7 +126,7 @@ void Parser::dispatch(
           log::fatal(R"(Unknown key="{}")"sv, key);
           break;
         case Field::CHANNEL: {
-          auto name = std::get<std::string_view>(value);
+          auto name = std::get<std::string_view>(value_);
           channel = parse_channel(name);
           if (channel == Channel::UNKNOWN) [[unlikely]]
             log::warn(R"(Can't parse channel="{}")"sv, name);
@@ -143,36 +143,36 @@ void Parser::dispatch(
               // public
               case Channel::PLATFORM_STATE:
                 dispatched = true;
-                dispatch_platform_state(handler, value, trace_info);
+                dispatch_platform_state(handler, value_, trace_info);
                 break;
               case Channel::INSTRUMENT_STATE:
                 dispatched = true;
-                dispatch_instrument_state(handler, value, trace_info);
+                dispatch_instrument_state(handler, value_, trace_info);
                 break;
               case Channel::QUOTE:
                 dispatched = true;
-                dispatch_quote(handler, value, trace_info);
+                dispatch_quote(handler, value_, trace_info);
                 break;
               case Channel::TICKER:
                 dispatched = true;
-                dispatch_ticker(handler, value, trace_info);
+                dispatch_ticker(handler, value_, trace_info);
                 break;
               // private
               case Channel::PORTFOLIO:
                 dispatched = true;
-                dispatch_portfolio(handler, value, trace_info);
+                dispatch_portfolio(handler, value_, trace_info);
                 break;
               case Channel::CHANGES:
                 dispatched = true;
-                dispatch_changes(handler, value, buffer, trace_info);
+                dispatch_changes(handler, value_, buffer, trace_info);
                 break;
               case Channel::ORDERS:
                 dispatched = true;
-                dispatch_orders(handler, value, buffer, trace_info);
+                dispatch_orders(handler, value_, buffer, trace_info);
                 break;
               case Channel::TRADES:
                 dispatched = true;
-                dispatch_trades(handler, value, buffer, trace_info);
+                dispatch_trades(handler, value_, buffer, trace_info);
                 break;
             }
           }
