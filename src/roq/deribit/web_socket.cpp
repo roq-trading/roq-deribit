@@ -508,7 +508,7 @@ void WebSocket::operator()(const Trace<json::Ticker> &event) {
     log::info<3>("ticker={}"sv, ticker);
     auto trading_status = json::map(ticker.state);
     auto &item = trading_status_[ticker.instrument_name];
-    if (trading_status && utils::update(item, trading_status)) {
+    if (trading_status != TradingStatus{} && utils::update(item, trading_status)) {
       MarketStatus market_status{
           .stream_id = stream_id_,
           .exchange = flags::Config::exchange(),

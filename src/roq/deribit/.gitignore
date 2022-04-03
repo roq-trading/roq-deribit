@@ -4,7 +4,3 @@ market_data_state.hpp
 order_entry_state.hpp
 web_socket_state.hpp
 drop_copy_state.hpp
-market_data_state.cpp
-order_entry_state.cpp
-web_socket_state.cpp
-drop_copy_state.cpp
