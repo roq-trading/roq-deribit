@@ -97,6 +97,10 @@
     {
       "name": "instrument_id",
       "type": "int32_t"
+    },
+    {
+      "name": "price_index",
+      "type": "std::string_view"
     }
   ]
 }

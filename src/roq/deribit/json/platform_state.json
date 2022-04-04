@@ -22,6 +22,10 @@
       "name": "maintenance",
       "type": "bool",
       "comment": "undoc"
+    },
+    {
+      "name": "price_index",
+      "type": "std::string_view"
     }
   ]
 }
