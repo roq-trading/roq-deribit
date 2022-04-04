@@ -41,7 +41,7 @@ namespace deribit {
 namespace {
 const auto LOGOUT_RESPONSE = "LOGOUT"sv;
 
-const Mask<SupportType> SUPPORTS{
+const Mask SUPPORTS{
     SupportType::CREATE_ORDER,
     SupportType::MODIFY_ORDER,
     SupportType::CANCEL_ORDER,

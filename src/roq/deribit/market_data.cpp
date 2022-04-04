@@ -36,12 +36,12 @@ namespace {
 const auto LOGOUT_RESPONSE = "LOGOUT"sv;  // XXX
 
 const auto NAME = "md"sv;
-const Mask<SupportType> SUPPORTS{
+const Mask SUPPORTS{
     SupportType::MARKET_BY_PRICE,
     SupportType::TRADE_SUMMARY,
     SupportType::STATISTICS,
 };
-const auto SUPPORTS_MASTER = Mask{
+const Mask SUPPORTS_MASTER{
     SUPPORTS,
     SupportType::REFERENCE_DATA,
 };

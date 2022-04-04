@@ -25,7 +25,7 @@ namespace roq {
 namespace deribit {
 
 namespace {
-const Mask<SupportType> SUPPORTS{
+const Mask SUPPORTS{
     SupportType::FUNDS,
 };
 

@@ -25,10 +25,10 @@ namespace roq {
 namespace deribit {
 
 namespace {
-const Mask<SupportType> SUPPORTS{
+const Mask SUPPORTS{
     SupportType::TOP_OF_BOOK,
 };
-const auto SUPPORTS_MASTER = Mask{
+const Mask SUPPORTS_MASTER{
     SUPPORTS,
     SupportType::MARKET_STATUS,
 };
