@@ -163,7 +163,7 @@ uint16_t OrderEntry::operator()(
   auto exec_inst = fix::map(create_order.execution_instructions);
   auto ord_type = core::fix::map(create_order.order_type);
   auto time_in_force = core::fix::map(create_order.time_in_force);
-  core::stack::Buffer<char, MAX_LENGTH_REQUEST_ID> buffer;
+  core::stack::Buffer<char, sizeof(RequestId)> buffer;
   fmt::format_to(
       std::back_inserter(buffer), "roq-{}-{}"sv, message_info.source, create_order.order_id);
   std::string_view deribit_label(std::data(buffer), std::size(buffer));
