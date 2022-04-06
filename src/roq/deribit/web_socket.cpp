@@ -441,8 +441,7 @@ void WebSocket::operator()(const Trace<json::Instruments> &event) {
         symbols.emplace_back(symbol);
       // cache multiplier so Quote (amount) can be converted to TopOfBook (lots)
       // note! the multiplier is only cached on startup!
-      auto multiplier =
-          utils::compare(item.contract_size, 0.0) == 0 ? 1.0 : (1.0 / item.contract_size);
+      auto multiplier = utils::is_zero(item.contract_size) ? 1.0 : (1.0 / item.contract_size);
       shared_.multiplier[symbol] = multiplier;
     }
     download_.check(WebSocketState::INSTRUMENTS);
@@ -491,7 +490,7 @@ void WebSocket::operator()(const Trace<json::Quote> &event) {
               .update_type = UpdateType::INCREMENTAL,
               .exchange_time_utc = quote.timestamp,
           };
-          if (utils::compare(layer, top_of_book.layer) != 0) {
+          if (!utils::is_equal(layer, top_of_book.layer)) {
             layer = top_of_book.layer;
             create_trace_and_dispatch(handler_, trace_info, top_of_book, true);
           }

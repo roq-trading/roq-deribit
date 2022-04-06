@@ -72,13 +72,13 @@ void validate(const T &value) {
     case core::fix::MDUpdateAction::UNKNOWN:
       break;
     case core::fix::MDUpdateAction::NEW:
-      // assert(utils::compare(value.md_entry_size, 0.0) > 0);
+      // assert(utils::is_greater(value.md_entry_size, 0.0));
       break;
     case core::fix::MDUpdateAction::CHANGE:
-      // assert(utils::compare(value.md_entry_size, 0.0) > 0);
+      // assert(utils::is_greater(value.md_entry_size, 0.0));
       break;
     case core::fix::MDUpdateAction::DELETE:
-      assert(utils::compare(value.md_entry_size, 0.0) == 0);
+      assert(utils::is_zero(value.md_entry_size));
       break;
     case core::fix::MDUpdateAction::DELETE_THRU:
     case core::fix::MDUpdateAction::DELETE_FROM:

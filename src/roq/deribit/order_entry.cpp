@@ -673,8 +673,7 @@ std::pair<double, double> compute_last_traded(
     sum_quantity += item.fill_qty;
     sum_quantity_price += item.fill_qty * item.fill_px;
   }
-  auto average_price =
-      utils::compare(sum_quantity, 0.0) == 0 ? NaN : sum_quantity_price / sum_quantity;
+  auto average_price = utils::is_zero(sum_quantity) ? NaN : sum_quantity_price / sum_quantity;
   return {sum_quantity, average_price};
 }
 
