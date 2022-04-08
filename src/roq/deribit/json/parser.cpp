@@ -119,58 +119,60 @@ void Parser::dispatch(
     for (auto [key, value_] : std::get<core::json::object_t>(root)) {
       auto field = Field(key);
       switch (field) {
-        case Field::UNDEFINED:
+        using enum Field::type_t;
+        case UNDEFINED:
           log::fatal("Unexpected"sv);
           break;
-        case Field::UNKNOWN:
+        case UNKNOWN:
           log::fatal(R"(Unknown key="{}")"sv, key);
           break;
-        case Field::CHANNEL: {
+        case CHANNEL: {
           auto name = std::get<std::string_view>(value_);
           channel = parse_channel(name);
           if (channel == Channel::UNKNOWN) [[unlikely]]
             log::warn(R"(Can't parse channel="{}")"sv, name);
           break;
         }
-        case Field::DATA:
+        case DATA:
           if (channel != Channel::UNDEFINED) {
             switch (channel) {
-              case Channel::UNDEFINED:
+              using enum Channel::type_t;
+              case UNDEFINED:
                 break;  // not ready
-              case Channel::UNKNOWN:
+              case UNKNOWN:
                 log::fatal("Unknown channel"sv);
                 break;
               // public
-              case Channel::PLATFORM_STATE:
+              case PLATFORM_STATE:
                 dispatched = true;
                 dispatch_platform_state(handler, value_, trace_info);
                 break;
-              case Channel::INSTRUMENT_STATE:
+              case INSTRUMENT_STATE:
                 dispatched = true;
                 dispatch_instrument_state(handler, value_, trace_info);
                 break;
-              case Channel::QUOTE:
+              case QUOTE:
                 dispatched = true;
                 dispatch_quote(handler, value_, trace_info);
                 break;
-              case Channel::TICKER:
+              case TICKER:
                 dispatched = true;
                 dispatch_ticker(handler, value_, trace_info);
                 break;
               // private
-              case Channel::PORTFOLIO:
+              case PORTFOLIO:
                 dispatched = true;
                 dispatch_portfolio(handler, value_, trace_info);
                 break;
-              case Channel::CHANGES:
+              case CHANGES:
                 dispatched = true;
                 dispatch_changes(handler, value_, buffer, trace_info);
                 break;
-              case Channel::ORDERS:
+              case ORDERS:
                 dispatched = true;
                 dispatch_orders(handler, value_, buffer, trace_info);
                 break;
-              case Channel::TRADES:
+              case TRADES:
                 dispatched = true;
                 dispatch_trades(handler, value_, buffer, trace_info);
                 break;

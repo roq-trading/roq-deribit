@@ -382,17 +382,17 @@ void OrderEntry::send_test_request(std::chrono::nanoseconds now) {
 
 uint32_t OrderEntry::download(OrderEntryState state) {
   switch (state) {
-    // using enum OrderEntryState::type_t;  // XXX clang13
-    case OrderEntryState::UNDEFINED:
+    using enum OrderEntryState;
+    case UNDEFINED:
       assert(false);
       break;
-    case OrderEntryState::POSITIONS:
+    case POSITIONS:
       subscribe_positions();
       return 1;
-    case OrderEntryState::ORDERS:
+    case ORDERS:
       download_orders();
       return 1;  // note! first report includes the true number of reports
-    case OrderEntryState::DONE:
+    case DONE:
       (*this)(ConnectionStatus::READY);
       assert(!ready_);
       ready_ = true;
@@ -430,49 +430,49 @@ void OrderEntry::parse_helper(const core::fix::message_t &message) {
   auto trace_info = server::create_trace_info();
   core::fix::Buffer buffer(decode_buffer_);
   switch (message.header.msg_type) {
-    // using enum core::fix::MsgType; // XXX clang13
+    using enum core::fix::MsgType;
     // session
-    case core::fix::MsgType::HEARTBEAT: {
+    case HEARTBEAT: {
       auto heartbeat = fix::Heartbeat::create(message);
       core::fix::create_event_and_dispatch(*this, message.header, heartbeat, trace_info);
       return;
     }
-    case core::fix::MsgType::LOGON: {
+    case LOGON: {
       auto logon = fix::Logon::create(message);
       core::fix::create_event_and_dispatch(*this, message.header, logon, trace_info);
       return;
     }
-    case core::fix::MsgType::LOGOUT: {
+    case LOGOUT: {
       auto logout = fix::Logout::create(message);
       core::fix::create_event_and_dispatch(*this, message.header, logout, trace_info);
       return;
     }
-    case core::fix::MsgType::RESEND_REQUEST: {
+    case RESEND_REQUEST: {
       auto resend_request = fix::ResendRequest::create(message);
       core::fix::create_event_and_dispatch(*this, message.header, resend_request, trace_info);
       return;
     }
-    case core::fix::MsgType::TEST_REQUEST: {
+    case TEST_REQUEST: {
       auto test_request = fix::TestRequest::create(message);
       core::fix::create_event_and_dispatch(*this, message.header, test_request, trace_info);
       return;
     }
     // ...
-    case core::fix::MsgType::POSITION_REPORT: {
+    case POSITION_REPORT: {
       profile_.position_report([&]() {
         auto position_report = fix::PositionReport::create(message, buffer);
         core::fix::create_event_and_dispatch(*this, message.header, position_report, trace_info);
       });
       return;
     }
-    case core::fix::MsgType::EXECUTION_REPORT: {
+    case EXECUTION_REPORT: {
       profile_.execution_report([&]() {
         auto execution_report = fix::ExecutionReport::create(message, buffer);
         core::fix::create_event_and_dispatch(*this, message.header, execution_report, trace_info);
       });
       return;
     }
-    case core::fix::MsgType::ORDER_CANCEL_REJECT: {
+    case ORDER_CANCEL_REJECT: {
       profile_.order_cancel_reject([&]() {
         auto order_cancel_reject = fix::OrderCancelReject::create(message);
         core::fix::create_event_and_dispatch(
@@ -480,14 +480,14 @@ void OrderEntry::parse_helper(const core::fix::message_t &message) {
       });
       return;
     }
-    case core::fix::MsgType::REJECT: {
+    case REJECT: {
       profile_.reject([&]() {
         auto reject = fix::Reject::create(message);
         core::fix::create_event_and_dispatch(*this, message.header, reject, trace_info);
       });
       return;
     }
-    case core::fix::MsgType::ORDER_MASS_CANCEL_REPORT: {
+    case ORDER_MASS_CANCEL_REPORT: {
       profile_.order_mass_cancel_report([&]() {
         auto order_mass_cancel_report = fix::OrderMassCancelReport::create(message, buffer);
         core::fix::create_event_and_dispatch(
@@ -595,18 +595,18 @@ namespace {
 
 RequestType compute_request_type(const auto exec_type, const auto ord_status) {
   switch (exec_type) {
-    // using enum core::fix::ExecType; // XXX clang13
-    case core::fix::ExecType::REJECTED:
+    using enum core::fix::ExecType;
+    case REJECTED:
       return {};  // any
-    case core::fix::ExecType::CANCELED:
+    case CANCELED:
       return RequestType::CANCEL_ORDER;
-    case core::fix::ExecType::ORDER_STATUS:
+    case ORDER_STATUS:
       switch (ord_status) {
-        // using enum core::fix::OrdStatus; // XXX clang13
-        case core::fix::OrdStatus::NEW:
-        case core::fix::OrdStatus::PARTIALLY_FILLED:
+        using enum core::fix::OrdStatus;
+        case NEW:
+        case PARTIALLY_FILLED:
           return {};  // create or modify
-        case core::fix::OrdStatus::CANCELED:
+        case CANCELED:
           return RequestType::CANCEL_ORDER;
           break;
         default:
@@ -620,18 +620,18 @@ RequestType compute_request_type(const auto exec_type, const auto ord_status) {
 
 RequestStatus compute_request_status(const auto exec_type, const auto ord_status) {
   switch (exec_type) {
-    // using enum core::fix::ExecType;  // XXX clang13
-    case core::fix::ExecType::REJECTED:
+    using enum core::fix::ExecType;
+    case REJECTED:
       return RequestStatus::REJECTED;
-    case core::fix::ExecType::CANCELED:
+    case CANCELED:
       return RequestStatus::ACCEPTED;
-    case core::fix::ExecType::ORDER_STATUS:
+    case ORDER_STATUS:
       switch (ord_status) {
-        // using enum core::fix::OrdStatus;  // XXX clang13
-        case core::fix::OrdStatus::NEW:
-        case core::fix::OrdStatus::PARTIALLY_FILLED:
-        case core::fix::OrdStatus::FILLED:
-        case core::fix::OrdStatus::CANCELED:
+        using enum core::fix::OrdStatus;
+        case NEW:
+        case PARTIALLY_FILLED:
+        case FILLED:
+        case CANCELED:
           return RequestStatus::ACCEPTED;
         default:
           break;
@@ -693,11 +693,11 @@ void OrderEntry::operator()(
   // log::debug("execution_report={}"sv, execution_report);
   // download begin?
   switch (execution_report.mass_status_req_type) {
-    // using enum core::fix::MassStatusReqType;  // XXX clang13
-    case core::fix::MassStatusReqType::UNDEFINED:
+    using enum core::fix::MassStatusReqType;
+    case UNDEFINED:
       assert(std::empty(execution_report.mass_status_req_id));
       break;
-    case core::fix::MassStatusReqType::ORDERS: {
+    case ORDERS: {
       auto count = execution_report.tot_num_reports;
       log::info<1>(
           R"(Downloading {} execution reports (request_id="{}")"sv,
@@ -857,12 +857,12 @@ void OrderEntry::operator()(
 namespace {
 RequestType message_type_to_request_type(const auto msg_type) {
   switch (msg_type) {
-    // using enum core::fix::MsgType;  // XXX clang13
-    case core::fix::MsgType::NEW_ORDER_SINGLE:
+    using enum core::fix::MsgType;
+    case NEW_ORDER_SINGLE:
       return RequestType::CREATE_ORDER;
-    case core::fix::MsgType::ORDER_CANCEL_REPLACE_REQUEST:
+    case ORDER_CANCEL_REPLACE_REQUEST:
       return RequestType::MODIFY_ORDER;
-    case core::fix::MsgType::ORDER_CANCEL_REQUEST:
+    case ORDER_CANCEL_REQUEST:
       return RequestType::CANCEL_ORDER;
     default:
       return {};
@@ -915,8 +915,8 @@ void OrderEntry::operator()(
   log::info<1>(
       "event={{header={}, order_mass_cancel_report={}}}"sv, header, order_mass_cancel_report);
   switch (order_mass_cancel_report.mass_cancel_response) {
-    // using enum core::fix::MassCancelResponse;  // XXX clang13
-    case core::fix::MassCancelResponse::CANCEL_REQUEST_REJECTED:
+    using enum core::fix::MassCancelResponse;
+    case CANCEL_REQUEST_REJECTED:
       log::warn(
           R"(*** CANCEL ALL ORDERS FAILED, REASON="{}" ***)"sv,
           order_mass_cancel_report.mass_cancel_reject_reason);

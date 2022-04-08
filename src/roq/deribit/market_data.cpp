@@ -68,20 +68,20 @@ T combine(T date_part, T time_part) {
 template <typename T>
 void validate(const T &value) {
   switch (value.md_update_action) {
-    // using enum core::fix::MDUpdateAction;  // XXX clang13
-    case core::fix::MDUpdateAction::UNKNOWN:
+    using enum core::fix::MDUpdateAction;
+    case UNKNOWN:
       break;
-    case core::fix::MDUpdateAction::NEW:
+    case NEW:
       // assert(utils::is_greater(value.md_entry_size, 0.0));
       break;
-    case core::fix::MDUpdateAction::CHANGE:
+    case CHANGE:
       // assert(utils::is_greater(value.md_entry_size, 0.0));
       break;
-    case core::fix::MDUpdateAction::DELETE:
+    case DELETE:
       assert(utils::is_zero(value.md_entry_size));
       break;
-    case core::fix::MDUpdateAction::DELETE_THRU:
-    case core::fix::MDUpdateAction::DELETE_FROM:
+    case DELETE_THRU:
+    case DELETE_FROM:
       log::fatal("MDUpdateAction not supported: {}"sv, value);
       break;
   }
@@ -282,22 +282,23 @@ void MarketData::send_test_request(std::chrono::nanoseconds now) {
 
 uint32_t MarketData::download(MarketDataState state) {
   switch (state) {
-    case MarketDataState::UNDEFINED:
+    using enum MarketDataState;
+    case UNDEFINED:
       assert(false);
       break;
-    case MarketDataState::SECURITIES:
+    case SECURITIES:
       if (master_) {
         download_securities();
         return 1;
       } else {
         return {};
       }
-    case MarketDataState::SUBSCRIBE:
+    case SUBSCRIBE:
       assert(!ready_);
       ready_ = true;
       subscribe();
       return {};
-    case MarketDataState::DONE:
+    case DONE:
       (*this)(ConnectionStatus::READY);
       return {};
   }
@@ -431,34 +432,35 @@ void MarketData::parse_helper(const core::fix::message_t &message) {
   auto trace_info = server::create_trace_info();
   core::fix::Buffer buffer(decode_buffer_);
   switch (message.header.msg_type) {
+    using enum core::fix::MsgType;
     // session
-    case core::fix::MsgType::HEARTBEAT: {
+    case HEARTBEAT: {
       auto heartbeat = fix::Heartbeat::create(message);
       core::fix::create_event_and_dispatch(*this, message.header, heartbeat, trace_info);
       return;
     }
-    case core::fix::MsgType::LOGON: {
+    case LOGON: {
       auto logon = fix::Logon::create(message);
       core::fix::create_event_and_dispatch(*this, message.header, logon, trace_info);
       return;
     }
-    case core::fix::MsgType::LOGOUT: {
+    case LOGOUT: {
       auto logout = fix::Logout::create(message);
       core::fix::create_event_and_dispatch(*this, message.header, logout, trace_info);
       return;
     }
-    case core::fix::MsgType::RESEND_REQUEST: {
+    case RESEND_REQUEST: {
       auto resend_request = fix::ResendRequest::create(message);
       core::fix::create_event_and_dispatch(*this, message.header, resend_request, trace_info);
       return;
     }
-    case core::fix::MsgType::TEST_REQUEST: {
+    case TEST_REQUEST: {
       auto test_request = fix::TestRequest::create(message);
       core::fix::create_event_and_dispatch(*this, message.header, test_request, trace_info);
       return;
     }
     // ...
-    case core::fix::MsgType::MARKET_DATA_INCREMENTAL_REFRESH: {
+    case MARKET_DATA_INCREMENTAL_REFRESH: {
       profile_.market_data_incremental_refresh([&]() {
         auto market_data_incremental_referesh =
             fix::MarketDataIncrementalRefresh::create(message, buffer);
@@ -467,7 +469,7 @@ void MarketData::parse_helper(const core::fix::message_t &message) {
       });
       return;
     }
-    case core::fix::MsgType::MARKET_DATA_REQUEST_REJECT: {
+    case MARKET_DATA_REQUEST_REJECT: {
       profile_.market_data_request_reject([&]() {
         auto market_data_request_reject = fix::MarketDataRequestReject::create(message);
         core::fix::create_event_and_dispatch(
@@ -475,7 +477,7 @@ void MarketData::parse_helper(const core::fix::message_t &message) {
       });
       return;
     }
-    case core::fix::MsgType::MARKET_DATA_SNAPSHOT_FULL_REFRESH: {
+    case MARKET_DATA_SNAPSHOT_FULL_REFRESH: {
       profile_.market_data_snapshot_full_refresh([&]() {
         auto market_data_snapshot_full_refresh =
             fix::MarketDataSnapshotFullRefresh::create(message, buffer);
@@ -484,14 +486,14 @@ void MarketData::parse_helper(const core::fix::message_t &message) {
       });
       return;
     }
-    case core::fix::MsgType::SECURITY_LIST: {
+    case SECURITY_LIST: {
       profile_.security_list([&]() {
         auto security_list = fix::SecurityList::create(message, buffer);
         core::fix::create_event_and_dispatch(*this, message.header, security_list, trace_info);
       });
       return;
     }
-    case core::fix::MsgType::SECURITY_STATUS: {
+    case SECURITY_STATUS: {
       profile_.security_status([&]() {
         auto security_status = fix::SecurityStatus::create(message, buffer);
         core::fix::create_event_and_dispatch(*this, message.header, security_status, trace_info);
@@ -499,7 +501,7 @@ void MarketData::parse_helper(const core::fix::message_t &message) {
       return;
     }
     // weird
-    case core::fix::MsgType::MARKET_DATA_REQUEST: {
+    case MARKET_DATA_REQUEST: {
       profile_.market_data_request([&]() {
         // XXX HANS why do we get this message?
       });
@@ -664,21 +666,22 @@ void MarketData::operator()(
     if (exchange_time_utc < item.md_entry_date)
       exchange_time_utc = item.md_entry_date;
     switch (item.md_entry_type) {
-      case core::fix::MDEntryType::BID: {
+      using enum core::fix::MDEntryType;
+      case BID: {
         validate(item);
         bids.emplace_back([&item](auto &result) { emplace(result, item); });
         break;
       }
-      case core::fix::MDEntryType::OFFER: {
+      case OFFER: {
         validate(item);
         asks.emplace_back([&item](auto &result) { emplace(result, item); });
         break;
       }
-      case core::fix::MDEntryType::TRADE: {
+      case TRADE: {
         trades.emplace_back([&item](auto &result) { emplace(result, item); });
         break;
       }
-      case core::fix::MDEntryType::INDEX_VALUE:
+      case INDEX_VALUE:
         statistics.emplace_back([&](auto &result) {
           new (&result) Statistics{
               .type = StatisticsType::INDEX_VALUE,
@@ -688,7 +691,7 @@ void MarketData::operator()(
           };
         });
         break;
-      case core::fix::MDEntryType::SETTLEMENT_PRICE:
+      case SETTLEMENT_PRICE:
         statistics.emplace_back([&](auto &result) {
           new (&result) Statistics{
               .type = StatisticsType::SETTLEMENT_PRICE,
@@ -776,19 +779,20 @@ void MarketData::operator()(
   core::back_emplacer statistics(shared_.statistics);
   for (auto &item : market_data_snapshot_full_refresh.no_md_entries) {
     switch (item.md_entry_type) {
-      case core::fix::MDEntryType::BID: {
+      using enum core::fix::MDEntryType;
+      case BID: {
         validate(item);
         bids.emplace_back([&item](auto &result) { emplace(result, item); });
         break;
       }
-      case core::fix::MDEntryType::OFFER: {
+      case OFFER: {
         validate(item);
         asks.emplace_back([&item](auto &result) { emplace(result, item); });
         break;
       }
-      case core::fix::MDEntryType::TRADE:
+      case TRADE:
         break;  // drop
-      case core::fix::MDEntryType::INDEX_VALUE:
+      case INDEX_VALUE:
         statistics.emplace_back([&](auto &result) {
           new (&result) Statistics{
               .type = StatisticsType::INDEX_VALUE,
@@ -798,7 +802,7 @@ void MarketData::operator()(
           };
         });
         break;
-      case core::fix::MDEntryType::SETTLEMENT_PRICE:
+      case SETTLEMENT_PRICE:
         statistics.emplace_back([&](auto &result) {
           new (&result) Statistics{
               .type = StatisticsType::SETTLEMENT_PRICE,

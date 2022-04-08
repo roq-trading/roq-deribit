@@ -177,18 +177,18 @@ void WebSocket::operator()(ConnectionStatus status) {
 
 uint32_t WebSocket::download(WebSocketState state) {
   switch (state) {
-    // using enum WebSocketState::type_t;  // XXX clang13
-    case WebSocketState::UNDEFINED:
+    using enum WebSocketState;
+    case UNDEFINED:
       break;
-    case WebSocketState::CURRENCIES:
+    case CURRENCIES:
       if (!master_)
         return {};
       return download_currencies();
-    case WebSocketState::INSTRUMENTS:
+    case INSTRUMENTS:
       if (!master_)
         return {};
       return download_instruments();
-    case WebSocketState::SUBSCRIBE:
+    case SUBSCRIBE:
       assert(!ready_);
       ready_ = true;
       if (master_) {
@@ -197,7 +197,7 @@ uint32_t WebSocket::download(WebSocketState state) {
       }
       subscribe();
       return {};
-    case WebSocketState::DONE:
+    case DONE:
       (*this)(ConnectionStatus::READY);
       return {};
   }
@@ -336,41 +336,41 @@ void WebSocket::operator()(const Trace<core::jsonrpc::Result> &event, core::json
   auto &[trace_info, result] = event;
   json::RequestType request_type(result.id);
   switch (request_type) {
-      // using enum json::RequestType::type_t;  // XXX clang13
-    case json::RequestType::UNDEFINED:
+    using enum json::RequestType::type_t;
+    case UNDEFINED:
       break;
-    case json::RequestType::UNKNOWN:
+    case UNKNOWN:
       log::fatal(R"(Unknown request_type="{}")"sv, result.id);
       return;
-    case json::RequestType::AUTH:
+    case AUTH:
       break;  // unexpected
-    case json::RequestType::GET_CURRENCIES: {
+    case GET_CURRENCIES: {
       core::json::Buffer buffer(decode_buffer_);
       json::Currencies currencies(value, buffer);
       Trace event(trace_info, currencies);
       (*this)(event);
       return;
     }
-    case json::RequestType::GET_INSTRUMENTS: {
+    case GET_INSTRUMENTS: {
       core::json::Buffer buffer(decode_buffer_);
       json::Instruments instruments(value, buffer);
       Trace event(trace_info, instruments);
       (*this)(event);
       return;
     }
-    case json::RequestType::SUBSCRIBE_PLATFORM_STATE:
-    case json::RequestType::SUBSCRIBE_INSTRUMENT_STATE:
-    case json::RequestType::SUBSCRIBE_QUOTE:
-    case json::RequestType::SUBSCRIBE_TICKER:
+    case SUBSCRIBE_PLATFORM_STATE:
+    case SUBSCRIBE_INSTRUMENT_STATE:
+    case SUBSCRIBE_QUOTE:
+    case SUBSCRIBE_TICKER:
       // note! no need to parse
       return;
-    case json::RequestType::SUBSCRIBE_PORTFOLIO:
-    case json::RequestType::SUBSCRIBE_CHANGES:
-    case json::RequestType::SUBSCRIBE_ORDERS:
-    case json::RequestType::SUBSCRIBE_TRADES:
-    case json::RequestType::GET_ACCOUNT_SUMMARY:
-    case json::RequestType::GET_TRADES:
-    case json::RequestType::GET_POSITIONS:
+    case SUBSCRIBE_PORTFOLIO:
+    case SUBSCRIBE_CHANGES:
+    case SUBSCRIBE_ORDERS:
+    case SUBSCRIBE_TRADES:
+    case GET_ACCOUNT_SUMMARY:
+    case GET_TRADES:
+    case GET_POSITIONS:
       break;  // unexpected
   }
   log::fatal("Unexpected: request_type={}"sv, request_type);
@@ -381,13 +381,13 @@ void WebSocket::operator()(
   auto &[trace_info, notification] = event;
   json::Method method(notification.method);
   switch (method) {
-    // using enum json::Method::type_t;  // XXX clang13
-    case json::Method::UNDEFINED:
+    using enum json::Method::type_t;
+    case UNDEFINED:
       break;
-    case json::Method::UNKNOWN:
+    case UNKNOWN:
       log::fatal(R"(Unknown method="{}")"sv, notification.method);
       break;
-    case json::Method::SUBSCRIPTION: {
+    case SUBSCRIPTION: {
       core::json::Buffer buffer(decode_buffer_);
       json::Parser::dispatch(*this, value, buffer, trace_info);
       break;

@@ -191,28 +191,28 @@ void DropCopy::login() {
 
 uint32_t DropCopy::download(DropCopyState state) {
   switch (state) {
-    // using enum DropCopyState::type_t;  // XXX clang13
-    case DropCopyState::UNDEFINED:
+    using enum DropCopyState;
+    case UNDEFINED:
       break;
-    case DropCopyState::SUBSCRIBE_PORTFOLIOS:
+    case SUBSCRIBE_PORTFOLIOS:
       subscribe_portfolios(currencies_);
       return {};
-    case DropCopyState::SUBSCRIBE_CHANGES:
+    case SUBSCRIBE_CHANGES:
       subscribe_changes();
       return {};
-    case DropCopyState::SUBSCRIBE_ORDERS:
+    case SUBSCRIBE_ORDERS:
       subscribe_orders();
       return {};
-    case DropCopyState::SUBSCRIBE_TRADES:
+    case SUBSCRIBE_TRADES:
       subscribe_trades();
       return {};
-    case DropCopyState::GET_ACCOUNT_SUMMARY:
+    case GET_ACCOUNT_SUMMARY:
       get_account_summary(currencies_);
       return {};
-    case DropCopyState::GET_TRADES:
+    case GET_TRADES:
       get_trades(currencies_);
       return {};
-    case DropCopyState::DONE:
+    case DONE:
       (*this)(ConnectionStatus::READY);
       assert(!ready_);
       ready_ = true;
@@ -338,43 +338,43 @@ void DropCopy::operator()(const Trace<core::jsonrpc::Result> &event, core::json:
   auto &[trace_info, result] = event;
   json::RequestType request_type(result.id);
   switch (request_type) {
-    // using enum json::RequestType::type_t;  // XXX clang13
-    case json::RequestType::UNDEFINED:
+    using enum json::RequestType::type_t;
+    case UNDEFINED:
       break;
-    case json::RequestType::UNKNOWN:
+    case UNKNOWN:
       log::fatal(R"(Unknown request_type="{}")"sv, result.id);
       return;
-    case json::RequestType::AUTH: {
+    case AUTH: {
       json::Auth auth(value);
       Trace event(trace_info, auth);
       (*this)(event);
       return;
     }
-    case json::RequestType::GET_CURRENCIES:
-    case json::RequestType::GET_INSTRUMENTS:
-    case json::RequestType::SUBSCRIBE_PLATFORM_STATE:
-    case json::RequestType::SUBSCRIBE_INSTRUMENT_STATE:
-    case json::RequestType::SUBSCRIBE_QUOTE:
-    case json::RequestType::SUBSCRIBE_TICKER:
+    case GET_CURRENCIES:
+    case GET_INSTRUMENTS:
+    case SUBSCRIBE_PLATFORM_STATE:
+    case SUBSCRIBE_INSTRUMENT_STATE:
+    case SUBSCRIBE_QUOTE:
+    case SUBSCRIBE_TICKER:
       break;  // unexpected
-    case json::RequestType::SUBSCRIBE_PORTFOLIO:
-    case json::RequestType::SUBSCRIBE_CHANGES:
-    case json::RequestType::SUBSCRIBE_ORDERS:
-    case json::RequestType::SUBSCRIBE_TRADES:
+    case SUBSCRIBE_PORTFOLIO:
+    case SUBSCRIBE_CHANGES:
+    case SUBSCRIBE_ORDERS:
+    case SUBSCRIBE_TRADES:
       // note! no need to parse
       return;
-    case json::RequestType::GET_ACCOUNT_SUMMARY: {
+    case GET_ACCOUNT_SUMMARY: {
       json::Portfolio portfolio(value);
       create_trace_and_dispatch(*this, trace_info, portfolio);
       return;
     }
-    case json::RequestType::GET_TRADES: {
+    case GET_TRADES: {
       core::json::Buffer buffer(decode_buffer_);
       json::Trades trades(value, buffer);
       create_trace_and_dispatch(*this, trace_info, trades);
       return;
     }
-    case json::RequestType::GET_POSITIONS:
+    case GET_POSITIONS:
       break;  // unexpected
   }
   log::fatal("Unexpected: request_type={}"sv, request_type);
@@ -385,13 +385,13 @@ void DropCopy::operator()(
   auto &[trace_info, notification] = event;
   json::Method method(notification.method);
   switch (method) {
-    // using enum json::Method::type_t;  // XXX clang13
-    case json::Method::UNDEFINED:
+    using enum json::Method::type_t;
+    case UNDEFINED:
       break;
-    case json::Method::UNKNOWN:
+    case UNKNOWN:
       log::fatal(R"(Unknown method="{}")"sv, notification.method);
       break;
-    case json::Method::SUBSCRIPTION: {
+    case SUBSCRIPTION: {
       core::json::Buffer buffer(decode_buffer_);
       json::Parser::dispatch(*this, value, buffer, trace_info);
       break;

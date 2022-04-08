@@ -10,9 +10,10 @@ namespace fix {
 
 std::string_view EnumNameAdvOrderType(const AdvOrderType &value) {
   switch (value) {
-    case AdvOrderType::IMPLIED_VOLATILITY_ORDER:
+    using enum AdvOrderType;
+    case IMPLIED_VOLATILITY_ORDER:
       return "IMPLIED_VOLATILITY_ORDER"sv;
-    case AdvOrderType::USD_ORDER:
+    case USD_ORDER:
       return "USD_ORDER"sv;
     default:
       return "UNKNOWN"sv;

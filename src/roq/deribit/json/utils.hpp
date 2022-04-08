@@ -29,15 +29,16 @@ inline void update(std::chrono::milliseconds &result, const core::json::value_t 
 
 inline Side map(Direction direction) {
   switch (direction) {
-    case Direction::UNDEFINED:
+    using enum Direction::type_t;
+    case UNDEFINED:
       break;
-    case Direction::UNKNOWN:
+    case UNKNOWN:
       break;
-    case Direction::BUY:
+    case BUY:
       return Side::BUY;
-    case Direction::SELL:
+    case SELL:
       return Side::SELL;
-    case Direction::ZERO:
+    case ZERO:
       return Side::UNDEFINED;
   }
   return Side::UNDEFINED;
@@ -45,17 +46,18 @@ inline Side map(Direction direction) {
 
 inline TradingStatus map(State state) {
   switch (state) {
-    case State::UNDEFINED:
+    using enum State::type_t;
+    case UNDEFINED:
       break;
-    case State::UNKNOWN:
+    case UNKNOWN:
       break;
-    case State::CLOSED:
+    case CLOSED:
       return TradingStatus::OPEN;
-    case State::OPEN:
+    case OPEN:
       return TradingStatus::OPEN;
-    case State::CREATED:     // XXX don't know how to map
-    case State::SETTLED:     // XXX don't know how to map
-    case State::TERMINATED:  // XXX don't know how to map
+    case CREATED:     // XXX don't know how to map
+    case SETTLED:     // XXX don't know how to map
+    case TERMINATED:  // XXX don't know how to map
       break;
   }
   return TradingStatus::UNDEFINED;
