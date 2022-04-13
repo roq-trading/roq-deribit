@@ -28,7 +28,7 @@ TEST_CASE("multicast_first_test", "[multicast]") {
   // header = 12
   // book = 56 = 29 + 2 * 18
   // quote = 44 = 44
-  auto data =
+  auto buffer =
       "\x7b\x00\x03\x00\xde\x1d\x01\x00\x1d\x00\xe9\x03\x01\x00\x01\x00"  // frame + book
       "\x01\x00\x00\x00\x24\x00\x00\x00\x53\x49\x61\x19\x80\x01\x00\x00"
       "\x89\xba\x19\x00\x00\x00\x00\x00\x8a\xba\x19\x00\x00\x00\x00\x00"
@@ -38,17 +38,16 @@ TEST_CASE("multicast_first_test", "[multicast]") {
       "\x01\x00\x00\xae\x47\xe1\x7a\x94\x8a\xe4\x40\x00\x00\x00\x00\x00"
       "\x00\x49\x40\xcd\xcc\xcc\xcc\x94\x8a\xe4\x40\x00\x00\x00\x00\x00"
       "\x00\x24\x40"sv;
-  CHECK(std::size(data) == 131);
+  CHECK(std::size(buffer) == 131);
   {
-    std::span<std::byte const> buffer{
-        reinterpret_cast<std::byte const *>(std::data(data)), std::size(data)};
-    auto frame = Frame::parse(buffer);
+    auto frame =
+        Frame::parse({reinterpret_cast<std::byte const *>(std::data(buffer)), std::size(buffer)});
     CHECK(frame.packet_length == 123);
     CHECK(frame.channel_id == 3);
     CHECK(frame.sequence_number == 73182);
   }
   {
-    auto message = data.substr(8);
+    auto message = buffer.substr(8);
     MessageHeader header{const_cast<char *>(std::data(message)), std::size(message)};
     CHECK(header.blockLength() == 29);
     CHECK(header.templateId() == 1001);  // defines the parser (1001=book)
@@ -56,7 +55,7 @@ TEST_CASE("multicast_first_test", "[multicast]") {
     CHECK(header.version() == 1);
   }
   {
-    auto message = data.substr(8);
+    auto message = buffer.substr(8);
     Book book{const_cast<char *>(std::data(message)), std::size(message)};
 
     auto &header = book.header();
@@ -77,7 +76,7 @@ TEST_CASE("multicast_first_test", "[multicast]") {
     fmt::print("{}\n"sv, book);
   }
   {
-    auto message = data.substr(75);
+    auto message = buffer.substr(75);
     Quote quote{const_cast<char *>(std::data(message)), std::size(message)};
     auto &header = quote.header();
     CHECK(header.blockLength() == 44);
