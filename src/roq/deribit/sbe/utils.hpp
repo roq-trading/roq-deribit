@@ -19,27 +19,11 @@
 
 #include "roq/api.hpp"
 
+#include "roq/core/sbe/iterator.hpp"
+
 namespace roq {
 namespace deribit {
 namespace sbe {
-
-struct sentinel final {};
-
-template <typename T>
-struct iterator final {
-  using value_type = T;
-  iterator(T &value) : value_(value) {}
-  bool operator==(const sentinel &) { return !value_.hasNext(); }
-  T &operator*() const {
-    value_.next();
-    return value_;
-  }
-  iterator &operator++() { return *this; }
-  void operator++(int) { ++(*this); }
-
- private:
-  T &value_;
-};
 
 inline Side map_book_side(deribit_multicast::BookSide::Value value) {
   switch (value) {
@@ -269,9 +253,7 @@ struct fmt::formatter<deribit_multicast::Book> {
         value.changeId(),
         roq::deribit::sbe::map_yes_no(value.isLast()),
         fmt::join(
-            roq::deribit::sbe::iterator{value.changesList()},
-            roq::deribit::sbe::sentinel{},
-            ", "sv));
+            roq::core::sbe::iterator{value.changesList()}, roq::core::sbe::sentinel{}, ", "sv));
   }
 };
 
@@ -357,9 +339,7 @@ struct fmt::formatter<deribit_multicast::Snapshot> {
         std::chrono::milliseconds{value.timestampMs()},
         value.changeId(),
         fmt::join(
-            roq::deribit::sbe::iterator{value.levelsList()},
-            roq::deribit::sbe::sentinel{},
-            ", "sv));
+            roq::core::sbe::iterator{value.levelsList()}, roq::core::sbe::sentinel{}, ", "sv));
   }
 };
 
@@ -382,9 +362,7 @@ struct fmt::formatter<deribit_multicast::Trades> {
         value.header(),
         value.instrumentId(),
         fmt::join(
-            roq::deribit::sbe::iterator{value.tradesList()},
-            roq::deribit::sbe::sentinel{},
-            ", "sv));
+            roq::core::sbe::iterator{value.tradesList()}, roq::core::sbe::sentinel{}, ", "sv));
   }
 };
 
