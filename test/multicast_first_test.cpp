@@ -8,6 +8,8 @@
 
 #include <iostream>
 
+#include "roq/deribit/sbe/utils.hpp"
+
 using namespace std::literals;
 
 using namespace Catch::literals;
@@ -38,6 +40,7 @@ TEST_CASE("multicast_first_test", "[multicast]") {
   {
     auto message = data.substr(8);
     Book book{const_cast<char *>(std::data(message)), std::size(message)};
+
     auto &header = book.header();
     CHECK(header.blockLength() == 29);
     CHECK(header.templateId() == 1001);
@@ -49,7 +52,9 @@ TEST_CASE("multicast_first_test", "[multicast]") {
     CHECK(book.changeId() == 1686154);
     CHECK(book.isLast() == true);
     //
-    std::cout << book << std::endl;
+    // std::cout << book << std::endl;
+    fmt::print("{}\n"sv, book);
+    fmt::print("{}\n"sv, book);
   }
   {
     auto message = data.substr(75);
@@ -62,6 +67,8 @@ TEST_CASE("multicast_first_test", "[multicast]") {
     //
     CHECK(quote.timestampMs() == 1649693247827);
     //
-    std::cout << quote << std::endl;
+    // std::cout << quote << std::endl;
+    fmt::print("{}\n"sv, quote);
+    fmt::print("{}\n"sv, quote);
   }
 }
