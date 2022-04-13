@@ -73,7 +73,17 @@ TEST_CASE("multicast_first_test", "[multicast]") {
     CHECK(book.changesList().computeLength() == 18);
     CHECK((49 + 18) == 67);
     //
-    // fmt::print("{}\n"sv, book);
+    /*
+    book.sbeRewind();
+    {
+      auto &xxx = book.changesList();
+      if (xxx.hasNext()) {
+        roq::core::sbe::iterator iter{xxx};
+        fmt::print("{}\n"sv, *iter);
+      }
+    }
+    */
+    fmt::print("{}\n"sv, book);
   }
   {
     auto message = buffer.substr(75);
@@ -86,7 +96,7 @@ TEST_CASE("multicast_first_test", "[multicast]") {
     //
     CHECK(quote.timestampMs() == 1649693247827);
     //
-    // fmt::print("{}\n"sv, quote);
+    fmt::print("{}\n"sv, quote);
     //
     CHECK(quote.computeLength() == 56);
   }
