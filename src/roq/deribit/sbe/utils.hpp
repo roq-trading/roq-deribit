@@ -141,7 +141,7 @@ struct fmt::formatter<deribit_multicast::Book::ChangesList> {
     return std::begin(context);
   }
   template <typename Context>
-  auto format(const deribit_multicast::Book::ChangesList &value, Context &context) {
+  auto format(deribit_multicast::Book::ChangesList &value, Context &context) {
     using namespace std::literals;
     return fmt::format_to(
         context.out(),
@@ -165,7 +165,7 @@ struct fmt::formatter<deribit_multicast::Trades::TradesList> {
     return std::begin(context);
   }
   template <typename Context>
-  auto format(const deribit_multicast::Trades::TradesList &value, Context &context) {
+  auto format(deribit_multicast::Trades::TradesList &value, Context &context) {
     using namespace std::literals;
     return fmt::format_to(
         context.out(),
@@ -206,7 +206,7 @@ struct fmt::formatter<deribit_multicast::Snapshot::LevelsList> {
     return std::begin(context);
   }
   template <typename Context>
-  auto format(const deribit_multicast::Snapshot::LevelsList &value, Context &context) {
+  auto format(deribit_multicast::Snapshot::LevelsList &value, Context &context) {
     using namespace std::literals;
     return fmt::format_to(
         context.out(),
