@@ -8,6 +8,7 @@
 
 #include <iostream>
 
+#include "roq/deribit/sbe/frame.hpp"
 #include "roq/deribit/sbe/utils.hpp"
 
 using namespace std::literals;
@@ -16,7 +17,17 @@ using namespace Catch::literals;
 
 using namespace deribit_multicast;
 
+using namespace roq::deribit::sbe;
+
 TEST_CASE("multicast_first_test", "[multicast]") {
+  //  0-  7 |  8 : frame
+  //  8- 74 | 67 : book
+  // 75-130 | 56 : quote
+  // ---
+  // frame = 8
+  // header = 12
+  // book = 56 = 29 + 2 * 18
+  // quote = 44 = 44
   auto data =
       "\x7b\x00\x03\x00\xde\x1d\x01\x00\x1d\x00\xe9\x03\x01\x00\x01\x00"  // frame + book
       "\x01\x00\x00\x00\x24\x00\x00\x00\x53\x49\x61\x19\x80\x01\x00\x00"
@@ -27,15 +38,22 @@ TEST_CASE("multicast_first_test", "[multicast]") {
       "\x01\x00\x00\xae\x47\xe1\x7a\x94\x8a\xe4\x40\x00\x00\x00\x00\x00"
       "\x00\x49\x40\xcd\xcc\xcc\xcc\x94\x8a\xe4\x40\x00\x00\x00\x00\x00"
       "\x00\x24\x40"sv;
+  CHECK(std::size(data) == 131);
+  {
+    std::span<std::byte const> buffer{
+        reinterpret_cast<std::byte const *>(std::data(data)), std::size(data)};
+    auto frame = Frame::parse(buffer);
+    CHECK(frame.packet_length == 123);
+    CHECK(frame.channel_id == 3);
+    CHECK(frame.sequence_number == 73182);
+  }
   {
     auto message = data.substr(8);
     MessageHeader header{const_cast<char *>(std::data(message)), std::size(message)};
     CHECK(header.blockLength() == 29);
-    CHECK(header.templateId() == 1001);
+    CHECK(header.templateId() == 1001);  // defines the parser (1001=book)
     CHECK(header.sbeSchemaId() == 1);
     CHECK(header.version() == 1);
-    // CHECK(message_header.sbeSchemaVersion() == 1);
-    std::cout << header << std::endl;
   }
   {
     auto message = data.substr(8);
@@ -52,8 +70,10 @@ TEST_CASE("multicast_first_test", "[multicast]") {
     CHECK(book.changeId() == 1686154);
     CHECK(book.isLast() == true);
     //
-    // std::cout << book << std::endl;
-    fmt::print("{}\n"sv, book);
+    CHECK(book.computeLength() == 49);
+    CHECK(book.changesList().computeLength() == 18);
+    CHECK((49 + 18) == 67);
+    //
     fmt::print("{}\n"sv, book);
   }
   {
@@ -67,8 +87,8 @@ TEST_CASE("multicast_first_test", "[multicast]") {
     //
     CHECK(quote.timestampMs() == 1649693247827);
     //
-    // std::cout << quote << std::endl;
     fmt::print("{}\n"sv, quote);
-    fmt::print("{}\n"sv, quote);
+    //
+    CHECK(quote.computeLength() == 56);
   }
 }

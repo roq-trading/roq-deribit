@@ -1,6 +1,6 @@
 set(TARGET_NAME "${PROJECT_NAME}-sbe")
 
-set(SOURCES utils.cpp)
+set(SOURCES frame.cpp)
 
 include(RoqAutogen)
 

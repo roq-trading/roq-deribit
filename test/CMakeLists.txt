@@ -33,6 +33,7 @@ target_link_libraries(
   "${TARGET_NAME}"
   "${PROJECT_NAME}-fix"
   "${PROJECT_NAME}-json"
+  "${PROJECT_NAME}-sbe"
   "${PROJECT_NAME}-tools"
   roq-server::roq-server
   roq-core::roq-core
