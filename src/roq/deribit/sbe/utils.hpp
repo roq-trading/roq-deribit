@@ -99,6 +99,40 @@ inline bool map_yes_no(deribit_multicast::YesNo::Value value) {
   return false;
 }
 
+template <typename T>
+size_t compute_length(T &);
+
+template <>
+inline size_t compute_length(deribit_multicast::MessageHeader &value) {
+  return value.encodedLength();
+}
+
+template <>
+inline size_t compute_length(deribit_multicast::Instrument &value) {
+  return value.computeLength(value.instrumentNameLength());
+}
+
+template <>
+inline size_t compute_length(deribit_multicast::Book &value) {
+  // return compute_length(value.changesList()) + value.computeLength();
+  return value.computeLength(value.changesList().count());
+}
+
+template <>
+inline size_t compute_length(deribit_multicast::Trades &value) {
+  // return compute_length(value.tradesList()) + value.computeLength();
+  return value.computeLength(value.tradesList().count());
+}
+
+template <>
+inline size_t compute_length(deribit_multicast::Quote &value) {
+  return value.computeLength();
+}
+
+template <>
+inline size_t compute_length(deribit_multicast::Snapshot &value) {
+  return value.computeLength(value.levelsList().count(), value.instrumentNameLength());
+}
 }  // namespace sbe
 }  // namespace deribit
 }  // namespace roq
@@ -366,4 +400,3 @@ struct fmt::formatter<deribit_multicast::Trades> {
             roq::core::sbe::iterator{value.tradesList()}, roq::core::sbe::sentinel{}, ", "sv));
   }
 };
-
