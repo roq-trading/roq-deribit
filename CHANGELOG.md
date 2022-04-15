@@ -4,6 +4,10 @@ All notable changes will be documented in this file.
 
 ## Head
 
+### Fixed
+
+* Ticker fields may contain non-numeric values (#203)
+
 ## 0.8.3 &ndash; 2022-03-22
 
 ### Changed

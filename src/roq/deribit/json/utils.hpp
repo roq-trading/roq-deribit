@@ -23,6 +23,17 @@ inline void update(T &result, const core::json::value_t &value) {
 }
 
 template <>
+inline void update(double &result, const core::json::value_t &value) {
+  if (std::holds_alternative<std::string_view>(value)) {
+    if (std::get<std::string_view>(value).compare("undefined") == 0) {
+      result = NaN;
+      return;
+    }
+  }
+  result = core::json::get<double>(value);
+}
+
+template <>
 inline void update(std::chrono::milliseconds &result, const core::json::value_t &value) {
   result = std::chrono::milliseconds{core::json::get<uint64_t>(value)};
 }

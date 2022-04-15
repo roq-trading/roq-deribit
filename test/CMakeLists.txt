@@ -22,6 +22,7 @@ set(SOURCES
     json_subscription.cpp
     json_ticker.cpp
     json_trades_2.cpp
+    json_types.cpp
     multicast_first_test.cpp
     main.cpp)
 
