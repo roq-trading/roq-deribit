@@ -4,6 +4,10 @@ All notable changes will be documented in this file.
 
 ## Head
 
+### Added
+
+* Optional multicast connection (#202)
+
 ### Fixed
 
 * Ticker fields may contain non-numeric values (#203)

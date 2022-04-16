@@ -3,7 +3,7 @@
   "type": "flags",
   "values": [
     {
-      "name": "multicast_local_interface",
+      "name": "local_interface",
       "type": "std::string",
       "description": "Multicast local interface"
     },

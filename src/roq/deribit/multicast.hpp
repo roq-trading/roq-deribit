@@ -13,10 +13,12 @@
 
 #include "roq/deribit/shared.hpp"
 
+#include "roq/deribit/sbe/parser.hpp"
+
 namespace roq {
 namespace deribit {
 
-class Multicast final : public core::net::UdpConnection::Handler {
+class Multicast final : public core::net::UdpConnection::Handler, public sbe::Parser::Handler {
  public:
   struct Handler {
     virtual void operator()(const Trace<StreamStatus> &) = 0;
@@ -38,6 +40,20 @@ class Multicast final : public core::net::UdpConnection::Handler {
 
  protected:
   void operator()(const core::net::UdpConnection::Read &) override;
+
+ protected:
+  // events
+  void operator()(
+      uint16_t channel_id, uint32_t sequence_number, deribit_multicast::Instrument &) override;
+  void operator()(
+      uint16_t channel_id, uint32_t sequence_number, deribit_multicast::Book &) override;
+  void operator()(
+      uint16_t channel_id, uint32_t sequence_number, deribit_multicast::Quote &) override;
+  void operator()(
+      uint16_t channel_id, uint32_t sequence_number, deribit_multicast::Trades &) override;
+  // snapshot
+  void operator()(
+      uint16_t channel_id, uint32_t sequence_number, deribit_multicast::Snapshot &) override;
 
  private:
   Handler &handler_;
