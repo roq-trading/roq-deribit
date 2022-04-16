@@ -3,27 +3,27 @@
   "type": "flags",
   "values": [
     {
-      "name": "mcast_if",
+      "name": "multicast_local_interface",
       "type": "std::string",
       "description": "Multicast local interface"
     },
     {
-      "name": "mcast_ip",
+      "name": "multicast_address",
       "type": "std::vector<std::string>",
       "default": "239.111.111.1,239.111.111.3",
       "description": "List of multicast addresses (comma-separated)"
     },
     {
-      "name": "mcast_port_events",
+      "name": "multicast_port_events",
       "type": "uint32_t",
       "default": "6100",
       "description": "Multicast port used for events"
     },
     {
-      "name": "mcast_port_snapshot",
+      "name": "multicast_port_snapshot",
       "type": "uint32_t",
       "default": "6101",
-      "description": "Multicast port for snapshots"
+      "description": "Multicast port for snapshot"
     }
   ]
 }

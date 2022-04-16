@@ -15,6 +15,7 @@
 #include "roq/deribit/config.hpp"
 #include "roq/deribit/drop_copy.hpp"
 #include "roq/deribit/market_data.hpp"
+#include "roq/deribit/multicast.hpp"
 #include "roq/deribit/order_entry.hpp"
 #include "roq/deribit/security.hpp"
 #include "roq/deribit/shared.hpp"
@@ -27,7 +28,8 @@ class Gateway final : public server::Handler,
                       public OrderEntry::Handler,
                       public DropCopy::Handler,
                       public WebSocket::Handler,
-                      public MarketData::Handler {
+                      public MarketData::Handler,
+                      public Multicast::Handler {
  public:
   Gateway(server::Dispatcher &, const Config &);
 
@@ -102,6 +104,7 @@ class Gateway final : public server::Handler,
   absl::flat_hash_map<Account, std::unique_ptr<DropCopy>> drop_copy_;
   std::vector<std::unique_ptr<WebSocket>> web_socket_;
   std::vector<std::unique_ptr<MarketData>> market_data_;
+  std::unique_ptr<Multicast> multicast_;
 };
 
 }  // namespace deribit

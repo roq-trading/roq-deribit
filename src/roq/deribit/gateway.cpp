@@ -5,6 +5,7 @@
 #include <utility>
 
 #include "roq/deribit/flags/fix.hpp"
+#include "roq/deribit/flags/multicast.hpp"
 
 using namespace std::literals;
 
@@ -71,6 +72,13 @@ auto create_market_data(
       gateway, context, stream_id, security, shared, std::size(result), true));
   return result;
 }
+
+auto create_multicast(
+    Gateway &gateway, core::io::Context &context, uint16_t &stream_id, Shared &shared) {
+  if (std::empty(flags::Multicast::multicast_local_interface()))
+    return std::unique_ptr<Multicast>{};
+  return std::make_unique<Multicast>(gateway, context, stream_id, shared);
+}
 }  // namespace
 
 Gateway::Gateway(server::Dispatcher &dispatcher, const Config &config)
@@ -82,7 +90,8 @@ Gateway::Gateway(server::Dispatcher &dispatcher, const Config &config)
           create_drop_copy<decltype(drop_copy_)>(*this, context_, stream_id_, security_, shared_)),
       web_socket_(create_web_socket<decltype(web_socket_)>(*this, context_, stream_id_, shared_)),
       market_data_(create_market_data<decltype(market_data_)>(
-          *this, context_, ++stream_id_, *security_[master_account_], shared_)) {
+          *this, context_, ++stream_id_, *security_[master_account_], shared_)),
+      multicast_(create_multicast(*this, context_, ++stream_id_, shared_)) {
   if (std::empty(master_account_)) {
     log::fatal("A master account is always required (due to FIX logon)"sv);
   }
@@ -100,10 +109,14 @@ void Gateway::operator()(const Event<Start> &event) {
     (*iter)(event);
   for (auto &iter : market_data_)
     (*iter)(event);
+  if (multicast_)
+    (*multicast_)(event);
 }
 
 void Gateway::operator()(const Event<Stop> &event) {
   log::info("Stopping the gateway..."sv);
+  if (multicast_)
+    (*multicast_)(event);
   for (auto &iter : market_data_)
     (*iter)(event);
   for (auto &iter : web_socket_)
@@ -123,6 +136,8 @@ void Gateway::operator()(const Event<Timer> &event) {
     (*iter)(event);
   for (auto &iter : market_data_)
     (*iter)(event);
+  if (multicast_)
+    (*multicast_)(event);
   context_.dispatch(true);
 }
 

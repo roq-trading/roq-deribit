@@ -183,7 +183,7 @@ void MarketData::operator()(const core::net::Manager::Disconnected &) {
 }
 
 void MarketData::operator()(const core::net::Manager::Read &read) {
-  auto buffer = read.buffer.pullup_new();
+  auto buffer = read.buffer.pullup();
   size_t total_bytes = 0;
   while (!std::empty(buffer)) {
     auto bytes = core::fix::Reader<FIX_VERSION>::dispatch(

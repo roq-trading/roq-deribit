@@ -13,6 +13,7 @@ set(SOURCES
     drop_copy.cpp
     gateway.cpp
     market_data.cpp
+    multicast.cpp
     order_entry.cpp
     security.cpp
     shared.cpp
