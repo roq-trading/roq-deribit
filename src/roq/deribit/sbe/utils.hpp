@@ -228,6 +228,7 @@ struct fmt::formatter<deribit_multicast::Trades::TradesList> {
         value.tradeSeq(),
         value.tradeId(),
         deribit_multicast::TickDirection::c_str(value.tickDirection()),
+        deribit_multicast::Liquidation::c_str(value.liquidation()),
         value.iv(),
         value.blockTradeId(),
         value.comboTradeId());
@@ -363,7 +364,6 @@ struct fmt::formatter<deribit_multicast::Snapshot> {
         R"(isBookComplete={}, )"
         R"(isLastInBook={}, )"
         R"(timestampMs={}, )"
-        R"(prevChangeId={}, )"
         R"(changeId={}, )"
         R"(levelsList=[{}])"
         R"(}})"sv,

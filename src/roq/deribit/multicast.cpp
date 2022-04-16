@@ -95,18 +95,14 @@ void Multicast::operator()(
 
 void Multicast::operator()(
     uint16_t channel_id, uint32_t sequence_number, deribit_multicast::Trades &trades) {
-  /*
   log::info<5>(
       "channel_id={}, sequence_number={}, trades={}"sv, channel_id, sequence_number, trades);
-  */
 }
 
 void Multicast::operator()(
     uint16_t channel_id, uint32_t sequence_number, deribit_multicast::Snapshot &snapshot) {
-  /*
   log::info<5>(
       "channel_id={}, sequence_number={}, snapshot={}"sv, channel_id, sequence_number, snapshot);
-  */
 }
 
 void Multicast::operator()(metrics::Writer &writer) {
