@@ -2,7 +2,6 @@
 
 #include <catch2/catch.hpp>
 
-#include "roq/core/debug.hpp"
 #include "roq/core/fix/reader.hpp"
 
 #include "roq/deribit/fix/logon.hpp"
@@ -65,7 +64,6 @@ TEST_CASE("fix_logon_create_message", "[fix_logon]") {
       msg_seq_num,
       sending_time);
   auto message = logon.encode(writer);
-  // core::print_string_with_escapes(std::data(message), std::size(message));
   const auto expected =
       "8=FIX.4.4\0019=0000211\00135=A\00149=ROQ_TRADING\00156=DERIBIT"
       "SERVER\00134=1\00152=20190917-06:46:50.000\001108=10\00195=58\001"

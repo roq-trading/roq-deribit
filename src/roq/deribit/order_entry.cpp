@@ -6,11 +6,13 @@
 #include <utility>
 
 #include "roq/mask.hpp"
+
 #include "roq/utils/safe_cast.hpp"
 #include "roq/utils/update.hpp"
 
+#include "roq/core/hex_escaped.hpp"
+
 #include "roq/core/back_emplacer.hpp"
-#include "roq/core/debug.hpp"
 
 #include "roq/core/metrics/factory.hpp"
 
@@ -294,10 +296,9 @@ void OrderEntry::operator()(const core::net::Manager::Read &read) {
             check(message.header);
             parse(message);
           } catch (std::exception &) {
-            log::warn("{}"sv, core::fix::Debug(buffer));
+            log::warn("{}"sv, core::fix::Debug{buffer});
 #if !defined(NDEBUG)
-            core::print_memory(buffer);
-            core::print_string_with_escapes(buffer);
+            log::warn("{}"sv, debug::HexEscaped{buffer});
 #endif
             throw;
           }

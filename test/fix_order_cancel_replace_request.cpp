@@ -2,7 +2,6 @@
 
 #include <catch2/catch.hpp>
 
-#include "roq/core/debug.hpp"
 #include "roq/core/fix/reader.hpp"
 
 #include "roq/deribit/fix/order_cancel_replace_request.hpp"
@@ -39,7 +38,6 @@ TEST_CASE("fix_order_cancel_replace_request_create_message", "[fix_order_cancel_
       msg_seq_num,
       sending_time);
   auto message = order_cancel_replace_request.encode(writer);
-  // core::print_string_with_escapes(message);
   const auto expected =
       "8=FIX.4.4\0019=0000148\00135=G\00149=ROQ_TRADING\00156=DERIBIT"
       "SERVER\00134=1\00152=20190917-06:46:50.000\00141=123\00111=123"
