@@ -18,17 +18,21 @@ namespace sbe {
 bool Parser::dispatch(Handler &handler, const std::span<std::byte const> &buffer) {
   auto result = true;
   if (Frame::parse(buffer, [&](auto &frame) {
+        log::debug("skip frame"sv);
         auto tmp = buffer.subspan(Frame::size());
         // sbe headers are not const-safe
         std::span message{
             reinterpret_cast<char *>(const_cast<std::byte *>(std::data(tmp))), std::size(tmp)};
         while (result) {
+          log::debug("message: size={}"sv, std::size(message));
           deribit_multicast::MessageHeader header{std::data(message), std::size(message)};
           auto template_id = header.templateId();
+          log::debug("template_id={}"sv, template_id);
           switch (header.templateId()) {
             case 1000: {
               deribit_multicast::Instrument instrument{std::data(message), std::size(message)};
               auto length = compute_length(instrument);
+              log::debug("--> instrument: length={}"sv, length);
               // log::info<5>("instrument={}"sv, instrument);
               instrument.sbeRewind();  // note! important
               handler(frame.channel_id, frame.sequence_number, instrument);
@@ -38,6 +42,7 @@ bool Parser::dispatch(Handler &handler, const std::span<std::byte const> &buffer
             case 1001: {
               deribit_multicast::Book book{std::data(message), std::size(message)};
               auto length = compute_length(book);
+              log::debug("--> book: length={}"sv, length);
               // log::info<5>("book={}"sv, book);
               book.sbeRewind();  // note! important
               handler(frame.channel_id, frame.sequence_number, book);
@@ -47,6 +52,7 @@ bool Parser::dispatch(Handler &handler, const std::span<std::byte const> &buffer
             case 1002: {
               deribit_multicast::Trades trades{std::data(message), std::size(message)};
               auto length = compute_length(trades);
+              log::debug("--> trades: length={}"sv, length);
               // log::info<5>("trades={}"sv, trades);
               trades.sbeRewind();  // note! important
               handler(frame.channel_id, frame.sequence_number, trades);
@@ -56,6 +62,7 @@ bool Parser::dispatch(Handler &handler, const std::span<std::byte const> &buffer
             case 1003: {
               deribit_multicast::Quote quote{std::data(message), std::size(message)};
               auto length = compute_length(quote);
+              log::debug("--> quote: length={}"sv, length);
               // log::info<5>("quote={}"sv, quote);
               quote.sbeRewind();  // note! important
               handler(frame.channel_id, frame.sequence_number, quote);
@@ -65,6 +72,7 @@ bool Parser::dispatch(Handler &handler, const std::span<std::byte const> &buffer
             case 1004: {
               deribit_multicast::Snapshot snapshot{std::data(message), std::size(message)};
               auto length = compute_length(snapshot);
+              log::debug("--> snapshot: length={}"sv, length);
               // std::cerr << snapshot << std::endl;
               // log::info<5>("snapshot={}"sv, snapshot);
               snapshot.sbeRewind();  // note! important
@@ -78,8 +86,11 @@ bool Parser::dispatch(Handler &handler, const std::span<std::byte const> &buffer
               return;
             }
           }
-          if (std::empty(message))
+          if (std::empty(message)) {
+            log::debug("done!"sv);
             break;
+          }
+          log::debug("message: length={}"sv, std::size(message));
           // XXX something wrong with Snapshot...
           if (std::size(message) < 12) {  // size of header
             log::warn("remaining data: length={}"sv, std::size(message));
