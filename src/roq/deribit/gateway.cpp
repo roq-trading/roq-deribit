@@ -4,6 +4,7 @@
 
 #include <utility>
 
+#include "roq/deribit/flags/common.hpp"
 #include "roq/deribit/flags/fix.hpp"
 #include "roq/deribit/flags/multicast.hpp"
 
@@ -92,7 +93,7 @@ Gateway::Gateway(server::Dispatcher &dispatcher, const Config &config)
       market_data_(create_market_data<decltype(market_data_)>(
           *this, context_, ++stream_id_, *security_[master_account_], shared_)),
       multicast_(create_multicast(*this, context_, ++stream_id_, shared_)) {
-  if (std::empty(master_account_)) {
+  if (std::empty(master_account_) && !flags::Common::disable_master_account_check()) {
     log::fatal("A master account is always required (due to FIX logon)"sv);
   }
   if (!flags::FIX::fix_cancel_on_disconnect())
