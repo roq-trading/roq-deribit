@@ -6,6 +6,8 @@
 #include <netinet/in.h>
 #include <sys/socket.h>
 
+#include "roq/debug/hex/message.hpp"
+
 #include "roq/core/metrics/factory.hpp"
 
 #include "roq/deribit/flags/common.hpp"
@@ -71,7 +73,10 @@ void Multicast::operator()(const Event<Timer> &) {
 
 void Multicast::operator()(const core::net::UdpConnection::Read &read) {
   log::info<5>("received {} byte(s)"sv, std::size(read.buffer));
-  // XXX parse
+  if (!sbe::Parser::dispatch(*this, read.buffer)) {
+    log::warn<5>("Failed to parse message"sv);
+    log::warn<5>("{}"sv, debug::hex::Message{read.buffer});
+  }
 }
 
 void Multicast::operator()(
