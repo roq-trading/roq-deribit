@@ -22,6 +22,8 @@
 
 #include "roq/core/sbe/iterator.hpp"
 
+#include "roq/logging.hpp"
+
 namespace roq {
 namespace deribit {
 namespace sbe {
@@ -109,19 +111,20 @@ inline size_t compute_length(deribit_multicast::MessageHeader &value) {
 
 template <>
 inline size_t compute_length(deribit_multicast::Instrument &value) {
-  return value.computeLength(value.instrumentNameLength());
+  auto instrument_name_length = value.instrumentNameLength();
+  return value.computeLength(instrument_name_length);
 }
 
 template <>
 inline size_t compute_length(deribit_multicast::Book &value) {
-  // return compute_length(value.changesList()) + value.computeLength();
-  return value.computeLength(value.changesList().count());
+  auto changes_list_length = value.changesList().count();
+  return value.computeLength(changes_list_length);
 }
 
 template <>
 inline size_t compute_length(deribit_multicast::Trades &value) {
-  // return compute_length(value.tradesList()) + value.computeLength();
-  return value.computeLength(value.tradesList().count());
+  auto trades_list_length = value.tradesList().count();
+  return value.computeLength(trades_list_length);
 }
 
 template <>
@@ -131,7 +134,10 @@ inline size_t compute_length(deribit_multicast::Quote &value) {
 
 template <>
 inline size_t compute_length(deribit_multicast::Snapshot &value) {
-  return value.computeLength(value.levelsList().count(), value.instrumentNameLength());
+  auto levels_list_length = value.levelsList().count();
+  value.sbeRewind();  // wtf!
+  auto instrument_name_length = value.instrumentNameLength();
+  return value.computeLength(levels_list_length, instrument_name_length);
 }
 }  // namespace sbe
 }  // namespace deribit

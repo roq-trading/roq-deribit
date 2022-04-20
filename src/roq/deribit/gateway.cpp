@@ -22,6 +22,13 @@ auto create_security(const Config &config) {
   return result;
 }
 
+auto &get_security(const auto &security, const std::string_view &master_account) {
+  auto iter = security.find(master_account);
+  if (iter != security.end())
+    return *(*iter).second;
+  log::fatal("Market data requires a master account"sv);
+}
+
 template <typename R, typename T>
 auto create_order_entry(
     Gateway &gateway,
@@ -91,7 +98,7 @@ Gateway::Gateway(server::Dispatcher &dispatcher, const Config &config)
           create_drop_copy<decltype(drop_copy_)>(*this, context_, stream_id_, security_, shared_)),
       web_socket_(create_web_socket<decltype(web_socket_)>(*this, context_, stream_id_, shared_)),
       market_data_(create_market_data<decltype(market_data_)>(
-          *this, context_, ++stream_id_, *security_[master_account_], shared_)),
+          *this, context_, ++stream_id_, get_security(security_, master_account_), shared_)),
       multicast_(create_multicast(*this, context_, ++stream_id_, shared_)) {
   if (std::empty(master_account_) && !flags::Common::disable_master_account_check()) {
     log::fatal("A master account is always required (due to FIX logon)"sv);

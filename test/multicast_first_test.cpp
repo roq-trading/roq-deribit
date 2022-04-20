@@ -319,7 +319,6 @@ TEST_CASE("multicast_snapshot", "[multicast]") {
     virtual void operator()(
         uint16_t channel_id, uint32_t sequence_number, deribit_multicast::Snapshot &snapshot) {
       found = true;
-      log::debug("HERE"sv);
       snapshot.sbeRewind();
       CHECK(snapshot.instrumentId() == 213039);
       CHECK(snapshot.timestampMs() == 1649929090244);
@@ -330,6 +329,7 @@ TEST_CASE("multicast_snapshot", "[multicast]") {
       snapshot.levelsList().forEach([&count](auto &) { ++count; });
       CHECK(count == 60);
       auto length = snapshot.instrumentNameLength();  // must fetch before getting name
+      CHECK(length == 18);
       auto name = std::string_view{snapshot.instrumentName(), length};
       CHECK(name == "SOL_USDC-PERPETUAL"sv);
     }

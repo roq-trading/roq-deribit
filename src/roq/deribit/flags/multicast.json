@@ -24,6 +24,21 @@
       "type": "uint32_t",
       "default": "6101",
       "description": "Multicast port for snapshot"
+    },
+    {
+      "name": "multicast_disable_top_of_book",
+      "type": "bool",
+      "description": "Default is to consume TopOfBook from the multicast feed"
+    },
+    {
+      "name": "multicast_disable_trade_summary",
+      "type": "bool",
+      "description": "Default is to consume TradeSummary from the multicast feed"
+    },
+    {
+      "name": "multicast_disable_market_by_price",
+      "type": "bool",
+      "description": "Default is to consume MarketByPrice from the multicast feed"
     }
   ]
 }
