@@ -19,7 +19,6 @@
 
 #include "roq/core/metrics/factory.hpp"
 
-#include "roq/core/fix/debug.hpp"
 #include "roq/core/fix/utils.hpp"
 
 #include "roq/deribit/common.hpp"
