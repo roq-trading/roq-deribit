@@ -10,7 +10,8 @@
 #include "roq/utils/safe_cast.hpp"
 #include "roq/utils/update.hpp"
 
-#include "roq/debug/hex_escaped.hpp"
+#include "roq/debug/fix/message.hpp"
+#include "roq/debug/hex/message.hpp"
 
 #include "roq/core/back_emplacer.hpp"
 
@@ -194,16 +195,16 @@ void MarketData::operator()(const core::net::Manager::Read &read) {
             check(message.header);
             parse(message);
           } catch (std::exception &) {
-            log::warn("{}"sv, core::fix::Debug{buffer});
+            log::warn("{}"sv, debug::fix::Message{buffer});
 #if !defined(NDEBUG)
-            log::warn("{}"sv, debug::HexEscaped{buffer});
+            log::warn("{}"sv, debug::hex::Message{buffer});
 #endif
             throw;
           }
         },
         buffer,
         [](auto &message) {
-          log::info<0>::when(flags::FIX::fix_debug(), "{}"sv, core::fix::Debug(message));
+          log::info<0>::when(flags::FIX::fix_debug(), "{}"sv, debug::fix::Message{message});
         });
     if (bytes == 0)
       break;
@@ -878,7 +879,7 @@ void MarketData::send(const T &event, std::chrono::nanoseconds sending_time) {
       outbound_.msg_seq_num,
       sending_time);
   auto message = event.encode(writer);
-  log::info<0>::when(flags::FIX::fix_debug(), "{}"sv, core::fix::Debug(message));
+  log::info<0>::when(flags::FIX::fix_debug(), "{}"sv, debug::fix::Message{message});
   // note!
   //   it is desirable to use a timer queue here
   //   however, the message header encodes seq_num and timestamp...!
