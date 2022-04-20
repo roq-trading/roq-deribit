@@ -10,7 +10,8 @@
 #include "roq/utils/safe_cast.hpp"
 #include "roq/utils/update.hpp"
 
-#include "roq/debug/hex_escaped.hpp"
+#include "roq/debug/fix/message.hpp"
+#include "roq/debug/hex/message.hpp"
 
 #include "roq/core/back_emplacer.hpp"
 
