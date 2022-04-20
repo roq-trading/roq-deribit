@@ -298,7 +298,7 @@ void OrderEntry::operator()(const core::net::Manager::Read &read) {
             parse(message);
           } catch (std::exception &) {
             log::warn("{}"sv, debug::fix::Message{buffer});
-#if !defined(NDEBUG)
+#ifndef NDEBUG
             log::warn("{}"sv, debug::hex::Message{buffer});
 #endif
             throw;
