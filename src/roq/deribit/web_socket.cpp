@@ -401,7 +401,8 @@ void WebSocket::operator()(const Trace<json::Auth> &) {
 
 void WebSocket::operator()(const Trace<json::Currencies> &event) {
   profile_.currencies([&]() {
-    log::fatal::when(!master_, "Unexpected"sv);
+    if (!master_)
+      log::fatal("Unexpected"sv);
     auto &[trace_info, currencies] = event;
     log::info<2>("currencies={}"sv, currencies);
     auto &data = currencies.data;
@@ -425,7 +426,8 @@ void WebSocket::operator()(const Trace<json::Currencies> &event) {
 
 void WebSocket::operator()(const Trace<json::Instruments> &event) {
   profile_.instruments([&]() {
-    log::fatal::when(!master_, "Unexpected"sv);
+    if (!master_)
+      log::fatal("Unexpected"sv);
     auto &[trace_info, instruments] = event;
     auto &data = instruments.data;
     std::vector<Symbol> symbols;
@@ -459,11 +461,13 @@ void WebSocket::operator()(const Trace<json::Positions> &) {
 }
 
 void WebSocket::operator()(const Trace<json::PlatformState> &) {
-  log::fatal::when(!master_, "Unexpected"sv);
+  if (!master_)
+    log::fatal("Unexpected"sv);
 }
 
 void WebSocket::operator()(const Trace<json::InstrumentState> &) {
-  log::fatal::when(!master_, "Unexpected"sv);
+  if (!master_)
+    log::fatal("Unexpected"sv);
   // seldom updated -- also done by Ticker
 }
 
