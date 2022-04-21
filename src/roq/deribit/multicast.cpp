@@ -132,7 +132,7 @@ void Multicast::publish_stream_status() {
       .supports = SUPPORTS,
       .transport = Transport::UDP,
       .protocol = Protocol::SBE,
-      .encoding = Encoding::SBE,
+      .encoding = {Encoding::SBE},
       .priority = Priority::PRIMARY,
       .connection_status = ConnectionStatus::READY,
   };

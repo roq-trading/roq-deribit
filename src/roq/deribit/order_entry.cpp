@@ -327,7 +327,7 @@ void OrderEntry::operator()(ConnectionStatus status) {
         .supports = SUPPORTS,
         .transport = Transport::TCP,
         .protocol = Protocol::FIX,
-        .encoding = Encoding::FIX,
+        .encoding = {Encoding::FIX},
         .priority = Priority::PRIMARY,
         .connection_status = status_,
     };

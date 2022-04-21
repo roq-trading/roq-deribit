@@ -168,7 +168,7 @@ void WebSocket::operator()(ConnectionStatus status) {
         .supports = master_ ? SUPPORTS_MASTER : SUPPORTS,
         .transport = Transport::TCP,
         .protocol = Protocol::WS,
-        .encoding = Encoding::JSON,
+        .encoding = {Encoding::JSON},
         .priority = Priority::PRIMARY,
         .connection_status = status_,
     };

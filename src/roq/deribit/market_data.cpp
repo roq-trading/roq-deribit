@@ -224,7 +224,7 @@ void MarketData::operator()(ConnectionStatus status) {
         .supports = master_ ? SUPPORTS_MASTER : SUPPORTS,
         .transport = Transport::TCP,
         .protocol = Protocol::FIX,
-        .encoding = Encoding::FIX,
+        .encoding = {Encoding::FIX},
         .priority = Priority::PRIMARY,
         .connection_status = status_,
     };
