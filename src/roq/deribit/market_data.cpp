@@ -222,9 +222,11 @@ void MarketData::operator()(ConnectionStatus status) {
         .stream_id = stream_id_,
         .account = {},
         .supports = master_ ? SUPPORTS_MASTER : SUPPORTS,
-        .status = status_,
-        .type = StreamType::FIX,
+        .transport = Transport::TCP,
+        .protocol = Protocol::FIX,
+        .encoding = Encoding::FIX,
         .priority = Priority::PRIMARY,
+        .connection_status = status_,
     };
     log::info<1>("stream_status={}"sv, stream_status);
     create_trace_and_dispatch(handler_, trace_info, stream_status);

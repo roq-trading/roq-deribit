@@ -56,6 +56,8 @@ class Multicast final : public core::net::UdpConnection::Handler, public sbe::Pa
   void operator()(
       uint16_t channel_id, uint32_t sequence_number, deribit_multicast::Snapshot &) override;
 
+  void publish_stream_status();
+
  private:
   Handler &handler_;
   // config
@@ -73,6 +75,7 @@ class Multicast final : public core::net::UdpConnection::Handler, public sbe::Pa
   } profile_;
   // cache
   Shared &shared_;
+  bool initialized_ = false;
 };
 
 }  // namespace deribit

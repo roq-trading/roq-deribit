@@ -73,6 +73,7 @@ void Multicast::operator()(const Event<Timer> &) {
 
 void Multicast::operator()(const core::net::UdpConnection::Read &read) {
   log::info<5>("received {} byte(s)"sv, std::size(read.buffer));
+  publish_stream_status();  // first message will publish
   if (!sbe::Parser::dispatch(*this, read.buffer)) {
     log::warn<5>("Failed to parse message"sv);
     log::warn<5>("{}"sv, debug::hex::Message{read.buffer});
@@ -118,6 +119,24 @@ void Multicast::operator()(metrics::Writer &writer) {
   writer  //
       .write(counter_.disconnect, metrics::COUNTER)
       .write(profile_.parse, metrics::PROFILE);
+}
+
+void Multicast::publish_stream_status() {
+  if (initialized_)
+    return;
+  initialized_ = true;
+  auto trace_info = server::create_trace_info();
+  StreamStatus stream_status{
+      .stream_id = stream_id_,
+      .account = {},
+      .supports = SUPPORTS,
+      .transport = Transport::UDP,
+      .protocol = Protocol::SBE,
+      .encoding = Encoding::SBE,
+      .priority = Priority::PRIMARY,
+      .connection_status = ConnectionStatus::READY,
+  };
+  create_trace_and_dispatch(handler_, trace_info, stream_status);
 }
 
 }  // namespace deribit

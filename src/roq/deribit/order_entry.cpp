@@ -325,9 +325,11 @@ void OrderEntry::operator()(ConnectionStatus status) {
         .stream_id = stream_id_,
         .account = security_.get_account(),
         .supports = SUPPORTS,
-        .status = status_,
-        .type = StreamType::FIX,
+        .transport = Transport::TCP,
+        .protocol = Protocol::FIX,
+        .encoding = Encoding::FIX,
         .priority = Priority::PRIMARY,
+        .connection_status = status_,
     };
     log::info("stream_status={}"sv, stream_status);
     create_trace_and_dispatch(handler_, trace_info, stream_status);
