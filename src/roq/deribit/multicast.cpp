@@ -79,6 +79,10 @@ void Multicast::operator()(const core::net::UdpConnection::Read &read) {
   }
 }
 
+void Multicast::operator()(const core::net::UdpConnection::Error &error) {
+  log::warn<1>("Error: what={}"sv, error.what);
+}
+
 void Multicast::operator()(
     uint16_t channel_id, uint32_t sequence_number, deribit_multicast::Instrument &instrument) {
   log::info<5>(

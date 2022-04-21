@@ -40,6 +40,7 @@ class Multicast final : public core::net::UdpConnection::Handler, public sbe::Pa
 
  protected:
   void operator()(const core::net::UdpConnection::Read &) override;
+  void operator()(const core::net::UdpConnection::Error &) override;
 
  protected:
   // events
