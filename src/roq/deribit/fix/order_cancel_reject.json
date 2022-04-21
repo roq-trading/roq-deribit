@@ -44,6 +44,12 @@
       "type": "double",
       "custom": true,
       "comment": "undoc"
+    },
+    {
+      "tag": 100010,
+      "name": "DeribitLabel",
+      "type": "std::string_view",
+      "custom": true
     }
   ]
 }

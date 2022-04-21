@@ -55,6 +55,12 @@
       "description": "log fix messages?"
     },
     {
+      "name": "fix_continue_from_parse_exception",
+      "type": "bool",
+      "default": false,
+      "description": "continue if message can't be parsed?"
+    },
+    {
       "name": "fix_terminate_on_market_data_request_reject",
       "type": "bool",
       "default": false,

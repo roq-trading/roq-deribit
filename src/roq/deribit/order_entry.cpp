@@ -301,7 +301,11 @@ void OrderEntry::operator()(const core::net::Manager::Read &read) {
 #ifndef NDEBUG
             log::warn("{}"sv, debug::hex::Message{buffer});
 #endif
-            throw;
+            if (!flags::FIX::fix_continue_from_parse_exception()) [[likely]] {
+              throw;
+            } else {
+              log::error("Message could not be parsed. PLEASE REPORT!"sv);
+            }
           }
         },
         buffer,
