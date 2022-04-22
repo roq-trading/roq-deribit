@@ -371,7 +371,8 @@ struct fmt::formatter<deribit_multicast::Snapshot> {
         R"(isLastInBook={}, )"
         R"(timestampMs={}, )"
         R"(changeId={}, )"
-        R"(levelsList=[{}])"
+        R"(levelsList=[{}],)"
+        R"(instrumentName="{}")"
         R"(}})"sv,
         value.header(),
         value.instrumentId(),
@@ -379,8 +380,8 @@ struct fmt::formatter<deribit_multicast::Snapshot> {
         roq::deribit::sbe::map_yes_no(value.isLastInBook()),
         std::chrono::milliseconds{value.timestampMs()},
         value.changeId(),
-        fmt::join(
-            roq::core::sbe::iterator{value.levelsList()}, roq::core::sbe::sentinel{}, ", "sv));
+        fmt::join(roq::core::sbe::iterator{value.levelsList()}, roq::core::sbe::sentinel{}, ", "sv),
+        value.instrumentName());
   }
 };
 
