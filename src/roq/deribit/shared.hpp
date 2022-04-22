@@ -37,6 +37,16 @@ struct Shared final {
     return dispatcher_.update_order(std::forward<Args>(args)...);
   }
 
+  template <typename Callback>
+  bool find_instrument_name(uint32_t instrument_id, Callback callback) {
+    auto iter = instrument_names.find(instrument_id);
+    if (iter != instrument_names.end()) {
+      callback((*iter).second);
+      return true;
+    }
+    return false;
+  }
+
  public:
   core::page_aligned_vector<Fill> fills;
   core::page_aligned_vector<MBPUpdate> bids, asks, final_bids, final_asks;
@@ -55,6 +65,7 @@ struct Shared final {
   absl::flat_hash_set<std::string> all_currencies;
   absl::flat_hash_set<Symbol> all_symbols;
   core::Symbols symbols;
+  absl::flat_hash_map<uint32_t, Symbol> instrument_names;
 };
 
 }  // namespace deribit

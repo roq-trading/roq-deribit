@@ -139,6 +139,26 @@ inline size_t compute_length(deribit_multicast::Snapshot &value) {
   auto instrument_name_length = value.instrumentNameLength();
   return value.computeLength(levels_list_length, instrument_name_length);
 }
+
+// this is just so... wtf!
+
+template <typename T>
+std::string get_instrument_name(T &);
+
+template <>
+inline std::string get_instrument_name(deribit_multicast::Instrument &value) {
+  value.sbeRewind();
+  auto length = value.instrumentNameLength();  // must fetch before getting name
+  return {value.instrumentName(), length};
+}
+
+template <>
+inline std::string get_instrument_name(deribit_multicast::Snapshot &value) {
+  value.sbeRewind();
+  value.levelsList().forEach([](auto &) {});
+  auto length = value.instrumentNameLength();  // must fetch before getting name
+  return {value.instrumentName(), length};
+}
 }  // namespace sbe
 }  // namespace deribit
 }  // namespace roq
@@ -308,10 +328,7 @@ struct fmt::formatter<deribit_multicast::Instrument> {
   template <typename Context>
   auto format(deribit_multicast::Instrument &value, Context &context) {
     using namespace std::literals;
-    // this is just so... wtf!
-    value.sbeRewind();
-    auto instrument_name_length = value.instrumentNameLength();  // must fetch before getting name
-    auto instrument_name = std::string_view{value.instrumentName(), instrument_name_length};
+    auto instrument_name = roq::deribit::sbe::get_instrument_name(value);
     value.sbeRewind();
     return fmt::format_to(
         context.out(),
@@ -367,11 +384,7 @@ struct fmt::formatter<deribit_multicast::Snapshot> {
   template <typename Context>
   auto format(deribit_multicast::Snapshot &value, Context &context) {
     using namespace std::literals;
-    // this is just so... wtf!
-    value.sbeRewind();
-    value.levelsList().forEach([](auto &) {});
-    auto instrument_name_length = value.instrumentNameLength();  // must fetch before getting name
-    auto instrument_name = std::string_view{value.instrumentName(), instrument_name_length};
+    auto instrument_name = roq::deribit::sbe::get_instrument_name(value);
     value.sbeRewind();
     return fmt::format_to(
         context.out(),

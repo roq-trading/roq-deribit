@@ -101,6 +101,25 @@ void Multicast::operator()(
 void Multicast::operator()(
     uint16_t channel_id, uint32_t sequence_number, deribit_multicast::Quote &quote) {
   log::info<5>("channel_id={}, sequence_number={}, quote={}"sv, channel_id, sequence_number, quote);
+  auto instrument_id = quote.instrumentId();
+  shared_.find_instrument_name(instrument_id, [&](auto &symbol) {
+    auto exchange_time_utc = std::chrono::milliseconds{quote.timestampMs()};
+    TopOfBook top_of_book{
+        .stream_id = stream_id_,
+        .exchange = flags::Config::exchange(),
+        .symbol = symbol,
+        .layer{
+            .bid_price = quote.bestBidPrice(),
+            .bid_quantity = quote.bestBidAmount(),
+            .ask_price = quote.bestAskPrice(),
+            .ask_quantity = quote.bestAskAmount(),
+        },
+        .update_type = UpdateType::INCREMENTAL,
+        .exchange_time_utc = exchange_time_utc,
+        .exchange_sequence = {},
+    };
+    log::info<3>("top_of_book={}"sv, top_of_book);
+  });
 }
 
 void Multicast::operator()(
@@ -113,6 +132,15 @@ void Multicast::operator()(
     uint16_t channel_id, uint32_t sequence_number, deribit_multicast::Snapshot &snapshot) {
   log::info<5>(
       "channel_id={}, sequence_number={}, snapshot={}"sv, channel_id, sequence_number, snapshot);
+  auto instrument_id = snapshot.instrumentId();
+  auto symbol = sbe::get_instrument_name(snapshot);
+  if (!shared_.find_instrument_name(instrument_id, [](auto &) {})) {
+    auto symbol = sbe::get_instrument_name(snapshot);
+    assert(!std::empty(symbol));
+    if (shared_.discard_symbol(symbol))
+      return;
+    shared_.instrument_names.try_emplace(instrument_id, symbol);
+  }
 }
 
 void Multicast::operator()(metrics::Writer &writer) {
