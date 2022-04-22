@@ -6,6 +6,8 @@
 #include <netinet/in.h>
 #include <sys/socket.h>
 
+#include "roq/core/back_emplacer.hpp"
+
 #include "roq/debug/hex/message.hpp"
 
 #include "roq/core/metrics/factory.hpp"
@@ -45,6 +47,27 @@ auto create_connection(auto &handler, auto &context, auto port) {
     connection.add_membership(core::NetworkAddress{multicast, 0}, core::NetworkAddress{local, 0});
   }
   return connection;
+}
+
+template <typename T>
+void emplace(MBPUpdate &result, const T &value) {
+  new (&result) MBPUpdate{
+      .price = value.price(),
+      .quantity = value.amount(),
+      .implied_quantity = NaN,
+      .price_level = {},
+      .number_of_orders = {},
+  };
+}
+
+template <typename T>
+void emplace(Trade &result, const T &value) {
+  new (&result) Trade{
+      .side = sbe::map_direction(value.direction()),
+      .price = value.price(),
+      .quantity = value.amount(),
+      .trade_id = {},  // XXX value.tradeId() is uint64
+  };
 }
 }  // namespace
 
@@ -91,11 +114,54 @@ void Multicast::operator()(
       channel_id,
       sequence_number,
       instrument);
+  auto instrument_id = instrument.instrumentId();
+  if (!shared_.find_instrument_name(instrument_id, [](auto &) {})) {
+    auto symbol = sbe::get_instrument_name(instrument);  // note! alloc
+    assert(!std::empty(symbol));
+    if (shared_.discard_symbol(symbol))
+      return;
+    shared_.instrument_names.try_emplace(instrument_id, symbol);
+  }
 }
 
 void Multicast::operator()(
     uint16_t channel_id, uint32_t sequence_number, deribit_multicast::Book &book) {
   log::info<5>("channel_id={}, sequence_number={}, book={}"sv, channel_id, sequence_number, book);
+  auto instrument_id = book.instrumentId();
+  shared_.find_instrument_name(instrument_id, [&](auto &symbol) {
+    auto exchange_time_utc = std::chrono::milliseconds{book.timestampMs()};
+    core::back_emplacer bids(shared_.bids), asks(shared_.asks);
+    book.sbeRewind();
+    book.changesList().forEach([&](auto &item) {
+      auto side = sbe::map_book_side(item.side());
+      switch (side) {
+        using enum Side;
+        case UNDEFINED:
+          assert(false);
+          break;
+        case BUY:
+          bids.emplace_back([&item](auto &result) { emplace(result, item); });
+          break;
+        case SELL:
+          asks.emplace_back([&item](auto &result) { emplace(result, item); });
+          break;
+      }
+    });
+    const MarketByPriceUpdate market_by_price_update{
+        .stream_id = stream_id_,
+        .exchange = flags::Config::exchange(),
+        .symbol = symbol,
+        .bids = bids,
+        .asks = asks,
+        .update_type = UpdateType::INCREMENTAL,
+        .exchange_time_utc = exchange_time_utc,
+        .exchange_sequence = static_cast<int64_t>(book.changeId()),
+        .price_decimals = {},
+        .quantity_decimals = {},
+        .checksum = {},
+    };
+    log::info<3>("market_by_price_update={}"sv, market_by_price_update);
+  });
 }
 
 void Multicast::operator()(
@@ -104,7 +170,7 @@ void Multicast::operator()(
   auto instrument_id = quote.instrumentId();
   shared_.find_instrument_name(instrument_id, [&](auto &symbol) {
     auto exchange_time_utc = std::chrono::milliseconds{quote.timestampMs()};
-    TopOfBook top_of_book{
+    const TopOfBook top_of_book{
         .stream_id = stream_id_,
         .exchange = flags::Config::exchange(),
         .symbol = symbol,
@@ -126,6 +192,25 @@ void Multicast::operator()(
     uint16_t channel_id, uint32_t sequence_number, deribit_multicast::Trades &trades) {
   log::info<5>(
       "channel_id={}, sequence_number={}, trades={}"sv, channel_id, sequence_number, trades);
+  auto instrument_id = trades.instrumentId();
+  shared_.find_instrument_name(instrument_id, [&](auto &symbol) {
+    std::chrono::milliseconds exchange_time_utc{};
+    core::back_emplacer trades_(shared_.trades);
+    trades.sbeRewind();
+    trades.tradesList().forEach([&](auto &item) {
+      auto timestamp = std::chrono::milliseconds{item.timestampMs()};
+      exchange_time_utc = std::max(exchange_time_utc, timestamp);
+      trades_.emplace_back([&item](auto &result) { emplace(result, item); });
+    });
+    const TradeSummary trade_summary{
+        .stream_id = stream_id_,
+        .exchange = flags::Config::exchange(),
+        .symbol = symbol,
+        .trades = trades_,
+        .exchange_time_utc = exchange_time_utc,
+    };
+    log::info<3>("trade_summary={}"sv, trade_summary);
+  });
 }
 
 void Multicast::operator()(
@@ -133,9 +218,8 @@ void Multicast::operator()(
   log::info<5>(
       "channel_id={}, sequence_number={}, snapshot={}"sv, channel_id, sequence_number, snapshot);
   auto instrument_id = snapshot.instrumentId();
-  auto symbol = sbe::get_instrument_name(snapshot);
   if (!shared_.find_instrument_name(instrument_id, [](auto &) {})) {
-    auto symbol = sbe::get_instrument_name(snapshot);
+    auto symbol = sbe::get_instrument_name(snapshot);  // note! alloc
     assert(!std::empty(symbol));
     if (shared_.discard_symbol(symbol))
       return;
