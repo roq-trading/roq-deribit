@@ -308,6 +308,11 @@ struct fmt::formatter<deribit_multicast::Instrument> {
   template <typename Context>
   auto format(deribit_multicast::Instrument &value, Context &context) {
     using namespace std::literals;
+    // this is just so... wtf!
+    value.sbeRewind();
+    auto instrument_name_length = value.instrumentNameLength();  // must fetch before getting name
+    auto instrument_name = std::string_view{value.instrumentName(), instrument_name_length};
+    value.sbeRewind();
     return fmt::format_to(
         context.out(),
         R"({{)"
@@ -319,7 +324,7 @@ struct fmt::formatter<deribit_multicast::Instrument> {
         value.header(),
         value.instrumentId(),
         deribit_multicast::InstrumentState::c_str(value.state()),
-        value.instrumentName());
+        instrument_name);
   }
 };
 
@@ -362,6 +367,12 @@ struct fmt::formatter<deribit_multicast::Snapshot> {
   template <typename Context>
   auto format(deribit_multicast::Snapshot &value, Context &context) {
     using namespace std::literals;
+    // this is just so... wtf!
+    value.sbeRewind();
+    value.levelsList().forEach([](auto &) {});
+    auto instrument_name_length = value.instrumentNameLength();  // must fetch before getting name
+    auto instrument_name = std::string_view{value.instrumentName(), instrument_name_length};
+    value.sbeRewind();
     return fmt::format_to(
         context.out(),
         R"({{)"
@@ -371,7 +382,7 @@ struct fmt::formatter<deribit_multicast::Snapshot> {
         R"(isLastInBook={}, )"
         R"(timestampMs={}, )"
         R"(changeId={}, )"
-        R"(levelsList=[{}],)"
+        R"(levelsList=[{}], )"
         R"(instrumentName="{}")"
         R"(}})"sv,
         value.header(),
@@ -381,7 +392,7 @@ struct fmt::formatter<deribit_multicast::Snapshot> {
         std::chrono::milliseconds{value.timestampMs()},
         value.changeId(),
         fmt::join(roq::core::sbe::iterator{value.levelsList()}, roq::core::sbe::sentinel{}, ", "sv),
-        value.instrumentName());
+        instrument_name);
   }
 };
 

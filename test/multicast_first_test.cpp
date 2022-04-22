@@ -332,6 +332,7 @@ TEST_CASE("multicast_snapshot", "[multicast]") {
       CHECK(length == 18);
       auto name = std::string_view{snapshot.instrumentName(), length};
       CHECK(name == "SOL_USDC-PERPETUAL"sv);
+      fmt::print("{}\n"sv, snapshot);
     }
   } handler;
   auto result = sbe::Parser::dispatch(handler, buffer);
