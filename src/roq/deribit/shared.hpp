@@ -26,6 +26,8 @@ struct Shared final {
   Shared(Shared &&) = default;
   Shared(const Shared &) = delete;
 
+  bool has_multicast() const { return multicast_; }
+
   std::string_view next_request_id();
 
   auto discard_symbol(const std::string_view &name) const {
@@ -59,6 +61,7 @@ struct Shared final {
   server::Dispatcher &dispatcher_;
   uint32_t request_id_ = 0;
   core::stack::Buffer<char, 32> stack_buffer_;
+  const bool multicast_;
 
  public:
   core::limit::RateLimiter rate_limiter;

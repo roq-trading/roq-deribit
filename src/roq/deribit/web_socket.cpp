@@ -12,6 +12,7 @@
 
 #include "roq/deribit/flags/common.hpp"
 #include "roq/deribit/flags/config.hpp"
+#include "roq/deribit/flags/multicast.hpp"
 #include "roq/deribit/flags/web_socket.hpp"
 
 #include "roq/deribit/json/error.hpp"
@@ -65,7 +66,10 @@ WebSocket::WebSocket(
     size_t index,
     bool master)
     : handler_(handler), stream_id_(stream_id), name_(create_name(stream_id_)), index_(index),
-      master_(master), connection_(create_connection(*this, context)),
+      master_(master),
+      publish_top_of_book_(
+          !shared.has_multicast() || flags::Multicast::multicast_disable_top_of_book()),
+      connection_(create_connection(*this, context)),
       decode_buffer_(flags::Common::decode_buffer_size()),
       counter_{
           .disconnect = create_metrics(name_, "disconnect"sv),
@@ -348,15 +352,15 @@ void WebSocket::operator()(const Trace<core::jsonrpc::Result> &event, core::json
       break;  // unexpected
     case GET_CURRENCIES: {
       core::json::Buffer buffer(decode_buffer_);
-      json::Currencies currencies(value, buffer);
-      Trace event(trace_info, currencies);
+      const json::Currencies currencies(value, buffer);
+      Trace2 event(trace_info, currencies);
       (*this)(event);
       return;
     }
     case GET_INSTRUMENTS: {
       core::json::Buffer buffer(decode_buffer_);
-      json::Instruments instruments(value, buffer);
-      Trace event(trace_info, instruments);
+      const json::Instruments instruments(value, buffer);
+      Trace2 event(trace_info, instruments);
       (*this)(event);
       return;
     }
@@ -397,11 +401,11 @@ void WebSocket::operator()(
   }
 }
 
-void WebSocket::operator()(const Trace<json::Auth> &) {
+void WebSocket::operator()(const Trace2<json::Auth const> &) {
   log::fatal("Unexpected"sv);
 }
 
-void WebSocket::operator()(const Trace<json::Currencies> &event) {
+void WebSocket::operator()(const Trace2<json::Currencies const> &event) {
   profile_.currencies([&]() {
     if (!master_)
       log::fatal("Unexpected"sv);
@@ -426,7 +430,7 @@ void WebSocket::operator()(const Trace<json::Currencies> &event) {
   });
 }
 
-void WebSocket::operator()(const Trace<json::Instruments> &event) {
+void WebSocket::operator()(const Trace2<json::Instruments const> &event) {
   profile_.instruments([&]() {
     if (!master_)
       log::fatal("Unexpected"sv);
@@ -460,57 +464,60 @@ void WebSocket::operator()(const Trace<json::Instruments> &event) {
   });
 }
 
-void WebSocket::operator()(const Trace<json::Positions> &) {
+void WebSocket::operator()(const Trace2<json::Positions const> &) {
   log::fatal("Unexpected"sv);
 }
 
-void WebSocket::operator()(const Trace<json::PlatformState> &) {
+void WebSocket::operator()(const Trace2<json::PlatformState const> &) {
   if (!master_)
     log::fatal("Unexpected"sv);
 }
 
-void WebSocket::operator()(const Trace<json::InstrumentState> &) {
+void WebSocket::operator()(const Trace2<json::InstrumentState const> &) {
   if (!master_)
     log::fatal("Unexpected"sv);
   // seldom updated -- also done by Ticker
 }
 
-void WebSocket::operator()(const Trace<json::Quote> &event) {
+void WebSocket::operator()(const Trace2<json::Quote const> &event) {
   profile_.quote([&]() {
     // auto &[trace_info, quote] = event;  // XXX clang13
     auto &trace_info = event.trace_info;
     auto &quote = event.value;
     log::info<3>("quote={}"sv, quote);
-    if (get_top_of_book(quote.instrument_name, [&](auto &layer, auto multiplier) {
-          // note! as real amounts to match MbP
-          auto bid_quantity = multiplier * quote.best_bid_amount;
-          auto ask_quantity = multiplier * quote.best_ask_amount;
-          TopOfBook top_of_book = {
-              .stream_id = stream_id_,
-              .exchange = flags::Config::exchange(),
-              .symbol = quote.instrument_name,
-              .layer{
-                  .bid_price = quote.best_bid_price,
-                  .bid_quantity = bid_quantity,
-                  .ask_price = quote.best_ask_price,
-                  .ask_quantity = ask_quantity,
-              },
-              .update_type = UpdateType::INCREMENTAL,
-              .exchange_time_utc = quote.timestamp,
-              .exchange_sequence = {},
-          };
-          if (!utils::is_equal(layer, top_of_book.layer)) {
-            layer = top_of_book.layer;
-            create_trace_and_dispatch(handler_, trace_info, top_of_book, true);
-          }
-        })) {
-    } else {
-      log::warn<3>(R"(Unexpected: can't find multiplier for symbol="{}")"sv, quote.instrument_name);
+    if (publish_top_of_book_) {
+      if (get_top_of_book(quote.instrument_name, [&](auto &layer, auto multiplier) {
+            // note! as real amounts to match MbP
+            auto bid_quantity = multiplier * quote.best_bid_amount;
+            auto ask_quantity = multiplier * quote.best_ask_amount;
+            TopOfBook top_of_book = {
+                .stream_id = stream_id_,
+                .exchange = flags::Config::exchange(),
+                .symbol = quote.instrument_name,
+                .layer{
+                    .bid_price = quote.best_bid_price,
+                    .bid_quantity = bid_quantity,
+                    .ask_price = quote.best_ask_price,
+                    .ask_quantity = ask_quantity,
+                },
+                .update_type = UpdateType::INCREMENTAL,
+                .exchange_time_utc = quote.timestamp,
+                .exchange_sequence = {},
+            };
+            if (!utils::is_equal(layer, top_of_book.layer)) {
+              layer = top_of_book.layer;
+              create_trace_and_dispatch(handler_, trace_info, top_of_book, true);
+            }
+          })) {
+      } else {
+        log::warn<3>(
+            R"(Unexpected: can't find multiplier for symbol="{}")"sv, quote.instrument_name);
+      }
     }
   });
 }
 
-void WebSocket::operator()(const Trace<json::Ticker> &event) {
+void WebSocket::operator()(const Trace2<json::Ticker const> &event) {
   profile_.ticker([&]() {
     auto &[trace_info, ticker] = event;
     log::info<3>("ticker={}"sv, ticker);
@@ -528,19 +535,19 @@ void WebSocket::operator()(const Trace<json::Ticker> &event) {
   });
 }
 
-void WebSocket::operator()(const Trace<json::Portfolio> &) {
+void WebSocket::operator()(const Trace2<json::Portfolio const> &) {
   log::fatal("Unexpected"sv);
 }
 
-void WebSocket::operator()(const Trace<json::Changes> &) {
+void WebSocket::operator()(const Trace2<json::Changes const> &) {
   log::fatal("Unexpected"sv);
 }
 
-void WebSocket::operator()(const Trace<json::Order> &) {
+void WebSocket::operator()(const Trace2<json::Order const> &) {
   log::fatal("Unexpected"sv);
 }
 
-void WebSocket::operator()(const Trace<json::Trades2> &) {
+void WebSocket::operator()(const Trace2<json::Trades2 const> &) {
   log::fatal("Unexpected"sv);
 }
 

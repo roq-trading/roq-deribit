@@ -2,6 +2,8 @@
 
 #pragma once
 
+#include <fmt/format.h>
+
 #include <cstdint>
 #include <span>
 
@@ -31,3 +33,25 @@ struct Frame final {
 }  // namespace sbe
 }  // namespace deribit
 }  // namespace roq
+
+template <>
+struct fmt::formatter<roq::deribit::sbe::Frame> {
+  template <typename Context>
+  constexpr auto parse(Context &context) {
+    return std::begin(context);
+  }
+  template <typename Context>
+  auto format(const roq::deribit::sbe::Frame &value, Context &context) {
+    using namespace std::literals;
+    return fmt::format_to(
+        context.out(),
+        R"({{)"
+        R"(packet_length={}, )"
+        R"(channel_id={}, )"
+        R"(sequence_number={})"
+        R"(}})"sv,
+        value.packet_length,
+        value.channel_id,
+        value.sequence_number);
+  }
+};

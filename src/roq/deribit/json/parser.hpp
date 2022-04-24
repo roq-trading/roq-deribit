@@ -4,6 +4,8 @@
 
 #include <string_view>
 
+#include "roq/trace_2.hpp"
+
 #include "roq/core/json/buffer.hpp"
 #include "roq/core/json/parser.hpp"
 
@@ -28,15 +30,15 @@ namespace json {
 struct Parser final {
   struct Handler {
     // public
-    virtual void operator()(const Trace<PlatformState> &) = 0;
-    virtual void operator()(const Trace<InstrumentState> &) = 0;
-    virtual void operator()(const Trace<Quote> &) = 0;
-    virtual void operator()(const Trace<Ticker> &) = 0;
+    virtual void operator()(const Trace2<PlatformState const> &) = 0;
+    virtual void operator()(const Trace2<InstrumentState const> &) = 0;
+    virtual void operator()(const Trace2<Quote const> &) = 0;
+    virtual void operator()(const Trace2<Ticker const> &) = 0;
     // private
-    virtual void operator()(const Trace<Portfolio> &) = 0;
-    virtual void operator()(const Trace<Changes> &) = 0;
-    virtual void operator()(const Trace<Order> &) = 0;
-    virtual void operator()(const Trace<Trades2> &) = 0;
+    virtual void operator()(const Trace2<Portfolio const> &) = 0;
+    virtual void operator()(const Trace2<Changes const> &) = 0;
+    virtual void operator()(const Trace2<Order const> &) = 0;
+    virtual void operator()(const Trace2<Trades2 const> &) = 0;
   };
 
   static void dispatch(

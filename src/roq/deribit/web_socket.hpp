@@ -110,22 +110,22 @@ class WebSocket final : public core::web::ClientSocket::Handler,
   void operator()(const Trace<core::jsonrpc::Result> &, core::json::value_t &) override;
   void operator()(const Trace<core::jsonrpc::Notification> &, core::json::value_t &) override;
 
-  void operator()(const Trace<json::Auth> &);
+  void operator()(const Trace2<json::Auth const> &);
 
-  void operator()(const Trace<json::Currencies> &);
-  void operator()(const Trace<json::Instruments> &);
-  void operator()(const Trace<json::Positions> &);
+  void operator()(const Trace2<json::Currencies const> &);
+  void operator()(const Trace2<json::Instruments const> &);
+  void operator()(const Trace2<json::Positions const> &);
 
   // public:
-  void operator()(const Trace<json::PlatformState> &) override;
-  void operator()(const Trace<json::InstrumentState> &) override;
-  void operator()(const Trace<json::Quote> &) override;
-  void operator()(const Trace<json::Ticker> &) override;
+  void operator()(const Trace2<json::PlatformState const> &) override;
+  void operator()(const Trace2<json::InstrumentState const> &) override;
+  void operator()(const Trace2<json::Quote const> &) override;
+  void operator()(const Trace2<json::Ticker const> &) override;
   // private:
-  void operator()(const Trace<json::Portfolio> &) override;
-  void operator()(const Trace<json::Changes> &) override;
-  void operator()(const Trace<json::Order> &) override;
-  void operator()(const Trace<json::Trades2> &) override;
+  void operator()(const Trace2<json::Portfolio const> &) override;
+  void operator()(const Trace2<json::Changes const> &) override;
+  void operator()(const Trace2<json::Order const> &) override;
+  void operator()(const Trace2<json::Trades2 const> &) override;
 
   template <typename C>
   bool get_top_of_book(const std::string_view &symbol, C callback) {
@@ -149,6 +149,7 @@ class WebSocket final : public core::web::ClientSocket::Handler,
   const std::string name_;
   const size_t index_;
   const bool master_;
+  const bool publish_top_of_book_;
   // web socket
   core::web::ClientSocket connection_;
   // buffers

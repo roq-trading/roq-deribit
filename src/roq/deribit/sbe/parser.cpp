@@ -15,7 +15,8 @@ namespace roq {
 namespace deribit {
 namespace sbe {
 
-bool Parser::dispatch(Handler &handler, const std::span<std::byte const> &buffer) {
+bool Parser::dispatch(
+    Handler &handler, const std::span<std::byte const> &buffer, const TraceInfo &trace_info) {
   auto result = true;
   if (Frame::parse(buffer, [&](auto &frame) {
         // log::debug("skip frame"sv);
@@ -35,7 +36,7 @@ bool Parser::dispatch(Handler &handler, const std::span<std::byte const> &buffer
               // log::debug("--> instrument: length={}"sv, length);
               // log::info<5>("instrument={}"sv, instrument);
               instrument.sbeRewind();  // note! important
-              handler(frame.channel_id, frame.sequence_number, instrument);
+              create_trace_2_and_dispatch(handler, trace_info, instrument, frame);
               message = message.subspan(length);
               break;
             }
@@ -45,7 +46,7 @@ bool Parser::dispatch(Handler &handler, const std::span<std::byte const> &buffer
               // log::debug("--> book: length={}"sv, length);
               // log::info<5>("book={}"sv, book);
               book.sbeRewind();  // note! important
-              handler(frame.channel_id, frame.sequence_number, book);
+              create_trace_2_and_dispatch(handler, trace_info, book, frame);
               message = message.subspan(length);
               break;
             }
@@ -55,7 +56,7 @@ bool Parser::dispatch(Handler &handler, const std::span<std::byte const> &buffer
               // log::debug("--> trades: length={}"sv, length);
               // log::info<5>("trades={}"sv, trades);
               trades.sbeRewind();  // note! important
-              handler(frame.channel_id, frame.sequence_number, trades);
+              create_trace_2_and_dispatch(handler, trace_info, trades, frame);
               message = message.subspan(length);
               break;
             }
@@ -65,7 +66,7 @@ bool Parser::dispatch(Handler &handler, const std::span<std::byte const> &buffer
               // log::debug("--> quote: length={}"sv, length);
               // log::info<5>("quote={}"sv, quote);
               quote.sbeRewind();  // note! important
-              handler(frame.channel_id, frame.sequence_number, quote);
+              create_trace_2_and_dispatch(handler, trace_info, quote, frame);
               message = message.subspan(length);
               break;
             }
@@ -76,7 +77,7 @@ bool Parser::dispatch(Handler &handler, const std::span<std::byte const> &buffer
               // std::cerr << snapshot << std::endl;
               // log::info<5>("snapshot={}"sv, snapshot);
               snapshot.sbeRewind();  // note! important
-              handler(frame.channel_id, frame.sequence_number, snapshot);
+              create_trace_2_and_dispatch(handler, trace_info, snapshot, frame);
               message = message.subspan(length);
               break;
             }

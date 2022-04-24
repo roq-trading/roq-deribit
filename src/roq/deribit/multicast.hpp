@@ -2,6 +2,8 @@
 
 #pragma once
 
+#include <absl/container/flat_hash_map.h>
+
 #include "roq/core/metrics/counter.hpp"
 #include "roq/core/metrics/profile.hpp"
 
@@ -44,25 +46,23 @@ class Multicast final : public core::net::UdpConnection::Handler, public sbe::Pa
 
  protected:
   // events
-  void operator()(
-      uint16_t channel_id, uint32_t sequence_number, deribit_multicast::Instrument &) override;
-  void operator()(
-      uint16_t channel_id, uint32_t sequence_number, deribit_multicast::Book &) override;
-  void operator()(
-      uint16_t channel_id, uint32_t sequence_number, deribit_multicast::Quote &) override;
-  void operator()(
-      uint16_t channel_id, uint32_t sequence_number, deribit_multicast::Trades &) override;
+  void operator()(const Trace2<deribit_multicast::Instrument> &, const sbe::Frame &) override;
+  void operator()(const Trace2<deribit_multicast::Book> &, const sbe::Frame &) override;
+  void operator()(const Trace2<deribit_multicast::Quote> &, const sbe::Frame &) override;
+  void operator()(const Trace2<deribit_multicast::Trades> &, const sbe::Frame &) override;
   // snapshot
-  void operator()(
-      uint16_t channel_id, uint32_t sequence_number, deribit_multicast::Snapshot &) override;
+  void operator()(const Trace2<deribit_multicast::Snapshot> &, const sbe::Frame &) override;
 
-  void publish_stream_status();
+  void publish_stream_status(const TraceInfo &);
 
  private:
   Handler &handler_;
   // config
   const uint16_t stream_id_;
   const std::string name_;
+  const bool publish_top_of_book_;
+  const bool publish_market_by_price_;
+  const bool publish_trade_summary_;
   // connection
   core::net::UdpConnection events_;
   core::net::UdpConnection snapshot_;
@@ -76,6 +76,8 @@ class Multicast final : public core::net::UdpConnection::Handler, public sbe::Pa
   // cache
   Shared &shared_;
   bool initialized_ = false;
+  absl::flat_hash_map<uint32_t, uint32_t> last_quote_;
+  absl::flat_hash_map<uint32_t, uint32_t> last_trades_;
 };
 
 }  // namespace deribit

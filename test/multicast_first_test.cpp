@@ -160,42 +160,32 @@ TEST_CASE("multicast_book", "[multicast]") {
   std::span buffer{reinterpret_cast<std::byte const *>(std::data(message)), std::size(message)};
   struct MyHandler : public sbe::Parser::Handler {
     bool found = false;
-    virtual void operator()(
-        [[maybe_unused]] uint16_t channel_id,
-        [[maybe_unused]] uint32_t sequence_number,
-        deribit_multicast::Instrument &) {
+    void operator()(const Trace2<deribit_multicast::Instrument> &, const sbe::Frame &) override {
       FAIL();
     }
-    virtual void operator()(
-        uint16_t channel_id, uint32_t sequence_number, deribit_multicast::Book &book) {
+    void operator()(
+        const Trace2<deribit_multicast::Book> &event, const sbe::Frame &frame) override {
       found = true;
-      CHECK(channel_id == 10);
-      CHECK(sequence_number == 70994608);
+      CHECK(frame.channel_id == 10);
+      CHECK(frame.sequence_number == 70994608);
+      auto &[trace_info, book] = event;
       auto &header = book.header();
       CHECK(header.sbeSchemaId() == 1);
       CHECK(header.version() == 1);
     }
-    virtual void operator()(
-        [[maybe_unused]] uint16_t channel_id,
-        [[maybe_unused]] uint32_t sequence_number,
-        deribit_multicast::Quote &) {
+    void operator()(const Trace2<deribit_multicast::Quote> &, const sbe::Frame &) override {
       FAIL();
     }
-    virtual void operator()(
-        [[maybe_unused]] uint16_t channel_id,
-        [[maybe_unused]] uint32_t sequence_number,
-        deribit_multicast::Trades &) {
+    void operator()(const Trace2<deribit_multicast::Trades> &, const sbe::Frame &) override {
       FAIL();
     }
     // snapshot
-    virtual void operator()(
-        [[maybe_unused]] uint16_t channel_id,
-        [[maybe_unused]] uint32_t sequence_number,
-        deribit_multicast::Snapshot &) {
+    void operator()(const Trace2<deribit_multicast::Snapshot> &, const sbe::Frame &) override {
       FAIL();
     }
   } handler;
-  auto result = sbe::Parser::dispatch(handler, buffer);
+  TraceInfo trace_info;
+  auto result = sbe::Parser::dispatch(handler, buffer, trace_info);
   CHECK(result == true);
   CHECK(handler.found == true);
 }
@@ -222,45 +212,39 @@ TEST_CASE("multicast_book_quote", "[multicast]") {
   struct MyHandler : public sbe::Parser::Handler {
     bool found_book = false;
     bool found_quote = false;
-    virtual void operator()(
-        [[maybe_unused]] uint16_t channel_id,
-        [[maybe_unused]] uint32_t sequence_number,
-        deribit_multicast::Instrument &) {
+    void operator()(const Trace2<deribit_multicast::Instrument> &, const sbe::Frame &) override {
       FAIL();
     }
-    virtual void operator()(
-        uint16_t channel_id, uint32_t sequence_number, deribit_multicast::Book &book) {
+    void operator()(
+        const Trace2<deribit_multicast::Book> &event, const sbe::Frame &frame) override {
       found_book = true;
-      CHECK(channel_id == 10);
-      CHECK(sequence_number == 71164925);
+      CHECK(frame.channel_id == 10);
+      CHECK(frame.sequence_number == 71164925);
+      auto &[trace_info, book] = event;
       auto &header = book.header();
       CHECK(header.sbeSchemaId() == 1);
       CHECK(header.version() == 1);
     }
-    virtual void operator()(
-        uint16_t channel_id, uint32_t sequence_number, deribit_multicast::Quote &quote) {
+    void operator()(
+        const Trace2<deribit_multicast::Quote> &event, const sbe::Frame &frame) override {
       found_quote = true;
-      CHECK(channel_id == 10);
-      CHECK(sequence_number == 71164925);
+      CHECK(frame.channel_id == 10);
+      CHECK(frame.sequence_number == 71164925);
+      auto &[trace_info, quote] = event;
       auto &header = quote.header();
       CHECK(header.sbeSchemaId() == 1);
       CHECK(header.version() == 1);
     }
-    virtual void operator()(
-        [[maybe_unused]] uint16_t channel_id,
-        [[maybe_unused]] uint32_t sequence_number,
-        deribit_multicast::Trades &) {
+    void operator()(const Trace2<deribit_multicast::Trades> &, const sbe::Frame &) override {
       FAIL();
     }
     // snapshot
-    virtual void operator()(
-        [[maybe_unused]] uint16_t channel_id,
-        [[maybe_unused]] uint32_t sequence_number,
-        deribit_multicast::Snapshot &) {
+    void operator()(const Trace2<deribit_multicast::Snapshot> &, const sbe::Frame &) override {
       FAIL();
     }
   } handler;
-  auto result = sbe::Parser::dispatch(handler, buffer);
+  TraceInfo trace_info;
+  auto result = sbe::Parser::dispatch(handler, buffer, trace_info);
   CHECK(result == true);
   CHECK(handler.found_book == true);
   CHECK(handler.found_quote == true);
@@ -291,34 +275,22 @@ TEST_CASE("multicast_snapshot", "[multicast]") {
   std::span buffer{reinterpret_cast<std::byte const *>(std::data(message)), std::size(message)};
   struct MyHandler : public sbe::Parser::Handler {
     bool found = false;
-    virtual void operator()(
-        [[maybe_unused]] uint16_t channel_id,
-        [[maybe_unused]] uint32_t sequence_number,
-        deribit_multicast::Instrument &) {
+    void operator()(const Trace2<deribit_multicast::Instrument> &, const sbe::Frame &) override {
       FAIL();
     }
-    virtual void operator()(
-        [[maybe_unused]] uint16_t channel_id,
-        [[maybe_unused]] uint32_t sequence_number,
-        deribit_multicast::Book &) {
+    void operator()(const Trace2<deribit_multicast::Book> &, const sbe::Frame &) override {
       FAIL();
     }
-    virtual void operator()(
-        [[maybe_unused]] uint16_t channel_id,
-        [[maybe_unused]] uint32_t sequence_number,
-        deribit_multicast::Quote &) {
+    void operator()(const Trace2<deribit_multicast::Quote> &, const sbe::Frame &) override {
       FAIL();
     }
-    virtual void operator()(
-        [[maybe_unused]] uint16_t channel_id,
-        [[maybe_unused]] uint32_t sequence_number,
-        deribit_multicast::Trades &) {
+    void operator()(const Trace2<deribit_multicast::Trades> &, const sbe::Frame &) override {
       FAIL();
     }
     // snapshot
-    virtual void operator()(
-        uint16_t channel_id, uint32_t sequence_number, deribit_multicast::Snapshot &snapshot) {
+    void operator()(const Trace2<deribit_multicast::Snapshot> &event, const sbe::Frame &) override {
       found = true;
+      auto &[trace_info, snapshot] = event;
       snapshot.sbeRewind();
       CHECK(snapshot.instrumentId() == 213039);
       CHECK(snapshot.timestampMs() == 1649929090244);
@@ -335,7 +307,8 @@ TEST_CASE("multicast_snapshot", "[multicast]") {
       fmt::print("{}\n"sv, snapshot);
     }
   } handler;
-  auto result = sbe::Parser::dispatch(handler, buffer);
+  TraceInfo trace_info;
+  auto result = sbe::Parser::dispatch(handler, buffer, trace_info);
   CHECK(result == true);
   CHECK(handler.found == true);
 }
@@ -349,9 +322,10 @@ TEST_CASE("multicast_instrument", "[multicast]") {
   std::span buffer{reinterpret_cast<std::byte const *>(std::data(message)), std::size(message)};
   struct MyHandler : public sbe::Parser::Handler {
     bool found = false;
-    virtual void operator()(
-        uint16_t channel_id, uint32_t sequence_number, deribit_multicast::Instrument &instrument) {
+    void operator()(
+        const Trace2<deribit_multicast::Instrument> &event, const sbe::Frame &) override {
       found = true;
+      auto &[trace_info, instrument] = event;
       CHECK(instrument.instrumentId() == 5);
       CHECK(instrument.state() == deribit_multicast::InstrumentState::Value::created);
       // instrument.sbeRewind(); // important
@@ -359,33 +333,22 @@ TEST_CASE("multicast_instrument", "[multicast]") {
       auto name = std::string_view{instrument.instrumentName(), length};
       CHECK(name == "BTC-14APR22_1500-39900-C"sv);
     }
-    virtual void operator()(
-        [[maybe_unused]] uint16_t channel_id,
-        [[maybe_unused]] uint32_t sequence_number,
-        deribit_multicast::Book &) {
+    void operator()(const Trace2<deribit_multicast::Book> &, const sbe::Frame &) override {
       FAIL();
     }
-    virtual void operator()(
-        [[maybe_unused]] uint16_t channel_id,
-        [[maybe_unused]] uint32_t sequence_number,
-        deribit_multicast::Quote &) {
+    void operator()(const Trace2<deribit_multicast::Quote> &, const sbe::Frame &) override {
       FAIL();
     }
-    virtual void operator()(
-        [[maybe_unused]] uint16_t channel_id,
-        [[maybe_unused]] uint32_t sequence_number,
-        deribit_multicast::Trades &) {
+    void operator()(const Trace2<deribit_multicast::Trades> &, const sbe::Frame &) override {
       FAIL();
     }
     // snapshot
-    virtual void operator()(
-        [[maybe_unused]] uint16_t channel_id,
-        [[maybe_unused]] uint32_t sequence_number,
-        deribit_multicast::Snapshot &) {
+    void operator()(const Trace2<deribit_multicast::Snapshot> &, const sbe::Frame &) override {
       FAIL();
     }
   } handler;
-  auto result = sbe::Parser::dispatch(handler, buffer);
+  TraceInfo trace_info;
+  auto result = sbe::Parser::dispatch(handler, buffer, trace_info);
   CHECK(result == true);
   CHECK(handler.found == true);
 }

@@ -26,6 +26,7 @@
 #include "roq/deribit/flags/common.hpp"
 #include "roq/deribit/flags/config.hpp"
 #include "roq/deribit/flags/fix.hpp"
+#include "roq/deribit/flags/multicast.hpp"
 
 #include "roq/deribit/fix/utils.hpp"
 
@@ -120,7 +121,10 @@ MarketData::MarketData(
     size_t index,
     bool master)
     : handler_(handler), stream_id_(stream_id), name_(fmt::format("{}:{}"sv, stream_id_, NAME)),
-      index_(index), master_(master), connection_factory_(create_connection_factory(context)),
+      index_(index), master_(master),
+      publish_trade_summary_(
+          !shared.has_multicast() || flags::Multicast::multicast_disable_trade_summary()),
+      connection_factory_(create_connection_factory(context)),
       connection_(*this, connection_factory_), encode_buffer_(flags::Common::encode_buffer_size()),
       decode_buffer_(flags::Common::decode_buffer_size()),
       counter_{
@@ -733,7 +737,7 @@ void MarketData::operator()(
       }
     }
   }
-  if (!std::empty(trades)) {
+  if (!std::empty(trades) && publish_trade_summary_) {
     const TradeSummary trade_summary{
         .stream_id = stream_id_,
         .exchange = flags::Config::exchange(),

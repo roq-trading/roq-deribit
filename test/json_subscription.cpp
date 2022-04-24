@@ -12,14 +12,14 @@ using namespace std::literals;
 using namespace Catch::literals;
 
 struct MyHandler : public json::Parser::Handler {
-  void operator()(const Trace<json::PlatformState> &) {}
-  void operator()(const Trace<json::InstrumentState> &) {}
-  void operator()(const Trace<json::Quote> &) {}
-  void operator()(const Trace<json::Ticker> &) {}
-  void operator()(const Trace<json::Portfolio> &) {}
-  void operator()(const Trace<json::Changes> &) {}
-  void operator()(const Trace<json::Order> &) {}
-  void operator()(const Trace<json::Trades2> &) {}
+  void operator()(const Trace2<json::PlatformState const> &) override {}
+  void operator()(const Trace2<json::InstrumentState const> &) override {}
+  void operator()(const Trace2<json::Quote const> &) override {}
+  void operator()(const Trace2<json::Ticker const> &) override {}
+  void operator()(const Trace2<json::Portfolio const> &) override {}
+  void operator()(const Trace2<json::Changes const> &) override {}
+  void operator()(const Trace2<json::Order const> &) override {}
+  void operator()(const Trace2<json::Trades2 const> &) override {}
 };
 
 TEST_CASE("json_subscription_parse_message", "[json_subscription]") {

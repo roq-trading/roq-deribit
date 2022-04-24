@@ -83,9 +83,9 @@ auto create_market_data(
 
 auto create_multicast(
     Gateway &gateway, core::io::Context &context, uint16_t &stream_id, Shared &shared) {
-  if (std::empty(flags::Multicast::local_interface()))  // XXX maybe check more flags?
-    return std::unique_ptr<Multicast>{};
-  return std::make_unique<Multicast>(gateway, context, stream_id, shared);
+  if (shared.has_multicast())
+    return std::make_unique<Multicast>(gateway, context, stream_id, shared);
+  return std::unique_ptr<Multicast>{};
 }
 }  // namespace
 

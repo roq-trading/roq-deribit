@@ -4,11 +4,21 @@
 
 #include "roq/deribit/flags/common.hpp"
 #include "roq/deribit/flags/fix.hpp"
+#include "roq/deribit/flags/multicast.hpp"
 
 using namespace std::literals;
 
 namespace roq {
 namespace deribit {
+
+namespace {
+auto get_multicast() {
+  // XXX maybe check more flags?
+  if (std::empty(flags::Multicast::local_interface()))
+    return false;
+  return true;
+}
+}  // namespace
 
 Shared::Shared(server::Dispatcher &dispatcher)
     : fills(server::Flags::cache_fills_max_depth()), bids(server::Flags::cache_mbp_max_depth()),
@@ -16,6 +26,7 @@ Shared::Shared(server::Dispatcher &dispatcher)
       final_asks(server::Flags::cache_mbp_max_depth()),
       trades(server::Flags::cache_trades_max_depth()),
       statistics(magic_enum::enum_count<StatisticsType>()), dispatcher_(dispatcher),
+      multicast_(get_multicast()),
       rate_limiter(flags::Common::request_limit(), flags::Common::request_limit_interval()),
       symbols(flags::FIX::fix_market_data_max_subscriptions_per_stream()) {
 }

@@ -13,6 +13,10 @@
 // snapshot
 #include <deribit_multicast/Snapshot.h>
 
+#include "roq/trace_2.hpp"
+
+#include "roq/deribit/sbe/frame.hpp"
+
 namespace roq {
 namespace deribit {
 namespace sbe {
@@ -20,20 +24,15 @@ namespace sbe {
 struct Parser final {
   struct Handler {
     // events
-    virtual void operator()(
-        uint16_t channel_id, uint32_t sequence_number, deribit_multicast::Instrument &) = 0;
-    virtual void operator()(
-        uint16_t channel_id, uint32_t sequence_number, deribit_multicast::Book &) = 0;
-    virtual void operator()(
-        uint16_t channel_id, uint32_t sequence_number, deribit_multicast::Quote &) = 0;
-    virtual void operator()(
-        uint16_t channel_id, uint32_t sequence_number, deribit_multicast::Trades &) = 0;
+    virtual void operator()(const Trace2<deribit_multicast::Instrument> &, const Frame &) = 0;
+    virtual void operator()(const Trace2<deribit_multicast::Book> &, const Frame &) = 0;
+    virtual void operator()(const Trace2<deribit_multicast::Quote> &, const Frame &) = 0;
+    virtual void operator()(const Trace2<deribit_multicast::Trades> &, const Frame &) = 0;
     // snapshot
-    virtual void operator()(
-        uint16_t channel_id, uint32_t sequence_number, deribit_multicast::Snapshot &) = 0;
+    virtual void operator()(const Trace2<deribit_multicast::Snapshot> &, const Frame &) = 0;
   };
 
-  static bool dispatch(Handler &, const std::span<std::byte const> &buffer);
+  static bool dispatch(Handler &, const std::span<std::byte const> &buffer, const TraceInfo &);
 };
 
 }  // namespace sbe

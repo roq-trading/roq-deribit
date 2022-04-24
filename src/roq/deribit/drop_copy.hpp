@@ -92,22 +92,22 @@ class DropCopy final : public core::web::ClientSocket::Handler,
   void operator()(const Trace<core::jsonrpc::Result> &, core::json::value_t &) override;
   void operator()(const Trace<core::jsonrpc::Notification> &, core::json::value_t &) override;
 
-  void operator()(const Trace<json::Auth> &);
+  void operator()(const Trace2<json::Auth const> &);
 
  public:
-  void operator()(const Trace<json::PlatformState> &) override;
-  void operator()(const Trace<json::InstrumentState> &) override;
-  void operator()(const Trace<json::Quote> &) override;
-  void operator()(const Trace<json::Ticker> &) override;
-  void operator()(const Trace<json::Portfolio> &) override;
-  void operator()(const Trace<json::Changes> &) override;
+  void operator()(const Trace2<json::PlatformState const> &) override;
+  void operator()(const Trace2<json::InstrumentState const> &) override;
+  void operator()(const Trace2<json::Quote const> &) override;
+  void operator()(const Trace2<json::Ticker const> &) override;
+  void operator()(const Trace2<json::Portfolio const> &) override;
+  void operator()(const Trace2<json::Changes const> &) override;
 
-  void operator()(const Trace<json::Trades> &);
-  void operator()(const Trace<json::Positions> &);
-  void operator()(const Trace<json::Order> &) override;
-  void operator()(const Trace<json::Trades2> &) override;
+  void operator()(const Trace2<json::Trades const> &);
+  void operator()(const Trace2<json::Positions const> &);
+  void operator()(const Trace2<json::Order const> &) override;
+  void operator()(const Trace2<json::Trades2 const> &) override;
 
-  void operator()(const Trace<json::Trade> &, bool is_last);
+  void operator()(const Trace2<json::Trade const> &, bool is_last);
 
  private:
   Handler &handler_;
