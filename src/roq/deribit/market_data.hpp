@@ -55,12 +55,13 @@ class MarketData final : public core::net::Manager::Handler {
   };
 
   struct Handler {
-    virtual void operator()(const Trace<StreamStatus> &) = 0;
-    virtual void operator()(const Trace<ExternalLatency> &) = 0;
-    virtual void operator()(const Trace<ReferenceData> &, bool is_last) = 0;
-    virtual void operator()(const Trace<MarketByPriceUpdate> &, bool is_last, bool refresh) = 0;
-    virtual void operator()(const Trace<TradeSummary> &, bool is_last) = 0;
-    virtual void operator()(const Trace<StatisticsUpdate> &, bool is_last) = 0;
+    virtual void operator()(const Trace<StreamStatus const> &) = 0;
+    virtual void operator()(const Trace<ExternalLatency const> &) = 0;
+    virtual void operator()(const Trace<ReferenceData const> &, bool is_last) = 0;
+    virtual void operator()(
+        const Trace<MarketByPriceUpdate const> &, bool is_last, bool refresh) = 0;
+    virtual void operator()(const Trace<TradeSummary const> &, bool is_last) = 0;
+    virtual void operator()(const Trace<StatisticsUpdate const> &, bool is_last) = 0;
     // cross-communication
     virtual void operator()(SymbolsUpdate &) = 0;
   };

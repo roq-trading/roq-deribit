@@ -13,7 +13,7 @@
 // snapshot
 #include <deribit_multicast/Snapshot.h>
 
-#include "roq/trace_2.hpp"
+#include "roq/trace.hpp"
 
 #include "roq/deribit/sbe/frame.hpp"
 
@@ -24,12 +24,12 @@ namespace sbe {
 struct Parser final {
   struct Handler {
     // events
-    virtual void operator()(const Trace2<deribit_multicast::Instrument> &, const Frame &) = 0;
-    virtual void operator()(const Trace2<deribit_multicast::Book> &, const Frame &) = 0;
-    virtual void operator()(const Trace2<deribit_multicast::Quote> &, const Frame &) = 0;
-    virtual void operator()(const Trace2<deribit_multicast::Trades> &, const Frame &) = 0;
+    virtual void operator()(const Trace<deribit_multicast::Instrument> &, const Frame &) = 0;
+    virtual void operator()(const Trace<deribit_multicast::Book> &, const Frame &) = 0;
+    virtual void operator()(const Trace<deribit_multicast::Quote> &, const Frame &) = 0;
+    virtual void operator()(const Trace<deribit_multicast::Trades> &, const Frame &) = 0;
     // snapshot
-    virtual void operator()(const Trace2<deribit_multicast::Snapshot> &, const Frame &) = 0;
+    virtual void operator()(const Trace<deribit_multicast::Snapshot> &, const Frame &) = 0;
   };
 
   static bool dispatch(Handler &, const std::span<std::byte const> &buffer, const TraceInfo &);

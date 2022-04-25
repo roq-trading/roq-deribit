@@ -222,7 +222,7 @@ void MarketData::operator()(const core::net::Manager::Read &read) {
 void MarketData::operator()(ConnectionStatus status) {
   if (utils::update(status_, status)) {
     auto trace_info = server::create_trace_info();
-    StreamStatus stream_status{
+    const StreamStatus stream_status{
         .stream_id = stream_id_,
         .account = {},
         .supports = master_ ? SUPPORTS_MASTER : SUPPORTS,
@@ -530,7 +530,7 @@ void MarketData::operator()(
   if (!std::empty(heartbeat.test_req_id)) {
     auto send_time = std::chrono::nanoseconds{core::from_chars<uint64_t>(heartbeat.test_req_id)};
     auto latency = (now - send_time) / 2;  // 1-way
-    ExternalLatency external_latency{
+    const ExternalLatency external_latency{
         .stream_id = stream_id_,
         .account = {},
         .latency = latency,
@@ -593,7 +593,7 @@ void MarketData::operator()(
           instrument.maturity_date,
           core::charconv::time_from_string<std::chrono::milliseconds>(instrument.maturity_time));
       auto expiry_datetime_utc = expiry_datetime;
-      ReferenceData reference_data{
+      const ReferenceData reference_data{
           .stream_id = stream_id_,
           .exchange = flags::Config::exchange(),
           .symbol = symbol,

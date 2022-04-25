@@ -134,7 +134,7 @@ void Multicast::operator()(const core::net::UdpConnection::Error &error) {
 }
 
 void Multicast::operator()(
-    const Trace2<deribit_multicast::Instrument> &event, const sbe::Frame &frame) {
+    const Trace<deribit_multicast::Instrument> &event, const sbe::Frame &frame) {
   auto &[trace_info, instrument] = event;
   log::info<5>("instrument={}, frame={}"sv, instrument, frame);
   auto instrument_id = instrument.instrumentId();
@@ -147,7 +147,7 @@ void Multicast::operator()(
   }
 }
 
-void Multicast::operator()(const Trace2<deribit_multicast::Book> &event, const sbe::Frame &frame) {
+void Multicast::operator()(const Trace<deribit_multicast::Book> &event, const sbe::Frame &frame) {
   // auto &[trace_info, book] = event;
   auto &trace_info = event.trace_info;
   auto &book = event.value;
@@ -191,7 +191,7 @@ void Multicast::operator()(const Trace2<deribit_multicast::Book> &event, const s
   });
 }
 
-void Multicast::operator()(const Trace2<deribit_multicast::Quote> &event, const sbe::Frame &frame) {
+void Multicast::operator()(const Trace<deribit_multicast::Quote> &event, const sbe::Frame &frame) {
   // auto &[trace_info, quote] = event;
   auto &trace_info = event.trace_info;
   auto &quote = event.value;
@@ -224,8 +224,7 @@ void Multicast::operator()(const Trace2<deribit_multicast::Quote> &event, const 
   }
 }
 
-void Multicast::operator()(
-    const Trace2<deribit_multicast::Trades> &event, const sbe::Frame &frame) {
+void Multicast::operator()(const Trace<deribit_multicast::Trades> &event, const sbe::Frame &frame) {
   // auto &[trace_info, trades] = event;
   auto &trace_info = event.trace_info;
   auto &trades = event.value;
@@ -257,7 +256,7 @@ void Multicast::operator()(
 }
 
 void Multicast::operator()(
-    const Trace2<deribit_multicast::Snapshot> &event, const sbe::Frame &frame) {
+    const Trace<deribit_multicast::Snapshot> &event, const sbe::Frame &frame) {
   auto &[trace_info, snapshot] = event;
   log::info<5>("snapshot={}, frame={}"sv, snapshot, frame);
   if (!publish_market_by_price_)
@@ -282,7 +281,7 @@ void Multicast::publish_stream_status(const TraceInfo &trace_info) {
   if (initialized_)
     return;
   initialized_ = true;
-  StreamStatus stream_status{
+  const StreamStatus stream_status{
       .stream_id = stream_id_,
       .account = {},
       .supports = SUPPORTS,

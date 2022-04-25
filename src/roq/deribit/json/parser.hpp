@@ -4,8 +4,6 @@
 
 #include <string_view>
 
-#include "roq/trace_2.hpp"
-
 #include "roq/core/json/buffer.hpp"
 #include "roq/core/json/parser.hpp"
 
@@ -30,22 +28,18 @@ namespace json {
 struct Parser final {
   struct Handler {
     // public
-    virtual void operator()(const Trace2<PlatformState const> &) = 0;
-    virtual void operator()(const Trace2<InstrumentState const> &) = 0;
-    virtual void operator()(const Trace2<Quote const> &) = 0;
-    virtual void operator()(const Trace2<Ticker const> &) = 0;
+    virtual void operator()(const Trace<PlatformState const> &) = 0;
+    virtual void operator()(const Trace<InstrumentState const> &) = 0;
+    virtual void operator()(const Trace<Quote const> &) = 0;
+    virtual void operator()(const Trace<Ticker const> &) = 0;
     // private
-    virtual void operator()(const Trace2<Portfolio const> &) = 0;
-    virtual void operator()(const Trace2<Changes const> &) = 0;
-    virtual void operator()(const Trace2<Order const> &) = 0;
-    virtual void operator()(const Trace2<Trades2 const> &) = 0;
+    virtual void operator()(const Trace<Portfolio const> &) = 0;
+    virtual void operator()(const Trace<Changes const> &) = 0;
+    virtual void operator()(const Trace<Order const> &) = 0;
+    virtual void operator()(const Trace<Trades2 const> &) = 0;
   };
 
-  static void dispatch(
-      Handler &handler,
-      core::json::value_t &value,
-      core::json::Buffer &buffer,
-      const TraceInfo &trace_info);
+  static void dispatch(Handler &, core::json::value_t &, core::json::Buffer &, const TraceInfo &);
 };
 
 }  // namespace json

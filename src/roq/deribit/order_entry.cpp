@@ -325,7 +325,7 @@ void OrderEntry::operator()(const core::net::Manager::Read &read) {
 void OrderEntry::operator()(ConnectionStatus status) {
   if (utils::update(status_, status)) {
     auto trace_info = server::create_trace_info();
-    StreamStatus stream_status{
+    const StreamStatus stream_status{
         .stream_id = stream_id_,
         .account = security_.get_account(),
         .supports = SUPPORTS,
@@ -519,7 +519,7 @@ void OrderEntry::operator()(const core::fix::Event<fix::Heartbeat> &event, const
     auto send_time = std::chrono::nanoseconds{core::from_chars<uint64_t>(heartbeat.test_req_id)};
     auto latency = (now - send_time) / 2;  // 1-way
     auto trace_info = server::create_trace_info();
-    ExternalLatency external_latency{
+    const ExternalLatency external_latency{
         .stream_id = stream_id_,
         .account = security_.get_account(),
         .latency = latency,
@@ -569,7 +569,7 @@ void OrderEntry::operator()(
     auto &position_qty = position_report.no_positions[i];
     auto long_quantity = std::max(0.0, position_qty.long_qty);
     auto short_quantity = std::max(0.0, position_qty.short_qty);
-    PositionUpdate position_update{
+    const PositionUpdate position_update{
         .stream_id = stream_id_,
         .account = security_.get_account(),
         .exchange = flags::Config::exchange(),
@@ -799,7 +799,7 @@ void OrderEntry::operator()(
               fills.emplace_back([&](auto &result) { emplace(result, item); });
             }
             if (!std::empty(fills)) {
-              TradeUpdate trade_update{
+              const TradeUpdate trade_update{
                   .stream_id = stream_id_,
                   .account = order.account,
                   .order_id = order.order_id,

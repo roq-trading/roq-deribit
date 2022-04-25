@@ -160,11 +160,10 @@ TEST_CASE("multicast_book", "[multicast]") {
   std::span buffer{reinterpret_cast<std::byte const *>(std::data(message)), std::size(message)};
   struct MyHandler : public sbe::Parser::Handler {
     bool found = false;
-    void operator()(const Trace2<deribit_multicast::Instrument> &, const sbe::Frame &) override {
+    void operator()(const Trace<deribit_multicast::Instrument> &, const sbe::Frame &) override {
       FAIL();
     }
-    void operator()(
-        const Trace2<deribit_multicast::Book> &event, const sbe::Frame &frame) override {
+    void operator()(const Trace<deribit_multicast::Book> &event, const sbe::Frame &frame) override {
       found = true;
       CHECK(frame.channel_id == 10);
       CHECK(frame.sequence_number == 70994608);
@@ -173,14 +172,14 @@ TEST_CASE("multicast_book", "[multicast]") {
       CHECK(header.sbeSchemaId() == 1);
       CHECK(header.version() == 1);
     }
-    void operator()(const Trace2<deribit_multicast::Quote> &, const sbe::Frame &) override {
+    void operator()(const Trace<deribit_multicast::Quote> &, const sbe::Frame &) override {
       FAIL();
     }
-    void operator()(const Trace2<deribit_multicast::Trades> &, const sbe::Frame &) override {
+    void operator()(const Trace<deribit_multicast::Trades> &, const sbe::Frame &) override {
       FAIL();
     }
     // snapshot
-    void operator()(const Trace2<deribit_multicast::Snapshot> &, const sbe::Frame &) override {
+    void operator()(const Trace<deribit_multicast::Snapshot> &, const sbe::Frame &) override {
       FAIL();
     }
   } handler;
@@ -212,11 +211,10 @@ TEST_CASE("multicast_book_quote", "[multicast]") {
   struct MyHandler : public sbe::Parser::Handler {
     bool found_book = false;
     bool found_quote = false;
-    void operator()(const Trace2<deribit_multicast::Instrument> &, const sbe::Frame &) override {
+    void operator()(const Trace<deribit_multicast::Instrument> &, const sbe::Frame &) override {
       FAIL();
     }
-    void operator()(
-        const Trace2<deribit_multicast::Book> &event, const sbe::Frame &frame) override {
+    void operator()(const Trace<deribit_multicast::Book> &event, const sbe::Frame &frame) override {
       found_book = true;
       CHECK(frame.channel_id == 10);
       CHECK(frame.sequence_number == 71164925);
@@ -226,7 +224,7 @@ TEST_CASE("multicast_book_quote", "[multicast]") {
       CHECK(header.version() == 1);
     }
     void operator()(
-        const Trace2<deribit_multicast::Quote> &event, const sbe::Frame &frame) override {
+        const Trace<deribit_multicast::Quote> &event, const sbe::Frame &frame) override {
       found_quote = true;
       CHECK(frame.channel_id == 10);
       CHECK(frame.sequence_number == 71164925);
@@ -235,11 +233,11 @@ TEST_CASE("multicast_book_quote", "[multicast]") {
       CHECK(header.sbeSchemaId() == 1);
       CHECK(header.version() == 1);
     }
-    void operator()(const Trace2<deribit_multicast::Trades> &, const sbe::Frame &) override {
+    void operator()(const Trace<deribit_multicast::Trades> &, const sbe::Frame &) override {
       FAIL();
     }
     // snapshot
-    void operator()(const Trace2<deribit_multicast::Snapshot> &, const sbe::Frame &) override {
+    void operator()(const Trace<deribit_multicast::Snapshot> &, const sbe::Frame &) override {
       FAIL();
     }
   } handler;
@@ -275,20 +273,18 @@ TEST_CASE("multicast_snapshot", "[multicast]") {
   std::span buffer{reinterpret_cast<std::byte const *>(std::data(message)), std::size(message)};
   struct MyHandler : public sbe::Parser::Handler {
     bool found = false;
-    void operator()(const Trace2<deribit_multicast::Instrument> &, const sbe::Frame &) override {
+    void operator()(const Trace<deribit_multicast::Instrument> &, const sbe::Frame &) override {
       FAIL();
     }
-    void operator()(const Trace2<deribit_multicast::Book> &, const sbe::Frame &) override {
+    void operator()(const Trace<deribit_multicast::Book> &, const sbe::Frame &) override { FAIL(); }
+    void operator()(const Trace<deribit_multicast::Quote> &, const sbe::Frame &) override {
       FAIL();
     }
-    void operator()(const Trace2<deribit_multicast::Quote> &, const sbe::Frame &) override {
-      FAIL();
-    }
-    void operator()(const Trace2<deribit_multicast::Trades> &, const sbe::Frame &) override {
+    void operator()(const Trace<deribit_multicast::Trades> &, const sbe::Frame &) override {
       FAIL();
     }
     // snapshot
-    void operator()(const Trace2<deribit_multicast::Snapshot> &event, const sbe::Frame &) override {
+    void operator()(const Trace<deribit_multicast::Snapshot> &event, const sbe::Frame &) override {
       found = true;
       auto &[trace_info, snapshot] = event;
       snapshot.sbeRewind();
@@ -323,7 +319,7 @@ TEST_CASE("multicast_instrument", "[multicast]") {
   struct MyHandler : public sbe::Parser::Handler {
     bool found = false;
     void operator()(
-        const Trace2<deribit_multicast::Instrument> &event, const sbe::Frame &) override {
+        const Trace<deribit_multicast::Instrument> &event, const sbe::Frame &) override {
       found = true;
       auto &[trace_info, instrument] = event;
       CHECK(instrument.instrumentId() == 5);
@@ -333,17 +329,15 @@ TEST_CASE("multicast_instrument", "[multicast]") {
       auto name = std::string_view{instrument.instrumentName(), length};
       CHECK(name == "BTC-14APR22_1500-39900-C"sv);
     }
-    void operator()(const Trace2<deribit_multicast::Book> &, const sbe::Frame &) override {
+    void operator()(const Trace<deribit_multicast::Book> &, const sbe::Frame &) override { FAIL(); }
+    void operator()(const Trace<deribit_multicast::Quote> &, const sbe::Frame &) override {
       FAIL();
     }
-    void operator()(const Trace2<deribit_multicast::Quote> &, const sbe::Frame &) override {
-      FAIL();
-    }
-    void operator()(const Trace2<deribit_multicast::Trades> &, const sbe::Frame &) override {
+    void operator()(const Trace<deribit_multicast::Trades> &, const sbe::Frame &) override {
       FAIL();
     }
     // snapshot
-    void operator()(const Trace2<deribit_multicast::Snapshot> &, const sbe::Frame &) override {
+    void operator()(const Trace<deribit_multicast::Snapshot> &, const sbe::Frame &) override {
       FAIL();
     }
   } handler;

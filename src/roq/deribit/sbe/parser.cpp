@@ -36,7 +36,7 @@ bool Parser::dispatch(
               // log::debug("--> instrument: length={}"sv, length);
               // log::info<5>("instrument={}"sv, instrument);
               instrument.sbeRewind();  // note! important
-              create_trace_2_and_dispatch(handler, trace_info, instrument, frame);
+              create_trace_and_dispatch(handler, trace_info, instrument, frame);
               message = message.subspan(length);
               break;
             }
@@ -46,7 +46,7 @@ bool Parser::dispatch(
               // log::debug("--> book: length={}"sv, length);
               // log::info<5>("book={}"sv, book);
               book.sbeRewind();  // note! important
-              create_trace_2_and_dispatch(handler, trace_info, book, frame);
+              create_trace_and_dispatch(handler, trace_info, book, frame);
               message = message.subspan(length);
               break;
             }
@@ -56,7 +56,7 @@ bool Parser::dispatch(
               // log::debug("--> trades: length={}"sv, length);
               // log::info<5>("trades={}"sv, trades);
               trades.sbeRewind();  // note! important
-              create_trace_2_and_dispatch(handler, trace_info, trades, frame);
+              create_trace_and_dispatch(handler, trace_info, trades, frame);
               message = message.subspan(length);
               break;
             }
@@ -66,7 +66,7 @@ bool Parser::dispatch(
               // log::debug("--> quote: length={}"sv, length);
               // log::info<5>("quote={}"sv, quote);
               quote.sbeRewind();  // note! important
-              create_trace_2_and_dispatch(handler, trace_info, quote, frame);
+              create_trace_and_dispatch(handler, trace_info, quote, frame);
               message = message.subspan(length);
               break;
             }
@@ -77,7 +77,7 @@ bool Parser::dispatch(
               // std::cerr << snapshot << std::endl;
               // log::info<5>("snapshot={}"sv, snapshot);
               snapshot.sbeRewind();  // note! important
-              create_trace_2_and_dispatch(handler, trace_info, snapshot, frame);
+              create_trace_and_dispatch(handler, trace_info, snapshot, frame);
               message = message.subspan(length);
               break;
             }

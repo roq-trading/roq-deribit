@@ -146,7 +146,7 @@ void WebSocket::operator()(const core::web::ClientSocket::Close &) {
 
 void WebSocket::operator()(const core::web::ClientSocket::Latency &latency) {
   auto trace_info = server::create_trace_info();
-  ExternalLatency external_latency{
+  const ExternalLatency external_latency{
       .stream_id = stream_id_,
       .account = {},
       .latency = latency.sample,
@@ -166,7 +166,7 @@ void WebSocket::operator()(const core::web::ClientSocket::Binary &) {
 void WebSocket::operator()(ConnectionStatus status) {
   if (utils::update(status_, status)) {
     auto trace_info = server::create_trace_info();
-    StreamStatus stream_status{
+    const StreamStatus stream_status{
         .stream_id = stream_id_,
         .account = {},
         .supports = master_ ? SUPPORTS_MASTER : SUPPORTS,
@@ -332,13 +332,15 @@ void WebSocket::parse(const std::string_view &message) {
   });
 }
 
-void WebSocket::operator()(const Trace<core::jsonrpc::Error> &event, core::json::value_t &value) {
+void WebSocket::operator()(
+    const Trace<core::jsonrpc::Error const> &event, core::json::value_t &value) {
   auto &[trace_info, error] = event;
   json::Error error_2(value);
   log::fatal(R"(error={}, id="{}")"sv, error_2, error.id);
 }
 
-void WebSocket::operator()(const Trace<core::jsonrpc::Result> &event, core::json::value_t &value) {
+void WebSocket::operator()(
+    const Trace<core::jsonrpc::Result const> &event, core::json::value_t &value) {
   auto &[trace_info, result] = event;
   json::RequestType request_type(result.id);
   switch (request_type) {
@@ -353,14 +355,14 @@ void WebSocket::operator()(const Trace<core::jsonrpc::Result> &event, core::json
     case GET_CURRENCIES: {
       core::json::Buffer buffer(decode_buffer_);
       const json::Currencies currencies(value, buffer);
-      Trace2 event(trace_info, currencies);
+      Trace event(trace_info, currencies);
       (*this)(event);
       return;
     }
     case GET_INSTRUMENTS: {
       core::json::Buffer buffer(decode_buffer_);
       const json::Instruments instruments(value, buffer);
-      Trace2 event(trace_info, instruments);
+      Trace event(trace_info, instruments);
       (*this)(event);
       return;
     }
@@ -383,7 +385,7 @@ void WebSocket::operator()(const Trace<core::jsonrpc::Result> &event, core::json
 }
 
 void WebSocket::operator()(
-    const Trace<core::jsonrpc::Notification> &event, core::json::value_t &value) {
+    const Trace<core::jsonrpc::Notification const> &event, core::json::value_t &value) {
   auto &[trace_info, notification] = event;
   json::Method method(notification.method);
   switch (method) {
@@ -401,11 +403,11 @@ void WebSocket::operator()(
   }
 }
 
-void WebSocket::operator()(const Trace2<json::Auth const> &) {
+void WebSocket::operator()(const Trace<json::Auth const> &) {
   log::fatal("Unexpected"sv);
 }
 
-void WebSocket::operator()(const Trace2<json::Currencies const> &event) {
+void WebSocket::operator()(const Trace<json::Currencies const> &event) {
   profile_.currencies([&]() {
     if (!master_)
       log::fatal("Unexpected"sv);
@@ -430,7 +432,7 @@ void WebSocket::operator()(const Trace2<json::Currencies const> &event) {
   });
 }
 
-void WebSocket::operator()(const Trace2<json::Instruments const> &event) {
+void WebSocket::operator()(const Trace<json::Instruments const> &event) {
   profile_.instruments([&]() {
     if (!master_)
       log::fatal("Unexpected"sv);
@@ -464,22 +466,22 @@ void WebSocket::operator()(const Trace2<json::Instruments const> &event) {
   });
 }
 
-void WebSocket::operator()(const Trace2<json::Positions const> &) {
+void WebSocket::operator()(const Trace<json::Positions const> &) {
   log::fatal("Unexpected"sv);
 }
 
-void WebSocket::operator()(const Trace2<json::PlatformState const> &) {
+void WebSocket::operator()(const Trace<json::PlatformState const> &) {
   if (!master_)
     log::fatal("Unexpected"sv);
 }
 
-void WebSocket::operator()(const Trace2<json::InstrumentState const> &) {
+void WebSocket::operator()(const Trace<json::InstrumentState const> &) {
   if (!master_)
     log::fatal("Unexpected"sv);
   // seldom updated -- also done by Ticker
 }
 
-void WebSocket::operator()(const Trace2<json::Quote const> &event) {
+void WebSocket::operator()(const Trace<json::Quote const> &event) {
   profile_.quote([&]() {
     // auto &[trace_info, quote] = event;  // XXX clang13
     auto &trace_info = event.trace_info;
@@ -490,7 +492,7 @@ void WebSocket::operator()(const Trace2<json::Quote const> &event) {
             // note! as real amounts to match MbP
             auto bid_quantity = multiplier * quote.best_bid_amount;
             auto ask_quantity = multiplier * quote.best_ask_amount;
-            TopOfBook top_of_book = {
+            const TopOfBook top_of_book = {
                 .stream_id = stream_id_,
                 .exchange = flags::Config::exchange(),
                 .symbol = quote.instrument_name,
@@ -517,14 +519,14 @@ void WebSocket::operator()(const Trace2<json::Quote const> &event) {
   });
 }
 
-void WebSocket::operator()(const Trace2<json::Ticker const> &event) {
+void WebSocket::operator()(const Trace<json::Ticker const> &event) {
   profile_.ticker([&]() {
     auto &[trace_info, ticker] = event;
     log::info<3>("ticker={}"sv, ticker);
     auto trading_status = json::map(ticker.state);
     auto &item = trading_status_[ticker.instrument_name];
     if (trading_status != TradingStatus{} && utils::update(item, trading_status)) {
-      MarketStatus market_status{
+      const MarketStatus market_status{
           .stream_id = stream_id_,
           .exchange = flags::Config::exchange(),
           .symbol = ticker.instrument_name,
@@ -535,19 +537,19 @@ void WebSocket::operator()(const Trace2<json::Ticker const> &event) {
   });
 }
 
-void WebSocket::operator()(const Trace2<json::Portfolio const> &) {
+void WebSocket::operator()(const Trace<json::Portfolio const> &) {
   log::fatal("Unexpected"sv);
 }
 
-void WebSocket::operator()(const Trace2<json::Changes const> &) {
+void WebSocket::operator()(const Trace<json::Changes const> &) {
   log::fatal("Unexpected"sv);
 }
 
-void WebSocket::operator()(const Trace2<json::Order const> &) {
+void WebSocket::operator()(const Trace<json::Order const> &) {
   log::fatal("Unexpected"sv);
 }
 
-void WebSocket::operator()(const Trace2<json::Trades2 const> &) {
+void WebSocket::operator()(const Trace<json::Trades2 const> &) {
   log::fatal("Unexpected"sv);
 }
 

@@ -23,10 +23,11 @@ namespace deribit {
 class Multicast final : public core::net::UdpConnection::Handler, public sbe::Parser::Handler {
  public:
   struct Handler {
-    virtual void operator()(const Trace<StreamStatus> &) = 0;
-    virtual void operator()(const Trace<TopOfBook> &, bool is_last) = 0;
-    virtual void operator()(const Trace<MarketByPriceUpdate> &, bool is_last, bool refresh) = 0;
-    virtual void operator()(const Trace<TradeSummary> &, bool is_last) = 0;
+    virtual void operator()(const Trace<StreamStatus const> &) = 0;
+    virtual void operator()(const Trace<TopOfBook const> &, bool is_last) = 0;
+    virtual void operator()(
+        const Trace<MarketByPriceUpdate const> &, bool is_last, bool refresh) = 0;
+    virtual void operator()(const Trace<TradeSummary const> &, bool is_last) = 0;
   };
 
   Multicast(Handler &, core::io::Context &, uint16_t stream_id, Shared &);
@@ -46,12 +47,12 @@ class Multicast final : public core::net::UdpConnection::Handler, public sbe::Pa
 
  protected:
   // events
-  void operator()(const Trace2<deribit_multicast::Instrument> &, const sbe::Frame &) override;
-  void operator()(const Trace2<deribit_multicast::Book> &, const sbe::Frame &) override;
-  void operator()(const Trace2<deribit_multicast::Quote> &, const sbe::Frame &) override;
-  void operator()(const Trace2<deribit_multicast::Trades> &, const sbe::Frame &) override;
+  void operator()(const Trace<deribit_multicast::Instrument> &, const sbe::Frame &) override;
+  void operator()(const Trace<deribit_multicast::Book> &, const sbe::Frame &) override;
+  void operator()(const Trace<deribit_multicast::Quote> &, const sbe::Frame &) override;
+  void operator()(const Trace<deribit_multicast::Trades> &, const sbe::Frame &) override;
   // snapshot
-  void operator()(const Trace2<deribit_multicast::Snapshot> &, const sbe::Frame &) override;
+  void operator()(const Trace<deribit_multicast::Snapshot> &, const sbe::Frame &) override;
 
   void publish_stream_status(const TraceInfo &);
 

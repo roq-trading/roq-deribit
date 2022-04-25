@@ -46,10 +46,10 @@ namespace deribit {
 class OrderEntry final : public core::net::Manager::Handler {
  public:
   struct Handler {
-    virtual void operator()(const Trace<StreamStatus> &) = 0;
-    virtual void operator()(const Trace<ExternalLatency> &) = 0;
-    virtual void operator()(const Trace<TradeUpdate> &, bool is_last, uint8_t user_id) = 0;
-    virtual void operator()(const Trace<PositionUpdate> &, bool is_last) = 0;
+    virtual void operator()(const Trace<StreamStatus const> &) = 0;
+    virtual void operator()(const Trace<ExternalLatency const> &) = 0;
+    virtual void operator()(const Trace<TradeUpdate const> &, bool is_last, uint8_t user_id) = 0;
+    virtual void operator()(const Trace<PositionUpdate const> &, bool is_last) = 0;
   };
 
   OrderEntry(Handler &, core::io::Context &, uint16_t stream_id, Security &, Shared &);
