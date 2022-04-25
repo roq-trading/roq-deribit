@@ -148,7 +148,9 @@ void Multicast::operator()(
 }
 
 void Multicast::operator()(const Trace2<deribit_multicast::Book> &event, const sbe::Frame &frame) {
-  auto &[trace_info, book] = event;
+  // auto &[trace_info, book] = event;
+  auto &trace_info = event.trace_info;
+  auto &book = event.value;
   log::info<5>("book={}, frame={}"sv, book, frame);
   if (!publish_market_by_price_)
     return;
@@ -190,7 +192,9 @@ void Multicast::operator()(const Trace2<deribit_multicast::Book> &event, const s
 }
 
 void Multicast::operator()(const Trace2<deribit_multicast::Quote> &event, const sbe::Frame &frame) {
-  auto &[trace_info, quote] = event;
+  // auto &[trace_info, quote] = event;
+  auto &trace_info = event.trace_info;
+  auto &quote = event.value;
   log::info<5>("quote={}, frame={}"sv, quote, frame);
   if (!publish_top_of_book_)
     return;
@@ -222,7 +226,9 @@ void Multicast::operator()(const Trace2<deribit_multicast::Quote> &event, const 
 
 void Multicast::operator()(
     const Trace2<deribit_multicast::Trades> &event, const sbe::Frame &frame) {
-  auto &[trace_info, trades] = event;
+  // auto &[trace_info, trades] = event;
+  auto &trace_info = event.trace_info;
+  auto &trades = event.value;
   log::info<5>("trades={}, frame={}"sv, trades, frame);
   if (!publish_trade_summary_)
     return;
