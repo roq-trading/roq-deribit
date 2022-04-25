@@ -177,6 +177,11 @@
       "name": "security_keys_enabled",
       "type": "bool",
       "comment": "undoc"
+    },
+    {
+      "name": "login_enabled",
+      "type": "bool",
+      "comment": "undoc"
     }
   ]
 }
