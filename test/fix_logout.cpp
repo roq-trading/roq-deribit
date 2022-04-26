@@ -20,7 +20,7 @@ TEST_CASE("fix_logout_parse_message", "[fix_logout]") {
       "s\00110=166\001"sv;
   int results = 0;
   auto bytes = core::fix::Reader<core::fix::Version::FIX_44>::dispatch(
-      [&](const core::fix::message_t &message) {
+      [&](const core::fix::Message &message) {
         ++results;
         CHECK(message.header.msg_type == core::fix::MsgType::LOGOUT);
         auto logout = fix::Logout::create(message);

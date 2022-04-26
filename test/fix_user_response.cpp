@@ -22,7 +22,7 @@ TEST_CASE("fix_user_response_parse_message", "[fix_user_response]") {
       "1=0.0\001100013=10.0\00110=004\001"sv;
   int results = 0;
   auto bytes = core::fix::Reader<core::fix::Version::FIX_44>::dispatch(
-      [&](const core::fix::message_t &message) {
+      [&](const core::fix::Message &message) {
         ++results;
         CHECK(message.header.msg_type == core::fix::MsgType::USER_RESPONSE);
         auto user_response = fix::UserResponse::create(message);

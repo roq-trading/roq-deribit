@@ -20,7 +20,7 @@ TEST_CASE("fix_order_cancel_reject_parse_message", "[fix_order_cancel_reject]") 
       "9=8\00158=not_found\00110=000\001"sv;
   int results = 0;
   auto bytes = core::fix::Reader<core::fix::Version::FIX_44>::dispatch(
-      [&](const core::fix::message_t &message) {
+      [&](const core::fix::Message &message) {
         ++results;
         CHECK(message.header.msg_type == core::fix::MsgType::ORDER_CANCEL_REJECT);
         auto result = fix::OrderCancelReject::create(message);
@@ -42,7 +42,7 @@ TEST_CASE("fix_order_cancel_reject_already_cancelled", "[fix_order_cancel_reject
       "\0016=0.000\00110=180\001"sv;
   int results = 0;
   auto bytes = core::fix::Reader<core::fix::Version::FIX_44>::dispatch(
-      [&](const core::fix::message_t &message) {
+      [&](const core::fix::Message &message) {
         ++results;
         CHECK(message.header.msg_type == core::fix::MsgType::ORDER_CANCEL_REJECT);
         auto result = fix::OrderCancelReject::create(message);

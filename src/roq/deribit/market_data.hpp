@@ -88,18 +88,20 @@ class MarketData final : public core::net::Manager::Handler {
 
   void subscribe(size_t start_from = 0);
 
-  void operator()(const core::fix::Event<fix::Heartbeat> &, const TraceInfo &);
-  void operator()(const core::fix::Event<fix::Logon> &, const TraceInfo &);
-  void operator()(const core::fix::Event<fix::Logout> &, const TraceInfo &);
-  void operator()(const core::fix::Event<fix::ResendRequest> &, const TraceInfo &);
-  void operator()(const core::fix::Event<fix::TestRequest> &, const TraceInfo &);
+  void operator()(const Trace<fix::Heartbeat const> &, const core::fix::Header &);
+  void operator()(const Trace<fix::Logon const> &, const core::fix::Header &);
+  void operator()(const Trace<fix::Logout const> &, const core::fix::Header &);
+  void operator()(const Trace<fix::ResendRequest const> &, const core::fix::Header &);
+  void operator()(const Trace<fix::TestRequest const> &, const core::fix::Header &);
 
-  void operator()(const core::fix::Event<fix::SecurityList> &, const TraceInfo &);
-  void operator()(const core::fix::Event<fix::SecurityStatus> &, const TraceInfo &);
+  void operator()(const Trace<fix::SecurityList const> &, const core::fix::Header &);
+  void operator()(const Trace<fix::SecurityStatus const> &, const core::fix::Header &);
 
-  void operator()(const core::fix::Event<fix::MarketDataIncrementalRefresh> &, const TraceInfo &);
-  void operator()(const core::fix::Event<fix::MarketDataRequestReject> &, const TraceInfo &);
-  void operator()(const core::fix::Event<fix::MarketDataSnapshotFullRefresh> &, const TraceInfo &);
+  void operator()(
+      const Trace<fix::MarketDataIncrementalRefresh const> &, const core::fix::Header &);
+  void operator()(const Trace<fix::MarketDataRequestReject const> &, const core::fix::Header &);
+  void operator()(
+      const Trace<fix::MarketDataSnapshotFullRefresh const> &, const core::fix::Header &);
 
  protected:
   void operator()(const core::net::Manager::Connected &) override;
@@ -123,8 +125,8 @@ class MarketData final : public core::net::Manager::Handler {
 
   void resubscribe(const std::string_view &symbol);
 
-  void parse(const core::fix::message_t &);
-  void parse_helper(const core::fix::message_t &);
+  void parse(const Trace<core::fix::Message const> &);
+  void parse_helper(const Trace<core::fix::Message const> &);
 
   // utilities
 
@@ -134,7 +136,7 @@ class MarketData final : public core::net::Manager::Handler {
   template <typename T>
   void send(const T &event, std::chrono::nanoseconds sending_time);
 
-  void check(const core::fix::header_t &);
+  void check(const core::fix::Header &);
 
  private:
   Handler &handler_;

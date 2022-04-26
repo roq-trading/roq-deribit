@@ -20,7 +20,7 @@ TEST_CASE("fix_heartbeat_parse_message", "[fix_heartbeat]") {
       "\00110=084\001"sv;
   int results = 0;
   auto bytes = core::fix::Reader<core::fix::Version::FIX_44>::dispatch(
-      [&](const core::fix::message_t &message) {
+      [&](const core::fix::Message &message) {
         ++results;
         CHECK(message.header.msg_type == core::fix::MsgType::HEARTBEAT);
         auto heartbeat = fix::Heartbeat::create(message);

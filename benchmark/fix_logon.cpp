@@ -24,7 +24,7 @@ void BM_fix_logon_parse_message(benchmark::State &state) {
   uint64_t processed = 0;
   for (auto _ : state) {
     core::fix::Reader<core::fix::Version::FIX_44>::dispatch(
-        [&](const core::fix::message_t &message) {
+        [&](const core::fix::Message &message) {
           auto result = fix::Logon::create(message);
           if (result.heart_bt_int > 0)
             ++processed;

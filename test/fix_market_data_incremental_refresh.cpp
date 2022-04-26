@@ -26,7 +26,7 @@ TEST_CASE(
   core::fix::Buffer decode_buffer(buffer);
   int results = 0;
   auto bytes = core::fix::Reader<core::fix::Version::FIX_44>::dispatch(
-      [&](const core::fix::message_t &message) {
+      [&](const core::fix::Message &message) {
         ++results;
         CHECK(message.header.msg_type == core::fix::MsgType::MARKET_DATA_INCREMENTAL_REFRESH);
         auto result = fix::MarketDataIncrementalRefresh::create(message, decode_buffer);
@@ -72,7 +72,7 @@ TEST_CASE(
   core::fix::Buffer decode_buffer(buffer);
   int results = 0;
   auto bytes = core::fix::Reader<core::fix::Version::FIX_44>::dispatch(
-      [&](const core::fix::message_t &message) {
+      [&](const core::fix::Message &message) {
         ++results;
         CHECK(message.header.msg_type == core::fix::MsgType::MARKET_DATA_INCREMENTAL_REFRESH);
         auto result = fix::MarketDataIncrementalRefresh::create(message, decode_buffer);
@@ -166,7 +166,7 @@ TEST_CASE(
   core::fix::Buffer decode_buffer(buffer);
   int results = 0;
   auto bytes = core::fix::Reader<core::fix::Version::FIX_44>::dispatch(
-      [&](const core::fix::message_t &message) {
+      [&](const core::fix::Message &message) {
         ++results;
         CHECK(message.header.msg_type == core::fix::MsgType::MARKET_DATA_INCREMENTAL_REFRESH);
         auto result = fix::MarketDataIncrementalRefresh::create(message, decode_buffer);

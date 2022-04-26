@@ -26,7 +26,7 @@ TEST_CASE("fix_execution_report_parse_message", "[fix_execution_report]") {
   core::fix::Buffer decode_buffer(buffer);
   int results = 0;
   auto bytes = core::fix::Reader<core::fix::Version::FIX_44>::dispatch(
-      [&](const core::fix::message_t &message) {
+      [&](const core::fix::Message &message) {
         ++results;
         CHECK(message.header.msg_type == core::fix::MsgType::EXECUTION_REPORT);
         auto result = fix::ExecutionReport::create(message, decode_buffer);
@@ -66,7 +66,7 @@ TEST_CASE("fix_execution_report_parse_order_mass_status", "[fix_execution_report
   core::fix::Buffer decode_buffer(buffer);
   int results = 0;
   auto bytes = core::fix::Reader<core::fix::Version::FIX_44>::dispatch(
-      [&](const core::fix::message_t &message) {
+      [&](const core::fix::Message &message) {
         ++results;
         CHECK(message.header.msg_type == core::fix::MsgType::EXECUTION_REPORT);
         auto result = fix::ExecutionReport::create(message, decode_buffer);
@@ -95,7 +95,7 @@ TEST_CASE("fix_execution_report_parse_fill", "[fix_execution_report]") {
   core::fix::Buffer decode_buffer(buffer);
   int results = 0;
   auto bytes = core::fix::Reader<core::fix::Version::FIX_44>::dispatch(
-      [&](const core::fix::message_t &message) {
+      [&](const core::fix::Message &message) {
         ++results;
         CHECK(message.header.msg_type == core::fix::MsgType::EXECUTION_REPORT);
         auto result = fix::ExecutionReport::create(message, decode_buffer);

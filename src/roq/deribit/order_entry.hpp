@@ -80,18 +80,18 @@ class OrderEntry final : public core::net::Manager::Handler {
 
   void operator()(metrics::Writer &);
 
-  void operator()(const core::fix::Event<fix::Heartbeat> &, const TraceInfo &);
-  void operator()(const core::fix::Event<fix::Logon> &, const TraceInfo &);
-  void operator()(const core::fix::Event<fix::Logout> &, const TraceInfo &);
-  void operator()(const core::fix::Event<fix::ResendRequest> &, const TraceInfo &);
-  void operator()(const core::fix::Event<fix::TestRequest> &, const TraceInfo &);
+  void operator()(const Trace<fix::Heartbeat const> &, const core::fix::Header &);
+  void operator()(const Trace<fix::Logon const> &, const core::fix::Header &);
+  void operator()(const Trace<fix::Logout const> &, const core::fix::Header &);
+  void operator()(const Trace<fix::ResendRequest const> &, const core::fix::Header &);
+  void operator()(const Trace<fix::TestRequest const> &, const core::fix::Header &);
 
-  void operator()(const core::fix::Event<fix::PositionReport> &, const TraceInfo &);
+  void operator()(const Trace<fix::PositionReport const> &, const core::fix::Header &);
 
-  void operator()(const core::fix::Event<fix::ExecutionReport> &, const TraceInfo &);
-  void operator()(const core::fix::Event<fix::OrderCancelReject> &, const TraceInfo &);
-  void operator()(const core::fix::Event<fix::Reject> &, const TraceInfo &);
-  void operator()(const core::fix::Event<fix::OrderMassCancelReport> &, const TraceInfo &);
+  void operator()(const Trace<fix::ExecutionReport const> &, const core::fix::Header &);
+  void operator()(const Trace<fix::OrderCancelReject const> &, const core::fix::Header &);
+  void operator()(const Trace<fix::Reject const> &, const core::fix::Header &);
+  void operator()(const Trace<fix::OrderMassCancelReport const> &, const core::fix::Header &);
 
  protected:
   void operator()(const core::net::Manager::Connected &) override;
@@ -111,8 +111,8 @@ class OrderEntry final : public core::net::Manager::Handler {
   void subscribe_positions();
   void download_orders();
 
-  void parse(const core::fix::message_t &);
-  void parse_helper(const core::fix::message_t &);
+  void parse(const Trace<core::fix::Message const> &);
+  void parse_helper(const Trace<core::fix::Message const> &);
 
   // utilities
 
@@ -122,7 +122,7 @@ class OrderEntry final : public core::net::Manager::Handler {
   template <typename T>
   uint64_t send(const T &event, std::chrono::nanoseconds sending_time);
 
-  void check(const core::fix::header_t &);
+  void check(const core::fix::Header &);
 
  private:
   Handler &handler_;

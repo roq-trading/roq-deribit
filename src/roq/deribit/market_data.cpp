@@ -192,11 +192,13 @@ void MarketData::operator()(const core::net::Manager::Read &read) {
   auto buffer = read.buffer.pullup();
   size_t total_bytes = 0;
   while (!std::empty(buffer)) {
+    auto trace_info = server::create_trace_info();
     auto bytes = core::fix::Reader<FIX_VERSION>::dispatch(
-        [&](const core::fix::message_t &message) {
+        [&](const core::fix::Message &message) {
           try {
             check(message.header);
-            parse(message);
+            Trace event{trace_info, message};
+            parse(event);
           } catch (std::exception &) {
             log::warn("{}"sv, debug::fix::Message{buffer});
 #ifndef NDEBUG
@@ -432,79 +434,78 @@ void MarketData::resubscribe(const std::string_view &symbol) {
   subscribe(symbols);
 }
 
-void MarketData::parse(const core::fix::message_t &message) {
-  profile_.parse([&]() { parse_helper(message); });
+void MarketData::parse(const Trace<core::fix::Message const> &event) {
+  profile_.parse([&]() { parse_helper(event); });
 }
 
-void MarketData::parse_helper(const core::fix::message_t &message) {
-  auto trace_info = server::create_trace_info();
+void MarketData::parse_helper(const Trace<core::fix::Message const> &event) {
+  auto &[trace_info, message] = event;
   core::fix::Buffer buffer(decode_buffer_);
   switch (message.header.msg_type) {
     using enum core::fix::MsgType;
     // session
     case HEARTBEAT: {
-      auto heartbeat = fix::Heartbeat::create(message);
-      core::fix::create_event_and_dispatch(*this, message.header, heartbeat, trace_info);
+      const auto heartbeat = fix::Heartbeat::create(message);
+      create_trace_and_dispatch(*this, trace_info, heartbeat, message.header);
       return;
     }
     case LOGON: {
-      auto logon = fix::Logon::create(message);
-      core::fix::create_event_and_dispatch(*this, message.header, logon, trace_info);
+      const auto logon = fix::Logon::create(message);
+      create_trace_and_dispatch(*this, trace_info, logon, message.header);
       return;
     }
     case LOGOUT: {
-      auto logout = fix::Logout::create(message);
-      core::fix::create_event_and_dispatch(*this, message.header, logout, trace_info);
+      const auto logout = fix::Logout::create(message);
+      create_trace_and_dispatch(*this, trace_info, logout, message.header);
       return;
     }
     case RESEND_REQUEST: {
-      auto resend_request = fix::ResendRequest::create(message);
-      core::fix::create_event_and_dispatch(*this, message.header, resend_request, trace_info);
+      const auto resend_request = fix::ResendRequest::create(message);
+      create_trace_and_dispatch(*this, trace_info, resend_request, message.header);
       return;
     }
     case TEST_REQUEST: {
-      auto test_request = fix::TestRequest::create(message);
-      core::fix::create_event_and_dispatch(*this, message.header, test_request, trace_info);
+      const auto test_request = fix::TestRequest::create(message);
+      create_trace_and_dispatch(*this, trace_info, test_request, message.header);
       return;
     }
     // ...
     case MARKET_DATA_INCREMENTAL_REFRESH: {
       profile_.market_data_incremental_refresh([&]() {
-        auto market_data_incremental_referesh =
+        const auto market_data_incremental_refresh =
             fix::MarketDataIncrementalRefresh::create(message, buffer);
-        core::fix::create_event_and_dispatch(
-            *this, message.header, market_data_incremental_referesh, trace_info);
+        create_trace_and_dispatch(
+            *this, trace_info, market_data_incremental_refresh, message.header);
       });
       return;
     }
     case MARKET_DATA_REQUEST_REJECT: {
       profile_.market_data_request_reject([&]() {
-        auto market_data_request_reject = fix::MarketDataRequestReject::create(message);
-        core::fix::create_event_and_dispatch(
-            *this, message.header, market_data_request_reject, trace_info);
+        const auto market_data_request_reject = fix::MarketDataRequestReject::create(message);
+        create_trace_and_dispatch(*this, trace_info, market_data_request_reject, message.header);
       });
       return;
     }
     case MARKET_DATA_SNAPSHOT_FULL_REFRESH: {
       profile_.market_data_snapshot_full_refresh([&]() {
-        auto market_data_snapshot_full_refresh =
+        const auto market_data_snapshot_full_refresh =
             fix::MarketDataSnapshotFullRefresh::create(message, buffer);
-        core::fix::create_event_and_dispatch(
-            *this, message.header, market_data_snapshot_full_refresh, trace_info);
+        create_trace_and_dispatch(
+            *this, trace_info, market_data_snapshot_full_refresh, message.header);
       });
       return;
     }
     case SECURITY_LIST: {
       profile_.security_list([&]() {
-        auto security_list = fix::SecurityList::create(message, buffer);
-        core::fix::create_event_and_dispatch(*this, message.header, security_list, trace_info);
+        const auto security_list = fix::SecurityList::create(message, buffer);
+        create_trace_and_dispatch(*this, trace_info, security_list, message.header);
       });
       return;
     }
     case SECURITY_STATUS: {
       profile_.security_status([&]() {
-        auto security_status = fix::SecurityStatus::create(message, buffer);
-        core::fix::create_event_and_dispatch(*this, message.header, security_status, trace_info);
+        const auto security_status = fix::SecurityStatus::create(message, buffer);
+        create_trace_and_dispatch(*this, trace_info, security_status, message.header);
       });
       return;
     }
@@ -522,9 +523,9 @@ void MarketData::parse_helper(const core::fix::message_t &message) {
 }
 
 void MarketData::operator()(
-    const core::fix::Event<fix::Heartbeat> &event, const TraceInfo &trace_info) {
+    const Trace<fix::Heartbeat const> &event, const core::fix::Header &header) {
   auto now = core::clock::GetSystem();
-  auto &[header, heartbeat] = event;
+  auto &[trace_info, heartbeat] = event;
   log::info<3>("event={{header={}, heartbeat={}}}"sv, header, heartbeat);
   last_logon_or_heartbeat_ = {};
   if (!std::empty(heartbeat.test_req_id)) {
@@ -540,15 +541,16 @@ void MarketData::operator()(
   }
 }
 
-void MarketData::operator()(const core::fix::Event<fix::Logon> &event, const TraceInfo &) {
-  auto &[header, logon] = event;
+void MarketData::operator()(const Trace<fix::Logon const> &event, const core::fix::Header &header) {
+  auto &[trace_info, logon] = event;
   log::info<2>("event={{header={}, logon={}}}"sv, header, logon);
   (*this)(ConnectionStatus::DOWNLOADING);
   download_.begin();
 }
 
-void MarketData::operator()(const core::fix::Event<fix::Logout> &event, const TraceInfo &) {
-  auto &[header, logout] = event;
+void MarketData::operator()(
+    const Trace<fix::Logout const> &event, const core::fix::Header &header) {
+  auto &[trace_info, logout] = event;
   log::warn("event={{header={}, logout={}}}"sv, header, logout);
   (*this)(ConnectionStatus::LOGGED_OUT);
   ready_ = false;
@@ -558,22 +560,24 @@ void MarketData::operator()(const core::fix::Event<fix::Logout> &event, const Tr
   connection_.close();
 }
 
-void MarketData::operator()(const core::fix::Event<fix::ResendRequest> &event, const TraceInfo &) {
-  auto &[header, resend_request] = event;
+void MarketData::operator()(
+    const Trace<fix::ResendRequest const> &event, const core::fix::Header &header) {
+  auto &[trace_info, resend_request] = event;
   log::warn("event={{header={}, resend_request={}}}"sv, header, resend_request);
   log::info("closing connection"sv);
   connection_.close();
 }
 
-void MarketData::operator()(const core::fix::Event<fix::TestRequest> &event, const TraceInfo &) {
-  auto &[header, test_request] = event;
+void MarketData::operator()(
+    const Trace<fix::TestRequest const> &event, const core::fix::Header &header) {
+  auto &[trace_info, test_request] = event;
   log::info<1>("event={{header={}, test_request={}}}"sv, header, test_request);
   send_heartbeat(test_request.test_req_id);
 }
 
 void MarketData::operator()(
-    const core::fix::Event<fix::SecurityList> &event, const TraceInfo &trace_info) {
-  auto &[header, security_list] = event;
+    const Trace<fix::SecurityList const> &event, const core::fix::Header &header) {
+  auto &[trace_info, security_list] = event;
   log::info<2>("event={{header={}, security_list={}}}"sv, header, security_list);
   if (std::size(security_list.no_related_sym) > 0) {
     size_t counter = {};
@@ -632,17 +636,18 @@ void MarketData::operator()(
   download_.check_relaxed(MarketDataState::SECURITIES);
 }
 
-void MarketData::operator()(const core::fix::Event<fix::SecurityStatus> &event, const TraceInfo &) {
-  auto &[header, security_status] = event;
+void MarketData::operator()(
+    const Trace<fix::SecurityStatus const> &event, const core::fix::Header &header) {
+  auto &[trace_info, security_status] = event;
   log::info<2>("event={{header={}, security_status={}}}"sv, header, security_status);
   // XXX should we use it or not?
 }
 
 void MarketData::operator()(
-    const core::fix::Event<fix::MarketDataIncrementalRefresh> &event, const TraceInfo &trace_info) {
-  // auto &[header, market_data_incremental_refresh] = event;  // XXX clang13
-  auto &header = event.header;
-  auto &market_data_incremental_refresh = event.value;
+    const Trace<fix::MarketDataIncrementalRefresh const> &event, const core::fix::Header &header) {
+  auto &[trace_info, market_data_incremental_refresh] = event;
+  // auto &trace_info = event.trace_info;
+  // auto &market_data_incremental_refresh = event.value;
   log::info<3>(
       "event={{header={}, market_data_incremental_refresh={}}}"sv,
       header,
@@ -762,8 +767,8 @@ void MarketData::operator()(
 }
 
 void MarketData::operator()(
-    const core::fix::Event<fix::MarketDataRequestReject> &event, const TraceInfo &) {
-  auto &[header, market_data_request_reject] = event;
+    const Trace<fix::MarketDataRequestReject const> &event, const core::fix::Header &header) {
+  auto &[trace_info, market_data_request_reject] = event;
   log::warn<1>(
       "event={{header={}, market_data_request_reject={}}}"sv, header, market_data_request_reject);
   if (flags::FIX::fix_terminate_on_market_data_request_reject())
@@ -771,9 +776,8 @@ void MarketData::operator()(
 }
 
 void MarketData::operator()(
-    const core::fix::Event<fix::MarketDataSnapshotFullRefresh> &event,
-    const TraceInfo &trace_info) {
-  auto &[header, market_data_snapshot_full_refresh] = event;
+    const Trace<fix::MarketDataSnapshotFullRefresh const> &event, const core::fix::Header &header) {
+  auto &[trace_info, market_data_snapshot_full_refresh] = event;
   log::info<3>(
       "event={{header={}, market_data_snapshot_full_refresh={}}}"sv,
       header,
@@ -894,7 +898,7 @@ void MarketData::send(const T &event, std::chrono::nanoseconds sending_time) {
   connection_.send(message);
 }
 
-void MarketData::check(const core::fix::header_t &header) {
+void MarketData::check(const core::fix::Header &header) {
   auto current = header.msg_seq_num;
   auto expected = inbound_.msg_seq_num + 1;
   if (current != expected) [[unlikely]] {

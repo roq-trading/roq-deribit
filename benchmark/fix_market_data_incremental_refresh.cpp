@@ -42,7 +42,7 @@ void BM_fix_market_data_increment_refresh_parse_message_1(
   for (auto _ : state) {
     core::fix::Buffer decode_buffer(buffer);
     core::fix::Reader<core::fix::Version::FIX_44>::dispatch(
-        [&](const core::fix::message_t &message) {
+        [&](const core::fix::Message &message) {
           auto result = fix::MarketDataIncrementalRefresh::create(message, decode_buffer);
           if (!std::empty(result.md_req_id))
             ++processed;
@@ -60,7 +60,7 @@ void BM_fix_market_data_increment_refresh_parse_message_2(
   for (auto _ : state) {
     core::fix::Buffer decode_buffer(buffer);
     core::fix::Reader<core::fix::Version::FIX_44>::dispatch(
-        [&](const core::fix::message_t &message) {
+        [&](const core::fix::Message &message) {
           auto result = fix::MarketDataIncrementalRefresh::create(message, decode_buffer);
           if (!std::empty(result.md_req_id))
             ++processed;

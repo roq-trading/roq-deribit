@@ -21,7 +21,7 @@ void BM_fix_logout_parse_message(benchmark::State &state) {
   uint64_t processed = 0;
   for (auto _ : state) {
     core::fix::Reader<core::fix::Version::FIX_44>::dispatch(
-        [&](const core::fix::message_t &message) {
+        [&](const core::fix::Message &message) {
           auto logout = fix::Logout::create(message);
           if (!std::empty(logout.text))
             ++processed;

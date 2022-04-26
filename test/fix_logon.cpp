@@ -23,7 +23,7 @@ TEST_CASE("fix_logon_parse_message", "[fix_logon]") {
       "M=\0019001=Y\00110=115\001"sv;
   int results = 0;
   auto bytes = core::fix::Reader<core::fix::Version::FIX_44>::dispatch(
-      [&](const core::fix::message_t &message) {
+      [&](const core::fix::Message &message) {
         ++results;
         CHECK(message.header.msg_type == core::fix::MsgType::LOGON);
         auto result = fix::Logon::create(message);
