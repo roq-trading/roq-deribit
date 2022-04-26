@@ -439,7 +439,9 @@ void MarketData::parse(const Trace<core::fix::Message const> &event) {
 }
 
 void MarketData::parse_helper(const Trace<core::fix::Message const> &event) {
-  auto &[trace_info, message] = event;
+  // auto &[trace_info, message] = event;
+  auto &trace_info = event.trace_info;
+  auto &message = event.value;
   core::fix::Buffer buffer(decode_buffer_);
   switch (message.header.msg_type) {
     using enum core::fix::MsgType;
@@ -645,9 +647,9 @@ void MarketData::operator()(
 
 void MarketData::operator()(
     const Trace<fix::MarketDataIncrementalRefresh const> &event, const core::fix::Header &header) {
-  auto &[trace_info, market_data_incremental_refresh] = event;
-  // auto &trace_info = event.trace_info;
-  // auto &market_data_incremental_refresh = event.value;
+  // auto &[trace_info, market_data_incremental_refresh] = event;
+  auto &trace_info = event.trace_info;
+  auto &market_data_incremental_refresh = event.value;
   log::info<3>(
       "event={{header={}, market_data_incremental_refresh={}}}"sv,
       header,

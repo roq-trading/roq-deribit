@@ -438,7 +438,9 @@ void OrderEntry::parse(const Trace<core::fix::Message const> &event) {
 }
 
 void OrderEntry::parse_helper(const Trace<core::fix::Message const> &event) {
-  auto &[trace_info, message] = event;
+  // auto &[trace_info, message] = event;
+  auto &trace_info = event.trace_info;
+  auto &message = event.value;
   core::fix::Buffer buffer(decode_buffer_);
   switch (message.header.msg_type) {
     using enum core::fix::MsgType;
