@@ -331,14 +331,14 @@ void DropCopy::parse(const std::string_view &message) {
 }
 
 void DropCopy::operator()(
-    const Trace<core::jsonrpc::Error const> &event, core::json::value_t &value) {
+    const Trace<core::jsonrpc::Error const> &event, core::json::Value &value) {
   auto &[trace_info, error] = event;
   json::Error error_2(value);
   log::fatal(R"(error={}, id="{}")"sv, error_2, error.id);
 }
 
 void DropCopy::operator()(
-    const Trace<core::jsonrpc::Result const> &event, core::json::value_t &value) {
+    const Trace<core::jsonrpc::Result const> &event, core::json::Value &value) {
   auto &[trace_info, result] = event;
   json::RequestType request_type(result.id);
   switch (request_type) {
@@ -385,7 +385,7 @@ void DropCopy::operator()(
 }
 
 void DropCopy::operator()(
-    const Trace<core::jsonrpc::Notification const> &event, core::json::value_t &value) {
+    const Trace<core::jsonrpc::Notification const> &event, core::json::Value &value) {
   auto &[trace_info, notification] = event;
   json::Method method(notification.method);
   switch (method) {

@@ -14,19 +14,19 @@ using namespace Catch::literals;
 TEST_CASE("json_double", "[json_types]") {
   {
     double result = 1.0;
-    core::json::value_t value = "undefined"sv;
+    core::json::Value value = "undefined"sv;
     json::update(result, value);
     CHECK(std::isnan(result) == true);
   }
   {
     double result = 1.0;
-    core::json::value_t value = core::json::null_t{};
+    core::json::Value value = core::json::Null{};
     json::update(result, value);
     CHECK(std::isnan(result) == true);
   }
   {
     double result = NaN;
-    core::json::value_t value = 1.2;
+    core::json::Value value = 1.2;
     json::update(result, value);
     CHECK(result == 1.2);
   }

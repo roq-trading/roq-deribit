@@ -106,9 +106,9 @@ class WebSocket final : public core::web::ClientSocket::Handler,
 
   void parse(const std::string_view &message);
 
-  void operator()(const Trace<core::jsonrpc::Error const> &, core::json::value_t &) override;
-  void operator()(const Trace<core::jsonrpc::Result const> &, core::json::value_t &) override;
-  void operator()(const Trace<core::jsonrpc::Notification const> &, core::json::value_t &) override;
+  void operator()(const Trace<core::jsonrpc::Error const> &, core::json::Value &) override;
+  void operator()(const Trace<core::jsonrpc::Result const> &, core::json::Value &) override;
+  void operator()(const Trace<core::jsonrpc::Notification const> &, core::json::Value &) override;
 
   void operator()(const Trace<json::Auth const> &);
 

@@ -106,7 +106,7 @@ void dispatch_trades(
 
 void Parser::dispatch(
     Parser::Handler &handler,
-    core::json::value_t &value,
+    core::json::Value &value,
     core::json::Buffer &buffer,
     const TraceInfo &trace_info) {
   // note! message is nested / channel name is at level 2
@@ -116,7 +116,7 @@ void Parser::dispatch(
   for (int i = 0; i < 2 && !dispatched; ++i) {
     core::json::Parser parser(message);
     auto root = parser.root();
-    for (auto [key, value_] : std::get<core::json::object_t>(root)) {
+    for (auto [key, value_] : std::get<core::json::Object>(root)) {
       auto field = Field(key);
       switch (field) {
         using enum Field::type_t;

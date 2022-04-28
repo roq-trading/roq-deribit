@@ -45,7 +45,7 @@ TEST_CASE("json_ticker_parse_message", "[json_ticker]") {
   int results = 0;
   core::json::Parser parser(message);
   auto root = parser.root();
-  for (auto [key, value] : std::get<core::json::object_t>(root)) {
+  for (auto [key, value] : std::get<core::json::Object>(root)) {
     if (key.compare("result"sv) == 0) {
       ++results;
       json::Ticker ticker(value);

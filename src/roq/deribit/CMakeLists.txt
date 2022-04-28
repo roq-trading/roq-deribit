@@ -8,7 +8,6 @@ add_subdirectory("sbe")
 
 set(SOURCES
     application.cpp
-    common.cpp
     config.cpp
     drop_copy.cpp
     gateway.cpp
