@@ -264,10 +264,13 @@ void Multicast::operator()(
       return;
     shared_.instrument_names.try_emplace(instrument_id, symbol);
     if (next_in_sequence(frame)) {
+      // in sequence
       const auto instrument_id = snapshot.instrumentId();
       const auto change_id = snapshot.changeId();
       if (snapshot.isLastInBook()) {
+        // last in book
         if (previous_instrument_id_) {
+          // prior updates
           if (instrument_id == previous_instrument_id_ && change_id == previous_change_id_) {
             if (!skip_instrument_id_) {
               log::info<3>(
@@ -286,9 +289,11 @@ void Multicast::operator()(
           }
           reset_snapshot();
         } else {
+          // no prior updates
           log::info<3>("DEBUG: SIMPLE instrument_id={}, change_id={}"sv, instrument_id, change_id);
         }
       } else {
+        // not last in book
         if (previous_instrument_id_) {
           if (!skip_instrument_id_ &&
               (instrument_id != previous_instrument_id_ || change_id != previous_change_id_)) {
@@ -306,10 +311,15 @@ void Multicast::operator()(
           previous_change_id_ = change_id;
         }
       }
-      // change_id != last_change_id + seqno = (previous_seqno + 1):
-      // => last_changed_id = change_id
     } else {
-      reset_snapshot();
+      // out of sequence
+      // WRONG
+      // reset_snapshot();
+      if (snapshot.isLastInBook()) {
+        // reset state ... how?
+      } else {
+        // ban ... what?
+      }
     }
   }
 }
@@ -340,21 +350,24 @@ void Multicast::publish_stream_status(const TraceInfo &trace_info) {
 bool Multicast::next_in_sequence(const sbe::Frame &frame) {
   auto result = true;
   auto sequence_number = frame.sequence_number;
-  if (sequence_number != (previous_sequence_number_ + 1)) [[unlikely]] {
-    if (sequence_number < previous_sequence_number_) [[unlikely]] {
-      // overflow
-      if (sequence_number != 0 || previous_sequence_number_ != std::numeric_limits<uint32_t>::max())
+  if (sequence_number != previous_sequence_number_) {  // note! packed messages are allowed
+    if (sequence_number != (previous_sequence_number_ + 1)) [[unlikely]] {
+      if (sequence_number < previous_sequence_number_) [[unlikely]] {
+        // not overflow?
+        if (sequence_number != 0 ||
+            previous_sequence_number_ != std::numeric_limits<uint32_t>::max())
+          result = false;
+      } else {
         result = false;
-    } else {
-      result = false;
+      }
     }
-  }
-  previous_sequence_number_ = sequence_number;
-  if (!result) [[unlikely]] {
-    log::info<1>(
-        "DEBUG: DROP sequence_number={}, previous_sequence_number={}"sv,
-        sequence_number,
-        previous_sequence_number_);
+    previous_sequence_number_ = sequence_number;
+    if (!result) [[unlikely]] {
+      log::info<1>(
+          "DEBUG: DROP sequence_number={}, previous_sequence_number={}"sv,
+          sequence_number,
+          previous_sequence_number_);
+    }
   }
   return result;
 }
