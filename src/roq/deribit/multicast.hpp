@@ -56,6 +56,10 @@ class Multicast final : public core::net::UdpConnection::Handler, public sbe::Pa
 
   void publish_stream_status(const TraceInfo &);
 
+  bool next_in_sequence(const sbe::Frame &);
+
+  void reset_snapshot();
+
  private:
   Handler &handler_;
   // config
@@ -79,6 +83,12 @@ class Multicast final : public core::net::UdpConnection::Handler, public sbe::Pa
   bool initialized_ = false;
   absl::flat_hash_map<uint32_t, uint32_t> last_quote_;
   absl::flat_hash_map<uint32_t, uint32_t> last_trades_;
+  // snapshot
+  uint32_t previous_sequence_number_ = {};
+  uint32_t previous_instrument_id_ = {};
+  uint64_t previous_change_id_ = {};
+  uint32_t skip_instrument_id_ = {};
+  uint64_t skip_change_id_ = {};
 };
 
 }  // namespace deribit

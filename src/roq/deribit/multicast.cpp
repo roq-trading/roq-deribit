@@ -148,8 +148,6 @@ void Multicast::operator()(
 }
 
 void Multicast::operator()(const Trace<deribit_multicast::Book> &event, const sbe::Frame &frame) {
-  // auto &[trace_info, book] = event;
-  auto &trace_info = event.trace_info;
   auto &book = event.value;
   log::info<5>("book={}, frame={}"sv, book, frame);
   if (!publish_market_by_price_)
@@ -192,7 +190,6 @@ void Multicast::operator()(const Trace<deribit_multicast::Book> &event, const sb
 }
 
 void Multicast::operator()(const Trace<deribit_multicast::Quote> &event, const sbe::Frame &frame) {
-  // auto &[trace_info, quote] = event;
   auto &trace_info = event.trace_info;
   auto &quote = event.value;
   log::info<5>("quote={}, frame={}"sv, quote, frame);
@@ -225,8 +222,6 @@ void Multicast::operator()(const Trace<deribit_multicast::Quote> &event, const s
 }
 
 void Multicast::operator()(const Trace<deribit_multicast::Trades> &event, const sbe::Frame &frame) {
-  // auto &[trace_info, trades] = event;
-  auto &trace_info = event.trace_info;
   auto &trades = event.value;
   log::info<5>("trades={}, frame={}"sv, trades, frame);
   if (!publish_trade_summary_)
@@ -268,6 +263,54 @@ void Multicast::operator()(
     if (shared_.discard_symbol(symbol))
       return;
     shared_.instrument_names.try_emplace(instrument_id, symbol);
+    if (next_in_sequence(frame)) {
+      const auto instrument_id = snapshot.instrumentId();
+      const auto change_id = snapshot.changeId();
+      if (snapshot.isLastInBook()) {
+        if (previous_instrument_id_) {
+          if (instrument_id == previous_instrument_id_ && change_id == previous_change_id_) {
+            if (!skip_instrument_id_) {
+              log::info<3>(
+                  "DEBUG: AGGREGATE instrument_id={}, change_id={}"sv, instrument_id, change_id);
+            } else {
+              log::info<3>(
+                  "DEBUG: SKIP instrument_id={}, change_id={}"sv, instrument_id, change_id);
+            }
+          } else {
+            log::info<1>(
+                "DEBUG: INCONSISTENT instrument_id={}(/{}), change_id={}(/{})"sv,
+                instrument_id,
+                previous_instrument_id_,
+                change_id,
+                previous_change_id_);
+          }
+          reset_snapshot();
+        } else {
+          log::info<3>("DEBUG: SIMPLE instrument_id={}, change_id={}"sv, instrument_id, change_id);
+        }
+      } else {
+        if (previous_instrument_id_) {
+          if (!skip_instrument_id_ &&
+              (instrument_id != previous_instrument_id_ || change_id != previous_change_id_)) {
+            log::info<1>(
+                "DEBUG: INCONSISTENT instrument_id={}(/{}), change_id={}(/{})"sv,
+                instrument_id,
+                previous_instrument_id_,
+                change_id,
+                previous_change_id_);
+            skip_instrument_id_ = instrument_id;
+            skip_change_id_ = change_id;
+          }
+        } else {
+          previous_instrument_id_ = instrument_id;
+          previous_change_id_ = change_id;
+        }
+      }
+      // change_id != last_change_id + seqno = (previous_seqno + 1):
+      // => last_changed_id = change_id
+    } else {
+      reset_snapshot();
+    }
   }
 }
 
@@ -292,6 +335,36 @@ void Multicast::publish_stream_status(const TraceInfo &trace_info) {
       .connection_status = ConnectionStatus::READY,
   };
   create_trace_and_dispatch(handler_, trace_info, stream_status);
+}
+
+bool Multicast::next_in_sequence(const sbe::Frame &frame) {
+  auto result = true;
+  auto sequence_number = frame.sequence_number;
+  if (sequence_number != (previous_sequence_number_ + 1)) [[unlikely]] {
+    if (sequence_number < previous_sequence_number_) [[unlikely]] {
+      // overflow
+      if (sequence_number != 0 || previous_sequence_number_ != std::numeric_limits<uint32_t>::max())
+        result = false;
+    } else {
+      result = false;
+    }
+  }
+  previous_sequence_number_ = sequence_number;
+  if (!result) [[unlikely]] {
+    log::info<1>(
+        "DEBUG: DROP sequence_number={}, previous_sequence_number={}"sv,
+        sequence_number,
+        previous_sequence_number_);
+  }
+  return result;
+}
+
+void Multicast::reset_snapshot() {
+  previous_instrument_id_ = {};
+  previous_change_id_ = {};
+  skip_instrument_id_ = {};
+  skip_change_id_ = {};
+  // also cached bid/ask
 }
 
 }  // namespace deribit
