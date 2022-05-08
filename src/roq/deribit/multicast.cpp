@@ -263,12 +263,15 @@ void Multicast::operator()(
   std::string_view symbol;
   if (shared_.find_instrument_name(instrument_id, [&symbol](auto &symbol_) { symbol = symbol_; })) {
   } else {
-    auto symbol = sbe::get_instrument_name(snapshot);  // note! alloc
-    assert(!std::empty(symbol));
-    if (shared_.discard_symbol(symbol))
+    auto instrument_name = sbe::get_instrument_name(snapshot);  // note! alloc
+    assert(!std::empty(instrument_name));
+    if (shared_.discard_symbol(instrument_name))
       return;
-    shared_.instrument_names.try_emplace(instrument_id, symbol);
+    auto res = shared_.instrument_names.try_emplace(instrument_id, instrument_name);
+    assert(res.second);
+    symbol = (*res.first).second;
   }
+  log::info<1>(R"(DEBUG: symbol="{}")"sv, symbol);
   if (next_in_sequence(frame)) {
     // in sequence
     if (snapshot.isLastInBook()) {
@@ -352,7 +355,7 @@ bool Multicast::next_in_sequence(const sbe::Frame &frame) {
   auto result = true;
   auto sequence_number = frame.sequence_number;
   if (sequence_number != previous_sequence_number_) {  // note! packed messages are allowed
-    if (sequence_number != previous_sequence_number_ ||
+    if (sequence_number != previous_sequence_number_ &&
         sequence_number != (previous_sequence_number_ + 1)) [[unlikely]] {
       if (sequence_number < previous_sequence_number_) [[unlikely]] {
         // not overflow?
@@ -363,13 +366,13 @@ bool Multicast::next_in_sequence(const sbe::Frame &frame) {
         result = false;
       }
     }
-    previous_sequence_number_ = sequence_number;
     if (!result) [[unlikely]] {
       log::info<1>(
           "*** OUT OF SEQUENCE *** sequence_number={}, previous_sequence_number={}"sv,
           sequence_number,
           previous_sequence_number_);
     }
+    previous_sequence_number_ = sequence_number;
   }
   return result;
 }
