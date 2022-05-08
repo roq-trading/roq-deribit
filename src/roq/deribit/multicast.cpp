@@ -353,7 +353,8 @@ bool Multicast::next_in_sequence(const sbe::Frame &frame) {
   auto result = true;
   auto sequence_number = frame.sequence_number;
   if (sequence_number != previous_sequence_number_) {  // note! packed messages are allowed
-    if (sequence_number != (previous_sequence_number_ + 1)) [[unlikely]] {
+    if (sequence_number != previous_sequence_number_ &&
+        sequence_number != (previous_sequence_number_ + 1)) [[unlikely]] {
       if (sequence_number < previous_sequence_number_) [[unlikely]] {
         // not overflow?
         if (sequence_number != 0 ||
