@@ -269,7 +269,6 @@ void Multicast::operator()(
       return;
     shared_.instrument_names.try_emplace(instrument_id, symbol);
   }
-  log::info<1>(R"(DEBUG: symbol="{}")"sv, symbol);
   if (next_in_sequence(frame)) {
     // in sequence
     if (snapshot.isLastInBook()) {
@@ -353,7 +352,7 @@ bool Multicast::next_in_sequence(const sbe::Frame &frame) {
   auto result = true;
   auto sequence_number = frame.sequence_number;
   if (sequence_number != previous_sequence_number_) {  // note! packed messages are allowed
-    if (sequence_number != previous_sequence_number_ &&
+    if (sequence_number != previous_sequence_number_ ||
         sequence_number != (previous_sequence_number_ + 1)) [[unlikely]] {
       if (sequence_number < previous_sequence_number_) [[unlikely]] {
         // not overflow?
@@ -367,7 +366,7 @@ bool Multicast::next_in_sequence(const sbe::Frame &frame) {
     previous_sequence_number_ = sequence_number;
     if (!result) [[unlikely]] {
       log::info<1>(
-          "DEBUG: DROP sequence_number={}, previous_sequence_number={}"sv,
+          "*** OUT OF SEQUENCE *** sequence_number={}, previous_sequence_number={}"sv,
           sequence_number,
           previous_sequence_number_);
     }
