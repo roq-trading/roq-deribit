@@ -254,70 +254,74 @@ void Multicast::operator()(
     const Trace<deribit_multicast::Snapshot> &event, const sbe::Frame &frame) {
   auto &[trace_info, snapshot] = event;
   log::info<5>("snapshot={}, frame={}"sv, snapshot, frame);
-  if (!publish_market_by_price_)
+  if (!publish_market_by_price_) {
+    log::info<1>("DEBUG: SKIP"sv);
     return;
+  }
   const auto instrument_id = snapshot.instrumentId();
   const auto change_id = snapshot.changeId();
-  if (!shared_.find_instrument_name(instrument_id, [](auto &) {})) {
+  std::string_view symbol;
+  if (shared_.find_instrument_name(instrument_id, [&symbol](auto &symbol_) { symbol = symbol_; })) {
+  } else {
     auto symbol = sbe::get_instrument_name(snapshot);  // note! alloc
     assert(!std::empty(symbol));
     if (shared_.discard_symbol(symbol))
       return;
     shared_.instrument_names.try_emplace(instrument_id, symbol);
-    if (next_in_sequence(frame)) {
-      // in sequence
-      if (snapshot.isLastInBook()) {
-        // last in book
-        if (previous_instrument_id_) {
-          // prior updates
-          if (instrument_id == previous_instrument_id_ && change_id == previous_change_id_) {
-            if (!skip_instrument_id_) {
-              log::info<3>(
-                  "DEBUG: AGGREGATE instrument_id={}, change_id={}"sv, instrument_id, change_id);
-            } else {
-              log::info<3>(
-                  "DEBUG: SKIP instrument_id={}, change_id={}"sv, instrument_id, change_id);
-            }
+  }
+  log::info<1>(R"(DEBUG: symbol="{}")"sv, symbol);
+  if (next_in_sequence(frame)) {
+    // in sequence
+    if (snapshot.isLastInBook()) {
+      // last in book
+      if (previous_instrument_id_) {
+        // prior updates
+        if (instrument_id == previous_instrument_id_ && change_id == previous_change_id_) {
+          if (!skip_instrument_id_) {
+            log::info<3>(
+                "DEBUG: AGGREGATE instrument_id={}, change_id={}"sv, instrument_id, change_id);
           } else {
-            log::info<1>(
-                "DEBUG: INCONSISTENT instrument_id={}(/{}), change_id={}(/{})"sv,
-                instrument_id,
-                previous_instrument_id_,
-                change_id,
-                previous_change_id_);
+            log::info<3>("DEBUG: SKIP instrument_id={}, change_id={}"sv, instrument_id, change_id);
           }
-          reset_snapshot();
         } else {
-          // no prior updates
-          log::info<3>("DEBUG: SIMPLE instrument_id={}, change_id={}"sv, instrument_id, change_id);
+          log::info<1>(
+              "DEBUG: INCONSISTENT instrument_id={}(/{}), change_id={}(/{})"sv,
+              instrument_id,
+              previous_instrument_id_,
+              change_id,
+              previous_change_id_);
         }
+        reset_snapshot();
       } else {
-        // not last in book
-        if (previous_instrument_id_) {
-          if (!skip_instrument_id_ &&
-              (instrument_id != previous_instrument_id_ || change_id != previous_change_id_)) {
-            log::info<1>(
-                "DEBUG: INCONSISTENT instrument_id={}(/{}), change_id={}(/{})"sv,
-                instrument_id,
-                previous_instrument_id_,
-                change_id,
-                previous_change_id_);
-            skip_instrument_id_ = instrument_id;
-            skip_change_id_ = change_id;
-          }
-        } else {
-          previous_instrument_id_ = instrument_id;
-          previous_change_id_ = change_id;
-        }
+        // no prior updates
+        log::info<3>("DEBUG: SIMPLE instrument_id={}, change_id={}"sv, instrument_id, change_id);
       }
     } else {
-      // out of sequence
-      if (snapshot.isLastInBook()) {
-        reset_snapshot();
+      // not last in book
+      if (previous_instrument_id_) {
+        if (!skip_instrument_id_ &&
+            (instrument_id != previous_instrument_id_ || change_id != previous_change_id_)) {
+          log::info<1>(
+              "DEBUG: INCONSISTENT instrument_id={}(/{}), change_id={}(/{})"sv,
+              instrument_id,
+              previous_instrument_id_,
+              change_id,
+              previous_change_id_);
+          skip_instrument_id_ = instrument_id;
+          skip_change_id_ = change_id;
+        }
       } else {
         previous_instrument_id_ = instrument_id;
         previous_change_id_ = change_id;
       }
+    }
+  } else {
+    // out of sequence
+    if (snapshot.isLastInBook()) {
+      reset_snapshot();
+    } else {
+      previous_instrument_id_ = instrument_id;
+      previous_change_id_ = change_id;
     }
   }
 }
