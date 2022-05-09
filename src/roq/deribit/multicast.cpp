@@ -138,6 +138,7 @@ void Multicast::operator()(
   auto &[trace_info, instrument] = event;
   log::info<5>("instrument={}, frame={}"sv, instrument, frame);
   auto instrument_id = instrument.instrumentId();
+  /*
   if (!shared_.find_instrument_name(instrument_id, [](auto &) {})) {
     auto symbol = sbe::get_instrument_name(instrument);  // note! alloc
     assert(!std::empty(symbol));
@@ -145,6 +146,10 @@ void Multicast::operator()(
       return;
     shared_.instrument_names.try_emplace(instrument_id, symbol);
   }
+  */
+  shared_.find_instrument_name_with_create(instrument_id, [&instrument]() {
+    return sbe::get_instrument_name(instrument);  // note! alloc
+  });
 }
 
 void Multicast::operator()(const Trace<deribit_multicast::Book> &event, const sbe::Frame &frame) {
@@ -153,40 +158,43 @@ void Multicast::operator()(const Trace<deribit_multicast::Book> &event, const sb
   if (!publish_market_by_price_)
     return;
   auto instrument_id = book.instrumentId();
-  shared_.find_instrument_name(instrument_id, [&](auto &symbol) {
-    auto exchange_time_utc = std::chrono::milliseconds{book.timestampMs()};
-    core::back_emplacer bids(shared_.bids), asks(shared_.asks);
-    book.sbeRewind();
-    book.changesList().forEach([&](auto &item) {
-      auto side = sbe::map_book_side(item.side());
-      switch (side) {
-        using enum Side;
-        case UNDEFINED:
-          assert(false);
-          break;
-        case BUY:
-          bids.emplace_back([&item](auto &result) { emplace(result, item); });
-          break;
-        case SELL:
-          asks.emplace_back([&item](auto &result) { emplace(result, item); });
-          break;
-      }
-    });
-    const MarketByPriceUpdate market_by_price_update{
-        .stream_id = stream_id_,
-        .exchange = flags::Config::exchange(),
-        .symbol = symbol,
-        .bids = bids,
-        .asks = asks,
-        .update_type = UpdateType::INCREMENTAL,
-        .exchange_time_utc = exchange_time_utc,
-        .exchange_sequence = static_cast<int64_t>(book.changeId()),
-        .price_decimals = {},
-        .quantity_decimals = {},
-        .checksum = {},
-    };
-    log::info<3>("market_by_price_update={}"sv, market_by_price_update);
-  });
+  if (shared_.find_instrument_name(instrument_id, [&](auto &symbol) {
+        auto exchange_time_utc = std::chrono::milliseconds{book.timestampMs()};
+        core::back_emplacer bids(shared_.bids), asks(shared_.asks);
+        book.sbeRewind();
+        book.changesList().forEach([&](auto &item) {
+          auto side = sbe::map_book_side(item.side());
+          switch (side) {
+            using enum Side;
+            case UNDEFINED:
+              assert(false);
+              break;
+            case BUY:
+              bids.emplace_back([&item](auto &result) { emplace(result, item); });
+              break;
+            case SELL:
+              asks.emplace_back([&item](auto &result) { emplace(result, item); });
+              break;
+          }
+        });
+        const MarketByPriceUpdate market_by_price_update{
+            .stream_id = stream_id_,
+            .exchange = flags::Config::exchange(),
+            .symbol = symbol,
+            .bids = bids,
+            .asks = asks,
+            .update_type = UpdateType::INCREMENTAL,
+            .exchange_time_utc = exchange_time_utc,
+            .exchange_sequence = static_cast<int64_t>(book.changeId()),
+            .price_decimals = {},
+            .quantity_decimals = {},
+            .checksum = {},
+        };
+        log::info<3>("market_by_price_update={}"sv, market_by_price_update);
+      })) {
+  } else {
+    // unknown instrument_id
+  }
 }
 
 void Multicast::operator()(const Trace<deribit_multicast::Quote> &event, const sbe::Frame &frame) {
@@ -198,26 +206,29 @@ void Multicast::operator()(const Trace<deribit_multicast::Quote> &event, const s
   auto instrument_id = quote.instrumentId();
   // note! skip previous updates
   if (test_sequence(last_quote_, instrument_id, frame.sequence_number)) {
-    shared_.find_instrument_name(instrument_id, [&](auto &symbol) {
-      auto exchange_time_utc = std::chrono::milliseconds{quote.timestampMs()};
-      // note! unlike the WS feed, it looks like we do *not* have to scale amounts here
-      const TopOfBook top_of_book{
-          .stream_id = stream_id_,
-          .exchange = flags::Config::exchange(),
-          .symbol = symbol,
-          .layer{
-              .bid_price = quote.bestBidPrice(),
-              .bid_quantity = quote.bestBidAmount(),
-              .ask_price = quote.bestAskPrice(),
-              .ask_quantity = quote.bestAskAmount(),
-          },
-          .update_type = UpdateType::INCREMENTAL,
-          .exchange_time_utc = exchange_time_utc,
-          .exchange_sequence = {},
-      };
-      log::info<3>("top_of_book={}"sv, top_of_book);
-      create_trace_and_dispatch(handler_, trace_info, top_of_book, true);
-    });
+    if (shared_.find_instrument_name(instrument_id, [&](auto &symbol) {
+          auto exchange_time_utc = std::chrono::milliseconds{quote.timestampMs()};
+          // note! unlike the WS feed, it looks like we do *not* have to scale amounts here
+          const TopOfBook top_of_book{
+              .stream_id = stream_id_,
+              .exchange = flags::Config::exchange(),
+              .symbol = symbol,
+              .layer{
+                  .bid_price = quote.bestBidPrice(),
+                  .bid_quantity = quote.bestBidAmount(),
+                  .ask_price = quote.bestAskPrice(),
+                  .ask_quantity = quote.bestAskAmount(),
+              },
+              .update_type = UpdateType::INCREMENTAL,
+              .exchange_time_utc = exchange_time_utc,
+              .exchange_sequence = {},
+          };
+          log::info<3>("top_of_book={}"sv, top_of_book);
+          create_trace_and_dispatch(handler_, trace_info, top_of_book, true);
+        })) {
+    } else {
+      // unknown instrument_id
+    }
   }
 }
 
@@ -229,24 +240,27 @@ void Multicast::operator()(const Trace<deribit_multicast::Trades> &event, const 
   auto instrument_id = trades.instrumentId();
   // note! skip previous updates
   if (test_sequence(last_trades_, instrument_id, frame.sequence_number)) {
-    shared_.find_instrument_name(instrument_id, [&](auto &symbol) {
-      std::chrono::milliseconds exchange_time_utc{};
-      core::back_emplacer trades_(shared_.trades);
-      trades.sbeRewind();
-      trades.tradesList().forEach([&](auto &item) {
-        auto timestamp = std::chrono::milliseconds{item.timestampMs()};
-        exchange_time_utc = std::max(exchange_time_utc, timestamp);
-        trades_.emplace_back([&item](auto &result) { emplace(result, item); });
-      });
-      const TradeSummary trade_summary{
-          .stream_id = stream_id_,
-          .exchange = flags::Config::exchange(),
-          .symbol = symbol,
-          .trades = trades_,
-          .exchange_time_utc = exchange_time_utc,
-      };
-      log::info<3>("trade_summary={}"sv, trade_summary);
-    });
+    if (shared_.find_instrument_name(instrument_id, [&](auto &symbol) {
+          std::chrono::milliseconds exchange_time_utc{};
+          core::back_emplacer trades_(shared_.trades);
+          trades.sbeRewind();
+          trades.tradesList().forEach([&](auto &item) {
+            auto timestamp = std::chrono::milliseconds{item.timestampMs()};
+            exchange_time_utc = std::max(exchange_time_utc, timestamp);
+            trades_.emplace_back([&item](auto &result) { emplace(result, item); });
+          });
+          const TradeSummary trade_summary{
+              .stream_id = stream_id_,
+              .exchange = flags::Config::exchange(),
+              .symbol = symbol,
+              .trades = trades_,
+              .exchange_time_utc = exchange_time_utc,
+          };
+          log::info<3>("trade_summary={}"sv, trade_summary);
+        })) {
+    } else {
+      // unknown instrument_id
+    }
   }
 }
 
@@ -260,17 +274,9 @@ void Multicast::operator()(
   }
   const auto instrument_id = snapshot.instrumentId();
   const auto change_id = snapshot.changeId();
-  std::string_view symbol;
-  if (shared_.find_instrument_name(instrument_id, [&symbol](auto &symbol_) { symbol = symbol_; })) {
-  } else {
-    auto instrument_name = sbe::get_instrument_name(snapshot);  // note! alloc
-    assert(!std::empty(instrument_name));
-    if (shared_.discard_symbol(instrument_name))
-      return;
-    auto res = shared_.instrument_names.try_emplace(instrument_id, instrument_name);
-    assert(res.second);
-    symbol = (*res.first).second;
-  }
+  auto [symbol, discard] = shared_.find_instrument_name_with_create(instrument_id, [&snapshot]() {
+    return sbe::get_instrument_name(snapshot);  // note! alloc
+  });
   log::info<1>(R"(DEBUG: symbol="{}")"sv, symbol);
   if (next_in_sequence(frame)) {
     // in sequence

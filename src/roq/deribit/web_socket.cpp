@@ -445,7 +445,10 @@ void WebSocket::operator()(const Trace<json::Instruments const> &event) {
       log::info<2>("instrument={}"sv, item);
       auto &symbol = item.instrument_name;
       assert(!std::empty(symbol));
-      if (shared_.discard_symbol(symbol))
+      auto discard = shared_.discard_symbol(symbol);
+      // needed by multicast
+      shared_.instrument_names.try_emplace(item.instrument_id, item.instrument_name, discard);
+      if (discard)
         continue;
       if (shared_.all_symbols.emplace(symbol).second)
         symbols.emplace_back(symbol);
@@ -453,8 +456,6 @@ void WebSocket::operator()(const Trace<json::Instruments const> &event) {
       // note! the multiplier is only cached on startup!
       auto multiplier = utils::is_zero(item.contract_size) ? 1.0 : (1.0 / item.contract_size);
       shared_.multiplier[symbol] = multiplier;
-      // needed by multicast
-      shared_.instrument_names.try_emplace(item.instrument_id, item.instrument_name);
     }
     download_.check(WebSocketState::INSTRUMENTS);
     if (!std::empty(symbols)) {

@@ -42,11 +42,26 @@ struct Shared final {
   template <typename Callback>
   bool find_instrument_name(uint32_t instrument_id, Callback callback) {
     auto iter = instrument_names.find(instrument_id);
-    if (iter != instrument_names.end()) {
-      callback((*iter).second);
+    if (iter != std::end(instrument_names)) {
+      if ((*iter).second.second)
+        callback((*iter).second.first);
       return true;
     }
     return false;
+  }
+
+  template <typename Callback>
+  std::pair<const Symbol &, bool> find_instrument_name_with_create(
+      uint32_t instrument_id, Callback callback) {
+    auto iter = instrument_names.find(instrument_id);
+    if (iter == std::end(instrument_names)) {
+      auto instrument_name = callback();
+      auto discard = discard_symbol(instrument_name);
+      auto res = instrument_names.try_emplace(instrument_id, instrument_name, discard);
+      assert(res.second);
+      iter = res.first;
+    }
+    return {(*iter).second.first, (*iter).second.second};
   }
 
  public:
@@ -68,7 +83,7 @@ struct Shared final {
   absl::flat_hash_set<std::string> all_currencies;
   absl::flat_hash_set<Symbol> all_symbols;
   core::Symbols symbols;
-  absl::flat_hash_map<uint32_t, Symbol> instrument_names;
+  absl::flat_hash_map<uint32_t, std::pair<Symbol, bool>> instrument_names;
 };
 
 }  // namespace deribit
