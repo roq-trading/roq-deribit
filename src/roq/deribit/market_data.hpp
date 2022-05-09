@@ -145,6 +145,7 @@ class MarketData final : public core::net::Manager::Handler {
   const std::string name_;
   const size_t index_;
   const bool master_;
+  const bool publish_market_by_price_;
   const bool publish_trade_summary_;
   // connection
   core::net::TcpConnectionFactory connection_factory_;

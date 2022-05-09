@@ -226,6 +226,7 @@ void Multicast::operator()(const Trace<deribit_multicast::Quote> &event, const s
 }
 
 void Multicast::operator()(const Trace<deribit_multicast::Trades> &event, const sbe::Frame &frame) {
+  auto &trace_info = event.trace_info;
   auto &trades = event.value;
   log::info<5>("trades={}, frame={}"sv, trades, frame);
   if (!publish_trade_summary_)
@@ -250,6 +251,7 @@ void Multicast::operator()(const Trace<deribit_multicast::Trades> &event, const 
               .exchange_time_utc = exchange_time_utc,
           };
           log::info<3>("trade_summary={}"sv, trade_summary);
+          create_trace_and_dispatch(handler_, trace_info, trade_summary, true);
         })) {
     } else {
       // unknown instrument_id
@@ -261,10 +263,8 @@ void Multicast::operator()(
     const Trace<deribit_multicast::Snapshot> &event, const sbe::Frame &frame) {
   auto &[trace_info, snapshot] = event;
   log::info<5>("snapshot={}, frame={}"sv, snapshot, frame);
-  if (!publish_market_by_price_) {
-    log::info<1>("DEBUG: SKIP"sv);
+  if (!publish_market_by_price_)
     return;
-  }
   const auto instrument_id = snapshot.instrumentId();
   const auto change_id = snapshot.changeId();
   auto [symbol, discard] = shared_.find_instrument_name_with_create(instrument_id, [&snapshot]() {
@@ -306,8 +306,9 @@ void Multicast::operator()(
           if (!skip_instrument_id_) {
             log::info<3>(
                 "DEBUG: AGGREGATE instrument_id={}, change_id={}"sv, instrument_id, change_id);
-            publish_snapshot(
-                trace_info, symbol, std::chrono::milliseconds{snapshot.timestampMs()}, change_id);
+            if (!discard)
+              publish_snapshot(
+                  trace_info, symbol, std::chrono::milliseconds{snapshot.timestampMs()}, change_id);
           } else {
             log::info<3>("DEBUG: SKIP instrument_id={}, change_id={}"sv, instrument_id, change_id);
           }
@@ -322,8 +323,9 @@ void Multicast::operator()(
       } else {
         // no prior updates
         log::info<3>("DEBUG: SIMPLE instrument_id={}, change_id={}"sv, instrument_id, change_id);
-        publish_snapshot(
-            trace_info, symbol, std::chrono::milliseconds{snapshot.timestampMs()}, change_id);
+        if (!discard)
+          publish_snapshot(
+              trace_info, symbol, std::chrono::milliseconds{snapshot.timestampMs()}, change_id);
       }
       reset_snapshot();
     } else {
@@ -412,23 +414,25 @@ void Multicast::publish_snapshot(
     const std::string_view &symbol,
     std::chrono::nanoseconds exchange_time_utc,
     uint32_t exchange_sequence) {
-  const MarketByPriceUpdate market_by_price_update{
-      .stream_id = stream_id_,
-      .exchange = flags::Config::exchange(),
-      .symbol = symbol,
-      .bids = bids_,
-      .asks = asks_,
-      .update_type = UpdateType::SNAPSHOT,
-      .exchange_time_utc = exchange_time_utc,
-      .exchange_sequence = exchange_sequence,
-      .price_decimals = {},
-      .quantity_decimals = {},
-      .checksum = {},
-  };
-  try {
-    create_trace_and_dispatch(handler_, trace_info, market_by_price_update, true, false);
-  } catch (BadState &) {
-    log::fatal("BAD STATE"sv);
+  if (!(std::empty(bids_) && std::empty(asks_))) {
+    const MarketByPriceUpdate market_by_price_update{
+        .stream_id = stream_id_,
+        .exchange = flags::Config::exchange(),
+        .symbol = symbol,
+        .bids = bids_,
+        .asks = asks_,
+        .update_type = UpdateType::SNAPSHOT,
+        .exchange_time_utc = exchange_time_utc,
+        .exchange_sequence = exchange_sequence,
+        .price_decimals = {},
+        .quantity_decimals = {},
+        .checksum = {},
+    };
+    try {
+      create_trace_and_dispatch(handler_, trace_info, market_by_price_update, true, false);
+    } catch (BadState &) {
+      log::fatal("BAD STATE"sv);
+    }
   }
 }
 

@@ -122,6 +122,8 @@ MarketData::MarketData(
     bool master)
     : handler_(handler), stream_id_(stream_id), name_(fmt::format("{}:{}"sv, stream_id_, NAME)),
       index_(index), master_(master),
+      publish_market_by_price_(
+          !shared.has_multicast() || flags::Multicast::multicast_disable_market_by_price()),
       publish_trade_summary_(
           !shared.has_multicast() || flags::Multicast::multicast_disable_trade_summary()),
       connection_factory_(create_connection_factory(context)),
@@ -721,7 +723,7 @@ void MarketData::operator()(
         break;
     }
   }
-  if (!(std::empty(bids) && std::empty(asks))) {
+  if (!(std::empty(bids) && std::empty(asks)) && publish_market_by_price_) {
     if (latch_.find(symbol) == std::end(latch_)) {
       const MarketByPriceUpdate market_by_price_update{
           .stream_id = stream_id_,
@@ -832,7 +834,7 @@ void MarketData::operator()(
         break;
     }
   }
-  if (!(std::empty(bids) && std::empty(asks))) {
+  if (!(std::empty(bids) && std::empty(asks)) && publish_market_by_price_) {
     auto is_last = std::empty(statistics);
     const MarketByPriceUpdate market_by_price_update{
         .stream_id = stream_id_,
