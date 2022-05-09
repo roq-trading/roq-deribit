@@ -58,6 +58,12 @@ class Multicast final : public core::net::UdpConnection::Handler, public sbe::Pa
 
   bool next_in_sequence(const sbe::Frame &);
 
+  void publish_snapshot(
+      const TraceInfo &,
+      const std::string_view &symbol,
+      std::chrono::nanoseconds exchange_time_utc,
+      uint32_t exchange_sequence);
+
   void reset_snapshot();
 
  private:

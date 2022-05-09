@@ -273,28 +273,30 @@ void Multicast::operator()(
   log::info<1>(R"(DEBUG: symbol="{}")"sv, symbol);
   if (next_in_sequence(frame)) {
     // levels
-    snapshot.sbeRewind();
-    snapshot.levelsList().forEach([this](auto &item) {
-      const MBPUpdate mbp_update{
-          .price = item.price(),
-          .quantity = item.amount(),
-          .implied_quantity = NaN,
-          .price_level = {},
-          .number_of_orders = {},
-      };
-      auto side = sbe::map_book_side(deribit_multicast::BookSide::get(item.side()));
-      switch (side) {
-        case Side::UNDEFINED:
-          assert(false);
-          break;
-        case Side::BUY:
-          bids_.emplace_back(std::move(mbp_update));
-          break;
-        case Side::SELL:
-          asks_.emplace_back(std::move(mbp_update));
-          break;
-      }
-    });
+    if (!discard) {
+      snapshot.sbeRewind();
+      snapshot.levelsList().forEach([this](auto &item) {
+        const MBPUpdate mbp_update{
+            .price = item.price(),
+            .quantity = item.amount(),
+            .implied_quantity = NaN,
+            .price_level = {},
+            .number_of_orders = {},
+        };
+        auto side = sbe::map_book_side(deribit_multicast::BookSide::get(item.side()));
+        switch (side) {
+          case Side::UNDEFINED:
+            assert(false);
+            break;
+          case Side::BUY:
+            bids_.emplace_back(std::move(mbp_update));
+            break;
+          case Side::SELL:
+            asks_.emplace_back(std::move(mbp_update));
+            break;
+        }
+      });
+    }
     // in sequence
     if (snapshot.isLastInBook()) {
       // last in book
@@ -304,8 +306,8 @@ void Multicast::operator()(
           if (!skip_instrument_id_) {
             log::info<3>(
                 "DEBUG: AGGREGATE instrument_id={}, change_id={}"sv, instrument_id, change_id);
-            log::info<3>("DEBUG: bids=[{}]"sv, fmt::join(bids_, ", "sv));
-            log::info<3>("DEBUG: asks=[{}]"sv, fmt::join(asks_, ", "sv));
+            publish_snapshot(
+                trace_info, symbol, std::chrono::milliseconds{snapshot.timestampMs()}, change_id);
           } else {
             log::info<3>("DEBUG: SKIP instrument_id={}, change_id={}"sv, instrument_id, change_id);
           }
@@ -320,8 +322,8 @@ void Multicast::operator()(
       } else {
         // no prior updates
         log::info<3>("DEBUG: SIMPLE instrument_id={}, change_id={}"sv, instrument_id, change_id);
-        log::info<3>("DEBUG: bids=[{}]"sv, fmt::join(bids_, ", "sv));
-        log::info<3>("DEBUG: asks=[{}]"sv, fmt::join(asks_, ", "sv));
+        publish_snapshot(
+            trace_info, symbol, std::chrono::milliseconds{snapshot.timestampMs()}, change_id);
       }
       reset_snapshot();
     } else {
@@ -403,6 +405,31 @@ bool Multicast::next_in_sequence(const sbe::Frame &frame) {
     previous_sequence_number_ = sequence_number;
   }
   return result;
+}
+
+void Multicast::publish_snapshot(
+    const TraceInfo &trace_info,
+    const std::string_view &symbol,
+    std::chrono::nanoseconds exchange_time_utc,
+    uint32_t exchange_sequence) {
+  const MarketByPriceUpdate market_by_price_update{
+      .stream_id = stream_id_,
+      .exchange = flags::Config::exchange(),
+      .symbol = symbol,
+      .bids = bids_,
+      .asks = asks_,
+      .update_type = UpdateType::SNAPSHOT,
+      .exchange_time_utc = exchange_time_utc,
+      .exchange_sequence = exchange_sequence,
+      .price_decimals = {},
+      .quantity_decimals = {},
+      .checksum = {},
+  };
+  try {
+    create_trace_and_dispatch(handler_, trace_info, market_by_price_update, true, false);
+  } catch (BadState &) {
+    log::fatal("BAD STATE"sv);
+  }
 }
 
 void Multicast::reset_snapshot() {
