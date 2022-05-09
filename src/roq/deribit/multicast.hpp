@@ -89,6 +89,8 @@ class Multicast final : public core::net::UdpConnection::Handler, public sbe::Pa
   uint64_t previous_change_id_ = {};
   uint32_t skip_instrument_id_ = {};
   uint64_t skip_change_id_ = {};
+  // -- note! required here because updates may span multiple packets
+  core::page_aligned_vector<MBPUpdate> bids_, asks_;
 };
 
 }  // namespace deribit

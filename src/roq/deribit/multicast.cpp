@@ -108,6 +108,8 @@ Multicast::Multicast(
           .parse = create_metrics(name_, "parse"sv),
       },
       shared_(shared) {
+  bids_.reserve(server::Flags::cache_mbp_max_depth());
+  asks_.reserve(server::Flags::cache_mbp_max_depth());
 }
 
 void Multicast::operator()(const Event<Start> &) {
@@ -138,15 +140,6 @@ void Multicast::operator()(
   auto &[trace_info, instrument] = event;
   log::info<5>("instrument={}, frame={}"sv, instrument, frame);
   auto instrument_id = instrument.instrumentId();
-  /*
-  if (!shared_.find_instrument_name(instrument_id, [](auto &) {})) {
-    auto symbol = sbe::get_instrument_name(instrument);  // note! alloc
-    assert(!std::empty(symbol));
-    if (shared_.discard_symbol(symbol))
-      return;
-    shared_.instrument_names.try_emplace(instrument_id, symbol);
-  }
-  */
   shared_.find_instrument_name_with_create(instrument_id, [&instrument]() {
     return sbe::get_instrument_name(instrument);  // note! alloc
   });
@@ -279,6 +272,29 @@ void Multicast::operator()(
   });
   log::info<1>(R"(DEBUG: symbol="{}")"sv, symbol);
   if (next_in_sequence(frame)) {
+    // levels
+    snapshot.sbeRewind();
+    snapshot.levelsList().forEach([this](auto &item) {
+      const MBPUpdate mbp_update{
+          .price = item.price(),
+          .quantity = item.amount(),
+          .implied_quantity = NaN,
+          .price_level = {},
+          .number_of_orders = {},
+      };
+      auto side = sbe::map_book_side(deribit_multicast::BookSide::get(item.side()));
+      switch (side) {
+        case Side::UNDEFINED:
+          assert(false);
+          break;
+        case Side::BUY:
+          bids_.emplace_back(std::move(mbp_update));
+          break;
+        case Side::SELL:
+          asks_.emplace_back(std::move(mbp_update));
+          break;
+      }
+    });
     // in sequence
     if (snapshot.isLastInBook()) {
       // last in book
@@ -288,6 +304,8 @@ void Multicast::operator()(
           if (!skip_instrument_id_) {
             log::info<3>(
                 "DEBUG: AGGREGATE instrument_id={}, change_id={}"sv, instrument_id, change_id);
+            log::info<3>("DEBUG: bids=[{}]"sv, fmt::join(bids_, ", "sv));
+            log::info<3>("DEBUG: asks=[{}]"sv, fmt::join(asks_, ", "sv));
           } else {
             log::info<3>("DEBUG: SKIP instrument_id={}, change_id={}"sv, instrument_id, change_id);
           }
@@ -299,11 +317,13 @@ void Multicast::operator()(
               change_id,
               previous_change_id_);
         }
-        reset_snapshot();
       } else {
         // no prior updates
         log::info<3>("DEBUG: SIMPLE instrument_id={}, change_id={}"sv, instrument_id, change_id);
+        log::info<3>("DEBUG: bids=[{}]"sv, fmt::join(bids_, ", "sv));
+        log::info<3>("DEBUG: asks=[{}]"sv, fmt::join(asks_, ", "sv));
       }
+      reset_snapshot();
     } else {
       // not last in book
       if (previous_instrument_id_) {
@@ -368,6 +388,8 @@ bool Multicast::next_in_sequence(const sbe::Frame &frame) {
         if (sequence_number != 0 ||
             previous_sequence_number_ != std::numeric_limits<uint32_t>::max())
           result = false;
+      } else if (sequence_number > 255 && previous_sequence_number_ == 0) {
+        // note! relaxed when initializing -- could be wrong, but very unlikely
       } else {
         result = false;
       }
@@ -388,7 +410,8 @@ void Multicast::reset_snapshot() {
   previous_change_id_ = {};
   skip_instrument_id_ = {};
   skip_change_id_ = {};
-  // also cached bid/ask
+  bids_.clear();
+  asks_.clear();
 }
 
 }  // namespace deribit
