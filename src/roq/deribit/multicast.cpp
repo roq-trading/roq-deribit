@@ -169,6 +169,7 @@ void Multicast::operator()(const Trace<deribit_multicast::Book> &event, const sb
       // unknown instrument_id
     }
   }
+  reset_events();  // XXX INCORRECT
 }
 
 void Multicast::operator()(const Trace<deribit_multicast::Quote> &event, const sbe::Frame &frame) {
