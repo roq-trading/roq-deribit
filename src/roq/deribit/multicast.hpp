@@ -56,15 +56,25 @@ class Multicast final : public core::net::UdpConnection::Handler, public sbe::Pa
 
   void publish_stream_status(const TraceInfo &);
 
-  bool next_in_sequence(const sbe::Frame &);
+  // events
+  bool events_next_in_sequence(const sbe::Frame &);
+
+  void reset_events();
+
+  // snapshot
+  bool snapshot_next_in_sequence(const sbe::Frame &);
 
   void publish_snapshot(
       const TraceInfo &,
       const std::string_view &symbol,
       std::chrono::nanoseconds exchange_time_utc,
-      uint32_t exchange_sequence);
+      uint64_t exchange_sequence);
 
   void reset_snapshot();
+
+  // utils
+  template <typename T, typename U>
+  static void emplace_back(const T &item, U &bids, U &asks);
 
  private:
   Handler &handler_;
@@ -89,14 +99,26 @@ class Multicast final : public core::net::UdpConnection::Handler, public sbe::Pa
   bool initialized_ = false;
   absl::flat_hash_map<uint32_t, uint32_t> last_quote_;
   absl::flat_hash_map<uint32_t, uint32_t> last_trades_;
+  // events
+  struct events_state_t {
+    uint32_t previous_sequence_number_ = {};
+    uint32_t previous_instrument_id_ = {};
+    uint64_t previous_change_id_ = {};
+    uint32_t skip_instrument_id_ = {};
+    uint64_t skip_change_id_ = {};
+    // -- note! required here because book updates may span multiple packets
+    core::page_aligned_vector<MBPUpdate> bids_, asks_;
+  } events_state_ = {};
   // snapshot
-  uint32_t previous_sequence_number_ = {};
-  uint32_t previous_instrument_id_ = {};
-  uint64_t previous_change_id_ = {};
-  uint32_t skip_instrument_id_ = {};
-  uint64_t skip_change_id_ = {};
-  // -- note! required here because updates may span multiple packets
-  core::page_aligned_vector<MBPUpdate> bids_, asks_;
+  struct snapshot_state_t {
+    uint32_t previous_sequence_number_ = {};
+    uint32_t previous_instrument_id_ = {};
+    uint64_t previous_change_id_ = {};
+    uint32_t skip_instrument_id_ = {};
+    uint64_t skip_change_id_ = {};
+    // -- note! required here because updates may span multiple packets
+    core::page_aligned_vector<MBPUpdate> bids_, asks_;
+  } snapshot_state_ = {};
 };
 
 }  // namespace deribit
