@@ -4,6 +4,8 @@
 
 #include "roq/logging.hpp"
 
+#include "roq/debug/hex/message.hpp"
+
 #include "roq/deribit/sbe/frame.hpp"
 #include "roq/deribit/sbe/utils.hpp"
 
@@ -84,6 +86,8 @@ bool Parser::dispatch(
             default: {
               log::warn("Unknown template_id={}"sv, template_id);
               result = false;
+              debug::hex::Message message{buffer};
+              log::info<1>("DEBUG: {}"sv, message);
               return;
             }
           }
