@@ -132,7 +132,9 @@ void Multicast::operator()(
   // note! always include
   auto instrument_id = instrument.instrumentId();
   shared_.find_instrument_name_with_create(instrument_id, [&instrument]() {
-    return sbe::get_instrument_name(instrument);  // note! alloc
+    auto instrument_name = sbe::get_instrument_name(instrument);  // note! alloc
+    log::info<5>(R"(DEBUG: CREATE "{}")"sv, instrument_name);
+    return instrument_name;
   });
 }
 
@@ -260,9 +262,11 @@ void Multicast::operator()(
     if (!publish_market_by_price_)
       return;
     auto [symbol, discard] = shared_.find_instrument_name_with_create(instrument_id, [&snapshot]() {
-      return sbe::get_instrument_name(snapshot);  // note! alloc
+      auto instrument_name = sbe::get_instrument_name(snapshot);  // note! alloc
+      log::info<5>(R"(DEBUG: CREATE "{}")"sv, instrument_name);
+      return instrument_name;
     });
-    log::info<1>(R"(DEBUG: symbol="{}")"sv, symbol);
+    log::info<1>(R"(DEBUG: symbol="{}", discard={})"sv, symbol, discard);
     // levels
     if (!discard) {
       snapshot.sbeRewind();
