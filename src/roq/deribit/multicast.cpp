@@ -142,13 +142,10 @@ void Multicast::operator()(const Trace<deribit_multicast::Book> &event, const sb
   auto &book = event.value;
   log::info<5>("book={}, frame={}"sv, book, frame);
   if (events_next_in_sequence(frame)) {
-    log::info<5>("DEBUG: HERE"sv);
     if (!publish_market_by_price_)
       return;
-    log::info<5>("DEBUG: HERE"sv);
     const auto instrument_id = book.instrumentId();
     if (shared_.find_instrument_name(instrument_id, [&](auto &symbol) {
-          log::info<5>("DEBUG: HERE"sv);
           const auto prev_change_id = book.prevChangeId();
           const auto change_id = book.changeId();
           auto exchange_time_utc = std::chrono::milliseconds{book.timestampMs()};
