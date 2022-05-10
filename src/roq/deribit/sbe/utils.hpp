@@ -136,7 +136,8 @@ template <>
 inline size_t compute_length(deribit_multicast::Snapshot &value) {
   auto levels_list_length = value.levelsList().count();
   value.sbeRewind();  // wtf!
-  auto instrument_name_length = value.instrumentNameLength();
+  value.levelsList().forEach([](auto &e) { e.skip(); });
+  auto instrument_name_length = value.skipInstrumentName();
   return value.computeLength(levels_list_length, instrument_name_length);
 }
 

@@ -87,7 +87,7 @@ bool Parser::dispatch(
               log::warn("Unknown template_id={}"sv, template_id);
               result = false;
               debug::hex::Message message{buffer};
-              log::info<1>("DEBUG: {}"sv, message);
+              log::info<5>("DEBUG: {}"sv, message);
               return;
             }
           }
@@ -95,7 +95,6 @@ bool Parser::dispatch(
             // log::debug("done!"sv);
             break;
           }
-          // log::debug("message: length={}"sv, std::size(message));
           // XXX something wrong with Snapshot...
           if (std::size(message) < 12) {  // size of header
             log::warn("remaining data: length={}"sv, std::size(message));
