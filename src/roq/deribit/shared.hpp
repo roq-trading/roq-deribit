@@ -43,8 +43,9 @@ struct Shared final {
   bool find_instrument_name(uint32_t instrument_id, Callback callback) {
     auto iter = instrument_names.find(instrument_id);
     if (iter != std::end(instrument_names)) {
-      if ((*iter).second.second)
-        callback((*iter).second.first);
+      auto &[symbol, discard] = (*iter).second;
+      if (!discard)
+        callback(symbol);
       return true;
     }
     return false;

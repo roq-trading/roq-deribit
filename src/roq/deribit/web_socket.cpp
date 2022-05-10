@@ -447,6 +447,7 @@ void WebSocket::operator()(const Trace<json::Instruments const> &event) {
       assert(!std::empty(symbol));
       auto discard = shared_.discard_symbol(symbol);
       // needed by multicast
+      log::info<5>(R"(DEBUG: CREATE "{}" discard={})"sv, item.instrument_name, discard);
       shared_.instrument_names.try_emplace(item.instrument_id, item.instrument_name, discard);
       if (discard)
         continue;
