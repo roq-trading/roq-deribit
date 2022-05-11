@@ -146,12 +146,14 @@ void Multicast::operator()(const Trace<deribit_multicast::Book> &event, const sb
       return;
     const auto instrument_id = book.instrumentId();
     if (shared_.find_instrument_name(instrument_id, [&](auto &symbol) {
+          // collect (missing)
           const auto prev_change_id = book.prevChangeId();
           const auto change_id = book.changeId();
           auto exchange_time_utc = std::chrono::milliseconds{book.timestampMs()};
           book.sbeRewind();
           book.changesList().forEach(
               [&](auto &item) { emplace_back(item, events_state_.bids_, events_state_.asks_); });
+          // publish through mbp sequencer
           const MarketByPriceUpdate market_by_price_update{
               .stream_id = stream_id_,
               .exchange = flags::Config::exchange(),
