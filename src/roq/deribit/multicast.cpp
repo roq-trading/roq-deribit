@@ -126,7 +126,7 @@ void Multicast::operator()(const core::net::UdpConnection::Error &error) {
 
 void Multicast::operator()(
     const Trace<deribit_multicast::Instrument> &event, const sbe::Frame &frame) {
-  auto &[trace_info, instrument] = event;
+  auto &instrument = event.value;
   log::info<5>("instrument={}, frame={}"sv, instrument, frame);
   events_next_in_sequence(frame);
   // note! always include
@@ -253,7 +253,8 @@ void Multicast::operator()(const Trace<deribit_multicast::Trades> &event, const 
 
 void Multicast::operator()(
     const Trace<deribit_multicast::Snapshot> &event, const sbe::Frame &frame) {
-  auto &[trace_info, snapshot] = event;
+  auto &trace_info = event.trace_info;
+  auto &snapshot = event.value;
   log::info<5>("snapshot={}, frame={}"sv, snapshot, frame);
   const auto instrument_id = snapshot.instrumentId();
   const auto change_id = snapshot.changeId();

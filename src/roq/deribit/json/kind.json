@@ -7,6 +7,12 @@
     },
     {
       "name": "option"
+    },
+    {
+      "name": "future_combo"
+    },
+    {
+      "name": "option_combo"
     }
   ]
 }

@@ -8,22 +8,23 @@ set(AUTOGEN_SCHEMAS
     auth.json
     changes.json
     channel.json
+    combo_state.json
     currencies.json
     currency.json
     direction.json
     error.json
     field.json
     instrument.json
-    instrument_state.json
     instruments.json
+    instrument_state.json
     kind.json
     method.json
     option_type.json
-    order.json
     order_book.json
+    order.json
+    orders.json
     order_state.json
     order_type.json
-    orders.json
     platform_state.json
     portfolio.json
     position.json
@@ -34,8 +35,8 @@ set(AUTOGEN_SCHEMAS
     ticker.json
     time_in_force.json
     trade.json
-    trades.json
-    trades_2.json)
+    trades_2.json
+    trades.json)
 
 roq_autogen(
   OUTPUT

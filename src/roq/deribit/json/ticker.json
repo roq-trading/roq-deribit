@@ -107,6 +107,18 @@
     {
       "name": "estimated_delivery_price",
       "comment": "undocumented -- have seen expired (string) and price (number)"
+    },
+    {
+      "name": "implied_bid",
+      "type": "double"
+    },
+    {
+      "name": "implied_ask",
+      "type": "double"
+    },
+    {
+      "name": "combo_state",
+      "type": "ComboState"
     }
   ]
 }

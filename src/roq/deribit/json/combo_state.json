@@ -1,0 +1,9 @@
+{
+  "name": "ComboState",
+  "type": "enum",
+  "values": [
+    {
+      "name": "active"
+    }
+  ]
+}
