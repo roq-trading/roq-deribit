@@ -156,10 +156,11 @@ void UDPSnapshot::operator()(
   auto &snapshot = event.value;
   log::info<5>("snapshot={}, frame={}"sv, snapshot, frame);
   auto const instrument_id = snapshot.instrumentId();
-  auto const [symbol, discard] =
-      shared_.find_instrument_name_with_create(instrument_id, [&snapshot]() {
-        return sbe::get_instrument_name(snapshot);  // note! alloc
-      });
+  auto const tmp = shared_.find_instrument_name_with_create(instrument_id, [&snapshot]() {
+    return sbe::get_instrument_name(snapshot);  // note! alloc
+  });
+  auto const symbol = tmp.first;
+  auto const discard = tmp.second;
   auto const change_id = snapshot.changeId();
   auto const is_last = snapshot.isLastInBook();
   aggregator_(
