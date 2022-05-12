@@ -13,6 +13,7 @@
 
 #include "roq/server.hpp"
 
+#include "roq/deribit/aggregator.hpp"
 #include "roq/deribit/shared.hpp"
 
 #include "roq/deribit/sbe/parser.hpp"
@@ -20,7 +21,7 @@
 namespace roq {
 namespace deribit {
 
-class Multicast final : public core::net::UdpConnection::Handler, public sbe::Parser::Handler {
+class UDPEvents final : public core::net::UdpConnection::Handler, public sbe::Parser::Handler {
  public:
   struct Handler {
     virtual void operator()(const Trace<StreamStatus const> &) = 0;
@@ -30,10 +31,10 @@ class Multicast final : public core::net::UdpConnection::Handler, public sbe::Pa
     virtual void operator()(const Trace<TradeSummary const> &, bool is_last) = 0;
   };
 
-  Multicast(Handler &, core::io::Context &, uint16_t stream_id, Shared &);
+  UDPEvents(Handler &, core::io::Context &, uint16_t stream_id, Shared &);
 
-  Multicast(const Multicast &) = delete;
-  Multicast(Multicast &&) = delete;
+  UDPEvents(const UDPEvents &) = delete;
+  UDPEvents(UDPEvents &&) = delete;
 
   void operator()(const Event<Start> &);
   void operator()(const Event<Stop> &);
@@ -56,22 +57,6 @@ class Multicast final : public core::net::UdpConnection::Handler, public sbe::Pa
 
   void publish_stream_status(const TraceInfo &);
 
-  // events
-  bool events_next_in_sequence(const sbe::Frame &);
-
-  void reset_events();
-
-  // snapshot
-  bool snapshot_next_in_sequence(const sbe::Frame &);
-
-  void publish_snapshot(
-      const TraceInfo &,
-      const std::string_view &symbol,
-      std::chrono::nanoseconds exchange_time_utc,
-      uint64_t exchange_sequence);
-
-  void reset_snapshot();
-
   // utils
   template <typename T, typename U>
   static void emplace_back(const T &item, U &bids, U &asks);
@@ -85,8 +70,7 @@ class Multicast final : public core::net::UdpConnection::Handler, public sbe::Pa
   const bool publish_market_by_price_;
   const bool publish_trade_summary_;
   // connection
-  core::net::UdpConnection events_;
-  core::net::UdpConnection snapshot_;
+  core::net::UdpConnection connection_;
   // metrics
   struct {
     core::metrics::Counter disconnect;
@@ -99,26 +83,7 @@ class Multicast final : public core::net::UdpConnection::Handler, public sbe::Pa
   bool initialized_ = false;
   absl::flat_hash_map<uint32_t, uint32_t> last_quote_;
   absl::flat_hash_map<uint32_t, uint32_t> last_trades_;
-  // events
-  struct events_state_t {
-    uint32_t previous_sequence_number_ = {};
-    uint32_t previous_instrument_id_ = {};
-    uint64_t previous_change_id_ = {};
-    uint32_t skip_instrument_id_ = {};
-    uint64_t skip_change_id_ = {};
-    // -- note! required here because book updates may span multiple packets
-    core::page_aligned_vector<MBPUpdate> bids_, asks_;
-  } events_state_ = {};
-  // snapshot
-  struct snapshot_state_t {
-    uint32_t previous_sequence_number_ = {};
-    uint32_t previous_instrument_id_ = {};
-    uint64_t previous_change_id_ = {};
-    uint32_t skip_instrument_id_ = {};
-    uint64_t skip_change_id_ = {};
-    // -- note! required here because updates may span multiple packets
-    core::page_aligned_vector<MBPUpdate> bids_, asks_;
-  } snapshot_state_ = {};
+  Aggregator aggregator_;
 };
 
 }  // namespace deribit

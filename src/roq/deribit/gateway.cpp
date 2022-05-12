@@ -81,11 +81,18 @@ auto create_market_data(
   return result;
 }
 
-auto create_multicast(
+auto create_udp_snapshot(
     Gateway &gateway, core::io::Context &context, uint16_t &stream_id, Shared &shared) {
   if (shared.has_multicast())
-    return std::make_unique<Multicast>(gateway, context, stream_id, shared);
-  return std::unique_ptr<Multicast>{};
+    return std::make_unique<UDPSnapshot>(gateway, context, stream_id, shared);
+  return std::unique_ptr<UDPSnapshot>{};
+}
+
+auto create_udp_events(
+    Gateway &gateway, core::io::Context &context, uint16_t &stream_id, Shared &shared) {
+  if (shared.has_multicast())
+    return std::make_unique<UDPEvents>(gateway, context, stream_id, shared);
+  return std::unique_ptr<UDPEvents>{};
 }
 }  // namespace
 
@@ -99,7 +106,8 @@ Gateway::Gateway(server::Dispatcher &dispatcher, const Config &config)
       web_socket_(create_web_socket<decltype(web_socket_)>(*this, context_, stream_id_, shared_)),
       market_data_(create_market_data<decltype(market_data_)>(
           *this, context_, ++stream_id_, get_security(security_, master_account_), shared_)),
-      multicast_(create_multicast(*this, context_, ++stream_id_, shared_)) {
+      udp_snapshot_(create_udp_snapshot(*this, context_, ++stream_id_, shared_)),
+      udp_events_(create_udp_events(*this, context_, ++stream_id_, shared_)) {
   if (std::empty(master_account_) && !flags::Common::disable_master_account_check()) {
     log::fatal("A master account is always required (due to FIX logon)"sv);
   }
@@ -117,14 +125,18 @@ void Gateway::operator()(const Event<Start> &event) {
     (*iter)(event);
   for (auto &iter : market_data_)
     (*iter)(event);
-  if (multicast_)
-    (*multicast_)(event);
+  if (udp_snapshot_)
+    (*udp_snapshot_)(event);
+  if (udp_events_)
+    (*udp_events_)(event);
 }
 
 void Gateway::operator()(const Event<Stop> &event) {
   log::info("Stopping the gateway..."sv);
-  if (multicast_)
-    (*multicast_)(event);
+  if (udp_events_)
+    (*udp_events_)(event);
+  if (udp_snapshot_)
+    (*udp_snapshot_)(event);
   for (auto &iter : market_data_)
     (*iter)(event);
   for (auto &iter : web_socket_)
@@ -144,8 +156,10 @@ void Gateway::operator()(const Event<Timer> &event) {
     (*iter)(event);
   for (auto &iter : market_data_)
     (*iter)(event);
-  if (multicast_)
-    (*multicast_)(event);
+  if (udp_snapshot_)
+    (*udp_snapshot_)(event);
+  if (udp_events_)
+    (*udp_events_)(event);
   context_.dispatch(true);
 }
 
