@@ -6,4 +6,4 @@ include(RoqAutogen)
 
 add_library("${TARGET_NAME}" STATIC ${SOURCES})
 
-target_link_libraries("${TARGET_NAME}" roq-core::roq-core roq-logging::roq-logging fmt::fmt)
+target_link_libraries("${TARGET_NAME}" roq-core::roq-core roq-logging::roq-logging fmt::fmt-header-only)
