@@ -134,9 +134,9 @@ void UDPSnapshot::operator()(Trace<deribit_multicast::Book> const &event, sbe::F
   log::fatal("Unexpected"sv);
 }
 
-void UDPSnapshot::operator()(Trace<deribit_multicast::Quote> const &event, sbe::Frame const &frame) {
-  auto &quote = event.value;
-  log::info<5>("quote={}, frame={}"sv, quote, frame);
+void UDPSnapshot::operator()(Trace<deribit_multicast::Ticker> const &event, sbe::Frame const &frame) {
+  auto &ticker = event.value;
+  log::info<5>("ticker={}, frame={}"sv, ticker, frame);
   log::fatal("Unexpected"sv);
 }
 
@@ -151,42 +151,40 @@ void UDPSnapshot::operator()(Trace<deribit_multicast::Snapshot> const &event, sb
   auto &snapshot = event.value;
   log::info<5>("snapshot={}, frame={}"sv, snapshot, frame);
   auto const instrument_id = snapshot.instrumentId();
-  auto const tmp = shared_.find_instrument_name_with_create(instrument_id, [&snapshot]() {
-    return sbe::get_instrument_name(snapshot);  // note! alloc
-  });
-  auto const symbol = tmp.first;
-  auto const discard = tmp.second;
   auto const change_id = snapshot.changeId();
   auto const is_last = snapshot.isLastInBook();
   aggregator_(frame.sequence_number, instrument_id, change_id, is_last, [&](auto &bids, auto &asks) {
     if (!publish_market_by_price_)
       return;
-    if (discard)
-      return;
-    snapshot.sbeRewind();
-    snapshot.levelsList().forEach([&](auto const &item) { emplace_back(item, bids, asks); });
-    if (is_last) {
-      std::chrono::milliseconds const timestamp{snapshot.timestampMs()};
-      if (!(std::empty(bids) && std::empty(asks))) {
-        const MarketByPriceUpdate market_by_price_update{
-            .stream_id = stream_id_,
-            .exchange = flags::Config::exchange(),
-            .symbol = symbol,
-            .bids = bids,
-            .asks = asks,
-            .update_type = UpdateType::SNAPSHOT,
-            .exchange_time_utc = timestamp,
-            .exchange_sequence = static_cast<int64_t>(change_id),
-            .price_decimals = {},
-            .quantity_decimals = {},
-            .checksum = {},
-        };
-        try {
-          create_trace_and_dispatch(handler_, trace_info, market_by_price_update, true, false);
-        } catch (BadState &) {
-          log::fatal("BAD STATE"sv);
-        }
-      }
+    if (shared_.find_instrument_name(instrument_id, [&](auto &symbol) {
+          snapshot.sbeRewind();
+          snapshot.levelsList().forEach([&](auto const &item) { emplace_back(item, bids, asks); });
+          if (is_last) {
+            std::chrono::milliseconds const timestamp{snapshot.timestampMs()};
+            if (!(std::empty(bids) && std::empty(asks))) {
+              const MarketByPriceUpdate market_by_price_update{
+                  .stream_id = stream_id_,
+                  .exchange = flags::Config::exchange(),
+                  .symbol = symbol,
+                  .bids = bids,
+                  .asks = asks,
+                  .update_type = UpdateType::SNAPSHOT,
+                  .exchange_time_utc = timestamp,
+                  .exchange_sequence = static_cast<int64_t>(change_id),
+                  .price_decimals = {},
+                  .quantity_decimals = {},
+                  .checksum = {},
+              };
+              try {
+                create_trace_and_dispatch(handler_, trace_info, market_by_price_update, true, false);
+              } catch (BadState &) {
+                log::fatal("BAD STATE"sv);
+              }
+            }
+          }
+        })) {
+    } else {
+      // unknown instrument_id
     }
   });
 }

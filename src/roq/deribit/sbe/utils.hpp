@@ -14,8 +14,8 @@
 
 #include <deribit_multicast/Book.h>
 #include <deribit_multicast/Instrument.h>
-#include <deribit_multicast/Quote.h>
 #include <deribit_multicast/Snapshot.h>
+#include <deribit_multicast/Ticker.h>
 #include <deribit_multicast/Trades.h>
 
 #include "roq/api.hpp"
@@ -119,6 +119,10 @@ template <>
 inline size_t compute_length(deribit_multicast::Book &value) {
   auto changes_list_length = value.changesList().count();
   return value.computeLength(changes_list_length);
+  /*
+  value.sbeRewind();  // wtf!
+  value.levelsList().forEach([](auto &e) { e.skip(); });
+  */
 }
 
 template <>
@@ -128,7 +132,7 @@ inline size_t compute_length(deribit_multicast::Trades &value) {
 }
 
 template <>
-inline size_t compute_length(deribit_multicast::Quote &value) {
+inline size_t compute_length(deribit_multicast::Ticker &value) {
   return value.computeLength();
 }
 
@@ -137,8 +141,7 @@ inline size_t compute_length(deribit_multicast::Snapshot &value) {
   auto levels_list_length = value.levelsList().count();
   value.sbeRewind();  // wtf!
   value.levelsList().forEach([](auto &e) { e.skip(); });
-  auto instrument_name_length = value.skipInstrumentName();
-  return value.computeLength(levels_list_length, instrument_name_length);
+  return value.computeLength(levels_list_length);
 }
 
 // this is just so... wtf!
@@ -153,13 +156,6 @@ inline std::string get_instrument_name(deribit_multicast::Instrument &value) {
   return {value.instrumentName(), length};
 }
 
-template <>
-inline std::string get_instrument_name(deribit_multicast::Snapshot &value) {
-  value.sbeRewind();
-  value.levelsList().forEach([](auto &) {});
-  auto length = value.instrumentNameLength();  // must fetch before getting name
-  return {value.instrumentName(), length};
-}
 }  // namespace sbe
 }  // namespace deribit
 }  // namespace roq
@@ -335,43 +331,111 @@ struct fmt::formatter<deribit_multicast::Instrument> {
         R"({{)"
         R"(header={}, )"
         R"(instrumentId={}, )"
-        R"(state={}, )"
+        R"(instrumentState={}, )"
+        R"(kind={}, )"
+        R"(futureType={}, )"
+        R"(optionType={}, )"
+        R"(rfq={}, )"
+        R"(settlementPeriod={}, )"
+        R"(settlementPeriodCount={}, )"
+        R"(baseCurrency="{}", )"
+        R"(quoteCurrency="{}", )"
+        R"(counterCurrency="{}", )"
+        R"(settlementCurrency="{}", )"
+        R"(sizeCurrency="{}", )"
+        R"(creationTimeStampMs={}, )"
+        R"(expirationTimeStampMs={}, )"
+        R"(striketPrice={}, )"
+        R"(contractSize={}, )"
+        R"(minTradeAmount={}, )"
+        R"(tickSize={}, )"
+        R"(makerCommission={}, )"
+        R"(takerCommission={}, )"
+        R"(blockTradeCommission={}, )"
+        R"(maxLiquidationCommission={}, )"
+        R"(maxLeverage={}, )"
         R"(instrumentName="{}")"
         R"(}})"sv,
         value.header(),
         value.instrumentId(),
-        deribit_multicast::InstrumentState::c_str(value.state()),
+        deribit_multicast::InstrumentState::c_str(value.instrumentState()),
+        deribit_multicast::InstrumentKind::c_str(value.kind()),
+        deribit_multicast::FutureType::c_str(value.futureType()),
+        deribit_multicast::OptionType::c_str(value.optionType()),
+        roq::deribit::sbe::map_yes_no(value.rfq()),
+        deribit_multicast::Period::c_str(value.settlementPeriod()),
+        value.settlementPeriodCount(),
+        value.baseCurrency(),
+        value.quoteCurrency(),
+        value.counterCurrency(),
+        value.settlementCurrency(),
+        value.sizeCurrency(),
+        std::chrono::milliseconds{value.creationTimestampMs()},
+        std::chrono::milliseconds{value.expirationTimestampMs()},
+        value.strikePrice(),
+        value.contractSize(),
+        value.minTradeAmount(),
+        value.tickSize(),
+        value.makerCommission(),
+        value.takerCommission(),
+        value.blockTradeCommission(),
+        value.maxLiquidationCommission(),
+        value.maxLeverage(),
         instrument_name);
   }
 };
 
 template <>
-struct fmt::formatter<deribit_multicast::Quote> {
+struct fmt::formatter<deribit_multicast::Ticker> {
   template <typename Context>
   constexpr auto parse(Context &context) {
     return std::begin(context);
   }
   template <typename Context>
-  auto format(deribit_multicast::Quote &value, Context &context) {
+  auto format(deribit_multicast::Ticker &value, Context &context) {
     using namespace std::literals;
     return fmt::format_to(
         context.out(),
         R"({{)"
         R"(header={}, )"
         R"(instrumentId={}, )"
+        R"(instrumentState={}, )"
         R"(timestampMs={}, )"
+        R"(openInterest={}, )"
+        R"(minSellPrice={}, )"
+        R"(maxBuyPrice={}, )"
+        R"(lastPrice={}, )"
+        R"(indexPrice={}, )"
+        R"(markPrice={}, )"
         R"(bestBidPrice={}, )"
         R"(bestBidAmount={}, )"
         R"(bestAskPrice={}, )"
-        R"(bestAskAmount={})"
+        R"(bestAskAmount={}, )"
+        R"(currentFunding={}, )"
+        R"(funding8h={}, )"
+        R"(estimatedDeliveryPrice={}, )"
+        R"(deliveryPrice={}, )"
+        R"(settlementPrice={})"
         R"(}})"sv,
         value.header(),
         value.instrumentId(),
+        deribit_multicast::InstrumentState::c_str(value.instrumentState()),
         std::chrono::milliseconds{value.timestampMs()},
+        value.openInterest(),
+        value.minSellPrice(),
+        value.maxBuyPrice(),
+        value.lastPrice(),
+        value.indexPrice(),
+        value.markPrice(),
         value.bestBidPrice(),
         value.bestBidAmount(),
         value.bestAskPrice(),
-        value.bestAskAmount());
+        value.bestAskAmount(),
+        value.currentFunding(),
+        value.funding8h(),
+        value.estimatedDeliveryPrice(),
+        value.deliveryPrice(),
+        value.settlementPrice());
   }
 };
 
@@ -384,28 +448,25 @@ struct fmt::formatter<deribit_multicast::Snapshot> {
   template <typename Context>
   auto format(deribit_multicast::Snapshot &value, Context &context) {
     using namespace std::literals;
-    auto instrument_name = roq::deribit::sbe::get_instrument_name(value);
     value.sbeRewind();
     return fmt::format_to(
         context.out(),
         R"({{)"
         R"(header={}, )"
         R"(instrumentId={}, )"
-        R"(isBookComplete={}, )"
-        R"(isLastInBook={}, )"
         R"(timestampMs={}, )"
         R"(changeId={}, )"
-        R"(levelsList=[{}], )"
-        R"(instrumentName="{}")"
+        R"(isBookComplete={}, )"
+        R"(isLastInBook={}, )"
+        R"(levelsList=[{}])"
         R"(}})"sv,
         value.header(),
         value.instrumentId(),
-        roq::deribit::sbe::map_yes_no(value.isBookComplete()),
-        roq::deribit::sbe::map_yes_no(value.isLastInBook()),
         std::chrono::milliseconds{value.timestampMs()},
         value.changeId(),
-        fmt::join(roq::core::sbe::iterator{value.levelsList()}, roq::core::sbe::sentinel{}, ", "sv),
-        instrument_name);
+        roq::deribit::sbe::map_yes_no(value.isBookComplete()),
+        roq::deribit::sbe::map_yes_no(value.isLastInBook()),
+        fmt::join(roq::core::sbe::iterator{value.levelsList()}, roq::core::sbe::sentinel{}, ", "sv));
   }
 };
 

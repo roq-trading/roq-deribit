@@ -49,7 +49,7 @@ class UDPEvents final : public core::net::UdpConnection::Handler, public sbe::Pa
   // events
   void operator()(Trace<deribit_multicast::Instrument> const &, sbe::Frame const &) override;
   void operator()(Trace<deribit_multicast::Book> const &, sbe::Frame const &) override;
-  void operator()(Trace<deribit_multicast::Quote> const &, sbe::Frame const &) override;
+  void operator()(Trace<deribit_multicast::Ticker> const &, sbe::Frame const &) override;
   void operator()(Trace<deribit_multicast::Trades> const &, sbe::Frame const &) override;
   // snapshot
   void operator()(Trace<deribit_multicast::Snapshot> const &, sbe::Frame const &) override;
@@ -80,7 +80,7 @@ class UDPEvents final : public core::net::UdpConnection::Handler, public sbe::Pa
   // cache
   Shared &shared_;
   bool initialized_ = false;
-  absl::flat_hash_map<uint32_t, uint32_t> last_quote_;
+  absl::flat_hash_map<uint32_t, uint32_t> last_ticker_;
   absl::flat_hash_map<uint32_t, uint32_t> last_trades_;
   Aggregator aggregator_;
 };

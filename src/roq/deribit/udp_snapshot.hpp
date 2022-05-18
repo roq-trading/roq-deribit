@@ -47,7 +47,7 @@ class UDPSnapshot final : public core::net::UdpConnection::Handler, public sbe::
   // events
   void operator()(Trace<deribit_multicast::Instrument> const &, sbe::Frame const &) override;
   void operator()(Trace<deribit_multicast::Book> const &, sbe::Frame const &) override;
-  void operator()(Trace<deribit_multicast::Quote> const &, sbe::Frame const &) override;
+  void operator()(Trace<deribit_multicast::Ticker> const &, sbe::Frame const &) override;
   void operator()(Trace<deribit_multicast::Trades> const &, sbe::Frame const &) override;
   // snapshot
   void operator()(Trace<deribit_multicast::Snapshot> const &, sbe::Frame const &) override;

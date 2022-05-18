@@ -170,29 +170,29 @@ void UDPEvents::operator()(Trace<deribit_multicast::Book> const &event, sbe::Fra
   // aggregator_.reset();  // XXX INCORRECT
 }
 
-void UDPEvents::operator()(Trace<deribit_multicast::Quote> const &event, sbe::Frame const &frame) {
+void UDPEvents::operator()(Trace<deribit_multicast::Ticker> const &event, sbe::Frame const &frame) {
   auto &trace_info = event.trace_info;
-  auto &quote = event.value;
-  log::info<5>("quote={}, frame={}"sv, quote, frame);
+  auto &ticker = event.value;
+  log::info<5>("ticker={}, frame={}"sv, ticker, frame);
   if (aggregator_(frame.sequence_number)) {
     if (!publish_top_of_book_)
       return;
-    auto const instrument_id = quote.instrumentId();
+    auto const instrument_id = ticker.instrumentId();
     // note! skip previous updates
     // XXX NOT NECESSARY
-    if (test_sequence(last_quote_, instrument_id, frame.sequence_number)) {
+    if (test_sequence(last_ticker_, instrument_id, frame.sequence_number)) {
       if (shared_.find_instrument_name(instrument_id, [&](auto &symbol) {
-            std::chrono::milliseconds const timestamp{quote.timestampMs()};
+            std::chrono::milliseconds const timestamp{ticker.timestampMs()};
             // note! unlike the WS feed, it looks like we do *not* have to scale amounts here
             const TopOfBook top_of_book{
                 .stream_id = stream_id_,
                 .exchange = flags::Config::exchange(),
                 .symbol = symbol,
                 .layer{
-                    .bid_price = quote.bestBidPrice(),
-                    .bid_quantity = quote.bestBidAmount(),
-                    .ask_price = quote.bestAskPrice(),
-                    .ask_quantity = quote.bestAskAmount(),
+                    .bid_price = ticker.bestBidPrice(),
+                    .bid_quantity = ticker.bestBidAmount(),
+                    .ask_price = ticker.bestAskPrice(),
+                    .ask_quantity = ticker.bestAskAmount(),
                 },
                 .update_type = UpdateType::INCREMENTAL,
                 .exchange_time_utc = timestamp,

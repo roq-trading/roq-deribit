@@ -8,7 +8,7 @@
 // events
 #include <deribit_multicast/Book.h>
 #include <deribit_multicast/Instrument.h>
-#include <deribit_multicast/Quote.h>
+#include <deribit_multicast/Ticker.h>
 #include <deribit_multicast/Trades.h>
 // snapshot
 #include <deribit_multicast/Snapshot.h>
@@ -26,7 +26,7 @@ struct Parser final {
     // events
     virtual void operator()(Trace<deribit_multicast::Instrument> const &, Frame const &) = 0;
     virtual void operator()(Trace<deribit_multicast::Book> const &, Frame const &) = 0;
-    virtual void operator()(Trace<deribit_multicast::Quote> const &, Frame const &) = 0;
+    virtual void operator()(Trace<deribit_multicast::Ticker> const &, Frame const &) = 0;
     virtual void operator()(Trace<deribit_multicast::Trades> const &, Frame const &) = 0;
     // snapshot
     virtual void operator()(Trace<deribit_multicast::Snapshot> const &, Frame const &) = 0;

@@ -23,7 +23,6 @@ set(SOURCES
     json_ticker.cpp
     json_trades_2.cpp
     json_types.cpp
-    multicast_first_test.cpp
     main.cpp)
 
 roq_gitignore(OUTPUT ".gitignore" SOURCES "${TARGET_NAME}")

@@ -61,12 +61,12 @@ bool Parser::dispatch(Handler &handler, std::span<std::byte const> const &buffer
               break;
             }
             case 1003: {
-              deribit_multicast::Quote quote{std::data(message), std::size(message)};
-              auto length = compute_length(quote);
-              // log::debug("--> quote: length={}"sv, length);
-              // log::info<5>("quote={}"sv, quote);
-              quote.sbeRewind();  // note! important
-              create_trace_and_dispatch(handler, trace_info, quote, frame);
+              deribit_multicast::Ticker ticker{std::data(message), std::size(message)};
+              auto length = compute_length(ticker);
+              // log::debug("--> ticker: length={}"sv, length);
+              // log::info<5>("ticker={}"sv, ticker);
+              ticker.sbeRewind();  // note! important
+              create_trace_and_dispatch(handler, trace_info, ticker, frame);
               message = message.subspan(length);
               break;
             }

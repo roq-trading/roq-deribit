@@ -4,7 +4,7 @@
 
 #include <deribit_multicast/Book.h>
 #include <deribit_multicast/MessageHeader.h>
-#include <deribit_multicast/Quote.h>
+#include <deribit_multicast/Ticker.h>
 
 #include <iostream>
 
@@ -26,18 +26,18 @@ using namespace roq::deribit;
 TEST_CASE("multicast_example", "[multicast]") {
   //  0-  7 |  8 : frame
   //  8- 74 | 67 : book
-  // 75-130 | 56 : quote
+  // 75-130 | 56 : ticker
   // ---
   // frame = 8
   // header = 12
   // book = 56 = 29 + 2 * 18
-  // quote = 44 = 44
+  // ticker = 44 = 44
   auto buffer =
       "\x7b\x00\x03\x00\xde\x1d\x01\x00\x1d\x00\xe9\x03\x01\x00\x01\x00"  // [0] frame + [8] book
       "\x01\x00\x00\x00\x24\x00\x00\x00\x53\x49\x61\x19\x80\x01\x00\x00"
       "\x89\xba\x19\x00\x00\x00\x00\x00\x8a\xba\x19\x00\x00\x00\x00\x00"
       "\x01\x12\x00\x01\x00\x00\x00\x00\x00\x00\x00\xcd\xcc\xcc\xcc\x94"
-      "\x8a\xe4\x40\x00\x00\x00\x00\x00\x00\x24\x40\x2c\x00\xeb\x03\x01"  // [75] quote
+      "\x8a\xe4\x40\x00\x00\x00\x00\x00\x00\x24\x40\x2c\x00\xeb\x03\x01"  // [75] ticker
       "\x00\x01\x00\x00\x00\x00\x00\x24\x00\x00\x00\x53\x49\x61\x19\x80"
       "\x01\x00\x00\xae\x47\xe1\x7a\x94\x8a\xe4\x40\x00\x00\x00\x00\x00"
       "\x00\x49\x40\xcd\xcc\xcc\xcc\x94\x8a\xe4\x40\x00\x00\x00\x00\x00"
@@ -94,18 +94,18 @@ TEST_CASE("multicast_example", "[multicast]") {
   }
   {
     auto message = buffer.substr(75);
-    Quote quote{const_cast<char *>(std::data(message)), std::size(message)};
-    auto &header = quote.header();
+    Ticker ticker{const_cast<char *>(std::data(message)), std::size(message)};
+    auto &header = ticker.header();
     CHECK(header.blockLength() == 44);
     CHECK(header.templateId() == 1003);
     CHECK(header.sbeSchemaId() == 1);
     CHECK(header.version() == 1);
     //
-    CHECK(quote.timestampMs() == 1649693247827);
+    CHECK(ticker.timestampMs() == 1649693247827);
     //
-    fmt::print("{}\n"sv, quote);
+    fmt::print("{}\n"sv, ticker);
     //
-    CHECK(quote.computeLength() == 56);
+    CHECK(ticker.computeLength() == 56);
   }
 }
 
@@ -167,7 +167,7 @@ TEST_CASE("multicast_book", "[multicast]") {
       CHECK(header.sbeSchemaId() == 1);
       CHECK(header.version() == 1);
     }
-    void operator()(Trace<deribit_multicast::Quote> const &, sbe::Frame const &) override { FAIL(); }
+    void operator()(Trace<deribit_multicast::Ticker> const &, sbe::Frame const &) override { FAIL(); }
     void operator()(Trace<deribit_multicast::Trades> const &, sbe::Frame const &) override { FAIL(); }
     // snapshot
     void operator()(Trace<deribit_multicast::Snapshot> const &, sbe::Frame const &) override { FAIL(); }
@@ -178,14 +178,14 @@ TEST_CASE("multicast_book", "[multicast]") {
   CHECK(handler.found == true);
 }
 
-TEST_CASE("multicast_book_quote", "[multicast]") {
+TEST_CASE("multicast_book_ticker", "[multicast]") {
   auto message =
       "\x8d\x00\x0a\x00\xfd\xe3\x3d\x04\x1d\x00\xe9\x03\x01\x00\x01\x00"  // [0] frame + [8] book
       "\x01\x00\x00\x00\x2f\x40\x03\x00\x01\xa1\x6f\x27\x80\x01\x00\x00"
       "\x31\xa3\x0a\x14\x00\x00\x00\x00\x32\xa3\x0a\x14\x00\x00\x00\x00"
       "\x01\x12\x00\x02\x00\x00\x00\x00\x00\x01\x01\x33\x33\x33\x33\x33"
       "\x63\x5a\x40\x33\x33\x33\x33\x33\xb3\x42\x40\x01\x01\xa4\x70\x3d"
-      "\x0a\xd7\x63\x5a\x40\x9a\x99\x99\x99\x99\x19\x44\x40\x2c\x00\xeb"  // [93] quote
+      "\x0a\xd7\x63\x5a\x40\x9a\x99\x99\x99\x99\x19\x44\x40\x2c\x00\xeb"  // [93] ticker
       "\x03\x01\x00\x01\x00\x00\x00\x00\x00\x2f\x40\x03\x00\x01\xa1\x6f"
       "\x27\x80\x01\x00\x00\xa4\x70\x3d\x0a\xd7\x63\x5a\x40\x9a\x99\x99"
       "\x99\x99\x19\x44\x40\xb8\x1e\x85\xeb\x51\x68\x5a\x40\xcd\xcc\xcc"
@@ -198,7 +198,7 @@ TEST_CASE("multicast_book_quote", "[multicast]") {
   }
   struct MyHandler : public sbe::Parser::Handler {
     bool found_book = false;
-    bool found_quote = false;
+    bool found_ticker = false;
     void operator()(Trace<deribit_multicast::Instrument> const &, sbe::Frame const &) override { FAIL(); }
     void operator()(Trace<deribit_multicast::Book> const &event, sbe::Frame const &frame) override {
       found_book = true;
@@ -209,12 +209,12 @@ TEST_CASE("multicast_book_quote", "[multicast]") {
       CHECK(header.sbeSchemaId() == 1);
       CHECK(header.version() == 1);
     }
-    void operator()(Trace<deribit_multicast::Quote> const &event, sbe::Frame const &frame) override {
-      found_quote = true;
+    void operator()(Trace<deribit_multicast::Ticker> const &event, sbe::Frame const &frame) override {
+      found_ticker = true;
       CHECK(frame.channel_id == 10);
       CHECK(frame.sequence_number == 71164925);
-      auto &[trace_info, quote] = event;
-      auto &header = quote.header();
+      auto &[trace_info, ticker] = event;
+      auto &header = ticker.header();
       CHECK(header.sbeSchemaId() == 1);
       CHECK(header.version() == 1);
     }
@@ -226,7 +226,7 @@ TEST_CASE("multicast_book_quote", "[multicast]") {
   auto result = sbe::Parser::dispatch(handler, buffer, trace_info);
   CHECK(result == true);
   CHECK(handler.found_book == true);
-  CHECK(handler.found_quote == true);
+  CHECK(handler.found_ticker == true);
 }
 
 TEST_CASE("multicast_snapshot", "[multicast]") {
@@ -256,7 +256,7 @@ TEST_CASE("multicast_snapshot", "[multicast]") {
     bool found = false;
     void operator()(Trace<deribit_multicast::Instrument> const &, sbe::Frame const &) override { FAIL(); }
     void operator()(Trace<deribit_multicast::Book> const &, sbe::Frame const &) override { FAIL(); }
-    void operator()(Trace<deribit_multicast::Quote> const &, sbe::Frame const &) override { FAIL(); }
+    void operator()(Trace<deribit_multicast::Ticker> const &, sbe::Frame const &) override { FAIL(); }
     void operator()(Trace<deribit_multicast::Trades> const &, sbe::Frame const &) override { FAIL(); }
     // snapshot
     void operator()(Trace<deribit_multicast::Snapshot> const &event, sbe::Frame const &) override {
@@ -271,10 +271,12 @@ TEST_CASE("multicast_snapshot", "[multicast]") {
       size_t count = 0;
       snapshot.levelsList().forEach([&count](auto &) { ++count; });
       CHECK(count == 60);
+      /*
       auto length = snapshot.instrumentNameLength();  // must fetch before getting name
       CHECK(length == 18);
       auto name = std::string_view{snapshot.instrumentName(), length};
       CHECK(name == "SOL_USDC-PERPETUAL"sv);
+      */
       fmt::print("{}\n"sv, snapshot);
     }
   } handler;
@@ -324,7 +326,7 @@ TEST_CASE("multicast_snapshot_2", "[multicast]") {
     size_t offset = 0;
     void operator()(Trace<deribit_multicast::Instrument> const &, sbe::Frame const &) override { FAIL(); }
     void operator()(Trace<deribit_multicast::Book> const &, sbe::Frame const &) override { FAIL(); }
-    void operator()(Trace<deribit_multicast::Quote> const &, sbe::Frame const &) override { FAIL(); }
+    void operator()(Trace<deribit_multicast::Ticker> const &, sbe::Frame const &) override { FAIL(); }
     void operator()(Trace<deribit_multicast::Trades> const &, sbe::Frame const &) override { FAIL(); }
     // snapshot
     void operator()(Trace<deribit_multicast::Snapshot> const &event, sbe::Frame const &) override {
@@ -340,10 +342,12 @@ TEST_CASE("multicast_snapshot_2", "[multicast]") {
           size_t count = 0;
           snapshot.levelsList().forEach([&count](auto &) { ++count; });
           CHECK(count == 38);
+          /*
           auto length = snapshot.instrumentNameLength();  // must fetch before getting name
           CHECK(length == 18);
           auto name = std::string_view{snapshot.instrumentName(), length};
           CHECK(name == "LTC_USDC-PERPETUAL"sv);
+          */
           break;
         }
         case 2: {
@@ -355,10 +359,12 @@ TEST_CASE("multicast_snapshot_2", "[multicast]") {
           size_t count = 0;
           snapshot.levelsList().forEach([&count](auto &) { ++count; });
           CHECK(count == 30);
+          /*
           auto length = snapshot.instrumentNameLength();  // must fetch before getting name
           CHECK(length == 19);
           auto name = std::string_view{snapshot.instrumentName(), length};
           CHECK(name == "NEAR_USDC-PERPETUAL"sv);
+          */
           break;
         }
       }
@@ -384,14 +390,14 @@ TEST_CASE("multicast_instrument", "[multicast]") {
       found = true;
       auto &[trace_info, instrument] = event;
       CHECK(instrument.instrumentId() == 5);
-      CHECK(instrument.state() == deribit_multicast::InstrumentState::Value::created);
+      CHECK(instrument.instrumentState() == deribit_multicast::InstrumentState::Value::created);
       // instrument.sbeRewind(); // important
       auto length = instrument.instrumentNameLength();  // must fetch before getting name
       auto name = std::string_view{instrument.instrumentName(), length};
       CHECK(name == "BTC-14APR22_1500-39900-C"sv);
     }
     void operator()(Trace<deribit_multicast::Book> const &, sbe::Frame const &) override { FAIL(); }
-    void operator()(Trace<deribit_multicast::Quote> const &, sbe::Frame const &) override { FAIL(); }
+    void operator()(Trace<deribit_multicast::Ticker> const &, sbe::Frame const &) override { FAIL(); }
     void operator()(Trace<deribit_multicast::Trades> const &, sbe::Frame const &) override { FAIL(); }
     // snapshot
     void operator()(Trace<deribit_multicast::Snapshot> const &, sbe::Frame const &) override { FAIL(); }
