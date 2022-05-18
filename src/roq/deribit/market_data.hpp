@@ -55,78 +55,68 @@ class MarketData final : public core::net::Manager::Handler {
   };
 
   struct Handler {
-    virtual void operator()(const Trace<StreamStatus const> &) = 0;
-    virtual void operator()(const Trace<ExternalLatency const> &) = 0;
-    virtual void operator()(const Trace<ReferenceData const> &, bool is_last) = 0;
-    virtual void operator()(
-        const Trace<MarketByPriceUpdate const> &, bool is_last, bool refresh) = 0;
-    virtual void operator()(const Trace<TradeSummary const> &, bool is_last) = 0;
-    virtual void operator()(const Trace<StatisticsUpdate const> &, bool is_last) = 0;
+    virtual void operator()(Trace<StreamStatus const> const &) = 0;
+    virtual void operator()(Trace<ExternalLatency const> const &) = 0;
+    virtual void operator()(Trace<ReferenceData const> const &, bool is_last) = 0;
+    virtual void operator()(Trace<MarketByPriceUpdate const> const &, bool is_last, bool refresh) = 0;
+    virtual void operator()(Trace<TradeSummary const> const &, bool is_last) = 0;
+    virtual void operator()(Trace<StatisticsUpdate const> const &, bool is_last) = 0;
     // cross-communication
     virtual void operator()(SymbolsUpdate &) = 0;
   };
 
-  MarketData(
-      Handler &,
-      core::io::Context &,
-      uint16_t stream_id,
-      Security &,
-      Shared &,
-      size_t index,
-      bool master);
+  MarketData(Handler &, core::io::Context &, uint16_t stream_id, Security &, Shared &, size_t index, bool master);
 
-  MarketData(const MarketData &) = delete;
+  MarketData(MarketData const &) = delete;
   MarketData(MarketData &&) = delete;
 
   bool ready() const { return ready_; }
 
-  void operator()(const Event<Start> &);
-  void operator()(const Event<Stop> &);
-  void operator()(const Event<Timer> &);
+  void operator()(Event<Start> const &);
+  void operator()(Event<Stop> const &);
+  void operator()(Event<Timer> const &);
 
   void operator()(metrics::Writer &);
 
   void subscribe(size_t start_from = 0);
 
-  void operator()(const Trace<fix::Heartbeat const> &, const core::fix::Header &);
-  void operator()(const Trace<fix::Logon const> &, const core::fix::Header &);
-  void operator()(const Trace<fix::Logout const> &, const core::fix::Header &);
-  void operator()(const Trace<fix::ResendRequest const> &, const core::fix::Header &);
-  void operator()(const Trace<fix::TestRequest const> &, const core::fix::Header &);
+  void operator()(Trace<fix::Heartbeat const> const &, core::fix::Header const &);
+  void operator()(Trace<fix::Logon const> const &, core::fix::Header const &);
+  void operator()(Trace<fix::Logout const> const &, core::fix::Header const &);
+  void operator()(Trace<fix::ResendRequest const> const &, core::fix::Header const &);
+  void operator()(Trace<fix::TestRequest const> const &, core::fix::Header const &);
 
-  void operator()(const Trace<fix::SecurityList const> &, const core::fix::Header &);
-  void operator()(const Trace<fix::SecurityStatus const> &, const core::fix::Header &);
+  void operator()(Trace<fix::SecurityList const> const &, core::fix::Header const &);
+  void operator()(Trace<fix::SecurityStatus const> const &, core::fix::Header const &);
 
-  void operator()(
-      const Trace<fix::MarketDataIncrementalRefresh const> &, const core::fix::Header &);
-  void operator()(const Trace<fix::MarketDataRequestReject const> &, const core::fix::Header &);
-  void operator()(
-      const Trace<fix::MarketDataSnapshotFullRefresh const> &, const core::fix::Header &);
+  void operator()(Trace<fix::MarketDataIncrementalRefresh const> const &, core::fix::Header const &);
+  void operator()(Trace<fix::MarketDataRequestReject const> const &, core::fix::Header const &);
+  void operator()(Trace<fix::MarketDataSnapshotFullRefresh const> const &, core::fix::Header const &);
 
  protected:
-  void operator()(const core::net::Manager::Connected &) override;
-  void operator()(const core::net::Manager::Disconnected &) override;
-  void operator()(const core::net::Manager::Read &) override;
+  void operator()(core::net::Manager::Connected const &) override;
+  void operator()(core::net::Manager::Disconnected const &) override;
+  void operator()(core::net::Manager::Read const &) override;
 
  private:
   void operator()(ConnectionStatus);
 
   void send_logon();
-  void send_logout(const std::string_view &text);
-  void send_heartbeat(const std::string_view &test_req_id);
+  void send_logout(std::string_view const &text);
+  void send_heartbeat(std::string_view const &test_req_id);
   void send_test_request(std::chrono::nanoseconds now);
 
   uint32_t download(MarketDataState);
 
   void download_securities();
 
-  void subscribe(const std::span<Symbol const> &symbols);
-  void unsubscribe(const std::span<Symbol const> &symbols);
+  void subscribe(std::span<Symbol const> const &symbols);
+  void unsubscribe(std::span<Symbol const> const &symbols);
 
-  void resubscribe(const std::string_view &symbol);
+  void resubscribe(std::string_view const &symbol);
 
-  void parse(const Trace<core::fix::Message const> &);
-  void parse_helper(const Trace<core::fix::Message const> &);
+  void parse(Trace<core::fix::Message const> const &);
+  void parse_helper(Trace<core::fix::Message const> const &);
 
   // utilities
 
@@ -136,7 +126,7 @@ class MarketData final : public core::net::Manager::Handler {
   template <typename T>
   void send(const T &event, std::chrono::nanoseconds sending_time);
 
-  void check(const core::fix::Header &);
+  void check(core::fix::Header const &);
 
  private:
   Handler &handler_;
@@ -144,9 +134,9 @@ class MarketData final : public core::net::Manager::Handler {
   const uint16_t stream_id_;
   const std::string name_;
   const size_t index_;
-  const bool master_;
-  const bool publish_market_by_price_;
-  const bool publish_trade_summary_;
+  bool const master_;
+  bool const publish_market_by_price_;
+  bool const publish_trade_summary_;
   // connection
   core::net::TcpConnectionFactory connection_factory_;
   core::net::Manager connection_;

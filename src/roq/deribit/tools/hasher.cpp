@@ -31,19 +31,17 @@ std::uniform_int_distribution<int> CHARSET_DISTRIBUTION(
 std::uniform_int_distribution<uint32_t> DISTRIBUTION;
 }  // namespace
 
-Hasher::Hasher(const std::string_view &access_secret) : secret_(access_secret), hmac_(secret_) {
+Hasher::Hasher(std::string_view const &access_secret) : secret_(access_secret), hmac_(secret_) {
 }
 
 std::string Hasher::create_nonce() {
   std::string result(RANDOM_BYTES, '-');
-  std::generate(std::begin(result), std::end(result), []() {
-    return CHARSET_DATA[CHARSET_DISTRIBUTION(GENERATOR)];
-  });
+  std::generate(std::begin(result), std::end(result), []() { return CHARSET_DATA[CHARSET_DISTRIBUTION(GENERATOR)]; });
   return result;
 }
 
 std::pair<std::string, std::chrono::milliseconds> Hasher::create_signature(
-    std::chrono::milliseconds timestamp, const std::string_view &nonce) {
+    std::chrono::milliseconds timestamp, std::string_view const &nonce) {
   auto sequence = get_sequence(timestamp);
   auto message = fmt::format("{}\n{}\n"sv, sequence, nonce);
   hmac_.clear();
@@ -60,20 +58,18 @@ std::string Hasher::create_raw_data(std::chrono::milliseconds timestamp) {
   std::array<value_type, n> buffer;
   for (size_t i = 0; i < n; ++i)
     buffer[i] = DISTRIBUTION(GENERATOR);
-  std::span tmp{
-      reinterpret_cast<std::byte *>(std::data(buffer)), std::size(buffer) * sizeof(value_type)};
+  std::span tmp{reinterpret_cast<std::byte *>(std::data(buffer)), std::size(buffer) * sizeof(value_type)};
   auto nonce = core::binascii::Base64::encode(tmp, false);
   return create_raw_data(timestamp, nonce);
 }
 
-std::string Hasher::create_raw_data(
-    std::chrono::milliseconds timestamp, const std::string_view &nonce) {
+std::string Hasher::create_raw_data(std::chrono::milliseconds timestamp, std::string_view const &nonce) {
   auto sequence = get_sequence(timestamp);
   auto raw_data = fmt::format("{:013}.{}"sv, sequence, nonce);
   return raw_data;
 }
 
-std::string Hasher::create_password(const std::string_view &raw_data) {
+std::string Hasher::create_password(std::string_view const &raw_data) {
   sha_.clear();
   sha_.update(raw_data);
   sha_.update(secret_);

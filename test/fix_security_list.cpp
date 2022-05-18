@@ -14,7 +14,7 @@ using namespace std::literals;
 using namespace Catch::literals;
 
 namespace {
-const auto message =
+auto const message =
     "8=FIX.4.4\0019=60307\00135=y\00149=DERIBITSERVER\00156=ROQ_TRA"
     "DING\00134=2\00152=20190907-17:00:36.162\001320=123\001322=123"
     "\001560=0\001146=285\00155=BTC-27SEP19-10500-P\001107=option\001"
@@ -1234,7 +1234,7 @@ TEST_CASE("fix_security_list_parse_message", "[fix_security_list]") {
   core::fix::Buffer decode_buffer(buffer);
   int results = 0;
   auto bytes = core::fix::Reader<core::fix::Version::FIX_44>::dispatch(
-      [&](const core::fix::Message &message) {
+      [&](core::fix::Message const &message) {
         fprintf(stderr, "HEADER\n");
         ++results;
         CHECK(message.header.msg_type == core::fix::MsgType::SECURITY_LIST);

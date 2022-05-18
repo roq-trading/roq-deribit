@@ -51,39 +51,38 @@ class WebSocket final : public core::web::ClientSocket::Handler,
   };
 
   struct Handler {
-    virtual void operator()(const Trace<StreamStatus const> &) = 0;
-    virtual void operator()(const Trace<ExternalLatency const> &) = 0;
-    virtual void operator()(const Trace<TopOfBook const> &, bool is_last) = 0;
-    virtual void operator()(const Trace<MarketStatus const> &, bool is_last) = 0;
+    virtual void operator()(Trace<StreamStatus const> const &) = 0;
+    virtual void operator()(Trace<ExternalLatency const> const &) = 0;
+    virtual void operator()(Trace<TopOfBook const> const &, bool is_last) = 0;
+    virtual void operator()(Trace<MarketStatus const> const &, bool is_last) = 0;
     // cross-communication
     virtual void operator()(CurrenciesUpdate &) = 0;
     virtual void operator()(SymbolsUpdate &) = 0;
   };
 
-  WebSocket(
-      Handler &, core::io::Context &, uint16_t stream_id, Shared &, size_t index, bool master);
+  WebSocket(Handler &, core::io::Context &, uint16_t stream_id, Shared &, size_t index, bool master);
 
   WebSocket(WebSocket &&) = delete;
-  WebSocket(const WebSocket &) = delete;
+  WebSocket(WebSocket const &) = delete;
 
   bool ready() const { return ready_; }
 
-  void operator()(const Event<Start> &);
-  void operator()(const Event<Stop> &);
-  void operator()(const Event<Timer> &);
+  void operator()(Event<Start> const &);
+  void operator()(Event<Stop> const &);
+  void operator()(Event<Timer> const &);
 
   void operator()(metrics::Writer &);
 
   void subscribe(size_t start_from = 0);
 
  protected:
-  void operator()(const core::web::ClientSocket::Connected &) override;
-  void operator()(const core::web::ClientSocket::Disconnected &) override;
-  void operator()(const core::web::ClientSocket::Ready &) override;
-  void operator()(const core::web::ClientSocket::Close &) override;
-  void operator()(const core::web::ClientSocket::Latency &) override;
-  void operator()(const core::web::ClientSocket::Text &) override;
-  void operator()(const core::web::ClientSocket::Binary &) override;
+  void operator()(core::web::ClientSocket::Connected const &) override;
+  void operator()(core::web::ClientSocket::Disconnected const &) override;
+  void operator()(core::web::ClientSocket::Ready const &) override;
+  void operator()(core::web::ClientSocket::Close const &) override;
+  void operator()(core::web::ClientSocket::Latency const &) override;
+  void operator()(core::web::ClientSocket::Text const &) override;
+  void operator()(core::web::ClientSocket::Binary const &) override;
 
  private:
   void operator()(ConnectionStatus);
@@ -94,41 +93,41 @@ class WebSocket final : public core::web::ClientSocket::Handler,
   uint32_t download_instruments();
 
   void get_currencies();
-  void get_instruments(const std::string_view &currency);
+  void get_instruments(std::string_view const &currency);
 
   void subscribe_platform_state();
   void subscribe_instrument_state();
 
-  void subscribe(const std::span<Symbol const> &symbols);
+  void subscribe(std::span<Symbol const> const &symbols);
 
-  void subscribe_quote(const std::span<Symbol const> &symbols);
-  void subscribe_ticker(const std::span<Symbol const> &symbols);
+  void subscribe_quote(std::span<Symbol const> const &symbols);
+  void subscribe_ticker(std::span<Symbol const> const &symbols);
 
-  void parse(const std::string_view &message);
+  void parse(std::string_view const &message);
 
-  void operator()(const Trace<core::jsonrpc::Error const> &, core::json::Value &) override;
-  void operator()(const Trace<core::jsonrpc::Result const> &, core::json::Value &) override;
-  void operator()(const Trace<core::jsonrpc::Notification const> &, core::json::Value &) override;
+  void operator()(Trace<core::jsonrpc::Error const> const &, core::json::Value &) override;
+  void operator()(Trace<core::jsonrpc::Result const> const &, core::json::Value &) override;
+  void operator()(Trace<core::jsonrpc::Notification const> const &, core::json::Value &) override;
 
-  void operator()(const Trace<json::Auth const> &);
+  void operator()(Trace<json::Auth const> const &);
 
-  void operator()(const Trace<json::Currencies const> &);
-  void operator()(const Trace<json::Instruments const> &);
-  void operator()(const Trace<json::Positions const> &);
+  void operator()(Trace<json::Currencies const> const &);
+  void operator()(Trace<json::Instruments const> const &);
+  void operator()(Trace<json::Positions const> const &);
 
   // public:
-  void operator()(const Trace<json::PlatformState const> &) override;
-  void operator()(const Trace<json::InstrumentState const> &) override;
-  void operator()(const Trace<json::Quote const> &) override;
-  void operator()(const Trace<json::Ticker const> &) override;
+  void operator()(Trace<json::PlatformState const> const &) override;
+  void operator()(Trace<json::InstrumentState const> const &) override;
+  void operator()(Trace<json::Quote const> const &) override;
+  void operator()(Trace<json::Ticker const> const &) override;
   // private:
-  void operator()(const Trace<json::Portfolio const> &) override;
-  void operator()(const Trace<json::Changes const> &) override;
-  void operator()(const Trace<json::Order const> &) override;
-  void operator()(const Trace<json::Trades2 const> &) override;
+  void operator()(Trace<json::Portfolio const> const &) override;
+  void operator()(Trace<json::Changes const> const &) override;
+  void operator()(Trace<json::Order const> const &) override;
+  void operator()(Trace<json::Trades2 const> const &) override;
 
   template <typename C>
-  bool get_top_of_book(const std::string_view &symbol, C callback) {
+  bool get_top_of_book(std::string_view const &symbol, C callback) {
     auto iter = top_of_book_.find(symbol);
     if (iter == std::end(top_of_book_)) {
       auto iter_2 = shared_.multiplier.find(symbol);
@@ -148,8 +147,8 @@ class WebSocket final : public core::web::ClientSocket::Handler,
   const uint16_t stream_id_;
   const std::string name_;
   const size_t index_;
-  const bool master_;
-  const bool publish_top_of_book_;
+  bool const master_;
+  bool const publish_top_of_book_;
   // web socket
   core::web::ClientSocket connection_;
   // buffers

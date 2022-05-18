@@ -15,7 +15,7 @@ using namespace std::chrono_literals;
 using namespace Catch::literals;
 
 TEST_CASE("fix_logon_parse_message", "[fix_logon]") {
-  const auto message =
+  auto const message =
       "8=FIX.4.4\0019=211\00135=A\00149=DERIBITSERVER\00156=ROQ_TRADI"
       "NG\00134=1\00152=20190907-16:45:58.192\001108=10\00195=58\0019"
       "6=1567874758168.y4/hA3i6qxm4yVL+3N7IrGcINVAFMLFhy4l7ATSehxc=\001"
@@ -23,7 +23,7 @@ TEST_CASE("fix_logon_parse_message", "[fix_logon]") {
       "M=\0019001=Y\00110=115\001"sv;
   int results = 0;
   auto bytes = core::fix::Reader<core::fix::Version::FIX_44>::dispatch(
-      [&](const core::fix::Message &message) {
+      [&](core::fix::Message const &message) {
         ++results;
         CHECK(message.header.msg_type == core::fix::MsgType::LOGON);
         auto result = fix::Logon::create(message);
@@ -64,7 +64,7 @@ TEST_CASE("fix_logon_create_message", "[fix_logon]") {
       msg_seq_num,
       sending_time);
   auto message = logon.encode(writer);
-  const auto expected =
+  auto const expected =
       "8=FIX.4.4\0019=0000211\00135=A\00149=ROQ_TRADING\00156=DERIBIT"
       "SERVER\00134=1\00152=20190917-06:46:50.000\001108=10\00195=58\001"
       "96=1567874758168.y4/hA3i6qxm4yVL+3N7IrGcINVAFMLFhy4l7ATSehxc=\001"

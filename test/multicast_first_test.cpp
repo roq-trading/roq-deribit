@@ -44,9 +44,8 @@ TEST_CASE("multicast_example", "[multicast]") {
       "\x00\x24\x40"sv;
   CHECK(std::size(buffer) == 131);
   {
-    auto result = sbe::Frame::parse(
-        {reinterpret_cast<std::byte const *>(std::data(buffer)), std::size(buffer)},
-        [](auto &frame) {
+    auto result =
+        sbe::Frame::parse({reinterpret_cast<std::byte const *>(std::data(buffer)), std::size(buffer)}, [](auto &frame) {
           CHECK(frame.packet_length == 123);
           CHECK(frame.channel_id == 3);
           CHECK(frame.sequence_number == 73182);
@@ -123,8 +122,7 @@ TEST_CASE("multicast_1001_book", "[multicast]") {
   CHECK(message[1] == 0x00);
   CHECK(message[2] == 0x0a);
   CHECK(message[3] == 0x00);
-  const std::span buffer{
-      reinterpret_cast<std::byte const *>(std::data(message)), std::size(message)};
+  const std::span buffer{reinterpret_cast<std::byte const *>(std::data(message)), std::size(message)};
   CHECK(std::size(buffer) == 93);
   CHECK(buffer[0] == std::byte{0x55});
   CHECK(buffer[1] == std::byte{0x00});
@@ -140,8 +138,7 @@ TEST_CASE("multicast_1001_book", "[multicast]") {
   }
   {
     auto message = buffer.subspan(8);
-    MessageHeader header{
-        reinterpret_cast<char *>(const_cast<std::byte *>(std::data(message))), std::size(message)};
+    MessageHeader header{reinterpret_cast<char *>(const_cast<std::byte *>(std::data(message))), std::size(message)};
     CHECK(header.blockLength() == 29);
     CHECK(header.templateId() == 1001);  // defines the parser (1001=book)
     CHECK(header.sbeSchemaId() == 1);
@@ -160,10 +157,8 @@ TEST_CASE("multicast_book", "[multicast]") {
   std::span buffer{reinterpret_cast<std::byte const *>(std::data(message)), std::size(message)};
   struct MyHandler : public sbe::Parser::Handler {
     bool found = false;
-    void operator()(const Trace<deribit_multicast::Instrument> &, const sbe::Frame &) override {
-      FAIL();
-    }
-    void operator()(const Trace<deribit_multicast::Book> &event, const sbe::Frame &frame) override {
+    void operator()(Trace<deribit_multicast::Instrument> const &, sbe::Frame const &) override { FAIL(); }
+    void operator()(Trace<deribit_multicast::Book> const &event, sbe::Frame const &frame) override {
       found = true;
       CHECK(frame.channel_id == 10);
       CHECK(frame.sequence_number == 70994608);
@@ -172,16 +167,10 @@ TEST_CASE("multicast_book", "[multicast]") {
       CHECK(header.sbeSchemaId() == 1);
       CHECK(header.version() == 1);
     }
-    void operator()(const Trace<deribit_multicast::Quote> &, const sbe::Frame &) override {
-      FAIL();
-    }
-    void operator()(const Trace<deribit_multicast::Trades> &, const sbe::Frame &) override {
-      FAIL();
-    }
+    void operator()(Trace<deribit_multicast::Quote> const &, sbe::Frame const &) override { FAIL(); }
+    void operator()(Trace<deribit_multicast::Trades> const &, sbe::Frame const &) override { FAIL(); }
     // snapshot
-    void operator()(const Trace<deribit_multicast::Snapshot> &, const sbe::Frame &) override {
-      FAIL();
-    }
+    void operator()(Trace<deribit_multicast::Snapshot> const &, sbe::Frame const &) override { FAIL(); }
   } handler;
   TraceInfo trace_info;
   auto result = sbe::Parser::dispatch(handler, buffer, trace_info);
@@ -204,17 +193,14 @@ TEST_CASE("multicast_book_quote", "[multicast]") {
   std::span buffer{reinterpret_cast<std::byte const *>(std::data(message)), std::size(message)};
   {
     auto message = buffer.subspan(8);
-    Book book{
-        reinterpret_cast<char *>(const_cast<std::byte *>(std::data(message))), std::size(message)};
+    Book book{reinterpret_cast<char *>(const_cast<std::byte *>(std::data(message))), std::size(message)};
     CHECK(sbe::compute_length(book) == 85);
   }
   struct MyHandler : public sbe::Parser::Handler {
     bool found_book = false;
     bool found_quote = false;
-    void operator()(const Trace<deribit_multicast::Instrument> &, const sbe::Frame &) override {
-      FAIL();
-    }
-    void operator()(const Trace<deribit_multicast::Book> &event, const sbe::Frame &frame) override {
+    void operator()(Trace<deribit_multicast::Instrument> const &, sbe::Frame const &) override { FAIL(); }
+    void operator()(Trace<deribit_multicast::Book> const &event, sbe::Frame const &frame) override {
       found_book = true;
       CHECK(frame.channel_id == 10);
       CHECK(frame.sequence_number == 71164925);
@@ -223,8 +209,7 @@ TEST_CASE("multicast_book_quote", "[multicast]") {
       CHECK(header.sbeSchemaId() == 1);
       CHECK(header.version() == 1);
     }
-    void operator()(
-        const Trace<deribit_multicast::Quote> &event, const sbe::Frame &frame) override {
+    void operator()(Trace<deribit_multicast::Quote> const &event, sbe::Frame const &frame) override {
       found_quote = true;
       CHECK(frame.channel_id == 10);
       CHECK(frame.sequence_number == 71164925);
@@ -233,13 +218,9 @@ TEST_CASE("multicast_book_quote", "[multicast]") {
       CHECK(header.sbeSchemaId() == 1);
       CHECK(header.version() == 1);
     }
-    void operator()(const Trace<deribit_multicast::Trades> &, const sbe::Frame &) override {
-      FAIL();
-    }
+    void operator()(Trace<deribit_multicast::Trades> const &, sbe::Frame const &) override { FAIL(); }
     // snapshot
-    void operator()(const Trace<deribit_multicast::Snapshot> &, const sbe::Frame &) override {
-      FAIL();
-    }
+    void operator()(Trace<deribit_multicast::Snapshot> const &, sbe::Frame const &) override { FAIL(); }
   } handler;
   TraceInfo trace_info;
   auto result = sbe::Parser::dispatch(handler, buffer, trace_info);
@@ -273,18 +254,12 @@ TEST_CASE("multicast_snapshot", "[multicast]") {
   std::span buffer{reinterpret_cast<std::byte const *>(std::data(message)), std::size(message)};
   struct MyHandler : public sbe::Parser::Handler {
     bool found = false;
-    void operator()(const Trace<deribit_multicast::Instrument> &, const sbe::Frame &) override {
-      FAIL();
-    }
-    void operator()(const Trace<deribit_multicast::Book> &, const sbe::Frame &) override { FAIL(); }
-    void operator()(const Trace<deribit_multicast::Quote> &, const sbe::Frame &) override {
-      FAIL();
-    }
-    void operator()(const Trace<deribit_multicast::Trades> &, const sbe::Frame &) override {
-      FAIL();
-    }
+    void operator()(Trace<deribit_multicast::Instrument> const &, sbe::Frame const &) override { FAIL(); }
+    void operator()(Trace<deribit_multicast::Book> const &, sbe::Frame const &) override { FAIL(); }
+    void operator()(Trace<deribit_multicast::Quote> const &, sbe::Frame const &) override { FAIL(); }
+    void operator()(Trace<deribit_multicast::Trades> const &, sbe::Frame const &) override { FAIL(); }
     // snapshot
-    void operator()(const Trace<deribit_multicast::Snapshot> &event, const sbe::Frame &) override {
+    void operator()(Trace<deribit_multicast::Snapshot> const &event, sbe::Frame const &) override {
       found = true;
       auto &[trace_info, snapshot] = event;
       snapshot.sbeRewind();
@@ -347,18 +322,12 @@ TEST_CASE("multicast_snapshot_2", "[multicast]") {
   std::span buffer{reinterpret_cast<std::byte const *>(std::data(message)), std::size(message)};
   struct MyHandler : public sbe::Parser::Handler {
     size_t offset = 0;
-    void operator()(const Trace<deribit_multicast::Instrument> &, const sbe::Frame &) override {
-      FAIL();
-    }
-    void operator()(const Trace<deribit_multicast::Book> &, const sbe::Frame &) override { FAIL(); }
-    void operator()(const Trace<deribit_multicast::Quote> &, const sbe::Frame &) override {
-      FAIL();
-    }
-    void operator()(const Trace<deribit_multicast::Trades> &, const sbe::Frame &) override {
-      FAIL();
-    }
+    void operator()(Trace<deribit_multicast::Instrument> const &, sbe::Frame const &) override { FAIL(); }
+    void operator()(Trace<deribit_multicast::Book> const &, sbe::Frame const &) override { FAIL(); }
+    void operator()(Trace<deribit_multicast::Quote> const &, sbe::Frame const &) override { FAIL(); }
+    void operator()(Trace<deribit_multicast::Trades> const &, sbe::Frame const &) override { FAIL(); }
     // snapshot
-    void operator()(const Trace<deribit_multicast::Snapshot> &event, const sbe::Frame &) override {
+    void operator()(Trace<deribit_multicast::Snapshot> const &event, sbe::Frame const &) override {
       auto &[trace_info, snapshot] = event;
       snapshot.sbeRewind();
       switch (++offset) {
@@ -411,8 +380,7 @@ TEST_CASE("multicast_instrument", "[multicast]") {
   std::span buffer{reinterpret_cast<std::byte const *>(std::data(message)), std::size(message)};
   struct MyHandler : public sbe::Parser::Handler {
     bool found = false;
-    void operator()(
-        const Trace<deribit_multicast::Instrument> &event, const sbe::Frame &) override {
+    void operator()(Trace<deribit_multicast::Instrument> const &event, sbe::Frame const &) override {
       found = true;
       auto &[trace_info, instrument] = event;
       CHECK(instrument.instrumentId() == 5);
@@ -422,17 +390,11 @@ TEST_CASE("multicast_instrument", "[multicast]") {
       auto name = std::string_view{instrument.instrumentName(), length};
       CHECK(name == "BTC-14APR22_1500-39900-C"sv);
     }
-    void operator()(const Trace<deribit_multicast::Book> &, const sbe::Frame &) override { FAIL(); }
-    void operator()(const Trace<deribit_multicast::Quote> &, const sbe::Frame &) override {
-      FAIL();
-    }
-    void operator()(const Trace<deribit_multicast::Trades> &, const sbe::Frame &) override {
-      FAIL();
-    }
+    void operator()(Trace<deribit_multicast::Book> const &, sbe::Frame const &) override { FAIL(); }
+    void operator()(Trace<deribit_multicast::Quote> const &, sbe::Frame const &) override { FAIL(); }
+    void operator()(Trace<deribit_multicast::Trades> const &, sbe::Frame const &) override { FAIL(); }
     // snapshot
-    void operator()(const Trace<deribit_multicast::Snapshot> &, const sbe::Frame &) override {
-      FAIL();
-    }
+    void operator()(Trace<deribit_multicast::Snapshot> const &, sbe::Frame const &) override { FAIL(); }
   } handler;
   TraceInfo trace_info;
   auto result = sbe::Parser::dispatch(handler, buffer, trace_info);

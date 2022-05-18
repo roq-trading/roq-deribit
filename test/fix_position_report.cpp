@@ -14,7 +14,7 @@ using namespace std::literals;
 using namespace Catch::literals;
 
 TEST_CASE("fix_position_report_parse_message", "[fix_position_report]") {
-  const auto message =
+  auto const message =
       "8=FIX.4.4\0019=245\00135=AP\00149=DERIBITSERVER\00156=ROQ_TRAD"
       "ING\00134=5\00152=20190920-17:10:28.595\001721=3221109\001710="
       "roq-pos-003\001724=0\001728=0\001702=1\001703=TQ\001704=0\0017"
@@ -25,7 +25,7 @@ TEST_CASE("fix_position_report_parse_message", "[fix_position_report]") {
   core::fix::Buffer decode_buffer(buffer);
   int results = 0;
   auto bytes = core::fix::Reader<core::fix::Version::FIX_44>::dispatch(
-      [&](const core::fix::Message &message) {
+      [&](core::fix::Message const &message) {
         ++results;
         CHECK(message.header.msg_type == core::fix::MsgType::POSITION_REPORT);
         auto position_report = fix::PositionReport::create(message, decode_buffer);

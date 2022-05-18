@@ -24,15 +24,15 @@ namespace sbe {
 struct Parser final {
   struct Handler {
     // events
-    virtual void operator()(const Trace<deribit_multicast::Instrument> &, const Frame &) = 0;
-    virtual void operator()(const Trace<deribit_multicast::Book> &, const Frame &) = 0;
-    virtual void operator()(const Trace<deribit_multicast::Quote> &, const Frame &) = 0;
-    virtual void operator()(const Trace<deribit_multicast::Trades> &, const Frame &) = 0;
+    virtual void operator()(Trace<deribit_multicast::Instrument> const &, Frame const &) = 0;
+    virtual void operator()(Trace<deribit_multicast::Book> const &, Frame const &) = 0;
+    virtual void operator()(Trace<deribit_multicast::Quote> const &, Frame const &) = 0;
+    virtual void operator()(Trace<deribit_multicast::Trades> const &, Frame const &) = 0;
     // snapshot
-    virtual void operator()(const Trace<deribit_multicast::Snapshot> &, const Frame &) = 0;
+    virtual void operator()(Trace<deribit_multicast::Snapshot> const &, Frame const &) = 0;
   };
 
-  static bool dispatch(Handler &, const std::span<std::byte const> &buffer, const TraceInfo &);
+  static bool dispatch(Handler &, std::span<std::byte const> const &buffer, TraceInfo const &);
 };
 
 }  // namespace sbe

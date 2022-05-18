@@ -19,7 +19,7 @@ struct Frame final {
   static size_t size() { return 8; }
 
   template <typename Callback>
-  static bool parse(const std::span<std::byte const> &buffer, Callback &&callback) {
+  static bool parse(std::span<std::byte const> const &buffer, Callback &&callback) {
     auto [result, frame] = parse_helper(buffer);
     if (result)
       callback(frame);
@@ -27,7 +27,7 @@ struct Frame final {
   }
 
  private:
-  static std::pair<bool, Frame> parse_helper(const std::span<std::byte const> &buffer);
+  static std::pair<bool, Frame> parse_helper(std::span<std::byte const> const &buffer);
 };
 
 }  // namespace sbe
@@ -41,7 +41,7 @@ struct fmt::formatter<roq::deribit::sbe::Frame> {
     return std::begin(context);
   }
   template <typename Context>
-  auto format(const roq::deribit::sbe::Frame &value, Context &context) {
+  auto format(roq::deribit::sbe::Frame const &value, Context &context) {
     using namespace std::literals;
     return fmt::format_to(
         context.out(),

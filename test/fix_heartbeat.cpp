@@ -14,13 +14,13 @@ using namespace std::literals;
 using namespace Catch::literals;
 
 TEST_CASE("fix_heartbeat_parse_message", "[fix_heartbeat]") {
-  const auto message =
+  auto const message =
       "8=FIX.4.4\0019=89\00135=0\00149=DERIBITSERVER\00156=ROQ_TRADIN"
       "G\00134=2\00152=20190908-08:47:31.503\001112=anybody in there?"
       "\00110=084\001"sv;
   int results = 0;
   auto bytes = core::fix::Reader<core::fix::Version::FIX_44>::dispatch(
-      [&](const core::fix::Message &message) {
+      [&](core::fix::Message const &message) {
         ++results;
         CHECK(message.header.msg_type == core::fix::MsgType::HEARTBEAT);
         auto heartbeat = fix::Heartbeat::create(message);

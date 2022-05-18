@@ -16,9 +16,9 @@ enum class AdvOrderType : char {
   USD_ORDER = '1',
 };
 
-extern std::string_view EnumNameAdvOrderType(const AdvOrderType &value);
+extern std::string_view EnumNameAdvOrderType(AdvOrderType const &value);
 
-extern AdvOrderType parse_adv_order_type(const std::string_view &value);
+extern AdvOrderType parse_adv_order_type(std::string_view const &value);
 
 }  // namespace fix
 }  // namespace deribit
@@ -31,7 +31,7 @@ struct fmt::formatter<roq::deribit::fix::AdvOrderType> {
     return std::begin(context);
   }
   template <typename Context>
-  auto format(const roq::deribit::fix::AdvOrderType &value, Context &context) {
+  auto format(roq::deribit::fix::AdvOrderType const &value, Context &context) {
     using namespace std::literals;
     return fmt::format_to(context.out(), "{}"sv, roq::deribit::fix::EnumNameAdvOrderType(value));
   }

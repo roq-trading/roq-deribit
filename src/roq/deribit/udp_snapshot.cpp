@@ -24,13 +24,13 @@ namespace roq {
 namespace deribit {
 
 namespace {
-const auto NAME = "udps"sv;
+auto const NAME = "udps"sv;
 const Mask SUPPORTS{
     SupportType::MARKET_BY_PRICE,
 };
 
 struct create_metrics final : public core::metrics::Factory {
-  explicit create_metrics(const std::string_view &group, const std::string_view &function)
+  explicit create_metrics(std::string_view const &group, std::string_view const &function)
       : core::metrics::Factory(server::Flags::name(), group, function) {}
 };
 
@@ -80,8 +80,7 @@ void emplace(Trade &result, const T &value) {
 }
 }  // namespace
 
-UDPSnapshot::UDPSnapshot(
-    Handler &handler, core::io::Context &context, uint16_t stream_id, Shared &shared)
+UDPSnapshot::UDPSnapshot(Handler &handler, core::io::Context &context, uint16_t stream_id, Shared &shared)
     : handler_(handler), stream_id_(stream_id), name_(fmt::format("{}:{}"sv, stream_id_, NAME)),
       publish_market_by_price_(!flags::Multicast::multicast_disable_market_by_price()),
       connection_(create_connection(*this, context, flags::Multicast::multicast_port_snapshot())),
@@ -94,16 +93,16 @@ UDPSnapshot::UDPSnapshot(
       shared_(shared), aggregator_(server::Flags::cache_mbp_max_depth()) {
 }
 
-void UDPSnapshot::operator()(const Event<Start> &) {
+void UDPSnapshot::operator()(Event<Start> const &) {
 }
 
-void UDPSnapshot::operator()(const Event<Stop> &) {
+void UDPSnapshot::operator()(Event<Stop> const &) {
 }
 
-void UDPSnapshot::operator()(const Event<Timer> &) {
+void UDPSnapshot::operator()(Event<Timer> const &) {
 }
 
-void UDPSnapshot::operator()(const core::net::UdpConnection::Read &read) {
+void UDPSnapshot::operator()(core::net::UdpConnection::Read const &read) {
   log::info<5>("received {} byte(s)"sv, std::size(read.buffer));
   auto trace_info = server::create_trace_info();
   publish_stream_status(trace_info);  // first message will publish
@@ -113,12 +112,11 @@ void UDPSnapshot::operator()(const core::net::UdpConnection::Read &read) {
   }
 }
 
-void UDPSnapshot::operator()(const core::net::UdpConnection::Error &error) {
+void UDPSnapshot::operator()(core::net::UdpConnection::Error const &error) {
   log::warn<1>("Error: what={}"sv, error.what);
 }
 
-void UDPSnapshot::operator()(
-    const Trace<deribit_multicast::Instrument> &event, const sbe::Frame &frame) {
+void UDPSnapshot::operator()(Trace<deribit_multicast::Instrument> const &event, sbe::Frame const &frame) {
   auto &instrument = event.value;
   log::info<5>("instrument={}, frame={}"sv, instrument, frame);
   if (aggregator_(frame.sequence_number)) {
@@ -130,28 +128,25 @@ void UDPSnapshot::operator()(
   }
 }
 
-void UDPSnapshot::operator()(const Trace<deribit_multicast::Book> &event, const sbe::Frame &frame) {
+void UDPSnapshot::operator()(Trace<deribit_multicast::Book> const &event, sbe::Frame const &frame) {
   auto &book = event.value;
   log::info<5>("book={}, frame={}"sv, book, frame);
   log::fatal("Unexpected"sv);
 }
 
-void UDPSnapshot::operator()(
-    const Trace<deribit_multicast::Quote> &event, const sbe::Frame &frame) {
+void UDPSnapshot::operator()(Trace<deribit_multicast::Quote> const &event, sbe::Frame const &frame) {
   auto &quote = event.value;
   log::info<5>("quote={}, frame={}"sv, quote, frame);
   log::fatal("Unexpected"sv);
 }
 
-void UDPSnapshot::operator()(
-    const Trace<deribit_multicast::Trades> &event, const sbe::Frame &frame) {
+void UDPSnapshot::operator()(Trace<deribit_multicast::Trades> const &event, sbe::Frame const &frame) {
   auto &trades = event.value;
   log::info<5>("trades={}, frame={}"sv, trades, frame);
   log::fatal("Unexpected"sv);
 }
 
-void UDPSnapshot::operator()(
-    const Trace<deribit_multicast::Snapshot> &event, const sbe::Frame &frame) {
+void UDPSnapshot::operator()(Trace<deribit_multicast::Snapshot> const &event, sbe::Frame const &frame) {
   auto &trace_info = event.trace_info;
   auto &snapshot = event.value;
   log::info<5>("snapshot={}, frame={}"sv, snapshot, frame);
@@ -163,38 +158,37 @@ void UDPSnapshot::operator()(
   auto const discard = tmp.second;
   auto const change_id = snapshot.changeId();
   auto const is_last = snapshot.isLastInBook();
-  aggregator_(
-      frame.sequence_number, instrument_id, change_id, is_last, [&](auto &bids, auto &asks) {
-        if (!publish_market_by_price_)
-          return;
-        if (discard)
-          return;
-        snapshot.sbeRewind();
-        snapshot.levelsList().forEach([&](auto const &item) { emplace_back(item, bids, asks); });
-        if (is_last) {
-          std::chrono::milliseconds const timestamp{snapshot.timestampMs()};
-          if (!(std::empty(bids) && std::empty(asks))) {
-            const MarketByPriceUpdate market_by_price_update{
-                .stream_id = stream_id_,
-                .exchange = flags::Config::exchange(),
-                .symbol = symbol,
-                .bids = bids,
-                .asks = asks,
-                .update_type = UpdateType::SNAPSHOT,
-                .exchange_time_utc = timestamp,
-                .exchange_sequence = static_cast<int64_t>(change_id),
-                .price_decimals = {},
-                .quantity_decimals = {},
-                .checksum = {},
-            };
-            try {
-              create_trace_and_dispatch(handler_, trace_info, market_by_price_update, true, false);
-            } catch (BadState &) {
-              log::fatal("BAD STATE"sv);
-            }
-          }
+  aggregator_(frame.sequence_number, instrument_id, change_id, is_last, [&](auto &bids, auto &asks) {
+    if (!publish_market_by_price_)
+      return;
+    if (discard)
+      return;
+    snapshot.sbeRewind();
+    snapshot.levelsList().forEach([&](auto const &item) { emplace_back(item, bids, asks); });
+    if (is_last) {
+      std::chrono::milliseconds const timestamp{snapshot.timestampMs()};
+      if (!(std::empty(bids) && std::empty(asks))) {
+        const MarketByPriceUpdate market_by_price_update{
+            .stream_id = stream_id_,
+            .exchange = flags::Config::exchange(),
+            .symbol = symbol,
+            .bids = bids,
+            .asks = asks,
+            .update_type = UpdateType::SNAPSHOT,
+            .exchange_time_utc = timestamp,
+            .exchange_sequence = static_cast<int64_t>(change_id),
+            .price_decimals = {},
+            .quantity_decimals = {},
+            .checksum = {},
+        };
+        try {
+          create_trace_and_dispatch(handler_, trace_info, market_by_price_update, true, false);
+        } catch (BadState &) {
+          log::fatal("BAD STATE"sv);
         }
-      });
+      }
+    }
+  });
 }
 
 void UDPSnapshot::operator()(metrics::Writer &writer) {
@@ -203,7 +197,7 @@ void UDPSnapshot::operator()(metrics::Writer &writer) {
       .write(profile_.parse, metrics::PROFILE);
 }
 
-void UDPSnapshot::publish_stream_status(const TraceInfo &trace_info) {
+void UDPSnapshot::publish_stream_status(TraceInfo const &trace_info) {
   if (initialized_)
     return;
   initialized_ = true;

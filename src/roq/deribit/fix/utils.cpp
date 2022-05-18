@@ -8,7 +8,7 @@ namespace roq {
 namespace deribit {
 namespace fix {
 
-SecurityType map_security_type(const std::string_view &value) {
+SecurityType map_security_type(std::string_view const &value) {
   if (std::size(value) == 3) {
     switch (std::data(value)[0]) {
       case 'F':
@@ -24,7 +24,7 @@ SecurityType map_security_type(const std::string_view &value) {
   return SecurityType::UNDEFINED;
 }
 
-Error map_error(const std::string_view &value) {
+Error map_error(std::string_view const &value) {
   if (std::size(value) > 0) {
     switch (std::data(value)[0]) {
       case 'c':
@@ -40,7 +40,7 @@ Error map_error(const std::string_view &value) {
   return Error::UNKNOWN;
 }
 
-std::string_view map(const Mask<ExecutionInstruction> &execution_instructions) {
+std::string_view map(Mask<ExecutionInstruction> const &execution_instructions) {
   if (std::empty(execution_instructions))
     return {};
   if (execution_instructions.has(ExecutionInstruction::PARTICIPATE_DO_NOT_INITIATE))
@@ -50,7 +50,7 @@ std::string_view map(const Mask<ExecutionInstruction> &execution_instructions) {
   throw RuntimeError("Not a supported execution instruction"sv);
 }
 
-Error reject_to_error(const std::string_view &reason, const std::string_view &text) {
+Error reject_to_error(std::string_view const &reason, std::string_view const &text) {
   if (std::empty(reason) && text.compare("rate_limit_exceeded"sv) == 0)
     return Error::REQUEST_RATE_LIMIT_REACHED;
   return {};

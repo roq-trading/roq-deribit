@@ -17,12 +17,12 @@ namespace deribit {
 
 class Config final : public server::Config, public server::ConfigReader::Handler {
  public:
-  Config(const std::string_view &config_path, const std::string_view &secrets_path);
+  Config(std::string_view const &config_path, std::string_view const &secrets_path);
 
-  const Account &get_master_account() const;
+  Account const &get_master_account() const;
 
-  const std::string &get_access_key(const Account &) const;
-  const std::string &get_access_secret(const Account &) const;
+  std::string const &get_access_key(Account const &) const;
+  std::string const &get_access_secret(Account const &) const;
 
  protected:
   // server::Config
@@ -33,7 +33,7 @@ class Config final : public server::Config, public server::ConfigReader::Handler
   void operator()(server::Account &&) override;
   void operator()(server::User &&) override;
   void operator()(server::RateLimit &&) override;
-  void operator()(const std::string_view &key, toml::node &) override;
+  void operator()(std::string_view const &key, toml::node &) override;
 
  public:
   server::Users users;
@@ -53,7 +53,7 @@ struct fmt::formatter<roq::deribit::Config> {
     return std::begin(context);
   }
   template <typename Context>
-  auto format(const roq::deribit::Config &value, Context &context) {
+  auto format(roq::deribit::Config const &value, Context &context) {
     using namespace std::literals;
     return fmt::format_to(
         context.out(),

@@ -13,7 +13,7 @@ using namespace std::chrono_literals;
 using namespace Catch::literals;
 
 TEST_CASE("json_instrument_parse_message", "[json_instrument]") {
-  const auto message = R"({)"
+  auto const message = R"({)"
                        R"("jsonrpc":"2.0",)"
                        R"("result":[)"
                        R"({)"

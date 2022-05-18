@@ -17,7 +17,7 @@ namespace deribit {
 namespace json {
 
 namespace {
-constexpr std::string_view get_token(const std::string_view &name) {
+constexpr std::string_view get_token(std::string_view const &name) {
   auto delim = name.find_first_of('.');
   auto part = name.substr(0, delim);
   if (part.compare("user"sv) == 0 && delim != name.npos) [[unlikely]] {
@@ -45,7 +45,7 @@ static_assert(get_token("user.changes.123"sv) == "changes"sv);
 static_assert(get_token("instrument.state"sv) == "instrument_state"sv);
 static_assert(get_token("instrument.state.123"sv) == "instrument_state"sv);
 
-Channel parse_channel(const std::string_view &name) {
+Channel parse_channel(std::string_view const &name) {
   auto token = get_token(name);
   if (std::empty(token)) [[unlikely]]
     return Channel::UNKNOWN;
@@ -53,62 +53,56 @@ Channel parse_channel(const std::string_view &name) {
 }
 
 template <typename T>
-void dispatch_platform_state(Parser::Handler &handler, T &value, const TraceInfo &trace_info) {
+void dispatch_platform_state(Parser::Handler &handler, T &value, TraceInfo const &trace_info) {
   const PlatformState platform_state(value);
   create_trace_and_dispatch(handler, trace_info, platform_state);
 }
 
 template <typename T>
-void dispatch_instrument_state(Parser::Handler &handler, T &value, const TraceInfo &trace_info) {
+void dispatch_instrument_state(Parser::Handler &handler, T &value, TraceInfo const &trace_info) {
   const InstrumentState instrument_state(value);
   create_trace_and_dispatch(handler, trace_info, instrument_state);
 }
 
 template <typename T>
-void dispatch_quote(Parser::Handler &handler, T &value, const TraceInfo &trace_info) {
+void dispatch_quote(Parser::Handler &handler, T &value, TraceInfo const &trace_info) {
   const Quote quote(value);
   create_trace_and_dispatch(handler, trace_info, quote);
 }
 
 template <typename T>
-void dispatch_ticker(Parser::Handler &handler, T &value, const TraceInfo &trace_info) {
+void dispatch_ticker(Parser::Handler &handler, T &value, TraceInfo const &trace_info) {
   const Ticker ticker(value);
   create_trace_and_dispatch(handler, trace_info, ticker);
 }
 
 template <typename T>
-void dispatch_portfolio(Parser::Handler &handler, T &value, const TraceInfo &trace_info) {
+void dispatch_portfolio(Parser::Handler &handler, T &value, TraceInfo const &trace_info) {
   const Portfolio portfolio(value);
   create_trace_and_dispatch(handler, trace_info, portfolio);
 }
 
 template <typename T>
-void dispatch_changes(
-    Parser::Handler &handler, T &value, core::json::Buffer &buffer, const TraceInfo &trace_info) {
+void dispatch_changes(Parser::Handler &handler, T &value, core::json::Buffer &buffer, TraceInfo const &trace_info) {
   const Changes changes(value, buffer);
   create_trace_and_dispatch(handler, trace_info, changes);
 }
 
 template <typename T>
-void dispatch_orders(
-    Parser::Handler &handler, T &value, core::json::Buffer &, const TraceInfo &trace_info) {
+void dispatch_orders(Parser::Handler &handler, T &value, core::json::Buffer &, TraceInfo const &trace_info) {
   const Order order(value);
   create_trace_and_dispatch(handler, trace_info, order);
 }
 
 template <typename T>
-void dispatch_trades(
-    Parser::Handler &handler, T &value, core::json::Buffer &buffer, const TraceInfo &trace_info) {
+void dispatch_trades(Parser::Handler &handler, T &value, core::json::Buffer &buffer, TraceInfo const &trace_info) {
   const Trades2 trades(value, buffer);
   create_trace_and_dispatch(handler, trace_info, trades);
 }
 }  // namespace
 
 void Parser::dispatch(
-    Parser::Handler &handler,
-    core::json::Value &value,
-    core::json::Buffer &buffer,
-    const TraceInfo &trace_info) {
+    Parser::Handler &handler, core::json::Value &value, core::json::Buffer &buffer, TraceInfo const &trace_info) {
   // note! message is nested / channel name is at level 2
   auto message = core::json::get<std::string_view>(value);
   auto channel = Channel::UNDEFINED;

@@ -28,18 +28,18 @@ namespace json {
 struct Parser final {
   struct Handler {
     // public
-    virtual void operator()(const Trace<PlatformState const> &) = 0;
-    virtual void operator()(const Trace<InstrumentState const> &) = 0;
-    virtual void operator()(const Trace<Quote const> &) = 0;
-    virtual void operator()(const Trace<Ticker const> &) = 0;
+    virtual void operator()(Trace<PlatformState const> const &) = 0;
+    virtual void operator()(Trace<InstrumentState const> const &) = 0;
+    virtual void operator()(Trace<Quote const> const &) = 0;
+    virtual void operator()(Trace<Ticker const> const &) = 0;
     // private
-    virtual void operator()(const Trace<Portfolio const> &) = 0;
-    virtual void operator()(const Trace<Changes const> &) = 0;
-    virtual void operator()(const Trace<Order const> &) = 0;
-    virtual void operator()(const Trace<Trades2 const> &) = 0;
+    virtual void operator()(Trace<Portfolio const> const &) = 0;
+    virtual void operator()(Trace<Changes const> const &) = 0;
+    virtual void operator()(Trace<Order const> const &) = 0;
+    virtual void operator()(Trace<Trades2 const> const &) = 0;
   };
 
-  static void dispatch(Handler &, core::json::Value &, core::json::Buffer &, const TraceInfo &);
+  static void dispatch(Handler &, core::json::Value &, core::json::Buffer &, TraceInfo const &);
 };
 
 }  // namespace json

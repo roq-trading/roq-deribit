@@ -10,13 +10,13 @@ using namespace roq::deribit;
 using namespace std::literals;
 
 namespace {
-const auto message_1 =
+auto const message_1 =
     "8=FIX.4.4\0019=216\00135=X\00149=DERIBITSERVER\00156=ROQ_TRADI"
     "NG\00134=126\00152=20190907-15:37:00.896\00155=BTC-27SEP19\001"
     "100087=10831047\001100090=10517.4400\001746=9465994.0000\00126"
     "2=123\001268=1\001279=0\001269=1\001270=10523.0000\001271=1000"
     ".0000\001272=20190907-15:37:00.896\00110=241\001"sv;
-const auto message_2 =
+auto const message_2 =
     "8=FIX.4.4\0019=726\00135=X\00149=DERIBITSERVER\00156=ROQ_TRADI"
     "NG\00134=117\00152=20190907-15:37:00.384\00155=BTC-27SEP19\001"
     "268=5\001279=0\001269=2\001270=10519.5000\001271=826.0000\0012"
@@ -42,7 +42,7 @@ void BM_fix_market_data_increment_refresh_parse_message_1(
   for (auto _ : state) {
     core::fix::Buffer decode_buffer(buffer);
     core::fix::Reader<core::fix::Version::FIX_44>::dispatch(
-        [&](const core::fix::Message &message) {
+        [&](core::fix::Message const &message) {
           auto result = fix::MarketDataIncrementalRefresh::create(message, decode_buffer);
           if (!std::empty(result.md_req_id))
             ++processed;
@@ -60,7 +60,7 @@ void BM_fix_market_data_increment_refresh_parse_message_2(
   for (auto _ : state) {
     core::fix::Buffer decode_buffer(buffer);
     core::fix::Reader<core::fix::Version::FIX_44>::dispatch(
-        [&](const core::fix::Message &message) {
+        [&](core::fix::Message const &message) {
           auto result = fix::MarketDataIncrementalRefresh::create(message, decode_buffer);
           if (!std::empty(result.md_req_id))
             ++processed;

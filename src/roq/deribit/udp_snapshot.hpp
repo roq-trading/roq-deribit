@@ -24,36 +24,35 @@ namespace deribit {
 class UDPSnapshot final : public core::net::UdpConnection::Handler, public sbe::Parser::Handler {
  public:
   struct Handler {
-    virtual void operator()(const Trace<StreamStatus const> &) = 0;
-    virtual void operator()(
-        const Trace<MarketByPriceUpdate const> &, bool is_last, bool refresh) = 0;
+    virtual void operator()(Trace<StreamStatus const> const &) = 0;
+    virtual void operator()(Trace<MarketByPriceUpdate const> const &, bool is_last, bool refresh) = 0;
   };
 
   UDPSnapshot(Handler &, core::io::Context &, uint16_t stream_id, Shared &);
 
-  UDPSnapshot(const UDPSnapshot &) = delete;
+  UDPSnapshot(UDPSnapshot const &) = delete;
   UDPSnapshot(UDPSnapshot &&) = delete;
 
-  void operator()(const Event<Start> &);
-  void operator()(const Event<Stop> &);
-  void operator()(const Event<Timer> &);
+  void operator()(Event<Start> const &);
+  void operator()(Event<Stop> const &);
+  void operator()(Event<Timer> const &);
 
   void operator()(metrics::Writer &);
 
  protected:
-  void operator()(const core::net::UdpConnection::Read &) override;
-  void operator()(const core::net::UdpConnection::Error &) override;
+  void operator()(core::net::UdpConnection::Read const &) override;
+  void operator()(core::net::UdpConnection::Error const &) override;
 
  protected:
   // events
-  void operator()(const Trace<deribit_multicast::Instrument> &, const sbe::Frame &) override;
-  void operator()(const Trace<deribit_multicast::Book> &, const sbe::Frame &) override;
-  void operator()(const Trace<deribit_multicast::Quote> &, const sbe::Frame &) override;
-  void operator()(const Trace<deribit_multicast::Trades> &, const sbe::Frame &) override;
+  void operator()(Trace<deribit_multicast::Instrument> const &, sbe::Frame const &) override;
+  void operator()(Trace<deribit_multicast::Book> const &, sbe::Frame const &) override;
+  void operator()(Trace<deribit_multicast::Quote> const &, sbe::Frame const &) override;
+  void operator()(Trace<deribit_multicast::Trades> const &, sbe::Frame const &) override;
   // snapshot
-  void operator()(const Trace<deribit_multicast::Snapshot> &, const sbe::Frame &) override;
+  void operator()(Trace<deribit_multicast::Snapshot> const &, sbe::Frame const &) override;
 
-  void publish_stream_status(const TraceInfo &);
+  void publish_stream_status(TraceInfo const &);
 
   // utils
   template <typename T, typename U>
@@ -64,7 +63,7 @@ class UDPSnapshot final : public core::net::UdpConnection::Handler, public sbe::
   // config
   const uint16_t stream_id_;
   const std::string name_;
-  const bool publish_market_by_price_;
+  bool const publish_market_by_price_;
   // connection
   core::net::UdpConnection connection_;
   // metrics

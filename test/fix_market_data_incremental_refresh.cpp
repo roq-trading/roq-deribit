@@ -14,9 +14,8 @@ using namespace std::chrono_literals;
 
 using namespace Catch::literals;
 
-TEST_CASE(
-    "fix_market_data_incremental_refresh_parse_message_1", "fix_market_data_incremental_refresh") {
-  const auto message =
+TEST_CASE("fix_market_data_incremental_refresh_parse_message_1", "fix_market_data_incremental_refresh") {
+  auto const message =
       "8=FIX.4.4\0019=216\00135=X\00149=DERIBITSERVER\00156=ROQ_TRADI"
       "NG\00134=126\00152=20190907-15:37:00.896\00155=BTC-27SEP19\001"
       "100087=10831047\001100090=10517.4400\001746=9465994.0000\00126"
@@ -26,7 +25,7 @@ TEST_CASE(
   core::fix::Buffer decode_buffer(buffer);
   int results = 0;
   auto bytes = core::fix::Reader<core::fix::Version::FIX_44>::dispatch(
-      [&](const core::fix::Message &message) {
+      [&](core::fix::Message const &message) {
         ++results;
         CHECK(message.header.msg_type == core::fix::MsgType::MARKET_DATA_INCREMENTAL_REFRESH);
         auto result = fix::MarketDataIncrementalRefresh::create(message, decode_buffer);
@@ -49,9 +48,8 @@ TEST_CASE(
   CHECK(results == 1);
 }
 
-TEST_CASE(
-    "fix_market_data_incremental_refresh_parse_message_2", "fix_market_data_incremental_refresh") {
-  const auto message =
+TEST_CASE("fix_market_data_incremental_refresh_parse_message_2", "fix_market_data_incremental_refresh") {
+  auto const message =
       "8=FIX.4.4\0019=726\00135=X\00149=DERIBITSERVER\00156=ROQ_TRADI"
       "NG\00134=117\00152=20190907-15:37:00.384\00155=BTC-27SEP19\001"
       "268=5\001279=0\001269=2\001270=10519.5000\001271=826.0000\0012"
@@ -72,7 +70,7 @@ TEST_CASE(
   core::fix::Buffer decode_buffer(buffer);
   int results = 0;
   auto bytes = core::fix::Reader<core::fix::Version::FIX_44>::dispatch(
-      [&](const core::fix::Message &message) {
+      [&](core::fix::Message const &message) {
         ++results;
         CHECK(message.header.msg_type == core::fix::MsgType::MARKET_DATA_INCREMENTAL_REFRESH);
         auto result = fix::MarketDataIncrementalRefresh::create(message, decode_buffer);
@@ -154,9 +152,8 @@ TEST_CASE(
   CHECK(results == 1);
 }
 
-TEST_CASE(
-    "fix_market_data_incremental_refresh_parse_message_3", "fix_market_data_incremental_refresh") {
-  const auto message =
+TEST_CASE("fix_market_data_incremental_refresh_parse_message_3", "fix_market_data_incremental_refresh") {
+  auto const message =
       "8=FIX.4.4\0019=219\00135=X\00149=DERIBITSERVER\00156=ROQ_TRADI"
       "NG\00134=16453\00152=20190928-15:48:12.831\00155=ETH-PERPETUAL"
       "\001268=1\001279=0\001269=2\001270=170.1500\001271=22.0000\001"
@@ -166,7 +163,7 @@ TEST_CASE(
   core::fix::Buffer decode_buffer(buffer);
   int results = 0;
   auto bytes = core::fix::Reader<core::fix::Version::FIX_44>::dispatch(
-      [&](const core::fix::Message &message) {
+      [&](core::fix::Message const &message) {
         ++results;
         CHECK(message.header.msg_type == core::fix::MsgType::MARKET_DATA_INCREMENTAL_REFRESH);
         auto result = fix::MarketDataIncrementalRefresh::create(message, decode_buffer);

@@ -12,7 +12,7 @@ using namespace std::literals;
 using namespace Catch::literals;
 
 TEST_CASE("json_ticker_parse_message", "[json_ticker]") {
-  const auto message = R"({)"
+  auto const message = R"({)"
                        R"("jsonrpc":"2.0",)"
                        R"("result":{)"
                        R"("timestamp":1566822213978,)"

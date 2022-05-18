@@ -173,7 +173,7 @@ struct fmt::formatter<deribit_multicast::MessageHeader> {
     return std::begin(context);
   }
   template <typename Context>
-  auto format(const deribit_multicast::MessageHeader &value, Context &context) {
+  auto format(deribit_multicast::MessageHeader const &value, Context &context) {
     using namespace std::literals;
     return fmt::format_to(
         context.out(),
@@ -203,7 +203,7 @@ struct fmt::formatter<deribit_multicast::Book::ChangesList> {
     return std::begin(context);
   }
   template <typename Context>
-  auto format(const deribit_multicast::Book::ChangesList &value, Context &context) {
+  auto format(deribit_multicast::Book::ChangesList const &value, Context &context) {
     using namespace std::literals;
     return fmt::format_to(
         context.out(),
@@ -227,7 +227,7 @@ struct fmt::formatter<deribit_multicast::Trades::TradesList> {
     return std::begin(context);
   }
   template <typename Context>
-  auto format(const deribit_multicast::Trades::TradesList &value, Context &context) {
+  auto format(deribit_multicast::Trades::TradesList const &value, Context &context) {
     using namespace std::literals;
     return fmt::format_to(
         context.out(),
@@ -269,7 +269,7 @@ struct fmt::formatter<deribit_multicast::Snapshot::LevelsList> {
     return std::begin(context);
   }
   template <typename Context>
-  auto format(const deribit_multicast::Snapshot::LevelsList &value, Context &context) {
+  auto format(deribit_multicast::Snapshot::LevelsList const &value, Context &context) {
     using namespace std::literals;
     return fmt::format_to(
         context.out(),
@@ -315,8 +315,7 @@ struct fmt::formatter<deribit_multicast::Book> {
         value.prevChangeId(),
         value.changeId(),
         roq::deribit::sbe::map_yes_no(value.isLast()),
-        fmt::join(
-            roq::core::sbe::iterator{value.changesList()}, roq::core::sbe::sentinel{}, ", "sv));
+        fmt::join(roq::core::sbe::iterator{value.changesList()}, roq::core::sbe::sentinel{}, ", "sv));
   }
 };
 
@@ -428,7 +427,6 @@ struct fmt::formatter<deribit_multicast::Trades> {
         R"(}})"sv,
         value.header(),
         value.instrumentId(),
-        fmt::join(
-            roq::core::sbe::iterator{value.tradesList()}, roq::core::sbe::sentinel{}, ", "sv));
+        fmt::join(roq::core::sbe::iterator{value.tradesList()}, roq::core::sbe::sentinel{}, ", "sv));
   }
 };

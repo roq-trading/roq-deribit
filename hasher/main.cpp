@@ -53,8 +53,7 @@ int main(int argc, char **argv) {
     auto real_nonce = std::empty(nonce) ? hasher.create_nonce() : std::string{nonce};
     auto [signature, used_timestamp] = hasher.create_signature(real_timestamp, real_nonce);
     // summary
-    printf(
-        "    nonce : \"%.*s\"\n", static_cast<int>(std::size(real_nonce)), std::data(real_nonce));
+    printf("    nonce : \"%.*s\"\n", static_cast<int>(std::size(real_nonce)), std::data(real_nonce));
     printf("signature : \"%.*s\"\n", static_cast<int>(std::size(signature)), std::data(signature));
   } else {
     fprintf(stderr, "Unknown type=%s\n", argv[1]);

@@ -46,64 +46,63 @@ namespace deribit {
 class OrderEntry final : public core::net::Manager::Handler {
  public:
   struct Handler {
-    virtual void operator()(const Trace<StreamStatus const> &) = 0;
-    virtual void operator()(const Trace<ExternalLatency const> &) = 0;
-    virtual void operator()(const Trace<TradeUpdate const> &, bool is_last, uint8_t user_id) = 0;
-    virtual void operator()(const Trace<PositionUpdate const> &, bool is_last) = 0;
+    virtual void operator()(Trace<StreamStatus const> const &) = 0;
+    virtual void operator()(Trace<ExternalLatency const> const &) = 0;
+    virtual void operator()(Trace<TradeUpdate const> const &, bool is_last, uint8_t user_id) = 0;
+    virtual void operator()(Trace<PositionUpdate const> const &, bool is_last) = 0;
   };
 
   OrderEntry(Handler &, core::io::Context &, uint16_t stream_id, Security &, Shared &);
 
-  OrderEntry(const OrderEntry &) = delete;
+  OrderEntry(OrderEntry const &) = delete;
   OrderEntry(OrderEntry &&) = delete;
 
   bool ready() const { return status_ == ConnectionStatus::READY; }
 
-  void operator()(const Event<Start> &);
-  void operator()(const Event<Stop> &);
-  void operator()(const Event<Timer> &);
+  void operator()(Event<Start> const &);
+  void operator()(Event<Stop> const &);
+  void operator()(Event<Timer> const &);
 
+  uint16_t operator()(Event<CreateOrder> const &, oms::Order const &, std::string_view const &request_id);
   uint16_t operator()(
-      const Event<CreateOrder> &, const oms::Order &, const std::string_view &request_id);
+      Event<ModifyOrder> const &,
+      oms::Order const &,
+      std::string_view const &request_id,
+      std::string_view const &previous_request_id);
   uint16_t operator()(
-      const Event<ModifyOrder> &,
-      const oms::Order &,
-      const std::string_view &request_id,
-      const std::string_view &previous_request_id);
-  uint16_t operator()(
-      const Event<CancelOrder> &,
-      const oms::Order &,
-      const std::string_view &request_id,
-      const std::string_view &previous_request_id);
+      Event<CancelOrder> const &,
+      oms::Order const &,
+      std::string_view const &request_id,
+      std::string_view const &previous_request_id);
 
-  uint16_t operator()(const Event<CancelAllOrders> &, const std::string_view &request_id);
+  uint16_t operator()(Event<CancelAllOrders> const &, std::string_view const &request_id);
 
   void operator()(metrics::Writer &);
 
-  void operator()(const Trace<fix::Heartbeat const> &, const core::fix::Header &);
-  void operator()(const Trace<fix::Logon const> &, const core::fix::Header &);
-  void operator()(const Trace<fix::Logout const> &, const core::fix::Header &);
-  void operator()(const Trace<fix::ResendRequest const> &, const core::fix::Header &);
-  void operator()(const Trace<fix::TestRequest const> &, const core::fix::Header &);
+  void operator()(Trace<fix::Heartbeat const> const &, core::fix::Header const &);
+  void operator()(Trace<fix::Logon const> const &, core::fix::Header const &);
+  void operator()(Trace<fix::Logout const> const &, core::fix::Header const &);
+  void operator()(Trace<fix::ResendRequest const> const &, core::fix::Header const &);
+  void operator()(Trace<fix::TestRequest const> const &, core::fix::Header const &);
 
-  void operator()(const Trace<fix::PositionReport const> &, const core::fix::Header &);
+  void operator()(Trace<fix::PositionReport const> const &, core::fix::Header const &);
 
-  void operator()(const Trace<fix::ExecutionReport const> &, const core::fix::Header &);
-  void operator()(const Trace<fix::OrderCancelReject const> &, const core::fix::Header &);
-  void operator()(const Trace<fix::Reject const> &, const core::fix::Header &);
-  void operator()(const Trace<fix::OrderMassCancelReport const> &, const core::fix::Header &);
+  void operator()(Trace<fix::ExecutionReport const> const &, core::fix::Header const &);
+  void operator()(Trace<fix::OrderCancelReject const> const &, core::fix::Header const &);
+  void operator()(Trace<fix::Reject const> const &, core::fix::Header const &);
+  void operator()(Trace<fix::OrderMassCancelReport const> const &, core::fix::Header const &);
 
  protected:
-  void operator()(const core::net::Manager::Connected &) override;
-  void operator()(const core::net::Manager::Disconnected &) override;
-  void operator()(const core::net::Manager::Read &) override;
+  void operator()(core::net::Manager::Connected const &) override;
+  void operator()(core::net::Manager::Disconnected const &) override;
+  void operator()(core::net::Manager::Read const &) override;
 
  private:
   void operator()(ConnectionStatus);
 
   void send_logon();
-  void send_logout(const std::string_view &text);
-  void send_heartbeat(const std::string_view &test_req_id);
+  void send_logout(std::string_view const &text);
+  void send_heartbeat(std::string_view const &test_req_id);
   void send_test_request(std::chrono::nanoseconds now);
 
   uint32_t download(OrderEntryState);
@@ -111,8 +110,8 @@ class OrderEntry final : public core::net::Manager::Handler {
   void subscribe_positions();
   void download_orders();
 
-  void parse(const Trace<core::fix::Message const> &);
-  void parse_helper(const Trace<core::fix::Message const> &);
+  void parse(Trace<core::fix::Message const> const &);
+  void parse_helper(Trace<core::fix::Message const> const &);
 
   // utilities
 
@@ -122,7 +121,7 @@ class OrderEntry final : public core::net::Manager::Handler {
   template <typename T>
   uint64_t send(const T &event, std::chrono::nanoseconds sending_time);
 
-  void check(const core::fix::Header &);
+  void check(core::fix::Header const &);
 
  private:
   Handler &handler_;

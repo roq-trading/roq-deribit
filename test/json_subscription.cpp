@@ -12,14 +12,14 @@ using namespace std::literals;
 using namespace Catch::literals;
 
 struct MyHandler : public json::Parser::Handler {
-  void operator()(const Trace<json::PlatformState const> &) override {}
-  void operator()(const Trace<json::InstrumentState const> &) override {}
-  void operator()(const Trace<json::Quote const> &) override {}
-  void operator()(const Trace<json::Ticker const> &) override {}
-  void operator()(const Trace<json::Portfolio const> &) override {}
-  void operator()(const Trace<json::Changes const> &) override {}
-  void operator()(const Trace<json::Order const> &) override {}
-  void operator()(const Trace<json::Trades2 const> &) override {}
+  void operator()(Trace<json::PlatformState const> const &) override {}
+  void operator()(Trace<json::InstrumentState const> const &) override {}
+  void operator()(Trace<json::Quote const> const &) override {}
+  void operator()(Trace<json::Ticker const> const &) override {}
+  void operator()(Trace<json::Portfolio const> const &) override {}
+  void operator()(Trace<json::Changes const> const &) override {}
+  void operator()(Trace<json::Order const> const &) override {}
+  void operator()(Trace<json::Trades2 const> const &) override {}
 };
 
 TEST_CASE("json_subscription_parse_message", "[json_subscription]") {
@@ -71,7 +71,7 @@ TEST_CASE("json_subscription_parse_message", "[json_subscription]") {
     R"(})"
     R"(})";
   */
-  const auto message = R"({)"
+  auto const message = R"({)"
                        R"("channel":"ticker.BTC-2APR20-7125-P.raw",)"
                        R"("data":{)"
                        R"("underlying_price":6663.43,)"

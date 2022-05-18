@@ -12,17 +12,17 @@ namespace roq {
 namespace deribit {
 namespace fix {
 
-inline void update(AdvOrderType &result, const std::string_view &value) {
+inline void update(AdvOrderType &result, std::string_view const &value) {
   result = parse_adv_order_type(value);
 }
 
-SecurityType map_security_type(const std::string_view &value);
+SecurityType map_security_type(std::string_view const &value);
 
-Error map_error(const std::string_view &value);
+Error map_error(std::string_view const &value);
 
-std::string_view map(const Mask<ExecutionInstruction> &);
+std::string_view map(Mask<ExecutionInstruction> const &);
 
-extern Error reject_to_error(const std::string_view &reason, const std::string_view &text);
+extern Error reject_to_error(std::string_view const &reason, std::string_view const &text);
 
 }  // namespace fix
 }  // namespace deribit

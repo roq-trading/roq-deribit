@@ -10,7 +10,7 @@ using namespace roq::deribit;
 using namespace std::literals;
 
 namespace {
-const auto MESSAGE =
+auto const MESSAGE =
     "8=FIX.4.4\0019=8056\00135=W\00149=DERIBITSERVER\00156=ROQ_TRAD"
     "ING\00134=3\00152=20190907-17:49:56.581\00155=BTC-27SEP19\0012"
     "31=10.0000\001100087=11767531\001100090=10594.7700\001746=9474"
@@ -176,7 +176,7 @@ void BM_fix_market_data_snapshot_full_refresh_parse_message(
   for (auto _ : state) {
     core::fix::Buffer decode_buffer(buffer);
     core::fix::Reader<core::fix::Version::FIX_44>::dispatch(
-        [&](const core::fix::Message &message) {
+        [&](core::fix::Message const &message) {
           auto market_data = fix::MarketDataSnapshotFullRefresh::create(message, decode_buffer);
           if (std::size(market_data.no_md_entries) > 0)
             ++processed;

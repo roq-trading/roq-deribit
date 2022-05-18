@@ -12,7 +12,7 @@ using namespace std::literals;
 using namespace Catch::literals;
 
 TEST_CASE("json_trades_2_parse_message", "[json_trades_2]") {
-  const auto message = R"([{)"
+  auto const message = R"([{)"
                        R"("trade_seq":52491427,)"
                        R"("trade_id":"76203357",)"
                        R"("timestamp":1625752501753,)"

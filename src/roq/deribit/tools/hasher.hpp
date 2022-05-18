@@ -16,20 +16,20 @@ namespace tools {
 
 class Hasher final {
  public:
-  explicit Hasher(const std::string_view &secret);
+  explicit Hasher(std::string_view const &secret);
 
   Hasher(Hasher &&) = delete;
-  Hasher(const Hasher &) = delete;
+  Hasher(Hasher const &) = delete;
 
   std::string create_nonce();
 
   std::pair<std::string, std::chrono::milliseconds> create_signature(
-      std::chrono::milliseconds timestamp, const std::string_view &nonce);
+      std::chrono::milliseconds timestamp, std::string_view const &nonce);
 
   std::string create_raw_data(std::chrono::milliseconds timestamp);
-  std::string create_raw_data(std::chrono::milliseconds timestamp, const std::string_view &nonce);
+  std::string create_raw_data(std::chrono::milliseconds timestamp, std::string_view const &nonce);
 
-  std::string create_password(const std::string_view &raw_data);
+  std::string create_password(std::string_view const &raw_data);
 
  protected:
   int64_t get_sequence(std::chrono::milliseconds timestamp);

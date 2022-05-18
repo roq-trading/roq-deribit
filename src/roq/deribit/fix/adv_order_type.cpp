@@ -8,7 +8,7 @@ namespace roq {
 namespace deribit {
 namespace fix {
 
-std::string_view EnumNameAdvOrderType(const AdvOrderType &value) {
+std::string_view EnumNameAdvOrderType(AdvOrderType const &value) {
   switch (value) {
     using enum AdvOrderType;
     case IMPLIED_VOLATILITY_ORDER:
@@ -20,7 +20,7 @@ std::string_view EnumNameAdvOrderType(const AdvOrderType &value) {
   }
 }
 
-AdvOrderType parse_adv_order_type(const std::string_view &value) {
+AdvOrderType parse_adv_order_type(std::string_view const &value) {
   if (std::empty(value))
     return AdvOrderType::UNKNOWN;
   switch (std::data(value)[0]) {

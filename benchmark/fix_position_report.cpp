@@ -10,7 +10,7 @@ using namespace roq::deribit;
 using namespace std::literals;
 
 namespace {
-const auto MESSAGE =
+auto const MESSAGE =
     "8=FIX.4.4\0019=245\00135=AP\00149=DERIBITSERVER\00156=ROQ_TRAD"
     "ING\00134=5\00152=20190920-17:10:28.595\001721=3221109\001710="
     "roq-pos-003\001724=0\001728=0\001702=1\001703=TQ\001704=0\0017"
@@ -26,7 +26,7 @@ void BM_fix_position_report_parse_message(benchmark::State &state) {
   for (auto _ : state) {
     core::fix::Buffer decode_buffer(buffer);
     core::fix::Reader<core::fix::Version::FIX_44>::dispatch(
-        [&](const core::fix::Message &message) {
+        [&](core::fix::Message const &message) {
           auto position_report = fix::PositionReport::create(message, decode_buffer);
           if (!std::empty(position_report.pos_req_id))
             ++processed;

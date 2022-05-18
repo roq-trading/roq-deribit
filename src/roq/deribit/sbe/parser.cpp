@@ -17,15 +17,13 @@ namespace roq {
 namespace deribit {
 namespace sbe {
 
-bool Parser::dispatch(
-    Handler &handler, const std::span<std::byte const> &buffer, const TraceInfo &trace_info) {
+bool Parser::dispatch(Handler &handler, std::span<std::byte const> const &buffer, TraceInfo const &trace_info) {
   auto result = true;
   if (Frame::parse(buffer, [&](auto &frame) {
         // log::debug("skip frame"sv);
         auto tmp = buffer.subspan(Frame::size());
         // sbe headers are not const-safe
-        std::span message{
-            reinterpret_cast<char *>(const_cast<std::byte *>(std::data(tmp))), std::size(tmp)};
+        std::span message{reinterpret_cast<char *>(const_cast<std::byte *>(std::data(tmp))), std::size(tmp)};
         while (result) {
           // log::debug("message: size={}"sv, std::size(message));
           deribit_multicast::MessageHeader header{std::data(message), std::size(message)};

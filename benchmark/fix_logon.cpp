@@ -11,7 +11,7 @@ using namespace std::literals;
 using namespace std::chrono_literals;
 
 namespace {
-const auto MESSAGE =
+auto const MESSAGE =
     "8=FIX.4.4\0019=211\00135=A\00149=DERIBITSERVER\00156=ROQ_TRADI"
     "NG\00134=1\00152=20190907-16:45:58.192\001108=10\00195=58\0019"
     "6=1567874758168.y4/hA3i6qxm4yVL+3N7IrGcINVAFMLFhy4l7ATSehxc=\001"
@@ -24,7 +24,7 @@ void BM_fix_logon_parse_message(benchmark::State &state) {
   uint64_t processed = 0;
   for (auto _ : state) {
     core::fix::Reader<core::fix::Version::FIX_44>::dispatch(
-        [&](const core::fix::Message &message) {
+        [&](core::fix::Message const &message) {
           auto result = fix::Logon::create(message);
           if (result.heart_bt_int > 0)
             ++processed;

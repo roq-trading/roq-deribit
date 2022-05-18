@@ -14,7 +14,7 @@ using namespace std::literals;
 using namespace Catch::literals;
 
 TEST_CASE("fix_execution_report_parse_message", "[fix_execution_report]") {
-  const auto message =
+  auto const message =
       "8=FIX.4.4\0019=275\00135=8\00149=DERIBITSERVER\00156=ROQ_TRADI"
       "NG\00134=2\00152=20190908-17:18:38.983\00137=2831903667\00111="
       "2831903667\00141=123\001150=I\00139=4\00154=1\00160=20190908-1"
@@ -26,7 +26,7 @@ TEST_CASE("fix_execution_report_parse_message", "[fix_execution_report]") {
   core::fix::Buffer decode_buffer(buffer);
   int results = 0;
   auto bytes = core::fix::Reader<core::fix::Version::FIX_44>::dispatch(
-      [&](const core::fix::Message &message) {
+      [&](core::fix::Message const &message) {
         ++results;
         CHECK(message.header.msg_type == core::fix::MsgType::EXECUTION_REPORT);
         auto result = fix::ExecutionReport::create(message, decode_buffer);
@@ -58,7 +58,7 @@ TEST_CASE("fix_execution_report_parse_message", "[fix_execution_report]") {
 }
 
 TEST_CASE("fix_execution_report_parse_order_mass_status", "[fix_execution_report]") {
-  const auto message =
+  auto const message =
       "8=FIX.4.4\0019=112\00135=8\00149=DERIBITSERVER\00156=ROQ_TRADI"
       "NG\00134=4\00152=20190909-07:58:54.679\001584=roq-oms-005\0015"
       "85=7\00158=total_reports\001911=1\00110=045\001"sv;
@@ -66,7 +66,7 @@ TEST_CASE("fix_execution_report_parse_order_mass_status", "[fix_execution_report
   core::fix::Buffer decode_buffer(buffer);
   int results = 0;
   auto bytes = core::fix::Reader<core::fix::Version::FIX_44>::dispatch(
-      [&](const core::fix::Message &message) {
+      [&](core::fix::Message const &message) {
         ++results;
         CHECK(message.header.msg_type == core::fix::MsgType::EXECUTION_REPORT);
         auto result = fix::ExecutionReport::create(message, decode_buffer);
@@ -81,7 +81,7 @@ TEST_CASE("fix_execution_report_parse_order_mass_status", "[fix_execution_report
 }
 
 TEST_CASE("fix_execution_report_parse_fill", "[fix_execution_report]") {
-  const auto message =
+  auto const message =
       "8=FIX.4.4\0019=403\00135=8\00149=DERIBITSERVER\00156=ROQ_TRADI"
       "NG\00134=598\00152=20191027-14:02:33.897\00137=3026811591\0011"
       "1=3026811591\00141=roq:000000014\001150=I\00139=2\00154=1\0016"
@@ -95,7 +95,7 @@ TEST_CASE("fix_execution_report_parse_fill", "[fix_execution_report]") {
   core::fix::Buffer decode_buffer(buffer);
   int results = 0;
   auto bytes = core::fix::Reader<core::fix::Version::FIX_44>::dispatch(
-      [&](const core::fix::Message &message) {
+      [&](core::fix::Message const &message) {
         ++results;
         CHECK(message.header.msg_type == core::fix::MsgType::EXECUTION_REPORT);
         auto result = fix::ExecutionReport::create(message, decode_buffer);

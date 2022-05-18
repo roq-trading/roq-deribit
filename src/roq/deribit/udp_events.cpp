@@ -24,7 +24,7 @@ namespace roq {
 namespace deribit {
 
 namespace {
-const auto NAME = "udpe"sv;
+auto const NAME = "udpe"sv;
 const Mask SUPPORTS{
     SupportType::TOP_OF_BOOK,
     SupportType::MARKET_BY_PRICE,
@@ -32,7 +32,7 @@ const Mask SUPPORTS{
 };
 
 struct create_metrics final : public core::metrics::Factory {
-  explicit create_metrics(const std::string_view &group, const std::string_view &function)
+  explicit create_metrics(std::string_view const &group, std::string_view const &function)
       : core::metrics::Factory(server::Flags::name(), group, function) {}
 };
 
@@ -82,8 +82,7 @@ void emplace(Trade &result, const T &value) {
 }
 }  // namespace
 
-UDPEvents::UDPEvents(
-    Handler &handler, core::io::Context &context, uint16_t stream_id, Shared &shared)
+UDPEvents::UDPEvents(Handler &handler, core::io::Context &context, uint16_t stream_id, Shared &shared)
     : handler_(handler), stream_id_(stream_id), name_(fmt::format("{}:{}"sv, stream_id_, NAME)),
       publish_top_of_book_(!flags::Multicast::multicast_disable_top_of_book()),
       publish_market_by_price_(!flags::Multicast::multicast_disable_market_by_price()),
@@ -98,16 +97,16 @@ UDPEvents::UDPEvents(
       shared_(shared), aggregator_(server::Flags::cache_mbp_max_depth()) {
 }
 
-void UDPEvents::operator()(const Event<Start> &) {
+void UDPEvents::operator()(Event<Start> const &) {
 }
 
-void UDPEvents::operator()(const Event<Stop> &) {
+void UDPEvents::operator()(Event<Stop> const &) {
 }
 
-void UDPEvents::operator()(const Event<Timer> &) {
+void UDPEvents::operator()(Event<Timer> const &) {
 }
 
-void UDPEvents::operator()(const core::net::UdpConnection::Read &read) {
+void UDPEvents::operator()(core::net::UdpConnection::Read const &read) {
   log::info<5>("received {} byte(s)"sv, std::size(read.buffer));
   auto trace_info = server::create_trace_info();
   publish_stream_status(trace_info);  // first message will publish
@@ -117,12 +116,11 @@ void UDPEvents::operator()(const core::net::UdpConnection::Read &read) {
   }
 }
 
-void UDPEvents::operator()(const core::net::UdpConnection::Error &error) {
+void UDPEvents::operator()(core::net::UdpConnection::Error const &error) {
   log::warn<1>("Error: what={}"sv, error.what);
 }
 
-void UDPEvents::operator()(
-    const Trace<deribit_multicast::Instrument> &event, const sbe::Frame &frame) {
+void UDPEvents::operator()(Trace<deribit_multicast::Instrument> const &event, sbe::Frame const &frame) {
   auto &instrument = event.value;
   log::info<5>("instrument={}, frame={}"sv, instrument, frame);
   if (aggregator_(frame.sequence_number)) {
@@ -134,46 +132,45 @@ void UDPEvents::operator()(
   }
 }
 
-void UDPEvents::operator()(const Trace<deribit_multicast::Book> &event, const sbe::Frame &frame) {
+void UDPEvents::operator()(Trace<deribit_multicast::Book> const &event, sbe::Frame const &frame) {
   auto &book = event.value;
   log::info<5>("book={}, frame={}"sv, book, frame);
   auto const instrument_id = book.instrumentId();
   auto const change_id = book.changeId();
   auto const is_last = book.isLast();
-  aggregator_(
-      frame.sequence_number, instrument_id, change_id, is_last, [&](auto &bids, auto &asks) {
-        if (!publish_market_by_price_)
-          return;
-        if (shared_.find_instrument_name(instrument_id, [&](auto &symbol) {
-              // collect (missing)
-              auto const prev_change_id = book.prevChangeId();
-              std::chrono::milliseconds const timestamp{book.timestampMs()};
-              book.sbeRewind();
-              book.changesList().forEach([&](auto &item) { emplace_back(item, bids, asks); });
-              // publish through mbp sequencer
-              const MarketByPriceUpdate market_by_price_update{
-                  .stream_id = stream_id_,
-                  .exchange = flags::Config::exchange(),
-                  .symbol = symbol,
-                  .bids = bids,
-                  .asks = asks,
-                  .update_type = UpdateType::INCREMENTAL,
-                  .exchange_time_utc = timestamp,
-                  .exchange_sequence = static_cast<int64_t>(change_id),
-                  .price_decimals = {},
-                  .quantity_decimals = {},
-                  .checksum = {},
-              };
-              log::info<3>("market_by_price_update={}"sv, market_by_price_update);
-            })) {
-        } else {
-          // unknown instrument_id
-        }
-      });
+  aggregator_(frame.sequence_number, instrument_id, change_id, is_last, [&](auto &bids, auto &asks) {
+    if (!publish_market_by_price_)
+      return;
+    if (shared_.find_instrument_name(instrument_id, [&](auto &symbol) {
+          // collect (missing)
+          auto const prev_change_id = book.prevChangeId();
+          std::chrono::milliseconds const timestamp{book.timestampMs()};
+          book.sbeRewind();
+          book.changesList().forEach([&](auto &item) { emplace_back(item, bids, asks); });
+          // publish through mbp sequencer
+          const MarketByPriceUpdate market_by_price_update{
+              .stream_id = stream_id_,
+              .exchange = flags::Config::exchange(),
+              .symbol = symbol,
+              .bids = bids,
+              .asks = asks,
+              .update_type = UpdateType::INCREMENTAL,
+              .exchange_time_utc = timestamp,
+              .exchange_sequence = static_cast<int64_t>(change_id),
+              .price_decimals = {},
+              .quantity_decimals = {},
+              .checksum = {},
+          };
+          log::info<3>("market_by_price_update={}"sv, market_by_price_update);
+        })) {
+    } else {
+      // unknown instrument_id
+    }
+  });
   // aggregator_.reset();  // XXX INCORRECT
 }
 
-void UDPEvents::operator()(const Trace<deribit_multicast::Quote> &event, const sbe::Frame &frame) {
+void UDPEvents::operator()(Trace<deribit_multicast::Quote> const &event, sbe::Frame const &frame) {
   auto &trace_info = event.trace_info;
   auto &quote = event.value;
   log::info<5>("quote={}, frame={}"sv, quote, frame);
@@ -211,7 +208,7 @@ void UDPEvents::operator()(const Trace<deribit_multicast::Quote> &event, const s
   }
 }
 
-void UDPEvents::operator()(const Trace<deribit_multicast::Trades> &event, const sbe::Frame &frame) {
+void UDPEvents::operator()(Trace<deribit_multicast::Trades> const &event, sbe::Frame const &frame) {
   auto &trace_info = event.trace_info;
   auto &trades = event.value;
   log::info<5>("trades={}, frame={}"sv, trades, frame);
@@ -248,8 +245,7 @@ void UDPEvents::operator()(const Trace<deribit_multicast::Trades> &event, const 
   }
 }
 
-void UDPEvents::operator()(
-    const Trace<deribit_multicast::Snapshot> &event, const sbe::Frame &frame) {
+void UDPEvents::operator()(Trace<deribit_multicast::Snapshot> const &event, sbe::Frame const &frame) {
   auto &snapshot = event.value;
   log::info<5>("snapshot={}, frame={}"sv, snapshot, frame);
   log::fatal("Unexpected"sv);
@@ -261,7 +257,7 @@ void UDPEvents::operator()(metrics::Writer &writer) {
       .write(profile_.parse, metrics::PROFILE);
 }
 
-void UDPEvents::publish_stream_status(const TraceInfo &trace_info) {
+void UDPEvents::publish_stream_status(TraceInfo const &trace_info) {
   if (initialized_)
     return;
   initialized_ = true;

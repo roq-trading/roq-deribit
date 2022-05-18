@@ -18,12 +18,12 @@ namespace deribit {
 namespace json {
 
 template <typename T>
-inline void update(T &result, const core::json::Value &value) {
+inline void update(T &result, core::json::Value const &value) {
   result = core::json::get<T>(value);
 }
 
 template <>
-inline void update(double &result, const core::json::Value &value) {
+inline void update(double &result, core::json::Value const &value) {
   if (std::holds_alternative<std::string_view>(value)) {
     if (std::get<std::string_view>(value).compare("undefined") == 0) {
       result = NaN;
@@ -34,7 +34,7 @@ inline void update(double &result, const core::json::Value &value) {
 }
 
 template <>
-inline void update(std::chrono::milliseconds &result, const core::json::Value &value) {
+inline void update(std::chrono::milliseconds &result, core::json::Value const &value) {
   result = std::chrono::milliseconds{core::json::get<uint64_t>(value)};
 }
 

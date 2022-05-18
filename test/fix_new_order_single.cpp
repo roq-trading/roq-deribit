@@ -39,7 +39,7 @@ TEST_CASE("fix_new_order_single_create_message", "[fix_new_order_single]") {
       msg_seq_num,
       sending_time);
   auto message = new_order_single.encode(writer);
-  const auto expected =
+  auto const expected =
       "8=FIX.4.4\0019=0000146\00135=D\00149=ROQ_TRADING\00156=DERIBIT"
       "SERVER\00134=1\00152=20190917-06:46:50.000\00111=roq-ord-006\001"
       "54=1\00138=2.0\00144=0.45\00155=BTC-27SEP19\00140=2\00159=1\001"

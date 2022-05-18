@@ -24,15 +24,13 @@ struct Shared final {
   explicit Shared(server::Dispatcher &);
 
   Shared(Shared &&) = default;
-  Shared(const Shared &) = delete;
+  Shared(Shared const &) = delete;
 
   bool has_multicast() const { return multicast_; }
 
   std::string_view next_request_id();
 
-  auto discard_symbol(const std::string_view &name) const {
-    return dispatcher_.discard_symbol(name);
-  }
+  auto discard_symbol(std::string_view const &name) const { return dispatcher_.discard_symbol(name); }
 
   template <typename... Args>
   auto update_order(Args &&...args) {
@@ -52,8 +50,7 @@ struct Shared final {
   }
 
   template <typename Callback>
-  std::pair<const Symbol &, bool> find_instrument_name_with_create(
-      uint32_t instrument_id, Callback callback) {
+  std::pair<Symbol const &, bool> find_instrument_name_with_create(uint32_t instrument_id, Callback callback) {
     auto iter = instrument_names.find(instrument_id);
     if (iter == std::end(instrument_names)) {
       auto instrument_name = callback();
@@ -77,7 +74,7 @@ struct Shared final {
   server::Dispatcher &dispatcher_;
   uint32_t request_id_ = 0;
   core::stack::Buffer<char, 32> stack_buffer_;
-  const bool multicast_;
+  bool const multicast_;
 
  public:
   core::limit::RateLimiter rate_limiter;
