@@ -137,7 +137,6 @@ void UDPSnapshot::operator()(Trace<deribit_multicast::Book> const &event, sbe::F
 void UDPSnapshot::operator()(Trace<deribit_multicast::Ticker> const &event, sbe::Frame const &frame) {
   auto &ticker = event.value;
   log::info<5>("ticker={}, frame={}"sv, ticker, frame);
-  log::fatal("Unexpected"sv);
 }
 
 void UDPSnapshot::operator()(Trace<deribit_multicast::Trades> const &event, sbe::Frame const &frame) {
