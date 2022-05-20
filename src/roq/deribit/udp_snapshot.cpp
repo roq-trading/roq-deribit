@@ -59,6 +59,7 @@ UDPSnapshot::UDPSnapshot(Handler &handler, core::io::Context &context, uint16_t 
           .parse = create_metrics(name_, "parse"sv),
       },
       shared_(shared), aggregator_(server::Flags::cache_mbp_max_depth()) {
+  log::info<5>("DEBUG: publish_market_by_price={}"sv, publish_market_by_price_);
 }
 
 void UDPSnapshot::operator()(Event<Start> const &) {
@@ -163,6 +164,7 @@ void UDPSnapshot::operator()(Trace<deribit_multicast::Snapshot> const &event, sb
         })) {
     } else {
       // unknown instrument_id
+      log::info<5>("DEBUG: unknown instrument_id={}"sv, instrument_id);
     }
   });
 }

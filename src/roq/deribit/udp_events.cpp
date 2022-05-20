@@ -95,6 +95,7 @@ UDPEvents::UDPEvents(Handler &handler, core::io::Context &context, uint16_t stre
           .parse = create_metrics(name_, "parse"sv),
       },
       shared_(shared), aggregator_(server::Flags::cache_mbp_max_depth()) {
+  log::info<5>("DEBUG: publish_market_by_price={}"sv, publish_market_by_price_);
 }
 
 void UDPEvents::operator()(Event<Start> const &) {
@@ -157,6 +158,7 @@ void UDPEvents::operator()(Trace<deribit_multicast::Book> const &event, sbe::Fra
                 prev_change_id,
                 [&](auto &bids, auto &asks) {  // update
                   // log::debug(R"(PUBLISH UPDATE symbol="{}")"sv, symbol);
+                  log::info<5>(R"(DEBUG: PUBLISH UPDATE symbol="{}")"sv, symbol);
                   const MarketByPriceUpdate market_by_price_update{
                       .stream_id = stream_id_,
                       .exchange = flags::Config::exchange(),
@@ -173,7 +175,7 @@ void UDPEvents::operator()(Trace<deribit_multicast::Book> const &event, sbe::Fra
                   create_trace_and_dispatch(handler_, trace_info, market_by_price_update, true, false);
                 },
                 [&](auto &bids, auto &asks, auto sequence) {  // snapshot
-                  log::debug(R"(PUBLISH SNAPSHOT symbol="{}", sequence={})"sv, symbol, sequence);
+                  // log::debug(R"(PUBLISH SNAPSHOT symbol="{}", sequence={})"sv, symbol, sequence);
                   log::info<5>(R"(DEBUG: PUBLISH SNAPSHOT symbol="{}", sequence={})"sv, symbol, sequence);
                   const MarketByPriceUpdate market_by_price_update{
                       .stream_id = stream_id_,
@@ -193,7 +195,7 @@ void UDPEvents::operator()(Trace<deribit_multicast::Book> const &event, sbe::Fra
                       event, true, [&](auto &market_by_price) { collector.apply(market_by_price, sequence, true); });
                 },
                 [&](auto retries) {  // request
-                  log::debug(R"(REQUEST symbol="{}" (retries={}))"sv, symbol, retries);
+                  // log::debug(R"(REQUEST symbol="{}" (retries={}))"sv, symbol, retries);
                   log::info<5>(R"(DEBUG: REQUEST symbol="{}" (retries={}))"sv, symbol, retries);
                   // note! don't have to do anything -- just wait for snapshot
                 });
@@ -209,6 +211,7 @@ void UDPEvents::operator()(Trace<deribit_multicast::Book> const &event, sbe::Fra
         })) {
     } else {
       // unknown instrument_id
+      log::info<5>("DEBUG: unknown instrument_id={}"sv, instrument_id);
     }
   });
   // aggregator_.reset();  // XXX INCORRECT
