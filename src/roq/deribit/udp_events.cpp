@@ -174,6 +174,7 @@ void UDPEvents::operator()(Trace<deribit_multicast::Book> const &event, sbe::Fra
                 },
                 [&](auto &bids, auto &asks, auto sequence) {  // snapshot
                   log::debug(R"(PUBLISH SNAPSHOT symbol="{}", sequence={})"sv, symbol, sequence);
+                  log::info<5>(R"(DEBUG: PUBLISH SNAPSHOT symbol="{}", sequence={})"sv, symbol, sequence);
                   const MarketByPriceUpdate market_by_price_update{
                       .stream_id = stream_id_,
                       .exchange = flags::Config::exchange(),
@@ -193,7 +194,7 @@ void UDPEvents::operator()(Trace<deribit_multicast::Book> const &event, sbe::Fra
                 },
                 [&](auto retries) {  // request
                   log::debug(R"(REQUEST symbol="{}" (retries={}))"sv, symbol, retries);
-                  log::info<1>(R"(DEBUG: REQUEST symbol="{}" (retries={}))"sv, symbol, retries);
+                  log::info<5>(R"(DEBUG: REQUEST symbol="{}" (retries={}))"sv, symbol, retries);
                   // note! don't have to do anything -- just wait for snapshot
                 });
           } catch (BadState &) {
