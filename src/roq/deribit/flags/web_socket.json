@@ -42,6 +42,11 @@
       "type": "std::string",
       "default": "100ms",
       "description": "ticker interval"
+    },
+    {
+      "name": "ws_allow_errors",
+      "type": "bool",
+      "description": "allow errors (debug)"
     }
   ]
 }

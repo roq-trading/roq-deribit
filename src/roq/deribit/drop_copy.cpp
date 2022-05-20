@@ -326,7 +326,11 @@ void DropCopy::parse(std::string_view const &message) {
 void DropCopy::operator()(Trace<core::jsonrpc::Error const> const &event, core::json::Value &value) {
   auto &[trace_info, error] = event;
   json::Error error_2(value);
-  log::fatal(R"(error={}, id="{}")"sv, error_2, error.id);
+  if (flags::WebSocket::ws_allow_errors()) {
+    log::warn(R"(error={}, id="{}")"sv, error_2, error.id);
+  } else {
+    log::fatal(R"(error={}, id="{}")"sv, error_2, error.id);
+  }
 }
 
 void DropCopy::operator()(Trace<core::jsonrpc::Result const> const &event, core::json::Value &value) {
