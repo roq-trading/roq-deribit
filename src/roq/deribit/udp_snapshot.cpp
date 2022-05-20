@@ -137,7 +137,12 @@ void UDPSnapshot::operator()(Trace<deribit_multicast::Snapshot> const &event, sb
                 change_id,
                 [&](auto &bids, auto &asks, auto sequence) {  // snapshot
                   // log::debug(R"(PUBLISH SNAPSHOT symbol="{}", sequence={})"sv, symbol, sequence);
-                  log::info<5>(R"(DEBUG: PUBLISH SNAPSHOT symbol="{}", sequence={})"sv, symbol, sequence);
+                  log::info<5>(
+                      R"(DEBUG: PUBLISH SNAPSHOT symbol="{}", sequence={}, change_id={}, timestamp={})"sv,
+                      symbol,
+                      sequence,
+                      change_id,
+                      timestamp);
                   const MarketByPriceUpdate market_by_price_update{
                       .stream_id = stream_id_,
                       .exchange = flags::Config::exchange(),
@@ -146,11 +151,12 @@ void UDPSnapshot::operator()(Trace<deribit_multicast::Snapshot> const &event, sb
                       .asks = asks,
                       .update_type = UpdateType::SNAPSHOT,
                       .exchange_time_utc = timestamp,
-                      .exchange_sequence = collector.last_sequence(),
+                      .exchange_sequence = sequence,
                       .price_decimals = {},
                       .quantity_decimals = {},
                       .checksum = {},
                   };
+                  log::info<5>("DEBUG: BEFORE market_by_price={}"sv, market_by_price_update);
                   Trace event(trace_info, market_by_price_update);
                   shared_(
                       event, true, [&](auto &market_by_price) { collector.apply(market_by_price, sequence, true); });
