@@ -133,6 +133,7 @@ void UDPEvents::operator()(Trace<deribit_multicast::Instrument> const &event, sb
 }
 
 void UDPEvents::operator()(Trace<deribit_multicast::Book> const &event, sbe::Frame const &frame) {
+  auto &trace_info = event.trace_info;
   auto &book = event.value;
   log::info<5>("book={}, frame={}"sv, book, frame);
   auto const instrument_id = book.instrumentId();
@@ -142,26 +143,68 @@ void UDPEvents::operator()(Trace<deribit_multicast::Book> const &event, sbe::Fra
     if (!publish_market_by_price_)
       return;
     if (shared_.find_instrument_name(instrument_id, [&](auto &symbol) {
-          // collect (missing)
           auto const prev_change_id = book.prevChangeId();
           std::chrono::milliseconds const timestamp{book.timestampMs()};
           book.sbeRewind();
           book.changesList().forEach([&](auto &item) { emplace_back(item, bids, asks); });
-          // publish through mbp sequencer
-          const MarketByPriceUpdate market_by_price_update{
-              .stream_id = stream_id_,
-              .exchange = flags::Config::exchange(),
-              .symbol = symbol,
-              .bids = bids,
-              .asks = asks,
-              .update_type = UpdateType::INCREMENTAL,
-              .exchange_time_utc = timestamp,
-              .exchange_sequence = static_cast<int64_t>(change_id),
-              .price_decimals = {},
-              .quantity_decimals = {},
-              .checksum = {},
-          };
-          log::info<3>("market_by_price_update={}"sv, market_by_price_update);
+          auto &collector = shared_.mbp_collector[symbol];
+          try {
+            collector(
+                bids,
+                asks,
+                change_id,
+                change_id,
+                prev_change_id,
+                [&](auto &bids, auto &asks) {  // update
+                  // log::debug(R"(PUBLISH UPDATE symbol="{}")"sv, symbol);
+                  const MarketByPriceUpdate market_by_price_update{
+                      .stream_id = stream_id_,
+                      .exchange = flags::Config::exchange(),
+                      .symbol = symbol,
+                      .bids = bids,
+                      .asks = asks,
+                      .update_type = UpdateType::INCREMENTAL,
+                      .exchange_time_utc = timestamp,
+                      .exchange_sequence = static_cast<int64_t>(change_id),  // XXX
+                      .price_decimals = {},
+                      .quantity_decimals = {},
+                      .checksum = {},
+                  };
+                  create_trace_and_dispatch(handler_, trace_info, market_by_price_update, true, false);
+                },
+                [&](auto &bids, auto &asks, auto sequence) {  // snapshot
+                  log::debug(R"(PUBLISH SNAPSHOT symbol="{}", sequence={})"sv, symbol, sequence);
+                  const MarketByPriceUpdate market_by_price_update{
+                      .stream_id = stream_id_,
+                      .exchange = flags::Config::exchange(),
+                      .symbol = symbol,
+                      .bids = bids,
+                      .asks = asks,
+                      .update_type = UpdateType::SNAPSHOT,
+                      .exchange_time_utc = timestamp,
+                      .exchange_sequence = sequence,
+                      .price_decimals = {},
+                      .quantity_decimals = {},
+                      .checksum = {},
+                  };
+                  Trace event(trace_info, market_by_price_update);
+                  shared_(
+                      event, true, [&](auto &market_by_price) { collector.apply(market_by_price, sequence, true); });
+                },
+                [&](auto retries) {  // request
+                  log::debug(R"(REQUEST symbol="{}" (retries={}))"sv, symbol, retries);
+                  log::info<1>(R"(DEBUG: REQUEST symbol="{}" (retries={}))"sv, symbol, retries);
+                  // note! don't have to do anything -- just wait for snapshot
+                });
+          } catch (BadState &) {
+            log::fatal("BAD STATE"sv);
+            /*
+            log::warn(R"(RESUBSCRIBE symbol="{}")"sv, symbol);
+            // XXX HANS publish stale
+            collector.clear();
+            shared_.depth_request_queue.emplace_back(symbol);
+            */
+          }
         })) {
     } else {
       // unknown instrument_id

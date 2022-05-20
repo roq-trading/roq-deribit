@@ -17,6 +17,8 @@
 
 #include "roq/core/stack/buffer.hpp"
 
+#include "roq/core/market/mbp_sequencer.hpp"
+
 namespace roq {
 namespace deribit {
 
@@ -62,6 +64,11 @@ struct Shared final {
     return {(*iter).second.first, (*iter).second.second};
   }
 
+  template <typename... Args>
+  auto operator()(Args &&...args) {
+    return dispatcher_(std::forward<Args>(args)...);
+  }
+
  public:
   core::page_aligned_vector<Fill> fills;
   core::page_aligned_vector<MBPUpdate> bids, asks, final_bids, final_asks;
@@ -82,6 +89,7 @@ struct Shared final {
   absl::flat_hash_set<Symbol> all_symbols;
   core::Symbols symbols;
   absl::flat_hash_map<uint32_t, std::pair<Symbol, bool>> instrument_names;
+  absl::flat_hash_map<Symbol, core::market::MBP_Sequencer> mbp_collector;
 };
 
 }  // namespace deribit

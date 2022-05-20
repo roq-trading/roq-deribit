@@ -46,38 +46,6 @@ auto create_connection(auto &handler, auto &context, auto port) {
   }
   return connection;
 }
-
-bool test_sequence(auto &cache, auto instrument_id, auto sequence_number) {
-  auto result = false;
-  const constexpr uint32_t midpoint = 1 << 31;
-  auto iter = cache.find(instrument_id);
-  if (iter != cache.end()) {
-    auto previous = (*iter).second;
-    if (previous < sequence_number) {
-      result = true;
-    } else if (sequence_number < midpoint && midpoint < previous) {
-      result = true;  // wraparound
-    } else {
-      // out of sequence
-    }
-  } else {
-    iter = cache.emplace(instrument_id, sequence_number).first;
-    result = true;
-  }
-  if (result)
-    (*iter).second = sequence_number;
-  return result;
-}
-
-template <typename T>
-void emplace(Trade &result, const T &value) {
-  new (&result) Trade{
-      .side = sbe::map_direction(value.direction()),
-      .price = value.price(),
-      .quantity = value.amount(),
-      .trade_id = {},  // XXX value.tradeId() is uint64
-  };
-}
 }  // namespace
 
 UDPSnapshot::UDPSnapshot(Handler &handler, core::io::Context &context, uint16_t stream_id, Shared &shared)
@@ -158,28 +126,38 @@ void UDPSnapshot::operator()(Trace<deribit_multicast::Snapshot> const &event, sb
     if (shared_.find_instrument_name(instrument_id, [&](auto &symbol) {
           snapshot.sbeRewind();
           snapshot.levelsList().forEach([&](auto const &item) { emplace_back(item, bids, asks); });
-          if (is_last) {
+          // XXX allow empty? (after all, we need to record the sequence number...)
+          if (is_last && !(std::empty(bids) && std::empty(asks))) {
             std::chrono::milliseconds const timestamp{snapshot.timestampMs()};
-            if (!(std::empty(bids) && std::empty(asks))) {
-              const MarketByPriceUpdate market_by_price_update{
-                  .stream_id = stream_id_,
-                  .exchange = flags::Config::exchange(),
-                  .symbol = symbol,
-                  .bids = bids,
-                  .asks = asks,
-                  .update_type = UpdateType::SNAPSHOT,
-                  .exchange_time_utc = timestamp,
-                  .exchange_sequence = static_cast<int64_t>(change_id),
-                  .price_decimals = {},
-                  .quantity_decimals = {},
-                  .checksum = {},
-              };
-              try {
-                create_trace_and_dispatch(handler_, trace_info, market_by_price_update, true, false);
-              } catch (BadState &) {
-                log::fatal("BAD STATE"sv);
-              }
-            }
+            auto &collector = shared_.mbp_collector[symbol];
+            collector(
+                bids,
+                asks,
+                change_id,
+                [&](auto &bids, auto &asks, auto sequence) {  // snapshot
+                  log::debug(R"(PUBLISH SNAPSHOT symbol="{}", sequence={})"sv, symbol, sequence);
+                  const MarketByPriceUpdate market_by_price_update{
+                      .stream_id = stream_id_,
+                      .exchange = flags::Config::exchange(),
+                      .symbol = symbol,
+                      .bids = bids,
+                      .asks = asks,
+                      .update_type = UpdateType::SNAPSHOT,
+                      .exchange_time_utc = timestamp,
+                      .exchange_sequence = collector.last_sequence(),
+                      .price_decimals = {},
+                      .quantity_decimals = {},
+                      .checksum = {},
+                  };
+                  Trace event(trace_info, market_by_price_update);
+                  shared_(
+                      event, true, [&](auto &market_by_price) { collector.apply(market_by_price, sequence, true); });
+                },
+                [&](auto retries) {  // request
+                  // log::debug(R"(REQUEST symbol="{}" (retries={}))"sv, symbol, retries);
+                  log::info<1>(R"(DEBUG: REQUEST symbol="{}" (retries={}))"sv, symbol, retries);
+                  // note! don't have to do anything -- just wait for snapshot
+                });
           }
         })) {
     } else {
