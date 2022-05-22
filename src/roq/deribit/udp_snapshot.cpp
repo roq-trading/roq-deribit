@@ -128,7 +128,13 @@ void UDPSnapshot::operator()(Trace<deribit_multicast::Snapshot> const &event, sb
           snapshot.sbeRewind();
           snapshot.levelsList().forEach([&](auto const &item) { emplace_back(item, bids, asks); });
           log::info<5>(
-              "DEBUG: change_id={}, bids=[{}], asks=[{}]"sv, change_id, fmt::join(bids, ","sv), fmt::join(asks, ","sv));
+              "DEBUG: sequence_number={}, instrument_id={}, change_id={}, is_last={}, bids=[{}], asks=[{}]"sv,
+              frame.sequence_number,
+              instrument_id,
+              change_id,
+              is_last,
+              fmt::join(bids, ","sv),
+              fmt::join(asks, ","sv));
           // XXX allow empty? (after all, we need to record the sequence number...)
           if (is_last && !(std::empty(bids) && std::empty(asks))) {
             std::chrono::milliseconds const timestamp{snapshot.timestampMs()};
@@ -159,7 +165,6 @@ void UDPSnapshot::operator()(Trace<deribit_multicast::Snapshot> const &event, sb
                       .quantity_decimals = {},
                       .checksum = {},
                   };
-                  log::info<5>("DEBUG: BEFORE market_by_price={}"sv, market_by_price_update);
                   Trace event(trace_info, market_by_price_update);
                   shared_(
                       event, true, [&](auto &market_by_price) { collector.apply(market_by_price, sequence, true); });
