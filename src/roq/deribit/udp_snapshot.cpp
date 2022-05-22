@@ -127,6 +127,8 @@ void UDPSnapshot::operator()(Trace<deribit_multicast::Snapshot> const &event, sb
     if (shared_.find_instrument_name(instrument_id, [&](auto &symbol) {
           snapshot.sbeRewind();
           snapshot.levelsList().forEach([&](auto const &item) { emplace_back(item, bids, asks); });
+          log::info<5>(
+              "DEBUG: change_id={}, bids=[{}], asks=[{}]"sv, change_id, fmt::join(bids, ","sv), fmt::join(asks, ","sv));
           // XXX allow empty? (after all, we need to record the sequence number...)
           if (is_last && !(std::empty(bids) && std::empty(asks))) {
             std::chrono::milliseconds const timestamp{snapshot.timestampMs()};
