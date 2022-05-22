@@ -136,6 +136,7 @@ void UDPSnapshot::operator()(Trace<deribit_multicast::Snapshot> const &event, sb
                 asks,
                 change_id,
                 [&](auto &bids, auto &asks, auto sequence) {  // snapshot
+                  log::info<1>(R"(Received snapshot: symbol="{}")"sv, symbol);
                   // log::debug(R"(PUBLISH SNAPSHOT symbol="{}", sequence={})"sv, symbol, sequence);
                   log::info<5>(
                       R"(DEBUG: PUBLISH SNAPSHOT symbol="{}", sequence={}, change_id={}, timestamp={})"sv,
@@ -162,6 +163,7 @@ void UDPSnapshot::operator()(Trace<deribit_multicast::Snapshot> const &event, sb
                       event, true, [&](auto &market_by_price) { collector.apply(market_by_price, sequence, true); });
                 },
                 [&](auto retries) {  // request
+                  log::info<1>(R"(Waiting for snapshot: symbol="{}")"sv, symbol);
                   // log::debug(R"(REQUEST symbol="{}" (retries={}))"sv, symbol, retries);
                   log::info<5>(R"(DEBUG: REQUEST symbol="{}" (retries={}))"sv, symbol, retries);
                   // note! don't have to do anything -- just wait for snapshot

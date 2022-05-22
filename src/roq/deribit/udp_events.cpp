@@ -204,6 +204,7 @@ void UDPEvents::operator()(Trace<deribit_multicast::Book> const &event, sbe::Fra
                       event, true, [&](auto &market_by_price) { collector.apply(market_by_price, sequence, true); });
                 },
                 [&](auto retries) {  // request
+                  log::info<1>(R"(Waiting for snapshot: symbol="{}")"sv, symbol);
                   // log::debug(R"(REQUEST symbol="{}" (retries={}))"sv, symbol, retries);
                   log::info<5>(R"(DEBUG: REQUEST symbol="{}" (retries={}))"sv, symbol, retries);
                   // note! don't have to do anything -- just wait for snapshot
