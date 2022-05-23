@@ -1,6 +1,6 @@
 /* Copyright (c) 2017-2022, Hans Erik Thrane */
 
-#include <catch2/catch.hpp>
+#include <catch2/catch_all.hpp>
 
 #include <deribit_multicast/Book.h>
 #include <deribit_multicast/MessageHeader.h>
@@ -117,15 +117,15 @@ TEST_CASE("sbe_instrument", "[sbe_parser]") {  // 1000 (note! bundled)
       CHECK(instrument.getSizeCurrencyAsStringView() == "DOT"sv);
       CHECK(instrument.creationTimestampMs() == 1647954000000);
       CHECK(instrument.expirationTimestampMs() == 32503708800000);
-      CHECK(instrument.strikePrice() == Catch::Detail::Approx{0.0});
-      CHECK(instrument.contractSize() == Catch::Detail::Approx{1.0});
-      CHECK(instrument.minTradeAmount() == Catch::Detail::Approx{1.0});
-      CHECK(instrument.tickSize() == Catch::Detail::Approx{0.001});
-      CHECK(instrument.makerCommission() == Catch::Detail::Approx{0.0});
-      CHECK(instrument.takerCommission() == Catch::Detail::Approx{0.0005});
-      CHECK(instrument.blockTradeCommission() == Catch::Detail::Approx{0.0001});
-      CHECK(instrument.maxLiquidationCommission() == Catch::Detail::Approx{0.0075});
-      CHECK(instrument.maxLeverage() == Catch::Detail::Approx{25.0});
+      CHECK(instrument.strikePrice() == Catch::Approx{0.0});
+      CHECK(instrument.contractSize() == Catch::Approx{1.0});
+      CHECK(instrument.minTradeAmount() == Catch::Approx{1.0});
+      CHECK(instrument.tickSize() == Catch::Approx{0.001});
+      CHECK(instrument.makerCommission() == Catch::Approx{0.0});
+      CHECK(instrument.takerCommission() == Catch::Approx{0.0005});
+      CHECK(instrument.blockTradeCommission() == Catch::Approx{0.0001});
+      CHECK(instrument.maxLiquidationCommission() == Catch::Approx{0.0075});
+      CHECK(instrument.maxLeverage() == Catch::Approx{25.0});
       CHECK(instrument.getInstrumentNameAsStringView() == "DOT_USDC-PERPETUAL"sv);
     }
     void operator()(Trace<deribit_multicast::Book> const &, sbe::Frame const &) override { FAIL(); }
@@ -194,16 +194,16 @@ TEST_CASE("sbe_book", "[sbe_parser]") {  // 1001 (note! bundled)
       trades.tradesList().forEach([&count](auto &item) {
         ++count;
         CHECK(item.direction() == deribit_multicast::Direction::sell);
-        CHECK(item.price() == Catch::Detail::Approx{0.5114});
-        CHECK(item.amount() == Catch::Detail::Approx{20.0});
+        CHECK(item.price() == Catch::Approx{0.5114});
+        CHECK(item.amount() == Catch::Approx{20.0});
         CHECK(item.timestampMs() == 1652936306904);
-        CHECK(item.markPrice() == Catch::Detail::Approx{0.5115});
-        CHECK(item.indexPrice() == Catch::Detail::Approx{0.5118});
+        CHECK(item.markPrice() == Catch::Approx{0.5115});
+        CHECK(item.indexPrice() == Catch::Approx{0.5118});
         CHECK(item.tradeSeq() == 141398);
         CHECK(item.tradeId() == 1553291);
         CHECK(item.tickDirection() == deribit_multicast::TickDirection::minus);
         CHECK(item.liquidation() == deribit_multicast::Liquidation::none);
-        CHECK(item.iv() == Catch::Detail::Approx{0.0});
+        CHECK(item.iv() == Catch::Approx{0.0});
         CHECK(item.blockTradeId() == 0);
         CHECK(item.comboTradeId() == 0);
       });
@@ -271,16 +271,16 @@ TEST_CASE("sbe_trades", "[sbe_parser]") {  // 1002 (note! bundled)
       trades.tradesList().forEach([&count](auto &item) {
         ++count;
         CHECK(item.direction() == deribit_multicast::Direction::sell);
-        CHECK(item.price() == Catch::Detail::Approx{0.5114});
-        CHECK(item.amount() == Catch::Detail::Approx{20.0});
+        CHECK(item.price() == Catch::Approx{0.5114});
+        CHECK(item.amount() == Catch::Approx{20.0});
         CHECK(item.timestampMs() == 1652936306904);
-        CHECK(item.markPrice() == Catch::Detail::Approx{0.5115});
-        CHECK(item.indexPrice() == Catch::Detail::Approx{0.5118});
+        CHECK(item.markPrice() == Catch::Approx{0.5115});
+        CHECK(item.indexPrice() == Catch::Approx{0.5118});
         CHECK(item.tradeSeq() == 141398);
         CHECK(item.tradeId() == 1553291);
         CHECK(item.tickDirection() == deribit_multicast::TickDirection::minus);
         CHECK(item.liquidation() == deribit_multicast::Liquidation::none);
-        CHECK(item.iv() == Catch::Detail::Approx{0.0});
+        CHECK(item.iv() == Catch::Approx{0.0});
         CHECK(item.blockTradeId() == 0);
         CHECK(item.comboTradeId() == 0);
       });
@@ -339,21 +339,21 @@ TEST_CASE("sbe_ticker", "[sbe_parser]") {  // 1003
       CHECK(ticker.instrumentId() == 215758);
       CHECK(ticker.instrumentState() == deribit_multicast::InstrumentState::open);
       CHECK(ticker.timestampMs() == 1652930951422);
-      CHECK(ticker.openInterest() == Catch::Detail::Approx{2411300.0});
-      CHECK(ticker.minSellPrice() == Catch::Detail::Approx{0.082539});
-      CHECK(ticker.maxBuyPrice() == Catch::Detail::Approx{0.085053});
-      CHECK(ticker.lastPrice() == Catch::Detail::Approx{0.08382});
-      CHECK(ticker.indexPrice() == Catch::Detail::Approx{0.083694});
-      CHECK(ticker.markPrice() == Catch::Detail::Approx{0.083755});
-      CHECK(ticker.bestBidPrice() == Catch::Detail::Approx{0.08371});
-      CHECK(ticker.bestBidAmount() == Catch::Detail::Approx{34800.0});
-      CHECK(ticker.bestAskPrice() == Catch::Detail::Approx{0.0838});
-      CHECK(ticker.bestAskAmount() == Catch::Detail::Approx{6000.0});
-      CHECK(ticker.currentFunding() == Catch::Detail::Approx{0.00022885});
-      CHECK(ticker.funding8h() == Catch::Detail::Approx{0.00025705});
-      CHECK(ticker.estimatedDeliveryPrice() == Catch::Detail::Approx{0.083694});
+      CHECK(ticker.openInterest() == Catch::Approx{2411300.0});
+      CHECK(ticker.minSellPrice() == Catch::Approx{0.082539});
+      CHECK(ticker.maxBuyPrice() == Catch::Approx{0.085053});
+      CHECK(ticker.lastPrice() == Catch::Approx{0.08382});
+      CHECK(ticker.indexPrice() == Catch::Approx{0.083694});
+      CHECK(ticker.markPrice() == Catch::Approx{0.083755});
+      CHECK(ticker.bestBidPrice() == Catch::Approx{0.08371});
+      CHECK(ticker.bestBidAmount() == Catch::Approx{34800.0});
+      CHECK(ticker.bestAskPrice() == Catch::Approx{0.0838});
+      CHECK(ticker.bestAskAmount() == Catch::Approx{6000.0});
+      CHECK(ticker.currentFunding() == Catch::Approx{0.00022885});
+      CHECK(ticker.funding8h() == Catch::Approx{0.00025705});
+      CHECK(ticker.estimatedDeliveryPrice() == Catch::Approx{0.083694});
       CHECK(std::isnan(ticker.deliveryPrice()));
-      CHECK(ticker.settlementPrice() == Catch::Detail::Approx{0.088545});
+      CHECK(ticker.settlementPrice() == Catch::Approx{0.088545});
     }
     void operator()(Trace<deribit_multicast::Trades> const &, sbe::Frame const &) override { FAIL(); }
     // snapshot
