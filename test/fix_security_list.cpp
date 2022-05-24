@@ -1234,11 +1234,11 @@ TEST_CASE("fix_security_list_parse_message", "[fix_security_list]") {
   core::fix::Buffer decode_buffer(buffer);
   int results = 0;
   auto bytes = core::fix::Reader<core::fix::Version::FIX_44>::dispatch(
-      [&](core::fix::Message const &message) {
+      [&](core::fix::Message const &message_2) {
         fprintf(stderr, "HEADER\n");
         ++results;
-        CHECK(message.header.msg_type == core::fix::MsgType::SECURITY_LIST);
-        /*auto security_list =*/fix::SecurityList::create(message, decode_buffer);
+        CHECK(message_2.header.msg_type == core::fix::MsgType::SECURITY_LIST);
+        /*auto security_list =*/fix::SecurityList::create(message_2, decode_buffer);
         /*
         CHECK(security_list.heart_bt_int == uint32_t{10});
         EXPECT_EQ(security_list.raw_data,
