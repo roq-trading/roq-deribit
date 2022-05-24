@@ -28,6 +28,6 @@ TEST_CASE("json_double", "[json_types]") {
     double result = NaN;
     core::json::Value value = 1.2;
     json::update(result, value);
-    CHECK(result == 1.2);
+    CHECK(result == 1.2_a);
   }
 }

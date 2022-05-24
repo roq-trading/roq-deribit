@@ -23,10 +23,10 @@ TEST_CASE("fix_logon_parse_message", "[fix_logon]") {
       "M=\0019001=Y\00110=115\001"sv;
   int results = 0;
   auto bytes = core::fix::Reader<core::fix::Version::FIX_44>::dispatch(
-      [&](core::fix::Message const &message) {
+      [&](core::fix::Message const &message_2) {
         ++results;
-        CHECK(message.header.msg_type == core::fix::MsgType::LOGON);
-        auto result = fix::Logon::create(message);
+        CHECK(message_2.header.msg_type == core::fix::MsgType::LOGON);
+        auto result = fix::Logon::create(message_2);
         CHECK(result.heart_bt_int == uint32_t{10});
         CHECK(result.raw_data == "1567874758168.y4/hA3i6qxm4yVL+3N7IrGcINVAFMLFhy4l7ATSehxc="sv);
         CHECK(result.username == "5MP40u9h"sv);

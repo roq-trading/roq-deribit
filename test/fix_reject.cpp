@@ -20,10 +20,10 @@ TEST_CASE("fix_reject_parse_message", "[fix_reject]") {
       "not_implemented\00110=092\001"sv;
   int results = 0;
   auto bytes = core::fix::Reader<core::fix::Version::FIX_44>::dispatch(
-      [&](core::fix::Message const &message) {
+      [&](core::fix::Message const &message_2) {
         ++results;
-        CHECK(message.header.msg_type == core::fix::MsgType::REJECT);
-        auto reject = fix::Reject::create(message);
+        CHECK(message_2.header.msg_type == core::fix::MsgType::REJECT);
+        auto reject = fix::Reject::create(message_2);
         CHECK(reject.ref_seq_num == uint64_t{5});
         CHECK(reject.ref_msg_type == core::fix::MsgType::REQUEST_FOR_POSITIONS);
         CHECK(reject.text == "not_implemented"sv);

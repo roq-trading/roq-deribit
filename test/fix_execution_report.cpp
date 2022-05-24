@@ -26,10 +26,10 @@ TEST_CASE("fix_execution_report_parse_message", "[fix_execution_report]") {
   core::fix::Buffer decode_buffer(buffer);
   int results = 0;
   auto bytes = core::fix::Reader<core::fix::Version::FIX_44>::dispatch(
-      [&](core::fix::Message const &message) {
+      [&](core::fix::Message const &message_2) {
         ++results;
-        CHECK(message.header.msg_type == core::fix::MsgType::EXECUTION_REPORT);
-        auto result = fix::ExecutionReport::create(message, decode_buffer);
+        CHECK(message_2.header.msg_type == core::fix::MsgType::EXECUTION_REPORT);
+        auto result = fix::ExecutionReport::create(message_2, decode_buffer);
         CHECK(result.order_id == "2831903667"sv);
         CHECK(result.cl_ord_id == "2831903667"sv);
         CHECK(result.orig_cl_ord_id == "123"sv);
@@ -66,10 +66,10 @@ TEST_CASE("fix_execution_report_parse_order_mass_status", "[fix_execution_report
   core::fix::Buffer decode_buffer(buffer);
   int results = 0;
   auto bytes = core::fix::Reader<core::fix::Version::FIX_44>::dispatch(
-      [&](core::fix::Message const &message) {
+      [&](core::fix::Message const &message_2) {
         ++results;
-        CHECK(message.header.msg_type == core::fix::MsgType::EXECUTION_REPORT);
-        auto result = fix::ExecutionReport::create(message, decode_buffer);
+        CHECK(message_2.header.msg_type == core::fix::MsgType::EXECUTION_REPORT);
+        auto result = fix::ExecutionReport::create(message_2, decode_buffer);
         CHECK(result.mass_status_req_id == "roq-oms-005"sv);
         CHECK(result.mass_status_req_type == core::fix::MassStatusReqType::ORDERS);
         CHECK(result.tot_num_reports == uint32_t{1});
@@ -95,10 +95,10 @@ TEST_CASE("fix_execution_report_parse_fill", "[fix_execution_report]") {
   core::fix::Buffer decode_buffer(buffer);
   int results = 0;
   auto bytes = core::fix::Reader<core::fix::Version::FIX_44>::dispatch(
-      [&](core::fix::Message const &message) {
+      [&](core::fix::Message const &message_2) {
         ++results;
-        CHECK(message.header.msg_type == core::fix::MsgType::EXECUTION_REPORT);
-        auto result = fix::ExecutionReport::create(message, decode_buffer);
+        CHECK(message_2.header.msg_type == core::fix::MsgType::EXECUTION_REPORT);
+        auto result = fix::ExecutionReport::create(message_2, decode_buffer);
         CHECK(result.order_id == "3026811591"sv);
         CHECK(result.cl_ord_id == "3026811591"sv);
         CHECK(result.orig_cl_ord_id == "roq:000000014"sv);

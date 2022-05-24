@@ -25,10 +25,10 @@ TEST_CASE("fix_position_report_parse_message", "[fix_position_report]") {
   core::fix::Buffer decode_buffer(buffer);
   int results = 0;
   auto bytes = core::fix::Reader<core::fix::Version::FIX_44>::dispatch(
-      [&](core::fix::Message const &message) {
+      [&](core::fix::Message const &message_2) {
         ++results;
-        CHECK(message.header.msg_type == core::fix::MsgType::POSITION_REPORT);
-        auto position_report = fix::PositionReport::create(message, decode_buffer);
+        CHECK(message_2.header.msg_type == core::fix::MsgType::POSITION_REPORT);
+        auto position_report = fix::PositionReport::create(message_2, decode_buffer);
         CHECK(position_report.pos_maint_rpt_id == "3221109"sv);
         CHECK(position_report.pos_req_id == "roq-pos-003"sv);
         CHECK(position_report.pos_req_type == core::fix::PosReqType::POSITIONS);

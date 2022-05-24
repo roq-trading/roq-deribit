@@ -20,10 +20,10 @@ TEST_CASE("fix_order_cancel_reject_parse_message", "[fix_order_cancel_reject]") 
       "9=8\00158=not_found\00110=000\001"sv;
   int results = 0;
   auto bytes = core::fix::Reader<core::fix::Version::FIX_44>::dispatch(
-      [&](core::fix::Message const &message) {
+      [&](core::fix::Message const &message_2) {
         ++results;
-        CHECK(message.header.msg_type == core::fix::MsgType::ORDER_CANCEL_REJECT);
-        auto result = fix::OrderCancelReject::create(message);
+        CHECK(message_2.header.msg_type == core::fix::MsgType::ORDER_CANCEL_REJECT);
+        auto result = fix::OrderCancelReject::create(message_2);
         CHECK(result.orig_cl_ord_id == "123"sv);
         CHECK(result.cl_ord_id == "345"sv);
         CHECK(result.ord_status == core::fix::OrdStatus::REJECTED);
@@ -42,10 +42,10 @@ TEST_CASE("fix_order_cancel_reject_already_cancelled", "[fix_order_cancel_reject
       "\0016=0.000\00110=180\001"sv;
   int results = 0;
   auto bytes = core::fix::Reader<core::fix::Version::FIX_44>::dispatch(
-      [&](core::fix::Message const &message) {
+      [&](core::fix::Message const &message_2) {
         ++results;
-        CHECK(message.header.msg_type == core::fix::MsgType::ORDER_CANCEL_REJECT);
-        auto result = fix::OrderCancelReject::create(message);
+        CHECK(message_2.header.msg_type == core::fix::MsgType::ORDER_CANCEL_REJECT);
+        auto result = fix::OrderCancelReject::create(message_2);
         CHECK(result.orig_cl_ord_id == "5wAC6QMAAwAACDaIJMsS"sv);
         CHECK(result.cl_ord_id == "6446518867"sv);
         CHECK(result.ord_status == core::fix::OrdStatus::CANCELED);

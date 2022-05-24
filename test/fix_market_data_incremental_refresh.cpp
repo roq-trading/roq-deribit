@@ -25,10 +25,10 @@ TEST_CASE("fix_market_data_incremental_refresh_parse_message_1", "fix_market_dat
   core::fix::Buffer decode_buffer(buffer);
   int results = 0;
   auto bytes = core::fix::Reader<core::fix::Version::FIX_44>::dispatch(
-      [&](core::fix::Message const &message) {
+      [&](core::fix::Message const &message_2) {
         ++results;
-        CHECK(message.header.msg_type == core::fix::MsgType::MARKET_DATA_INCREMENTAL_REFRESH);
-        auto result = fix::MarketDataIncrementalRefresh::create(message, decode_buffer);
+        CHECK(message_2.header.msg_type == core::fix::MsgType::MARKET_DATA_INCREMENTAL_REFRESH);
+        auto result = fix::MarketDataIncrementalRefresh::create(message_2, decode_buffer);
         CHECK(result.symbol == "BTC-27SEP19"sv);
         CHECK(result.trade_volume24h == 10831047.0_a);
         CHECK(result.mark_price == 10517.44_a);
@@ -70,10 +70,10 @@ TEST_CASE("fix_market_data_incremental_refresh_parse_message_2", "fix_market_dat
   core::fix::Buffer decode_buffer(buffer);
   int results = 0;
   auto bytes = core::fix::Reader<core::fix::Version::FIX_44>::dispatch(
-      [&](core::fix::Message const &message) {
+      [&](core::fix::Message const &message_2) {
         ++results;
-        CHECK(message.header.msg_type == core::fix::MsgType::MARKET_DATA_INCREMENTAL_REFRESH);
-        auto result = fix::MarketDataIncrementalRefresh::create(message, decode_buffer);
+        CHECK(message_2.header.msg_type == core::fix::MsgType::MARKET_DATA_INCREMENTAL_REFRESH);
+        auto result = fix::MarketDataIncrementalRefresh::create(message_2, decode_buffer);
         CHECK(result.symbol == "BTC-27SEP19"sv);
         CHECK(std::size(result.no_md_entries) == size_t{5});
         // item 0
@@ -163,10 +163,10 @@ TEST_CASE("fix_market_data_incremental_refresh_parse_message_3", "fix_market_dat
   core::fix::Buffer decode_buffer(buffer);
   int results = 0;
   auto bytes = core::fix::Reader<core::fix::Version::FIX_44>::dispatch(
-      [&](core::fix::Message const &message) {
+      [&](core::fix::Message const &message_2) {
         ++results;
-        CHECK(message.header.msg_type == core::fix::MsgType::MARKET_DATA_INCREMENTAL_REFRESH);
-        auto result = fix::MarketDataIncrementalRefresh::create(message, decode_buffer);
+        CHECK(message_2.header.msg_type == core::fix::MsgType::MARKET_DATA_INCREMENTAL_REFRESH);
+        auto result = fix::MarketDataIncrementalRefresh::create(message_2, decode_buffer);
         CHECK(result.symbol == "ETH-PERPETUAL"sv);
         CHECK(std::size(result.no_md_entries) == size_t{1});
         // item 0

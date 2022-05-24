@@ -80,9 +80,10 @@ TEST_CASE("sbe_instrument", "[sbe_parser]") {  // 1000 (note! bundled)
   REQUIRE(std::size(message) == 1318);
   std::span buffer{reinterpret_cast<std::byte const *>(std::data(message)), std::size(message)};
   {
-    auto message = buffer.subspan(8);
-    // fmt::print("message={}\n"sv, debug::hex::Message{message});
-    Instrument instrument{reinterpret_cast<char *>(const_cast<std::byte *>(std::data(message))), std::size(message)};
+    auto message_2 = buffer.subspan(8);
+    // fmt::print("message_2={}\n"sv, debug::hex::Message{message_2});
+    Instrument instrument{
+        reinterpret_cast<char *>(const_cast<std::byte *>(std::data(message_2))), std::size(message_2)};
     REQUIRE(sbe::compute_length(instrument) == 171);
     static_assert((8 + 171) == 179);
   }
@@ -163,9 +164,9 @@ TEST_CASE("sbe_book", "[sbe_parser]") {  // 1001 (note! bundled)
   REQUIRE(std::size(message) == 327);
   std::span buffer{reinterpret_cast<std::byte const *>(std::data(message)), std::size(message)};
   {
-    auto message = buffer.subspan(260);
-    // fmt::print("message={}\n"sv, debug::hex::Message{message});
-    Book book{reinterpret_cast<char *>(const_cast<std::byte *>(std::data(message))), std::size(message)};
+    auto message_2 = buffer.subspan(260);
+    // fmt::print("message_2={}\n"sv, debug::hex::Message{message_2});
+    Book book{reinterpret_cast<char *>(const_cast<std::byte *>(std::data(message_2))), std::size(message_2)};
     REQUIRE(sbe::compute_length(book) == 67);
     static_assert((260 + 67) == 327);
   }
@@ -240,9 +241,9 @@ TEST_CASE("sbe_trades", "[sbe_parser]") {  // 1002 (note! bundled)
   REQUIRE(std::size(message) == 327);
   std::span buffer{reinterpret_cast<std::byte const *>(std::data(message)), std::size(message)};
   {
-    auto message = buffer.subspan(8);
-    // fmt::print("message={}\n"sv, debug::hex::Message{message});
-    Trades trades{reinterpret_cast<char *>(const_cast<std::byte *>(std::data(message))), std::size(message)};
+    auto message_2 = buffer.subspan(8);
+    // fmt::print("message_2={}\n"sv, debug::hex::Message{message_2});
+    Trades trades{reinterpret_cast<char *>(const_cast<std::byte *>(std::data(message_2))), std::size(message_2)};
     REQUIRE(sbe::compute_length(trades) == 107);
     static_assert((8 + 107) == 115);
   }
@@ -313,9 +314,9 @@ TEST_CASE("sbe_ticker", "[sbe_parser]") {  // 1003
   REQUIRE(std::size(message) == 153);
   std::span buffer{reinterpret_cast<std::byte const *>(std::data(message)), std::size(message)};
   {
-    auto message = buffer.subspan(8);
-    // fmt::print("message={}\n"sv, debug::hex::Message{message});
-    Ticker ticker{reinterpret_cast<char *>(const_cast<std::byte *>(std::data(message))), std::size(message)};
+    auto message_2 = buffer.subspan(8);
+    // fmt::print("message_2={}\n"sv, debug::hex::Message{message_2});
+    Ticker ticker{reinterpret_cast<char *>(const_cast<std::byte *>(std::data(message_2))), std::size(message_2)};
     REQUIRE(sbe::compute_length(ticker) == 145);
     static_assert((8 + 145) == 153);
   }
@@ -420,9 +421,9 @@ TEST_CASE("sbe_snapshot", "[sbe_parser]") {  // 1004 (note! bundled)
   REQUIRE(std::size(message) == 1318);
   std::span buffer{reinterpret_cast<std::byte const *>(std::data(message)), std::size(message)};
   {
-    auto message = buffer.subspan(324);
-    // fmt::print("message={}\n"sv, debug::hex::Message{message});
-    Snapshot snapshot{reinterpret_cast<char *>(const_cast<std::byte *>(std::data(message))), std::size(message)};
+    auto message_2 = buffer.subspan(324);
+    // fmt::print("message_2={}\n"sv, debug::hex::Message{message_2});
+    Snapshot snapshot{reinterpret_cast<char *>(const_cast<std::byte *>(std::data(message_2))), std::size(message_2)};
     REQUIRE(sbe::compute_length(snapshot) == 994);
     static_assert((324 + 994) == 1318);
   }

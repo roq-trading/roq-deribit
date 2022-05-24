@@ -20,10 +20,10 @@ TEST_CASE("fix_logout_parse_message", "[fix_logout]") {
       "s\00110=166\001"sv;
   int results = 0;
   auto bytes = core::fix::Reader<core::fix::Version::FIX_44>::dispatch(
-      [&](core::fix::Message const &message) {
+      [&](core::fix::Message const &message_2) {
         ++results;
-        CHECK(message.header.msg_type == core::fix::MsgType::LOGOUT);
-        auto logout = fix::Logout::create(message);
+        CHECK(message_2.header.msg_type == core::fix::MsgType::LOGOUT);
+        auto logout = fix::Logout::create(message_2);
         CHECK(logout.text == "invalid_credentials");
       },
       message);

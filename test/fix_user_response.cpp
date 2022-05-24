@@ -22,10 +22,10 @@ TEST_CASE("fix_user_response_parse_message", "[fix_user_response]") {
       "1=0.0\001100013=10.0\00110=004\001"sv;
   int results = 0;
   auto bytes = core::fix::Reader<core::fix::Version::FIX_44>::dispatch(
-      [&](core::fix::Message const &message) {
+      [&](core::fix::Message const &message_2) {
         ++results;
-        CHECK(message.header.msg_type == core::fix::MsgType::USER_RESPONSE);
-        auto user_response = fix::UserResponse::create(message);
+        CHECK(message_2.header.msg_type == core::fix::MsgType::USER_RESPONSE);
+        auto user_response = fix::UserResponse::create(message_2);
         CHECK(user_response.user_request_id == "123"sv);
         CHECK(user_response.username == "5MP40u9h"sv);
         CHECK(user_response.user_status == core::fix::UserStatus::LOGGED_IN);

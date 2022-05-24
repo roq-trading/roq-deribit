@@ -175,10 +175,10 @@ TEST_CASE("fix_market_data_snapshot_full_refresh_parse_message", "fix_market_dat
   core::fix::Buffer decode_buffer(buffer);
   int results = 0;
   auto bytes = core::fix::Reader<core::fix::Version::FIX_44>::dispatch(
-      [&](core::fix::Message const &message) {
+      [&](core::fix::Message const &message_2) {
         ++results;
-        CHECK(message.header.msg_type == core::fix::MsgType::MARKET_DATA_SNAPSHOT_FULL_REFRESH);
-        /*auto market_data =*/fix::MarketDataSnapshotFullRefresh::create(message, decode_buffer);
+        CHECK(message_2.header.msg_type == core::fix::MsgType::MARKET_DATA_SNAPSHOT_FULL_REFRESH);
+        /*auto market_data =*/fix::MarketDataSnapshotFullRefresh::create(message_2, decode_buffer);
         /*
         CHECK(result.heart_bt_int == uint32_t{10});
         EXPECT_EQ(result.raw_data,
