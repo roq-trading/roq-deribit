@@ -573,13 +573,9 @@ void MarketData::operator()(Trace<fix::SecurityList const> const &event, core::f
     for (auto &instrument : security_list.no_related_sym) {
       log::info<2>("instrument={}"sv, instrument);
       auto &symbol = instrument.symbol;
-      if (shared_.discard_symbol(symbol))
-        continue;
-      if (shared_.all_symbols.emplace(symbol).second)  // only include new
-        symbols.emplace_back(symbol);
+      auto discard = shared_.discard_symbol(symbol);
       auto security_type = fix::map_security_type(instrument.security_type);
       auto option_type = core::fix::map(instrument.put_or_call);
-
       auto expiry_datetime = combine(
           instrument.maturity_date,
           core::charconv::time_from_string<std::chrono::milliseconds>(instrument.maturity_time));
@@ -608,8 +604,13 @@ void MarketData::operator()(Trace<fix::SecurityList const> const &event, core::f
           .settlement_date = {},
           .expiry_datetime = utils::safe_cast(expiry_datetime),
           .expiry_datetime_utc = utils::safe_cast(expiry_datetime_utc),
+          .discard = discard,
       };
       create_trace_and_dispatch(handler_, trace_info, reference_data, true);
+      if (discard)
+        continue;
+      if (shared_.all_symbols.emplace(symbol).second)  // only include new
+        symbols.emplace_back(symbol);
       ++counter;
     }
     log::info<2>("- securities: {} (/{})"sv, counter, std::size(security_list.no_related_sym));
