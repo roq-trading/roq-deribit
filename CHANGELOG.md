@@ -4,6 +4,10 @@ All notable changes will be documented in this file.
 
 ## Head
 
+### Added
+
+* Flag to disconnect market data connection after some time (#224)
+
 ## 0.8.4 &ndash; 2022-05-14
 
 ### Added

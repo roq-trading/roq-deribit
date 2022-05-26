@@ -162,10 +162,20 @@ void MarketData::operator()(Event<Timer> const &event) {
     log::info("closing connection"sv);
     connection_.close();
   } else {
-    if (status_ == ConnectionStatus::READY && next_heartbeat_ <= event.value.now) {
-      assert(flags::FIX::fix_ping_freq().count() > 0);
-      next_heartbeat_ = event.value.now + flags::FIX::fix_ping_freq();
-      send_test_request(core::clock::GetSystem());
+    if (status_ == ConnectionStatus::READY) {
+      if (test_disconnect_time_.count() && test_disconnect_time_ < event.value.now) [[unlikely]] {
+        if (flags::FIX::fix_test_market_data_disconnect().count()) {
+          log::warn("*** TEST: DISCONNECT (stream_id={}) ***"sv, stream_id_);
+          log::info("closing connection"sv);
+          connection_.close();
+        }
+      } else {
+        if (next_heartbeat_ <= event.value.now) {
+          assert(flags::FIX::fix_ping_freq().count() > 0);
+          next_heartbeat_ = event.value.now + flags::FIX::fix_ping_freq();
+          send_test_request(core::clock::GetSystem());
+        }
+      }
     }
   }
 }
@@ -183,6 +193,8 @@ void MarketData::operator()(core::net::Manager::Disconnected const &) {
   next_heartbeat_ = {};
   (*this)(ConnectionStatus::DISCONNECTED);
   download_.reset();
+  // test
+  test_disconnect_time_ = {};
 }
 
 void MarketData::operator()(core::net::Manager::Read const &read) {
@@ -304,9 +316,19 @@ uint32_t MarketData::download(MarketDataState state) {
       ready_ = true;
       subscribe();
       return {};
-    case DONE:
+    case DONE: {
       (*this)(ConnectionStatus::READY);
+      // test
+      auto now = core::clock::GetSystem();
+      if (flags::FIX::fix_test_market_data_disconnect().count()) {
+        test_disconnect_time_ = now + flags::FIX::fix_test_market_data_disconnect();
+        log::warn(
+            "*** TEST: DISCONNECT IN {} (stream_id={}) ***"sv,
+            std::chrono::duration_cast<std::chrono::seconds>(flags::FIX::fix_test_market_data_disconnect()),
+            stream_id_);
+      }
       return {};
+    }
   }
   assert(false);
   return {};

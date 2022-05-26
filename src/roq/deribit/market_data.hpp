@@ -173,6 +173,8 @@ class MarketData final : public core::net::Manager::Handler {
   core::Download<MarketDataState> download_;
   std::chrono::nanoseconds last_logon_or_heartbeat_ = {};
   absl::flat_hash_set<Symbol> latch_;
+  // EXPERIMENTAL
+  std::chrono::nanoseconds test_disconnect_time_ = {};
 };
 
 }  // namespace deribit

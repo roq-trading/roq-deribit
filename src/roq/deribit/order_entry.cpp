@@ -125,10 +125,11 @@ void OrderEntry::operator()(Event<Timer> const &event) {
   } else {
     if (ready_) {
       if (test_disconnect_time_.count() && test_disconnect_time_ < event.value.now) [[unlikely]] {
-        if (flags::FIX::fix_test_order_disconnect().count())
+        if (flags::FIX::fix_test_order_disconnect().count()) {
           log::warn("*** TEST: DISCONNECT ***"sv);
-        log::info("closing connection"sv);
-        connection_.close();
+          log::info("closing connection"sv);
+          connection_.close();
+        }
       } else {
         if (next_heartbeat_ <= event.value.now) {
           assert(flags::FIX::fix_ping_freq().count() > 0);

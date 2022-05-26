@@ -79,6 +79,13 @@
       "validator": "roq::core::flags::TimePeriod",
       "default": "{}",
       "description": "TEST logon order stream after this period"
+    },
+    {
+      "name": "fix_test_market_data_disconnect",
+      "type": "std::chrono::nanoseconds",
+      "validator": "roq::core::flags::TimePeriod",
+      "default": "{}",
+      "description": "TEST disconnect market data stream after this period"
     }
   ]
 }
