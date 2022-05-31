@@ -58,9 +58,18 @@ auto create_connection_factory(auto &context) {
   auto uri = flags::FIX::fix_uri();
   core::net::ConnectionFactory::Config config{
       .uris = {&uri, 1},
-      .validate_certificate = server::Flags::tls_validate_certificate(),
+      .validate_certificate = server::Flags::net_tls_validate_certificate(),
   };
   return core::net::TcpConnectionFactory{context, config};
+}
+
+auto create_connection(auto &handler, auto &connection_factory) {
+  core::net::Manager::Config config{
+      .always_reconnect = true,
+      .connection_timeout = server::Flags::net_connection_timeout(),
+      .disconnect_on_idle_timeout = {},
+  };
+  return core::net::Manager{handler, connection_factory, config};
 }
 
 template <typename T>
@@ -124,8 +133,9 @@ MarketData::MarketData(
       master_(master),
       publish_market_by_price_(!shared.has_multicast() || flags::Multicast::multicast_disable_market_by_price()),
       publish_trade_summary_(!shared.has_multicast() || flags::Multicast::multicast_disable_trade_summary()),
-      connection_factory_(create_connection_factory(context)), connection_(*this, connection_factory_),
-      encode_buffer_(flags::Common::encode_buffer_size()), decode_buffer_(flags::Common::decode_buffer_size()),
+      connection_factory_(create_connection_factory(context)),
+      connection_(create_connection(*this, connection_factory_)), encode_buffer_(flags::Common::encode_buffer_size()),
+      decode_buffer_(flags::Common::decode_buffer_size()),
       counter_{
           .disconnect = create_metrics(name_, "disconnect"sv),
       },

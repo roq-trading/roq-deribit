@@ -42,7 +42,10 @@ struct create_metrics final : public core::metrics::Factory {
 auto create_connection(auto &handler, auto &context) {
   auto uri = flags::WebSocket::ws_uri();
   core::web::ClientSocket::Config config{
-      .validate_certificate = server::Flags::tls_validate_certificate(),
+      .always_reconnect = true,
+      .connection_timeout = server::Flags::net_connection_timeout(),
+      .disconnect_on_idle_timeout = {},
+      .validate_certificate = server::Flags::net_tls_validate_certificate(),
       .uris = {&uri, 1},
       .query = {},
       .ping_frequency = flags::WebSocket::ws_ping_freq(),
