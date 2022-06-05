@@ -119,6 +119,10 @@
     {
       "name": "combo_state",
       "type": "ComboState"
+    },
+    {
+      "name": "interest_value",
+      "type": "double"
     }
   ]
 }

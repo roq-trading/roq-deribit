@@ -85,6 +85,10 @@
     {
       "name": "total_profit_loss",
       "type": "double"
+    },
+    {
+      "name": "interest_value",
+      "type": "double"
     }
   ]
 }
