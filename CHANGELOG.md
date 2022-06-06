@@ -4,6 +4,10 @@ All notable changes will be documented in this file.
 
 ## Head
 
+### Fixed
+
+* MbP snapshot did not contain `exchange_time_utc` (#234)
+
 ## 0.8.5 &ndash; 2022-06-06
 
 ### Added

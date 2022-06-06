@@ -802,7 +802,10 @@ void MarketData::operator()(
   }
   core::back_emplacer bids(shared_.bids), asks(shared_.asks);
   core::back_emplacer statistics(shared_.statistics);
+  std::chrono::nanoseconds exchange_time_utc = {};
   for (auto &item : market_data_snapshot_full_refresh.no_md_entries) {
+    if (exchange_time_utc < item.md_entry_date)
+      exchange_time_utc = item.md_entry_date;
     switch (item.md_entry_type) {
       using enum core::fix::MDEntryType;
       case BID: {
@@ -851,7 +854,7 @@ void MarketData::operator()(
         .bids = bids,
         .asks = asks,
         .update_type = UpdateType::SNAPSHOT,
-        .exchange_time_utc = {},
+        .exchange_time_utc = exchange_time_utc,
         .price_decimals = {},
         .quantity_decimals = {},
         .checksum = {},
@@ -873,7 +876,7 @@ void MarketData::operator()(
         .symbol = symbol,
         .statistics = statistics,
         .update_type = UpdateType::SNAPSHOT,
-        .exchange_time_utc = {},
+        .exchange_time_utc = exchange_time_utc,
     };
     create_trace_and_dispatch(handler_, trace_info, statistics_update, true);
   }
