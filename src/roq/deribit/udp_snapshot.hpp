@@ -58,6 +58,8 @@ class UDPSnapshot final : public core::net::UdpConnection::Handler, public sbe::
   template <typename T, typename U>
   static void emplace_back(const T &item, U &bids, U &asks);
 
+  Aggregator &get_aggregator(uint16_t channel_id);
+
  private:
   Handler &handler_;
   // config
@@ -77,7 +79,7 @@ class UDPSnapshot final : public core::net::UdpConnection::Handler, public sbe::
   // cache
   Shared &shared_;
   ConnectionStatus connection_status_ = {};
-  Aggregator aggregator_;
+  absl::flat_hash_map<uint16_t, Aggregator> aggregator_;
   // state
   std::chrono::nanoseconds last_update_time_ = {};
 };

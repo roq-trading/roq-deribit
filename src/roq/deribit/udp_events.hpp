@@ -60,6 +60,8 @@ class UDPEvents final : public core::net::UdpConnection::Handler, public sbe::Pa
   template <typename T, typename U>
   static void emplace_back(const T &item, U &bids, U &asks);
 
+  Aggregator &get_aggregator(uint16_t channel_id);
+
  private:
   Handler &handler_;
   // config
@@ -83,7 +85,7 @@ class UDPEvents final : public core::net::UdpConnection::Handler, public sbe::Pa
   ConnectionStatus connection_status_ = {};
   absl::flat_hash_map<uint32_t, uint32_t> last_ticker_;
   absl::flat_hash_map<uint32_t, uint32_t> last_trades_;
-  Aggregator aggregator_;
+  absl::flat_hash_map<uint16_t, Aggregator> aggregator_;
   // state
   std::chrono::nanoseconds last_update_time_ = {};
 };

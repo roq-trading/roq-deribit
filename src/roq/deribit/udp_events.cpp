@@ -103,7 +103,7 @@ UDPEvents::UDPEvents(Handler &handler, core::io::Context &context, uint16_t stre
       profile_{
           .parse = create_metrics(name_, "parse"sv),
       },
-      shared_(shared), aggregator_(server::Flags::cache_mbp_max_depth()) {
+      shared_(shared) {
   log::info("DEBUG: publish_top_of_book={}"sv, publish_top_of_book_);
   log::info("DEBUG: publish_market_by_price={}"sv, publish_market_by_price_);
   log::info("DEBUG: publish_trade_summary={}"sv, publish_trade_summary_);
@@ -143,7 +143,8 @@ void UDPEvents::operator()(core::net::UdpConnection::Error const &error) {
 void UDPEvents::operator()(Trace<deribit_multicast::Instrument> const &event, sbe::Frame const &frame) {
   auto &instrument = event.value;
   log::info<2>("instrument={}, frame={}"sv, instrument, frame);
-  if (aggregator_(frame.sequence_number)) {
+  auto &aggregator = get_aggregator(frame.channel_id);
+  if (aggregator(frame.sequence_number)) {
     // note! always include
     auto const instrument_id = instrument.instrumentId();
     shared_.find_instrument_name_with_create(instrument_id, [&]() {
@@ -159,7 +160,8 @@ void UDPEvents::operator()(Trace<deribit_multicast::Book> const &event, sbe::Fra
   auto const instrument_id = book.instrumentId();
   auto const change_id = book.changeId();
   auto const is_last = book.isLast();
-  aggregator_(frame.sequence_number, instrument_id, change_id, is_last, [&](auto &bids, auto &asks) {
+  auto &aggregator = get_aggregator(frame.channel_id);
+  aggregator(frame.sequence_number, instrument_id, change_id, is_last, [&](auto &bids, auto &asks) {
     if (!publish_market_by_price_)
       return;
     if (shared_.find_instrument_name(instrument_id, [&](auto &symbol) {
@@ -250,7 +252,8 @@ void UDPEvents::operator()(Trace<deribit_multicast::Ticker> const &event, sbe::F
   auto &trace_info = event.trace_info;
   auto &ticker = event.value;
   log::info<4>("ticker={}, frame={}"sv, ticker, frame);
-  if (aggregator_(frame.sequence_number)) {
+  auto &aggregator = get_aggregator(frame.channel_id);
+  if (aggregator(frame.sequence_number)) {
     if (!publish_top_of_book_)
       return;
     auto const instrument_id = ticker.instrumentId();
@@ -288,7 +291,8 @@ void UDPEvents::operator()(Trace<deribit_multicast::Trades> const &event, sbe::F
   auto &trace_info = event.trace_info;
   auto &trades = event.value;
   log::info<4>("trades={}, frame={}"sv, trades, frame);
-  if (aggregator_(frame.sequence_number)) {
+  auto &aggregator = get_aggregator(frame.channel_id);
+  if (aggregator(frame.sequence_number)) {
     if (!publish_trade_summary_)
       return;
     auto const instrument_id = trades.instrumentId();
@@ -371,6 +375,14 @@ void UDPEvents::emplace_back(const T &item, U &bids, U &asks) {
       asks.emplace_back(std::move(mbp_update));
       break;
   }
+}
+
+Aggregator &UDPEvents::get_aggregator(uint16_t channel_id) {
+  auto iter = aggregator_.find(channel_id);
+  if (iter == std::end(aggregator_)) {
+    iter = aggregator_.emplace(channel_id, server::Flags::cache_mbp_max_depth()).first;
+  }
+  return (*iter).second;
 }
 
 }  // namespace deribit
