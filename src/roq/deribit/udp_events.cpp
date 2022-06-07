@@ -27,11 +27,17 @@ namespace deribit {
 
 namespace {
 auto const NAME = "udpe"sv;
-const Mask SUPPORTS{
-    SupportType::TOP_OF_BOOK,
-    SupportType::MARKET_BY_PRICE,
-    SupportType::TRADE_SUMMARY,
-};
+
+auto get_supports(auto publish_top_of_book, auto publish_market_by_price, auto publish_trade_summary) {
+  Mask<SupportType> result;
+  if (publish_top_of_book)
+    result |= SupportType::TOP_OF_BOOK;
+  if (publish_market_by_price)
+    result |= SupportType::MARKET_BY_PRICE;
+  if (publish_trade_summary)
+    result |= SupportType::TRADE_SUMMARY;
+  return result;
+}
 
 struct create_metrics final : public core::metrics::Factory {
   explicit create_metrics(std::string_view const &group, std::string_view const &function)
@@ -89,6 +95,7 @@ UDPEvents::UDPEvents(Handler &handler, core::io::Context &context, uint16_t stre
       publish_top_of_book_(!flags::Multicast::multicast_disable_top_of_book()),
       publish_market_by_price_(!flags::Multicast::multicast_disable_market_by_price()),
       publish_trade_summary_(!flags::Multicast::multicast_disable_trade_summary()),
+      supports_(get_supports(publish_top_of_book_, publish_market_by_price_, publish_trade_summary_)),
       connection_(create_connection(*this, context, flags::Multicast::multicast_port_events())),
       counter_{
           .disconnect = create_metrics(name_, "disconnect"sv),
@@ -105,17 +112,23 @@ UDPEvents::UDPEvents(Handler &handler, core::io::Context &context, uint16_t stre
 void UDPEvents::operator()(Event<Start> const &) {
   auto trace_info = server::create_trace_info();
   publish_stream_status(trace_info, ConnectionStatus::CONNECTING);
+  last_update_time_ = trace_info.source_receive_time;
 }
 
 void UDPEvents::operator()(Event<Stop> const &) {
 }
 
-void UDPEvents::operator()(Event<Timer> const &) {
+void UDPEvents::operator()(Event<Timer> const &event) {
+  if (last_update_time_.count() && (last_update_time_ + flags::Multicast::multicast_timeout()) < event.value.now) {
+    log::warn("*** DETECTED TIMEOUT ***"sv);
+    last_update_time_ = {};
+  }
 }
 
 void UDPEvents::operator()(core::net::UdpConnection::Read const &read) {
   log::info<5>("received {} byte(s)"sv, std::size(read.buffer));
   auto trace_info = server::create_trace_info();
+  last_update_time_ = trace_info.source_receive_time;
   publish_stream_status(trace_info, ConnectionStatus::READY);  // first message will publish
   if (!sbe::Parser::dispatch(*this, read.buffer, trace_info)) {
     log::warn("{}"sv, debug::hex::Message{read.buffer});
@@ -326,7 +339,7 @@ void UDPEvents::publish_stream_status(TraceInfo const &trace_info, ConnectionSta
   const StreamStatus stream_status{
       .stream_id = stream_id_,
       .account = {},
-      .supports = SUPPORTS,
+      .supports = supports_,
       .transport = Transport::UDP,
       .protocol = Protocol::SBE,
       .encoding = {Encoding::SBE},

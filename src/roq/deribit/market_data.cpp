@@ -39,15 +39,17 @@ namespace {
 auto const LOGOUT_RESPONSE = "LOGOUT"sv;  // XXX
 
 auto const NAME = "md"sv;
-const Mask SUPPORTS{
-    SupportType::MARKET_BY_PRICE,
-    SupportType::TRADE_SUMMARY,
-    SupportType::STATISTICS,
-};
-const Mask SUPPORTS_MASTER{
-    SUPPORTS,
-    SupportType::REFERENCE_DATA,
-};
+
+auto get_supports(auto master, auto publish_market_by_price, auto publish_trade_summary) {
+  Mask<SupportType> result;
+  if (master)
+    result |= SupportType::REFERENCE_DATA;
+  if (publish_market_by_price)
+    result |= SupportType::MARKET_BY_PRICE;
+  if (publish_trade_summary)
+    result |= SupportType::TRADE_SUMMARY;
+  return result;
+}
 
 struct create_metrics final : public core::metrics::Factory {
   explicit create_metrics(std::string_view const &group, std::string_view const &function)
@@ -133,6 +135,7 @@ MarketData::MarketData(
       master_(master),
       publish_market_by_price_(!shared.has_multicast() || flags::Multicast::multicast_disable_market_by_price()),
       publish_trade_summary_(!shared.has_multicast() || flags::Multicast::multicast_disable_trade_summary()),
+      supports_(get_supports(master_, publish_market_by_price_, publish_trade_summary_)),
       connection_factory_(create_connection_factory(context)),
       connection_(create_connection(*this, connection_factory_)), encode_buffer_(flags::Common::encode_buffer_size()),
       decode_buffer_(flags::Common::decode_buffer_size()),
@@ -248,7 +251,7 @@ void MarketData::operator()(ConnectionStatus status) {
     const StreamStatus stream_status{
         .stream_id = stream_id_,
         .account = {},
-        .supports = master_ ? SUPPORTS_MASTER : SUPPORTS,
+        .supports = supports_,
         .transport = Transport::TCP,
         .protocol = Protocol::FIX,
         .encoding = {Encoding::FIX},

@@ -149,6 +149,7 @@ class WebSocket final : public core::web::ClientSocket::Handler,
   const size_t index_;
   bool const master_;
   bool const publish_top_of_book_;
+  Mask<SupportType> const supports_;
   // web socket
   core::web::ClientSocket connection_;
   // buffers

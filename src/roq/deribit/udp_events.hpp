@@ -68,6 +68,7 @@ class UDPEvents final : public core::net::UdpConnection::Handler, public sbe::Pa
   bool const publish_top_of_book_;
   bool const publish_market_by_price_;
   bool const publish_trade_summary_;
+  Mask<SupportType> const supports_;
   // connection
   core::net::UdpConnection connection_;
   // metrics
@@ -83,6 +84,8 @@ class UDPEvents final : public core::net::UdpConnection::Handler, public sbe::Pa
   absl::flat_hash_map<uint32_t, uint32_t> last_ticker_;
   absl::flat_hash_map<uint32_t, uint32_t> last_trades_;
   Aggregator aggregator_;
+  // state
+  std::chrono::nanoseconds last_update_time_ = {};
 };
 
 }  // namespace deribit

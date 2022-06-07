@@ -26,13 +26,14 @@ namespace roq {
 namespace deribit {
 
 namespace {
-const Mask SUPPORTS{
-    SupportType::TOP_OF_BOOK,
-};
-const Mask SUPPORTS_MASTER{
-    SUPPORTS,
-    SupportType::MARKET_STATUS,
-};
+auto get_supports(auto master, auto publish_top_of_book) {
+  Mask<SupportType> result;
+  if (master)
+    result |= SupportType::MARKET_STATUS;
+  if (publish_top_of_book)
+    result |= SupportType::TOP_OF_BOOK;
+  return result;
+}
 
 auto create_name(auto const &stream_id) {
   auto name = "ws"sv;
@@ -65,7 +66,8 @@ WebSocket::WebSocket(
     Handler &handler, core::io::Context &context, uint16_t stream_id, Shared &shared, size_t index, bool master)
     : handler_(handler), stream_id_(stream_id), name_(create_name(stream_id_)), index_(index), master_(master),
       publish_top_of_book_(!shared.has_multicast() || flags::Multicast::multicast_disable_top_of_book()),
-      connection_(create_connection(*this, context)), decode_buffer_(flags::Common::decode_buffer_size()),
+      supports_(get_supports(master_, publish_top_of_book_)), connection_(create_connection(*this, context)),
+      decode_buffer_(flags::Common::decode_buffer_size()),
       counter_{
           .disconnect = create_metrics(name_, "disconnect"sv),
       },
@@ -164,7 +166,7 @@ void WebSocket::operator()(ConnectionStatus status) {
     const StreamStatus stream_status{
         .stream_id = stream_id_,
         .account = {},
-        .supports = master_ ? SUPPORTS_MASTER : SUPPORTS,
+        .supports = supports_,
         .transport = Transport::TCP,
         .protocol = Protocol::WS,
         .encoding = {Encoding::JSON},

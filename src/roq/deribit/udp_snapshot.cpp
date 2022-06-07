@@ -27,9 +27,13 @@ namespace deribit {
 
 namespace {
 auto const NAME = "udps"sv;
-const Mask SUPPORTS{
-    SupportType::MARKET_BY_PRICE,
-};
+
+auto get_supports(auto publish_market_by_price) {
+  Mask<SupportType> result;
+  if (publish_market_by_price)
+    result |= SupportType::MARKET_BY_PRICE;
+  return result;
+}
 
 struct create_metrics final : public core::metrics::Factory {
   explicit create_metrics(std::string_view const &group, std::string_view const &function)
@@ -53,6 +57,7 @@ auto create_connection(auto &handler, auto &context, auto port) {
 UDPSnapshot::UDPSnapshot(Handler &handler, core::io::Context &context, uint16_t stream_id, Shared &shared)
     : handler_(handler), stream_id_(stream_id), name_(fmt::format("{}:{}"sv, stream_id_, NAME)),
       publish_market_by_price_(!flags::Multicast::multicast_disable_market_by_price()),
+      supports_(get_supports(publish_market_by_price_)),
       connection_(create_connection(*this, context, flags::Multicast::multicast_port_snapshot())),
       counter_{
           .disconnect = create_metrics(name_, "disconnect"sv),
@@ -66,18 +71,24 @@ UDPSnapshot::UDPSnapshot(Handler &handler, core::io::Context &context, uint16_t 
 
 void UDPSnapshot::operator()(Event<Start> const &) {
   auto trace_info = server::create_trace_info();
+  last_update_time_ = trace_info.source_receive_time;
   publish_stream_status(trace_info, ConnectionStatus::CONNECTING);
 }
 
 void UDPSnapshot::operator()(Event<Stop> const &) {
 }
 
-void UDPSnapshot::operator()(Event<Timer> const &) {
+void UDPSnapshot::operator()(Event<Timer> const &event) {
+  if (last_update_time_.count() && (last_update_time_ + flags::Multicast::multicast_timeout()) < event.value.now) {
+    log::warn("*** DETECTED TIMEOUT ***"sv);
+    last_update_time_ = {};
+  }
 }
 
 void UDPSnapshot::operator()(core::net::UdpConnection::Read const &read) {
   log::info<5>("received {} byte(s)"sv, std::size(read.buffer));
   auto trace_info = server::create_trace_info();
+  last_update_time_ = trace_info.source_receive_time;
   publish_stream_status(trace_info, ConnectionStatus::READY);  // first message will publish
   if (!sbe::Parser::dispatch(*this, read.buffer, trace_info)) {
     log::warn("{}"sv, debug::hex::Message{read.buffer});
@@ -200,7 +211,7 @@ void UDPSnapshot::publish_stream_status(TraceInfo const &trace_info, ConnectionS
   const StreamStatus stream_status{
       .stream_id = stream_id_,
       .account = {},
-      .supports = SUPPORTS,
+      .supports = supports_,
       .transport = Transport::UDP,
       .protocol = Protocol::SBE,
       .encoding = {Encoding::SBE},

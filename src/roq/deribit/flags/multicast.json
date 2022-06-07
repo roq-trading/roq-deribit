@@ -39,6 +39,13 @@
       "name": "multicast_disable_market_by_price",
       "type": "bool",
       "description": "Default is to consume MarketByPrice from the multicast feed"
+    },
+    {
+      "name": "multicast_timeout",
+      "type": "std::chrono::nanoseconds",
+      "validator": "roq::core::flags::TimePeriod",
+      "default": "90s",
+      "description": "Timeout when waiting for snapshot"
     }
   ]
 }

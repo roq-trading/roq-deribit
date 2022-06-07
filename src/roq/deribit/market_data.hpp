@@ -137,6 +137,7 @@ class MarketData final : public core::net::Manager::Handler {
   bool const master_;
   bool const publish_market_by_price_;
   bool const publish_trade_summary_;
+  Mask<SupportType> const supports_;
   // connection
   core::net::TcpConnectionFactory connection_factory_;
   core::net::Manager connection_;

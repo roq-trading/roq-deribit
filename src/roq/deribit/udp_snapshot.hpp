@@ -64,6 +64,7 @@ class UDPSnapshot final : public core::net::UdpConnection::Handler, public sbe::
   const uint16_t stream_id_;
   const std::string name_;
   bool const publish_market_by_price_;
+  Mask<SupportType> const supports_;
   // connection
   core::net::UdpConnection connection_;
   // metrics
@@ -77,6 +78,8 @@ class UDPSnapshot final : public core::net::UdpConnection::Handler, public sbe::
   Shared &shared_;
   ConnectionStatus connection_status_ = {};
   Aggregator aggregator_;
+  // state
+  std::chrono::nanoseconds last_update_time_ = {};
 };
 
 }  // namespace deribit
