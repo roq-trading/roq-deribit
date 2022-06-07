@@ -52,7 +52,7 @@ class UDPSnapshot final : public core::net::UdpConnection::Handler, public sbe::
   // snapshot
   void operator()(Trace<deribit_multicast::Snapshot> const &, sbe::Frame const &) override;
 
-  void publish_stream_status(TraceInfo const &);
+  void publish_stream_status(TraceInfo const &, ConnectionStatus connection_status);
 
   // utils
   template <typename T, typename U>
@@ -75,7 +75,7 @@ class UDPSnapshot final : public core::net::UdpConnection::Handler, public sbe::
   } profile_;
   // cache
   Shared &shared_;
-  bool initialized_ = false;
+  ConnectionStatus connection_status_ = {};
   Aggregator aggregator_;
 };
 

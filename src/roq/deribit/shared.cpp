@@ -2,6 +2,8 @@
 
 #include "roq/deribit/shared.hpp"
 
+#include "roq/logging.hpp"
+
 #include "roq/deribit/flags/common.hpp"
 #include "roq/deribit/flags/fix.hpp"
 #include "roq/deribit/flags/multicast.hpp"
@@ -16,6 +18,7 @@ auto get_multicast() {
   // XXX maybe check more flags?
   if (std::empty(flags::Multicast::local_interface()))
     return false;
+  log::info("Using multicast"sv);
   return true;
 }
 }  // namespace

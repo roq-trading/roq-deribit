@@ -54,7 +54,7 @@ class UDPEvents final : public core::net::UdpConnection::Handler, public sbe::Pa
   // snapshot
   void operator()(Trace<deribit_multicast::Snapshot> const &, sbe::Frame const &) override;
 
-  void publish_stream_status(TraceInfo const &);
+  void publish_stream_status(TraceInfo const &, ConnectionStatus connection_status);
 
   // utils
   template <typename T, typename U>
@@ -79,7 +79,7 @@ class UDPEvents final : public core::net::UdpConnection::Handler, public sbe::Pa
   } profile_;
   // cache
   Shared &shared_;
-  bool initialized_ = false;
+  ConnectionStatus connection_status_ = {};
   absl::flat_hash_map<uint32_t, uint32_t> last_ticker_;
   absl::flat_hash_map<uint32_t, uint32_t> last_trades_;
   Aggregator aggregator_;

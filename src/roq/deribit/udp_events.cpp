@@ -6,6 +6,8 @@
 #include <netinet/in.h>
 #include <sys/socket.h>
 
+#include "roq/utils/update.hpp"
+
 #include "roq/core/back_emplacer.hpp"
 
 #include "roq/debug/hex/message.hpp"
@@ -95,10 +97,14 @@ UDPEvents::UDPEvents(Handler &handler, core::io::Context &context, uint16_t stre
           .parse = create_metrics(name_, "parse"sv),
       },
       shared_(shared), aggregator_(server::Flags::cache_mbp_max_depth()) {
-  log::info<5>("DEBUG: publish_market_by_price={}"sv, publish_market_by_price_);
+  log::info("DEBUG: publish_top_of_book={}"sv, publish_top_of_book_);
+  log::info("DEBUG: publish_market_by_price={}"sv, publish_market_by_price_);
+  log::info("DEBUG: publish_trade_summary={}"sv, publish_trade_summary_);
 }
 
 void UDPEvents::operator()(Event<Start> const &) {
+  auto trace_info = server::create_trace_info();
+  publish_stream_status(trace_info, ConnectionStatus::CONNECTING);
 }
 
 void UDPEvents::operator()(Event<Stop> const &) {
@@ -110,20 +116,20 @@ void UDPEvents::operator()(Event<Timer> const &) {
 void UDPEvents::operator()(core::net::UdpConnection::Read const &read) {
   log::info<5>("received {} byte(s)"sv, std::size(read.buffer));
   auto trace_info = server::create_trace_info();
-  publish_stream_status(trace_info);  // first message will publish
+  publish_stream_status(trace_info, ConnectionStatus::READY);  // first message will publish
   if (!sbe::Parser::dispatch(*this, read.buffer, trace_info)) {
-    log::warn<5>("Failed to parse message"sv);
-    log::warn<5>("{}"sv, debug::hex::Message{read.buffer});
+    log::warn("{}"sv, debug::hex::Message{read.buffer});
+    log::fatal("Failed to parse message"sv);
   }
 }
 
 void UDPEvents::operator()(core::net::UdpConnection::Error const &error) {
-  log::warn<1>("Error: what={}"sv, error.what);
+  log::fatal("Error: what={}"sv, error.what);
 }
 
 void UDPEvents::operator()(Trace<deribit_multicast::Instrument> const &event, sbe::Frame const &frame) {
   auto &instrument = event.value;
-  log::info<5>("instrument={}, frame={}"sv, instrument, frame);
+  log::info<2>("instrument={}, frame={}"sv, instrument, frame);
   if (aggregator_(frame.sequence_number)) {
     // note! always include
     auto const instrument_id = instrument.instrumentId();
@@ -136,7 +142,7 @@ void UDPEvents::operator()(Trace<deribit_multicast::Instrument> const &event, sb
 void UDPEvents::operator()(Trace<deribit_multicast::Book> const &event, sbe::Frame const &frame) {
   auto &trace_info = event.trace_info;
   auto &book = event.value;
-  log::info<5>("book={}, frame={}"sv, book, frame);
+  log::info<4>("book={}, frame={}"sv, book, frame);
   auto const instrument_id = book.instrumentId();
   auto const change_id = book.changeId();
   auto const is_last = book.isLast();
@@ -230,7 +236,7 @@ void UDPEvents::operator()(Trace<deribit_multicast::Book> const &event, sbe::Fra
 void UDPEvents::operator()(Trace<deribit_multicast::Ticker> const &event, sbe::Frame const &frame) {
   auto &trace_info = event.trace_info;
   auto &ticker = event.value;
-  log::info<5>("ticker={}, frame={}"sv, ticker, frame);
+  log::info<4>("ticker={}, frame={}"sv, ticker, frame);
   if (aggregator_(frame.sequence_number)) {
     if (!publish_top_of_book_)
       return;
@@ -268,7 +274,7 @@ void UDPEvents::operator()(Trace<deribit_multicast::Ticker> const &event, sbe::F
 void UDPEvents::operator()(Trace<deribit_multicast::Trades> const &event, sbe::Frame const &frame) {
   auto &trace_info = event.trace_info;
   auto &trades = event.value;
-  log::info<5>("trades={}, frame={}"sv, trades, frame);
+  log::info<4>("trades={}, frame={}"sv, trades, frame);
   if (aggregator_(frame.sequence_number)) {
     if (!publish_trade_summary_)
       return;
@@ -304,7 +310,7 @@ void UDPEvents::operator()(Trace<deribit_multicast::Trades> const &event, sbe::F
 
 void UDPEvents::operator()(Trace<deribit_multicast::Snapshot> const &event, sbe::Frame const &frame) {
   auto &snapshot = event.value;
-  log::info<5>("snapshot={}, frame={}"sv, snapshot, frame);
+  log::info<4>("snapshot={}, frame={}"sv, snapshot, frame);
   log::fatal("Unexpected"sv);
 }
 
@@ -314,10 +320,9 @@ void UDPEvents::operator()(metrics::Writer &writer) {
       .write(profile_.parse, metrics::PROFILE);
 }
 
-void UDPEvents::publish_stream_status(TraceInfo const &trace_info) {
-  if (initialized_)
+void UDPEvents::publish_stream_status(TraceInfo const &trace_info, ConnectionStatus connection_status) {
+  if (!utils::update(connection_status_, connection_status))
     return;
-  initialized_ = true;
   const StreamStatus stream_status{
       .stream_id = stream_id_,
       .account = {},
@@ -326,8 +331,9 @@ void UDPEvents::publish_stream_status(TraceInfo const &trace_info) {
       .protocol = Protocol::SBE,
       .encoding = {Encoding::SBE},
       .priority = Priority::PRIMARY,
-      .connection_status = ConnectionStatus::READY,
+      .connection_status = connection_status_,
   };
+  log::info("stream_status={}"sv, stream_status);
   create_trace_and_dispatch(handler_, trace_info, stream_status);
 }
 

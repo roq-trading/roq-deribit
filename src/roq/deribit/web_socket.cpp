@@ -83,6 +83,7 @@ WebSocket::WebSocket(
       },
       shared_(shared),
       download_(flags::WebSocket::ws_request_timeout(), [this](auto state) { return download(state); }) {
+  log::info("DEBUG: publish_top_of_book={}"sv, publish_top_of_book_);
 }
 
 void WebSocket::operator()(Event<Start> const &) {
@@ -557,3 +558,4 @@ void WebSocket::check_subscribe_queue(std::chrono::nanoseconds now) {
 
 }  // namespace deribit
 }  // namespace roq
+

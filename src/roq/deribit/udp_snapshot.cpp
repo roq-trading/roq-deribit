@@ -6,6 +6,8 @@
 #include <netinet/in.h>
 #include <sys/socket.h>
 
+#include "roq/utils/update.hpp"
+
 #include "roq/core/back_emplacer.hpp"
 
 #include "roq/debug/hex/message.hpp"
@@ -59,10 +61,12 @@ UDPSnapshot::UDPSnapshot(Handler &handler, core::io::Context &context, uint16_t 
           .parse = create_metrics(name_, "parse"sv),
       },
       shared_(shared), aggregator_(server::Flags::cache_mbp_max_depth()) {
-  log::info<5>("DEBUG: publish_market_by_price={}"sv, publish_market_by_price_);
+  log::info("DEBUG: publish_market_by_price={}"sv, publish_market_by_price_);
 }
 
 void UDPSnapshot::operator()(Event<Start> const &) {
+  auto trace_info = server::create_trace_info();
+  publish_stream_status(trace_info, ConnectionStatus::CONNECTING);
 }
 
 void UDPSnapshot::operator()(Event<Stop> const &) {
@@ -74,20 +78,20 @@ void UDPSnapshot::operator()(Event<Timer> const &) {
 void UDPSnapshot::operator()(core::net::UdpConnection::Read const &read) {
   log::info<5>("received {} byte(s)"sv, std::size(read.buffer));
   auto trace_info = server::create_trace_info();
-  publish_stream_status(trace_info);  // first message will publish
+  publish_stream_status(trace_info, ConnectionStatus::READY);  // first message will publish
   if (!sbe::Parser::dispatch(*this, read.buffer, trace_info)) {
-    log::warn<5>("Failed to parse message"sv);
-    log::warn<5>("{}"sv, debug::hex::Message{read.buffer});
+    log::warn("{}"sv, debug::hex::Message{read.buffer});
+    log::fatal("Failed to parse message"sv);
   }
 }
 
 void UDPSnapshot::operator()(core::net::UdpConnection::Error const &error) {
-  log::warn<1>("Error: what={}"sv, error.what);
+  log::fatal("Error: what={}"sv, error.what);
 }
 
 void UDPSnapshot::operator()(Trace<deribit_multicast::Instrument> const &event, sbe::Frame const &frame) {
   auto &instrument = event.value;
-  log::info<5>("instrument={}, frame={}"sv, instrument, frame);
+  log::info<2>("instrument={}, frame={}"sv, instrument, frame);
   if (aggregator_(frame.sequence_number)) {
     // note! always include
     auto const instrument_id = instrument.instrumentId();
@@ -99,25 +103,25 @@ void UDPSnapshot::operator()(Trace<deribit_multicast::Instrument> const &event, 
 
 void UDPSnapshot::operator()(Trace<deribit_multicast::Book> const &event, sbe::Frame const &frame) {
   auto &book = event.value;
-  log::info<5>("book={}, frame={}"sv, book, frame);
+  log::warn("book={}, frame={}"sv, book, frame);
   log::fatal("Unexpected"sv);
 }
 
 void UDPSnapshot::operator()(Trace<deribit_multicast::Ticker> const &event, sbe::Frame const &frame) {
   auto &ticker = event.value;
-  log::info<5>("ticker={}, frame={}"sv, ticker, frame);
+  log::info<4>("ticker={}, frame={}"sv, ticker, frame);
 }
 
 void UDPSnapshot::operator()(Trace<deribit_multicast::Trades> const &event, sbe::Frame const &frame) {
   auto &trades = event.value;
-  log::info<5>("trades={}, frame={}"sv, trades, frame);
+  log::warn("trades={}, frame={}"sv, trades, frame);
   log::fatal("Unexpected"sv);
 }
 
 void UDPSnapshot::operator()(Trace<deribit_multicast::Snapshot> const &event, sbe::Frame const &frame) {
   auto &trace_info = event.trace_info;
   auto &snapshot = event.value;
-  log::info<5>("snapshot={}, frame={}"sv, snapshot, frame);
+  log::info<4>("snapshot={}, frame={}"sv, snapshot, frame);
   auto const instrument_id = snapshot.instrumentId();
   auto const change_id = snapshot.changeId();
   auto const is_last = snapshot.isLastInBook();
@@ -190,10 +194,9 @@ void UDPSnapshot::operator()(metrics::Writer &writer) {
       .write(profile_.parse, metrics::PROFILE);
 }
 
-void UDPSnapshot::publish_stream_status(TraceInfo const &trace_info) {
-  if (initialized_)
+void UDPSnapshot::publish_stream_status(TraceInfo const &trace_info, ConnectionStatus connection_status) {
+  if (!utils::update(connection_status_, connection_status))
     return;
-  initialized_ = true;
   const StreamStatus stream_status{
       .stream_id = stream_id_,
       .account = {},
@@ -202,8 +205,9 @@ void UDPSnapshot::publish_stream_status(TraceInfo const &trace_info) {
       .protocol = Protocol::SBE,
       .encoding = {Encoding::SBE},
       .priority = Priority::PRIMARY,
-      .connection_status = ConnectionStatus::READY,
+      .connection_status = connection_status_,
   };
+  log::info("stream_status={}"sv, stream_status);
   create_trace_and_dispatch(handler_, trace_info, stream_status);
 }
 

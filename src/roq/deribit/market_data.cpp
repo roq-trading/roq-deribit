@@ -153,6 +153,8 @@ MarketData::MarketData(
       },
       security_(security), shared_(shared),
       download_(flags::FIX::fix_request_timeout(), [this](auto state) { return download(state); }) {
+  log::info("DEBUG: publish_market_by_price={}"sv, publish_market_by_price_);
+  log::info("DEBUG: publish_trade_summary={}"sv, publish_trade_summary_);
 }
 
 void MarketData::operator()(Event<Start> const &) {
