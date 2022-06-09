@@ -230,8 +230,9 @@ void UDPSnapshot::emplace_back(const T &item, U &bids, U &asks) {
       .price = item.price(),
       .quantity = item.amount(),
       .implied_quantity = NaN,
-      .price_level = {},
       .number_of_orders = {},
+      .update_action = {},
+      .price_level = {},
   };
   auto side = sbe::map_book_side(deribit_multicast::BookSide::get(item.side()));
   switch (side) {
