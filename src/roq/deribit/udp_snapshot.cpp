@@ -41,11 +41,14 @@ struct create_metrics final : public core::metrics::Factory {
 };
 
 auto create_connection(auto &handler, auto &context, auto port) {
+  log::info<1>("Create multicast socket port={}"sv, port);
   core::net::UdpConnection connection(handler, context, port);
+  log::info<1>(R"(Local interface is "{}")"sv, flags::Multicast::local_interface());
   std::string local_interface{flags::Multicast::local_interface()};
   struct in_addr local = {};
   local.s_addr = inet_addr(local_interface.c_str());
   for (auto &multicast_address : flags::Multicast::multicast_address()) {
+    log::info<1>(R"(Add membership "{}")"sv, multicast_address);
     struct in_addr multicast = {};
     multicast.s_addr = inet_addr(multicast_address.c_str());
     connection.add_membership(core::NetworkAddress{multicast, 0}, core::NetworkAddress{local, 0});
