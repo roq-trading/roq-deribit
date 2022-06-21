@@ -14,6 +14,8 @@
 
 #include "roq/core/metrics/factory.hpp"
 
+#include "roq/deribit/utils.hpp"
+
 #include "roq/deribit/flags/common.hpp"
 #include "roq/deribit/flags/config.hpp"
 #include "roq/deribit/flags/multicast.hpp"
@@ -83,11 +85,11 @@ bool test_sequence(auto &cache, auto instrument_id, auto sequence_number) {
 }
 
 template <typename T>
-void emplace(Trade &result, const T &value) {
+void emplace(Trade &result, double multiplier, const T &value) {
   new (&result) Trade{
       .side = sbe::map_direction(value.direction()),
       .price = value.price(),
-      .quantity = value.amount(),
+      .quantity = value.amount() * multiplier,
       .trade_id = {},  // XXX value.tradeId() is uint64
   };
 }
@@ -151,7 +153,13 @@ void UDPEvents::operator()(Trace<deribit_multicast::Instrument> const &event, sb
     // note! always include
     auto const instrument_id = instrument.instrumentId();
     shared_.find_instrument_name_with_create(instrument_id, [&]() {
-      return sbe::get_instrument_name(instrument);  // note! alloc
+      auto contract_size = instrument.contractSize();
+      auto multiplier = compute_contracts_multiplier(contract_size);
+      return Instrument{
+          sbe::get_instrument_name(instrument),  // note! alloc
+          contract_size,
+          multiplier,
+      };
     });
   }
 }
@@ -167,12 +175,12 @@ void UDPEvents::operator()(Trace<deribit_multicast::Book> const &event, sbe::Fra
   aggregator(frame.sequence_number, instrument_id, change_id, is_last, [&](auto &bids, auto &asks) {
     if (!publish_market_by_price_)
       return;
-    if (shared_.find_instrument_name(instrument_id, [&](auto &symbol) {
+    if (shared_.find_instrument(instrument_id, [&](auto &instrument) {
           auto const prev_change_id = book.prevChangeId();
           std::chrono::milliseconds const timestamp{book.timestampMs()};
           book.sbeRewind();
-          book.changesList().forEach([&](auto &item) { emplace_back(item, bids, asks); });
-          auto &collector = shared_.mbp_collector[symbol];
+          book.changesList().forEach([&](auto &item) { emplace_back(item, instrument.multiplier, bids, asks); });
+          auto &collector = shared_.mbp_collector[instrument.symbol];
           try {
             collector(
                 bids,
@@ -181,16 +189,16 @@ void UDPEvents::operator()(Trace<deribit_multicast::Book> const &event, sbe::Fra
                 change_id,
                 prev_change_id,
                 [&](auto &bids, auto &asks) {  // update
-                  // log::debug(R"(PUBLISH UPDATE symbol="{}")"sv, symbol);
+                  // log::debug(R"(PUBLISH UPDATE symbol="{}")"sv, instrument.symbol);
                   log::info<5>(
                       R"(DEBUG: PUBLISH UPDATE symbol="{}", change_id={}, prev_change_id={})"sv,
-                      symbol,
+                      instrument.symbol,
                       change_id,
                       prev_change_id);
                   const MarketByPriceUpdate market_by_price_update{
                       .stream_id = stream_id_,
                       .exchange = flags::Config::exchange(),
-                      .symbol = symbol,
+                      .symbol = instrument.symbol,
                       .bids = bids,
                       .asks = asks,
                       .update_type = UpdateType::INCREMENTAL,
@@ -203,17 +211,17 @@ void UDPEvents::operator()(Trace<deribit_multicast::Book> const &event, sbe::Fra
                   create_trace_and_dispatch(handler_, trace_info, market_by_price_update, true, false);
                 },
                 [&](auto &bids, auto &asks, auto sequence) {  // snapshot
-                  // log::debug(R"(PUBLISH SNAPSHOT symbol="{}", sequence={})"sv, symbol, sequence);
+                  // log::debug(R"(PUBLISH SNAPSHOT symbol="{}", sequence={})"sv, instrument.symbol, sequence);
                   log::info<5>(
                       R"(DEBUG: PUBLISH SNAPSHOT symbol="{}", sequence={}, change_id={}, prev_change_id={})"sv,
-                      symbol,
+                      instrument.symbol,
                       sequence,
                       change_id,
                       prev_change_id);
                   const MarketByPriceUpdate market_by_price_update{
                       .stream_id = stream_id_,
                       .exchange = flags::Config::exchange(),
-                      .symbol = symbol,
+                      .symbol = instrument.symbol,
                       .bids = bids,
                       .asks = asks,
                       .update_type = UpdateType::SNAPSHOT,
@@ -228,18 +236,18 @@ void UDPEvents::operator()(Trace<deribit_multicast::Book> const &event, sbe::Fra
                       event, true, [&](auto &market_by_price) { collector.apply(market_by_price, sequence, true); });
                 },
                 [&](auto retries) {  // request
-                  log::info<1>(R"(Waiting for snapshot: symbol="{}")"sv, symbol);
-                  // log::debug(R"(REQUEST symbol="{}" (retries={}))"sv, symbol, retries);
-                  log::info<5>(R"(DEBUG: REQUEST symbol="{}" (retries={}))"sv, symbol, retries);
+                  log::info<1>(R"(Waiting for snapshot: symbol="{}")"sv, instrument.symbol);
+                  // log::debug(R"(REQUEST symbol="{}" (retries={}))"sv, instrument.symbol, retries);
+                  log::info<5>(R"(DEBUG: REQUEST symbol="{}" (retries={}))"sv, instrument.symbol, retries);
                   // note! don't have to do anything -- just wait for snapshot
                 });
           } catch (BadState &) {
             log::fatal("BAD STATE"sv);
             /*
-            log::warn(R"(RESUBSCRIBE symbol="{}")"sv, symbol);
+            log::warn(R"(RESUBSCRIBE symbol="{}")"sv, instrument.symbol);
             // XXX HANS publish stale
             collector.clear();
-            shared_.depth_request_queue.emplace_back(symbol);
+            shared_.depth_request_queue.emplace_back(instrument.symbol);
             */
           }
         })) {
@@ -263,18 +271,18 @@ void UDPEvents::operator()(Trace<deribit_multicast::Ticker> const &event, sbe::F
     // note! skip previous updates
     // XXX NOT NECESSARY
     if (test_sequence(last_ticker_, instrument_id, frame.sequence_number)) {
-      if (shared_.find_instrument_name(instrument_id, [&](auto &symbol) {
+      if (shared_.find_instrument(instrument_id, [&](auto &instrument) {
             std::chrono::milliseconds const timestamp{ticker.timestampMs()};
             // note! unlike the WS feed, it looks like we do *not* have to scale amounts here
             const TopOfBook top_of_book{
                 .stream_id = stream_id_,
                 .exchange = flags::Config::exchange(),
-                .symbol = symbol,
+                .symbol = instrument.symbol,
                 .layer{
                     .bid_price = ticker.bestBidPrice(),
-                    .bid_quantity = ticker.bestBidAmount(),
+                    .bid_quantity = ticker.bestBidAmount() * instrument.multiplier,
                     .ask_price = ticker.bestAskPrice(),
-                    .ask_quantity = ticker.bestAskAmount(),
+                    .ask_quantity = ticker.bestAskAmount() * instrument.multiplier,
                 },
                 .update_type = UpdateType::INCREMENTAL,
                 .exchange_time_utc = timestamp,
@@ -302,19 +310,20 @@ void UDPEvents::operator()(Trace<deribit_multicast::Trades> const &event, sbe::F
     // note! skip previous updates
     // XXX NOT NECESSARY
     if (test_sequence(last_trades_, instrument_id, frame.sequence_number)) {
-      if (shared_.find_instrument_name(instrument_id, [&](auto &symbol) {
+      if (shared_.find_instrument(instrument_id, [&](auto &instrument) {
             std::chrono::milliseconds exchange_time_utc{};
             core::back_emplacer trades_(shared_.trades);
             trades.sbeRewind();
             trades.tradesList().forEach([&](auto const &item) {
               std::chrono::milliseconds const timestamp{item.timestampMs()};
               exchange_time_utc = std::max(exchange_time_utc, timestamp);
-              trades_.emplace_back([&item](auto &result) { emplace(result, item); });
+              trades_.emplace_back(
+                  [&instrument, &item](auto &result) { emplace(result, instrument.multiplier, item); });
             });
             const TradeSummary trade_summary{
                 .stream_id = stream_id_,
                 .exchange = flags::Config::exchange(),
-                .symbol = symbol,
+                .symbol = instrument.symbol,
                 .trades = trades_,
                 .exchange_time_utc = exchange_time_utc,
             };
@@ -358,10 +367,10 @@ void UDPEvents::publish_stream_status(TraceInfo const &trace_info, ConnectionSta
 }
 
 template <typename T, typename U>
-void UDPEvents::emplace_back(const T &item, U &bids, U &asks) {
+void UDPEvents::emplace_back(const T &item, double multiplier, U &bids, U &asks) {
   const MBPUpdate mbp_update{
       .price = item.price(),
-      .quantity = item.amount(),
+      .quantity = item.amount() * multiplier,
       .implied_quantity = NaN,
       .number_of_orders = {},
       .update_action = {},

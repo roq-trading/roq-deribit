@@ -14,6 +14,8 @@
 
 #include "roq/core/metrics/factory.hpp"
 
+#include "roq/deribit/utils.hpp"
+
 #include "roq/deribit/flags/common.hpp"
 #include "roq/deribit/flags/config.hpp"
 #include "roq/deribit/flags/multicast.hpp"
@@ -111,7 +113,13 @@ void UDPSnapshot::operator()(Trace<deribit_multicast::Instrument> const &event, 
     // note! always include
     auto const instrument_id = instrument.instrumentId();
     shared_.find_instrument_name_with_create(instrument_id, [&]() {
-      return sbe::get_instrument_name(instrument);  // note! alloc
+      auto contract_size = instrument.contractSize();
+      auto multiplier = compute_contracts_multiplier(contract_size);
+      return Instrument{
+          sbe::get_instrument_name(instrument),  // note! alloc
+          contract_size,
+          multiplier,
+      };
     });
   }
 }
@@ -144,9 +152,10 @@ void UDPSnapshot::operator()(Trace<deribit_multicast::Snapshot> const &event, sb
   aggregator(frame.sequence_number, instrument_id, change_id, is_last, [&](auto &bids, auto &asks) {
     if (!publish_market_by_price_)
       return;
-    if (shared_.find_instrument_name(instrument_id, [&](auto &symbol) {
+    if (shared_.find_instrument(instrument_id, [&](auto &instrument) {
           snapshot.sbeRewind();
-          snapshot.levelsList().forEach([&](auto const &item) { emplace_back(item, bids, asks); });
+          snapshot.levelsList().forEach(
+              [&](auto const &item) { emplace_back(item, instrument.multiplier, bids, asks); });
           log::info<5>(
               "DEBUG: sequence_number={}, instrument_id={}, change_id={}, is_last={}, bids=[{}], asks=[{}]"sv,
               frame.sequence_number,
@@ -158,24 +167,24 @@ void UDPSnapshot::operator()(Trace<deribit_multicast::Snapshot> const &event, sb
           // XXX allow empty? (after all, we need to record the sequence number...)
           if (is_last && !(std::empty(bids) && std::empty(asks))) {
             std::chrono::milliseconds const timestamp{snapshot.timestampMs()};
-            auto &collector = shared_.mbp_collector[symbol];
+            auto &collector = shared_.mbp_collector[instrument.symbol];
             collector(
                 bids,
                 asks,
                 change_id,
                 [&](auto &bids, auto &asks, auto sequence) {  // snapshot
-                  log::info<1>(R"(Received snapshot: symbol="{}")"sv, symbol);
+                  log::info<1>(R"(Received snapshot: symbol="{}")"sv, instrument.symbol);
                   // log::debug(R"(PUBLISH SNAPSHOT symbol="{}", sequence={})"sv, symbol, sequence);
                   log::info<5>(
                       R"(DEBUG: PUBLISH SNAPSHOT symbol="{}", sequence={}, change_id={}, timestamp={})"sv,
-                      symbol,
+                      instrument.symbol,
                       sequence,
                       change_id,
                       timestamp);
                   const MarketByPriceUpdate market_by_price_update{
                       .stream_id = stream_id_,
                       .exchange = flags::Config::exchange(),
-                      .symbol = symbol,
+                      .symbol = instrument.symbol,
                       .bids = bids,
                       .asks = asks,
                       .update_type = UpdateType::SNAPSHOT,
@@ -190,9 +199,9 @@ void UDPSnapshot::operator()(Trace<deribit_multicast::Snapshot> const &event, sb
                       event, true, [&](auto &market_by_price) { collector.apply(market_by_price, sequence, true); });
                 },
                 [&](auto retries) {  // request
-                  log::info<1>(R"(Waiting for snapshot: symbol="{}")"sv, symbol);
-                  // log::debug(R"(REQUEST symbol="{}" (retries={}))"sv, symbol, retries);
-                  log::info<5>(R"(DEBUG: REQUEST symbol="{}" (retries={}))"sv, symbol, retries);
+                  log::info<1>(R"(Waiting for snapshot: symbol="{}")"sv, instrument.symbol);
+                  // log::debug(R"(REQUEST symbol="{}" (retries={}))"sv, instrument.symbol, retries);
+                  log::info<5>(R"(DEBUG: REQUEST symbol="{}" (retries={}))"sv, instrument.symbol, retries);
                   // note! don't have to do anything -- just wait for snapshot
                 });
           }
@@ -228,10 +237,10 @@ void UDPSnapshot::publish_stream_status(TraceInfo const &trace_info, ConnectionS
 }
 
 template <typename T, typename U>
-void UDPSnapshot::emplace_back(const T &item, U &bids, U &asks) {
+void UDPSnapshot::emplace_back(const T &item, double multiplier, U &bids, U &asks) {
   const MBPUpdate mbp_update{
       .price = item.price(),
-      .quantity = item.amount(),
+      .quantity = item.amount() * multiplier,
       .implied_quantity = NaN,
       .number_of_orders = {},
       .update_action = {},

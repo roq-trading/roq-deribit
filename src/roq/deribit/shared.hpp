@@ -19,6 +19,8 @@
 
 #include "roq/core/market/mbp_sequencer.hpp"
 
+#include "roq/deribit/instrument.hpp"
+
 namespace roq {
 namespace deribit {
 
@@ -40,24 +42,24 @@ struct Shared final {
   }
 
   template <typename Callback>
-  bool find_instrument_name(uint32_t instrument_id, Callback callback) {
-    auto iter = instrument_names.find(instrument_id);
-    if (iter != std::end(instrument_names)) {
+  bool find_instrument(uint32_t instrument_id, Callback callback) {
+    auto iter = instruments.find(instrument_id);
+    if (iter != std::end(instruments)) {
       auto &[symbol, discard] = (*iter).second;
       if (!discard)
-        callback(symbol);
+        callback((*iter).second.first);
       return true;
     }
     return false;
   }
 
   template <typename Callback>
-  std::pair<Symbol const &, bool> find_instrument_name_with_create(uint32_t instrument_id, Callback callback) {
-    auto iter = instrument_names.find(instrument_id);
-    if (iter == std::end(instrument_names)) {
-      auto instrument_name = callback();
-      auto discard = discard_symbol(instrument_name);
-      auto res = instrument_names.try_emplace(instrument_id, instrument_name, discard);
+  std::pair<Instrument const &, bool> find_instrument_name_with_create(uint32_t instrument_id, Callback callback) {
+    auto iter = instruments.find(instrument_id);
+    if (iter == std::end(instruments)) {
+      auto instrument = callback();
+      auto discard = discard_symbol(instrument.symbol);
+      auto res = instruments.try_emplace(instrument_id, instrument, discard);
       assert(res.second);
       iter = res.first;
     }
@@ -88,7 +90,7 @@ struct Shared final {
   absl::flat_hash_set<std::string> all_currencies;
   absl::flat_hash_set<Symbol> all_symbols;
   core::Symbols symbols;
-  absl::flat_hash_map<uint32_t, std::pair<Symbol, bool>> instrument_names;
+  absl::flat_hash_map<uint32_t, std::pair<Instrument, bool>> instruments;
   absl::flat_hash_map<Symbol, core::market::MBP_Sequencer> mbp_collector;
 };
 

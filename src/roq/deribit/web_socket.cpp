@@ -10,6 +10,8 @@
 
 #include "roq/core/metrics/factory.hpp"
 
+#include "roq/deribit/utils.hpp"
+
 #include "roq/deribit/flags/common.hpp"
 #include "roq/deribit/flags/config.hpp"
 #include "roq/deribit/flags/multicast.hpp"
@@ -442,14 +444,15 @@ void WebSocket::operator()(Trace<json::Instruments const> const &event) {
       auto discard = shared_.discard_symbol(symbol);
       // needed by multicast
       log::info<5>(R"(DEBUG: CREATE "{}" discard={})"sv, item.instrument_name, discard);
-      shared_.instrument_names.try_emplace(item.instrument_id, item.instrument_name, discard);
+      auto multiplier = compute_contracts_multiplier(item.contract_size);
+      shared_.instruments.try_emplace(
+          item.instrument_id, Instrument{item.instrument_name, item.contract_size, multiplier}, discard);
       if (discard)
         continue;
       if (shared_.all_symbols.emplace(symbol).second)
         symbols.emplace_back(symbol);
       // cache multiplier so Quote (amount) can be converted to TopOfBook (lots)
       // note! the multiplier is only cached on startup!
-      auto multiplier = utils::is_zero(item.contract_size) ? 1.0 : (1.0 / item.contract_size);
       shared_.multiplier[symbol] = multiplier;
     }
     download_.check(WebSocketState::INSTRUMENTS);

@@ -56,7 +56,7 @@ class UDPSnapshot final : public core::net::UdpConnection::Handler, public sbe::
 
   // utils
   template <typename T, typename U>
-  static void emplace_back(const T &item, U &bids, U &asks);
+  static void emplace_back(const T &item, double multiplier, U &bids, U &asks);
 
   Aggregator &get_aggregator(uint16_t channel_id);
 
