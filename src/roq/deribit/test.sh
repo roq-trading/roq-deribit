@@ -34,6 +34,8 @@ $PREFIX "./roq-deribit" \
 	--name "deribit" \
 	--config_file "$CONFIG_FILE" \
 	--secrets_file "$SECRETS_FILE" \
+  --event_log_dir "${HOME}/var/lib/roq/data" \
+  --event_log_symlink \
 	--client_listen_address "${HOME}/run/deribit.sock" \
 	--metrics_listen_address "${HOME}/run/${NAME}_metrics.sock" \
 	--fix_uri "$FIX_URI" \
