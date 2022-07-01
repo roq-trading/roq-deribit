@@ -2,7 +2,9 @@
 
 #pragma once
 
+#include <absl/container/flat_hash_map.h>
 #include <absl/container/flat_hash_set.h>
+#include <absl/container/node_hash_map.h>
 
 #include <string>
 #include <utility>
@@ -90,8 +92,8 @@ struct Shared final {
   absl::flat_hash_set<std::string> all_currencies;
   absl::flat_hash_set<Symbol> all_symbols;
   core::Symbols symbols;
-  absl::flat_hash_map<uint32_t, std::pair<Instrument, bool>> instruments;
-  absl::flat_hash_map<Symbol, core::market::MBP_Sequencer> mbp_collector;
+  absl::node_hash_map<uint32_t, std::pair<Instrument, bool>> instruments;
+  absl::node_hash_map<Symbol, core::market::MBP_Sequencer> mbp_collector;
 };
 
 }  // namespace deribit

@@ -563,4 +563,3 @@ void WebSocket::check_subscribe_queue(std::chrono::nanoseconds now) {
 
 }  // namespace deribit
 }  // namespace roq
-
