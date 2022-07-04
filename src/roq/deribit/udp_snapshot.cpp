@@ -12,6 +12,8 @@
 
 #include "roq/debug/hex/message.hpp"
 
+#include "roq/core/io/network_address.hpp"
+
 #include "roq/core/metrics/factory.hpp"
 
 #include "roq/deribit/utils.hpp"
@@ -53,7 +55,7 @@ auto create_connection(auto &handler, auto &context, auto port) {
     log::info<1>(R"(Add membership "{}")"sv, multicast_address);
     struct in_addr multicast = {};
     multicast.s_addr = inet_addr(multicast_address.c_str());
-    connection.add_membership(core::NetworkAddress{multicast, 0}, core::NetworkAddress{local, 0});
+    connection.add_membership(core::io::NetworkAddress{multicast, 0}, core::io::NetworkAddress{local, 0});
   }
   return connection;
 }
