@@ -44,9 +44,9 @@ struct create_metrics final : public core::metrics::Factory {
       : core::metrics::Factory(server::Flags::name(), group, function) {}
 };
 
-auto create_connection(auto &handler, auto &context, auto port) {
+auto create_receiver(auto &handler, auto &context, auto port) {
   log::info<1>("Create multicast socket port={}"sv, port);
-  core::net::UdpConnection connection(handler, context, port);
+  auto receiver = context.create_udp_receiver(handler, port);
   log::info<1>(R"(Local interface is "{}")"sv, flags::Multicast::local_interface());
   std::string local_interface{flags::Multicast::local_interface()};
   struct in_addr local = {};
@@ -55,9 +55,9 @@ auto create_connection(auto &handler, auto &context, auto port) {
     log::info<1>(R"(Add membership "{}")"sv, multicast_address);
     struct in_addr multicast = {};
     multicast.s_addr = inet_addr(multicast_address.c_str());
-    connection.add_membership(core::io::NetworkAddress{multicast, 0}, core::io::NetworkAddress{local, 0});
+    (*receiver).add_membership(core::io::NetworkAddress{multicast, 0}, core::io::NetworkAddress{local, 0});
   }
-  return connection;
+  return receiver;
 }
 }  // namespace
 
@@ -65,7 +65,7 @@ UDPSnapshot::UDPSnapshot(Handler &handler, core::io::Context &context, uint16_t 
     : handler_(handler), stream_id_(stream_id), name_(fmt::format("{}:{}"sv, stream_id_, NAME)),
       publish_market_by_price_(!flags::Multicast::multicast_disable_market_by_price()),
       supports_(get_supports(publish_market_by_price_)),
-      connection_(create_connection(*this, context, flags::Multicast::multicast_port_snapshot())),
+      receiver_(create_receiver(*this, context, flags::Multicast::multicast_port_snapshot())),
       counter_{
           .disconnect = create_metrics(name_, "disconnect"sv),
       },
@@ -92,18 +92,22 @@ void UDPSnapshot::operator()(Event<Timer> const &event) {
   }
 }
 
-void UDPSnapshot::operator()(core::net::UdpConnection::Read const &read) {
-  log::info<5>("received {} byte(s)"sv, std::size(read.buffer));
+void UDPSnapshot::operator()(core::io::Receiver::Read const &) {
   auto trace_info = server::create_trace_info();
   last_update_time_ = trace_info.source_receive_time;
   publish_stream_status(trace_info, ConnectionStatus::READY);  // first message will publish
-  if (!sbe::Parser::dispatch(*this, read.buffer, trace_info)) {
-    log::warn("{}"sv, debug::hex::Message{read.buffer});
-    log::fatal("Failed to parse message"sv);
+  while (receive_buffer_.append(*receiver_)) {
+    auto message = receive_buffer_.data();
+    log::info<5>("received {} byte(s)"sv, std::size(message));
+    if (!sbe::Parser::dispatch(*this, message, trace_info)) {
+      log::warn("{}"sv, debug::hex::Message{message});
+      log::fatal("Failed to parse message"sv);
+    }
+    receive_buffer_.drain(std::size(message));
   }
 }
 
-void UDPSnapshot::operator()(core::net::UdpConnection::Error const &error) {
+void UDPSnapshot::operator()(core::io::Receiver::Error const &error) {
   log::fatal("Error: what={}"sv, error.what);
 }
 

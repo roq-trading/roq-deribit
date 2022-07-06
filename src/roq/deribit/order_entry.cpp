@@ -289,8 +289,8 @@ void OrderEntry::operator()(core::net::Manager::Disconnected const &) {
   test_disconnect_time_ = {};
 }
 
-void OrderEntry::operator()(core::net::Manager::Read const &read) {
-  auto buffer = read.buffer.pullup();
+void OrderEntry::operator()(core::net::Manager::Read const &) {
+  auto buffer = connection_.buffer();
   size_t total_bytes = 0;
   while (!std::empty(buffer)) {
     auto trace_info = server::create_trace_info();
@@ -323,7 +323,7 @@ void OrderEntry::operator()(core::net::Manager::Read const &read) {
     total_bytes += bytes;
     buffer = buffer.subspan(bytes);
   }
-  read.buffer.drain(total_bytes);
+  connection_.drain(total_bytes);
 }
 
 void OrderEntry::operator()(ConnectionStatus status) {
