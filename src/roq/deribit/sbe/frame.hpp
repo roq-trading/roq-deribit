@@ -41,7 +41,7 @@ struct fmt::formatter<roq::deribit::sbe::Frame> {
     return std::begin(context);
   }
   template <typename Context>
-  auto format(roq::deribit::sbe::Frame const &value, Context &context) {
+  auto format(roq::deribit::sbe::Frame const &value, Context &context) const {
     using namespace std::literals;
     return fmt::format_to(
         context.out(),

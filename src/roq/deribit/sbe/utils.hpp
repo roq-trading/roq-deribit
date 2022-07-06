@@ -169,7 +169,7 @@ struct fmt::formatter<deribit_multicast::MessageHeader> {
     return std::begin(context);
   }
   template <typename Context>
-  auto format(deribit_multicast::MessageHeader const &value, Context &context) {
+  auto format(deribit_multicast::MessageHeader const &value, Context &context) const {
     using namespace std::literals;
     return fmt::format_to(
         context.out(),
@@ -199,7 +199,7 @@ struct fmt::formatter<deribit_multicast::Book::ChangesList> {
     return std::begin(context);
   }
   template <typename Context>
-  auto format(deribit_multicast::Book::ChangesList const &value, Context &context) {
+  auto format(deribit_multicast::Book::ChangesList const &value, Context &context) const {
     using namespace std::literals;
     return fmt::format_to(
         context.out(),
@@ -223,7 +223,7 @@ struct fmt::formatter<deribit_multicast::Trades::TradesList> {
     return std::begin(context);
   }
   template <typename Context>
-  auto format(deribit_multicast::Trades::TradesList const &value, Context &context) {
+  auto format(deribit_multicast::Trades::TradesList const &value, Context &context) const {
     using namespace std::literals;
     return fmt::format_to(
         context.out(),
@@ -265,7 +265,7 @@ struct fmt::formatter<deribit_multicast::Snapshot::LevelsList> {
     return std::begin(context);
   }
   template <typename Context>
-  auto format(deribit_multicast::Snapshot::LevelsList const &value, Context &context) {
+  auto format(deribit_multicast::Snapshot::LevelsList const &value, Context &context) const {
     using namespace std::literals;
     return fmt::format_to(
         context.out(),
@@ -291,7 +291,7 @@ struct fmt::formatter<deribit_multicast::Book> {
     return std::begin(context);
   }
   template <typename Context>
-  auto format(deribit_multicast::Book &value, Context &context) {
+  auto format(deribit_multicast::Book &value, Context &context) const {
     using namespace std::literals;
     value.sbeRewind();
     return fmt::format_to(
@@ -322,7 +322,7 @@ struct fmt::formatter<deribit_multicast::Instrument> {
     return std::begin(context);
   }
   template <typename Context>
-  auto format(deribit_multicast::Instrument &value, Context &context) {
+  auto format(deribit_multicast::Instrument &value, Context &context) const {
     using namespace std::literals;
     auto instrument_name = roq::deribit::sbe::get_instrument_name(value);
     value.sbeRewind();
@@ -392,7 +392,7 @@ struct fmt::formatter<deribit_multicast::Ticker> {
     return std::begin(context);
   }
   template <typename Context>
-  auto format(deribit_multicast::Ticker &value, Context &context) {
+  auto format(deribit_multicast::Ticker &value, Context &context) const {
     using namespace std::literals;
     return fmt::format_to(
         context.out(),
@@ -446,7 +446,7 @@ struct fmt::formatter<deribit_multicast::Snapshot> {
     return std::begin(context);
   }
   template <typename Context>
-  auto format(deribit_multicast::Snapshot &value, Context &context) {
+  auto format(deribit_multicast::Snapshot &value, Context &context) const {
     using namespace std::literals;
     value.sbeRewind();
     return fmt::format_to(
@@ -477,7 +477,7 @@ struct fmt::formatter<deribit_multicast::Trades> {
     return std::begin(context);
   }
   template <typename Context>
-  auto format(deribit_multicast::Trades &value, Context &context) {
+  auto format(deribit_multicast::Trades &value, Context &context) const {
     using namespace std::literals;
     return fmt::format_to(
         context.out(),

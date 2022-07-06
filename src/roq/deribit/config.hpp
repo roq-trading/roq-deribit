@@ -51,7 +51,7 @@ struct fmt::formatter<roq::deribit::Config> {
     return std::begin(context);
   }
   template <typename Context>
-  auto format(roq::deribit::Config const &value, Context &context) {
+  auto format(roq::deribit::Config const &value, Context &context) const {
     using namespace std::literals;
     return fmt::format_to(
         context.out(),
