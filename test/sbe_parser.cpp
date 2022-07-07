@@ -81,7 +81,7 @@ TEST_CASE("sbe_instrument", "[sbe_parser]") {  // 1000 (note! bundled)
   std::span buffer{reinterpret_cast<std::byte const *>(std::data(message)), std::size(message)};
   {
     auto message_2 = buffer.subspan(8);
-    // fmt::print("message_2={}\n"sv, debug::hex::Message{message_2});
+    // log::print("message_2={}\n"sv, debug::hex::Message{message_2});
     Instrument instrument{
         reinterpret_cast<char *>(const_cast<std::byte *>(std::data(message_2))), std::size(message_2)};
     REQUIRE(sbe::compute_length(instrument) == 171);
@@ -91,12 +91,12 @@ TEST_CASE("sbe_instrument", "[sbe_parser]") {  // 1000 (note! bundled)
     bool found_instrument = false;
     bool found_ticker = false, found_snapshot = false;  // secondary
     void operator()(Trace<deribit_multicast::Instrument> const &event, sbe::Frame const &frame) override {
-      fmt::print("frame={}\n"sv, frame);
+      log::print("frame={}\n"sv, frame);
       found_instrument = true;
       CHECK(frame.channel_id == 110);
       CHECK(frame.sequence_number == 13360);
       auto &[trace_info, instrument] = event;
-      fmt::print("instrument={}\n"sv, instrument);
+      log::print("instrument={}\n"sv, instrument);
       // header
       auto &header = instrument.header();
       CHECK(header.templateId() == 1000);
@@ -165,7 +165,7 @@ TEST_CASE("sbe_book", "[sbe_parser]") {  // 1001 (note! bundled)
   std::span buffer{reinterpret_cast<std::byte const *>(std::data(message)), std::size(message)};
   {
     auto message_2 = buffer.subspan(260);
-    // fmt::print("message_2={}\n"sv, debug::hex::Message{message_2});
+    // log::print("message_2={}\n"sv, debug::hex::Message{message_2});
     Book book{reinterpret_cast<char *>(const_cast<std::byte *>(std::data(message_2))), std::size(message_2)};
     REQUIRE(sbe::compute_length(book) == 67);
     static_assert((260 + 67) == 327);
@@ -178,11 +178,11 @@ TEST_CASE("sbe_book", "[sbe_parser]") {  // 1001 (note! bundled)
     void operator()(Trace<deribit_multicast::Ticker> const &, sbe::Frame const &) override { found_ticker = true; }
     void operator()(Trace<deribit_multicast::Trades> const &event, sbe::Frame const &frame) override {
       found_trades = true;
-      fmt::print("frame={}\n"sv, frame);
+      log::print("frame={}\n"sv, frame);
       CHECK(frame.channel_id == 10);
       CHECK(frame.sequence_number == 15921049);
       auto &[trace_info, trades] = event;
-      fmt::print("trades={}\n"sv, trades);
+      log::print("trades={}\n"sv, trades);
       // header
       auto &header = trades.header();
       CHECK(header.templateId() == 1002);
@@ -242,7 +242,7 @@ TEST_CASE("sbe_trades", "[sbe_parser]") {  // 1002 (note! bundled)
   std::span buffer{reinterpret_cast<std::byte const *>(std::data(message)), std::size(message)};
   {
     auto message_2 = buffer.subspan(8);
-    // fmt::print("message_2={}\n"sv, debug::hex::Message{message_2});
+    // log::print("message_2={}\n"sv, debug::hex::Message{message_2});
     Trades trades{reinterpret_cast<char *>(const_cast<std::byte *>(std::data(message_2))), std::size(message_2)};
     REQUIRE(sbe::compute_length(trades) == 107);
     static_assert((8 + 107) == 115);
@@ -255,11 +255,11 @@ TEST_CASE("sbe_trades", "[sbe_parser]") {  // 1002 (note! bundled)
     void operator()(Trace<deribit_multicast::Ticker> const &, sbe::Frame const &) override { found_ticker = true; }
     void operator()(Trace<deribit_multicast::Trades> const &event, sbe::Frame const &frame) override {
       found_trades = true;
-      fmt::print("frame={}\n"sv, frame);
+      log::print("frame={}\n"sv, frame);
       CHECK(frame.channel_id == 10);
       CHECK(frame.sequence_number == 15921049);
       auto &[trace_info, trades] = event;
-      fmt::print("trades={}\n"sv, trades);
+      log::print("trades={}\n"sv, trades);
       // header
       auto &header = trades.header();
       CHECK(header.templateId() == 1002);
@@ -315,7 +315,7 @@ TEST_CASE("sbe_ticker", "[sbe_parser]") {  // 1003
   std::span buffer{reinterpret_cast<std::byte const *>(std::data(message)), std::size(message)};
   {
     auto message_2 = buffer.subspan(8);
-    // fmt::print("message_2={}\n"sv, debug::hex::Message{message_2});
+    // log::print("message_2={}\n"sv, debug::hex::Message{message_2});
     Ticker ticker{reinterpret_cast<char *>(const_cast<std::byte *>(std::data(message_2))), std::size(message_2)};
     REQUIRE(sbe::compute_length(ticker) == 145);
     static_assert((8 + 145) == 153);
@@ -325,12 +325,12 @@ TEST_CASE("sbe_ticker", "[sbe_parser]") {  // 1003
     void operator()(Trace<deribit_multicast::Instrument> const &, sbe::Frame const &) override { FAIL(); }
     void operator()(Trace<deribit_multicast::Book> const &, sbe::Frame const &) override { FAIL(); }
     void operator()(Trace<deribit_multicast::Ticker> const &event, sbe::Frame const &frame) override {
-      fmt::print("frame={}\n"sv, frame);
+      log::print("frame={}\n"sv, frame);
       found = true;
       CHECK(frame.channel_id == 10);
       CHECK(frame.sequence_number == 14831144);
       auto &[trace_info, ticker] = event;
-      fmt::print("ticker={}\n"sv, ticker);
+      log::print("ticker={}\n"sv, ticker);
       // header
       auto &header = ticker.header();
       CHECK(header.templateId() == 1003);
@@ -422,7 +422,7 @@ TEST_CASE("sbe_snapshot", "[sbe_parser]") {  // 1004 (note! bundled)
   std::span buffer{reinterpret_cast<std::byte const *>(std::data(message)), std::size(message)};
   {
     auto message_2 = buffer.subspan(324);
-    // fmt::print("message_2={}\n"sv, debug::hex::Message{message_2});
+    // log::print("message_2={}\n"sv, debug::hex::Message{message_2});
     Snapshot snapshot{reinterpret_cast<char *>(const_cast<std::byte *>(std::data(message_2))), std::size(message_2)};
     REQUIRE(sbe::compute_length(snapshot) == 994);
     static_assert((324 + 994) == 1318);
@@ -439,12 +439,12 @@ TEST_CASE("sbe_snapshot", "[sbe_parser]") {  // 1004 (note! bundled)
     // snapshot
     void operator()(Trace<deribit_multicast::Snapshot> const &event, sbe::Frame const &frame) override {
       found_snapshot = true;
-      fmt::print("frame={}\n"sv, frame);
+      log::print("frame={}\n"sv, frame);
       found_instrument = true;
       CHECK(frame.channel_id == 110);
       CHECK(frame.sequence_number == 13360);
       auto &[trace_info, snapshot] = event;
-      fmt::print("snapshot={}\n"sv, snapshot);
+      log::print("snapshot={}\n"sv, snapshot);
       // header
       auto &header = snapshot.header();
       CHECK(header.templateId() == 1004);
