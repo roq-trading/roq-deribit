@@ -6,6 +6,7 @@ All notable changes will be documented in this file.
 
 ### Fixed
 
+* Auto-reconnect after exchange maintenance (#246)
 * MbP snapshot did not contain `exchange_time_utc` (#234)
 
 ## 0.8.5 &ndash; 2022-06-06

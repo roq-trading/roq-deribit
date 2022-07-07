@@ -69,7 +69,7 @@ auto create_connection(auto &handler, auto &connection_factory) {
   core::net::Manager::Config config{
       .always_reconnect = true,
       .connection_timeout = server::Flags::net_connection_timeout(),
-      .disconnect_on_idle_timeout = {},
+      .disconnect_on_idle_timeout = server::Flags::net_disconnect_on_idle_timeout(),
   };
   return core::net::Manager{handler, connection_factory, config};
 }
@@ -604,6 +604,7 @@ void MarketData::operator()(Trace<fix::TestRequest const> const &event, core::fi
 void MarketData::operator()(Trace<fix::SecurityList const> const &event, core::fix::Header const &header) {
   auto &[trace_info, security_list] = event;
   log::info<2>("event={{header={}, security_list={}}}"sv, header, security_list);
+  connection_.touch(trace_info.source_receive_time);
   if (std::size(security_list.no_related_sym) > 0) {
     size_t counter = {};
     std::vector<Symbol> symbols;
@@ -674,6 +675,7 @@ void MarketData::operator()(
   auto &trace_info = event.trace_info;
   auto &market_data_incremental_refresh = event.value;
   log::info<3>("event={{header={}, market_data_incremental_refresh={}}}"sv, header, market_data_incremental_refresh);
+  connection_.touch(trace_info.source_receive_time);
   auto symbol = market_data_incremental_refresh.symbol;
   core::back_emplacer bids(shared_.bids), asks(shared_.asks);
   core::back_emplacer trades(shared_.trades);
@@ -800,6 +802,7 @@ void MarketData::operator()(
   auto &[trace_info, market_data_snapshot_full_refresh] = event;
   log::info<3>(
       "event={{header={}, market_data_snapshot_full_refresh={}}}"sv, header, market_data_snapshot_full_refresh);
+  connection_.touch(trace_info.source_receive_time);
   auto symbol = market_data_snapshot_full_refresh.symbol;
   auto iter = latch_.find(symbol);
   if (iter != std::end(latch_)) [[unlikely]] {

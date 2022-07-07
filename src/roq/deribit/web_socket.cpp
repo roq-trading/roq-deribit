@@ -52,7 +52,7 @@ auto create_connection(auto &handler, auto &context) {
   core::web::ClientSocket::Config config{
       .always_reconnect = true,
       .connection_timeout = server::Flags::net_connection_timeout(),
-      .disconnect_on_idle_timeout = {},
+      .disconnect_on_idle_timeout = server::Flags::net_disconnect_on_idle_timeout(),
       .validate_certificate = server::Flags::net_tls_validate_certificate(),
       .uris = {&uri, 1},
       .query = {},
@@ -409,6 +409,7 @@ void WebSocket::operator()(Trace<json::Currencies const> const &event) {
       log::fatal("Unexpected"sv);
     auto &[trace_info, currencies] = event;
     log::info<2>("currencies={}"sv, currencies);
+    connection_.touch(trace_info.source_receive_time);
     auto &data = currencies.data;
     std::vector<std::string> tmp;
     if (!std::empty(data))
@@ -433,6 +434,7 @@ void WebSocket::operator()(Trace<json::Instruments const> const &event) {
     if (!master_)
       log::fatal("Unexpected"sv);
     auto &[trace_info, instruments] = event;
+    connection_.touch(trace_info.source_receive_time);
     auto &data = instruments.data;
     std::vector<Symbol> symbols;
     if (!std::empty(data))
@@ -486,6 +488,7 @@ void WebSocket::operator()(Trace<json::Quote const> const &event) {
     auto &trace_info = event.trace_info;
     auto &quote = event.value;
     log::info<3>("quote={}"sv, quote);
+    connection_.touch(trace_info.source_receive_time);
     if (publish_top_of_book_) {
       if (get_top_of_book(quote.instrument_name, [&](auto &layer, auto multiplier) {
             // note! as real amounts to match MbP
@@ -521,6 +524,7 @@ void WebSocket::operator()(Trace<json::Ticker const> const &event) {
   profile_.ticker([&]() {
     auto &[trace_info, ticker] = event;
     log::info<3>("ticker={}"sv, ticker);
+    connection_.touch(trace_info.source_receive_time);
     auto trading_status = json::map(ticker.state);
     auto &item = trading_status_[ticker.instrument_name];
     if (trading_status != TradingStatus{} && utils::update(item, trading_status)) {
