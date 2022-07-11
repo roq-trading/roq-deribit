@@ -92,8 +92,7 @@ void emplace(Fill &result, const T &value) {
 }
 }  // namespace
 
-OrderEntry::OrderEntry(
-    Handler &handler, io::Context &context, uint16_t stream_id, Security &security, Shared &shared)
+OrderEntry::OrderEntry(Handler &handler, io::Context &context, uint16_t stream_id, Security &security, Shared &shared)
     : handler_(handler), stream_id_(stream_id), name_(create_name(stream_id_, security)),
       connection_factory_(create_connection_factory(context)),
       connection_(create_connection(*this, connection_factory_)), encode_buffer_(flags::Common::encode_buffer_size()),

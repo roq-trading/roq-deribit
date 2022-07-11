@@ -32,8 +32,7 @@ auto &get_security(auto const &security, std::string_view const &master_account)
 }
 
 template <typename R, typename T>
-auto create_order_entry(
-    Gateway &gateway, io::Context &context, uint16_t &stream_id, T &security, Shared &shared) {
+auto create_order_entry(Gateway &gateway, io::Context &context, uint16_t &stream_id, T &security, Shared &shared) {
   R result;
   for (auto &iter : security)
     result.try_emplace(iter.first, std::make_unique<OrderEntry>(gateway, context, ++stream_id, *iter.second, shared));
