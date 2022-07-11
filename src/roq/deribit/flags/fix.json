@@ -4,7 +4,7 @@
   "values": [
     {
       "name": "fix_uri",
-      "type": "roq::core::URI",
+      "type": "roq::io::web::URI",
       "validator": "roq::core::flags::URI<std::string>",
       "default": "tcp://test.deribit.com:9881",
       "description": "FIX end-point (URI)"
