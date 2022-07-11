@@ -12,7 +12,7 @@
 
 #include "roq/debug/hex/message.hpp"
 
-#include "roq/core/io/network_address.hpp"
+#include "roq/io/network_address.hpp"
 
 #include "roq/core/metrics/factory.hpp"
 
@@ -55,13 +55,13 @@ auto create_receiver(auto &handler, auto &context, auto port) {
     log::info<1>(R"(Add membership "{}")"sv, multicast_address);
     struct in_addr multicast = {};
     multicast.s_addr = inet_addr(multicast_address.c_str());
-    (*receiver).add_membership(core::io::NetworkAddress{multicast, 0}, core::io::NetworkAddress{local, 0});
+    (*receiver).add_membership(io::NetworkAddress{multicast, 0}, io::NetworkAddress{local, 0});
   }
   return receiver;
 }
 }  // namespace
 
-UDPSnapshot::UDPSnapshot(Handler &handler, core::io::Context &context, uint16_t stream_id, Shared &shared)
+UDPSnapshot::UDPSnapshot(Handler &handler, io::Context &context, uint16_t stream_id, Shared &shared)
     : handler_(handler), stream_id_(stream_id), name_(fmt::format("{}:{}"sv, stream_id_, NAME)),
       publish_market_by_price_(!flags::Multicast::multicast_disable_market_by_price()),
       supports_(get_supports(publish_market_by_price_)),
@@ -92,7 +92,7 @@ void UDPSnapshot::operator()(Event<Timer> const &event) {
   }
 }
 
-void UDPSnapshot::operator()(core::io::UdpReceiver::Read const &) {
+void UDPSnapshot::operator()(io::UdpReceiver::Read const &) {
   auto trace_info = server::create_trace_info();
   last_update_time_ = trace_info.source_receive_time;
   publish_stream_status(trace_info, ConnectionStatus::READY);  // first message will publish
@@ -107,7 +107,7 @@ void UDPSnapshot::operator()(core::io::UdpReceiver::Read const &) {
   }
 }
 
-void UDPSnapshot::operator()(core::io::UdpReceiver::Error const &error) {
+void UDPSnapshot::operator()(io::UdpReceiver::Error const &error) {
   log::fatal("Error: what={}"sv, error.what);
 }
 

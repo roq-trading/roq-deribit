@@ -14,7 +14,7 @@
 
 #include "roq/core/metrics/factory.hpp"
 
-#include "roq/core/io/network_address.hpp"
+#include "roq/io/network_address.hpp"
 
 #include "roq/deribit/utils.hpp"
 
@@ -59,7 +59,7 @@ auto create_receiver(auto &handler, auto &context, auto port) {
     log::info<1>(R"(Add membership "{}")"sv, multicast_address);
     struct in_addr multicast = {};
     multicast.s_addr = inet_addr(multicast_address.c_str());
-    (*receiver).add_membership(core::io::NetworkAddress{multicast, 0}, core::io::NetworkAddress{local, 0});
+    (*receiver).add_membership(io::NetworkAddress{multicast, 0}, io::NetworkAddress{local, 0});
   }
   return receiver;
 }
@@ -97,7 +97,7 @@ void emplace(Trade &result, double multiplier, const T &value) {
 }
 }  // namespace
 
-UDPEvents::UDPEvents(Handler &handler, core::io::Context &context, uint16_t stream_id, Shared &shared)
+UDPEvents::UDPEvents(Handler &handler, io::Context &context, uint16_t stream_id, Shared &shared)
     : handler_(handler), stream_id_(stream_id), name_(fmt::format("{}:{}"sv, stream_id_, NAME)),
       publish_top_of_book_(!flags::Multicast::multicast_disable_top_of_book()),
       publish_market_by_price_(!flags::Multicast::multicast_disable_market_by_price()),
@@ -132,7 +132,7 @@ void UDPEvents::operator()(Event<Timer> const &event) {
   }
 }
 
-void UDPEvents::operator()(core::io::UdpReceiver::Read const &read) {
+void UDPEvents::operator()(io::UdpReceiver::Read const &read) {
   auto trace_info = server::create_trace_info();
   last_update_time_ = trace_info.source_receive_time;
   publish_stream_status(trace_info, ConnectionStatus::READY);  // first message will publish
@@ -147,7 +147,7 @@ void UDPEvents::operator()(core::io::UdpReceiver::Read const &read) {
   }
 }
 
-void UDPEvents::operator()(core::io::UdpReceiver::Error const &error) {
+void UDPEvents::operator()(io::UdpReceiver::Error const &error) {
   log::fatal("Error: what={}"sv, error.what);
 }
 

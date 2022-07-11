@@ -126,7 +126,7 @@ void emplace(Trade &result, const T &value) {
 
 MarketData::MarketData(
     Handler &handler,
-    core::io::Context &context,
+    io::Context &context,
     uint16_t stream_id,
     Security &security,
     Shared &shared,

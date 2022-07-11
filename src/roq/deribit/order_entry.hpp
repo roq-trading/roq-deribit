@@ -15,7 +15,7 @@
 #include "roq/core/metrics/latency.hpp"
 #include "roq/core/metrics/profile.hpp"
 
-#include "roq/core/io/context.hpp"
+#include "roq/io/context.hpp"
 
 #include "roq/core/net/manager.hpp"
 #include "roq/core/net/tcp_connection_factory.hpp"
@@ -52,7 +52,7 @@ class OrderEntry final : public core::net::Manager::Handler {
     virtual void operator()(Trace<PositionUpdate const> const &, bool is_last) = 0;
   };
 
-  OrderEntry(Handler &, core::io::Context &, uint16_t stream_id, Security &, Shared &);
+  OrderEntry(Handler &, io::Context &, uint16_t stream_id, Security &, Shared &);
 
   OrderEntry(OrderEntry const &) = delete;
   OrderEntry(OrderEntry &&) = delete;

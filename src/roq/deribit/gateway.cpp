@@ -4,7 +4,7 @@
 
 #include <utility>
 
-#include "roq/core/io/event_context.hpp"
+#include "roq/io/event/context_factory.hpp"
 
 #include "roq/deribit/flags/common.hpp"
 #include "roq/deribit/flags/fix.hpp"
@@ -33,7 +33,7 @@ auto &get_security(auto const &security, std::string_view const &master_account)
 
 template <typename R, typename T>
 auto create_order_entry(
-    Gateway &gateway, core::io::Context &context, uint16_t &stream_id, T &security, Shared &shared) {
+    Gateway &gateway, io::Context &context, uint16_t &stream_id, T &security, Shared &shared) {
   R result;
   for (auto &iter : security)
     result.try_emplace(iter.first, std::make_unique<OrderEntry>(gateway, context, ++stream_id, *iter.second, shared));
@@ -41,7 +41,7 @@ auto create_order_entry(
 }
 
 template <typename R, typename T>
-auto create_drop_copy(Gateway &gateway, core::io::Context &context, uint16_t &stream_id, T &security, Shared &shared) {
+auto create_drop_copy(Gateway &gateway, io::Context &context, uint16_t &stream_id, T &security, Shared &shared) {
   R result;
   for (auto &iter : security)
     result.try_emplace(iter.first, std::make_unique<DropCopy>(gateway, context, ++stream_id, *iter.second, shared));
@@ -49,7 +49,7 @@ auto create_drop_copy(Gateway &gateway, core::io::Context &context, uint16_t &st
 }
 
 template <typename R>
-auto create_web_socket(Gateway &gateway, core::io::Context &context, uint16_t &stream_id, Shared &shared) {
+auto create_web_socket(Gateway &gateway, io::Context &context, uint16_t &stream_id, Shared &shared) {
   R result;
   result.emplace_back(std::make_unique<WebSocket>(gateway, context, ++stream_id, shared, std::size(result), true));
   return result;
@@ -57,20 +57,20 @@ auto create_web_socket(Gateway &gateway, core::io::Context &context, uint16_t &s
 
 template <typename R>
 auto create_market_data(
-    Gateway &gateway, core::io::Context &context, uint16_t &stream_id, Security &security, Shared &shared) {
+    Gateway &gateway, io::Context &context, uint16_t &stream_id, Security &security, Shared &shared) {
   R result;
   result.emplace_back(
       std::make_unique<MarketData>(gateway, context, stream_id, security, shared, std::size(result), true));
   return result;
 }
 
-auto create_udp_snapshot(Gateway &gateway, core::io::Context &context, uint16_t &stream_id, Shared &shared) {
+auto create_udp_snapshot(Gateway &gateway, io::Context &context, uint16_t &stream_id, Shared &shared) {
   if (shared.has_multicast())
     return std::make_unique<UDPSnapshot>(gateway, context, stream_id, shared);
   return std::unique_ptr<UDPSnapshot>{};
 }
 
-auto create_udp_events(Gateway &gateway, core::io::Context &context, uint16_t &stream_id, Shared &shared) {
+auto create_udp_events(Gateway &gateway, io::Context &context, uint16_t &stream_id, Shared &shared) {
   if (shared.has_multicast())
     return std::make_unique<UDPEvents>(gateway, context, stream_id, shared);
   return std::unique_ptr<UDPEvents>{};
@@ -79,7 +79,7 @@ auto create_udp_events(Gateway &gateway, core::io::Context &context, uint16_t &s
 
 Gateway::Gateway(server::Dispatcher &dispatcher, Config const &config)
     : dispatcher_(dispatcher), master_account_(config.get_master_account()),
-      security_(create_security<decltype(security_)>(config)), context_(core::io::EventContext::create()),
+      security_(create_security<decltype(security_)>(config)), context_(io::event::ContextFactory::create()),
       shared_(dispatcher_),
       order_entry_(create_order_entry<decltype(order_entry_)>(*this, *context_, stream_id_, security_, shared_)),
       drop_copy_(create_drop_copy<decltype(drop_copy_)>(*this, *context_, stream_id_, security_, shared_)),

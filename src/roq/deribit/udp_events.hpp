@@ -8,9 +8,9 @@
 #include "roq/core/metrics/counter.hpp"
 #include "roq/core/metrics/profile.hpp"
 
-#include "roq/core/io/buffer.hpp"
-#include "roq/core/io/context.hpp"
-#include "roq/core/io/udp_receiver.hpp"
+#include "roq/io/buffer.hpp"
+#include "roq/io/context.hpp"
+#include "roq/io/udp_receiver.hpp"
 
 #include "roq/server.hpp"
 
@@ -22,7 +22,7 @@
 namespace roq {
 namespace deribit {
 
-class UDPEvents final : public core::io::UdpReceiver::Handler, public sbe::Parser::Handler {
+class UDPEvents final : public io::UdpReceiver::Handler, public sbe::Parser::Handler {
  public:
   struct Handler {
     virtual void operator()(Trace<StreamStatus const> const &) = 0;
@@ -31,7 +31,7 @@ class UDPEvents final : public core::io::UdpReceiver::Handler, public sbe::Parse
     virtual void operator()(Trace<TradeSummary const> const &, bool is_last) = 0;
   };
 
-  UDPEvents(Handler &, core::io::Context &, uint16_t stream_id, Shared &);
+  UDPEvents(Handler &, io::Context &, uint16_t stream_id, Shared &);
 
   UDPEvents(UDPEvents const &) = delete;
   UDPEvents(UDPEvents &&) = delete;
@@ -43,8 +43,8 @@ class UDPEvents final : public core::io::UdpReceiver::Handler, public sbe::Parse
   void operator()(metrics::Writer &);
 
  protected:
-  void operator()(core::io::UdpReceiver::Read const &) override;
-  void operator()(core::io::UdpReceiver::Error const &) override;
+  void operator()(io::UdpReceiver::Read const &) override;
+  void operator()(io::UdpReceiver::Error const &) override;
 
  protected:
   // events
@@ -73,8 +73,8 @@ class UDPEvents final : public core::io::UdpReceiver::Handler, public sbe::Parse
   bool const publish_trade_summary_;
   Mask<SupportType> const supports_;
   // receiver
-  std::unique_ptr<core::io::UdpReceiver> receiver_;
-  core::io::Buffer receive_buffer_;
+  std::unique_ptr<io::UdpReceiver> receiver_;
+  io::Buffer receive_buffer_;
   // metrics
   struct {
     core::metrics::Counter disconnect;

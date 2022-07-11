@@ -17,7 +17,7 @@
 #include "roq/core/metrics/latency.hpp"
 #include "roq/core/metrics/profile.hpp"
 
-#include "roq/core/io/context.hpp"
+#include "roq/io/context.hpp"
 
 #include "roq/core/web/client_socket.hpp"
 
@@ -60,7 +60,7 @@ class WebSocket final : public core::web::ClientSocket::Handler,
     virtual void operator()(SymbolsUpdate &) = 0;
   };
 
-  WebSocket(Handler &, core::io::Context &, uint16_t stream_id, Shared &, size_t index, bool master);
+  WebSocket(Handler &, io::Context &, uint16_t stream_id, Shared &, size_t index, bool master);
 
   WebSocket(WebSocket &&) = delete;
   WebSocket(WebSocket const &) = delete;

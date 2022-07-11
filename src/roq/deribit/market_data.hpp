@@ -15,7 +15,7 @@
 #include "roq/core/metrics/latency.hpp"
 #include "roq/core/metrics/profile.hpp"
 
-#include "roq/core/io/context.hpp"
+#include "roq/io/context.hpp"
 
 #include "roq/core/net/manager.hpp"
 #include "roq/core/net/tcp_connection_factory.hpp"
@@ -65,7 +65,7 @@ class MarketData final : public core::net::Manager::Handler {
     virtual void operator()(SymbolsUpdate &) = 0;
   };
 
-  MarketData(Handler &, core::io::Context &, uint16_t stream_id, Security &, Shared &, size_t index, bool master);
+  MarketData(Handler &, io::Context &, uint16_t stream_id, Security &, Shared &, size_t index, bool master);
 
   MarketData(MarketData const &) = delete;
   MarketData(MarketData &&) = delete;

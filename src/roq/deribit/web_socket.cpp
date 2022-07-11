@@ -65,7 +65,7 @@ auto create_connection(auto &handler, auto &context) {
 }  // namespace
 
 WebSocket::WebSocket(
-    Handler &handler, core::io::Context &context, uint16_t stream_id, Shared &shared, size_t index, bool master)
+    Handler &handler, io::Context &context, uint16_t stream_id, Shared &shared, size_t index, bool master)
     : handler_(handler), stream_id_(stream_id), name_(create_name(stream_id_)), index_(index), master_(master),
       publish_top_of_book_(!shared.has_multicast() || flags::Multicast::multicast_disable_top_of_book()),
       supports_(get_supports(master_, publish_top_of_book_)), connection_(create_connection(*this, context)),
