@@ -65,11 +65,11 @@ struct create_metrics final : public core::metrics::Factory {
 
 auto create_connection_factory(auto &context) {
   auto uri = flags::FIX::fix_uri();
-  core::net::ConnectionFactory::Config config{
+  io::net::ConnectionFactory::Config config{
       .uris = {&uri, 1},
       .validate_certificate = server::Flags::net_tls_validate_certificate(),
   };
-  return core::net::TcpConnectionFactory{context, config};
+  return io::net::ConnectionFactory::create(context, config);
 }
 
 auto create_connection(auto &handler, auto &connection_factory) {
@@ -95,7 +95,7 @@ void emplace(Fill &result, const T &value) {
 OrderEntry::OrderEntry(Handler &handler, io::Context &context, uint16_t stream_id, Security &security, Shared &shared)
     : handler_(handler), stream_id_(stream_id), name_(create_name(stream_id_, security)),
       connection_factory_(create_connection_factory(context)),
-      connection_(create_connection(*this, connection_factory_)), encode_buffer_(flags::Common::encode_buffer_size()),
+      connection_(create_connection(*this, *connection_factory_)), encode_buffer_(flags::Common::encode_buffer_size()),
       decode_buffer_(flags::Common::decode_buffer_size()),
       counter_{
           .disconnect = create_metrics(name_, "disconnect"sv),

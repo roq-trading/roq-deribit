@@ -16,9 +16,9 @@
 #include "roq/core/metrics/profile.hpp"
 
 #include "roq/io/context.hpp"
+#include "roq/io/net/connection_factory.hpp"
 
 #include "roq/core/net/manager.hpp"
-#include "roq/core/net/tcp_connection_factory.hpp"
 
 #include "roq/server.hpp"
 
@@ -129,7 +129,7 @@ class OrderEntry final : public core::net::Manager::Handler {
   const uint16_t stream_id_;
   const std::string name_;
   // connection
-  core::net::TcpConnectionFactory connection_factory_;
+  std::unique_ptr<io::net::ConnectionFactory> connection_factory_;
   core::net::Manager connection_;
   // buffers
   core::Buffer encode_buffer_;

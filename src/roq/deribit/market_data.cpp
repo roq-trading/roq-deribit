@@ -58,11 +58,11 @@ struct create_metrics final : public core::metrics::Factory {
 
 auto create_connection_factory(auto &context) {
   auto uri = flags::FIX::fix_uri();
-  core::net::ConnectionFactory::Config config{
+  io::net::ConnectionFactory::Config config{
       .uris = {&uri, 1},
       .validate_certificate = server::Flags::net_tls_validate_certificate(),
   };
-  return core::net::TcpConnectionFactory{context, config};
+  return io::net::ConnectionFactory::create(context, config);
 }
 
 auto create_connection(auto &handler, auto &connection_factory) {
@@ -138,7 +138,7 @@ MarketData::MarketData(
       publish_trade_summary_(!shared.has_multicast() || flags::Multicast::multicast_disable_trade_summary()),
       supports_(get_supports(master_, publish_market_by_price_, publish_trade_summary_)),
       connection_factory_(create_connection_factory(context)),
-      connection_(create_connection(*this, connection_factory_)), encode_buffer_(flags::Common::encode_buffer_size()),
+      connection_(create_connection(*this, *connection_factory_)), encode_buffer_(flags::Common::encode_buffer_size()),
       decode_buffer_(flags::Common::decode_buffer_size()),
       counter_{
           .disconnect = create_metrics(name_, "disconnect"sv),
