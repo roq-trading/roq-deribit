@@ -65,13 +65,13 @@ auto create_connection_factory(auto &context) {
   return io::net::ConnectionFactory::create(context, config);
 }
 
-auto create_connection(auto &handler, auto &connection_factory) {
-  core::net::Manager::Config config{
+auto create_connection_manager(auto &handler, auto &connection_factory) {
+  io::net::ConnectionManager::Config config{
       .always_reconnect = true,
       .connection_timeout = server::Flags::net_connection_timeout(),
       .disconnect_on_idle_timeout = server::Flags::net_disconnect_on_idle_timeout(),
   };
-  return core::net::Manager{handler, connection_factory, config};
+  return io::net::ConnectionManager::create(handler, connection_factory, config);
 }
 
 template <typename T>
@@ -138,8 +138,8 @@ MarketData::MarketData(
       publish_trade_summary_(!shared.has_multicast() || flags::Multicast::multicast_disable_trade_summary()),
       supports_(get_supports(master_, publish_market_by_price_, publish_trade_summary_)),
       connection_factory_(create_connection_factory(context)),
-      connection_(create_connection(*this, *connection_factory_)), encode_buffer_(flags::Common::encode_buffer_size()),
-      decode_buffer_(flags::Common::decode_buffer_size()),
+      connection_manager_(create_connection_manager(*this, *connection_factory_)),
+      encode_buffer_(flags::Common::encode_buffer_size()), decode_buffer_(flags::Common::decode_buffer_size()),
       counter_{
           .disconnect = create_metrics(name_, "disconnect"sv),
       },
@@ -162,28 +162,28 @@ MarketData::MarketData(
 }
 
 void MarketData::operator()(Event<Start> const &) {
-  connection_.start();
+  (*connection_manager_).start();
 }
 
 void MarketData::operator()(Event<Stop> const &) {
-  connection_.stop();
+  (*connection_manager_).stop();
 }
 
 void MarketData::operator()(Event<Timer> const &event) {
-  if (!connection_.refresh(event.value.now))
+  if (!(*connection_manager_).refresh(event.value.now))
     return;
   if (last_logon_or_heartbeat_.count() && flags::FIX::fix_request_timeout().count() &&
       (event.value.now - last_logon_or_heartbeat_) > flags::FIX::fix_request_timeout()) {
     log::warn("*** DETECTED TIMEOUT ***"sv);
     log::info("closing connection"sv);
-    connection_.close();
+    (*connection_manager_).close();
   } else {
     if (status_ == ConnectionStatus::READY) {
       if (test_disconnect_time_.count() && test_disconnect_time_ < event.value.now) [[unlikely]] {
         if (flags::FIX::fix_test_market_data_disconnect().count()) {
           log::warn("*** TEST: DISCONNECT (stream_id={}) ***"sv, stream_id_);
           log::info("closing connection"sv);
-          connection_.close();
+          (*connection_manager_).close();
         }
       } else {
         if (next_heartbeat_ <= event.value.now) {
@@ -196,12 +196,12 @@ void MarketData::operator()(Event<Timer> const &event) {
   }
 }
 
-void MarketData::operator()(core::net::Manager::Connected const &) {
+void MarketData::operator()(io::net::ConnectionManager::Connected const &) {
   send_logon();
   (*this)(ConnectionStatus::LOGIN_SENT);
 }
 
-void MarketData::operator()(core::net::Manager::Disconnected const &) {
+void MarketData::operator()(io::net::ConnectionManager::Disconnected const &) {
   ++counter_.disconnect;
   outbound_ = {};
   inbound_ = {};
@@ -213,8 +213,8 @@ void MarketData::operator()(core::net::Manager::Disconnected const &) {
   test_disconnect_time_ = {};
 }
 
-void MarketData::operator()(core::net::Manager::Read const &) {
-  auto buffer = connection_.buffer();
+void MarketData::operator()(io::net::ConnectionManager::Read const &) {
+  auto buffer = (*connection_manager_).buffer();
   size_t total_bytes = 0;
   while (!std::empty(buffer)) {
     auto trace_info = server::create_trace_info();
@@ -243,7 +243,7 @@ void MarketData::operator()(core::net::Manager::Read const &) {
     total_bytes += bytes;
     buffer = buffer.subspan(bytes);
   }
-  connection_.drain(total_bytes);
+  (*connection_manager_).drain(total_bytes);
 }
 
 void MarketData::operator()(ConnectionStatus status) {
@@ -585,14 +585,14 @@ void MarketData::operator()(Trace<fix::Logout const> const &event, core::fix::He
   // note! mandated, must send a logout response
   send_logout(LOGOUT_RESPONSE);
   log::info("closing connection"sv);
-  connection_.close();
+  (*connection_manager_).close();
 }
 
 void MarketData::operator()(Trace<fix::ResendRequest const> const &event, core::fix::Header const &header) {
   auto &[trace_info, resend_request] = event;
   log::warn("event={{header={}, resend_request={}}}"sv, header, resend_request);
   log::info("closing connection"sv);
-  connection_.close();
+  (*connection_manager_).close();
 }
 
 void MarketData::operator()(Trace<fix::TestRequest const> const &event, core::fix::Header const &header) {
@@ -604,7 +604,7 @@ void MarketData::operator()(Trace<fix::TestRequest const> const &event, core::fi
 void MarketData::operator()(Trace<fix::SecurityList const> const &event, core::fix::Header const &header) {
   auto &[trace_info, security_list] = event;
   log::info<2>("event={{header={}, security_list={}}}"sv, header, security_list);
-  connection_.touch(trace_info.source_receive_time);
+  (*connection_manager_).touch(trace_info.source_receive_time);
   if (std::size(security_list.no_related_sym) > 0) {
     size_t counter = {};
     std::vector<Symbol> symbols;
@@ -675,7 +675,7 @@ void MarketData::operator()(
   auto &trace_info = event.trace_info;
   auto &market_data_incremental_refresh = event.value;
   log::info<3>("event={{header={}, market_data_incremental_refresh={}}}"sv, header, market_data_incremental_refresh);
-  connection_.touch(trace_info.source_receive_time);
+  (*connection_manager_).touch(trace_info.source_receive_time);
   auto symbol = market_data_incremental_refresh.symbol;
   core::back_emplacer bids(shared_.bids), asks(shared_.asks);
   core::back_emplacer trades(shared_.trades);
@@ -802,7 +802,7 @@ void MarketData::operator()(
   auto &[trace_info, market_data_snapshot_full_refresh] = event;
   log::info<3>(
       "event={{header={}, market_data_snapshot_full_refresh={}}}"sv, header, market_data_snapshot_full_refresh);
-  connection_.touch(trace_info.source_receive_time);
+  (*connection_manager_).touch(trace_info.source_receive_time);
   auto symbol = market_data_snapshot_full_refresh.symbol;
   auto iter = latch_.find(symbol);
   if (iter != std::end(latch_)) [[unlikely]] {
@@ -910,7 +910,7 @@ void MarketData::send(const T &event, std::chrono::nanoseconds sending_time) {
   //   it is desirable to use a timer queue here
   //   however, the message header encodes seq_num and timestamp...!
   //   so we would therefore have to enqueue a message encoded *without* the header
-  connection_.send(message);
+  (*connection_manager_).send(message);
 }
 
 void MarketData::check(core::fix::Header const &header) {

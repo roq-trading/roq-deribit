@@ -72,13 +72,13 @@ auto create_connection_factory(auto &context) {
   return io::net::ConnectionFactory::create(context, config);
 }
 
-auto create_connection(auto &handler, auto &connection_factory) {
-  core::net::Manager::Config config{
+auto create_connection_manager(auto &handler, auto &connection_factory) {
+  io::net::ConnectionManager::Config config{
       .always_reconnect = true,
       .connection_timeout = server::Flags::net_connection_timeout(),
       .disconnect_on_idle_timeout = {},
   };
-  return core::net::Manager{handler, connection_factory, config};
+  return io::net::ConnectionManager::create(handler, connection_factory, config);
 }
 
 template <typename T>
@@ -95,8 +95,8 @@ void emplace(Fill &result, const T &value) {
 OrderEntry::OrderEntry(Handler &handler, io::Context &context, uint16_t stream_id, Security &security, Shared &shared)
     : handler_(handler), stream_id_(stream_id), name_(create_name(stream_id_, security)),
       connection_factory_(create_connection_factory(context)),
-      connection_(create_connection(*this, *connection_factory_)), encode_buffer_(flags::Common::encode_buffer_size()),
-      decode_buffer_(flags::Common::decode_buffer_size()),
+      connection_manager_(create_connection_manager(*this, *connection_factory_)),
+      encode_buffer_(flags::Common::encode_buffer_size()), decode_buffer_(flags::Common::decode_buffer_size()),
       counter_{
           .disconnect = create_metrics(name_, "disconnect"sv),
       },
@@ -116,28 +116,28 @@ OrderEntry::OrderEntry(Handler &handler, io::Context &context, uint16_t stream_i
 }
 
 void OrderEntry::operator()(Event<Start> const &) {
-  connection_.start();
+  (*connection_manager_).start();
 }
 
 void OrderEntry::operator()(Event<Stop> const &) {
-  connection_.stop();
+  (*connection_manager_).stop();
 }
 
 void OrderEntry::operator()(Event<Timer> const &event) {
-  if (!connection_.refresh(event.value.now))
+  if (!(*connection_manager_).refresh(event.value.now))
     return;
   if (last_logon_or_heartbeat_.count() && flags::FIX::fix_request_timeout().count() &&
       (event.value.now - last_logon_or_heartbeat_) > flags::FIX::fix_request_timeout()) {
     log::warn("*** DETECTED TIMEOUT ***"sv);
     log::info("closing connection"sv);
-    connection_.close();
+    (*connection_manager_).close();
   } else {
     if (ready_) {
       if (test_disconnect_time_.count() && test_disconnect_time_ < event.value.now) [[unlikely]] {
         if (flags::FIX::fix_test_order_disconnect().count()) {
           log::warn("*** TEST: DISCONNECT ***"sv);
           log::info("closing connection"sv);
-          connection_.close();
+          (*connection_manager_).close();
         }
       } else {
         if (next_heartbeat_ <= event.value.now) {
@@ -267,7 +267,7 @@ void OrderEntry::operator()(metrics::Writer &writer) {
       .write(latency_.ping, metrics::LATENCY);
 }
 
-void OrderEntry::operator()(core::net::Manager::Connected const &) {
+void OrderEntry::operator()(io::net::ConnectionManager::Connected const &) {
   assert(test_logon_time_.count() == 0);
   auto now = core::clock::GetSystem();
   test_logon_time_ = now + flags::FIX::fix_test_order_logon();
@@ -275,7 +275,7 @@ void OrderEntry::operator()(core::net::Manager::Connected const &) {
     test_disconnect_time_ = now + flags::FIX::fix_test_order_disconnect();
 }
 
-void OrderEntry::operator()(core::net::Manager::Disconnected const &) {
+void OrderEntry::operator()(io::net::ConnectionManager::Disconnected const &) {
   ++counter_.disconnect;
   outbound_ = {};
   inbound_ = {};
@@ -288,8 +288,8 @@ void OrderEntry::operator()(core::net::Manager::Disconnected const &) {
   test_disconnect_time_ = {};
 }
 
-void OrderEntry::operator()(core::net::Manager::Read const &) {
-  auto buffer = connection_.buffer();
+void OrderEntry::operator()(io::net::ConnectionManager::Read const &) {
+  auto buffer = (*connection_manager_).buffer();
   size_t total_bytes = 0;
   while (!std::empty(buffer)) {
     auto trace_info = server::create_trace_info();
@@ -322,7 +322,7 @@ void OrderEntry::operator()(core::net::Manager::Read const &) {
     total_bytes += bytes;
     buffer = buffer.subspan(bytes);
   }
-  connection_.drain(total_bytes);
+  (*connection_manager_).drain(total_bytes);
 }
 
 void OrderEntry::operator()(ConnectionStatus status) {
@@ -546,14 +546,14 @@ void OrderEntry::operator()(Trace<fix::Logout const> const &event, core::fix::He
   // note! mandated, must send a logout response
   send_logout(LOGOUT_RESPONSE);
   log::info("closing connection"sv);
-  connection_.close();
+  (*connection_manager_).close();
 }
 
 void OrderEntry::operator()(Trace<fix::ResendRequest const> const &event, core::fix::Header const &header) {
   auto &[trace_info, resend_request] = event;
   log::warn("event={{header={}, resend_request={}}}"sv, header, resend_request);
   log::info("closing connection"sv);
-  connection_.close();
+  (*connection_manager_).close();
 }
 
 void OrderEntry::operator()(Trace<fix::TestRequest const> const &event, core::fix::Header const &header) {
@@ -902,7 +902,7 @@ void OrderEntry::operator()(Trace<fix::Reject const> const &event, core::fix::He
     }
   } else if (reject.session_reject_reason.compare("99"sv) == 0 && reject.text.compare("connection_too_slow"sv) == 0) {
     log::info("closing connection"sv);
-    connection_.close();
+    (*connection_manager_).close();
   } else {
     log::fatal("Unexpected"sv);
   }
@@ -937,7 +937,7 @@ uint64_t OrderEntry::send(const T &event, std::chrono::nanoseconds sending_time)
   auto message = event.encode(writer);
   if (flags::FIX::fix_debug())
     log::info("{}"sv, debug::fix::Message{message});
-  connection_.send(message);
+  (*connection_manager_).send(message);
   return outbound_.msg_seq_num;
 }
 

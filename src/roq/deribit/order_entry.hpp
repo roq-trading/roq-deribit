@@ -17,8 +17,7 @@
 
 #include "roq/io/context.hpp"
 #include "roq/io/net/connection_factory.hpp"
-
-#include "roq/core/net/manager.hpp"
+#include "roq/io/net/connection_manager.hpp"
 
 #include "roq/server.hpp"
 
@@ -43,7 +42,7 @@
 namespace roq {
 namespace deribit {
 
-class OrderEntry final : public core::net::Manager::Handler {
+class OrderEntry final : public io::net::ConnectionManager::Handler {
  public:
   struct Handler {
     virtual void operator()(Trace<StreamStatus const> const &) = 0;
@@ -93,9 +92,9 @@ class OrderEntry final : public core::net::Manager::Handler {
   void operator()(Trace<fix::OrderMassCancelReport const> const &, core::fix::Header const &);
 
  protected:
-  void operator()(core::net::Manager::Connected const &) override;
-  void operator()(core::net::Manager::Disconnected const &) override;
-  void operator()(core::net::Manager::Read const &) override;
+  void operator()(io::net::ConnectionManager::Connected const &) override;
+  void operator()(io::net::ConnectionManager::Disconnected const &) override;
+  void operator()(io::net::ConnectionManager::Read const &) override;
 
  private:
   void operator()(ConnectionStatus);
@@ -130,7 +129,7 @@ class OrderEntry final : public core::net::Manager::Handler {
   const std::string name_;
   // connection
   std::unique_ptr<io::net::ConnectionFactory> connection_factory_;
-  core::net::Manager connection_;
+  std::unique_ptr<io::net::ConnectionManager> connection_manager_;
   // buffers
   core::Buffer encode_buffer_;
   core::Buffer decode_buffer_;
