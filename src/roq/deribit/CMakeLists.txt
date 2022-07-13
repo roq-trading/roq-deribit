@@ -53,6 +53,7 @@ target_link_libraries(
   "${PROJECT_NAME}-tools"
   "${PROJECT_NAME}-sbe"
   roq-server::roq-server
+  roq-web::roq-web
   roq-core::roq-core
   roq-api::roq-api
   roq-io::roq-io

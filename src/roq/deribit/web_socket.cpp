@@ -10,6 +10,8 @@
 
 #include "roq/core/metrics/factory.hpp"
 
+#include "roq/web/socket/client_factory.hpp"
+
 #include "roq/deribit/utils.hpp"
 
 #include "roq/deribit/flags/common.hpp"
@@ -49,7 +51,7 @@ struct create_metrics final : public core::metrics::Factory {
 
 auto create_connection(auto &handler, auto &context) {
   auto uri = flags::WebSocket::ws_uri();
-  core::web::ClientSocket::Config config{
+  web::socket::Client::Config config{
       .always_reconnect = true,
       .connection_timeout = server::Flags::net_connection_timeout(),
       .disconnect_on_idle_timeout = server::Flags::net_disconnect_on_idle_timeout(),
@@ -60,7 +62,7 @@ auto create_connection(auto &handler, auto &context) {
       .read_buffer_size = flags::Common::decode_buffer_size(),
       .encode_buffer_size = flags::Common::encode_buffer_size(),
   };
-  return core::web::ClientSocket{handler, context, config, []() { return std::string(); }};
+  return web::socket::ClientFactory::create(handler, context, config, []() { return std::string(); });
 }
 }  // namespace
 
@@ -91,17 +93,17 @@ WebSocket::WebSocket(
 }
 
 void WebSocket::operator()(Event<Start> const &) {
-  connection_.start();
+  (*connection_).start();
 }
 
 void WebSocket::operator()(Event<Stop> const &) {
-  connection_.stop();
+  (*connection_).stop();
 }
 
 void WebSocket::operator()(Event<Timer> const &event) {
   auto now = event.value.now;
-  connection_.refresh(now);
-  if (connection_.ready())
+  (*connection_).refresh(now);
+  if ((*connection_).ready())
     check_subscribe_queue(now);
 }
 
@@ -123,11 +125,11 @@ void WebSocket::subscribe(size_t start_from) {
     subscribe(shared_.symbols.get_slice(index_, start_from));
 }
 
-void WebSocket::operator()(core::web::ClientSocket::Connected const &) {
+void WebSocket::operator()(web::socket::Client::Connected const &) {
   // note! wait for upgrade
 }
 
-void WebSocket::operator()(core::web::ClientSocket::Disconnected const &) {
+void WebSocket::operator()(web::socket::Client::Disconnected const &) {
   ++counter_.disconnect;
   ready_ = false;
   (*this)(ConnectionStatus::DISCONNECTED);
@@ -135,15 +137,15 @@ void WebSocket::operator()(core::web::ClientSocket::Disconnected const &) {
   subscribe_queue_.clear();
 }
 
-void WebSocket::operator()(core::web::ClientSocket::Ready const &) {
+void WebSocket::operator()(web::socket::Client::Ready const &) {
   (*this)(ConnectionStatus::DOWNLOADING);
   download_.begin();
 }
 
-void WebSocket::operator()(core::web::ClientSocket::Close const &) {
+void WebSocket::operator()(web::socket::Client::Close const &) {
 }
 
-void WebSocket::operator()(core::web::ClientSocket::Latency const &latency) {
+void WebSocket::operator()(web::socket::Client::Latency const &latency) {
   auto trace_info = server::create_trace_info();
   const ExternalLatency external_latency{
       .stream_id = stream_id_,
@@ -154,11 +156,11 @@ void WebSocket::operator()(core::web::ClientSocket::Latency const &latency) {
   latency_.ping.update(latency.sample);
 }
 
-void WebSocket::operator()(core::web::ClientSocket::Text const &text) {
+void WebSocket::operator()(web::socket::Client::Text const &text) {
   parse(text.payload);
 }
 
-void WebSocket::operator()(core::web::ClientSocket::Binary const &) {
+void WebSocket::operator()(web::socket::Client::Binary const &) {
   log::fatal("Unexpected"sv);
 }
 
@@ -409,7 +411,7 @@ void WebSocket::operator()(Trace<json::Currencies const> const &event) {
       log::fatal("Unexpected"sv);
     auto &[trace_info, currencies] = event;
     log::info<2>("currencies={}"sv, currencies);
-    connection_.touch(trace_info.source_receive_time);
+    (*connection_).touch(trace_info.source_receive_time);
     auto &data = currencies.data;
     std::vector<std::string> tmp;
     if (!std::empty(data))
@@ -434,7 +436,7 @@ void WebSocket::operator()(Trace<json::Instruments const> const &event) {
     if (!master_)
       log::fatal("Unexpected"sv);
     auto &[trace_info, instruments] = event;
-    connection_.touch(trace_info.source_receive_time);
+    (*connection_).touch(trace_info.source_receive_time);
     auto &data = instruments.data;
     std::vector<Symbol> symbols;
     if (!std::empty(data))
@@ -488,7 +490,7 @@ void WebSocket::operator()(Trace<json::Quote const> const &event) {
     auto &trace_info = event.trace_info;
     auto &quote = event.value;
     log::info<3>("quote={}"sv, quote);
-    connection_.touch(trace_info.source_receive_time);
+    (*connection_).touch(trace_info.source_receive_time);
     if (publish_top_of_book_) {
       if (get_top_of_book(quote.instrument_name, [&](auto &layer, auto multiplier) {
             // note! as real amounts to match MbP
@@ -524,7 +526,7 @@ void WebSocket::operator()(Trace<json::Ticker const> const &event) {
   profile_.ticker([&]() {
     auto &[trace_info, ticker] = event;
     log::info<3>("ticker={}"sv, ticker);
-    connection_.touch(trace_info.source_receive_time);
+    (*connection_).touch(trace_info.source_receive_time);
     auto trading_status = json::map(ticker.state);
     auto &item = trading_status_[ticker.instrument_name];
     if (trading_status != TradingStatus{} && utils::update(item, trading_status)) {
@@ -560,7 +562,7 @@ void WebSocket::check_subscribe_queue(std::chrono::nanoseconds now) {
       [&](auto now) { return shared_.rate_limiter.can_request(now); },
       [&](auto &message) {
         // log::debug(R"(Subscribe: "{}")"sv, message);
-        connection_.send_text(message);
+        (*connection_).send_text(message);
       },
       now);
 }
