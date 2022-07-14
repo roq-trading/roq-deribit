@@ -20,7 +20,6 @@ requirements:
     - cmake
     - make
   host:
-    - roq-api
     - roq-core
     - roq-deribit-multicast
     - roq-oss-abseil-cpp
@@ -28,8 +27,6 @@ requirements:
     - roq-oss-brotli
     - roq-oss-catch2
     - roq-oss-cppitertools
-    - roq-oss-http-parser
-    - roq-oss-libevent
     - roq-oss-libsodium
     - roq-oss-magic_enum
     - roq-oss-re2
