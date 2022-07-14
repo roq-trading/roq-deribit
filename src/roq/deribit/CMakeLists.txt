@@ -47,23 +47,22 @@ add_dependencies("${TARGET_NAME}" autogen-headers autogen-fix-headers autogen-js
 
 target_link_libraries(
   "${TARGET_NAME}"
-  "${PROJECT_NAME}-fix"
-  "${PROJECT_NAME}-json"
-  "${PROJECT_NAME}-flags"
-  "${PROJECT_NAME}-tools"
-  "${PROJECT_NAME}-sbe"
-  roq-server::roq-server
-  roq-web::roq-web
-  roq-core::roq-core
-  roq-api::roq-api
-  roq-io::roq-io
-  roq-logging::roq-logging
-  absl::flags
-  absl::flat_hash_map
-  absl::flat_hash_set
-  ${LIBEVENT_LIBRARIES}
-  ${UUID_LIBRARIES}
-  ${RT_LIBRARIES})
+  PUBLIC roq-api::roq-api roq-logging::roq-logging
+  PRIVATE "${PROJECT_NAME}-fix"
+          "${PROJECT_NAME}-json"
+          "${PROJECT_NAME}-flags"
+          "${PROJECT_NAME}-tools"
+          "${PROJECT_NAME}-sbe"
+          roq-server::roq-server
+          roq-web::roq-web
+          roq-core::roq-core
+          roq-io::roq-io
+          absl::flags
+          absl::flat_hash_map
+          absl::flat_hash_set
+          ${LIBEVENT_LIBRARIES}
+          ${UUID_LIBRARIES}
+          ${RT_LIBRARIES})
 
 target_compile_features("${TARGET_NAME}" PUBLIC cxx_std_20)
 
