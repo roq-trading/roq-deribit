@@ -47,7 +47,6 @@ add_dependencies("${TARGET_NAME}" autogen-headers autogen-fix-headers autogen-js
 
 target_link_libraries(
   "${TARGET_NAME}"
-  PUBLIC roq-api::roq-api roq-logging::roq-logging
   PRIVATE "${PROJECT_NAME}-fix"
           "${PROJECT_NAME}-json"
           "${PROJECT_NAME}-flags"
@@ -57,10 +56,11 @@ target_link_libraries(
           roq-web::roq-web
           roq-core::roq-core
           roq-io::roq-io
-          absl::flags_parse
+          roq-logging::roq-logging
+          roq-api::roq-api
+          absl::flags
           absl::flat_hash_map
           absl::flat_hash_set
-          ${LIBEVENT_LIBRARIES}
           ${UUID_LIBRARIES}
           ${RT_LIBRARIES})
 
