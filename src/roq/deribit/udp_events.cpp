@@ -132,7 +132,7 @@ void UDPEvents::operator()(Event<Timer> const &event) {
   }
 }
 
-void UDPEvents::operator()(io::UdpReceiver::Read const &read) {
+void UDPEvents::operator()(io::net::udp::Receiver::Read const &read) {
   auto trace_info = server::create_trace_info();
   last_update_time_ = trace_info.source_receive_time;
   publish_stream_status(trace_info, ConnectionStatus::READY);  // first message will publish
@@ -147,7 +147,7 @@ void UDPEvents::operator()(io::UdpReceiver::Read const &read) {
   }
 }
 
-void UDPEvents::operator()(io::UdpReceiver::Error const &error) {
+void UDPEvents::operator()(io::net::udp::Receiver::Error const &error) {
   log::fatal("Error: what={}"sv, error.what);
 }
 

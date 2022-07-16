@@ -4,7 +4,7 @@
 
 #include <utility>
 
-#include "roq/io/event/context_factory.hpp"
+#include "roq/io/engine/libevent/context_factory.hpp"
 
 #include "roq/deribit/flags/common.hpp"
 #include "roq/deribit/flags/fix.hpp"
@@ -78,7 +78,7 @@ auto create_udp_events(Gateway &gateway, io::Context &context, uint16_t &stream_
 
 Gateway::Gateway(server::Dispatcher &dispatcher, Config const &config)
     : dispatcher_(dispatcher), master_account_(config.get_master_account()),
-      security_(create_security<decltype(security_)>(config)), context_(io::event::ContextFactory::create()),
+      security_(create_security<decltype(security_)>(config)), context_(io::engine::libevent::ContextFactory::create()),
       shared_(dispatcher_),
       order_entry_(create_order_entry<decltype(order_entry_)>(*this, *context_, stream_id_, security_, shared_)),
       drop_copy_(create_drop_copy<decltype(drop_copy_)>(*this, *context_, stream_id_, security_, shared_)),
