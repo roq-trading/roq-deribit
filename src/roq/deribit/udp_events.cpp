@@ -50,7 +50,7 @@ struct create_metrics final : public core::metrics::Factory {
 
 auto create_receiver(auto &handler, auto &context, auto port) {
   log::info<1>("Create multicast socket port={}"sv, port);
-  auto receiver = context.create_udp_receiver(handler, port);
+  auto receiver = context.create_udp_receiver(handler, io::NetworkAddress{port});
   log::info<1>(R"(Local interface is "{}")"sv, flags::Multicast::local_interface());
   std::string local_interface{flags::Multicast::local_interface()};
   struct in_addr local = {};
@@ -59,7 +59,7 @@ auto create_receiver(auto &handler, auto &context, auto port) {
     log::info<1>(R"(Add membership "{}")"sv, multicast_address);
     struct in_addr multicast = {};
     multicast.s_addr = inet_addr(multicast_address.c_str());
-    (*receiver).add_membership(io::NetworkAddress{multicast, 0}, io::NetworkAddress{local, 0});
+    (*receiver).add_membership(io::NetworkAddress{0, multicast}, io::NetworkAddress{0, local});
   }
   return receiver;
 }
