@@ -631,6 +631,7 @@ void MarketData::operator()(Trace<fix::SecurityList const> const &event, core::f
           .commission_currency = instrument.comm_currency,
           .tick_size = instrument.min_price_increment,
           .multiplier = instrument.contract_multiplier,
+          .min_notional = NaN,
           .min_trade_vol = instrument.min_trade_vol,
           .max_trade_vol = NaN,
           .trade_vol_step_size = instrument.min_trade_vol,

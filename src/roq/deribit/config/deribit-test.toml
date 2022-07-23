@@ -34,6 +34,8 @@
   request_limit = 50
   monitor_period = "120s"
   ban_period = "5m"
+  low_water_mark = 25
+  high_water_mark = 40
 
   [rate_limits.A]
   type = "CREATE_ORDER"
