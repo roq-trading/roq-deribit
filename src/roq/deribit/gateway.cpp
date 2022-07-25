@@ -213,6 +213,10 @@ void Gateway::operator()(metrics::Writer &writer) {
     (*iter)(writer);
   for (auto &iter : market_data_)
     (*iter)(writer);
+  if (udp_snapshot_)
+    (*udp_snapshot_)(writer);
+  if (udp_events_)
+    (*udp_events_)(writer);
 }
 
 void Gateway::operator()(Trace<StreamStatus const> const &event) {
