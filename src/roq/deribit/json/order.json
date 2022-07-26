@@ -89,6 +89,14 @@
     {
       "name": "amount",
       "type": "double"
+    },
+    {
+      "name": "risk_reducing",
+      "type": "bool"
+    },
+    {
+      "name": "mmp",
+      "type": "bool"
     }
   ]
 }
