@@ -811,6 +811,7 @@ void OrderEntry::operator()(Trace<fix::ExecutionReport const> const &event, core
                   .fills = fills,
                   .routing_id = order.routing_id,
                   .update_type = update_type,
+                  .user = {},
               };
               create_trace_and_dispatch(handler_, trace_info, trade_update, true, order.user_id);
             }
