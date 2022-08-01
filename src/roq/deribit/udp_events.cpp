@@ -139,11 +139,12 @@ void UDPEvents::operator()(io::net::udp::Receiver::Read const &read) {
   while (receive_buffer_.append(*receiver_, read.available_bytes)) {
     auto message = receive_buffer_.data();
     log::info<5>("received {} byte(s)"sv, std::size(message));
-    if (!sbe::Parser::dispatch(*this, message, trace_info)) {
+    auto bytes = sbe::Parser::dispatch(*this, message, trace_info);
+    if (!bytes || bytes != std::size(message)) {
       log::warn("{}"sv, debug::hex::Message{message});
       log::fatal("Failed to parse message"sv);
     }
-    receive_buffer_.drain(std::size(message));
+    receive_buffer_.drain(bytes);  // XXX clear()?
   }
 }
 

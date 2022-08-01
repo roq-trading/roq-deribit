@@ -81,7 +81,6 @@ TEST_CASE("sbe_instrument", "[sbe_parser]") {  // 1000 (note! bundled)
   std::span buffer{reinterpret_cast<std::byte const *>(std::data(message)), std::size(message)};
   {
     auto message_2 = buffer.subspan(8);
-    // log::print("message_2={}\n"sv, debug::hex::Message{message_2});
     Instrument instrument{
         reinterpret_cast<char *>(const_cast<std::byte *>(std::data(message_2))), std::size(message_2)};
     REQUIRE(sbe::compute_length(instrument) == 171);
@@ -91,12 +90,10 @@ TEST_CASE("sbe_instrument", "[sbe_parser]") {  // 1000 (note! bundled)
     bool found_instrument = false;
     bool found_ticker = false, found_snapshot = false;  // secondary
     void operator()(Trace<deribit_multicast::Instrument> const &event, sbe::Frame const &frame) override {
-      log::print("frame={}\n"sv, frame);
       found_instrument = true;
       CHECK(frame.channel_id == 110);
       CHECK(frame.sequence_number == 13360);
       auto &[trace_info, instrument] = event;
-      log::print("instrument={}\n"sv, instrument);
       // header
       auto &header = instrument.header();
       CHECK(header.templateId() == 1000);
@@ -137,7 +134,7 @@ TEST_CASE("sbe_instrument", "[sbe_parser]") {  // 1000 (note! bundled)
   } handler;
   TraceInfo trace_info;
   auto result = sbe::Parser::dispatch(handler, buffer, trace_info);
-  CHECK(result == true);
+  CHECK(result == std::size(message));
   CHECK(handler.found_instrument == true);
   // ... secondary
   CHECK(handler.found_ticker == true);
@@ -165,7 +162,6 @@ TEST_CASE("sbe_book", "[sbe_parser]") {  // 1001 (note! bundled)
   std::span buffer{reinterpret_cast<std::byte const *>(std::data(message)), std::size(message)};
   {
     auto message_2 = buffer.subspan(260);
-    // log::print("message_2={}\n"sv, debug::hex::Message{message_2});
     Book book{reinterpret_cast<char *>(const_cast<std::byte *>(std::data(message_2))), std::size(message_2)};
     REQUIRE(sbe::compute_length(book) == 67);
     static_assert((260 + 67) == 327);
@@ -178,11 +174,9 @@ TEST_CASE("sbe_book", "[sbe_parser]") {  // 1001 (note! bundled)
     void operator()(Trace<deribit_multicast::Ticker> const &, sbe::Frame const &) override { found_ticker = true; }
     void operator()(Trace<deribit_multicast::Trades> const &event, sbe::Frame const &frame) override {
       found_trades = true;
-      log::print("frame={}\n"sv, frame);
       CHECK(frame.channel_id == 10);
       CHECK(frame.sequence_number == 15921049);
       auto &[trace_info, trades] = event;
-      log::print("trades={}\n"sv, trades);
       // header
       auto &header = trades.header();
       CHECK(header.templateId() == 1002);
@@ -214,7 +208,7 @@ TEST_CASE("sbe_book", "[sbe_parser]") {  // 1001 (note! bundled)
   } handler;
   TraceInfo trace_info;
   auto result = sbe::Parser::dispatch(handler, buffer, trace_info);
-  CHECK(result == true);
+  CHECK(result == std::size(message));
   CHECK(handler.found_trades == true);
   // ... secondary
   CHECK(handler.found_ticker == true);
@@ -242,7 +236,6 @@ TEST_CASE("sbe_trades", "[sbe_parser]") {  // 1002 (note! bundled)
   std::span buffer{reinterpret_cast<std::byte const *>(std::data(message)), std::size(message)};
   {
     auto message_2 = buffer.subspan(8);
-    // log::print("message_2={}\n"sv, debug::hex::Message{message_2});
     Trades trades{reinterpret_cast<char *>(const_cast<std::byte *>(std::data(message_2))), std::size(message_2)};
     REQUIRE(sbe::compute_length(trades) == 107);
     static_assert((8 + 107) == 115);
@@ -255,11 +248,9 @@ TEST_CASE("sbe_trades", "[sbe_parser]") {  // 1002 (note! bundled)
     void operator()(Trace<deribit_multicast::Ticker> const &, sbe::Frame const &) override { found_ticker = true; }
     void operator()(Trace<deribit_multicast::Trades> const &event, sbe::Frame const &frame) override {
       found_trades = true;
-      log::print("frame={}\n"sv, frame);
       CHECK(frame.channel_id == 10);
       CHECK(frame.sequence_number == 15921049);
       auto &[trace_info, trades] = event;
-      log::print("trades={}\n"sv, trades);
       // header
       auto &header = trades.header();
       CHECK(header.templateId() == 1002);
@@ -291,7 +282,7 @@ TEST_CASE("sbe_trades", "[sbe_parser]") {  // 1002 (note! bundled)
   } handler;
   TraceInfo trace_info;
   auto result = sbe::Parser::dispatch(handler, buffer, trace_info);
-  CHECK(result == true);
+  CHECK(result == std::size(message));
   CHECK(handler.found_trades == true);
   // ... secondary
   CHECK(handler.found_ticker == true);
@@ -315,7 +306,6 @@ TEST_CASE("sbe_ticker", "[sbe_parser]") {  // 1003
   std::span buffer{reinterpret_cast<std::byte const *>(std::data(message)), std::size(message)};
   {
     auto message_2 = buffer.subspan(8);
-    // log::print("message_2={}\n"sv, debug::hex::Message{message_2});
     Ticker ticker{reinterpret_cast<char *>(const_cast<std::byte *>(std::data(message_2))), std::size(message_2)};
     REQUIRE(sbe::compute_length(ticker) == 145);
     static_assert((8 + 145) == 153);
@@ -325,12 +315,10 @@ TEST_CASE("sbe_ticker", "[sbe_parser]") {  // 1003
     void operator()(Trace<deribit_multicast::Instrument> const &, sbe::Frame const &) override { FAIL(); }
     void operator()(Trace<deribit_multicast::Book> const &, sbe::Frame const &) override { FAIL(); }
     void operator()(Trace<deribit_multicast::Ticker> const &event, sbe::Frame const &frame) override {
-      log::print("frame={}\n"sv, frame);
       found = true;
       CHECK(frame.channel_id == 10);
       CHECK(frame.sequence_number == 14831144);
       auto &[trace_info, ticker] = event;
-      log::print("ticker={}\n"sv, ticker);
       // header
       auto &header = ticker.header();
       CHECK(header.templateId() == 1003);
@@ -362,7 +350,7 @@ TEST_CASE("sbe_ticker", "[sbe_parser]") {  // 1003
   } handler;
   TraceInfo trace_info;
   auto result = sbe::Parser::dispatch(handler, buffer, trace_info);
-  CHECK(result == true);
+  CHECK(result == std::size(message));
   CHECK(handler.found == true);
 }
 
@@ -422,7 +410,6 @@ TEST_CASE("sbe_snapshot", "[sbe_parser]") {  // 1004 (note! bundled)
   std::span buffer{reinterpret_cast<std::byte const *>(std::data(message)), std::size(message)};
   {
     auto message_2 = buffer.subspan(324);
-    // log::print("message_2={}\n"sv, debug::hex::Message{message_2});
     Snapshot snapshot{reinterpret_cast<char *>(const_cast<std::byte *>(std::data(message_2))), std::size(message_2)};
     REQUIRE(sbe::compute_length(snapshot) == 994);
     static_assert((324 + 994) == 1318);
@@ -439,12 +426,10 @@ TEST_CASE("sbe_snapshot", "[sbe_parser]") {  // 1004 (note! bundled)
     // snapshot
     void operator()(Trace<deribit_multicast::Snapshot> const &event, sbe::Frame const &frame) override {
       found_snapshot = true;
-      log::print("frame={}\n"sv, frame);
       found_instrument = true;
       CHECK(frame.channel_id == 110);
       CHECK(frame.sequence_number == 13360);
       auto &[trace_info, snapshot] = event;
-      log::print("snapshot={}\n"sv, snapshot);
       // header
       auto &header = snapshot.header();
       CHECK(header.templateId() == 1004);
@@ -480,9 +465,255 @@ TEST_CASE("sbe_snapshot", "[sbe_parser]") {  // 1004 (note! bundled)
   } handler;
   TraceInfo trace_info;
   auto result = sbe::Parser::dispatch(handler, buffer, trace_info);
-  CHECK(result == true);
+  CHECK(result == std::size(message));
   CHECK(handler.found_snapshot == true);
   // ... secondary
   CHECK(handler.found_instrument == true);
   CHECK(handler.found_ticker == true);
+}
+
+TEST_CASE("sbe_multiple_datagrams", "[sbe_parser]") {
+  auto message =
+      // DATAGRAM #1
+      // [0] frame
+      "\x43\x00"          // packet length (67)
+      "\x04\x00"          // channel id (4)
+      "\x47\x1c\x0f\x13"  // sequence number (319757383)
+      // [8] book
+      //     - header
+      "\x1d\x00"  // block length (29)
+      "\xe9\x03"  // template id (1001)
+      "\x01\x00"  // schema id (1)
+      "\x01\x00"  // version (1)
+      "\x01\x00"  // num groups (1)
+      "\x00\x00"  // num var data fields (0)
+      //     - book
+      "\x48\x37\x03\x00"                  // instrument id (210760)
+      "\x9d\xf8\x49\x58\x82\x01\x00\x00"  // timestamp (1659338619037)
+      "\x52\xbf\xf9\x53\x06\x00\x00\x00"  // prev change id (27178680146)
+      "\x53\xbf\xf9\x53\x06\x00\x00\x00"  // change id (27178680147)
+      "\x01"                              // is last (true)
+      //     > book.changesList
+      "\x12\x00\x01\x00\x00\x00\x00\x00"  // XXX ???
+      "\x00"                              // side (ask)
+      "\x01"                              // change (changed)
+      "\x00\x00\x00\x00\x00\x3e\x9a\x40"  // price (1679.5)
+      "\x00\x00\x00\x00\x60\x2b\xe1\x40"  // quantity (35163.0)
+      // DATAGRAM #2
+      "\x43\x00"          // package length (67)
+      "\x04\x00"          // channel id (4)
+      "\x48\x1c\x0f\x13"  // sequence number (319757383)
+      // [83] book
+      //      - header
+      "\x1d\x00"  // block length (29)
+      "\xe9\x03"  // template id (1001)
+      "\x01\x00"  // schema id (1)
+      "\x01\x00"  // version (1)
+      "\x01\x00"  // num groups (1)
+      "\x00\x00"  // num var data fields (0)
+      //      - book
+      "\x48\x37\x03\x00"                  // instrument id (210760)
+      "\xa0\xf8\x49\x58\x82\x01\x00\x00"  // timestamp (1659338619040)
+      "\x53\xbf\xf9\x53\x06\x00\x00\x00"  // prev change id (27178680147)
+      "\x54\xbf\xf9\x53\x06\x00\x00\x00"  // change id (27178680148)
+      "\x01"                              // is last (true)
+      //     > book.changesList
+      "\x12\x00\x01\x00\x00\x00\x00\x00"  // XXX ???
+      "\x00"                              // side (ask)
+      "\x01"                              // change (changed)
+      "\xcd\xcc\xcc\xcc\x4c\xa9\xa3\x40"  // price
+      "\x00\x00\x00\x00\x00\x00\x08\x40"  // quantity
+      // DATAGRAM #3
+      "\x43\x00"
+      "\x01\x00"
+      "\x73\xed\xa3\x1d"
+      "\x1d\x00"
+      "\xe9\x03"
+      "\x01\x00"
+      "\x01\x00"
+      "\x01\x00"
+      "\x00\x00"
+      "\x96\x37\x03\x00"
+      "\xa0\xf8\x49\x58\x82\x01\x00\x00"
+      "\xe4\xdb\x6d\x3c\x0b\x00\x00\x00"
+      "\xe5\xdb\x6d\x3c\x0b\x00\x00\x00"
+      "\x01"
+      "\x12\x00\x01\x00\x00\x00\x00\x00"
+      "\x00"
+      "\x01"
+      "\x00\x00\x00\x00\xb0\xf9\xe0\x40"
+      "\x00\x00\x00\x00\x00\x80\x51\x40"
+      // DATAGRAM #4
+      "\x43\x00"
+      "\x0a\x00"
+      "\xa4\xea\x6b\x12"
+      "\x1d\x00"
+      "\xe9\x03"
+      "\x01\x00"
+      "\x01\x00"
+      "\x01\x00"
+      "\x00\x00"
+      "\x2f\x40\x03\x00"
+      "\xa1\xf8\x49\x58\x82\x01\x00\x00"
+      "\x8b\x32\x78\x86\x00\x00\x00\x00"
+      "\x8f\x32\x78\x86\x00\x00\x00\x00"
+      "\x01"
+      "\x12\x00\x01\x00\x00\x00\x00\x00"
+      "\x00"
+      "\x01"
+      "\x7b\x14\xae\x47\xe1\xda\x4f\x40"
+      "\x9a\x99\x99\x99\x99\x99\xc9\x3f"
+      // DATAGRAM #5
+      "\x43\x00"
+      "\x0a\x00"
+      "\xa5\xea\x6b\x12"
+      "\x1d\x00"
+      "\xe9\x03"
+      "\x01\x00"
+      "\x01\x00"
+      "\x01\x00"
+      "\x00\x00"
+      "\x69\x39\x03\x00"
+      "\xa1\xf8\x49\x58\x82\x01\x00\x00"
+      "\x7d\x32\x78\x86\x00\x00\x00\x00"
+      "\x90\x32\x78\x86\x00\x00\x00\x00"
+      "\x01"
+      "\x12\x00\x01\x00\x00\x00\x00\x00"
+      "\x00"
+      "\x01"
+      "\xcd\xcc\xcc\xcc\xcc\xaa\xa3\x40"
+      "\xec\x51\xb8\x1e\x85\xeb\xb1\x3f"
+      // DATAGRAM #6
+      "\x43\x00"
+      "\x01\x00"
+      "\x74\xed\xa3\x1d"
+      "\x1d\x00"
+      "\xe9\x03"
+      "\x01\x00"
+      "\x01\x00"
+      "\x01\x00"
+      "\x00\x00"
+      "\x96\x37\x03\x00"
+      "\xa1\xf8\x49\x58\x82\x01\x00\x00"
+      "\xe5\xdb\x6d\x3c\x0b\x00\x00\x00"
+      "\xe6\xdb\x6d\x3c\x0b\x00\x00\x00"
+      "\x01"
+      "\x12\x00\x01\x00\x00\x00\x00\x00"
+      "\x00"
+      "\x01"
+      "\x00\x00\x00\x00\xb0\xf9\xe0\x40"
+      "\x00\x00\x00\x00\x00\x00\x4e\x40"
+      // DATAGRAM #7
+      "\x43\x00"
+      "\x04\x00"
+      "\x49\x1c\x0f\x13"
+      "\x1d\x00"
+      "\xe9\x03"
+      "\x01\x00"
+      "\x01\x00"
+      "\x01\x00"
+      "\x00\x00"
+      "\x48\x37\x03\x00"
+      "\xa0\xf8\x49\x58\x82\x01\x00\x00"
+      "\x54\xbf\xf9\x53\x06\x00\x00\x00"
+      "\x55\xbf\xf9\x53\x06\x00\x00\x00"
+      "\x01"
+      "\x12\x00\x01\x00\x00\x00\x00\x00"
+      "\x00"
+      "\x01"
+      "\xcd\xcc\xcc\xcc\x4c\xa9\xa3\x40"
+      "\x00\x00\x00\x00\x00\x00\x00\x40"
+      // DATAGRAM #8
+      "\x43\x00"
+      "\x0a\x00"
+      "\xa6\xea\x6b\x12"
+      "\x1d\x00"
+      "\xe9\x03"
+      "\x01\x00"
+      "\x01\x00"
+      "\x01\x00"
+      "\x00\x00"
+      "\x69\x39\x03\x00"
+      "\xa1\xf8\x49\x58\x82\x01\x00\x00"
+      "\x90\x32\x78\x86\x00\x00\x00\x00"
+      "\x91\x32\x78\x86\x00\x00\x00\x00"
+      "\x01"
+      "\x12\x00\x01\x00\x00\x00\x00\x00"
+      "\x00"
+      "\x01"
+      "\xcd\xcc\xcc\xcc\xcc\xaa\xa3\x40"
+      "\xb8\x1e\x85\xeb\x51\xb8\xae\x3f"
+      // DATAGRAM #9
+      "\x43\x00"
+      "\x0a\x00"
+      "\xa7\xea\x6b\x12"
+      "\x1d\x00"
+      "\xe9\x03"
+      "\x01\x00"
+      "\x01\x00"
+      "\x01\x00"
+      "\x00\x00"
+      "\x2f\x40\x03\x00"
+      "\xa1\xf8\x49\x58\x82\x01\x00\x00"
+      "\x8f\x32\x78\x86\x00\x00\x00\x00"
+      "\x92\x32\x78\x86\x00\x00\x00\x00"
+      "\x01"
+      "\x12\x00\x01\x00\x00\x00\x00\x00"
+      "\x00"
+      "\x01"
+      "\x7b\x14\xae\x47\xe1\xda\x4f\x40"
+      "\x9a\x99\x99\x99\x99\x99\xb9\x3f"sv;
+  REQUIRE(std::size(message) == 675);
+  std::span buffer{reinterpret_cast<std::byte const *>(std::data(message)), std::size(message)};
+  struct MyHandler : public sbe::Parser::Handler {
+    int counter = 0;
+    void operator()(Trace<deribit_multicast::Instrument> const &, sbe::Frame const &) override { FAIL(); }
+    void operator()(Trace<deribit_multicast::Book> const &event, sbe::Frame const &frame) override {
+      auto &[trace_info, book] = event;
+      switch (++counter) {
+        case 1: {
+          // frame
+          CHECK(frame.channel_id == 4);
+          CHECK(frame.sequence_number == 319757383);
+          // header
+          auto &header = book.header();
+          CHECK(header.templateId() == 1001);
+          CHECK(header.sbeSchemaId() == 1);
+          CHECK(header.version() == 1);
+          // book
+          CHECK(book.instrumentId() == 210760);
+          CHECK(book.timestampMs() == 1659338619037);
+          CHECK(book.prevChangeId() == 27178680146);
+          CHECK(book.changeId() == 27178680147);
+          CHECK(book.isLast() == true);
+          break;
+        }
+        case 2: {
+          // frame
+          CHECK(frame.channel_id == 4);
+          CHECK(frame.sequence_number == 319757384);
+          // header
+          auto &header = book.header();
+          CHECK(header.templateId() == 1001);
+          CHECK(header.sbeSchemaId() == 1);
+          CHECK(header.version() == 1);
+          // book
+          CHECK(book.instrumentId() == 210760);
+          CHECK(book.timestampMs() == 1659338619040);
+          CHECK(book.prevChangeId() == 27178680147);
+          CHECK(book.changeId() == 27178680148);
+          CHECK(book.isLast() == true);
+          break;
+        }
+      }
+    }
+    void operator()(Trace<deribit_multicast::Ticker> const &, sbe::Frame const &) override { FAIL(); }
+    void operator()(Trace<deribit_multicast::Trades> const &, sbe::Frame const &) override { FAIL(); }
+    // snapshot
+    void operator()(Trace<deribit_multicast::Snapshot> const &, sbe::Frame const &) override { FAIL(); }
+  } handler;
+  TraceInfo trace_info;
+  auto result = sbe::Parser::dispatch(handler, buffer, trace_info);
+  CHECK(result == std::size(message));
+  CHECK(handler.counter == 9);
 }

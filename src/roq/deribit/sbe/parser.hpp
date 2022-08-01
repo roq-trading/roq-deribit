@@ -32,7 +32,7 @@ struct Parser final {
     virtual void operator()(Trace<deribit_multicast::Snapshot> const &, Frame const &) = 0;
   };
 
-  static bool dispatch(Handler &, std::span<std::byte const> const &buffer, TraceInfo const &);
+  static size_t dispatch(Handler &, std::span<std::byte const> const &buffer, TraceInfo const &);
 };
 
 }  // namespace sbe
