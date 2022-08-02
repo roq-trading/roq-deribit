@@ -494,7 +494,11 @@ TEST_CASE("sbe_multiple_datagrams", "[sbe_parser]") {
       "\x53\xbf\xf9\x53\x06\x00\x00\x00"  // change id (27178680147)
       "\x01"                              // is last (true)
       //     > book.changesList
-      "\x12\x00\x01\x00\x00\x00\x00\x00"  // XXX ???
+      "\x12\x00"  // block length (18)
+      "\x01\x00"  // num in group (1)
+      "\x00\x00"  // num nested groups (0)
+      "\x00\x00"  // num var data fields (0)
+      // --- #1 ---
       "\x00"                              // side (ask)
       "\x01"                              // change (changed)
       "\x00\x00\x00\x00\x00\x3e\x9a\x40"  // price (1679.5)
@@ -518,7 +522,11 @@ TEST_CASE("sbe_multiple_datagrams", "[sbe_parser]") {
       "\x54\xbf\xf9\x53\x06\x00\x00\x00"  // change id (27178680148)
       "\x01"                              // is last (true)
       //     > book.changesList
-      "\x12\x00\x01\x00\x00\x00\x00\x00"  // XXX ???
+      "\x12\x00"  // block length (18)
+      "\x01\x00"  // num in group (1)
+      "\x00\x00"  // num nested groups (0)
+      "\x00\x00"  // num var data fields (0)
+      // --- #1 ---
       "\x00"                              // side (ask)
       "\x01"                              // change (changed)
       "\xcd\xcc\xcc\xcc\x4c\xa9\xa3\x40"  // price
