@@ -104,6 +104,18 @@
     {
       "name": "underlying_price",
       "type": "double"
+    },
+    {
+      "name": "risk_reducing",
+      "type": "bool"
+    },
+    {
+      "name": "mmp",
+      "type": "bool"
+    },
+    {
+      "name": "api",
+      "type": "bool"
     }
   ]
 }

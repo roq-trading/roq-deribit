@@ -69,6 +69,7 @@ inline TradingStatus map(State state) {
     case CREATED:     // XXX don't know how to map
     case SETTLED:     // XXX don't know how to map
     case TERMINATED:  // XXX don't know how to map
+    case INACTIVE:    // XXX don't know how to map
       break;
   }
   return TradingStatus::UNDEFINED;
