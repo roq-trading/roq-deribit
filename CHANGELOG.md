@@ -6,6 +6,10 @@ All notable changes will be documented in this file.
 
 ## 0.8.7 &ndash; 2022-08-22
 
+### Changed
+
+* New 1.5.0 SBE/multicast protocol (#269)
+
 ## 0.8.6 &ndash; 2022-07-18
 
 ### Fixed

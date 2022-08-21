@@ -65,6 +65,12 @@ inline TradingStatus map_instrument_state(deribit_multicast::InstrumentState::Va
       return TradingStatus::CLOSE;
     case settled:
       break;  // ???
+    case inactive:
+      break;  // ???
+    case started:
+      break;  // ???
+    case deactivated:
+      break;  // ???
     case NULL_VALUE:
       return TradingStatus::UNDEFINED;
   }
