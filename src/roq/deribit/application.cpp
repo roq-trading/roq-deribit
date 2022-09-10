@@ -18,9 +18,11 @@ int Application::main(int, char **) {
   log::info(R"(Parse config_file="{}")"sv, flags::Config::config_file());
   Config config(flags::Config::config_file(), flags::Config::secrets_file());
   log::info<1>("config={}"sv, config);
-  log::info("Starting the gateway..."sv);
+  log::info("Prepare environment"sv);
   auto context = io::engine::ContextFactory::create(server::Flags::io_backend());
+  log::info("Start gateway"sv);
   roq::server::Trading<Gateway>(ROQ_PACKAGE_NAME, ROQ_BUILD_NUMBER, {}, config, *context).dispatch();
+  log::info("Done!"sv);
   return EXIT_SUCCESS;
 }
 
