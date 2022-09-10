@@ -2,6 +2,8 @@
 
 #include "roq/deribit/application.hpp"
 
+#include "roq/io/engine/context_factory.hpp"
+
 #include "roq/deribit/config.hpp"
 #include "roq/deribit/gateway.hpp"
 
@@ -17,7 +19,8 @@ int Application::main(int, char **) {
   Config config(flags::Config::config_file(), flags::Config::secrets_file());
   log::info<1>("config={}"sv, config);
   log::info("Starting the gateway..."sv);
-  roq::server::Trading<Gateway>(ROQ_PACKAGE_NAME, ROQ_BUILD_NUMBER, {}, config).dispatch();
+  auto context = io::engine::ContextFactory::create(server::Flags::io_backend());
+  roq::server::Trading<Gateway>(ROQ_PACKAGE_NAME, ROQ_BUILD_NUMBER, {}, config, *context).dispatch();
   return EXIT_SUCCESS;
 }
 

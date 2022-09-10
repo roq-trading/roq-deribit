@@ -4,8 +4,6 @@
 
 #include <utility>
 
-#include "roq/io/engine/context_factory.hpp"
-
 #include "roq/deribit/flags/common.hpp"
 #include "roq/deribit/flags/fix.hpp"
 #include "roq/deribit/flags/multicast.hpp"
@@ -76,17 +74,16 @@ auto create_udp_events(Gateway &gateway, io::Context &context, uint16_t &stream_
 }
 }  // namespace
 
-Gateway::Gateway(server::Dispatcher &dispatcher, Config const &config)
+Gateway::Gateway(server::Dispatcher &dispatcher, Config const &config, io::Context &context)
     : dispatcher_(dispatcher), master_account_(config.get_master_account()),
-      security_(create_security<decltype(security_)>(config)), context_(io::engine::ContextFactory::create_libevent()),
-      shared_(dispatcher_),
-      order_entry_(create_order_entry<decltype(order_entry_)>(*this, *context_, stream_id_, security_, shared_)),
-      drop_copy_(create_drop_copy<decltype(drop_copy_)>(*this, *context_, stream_id_, security_, shared_)),
-      web_socket_(create_web_socket<decltype(web_socket_)>(*this, *context_, stream_id_, shared_)),
+      security_(create_security<decltype(security_)>(config)), context_(context), shared_(dispatcher_),
+      order_entry_(create_order_entry<decltype(order_entry_)>(*this, context_, stream_id_, security_, shared_)),
+      drop_copy_(create_drop_copy<decltype(drop_copy_)>(*this, context_, stream_id_, security_, shared_)),
+      web_socket_(create_web_socket<decltype(web_socket_)>(*this, context_, stream_id_, shared_)),
       market_data_(create_market_data<decltype(market_data_)>(
-          *this, *context_, ++stream_id_, get_security(security_, master_account_), shared_)),
-      udp_snapshot_(create_udp_snapshot(*this, *context_, ++stream_id_, shared_)),
-      udp_events_(create_udp_events(*this, *context_, ++stream_id_, shared_)) {
+          *this, context_, ++stream_id_, get_security(security_, master_account_), shared_)),
+      udp_snapshot_(create_udp_snapshot(*this, context_, ++stream_id_, shared_)),
+      udp_events_(create_udp_events(*this, context_, ++stream_id_, shared_)) {
   if (std::empty(master_account_) && !flags::Common::disable_master_account_check()) {
     log::fatal("A master account is always required (due to FIX logon)"sv);
   }
@@ -139,7 +136,7 @@ void Gateway::operator()(Event<Timer> const &event) {
     (*udp_snapshot_)(event);
   if (udp_events_)
     (*udp_events_)(event);
-  (*context_).drain();
+  context_.drain();
 }
 
 void Gateway::operator()(Event<Connected> const &) {
@@ -296,7 +293,7 @@ void Gateway::ensure_symbol_slices(size_t size) {
     auto index = std::size(market_data_);
     log::debug("Create MarketData(stream_id={}, index={})"sv, stream_id, index);
     auto market_data =
-        std::make_unique<MarketData>(*this, *context_, stream_id, *security_[master_account_], shared_, index, false);
+        std::make_unique<MarketData>(*this, context_, stream_id, *security_[master_account_], shared_, index, false);
     MessageInfo message_info;
     Start start;
     create_event_and_dispatch(*market_data, message_info, start);
@@ -307,7 +304,7 @@ void Gateway::ensure_symbol_slices(size_t size) {
     auto stream_id = ++stream_id_;
     auto index = std::size(web_socket_);
     log::debug("Create WebSocket (stream_id={}, index={})"sv, stream_id, index);
-    auto web_socket = std::make_unique<WebSocket>(*this, *context_, stream_id, shared_, index, false);
+    auto web_socket = std::make_unique<WebSocket>(*this, context_, stream_id, shared_, index, false);
     MessageInfo message_info;
     Start start;
     create_event_and_dispatch(*web_socket, message_info, start);
