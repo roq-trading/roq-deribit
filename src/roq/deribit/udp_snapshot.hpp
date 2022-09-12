@@ -40,6 +40,7 @@ class UDPSnapshot final : public io::net::udp::Receiver::Handler, public sbe::Pa
   void operator()(metrics::Writer &);
 
  protected:
+  // io::net::udp::Receiver::Handler
   void operator()(io::net::udp::Receiver::Read const &) override;
   void operator()(io::net::udp::Receiver::Error const &) override;
 

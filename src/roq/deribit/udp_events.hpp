@@ -43,6 +43,7 @@ class UDPEvents final : public io::net::udp::Receiver::Handler, public sbe::Pars
   void operator()(metrics::Writer &);
 
  protected:
+  // io::net::udp::Receiver::Handler
   void operator()(io::net::udp::Receiver::Read const &) override;
   void operator()(io::net::udp::Receiver::Error const &) override;
 
