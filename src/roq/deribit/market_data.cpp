@@ -466,11 +466,11 @@ void MarketData::resubscribe(std::string_view const &symbol) {
   subscribe(symbols);
 }
 
-void MarketData::parse(Trace<core::fix::Message const> const &event) {
+void MarketData::parse(Trace<core::fix::Message> const &event) {
   profile_.parse([&]() { parse_helper(event); });
 }
 
-void MarketData::parse_helper(Trace<core::fix::Message const> const &event) {
+void MarketData::parse_helper(Trace<core::fix::Message> const &event) {
   // auto &[trace_info, message] = event;
   auto &trace_info = event.trace_info;
   auto &message = event.value;
@@ -552,7 +552,7 @@ void MarketData::parse_helper(Trace<core::fix::Message const> const &event) {
   log::warn("Unexpected msg_type={}"sv, message.header.msg_type);
 }
 
-void MarketData::operator()(Trace<fix::Heartbeat const> const &event, core::fix::Header const &header) {
+void MarketData::operator()(Trace<fix::Heartbeat> const &event, core::fix::Header const &header) {
   auto now = core::clock::GetSystem();
   auto &[trace_info, heartbeat] = event;
   log::info<3>("event={{header={}, heartbeat={}}}"sv, header, heartbeat);
@@ -570,14 +570,14 @@ void MarketData::operator()(Trace<fix::Heartbeat const> const &event, core::fix:
   }
 }
 
-void MarketData::operator()(Trace<fix::Logon const> const &event, core::fix::Header const &header) {
+void MarketData::operator()(Trace<fix::Logon> const &event, core::fix::Header const &header) {
   auto &[trace_info, logon] = event;
   log::info<2>("event={{header={}, logon={}}}"sv, header, logon);
   (*this)(ConnectionStatus::DOWNLOADING);
   download_.begin();
 }
 
-void MarketData::operator()(Trace<fix::Logout const> const &event, core::fix::Header const &header) {
+void MarketData::operator()(Trace<fix::Logout> const &event, core::fix::Header const &header) {
   auto &[trace_info, logout] = event;
   log::warn("event={{header={}, logout={}}}"sv, header, logout);
   (*this)(ConnectionStatus::LOGGED_OUT);
@@ -588,20 +588,20 @@ void MarketData::operator()(Trace<fix::Logout const> const &event, core::fix::He
   (*connection_manager_).close();
 }
 
-void MarketData::operator()(Trace<fix::ResendRequest const> const &event, core::fix::Header const &header) {
+void MarketData::operator()(Trace<fix::ResendRequest> const &event, core::fix::Header const &header) {
   auto &[trace_info, resend_request] = event;
   log::warn("event={{header={}, resend_request={}}}"sv, header, resend_request);
   log::info("closing connection"sv);
   (*connection_manager_).close();
 }
 
-void MarketData::operator()(Trace<fix::TestRequest const> const &event, core::fix::Header const &header) {
+void MarketData::operator()(Trace<fix::TestRequest> const &event, core::fix::Header const &header) {
   auto &[trace_info, test_request] = event;
   log::info<1>("event={{header={}, test_request={}}}"sv, header, test_request);
   send_heartbeat(test_request.test_req_id);
 }
 
-void MarketData::operator()(Trace<fix::SecurityList const> const &event, core::fix::Header const &header) {
+void MarketData::operator()(Trace<fix::SecurityList> const &event, core::fix::Header const &header) {
   auto &[trace_info, security_list] = event;
   log::info<2>("event={{header={}, security_list={}}}"sv, header, security_list);
   (*connection_manager_).touch(trace_info.source_receive_time);
@@ -664,14 +664,13 @@ void MarketData::operator()(Trace<fix::SecurityList const> const &event, core::f
   download_.check_relaxed(MarketDataState::SECURITIES);
 }
 
-void MarketData::operator()(Trace<fix::SecurityStatus const> const &event, core::fix::Header const &header) {
+void MarketData::operator()(Trace<fix::SecurityStatus> const &event, core::fix::Header const &header) {
   auto &[trace_info, security_status] = event;
   log::info<2>("event={{header={}, security_status={}}}"sv, header, security_status);
   // XXX should we use it or not?
 }
 
-void MarketData::operator()(
-    Trace<fix::MarketDataIncrementalRefresh const> const &event, core::fix::Header const &header) {
+void MarketData::operator()(Trace<fix::MarketDataIncrementalRefresh> const &event, core::fix::Header const &header) {
   // auto &[trace_info, market_data_incremental_refresh] = event;
   auto &trace_info = event.trace_info;
   auto &market_data_incremental_refresh = event.value;
@@ -791,15 +790,14 @@ void MarketData::operator()(
   }
 }
 
-void MarketData::operator()(Trace<fix::MarketDataRequestReject const> const &event, core::fix::Header const &header) {
+void MarketData::operator()(Trace<fix::MarketDataRequestReject> const &event, core::fix::Header const &header) {
   auto &[trace_info, market_data_request_reject] = event;
   log::warn<1>("event={{header={}, market_data_request_reject={}}}"sv, header, market_data_request_reject);
   if (flags::FIX::fix_terminate_on_market_data_request_reject())
     log::fatal("Unexpected"sv);
 }
 
-void MarketData::operator()(
-    Trace<fix::MarketDataSnapshotFullRefresh const> const &event, core::fix::Header const &header) {
+void MarketData::operator()(Trace<fix::MarketDataSnapshotFullRefresh> const &event, core::fix::Header const &header) {
   auto &[trace_info, market_data_snapshot_full_refresh] = event;
   log::info<3>(
       "event={{header={}, market_data_snapshot_full_refresh={}}}"sv, header, market_data_snapshot_full_refresh);

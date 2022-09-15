@@ -25,10 +25,10 @@ namespace deribit {
 class UDPEvents final : public io::net::udp::Receiver::Handler, public sbe::Parser::Handler {
  public:
   struct Handler {
-    virtual void operator()(Trace<StreamStatus const> const &) = 0;
-    virtual void operator()(Trace<TopOfBook const> const &, bool is_last) = 0;
-    virtual void operator()(Trace<MarketByPriceUpdate const> const &, bool is_last, bool refresh) = 0;
-    virtual void operator()(Trace<TradeSummary const> const &, bool is_last) = 0;
+    virtual void operator()(Trace<StreamStatus> const &) = 0;
+    virtual void operator()(Trace<TopOfBook> const &, bool is_last) = 0;
+    virtual void operator()(Trace<MarketByPriceUpdate> const &, bool is_last, bool refresh) = 0;
+    virtual void operator()(Trace<TradeSummary> const &, bool is_last) = 0;
   };
 
   UDPEvents(Handler &, io::Context &, uint16_t stream_id, Shared &);

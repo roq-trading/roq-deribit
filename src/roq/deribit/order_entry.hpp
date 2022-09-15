@@ -45,10 +45,10 @@ namespace deribit {
 class OrderEntry final : public io::net::ConnectionManager::Handler {
  public:
   struct Handler {
-    virtual void operator()(Trace<StreamStatus const> const &) = 0;
-    virtual void operator()(Trace<ExternalLatency const> const &) = 0;
-    virtual void operator()(Trace<TradeUpdate const> const &, bool is_last, uint8_t user_id) = 0;
-    virtual void operator()(Trace<PositionUpdate const> const &, bool is_last) = 0;
+    virtual void operator()(Trace<StreamStatus> const &) = 0;
+    virtual void operator()(Trace<ExternalLatency> const &) = 0;
+    virtual void operator()(Trace<TradeUpdate> const &, bool is_last, uint8_t user_id) = 0;
+    virtual void operator()(Trace<PositionUpdate> const &, bool is_last) = 0;
   };
 
   OrderEntry(Handler &, io::Context &, uint16_t stream_id, Security &, Shared &);
@@ -78,18 +78,18 @@ class OrderEntry final : public io::net::ConnectionManager::Handler {
 
   void operator()(metrics::Writer &);
 
-  void operator()(Trace<fix::Heartbeat const> const &, core::fix::Header const &);
-  void operator()(Trace<fix::Logon const> const &, core::fix::Header const &);
-  void operator()(Trace<fix::Logout const> const &, core::fix::Header const &);
-  void operator()(Trace<fix::ResendRequest const> const &, core::fix::Header const &);
-  void operator()(Trace<fix::TestRequest const> const &, core::fix::Header const &);
+  void operator()(Trace<fix::Heartbeat> const &, core::fix::Header const &);
+  void operator()(Trace<fix::Logon> const &, core::fix::Header const &);
+  void operator()(Trace<fix::Logout> const &, core::fix::Header const &);
+  void operator()(Trace<fix::ResendRequest> const &, core::fix::Header const &);
+  void operator()(Trace<fix::TestRequest> const &, core::fix::Header const &);
 
-  void operator()(Trace<fix::PositionReport const> const &, core::fix::Header const &);
+  void operator()(Trace<fix::PositionReport> const &, core::fix::Header const &);
 
-  void operator()(Trace<fix::ExecutionReport const> const &, core::fix::Header const &);
-  void operator()(Trace<fix::OrderCancelReject const> const &, core::fix::Header const &);
-  void operator()(Trace<fix::Reject const> const &, core::fix::Header const &);
-  void operator()(Trace<fix::OrderMassCancelReport const> const &, core::fix::Header const &);
+  void operator()(Trace<fix::ExecutionReport> const &, core::fix::Header const &);
+  void operator()(Trace<fix::OrderCancelReject> const &, core::fix::Header const &);
+  void operator()(Trace<fix::Reject> const &, core::fix::Header const &);
+  void operator()(Trace<fix::OrderMassCancelReport> const &, core::fix::Header const &);
 
  protected:
   void operator()(io::net::ConnectionManager::Connected const &) override;
@@ -109,8 +109,8 @@ class OrderEntry final : public io::net::ConnectionManager::Handler {
   void subscribe_positions();
   void download_orders();
 
-  void parse(Trace<core::fix::Message const> const &);
-  void parse_helper(Trace<core::fix::Message const> const &);
+  void parse(Trace<core::fix::Message> const &);
+  void parse_helper(Trace<core::fix::Message> const &);
 
   // utilities
 

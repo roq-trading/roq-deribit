@@ -434,11 +434,11 @@ void OrderEntry::download_orders() {
   send(order_mass_status_request);
 }
 
-void OrderEntry::parse(Trace<core::fix::Message const> const &event) {
+void OrderEntry::parse(Trace<core::fix::Message> const &event) {
   profile_.parse([&]() { parse_helper(event); });
 }
 
-void OrderEntry::parse_helper(Trace<core::fix::Message const> const &event) {
+void OrderEntry::parse_helper(Trace<core::fix::Message> const &event) {
   // auto &[trace_info, message] = event;
   auto &trace_info = event.trace_info;
   auto &message = event.value;
@@ -513,7 +513,7 @@ void OrderEntry::parse_helper(Trace<core::fix::Message const> const &event) {
   log::warn("Unexpected msg_type={}"sv, message.header.msg_type);
 }
 
-void OrderEntry::operator()(Trace<fix::Heartbeat const> const &event, core::fix::Header const &header) {
+void OrderEntry::operator()(Trace<fix::Heartbeat> const &event, core::fix::Header const &header) {
   auto now = core::clock::GetSystem();
   auto &[trace_info, heartbeat] = event;
   log::info<3>("event={{header={}, heartbeat={}}}"sv, header, heartbeat);
@@ -531,7 +531,7 @@ void OrderEntry::operator()(Trace<fix::Heartbeat const> const &event, core::fix:
   }
 }
 
-void OrderEntry::operator()(Trace<fix::Logon const> const &event, core::fix::Header const &header) {
+void OrderEntry::operator()(Trace<fix::Logon> const &event, core::fix::Header const &header) {
   auto &[trace_info, logon] = event;
   log::info<2>("event={{header={}, logon={}}}"sv, header, logon);
   last_logon_or_heartbeat_ = {};
@@ -539,7 +539,7 @@ void OrderEntry::operator()(Trace<fix::Logon const> const &event, core::fix::Hea
   download_.begin();
 }
 
-void OrderEntry::operator()(Trace<fix::Logout const> const &event, core::fix::Header const &header) {
+void OrderEntry::operator()(Trace<fix::Logout> const &event, core::fix::Header const &header) {
   auto &[trace_info, logout] = event;
   log::warn("event={{header={}, logout={}}}"sv, header, logout);
   ready_ = false;
@@ -549,20 +549,20 @@ void OrderEntry::operator()(Trace<fix::Logout const> const &event, core::fix::He
   (*connection_manager_).close();
 }
 
-void OrderEntry::operator()(Trace<fix::ResendRequest const> const &event, core::fix::Header const &header) {
+void OrderEntry::operator()(Trace<fix::ResendRequest> const &event, core::fix::Header const &header) {
   auto &[trace_info, resend_request] = event;
   log::warn("event={{header={}, resend_request={}}}"sv, header, resend_request);
   log::info("closing connection"sv);
   (*connection_manager_).close();
 }
 
-void OrderEntry::operator()(Trace<fix::TestRequest const> const &event, core::fix::Header const &header) {
+void OrderEntry::operator()(Trace<fix::TestRequest> const &event, core::fix::Header const &header) {
   auto &[trace_info, test_request] = event;
   log::info<1>("event={{header={}, test_request={}}}"sv, header, test_request);
   send_heartbeat(test_request.test_req_id);
 }
 
-void OrderEntry::operator()(Trace<fix::PositionReport const> const &event, core::fix::Header const &header) {
+void OrderEntry::operator()(Trace<fix::PositionReport> const &event, core::fix::Header const &header) {
   auto &[trace_info, position_report] = event;
   log::info<2>("event={{header={}, position_report={}}}"sv, header, position_report);
   for (size_t i = 0; i < std::size(position_report.no_positions); ++i) {
@@ -694,7 +694,7 @@ UpdateType compute_update_type(auto const &download) {
 }
 }  // namespace
 
-void OrderEntry::operator()(Trace<fix::ExecutionReport const> const &event, core::fix::Header const &header) {
+void OrderEntry::operator()(Trace<fix::ExecutionReport> const &event, core::fix::Header const &header) {
   // auto &[trace_info, execution_report] = event;  // XXX clang13
   auto &trace_info = event.trace_info;
   auto &execution_report = event.value;
@@ -828,7 +828,7 @@ void OrderEntry::operator()(Trace<fix::ExecutionReport const> const &event, core
   download_.check_relaxed(OrderEntryState::ORDERS);
 }
 
-void OrderEntry::operator()(Trace<fix::OrderCancelReject const> const &event, core::fix::Header const &header) {
+void OrderEntry::operator()(Trace<fix::OrderCancelReject> const &event, core::fix::Header const &header) {
   // auto &[trace_info, order_cancel_reject] = event;  // XXX clang13
   auto &trace_info = event.trace_info;
   auto &order_cancel_reject = event.value;
@@ -874,7 +874,7 @@ RequestType message_type_to_request_type(auto const msg_type) {
 }
 }  // namespace
 
-void OrderEntry::operator()(Trace<fix::Reject const> const &event, core::fix::Header const &header) {
+void OrderEntry::operator()(Trace<fix::Reject> const &event, core::fix::Header const &header) {
   auto &[trace_info, reject] = event;
   log::warn<1>("event={{header={}, reject={}}}"sv, header, reject);
   auto request_type = message_type_to_request_type(reject.ref_msg_type);
@@ -909,7 +909,7 @@ void OrderEntry::operator()(Trace<fix::Reject const> const &event, core::fix::He
   }
 }
 
-void OrderEntry::operator()(Trace<fix::OrderMassCancelReport const> const &event, core::fix::Header const &header) {
+void OrderEntry::operator()(Trace<fix::OrderMassCancelReport> const &event, core::fix::Header const &header) {
   auto &[trace_info, order_mass_cancel_report] = event;
   log::info<1>("event={{header={}, order_mass_cancel_report={}}}"sv, header, order_mass_cancel_report);
   switch (order_mass_cancel_report.mass_cancel_response) {

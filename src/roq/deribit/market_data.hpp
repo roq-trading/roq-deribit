@@ -54,12 +54,12 @@ class MarketData final : public io::net::ConnectionManager::Handler {
   };
 
   struct Handler {
-    virtual void operator()(Trace<StreamStatus const> const &) = 0;
-    virtual void operator()(Trace<ExternalLatency const> const &) = 0;
-    virtual void operator()(Trace<ReferenceData const> const &, bool is_last) = 0;
-    virtual void operator()(Trace<MarketByPriceUpdate const> const &, bool is_last, bool refresh) = 0;
-    virtual void operator()(Trace<TradeSummary const> const &, bool is_last) = 0;
-    virtual void operator()(Trace<StatisticsUpdate const> const &, bool is_last) = 0;
+    virtual void operator()(Trace<StreamStatus> const &) = 0;
+    virtual void operator()(Trace<ExternalLatency> const &) = 0;
+    virtual void operator()(Trace<ReferenceData> const &, bool is_last) = 0;
+    virtual void operator()(Trace<MarketByPriceUpdate> const &, bool is_last, bool refresh) = 0;
+    virtual void operator()(Trace<TradeSummary> const &, bool is_last) = 0;
+    virtual void operator()(Trace<StatisticsUpdate> const &, bool is_last) = 0;
     // cross-communication
     virtual void operator()(SymbolsUpdate &) = 0;
   };
@@ -79,18 +79,18 @@ class MarketData final : public io::net::ConnectionManager::Handler {
 
   void subscribe(size_t start_from = 0);
 
-  void operator()(Trace<fix::Heartbeat const> const &, core::fix::Header const &);
-  void operator()(Trace<fix::Logon const> const &, core::fix::Header const &);
-  void operator()(Trace<fix::Logout const> const &, core::fix::Header const &);
-  void operator()(Trace<fix::ResendRequest const> const &, core::fix::Header const &);
-  void operator()(Trace<fix::TestRequest const> const &, core::fix::Header const &);
+  void operator()(Trace<fix::Heartbeat> const &, core::fix::Header const &);
+  void operator()(Trace<fix::Logon> const &, core::fix::Header const &);
+  void operator()(Trace<fix::Logout> const &, core::fix::Header const &);
+  void operator()(Trace<fix::ResendRequest> const &, core::fix::Header const &);
+  void operator()(Trace<fix::TestRequest> const &, core::fix::Header const &);
 
-  void operator()(Trace<fix::SecurityList const> const &, core::fix::Header const &);
-  void operator()(Trace<fix::SecurityStatus const> const &, core::fix::Header const &);
+  void operator()(Trace<fix::SecurityList> const &, core::fix::Header const &);
+  void operator()(Trace<fix::SecurityStatus> const &, core::fix::Header const &);
 
-  void operator()(Trace<fix::MarketDataIncrementalRefresh const> const &, core::fix::Header const &);
-  void operator()(Trace<fix::MarketDataRequestReject const> const &, core::fix::Header const &);
-  void operator()(Trace<fix::MarketDataSnapshotFullRefresh const> const &, core::fix::Header const &);
+  void operator()(Trace<fix::MarketDataIncrementalRefresh> const &, core::fix::Header const &);
+  void operator()(Trace<fix::MarketDataRequestReject> const &, core::fix::Header const &);
+  void operator()(Trace<fix::MarketDataSnapshotFullRefresh> const &, core::fix::Header const &);
 
  protected:
   void operator()(io::net::ConnectionManager::Connected const &) override;
@@ -114,8 +114,8 @@ class MarketData final : public io::net::ConnectionManager::Handler {
 
   void resubscribe(std::string_view const &symbol);
 
-  void parse(Trace<core::fix::Message const> const &);
-  void parse_helper(Trace<core::fix::Message const> const &);
+  void parse(Trace<core::fix::Message> const &);
+  void parse_helper(Trace<core::fix::Message> const &);
 
   // utilities
 

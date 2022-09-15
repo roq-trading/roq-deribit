@@ -328,7 +328,7 @@ void DropCopy::parse(std::string_view const &message) {
   });
 }
 
-void DropCopy::operator()(Trace<core::jsonrpc::Error const> const &event, core::json::Value &value) {
+void DropCopy::operator()(Trace<core::jsonrpc::Error> const &event, core::json::Value &value) {
   auto &[trace_info, error] = event;
   json::Error error_2(value);
   if (flags::WebSocket::ws_allow_errors()) {
@@ -338,7 +338,7 @@ void DropCopy::operator()(Trace<core::jsonrpc::Error const> const &event, core::
   }
 }
 
-void DropCopy::operator()(Trace<core::jsonrpc::Result const> const &event, core::json::Value &value) {
+void DropCopy::operator()(Trace<core::jsonrpc::Result> const &event, core::json::Value &value) {
   auto &[trace_info, result] = event;
   json::RequestType request_type(result.id);
   switch (request_type) {
@@ -384,7 +384,7 @@ void DropCopy::operator()(Trace<core::jsonrpc::Result const> const &event, core:
   log::fatal("Unexpected: request_type={}"sv, request_type);
 }
 
-void DropCopy::operator()(Trace<core::jsonrpc::Notification const> const &event, core::json::Value &value) {
+void DropCopy::operator()(Trace<core::jsonrpc::Notification> const &event, core::json::Value &value) {
   auto &[trace_info, notification] = event;
   json::Method method(notification.method);
   switch (method) {
@@ -402,7 +402,7 @@ void DropCopy::operator()(Trace<core::jsonrpc::Notification const> const &event,
   }
 }
 
-void DropCopy::operator()(Trace<json::Auth const> const &event) {
+void DropCopy::operator()(Trace<json::Auth> const &event) {
   profile_.auth([&]() {
     auto &[trace_info, auth] = event;
     log::info<2>("auth={}"sv, auth);
@@ -411,23 +411,23 @@ void DropCopy::operator()(Trace<json::Auth const> const &event) {
   });
 }
 
-void DropCopy::operator()(Trace<json::PlatformState const> const &) {
+void DropCopy::operator()(Trace<json::PlatformState> const &) {
   log::fatal("Unexpected"sv);
 }
 
-void DropCopy::operator()(Trace<json::InstrumentState const> const &) {
+void DropCopy::operator()(Trace<json::InstrumentState> const &) {
   log::fatal("Unexpected"sv);
 }
 
-void DropCopy::operator()(Trace<json::Quote const> const &) {
+void DropCopy::operator()(Trace<json::Quote> const &) {
   log::fatal("Unexpected"sv);
 }
 
-void DropCopy::operator()(Trace<json::Ticker const> const &) {
+void DropCopy::operator()(Trace<json::Ticker> const &) {
   log::fatal("Unexpected"sv);
 }
 
-void DropCopy::operator()(Trace<json::Portfolio const> const &event) {
+void DropCopy::operator()(Trace<json::Portfolio> const &event) {
   log::info<2>("portfolio={}"sv, event.value);
   auto &[trace_info, portfolio] = event;
   const FundsUpdate funds_update{
@@ -441,7 +441,7 @@ void DropCopy::operator()(Trace<json::Portfolio const> const &event) {
   create_trace_and_dispatch(handler_, event.trace_info, funds_update, true);
 }
 
-void DropCopy::operator()(Trace<json::Changes const> const &event) {
+void DropCopy::operator()(Trace<json::Changes> const &event) {
   auto &[trace_info, changes] = event;
   auto &trades = changes.trades;
   for (auto &&[i, trade] : iter::enumerate(trades)) {
@@ -450,7 +450,7 @@ void DropCopy::operator()(Trace<json::Changes const> const &event) {
   }
 }
 
-void DropCopy::operator()(Trace<json::Trades const> const &event) {
+void DropCopy::operator()(Trace<json::Trades> const &event) {
   auto &[trace_info, trades] = event;
   auto &trades_2 = trades.trades;
   for (auto &&[i, trade] : iter::enumerate(trades_2)) {
@@ -459,19 +459,19 @@ void DropCopy::operator()(Trace<json::Trades const> const &event) {
   }
 }
 
-void DropCopy::operator()(Trace<json::Order const> const &event) {
+void DropCopy::operator()(Trace<json::Order> const &event) {
   auto &[trace_info, order] = event;
   log::info<1>("order={}"sv, order);
   // do nothing?
 }
 
-void DropCopy::operator()(Trace<json::Trades2 const> const &event) {
+void DropCopy::operator()(Trace<json::Trades2> const &event) {
   auto &[trace_info, trades2] = event;
   log::info<1>("trades={}"sv, trades2);
   // do nothing?
 }
 
-void DropCopy::operator()(Trace<json::Trade const> const &event, [[maybe_unused]] bool is_last) {
+void DropCopy::operator()(Trace<json::Trade> const &event, [[maybe_unused]] bool is_last) {
   auto &[trace_info, trade] = event;
   log::info<1>("trade={}"sv, trade);
   // do nothing?

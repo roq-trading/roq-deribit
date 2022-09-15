@@ -21,7 +21,13 @@ int Application::main(int, char **) {
   log::info("Prepare environment"sv);
   auto context = io::engine::ContextFactory::create(server::Flags::io_backend());
   log::info("Start gateway"sv);
-  roq::server::Trading<Gateway>(ROQ_PACKAGE_NAME, ROQ_BUILD_NUMBER, {}, config, *context).dispatch();
+  server::Settings settings{
+      .package_name = ROQ_PACKAGE_NAME,
+      .build_number = ROQ_BUILD_NUMBER,
+      .api = {},
+      .type = server::Type::ORDER_MANAGEMENT,
+  };
+  server::Trading<Gateway>(settings, config, *context).dispatch();
   log::info("Done!"sv);
   return EXIT_SUCCESS;
 }

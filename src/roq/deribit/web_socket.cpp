@@ -333,13 +333,13 @@ void WebSocket::parse(std::string_view const &message) {
   });
 }
 
-void WebSocket::operator()(Trace<core::jsonrpc::Error const> const &event, core::json::Value &value) {
+void WebSocket::operator()(Trace<core::jsonrpc::Error> const &event, core::json::Value &value) {
   auto &[trace_info, error] = event;
   json::Error error_2(value);
   log::fatal(R"(error={}, id="{}")"sv, error_2, error.id);
 }
 
-void WebSocket::operator()(Trace<core::jsonrpc::Result const> const &event, core::json::Value &value) {
+void WebSocket::operator()(Trace<core::jsonrpc::Result> const &event, core::json::Value &value) {
   auto &[trace_info, result] = event;
   json::RequestType request_type(result.id);
   switch (request_type) {
@@ -383,7 +383,7 @@ void WebSocket::operator()(Trace<core::jsonrpc::Result const> const &event, core
   log::fatal("Unexpected: request_type={}"sv, request_type);
 }
 
-void WebSocket::operator()(Trace<core::jsonrpc::Notification const> const &event, core::json::Value &value) {
+void WebSocket::operator()(Trace<core::jsonrpc::Notification> const &event, core::json::Value &value) {
   auto &[trace_info, notification] = event;
   json::Method method(notification.method);
   switch (method) {
@@ -401,11 +401,11 @@ void WebSocket::operator()(Trace<core::jsonrpc::Notification const> const &event
   }
 }
 
-void WebSocket::operator()(Trace<json::Auth const> const &) {
+void WebSocket::operator()(Trace<json::Auth> const &) {
   log::fatal("Unexpected"sv);
 }
 
-void WebSocket::operator()(Trace<json::Currencies const> const &event) {
+void WebSocket::operator()(Trace<json::Currencies> const &event) {
   profile_.currencies([&]() {
     if (!master_)
       log::fatal("Unexpected"sv);
@@ -431,7 +431,7 @@ void WebSocket::operator()(Trace<json::Currencies const> const &event) {
   });
 }
 
-void WebSocket::operator()(Trace<json::Instruments const> const &event) {
+void WebSocket::operator()(Trace<json::Instruments> const &event) {
   profile_.instruments([&]() {
     if (!master_)
       log::fatal("Unexpected"sv);
@@ -469,22 +469,22 @@ void WebSocket::operator()(Trace<json::Instruments const> const &event) {
   });
 }
 
-void WebSocket::operator()(Trace<json::Positions const> const &) {
+void WebSocket::operator()(Trace<json::Positions> const &) {
   log::fatal("Unexpected"sv);
 }
 
-void WebSocket::operator()(Trace<json::PlatformState const> const &) {
+void WebSocket::operator()(Trace<json::PlatformState> const &) {
   if (!master_)
     log::fatal("Unexpected"sv);
 }
 
-void WebSocket::operator()(Trace<json::InstrumentState const> const &) {
+void WebSocket::operator()(Trace<json::InstrumentState> const &) {
   if (!master_)
     log::fatal("Unexpected"sv);
   // seldom updated -- also done by Ticker
 }
 
-void WebSocket::operator()(Trace<json::Quote const> const &event) {
+void WebSocket::operator()(Trace<json::Quote> const &event) {
   profile_.quote([&]() {
     // auto &[trace_info, quote] = event;  // XXX clang13
     auto &trace_info = event.trace_info;
@@ -522,7 +522,7 @@ void WebSocket::operator()(Trace<json::Quote const> const &event) {
   });
 }
 
-void WebSocket::operator()(Trace<json::Ticker const> const &event) {
+void WebSocket::operator()(Trace<json::Ticker> const &event) {
   profile_.ticker([&]() {
     auto &[trace_info, ticker] = event;
     log::info<3>("ticker={}"sv, ticker);
@@ -541,19 +541,19 @@ void WebSocket::operator()(Trace<json::Ticker const> const &event) {
   });
 }
 
-void WebSocket::operator()(Trace<json::Portfolio const> const &) {
+void WebSocket::operator()(Trace<json::Portfolio> const &) {
   log::fatal("Unexpected"sv);
 }
 
-void WebSocket::operator()(Trace<json::Changes const> const &) {
+void WebSocket::operator()(Trace<json::Changes> const &) {
   log::fatal("Unexpected"sv);
 }
 
-void WebSocket::operator()(Trace<json::Order const> const &) {
+void WebSocket::operator()(Trace<json::Order> const &) {
   log::fatal("Unexpected"sv);
 }
 
-void WebSocket::operator()(Trace<json::Trades2 const> const &) {
+void WebSocket::operator()(Trace<json::Trades2> const &) {
   log::fatal("Unexpected"sv);
 }
 
