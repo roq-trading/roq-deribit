@@ -136,7 +136,6 @@ void Gateway::operator()(Event<Timer> const &event) {
     (*udp_snapshot_)(event);
   if (udp_events_)
     (*udp_events_)(event);
-  context_.drain();
 }
 
 void Gateway::operator()(Event<Connected> const &) {

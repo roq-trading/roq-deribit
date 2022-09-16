@@ -153,7 +153,8 @@ void UDPEvents::operator()(io::net::udp::Receiver::Error const &error) {
 }
 
 void UDPEvents::operator()(Trace<deribit_multicast::Instrument> const &event, sbe::Frame const &frame) {
-  auto &instrument = event.value;
+  using value_type = std::remove_cvref<decltype(event)>::type::value_type;
+  auto &instrument = const_cast<value_type &>(event.value);  // note! not const-safe
   log::info<2>("instrument={}, frame={}"sv, instrument, frame);
   auto &aggregator = get_aggregator(frame.channel_id);
   if (aggregator(frame.sequence_number)) {
@@ -173,7 +174,8 @@ void UDPEvents::operator()(Trace<deribit_multicast::Instrument> const &event, sb
 
 void UDPEvents::operator()(Trace<deribit_multicast::Book> const &event, sbe::Frame const &frame) {
   auto &trace_info = event.trace_info;
-  auto &book = event.value;
+  using value_type = std::remove_cvref<decltype(event)>::type::value_type;
+  auto &book = const_cast<value_type &>(event.value);  // note! not const-safe
   log::info<4>("book={}, frame={}"sv, book, frame);
   auto const instrument_id = book.instrumentId();
   auto const change_id = book.changeId();
@@ -268,7 +270,8 @@ void UDPEvents::operator()(Trace<deribit_multicast::Book> const &event, sbe::Fra
 
 void UDPEvents::operator()(Trace<deribit_multicast::Ticker> const &event, sbe::Frame const &frame) {
   auto &trace_info = event.trace_info;
-  auto &ticker = event.value;
+  using value_type = std::remove_cvref<decltype(event)>::type::value_type;
+  auto &ticker = const_cast<value_type &>(event.value);  // note! not const-safe
   log::info<4>("ticker={}, frame={}"sv, ticker, frame);
   auto &aggregator = get_aggregator(frame.channel_id);
   if (aggregator(frame.sequence_number)) {
@@ -307,7 +310,8 @@ void UDPEvents::operator()(Trace<deribit_multicast::Ticker> const &event, sbe::F
 
 void UDPEvents::operator()(Trace<deribit_multicast::Trades> const &event, sbe::Frame const &frame) {
   auto &trace_info = event.trace_info;
-  auto &trades = event.value;
+  using value_type = std::remove_cvref<decltype(event)>::type::value_type;
+  auto &trades = const_cast<value_type &>(event.value);  // note! not const-safe
   log::info<4>("trades={}, frame={}"sv, trades, frame);
   auto &aggregator = get_aggregator(frame.channel_id);
   if (aggregator(frame.sequence_number)) {
@@ -345,7 +349,8 @@ void UDPEvents::operator()(Trace<deribit_multicast::Trades> const &event, sbe::F
 }
 
 void UDPEvents::operator()(Trace<deribit_multicast::Snapshot> const &event, sbe::Frame const &frame) {
-  auto &snapshot = event.value;
+  using value_type = std::remove_cvref<decltype(event)>::type::value_type;
+  auto &snapshot = const_cast<value_type &>(event.value);  // note! not const-safe
   log::info<4>("snapshot={}, frame={}"sv, snapshot, frame);
   log::fatal("Unexpected"sv);
 }

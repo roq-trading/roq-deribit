@@ -93,7 +93,8 @@ TEST_CASE("sbe_instrument", "[sbe_parser]") {  // 1000 (note! bundled)
       found_instrument = true;
       CHECK(frame.channel_id == 110);
       CHECK(frame.sequence_number == 13360);
-      auto &[trace_info, instrument] = event;
+      using value_type = std::remove_cvref<decltype(event)>::type::value_type;
+      auto &instrument = const_cast<value_type &>(event.value);  // note! not const-safe
       // header
       auto &header = instrument.header();
       CHECK(header.templateId() == 1000);
@@ -176,7 +177,8 @@ TEST_CASE("sbe_book", "[sbe_parser]") {  // 1001 (note! bundled)
       found_trades = true;
       CHECK(frame.channel_id == 10);
       CHECK(frame.sequence_number == 15921049);
-      auto &[trace_info, trades] = event;
+      using value_type = std::remove_cvref<decltype(event)>::type::value_type;
+      auto &trades = const_cast<value_type &>(event.value);  // note! not const-safe
       // header
       auto &header = trades.header();
       CHECK(header.templateId() == 1002);
@@ -250,7 +252,8 @@ TEST_CASE("sbe_trades", "[sbe_parser]") {  // 1002 (note! bundled)
       found_trades = true;
       CHECK(frame.channel_id == 10);
       CHECK(frame.sequence_number == 15921049);
-      auto &[trace_info, trades] = event;
+      using value_type = std::remove_cvref<decltype(event)>::type::value_type;
+      auto &trades = const_cast<value_type &>(event.value);  // note! not const-safe
       // header
       auto &header = trades.header();
       CHECK(header.templateId() == 1002);
@@ -318,7 +321,8 @@ TEST_CASE("sbe_ticker", "[sbe_parser]") {  // 1003
       found = true;
       CHECK(frame.channel_id == 10);
       CHECK(frame.sequence_number == 14831144);
-      auto &[trace_info, ticker] = event;
+      using value_type = std::remove_cvref<decltype(event)>::type::value_type;
+      auto &ticker = const_cast<value_type &>(event.value);  // note! not const-safe
       // header
       auto &header = ticker.header();
       CHECK(header.templateId() == 1003);
@@ -429,7 +433,8 @@ TEST_CASE("sbe_snapshot", "[sbe_parser]") {  // 1004 (note! bundled)
       found_instrument = true;
       CHECK(frame.channel_id == 110);
       CHECK(frame.sequence_number == 13360);
-      auto &[trace_info, snapshot] = event;
+      using value_type = std::remove_cvref<decltype(event)>::type::value_type;
+      auto &snapshot = const_cast<value_type &>(event.value);  // note! not const-safe
       // header
       auto &header = snapshot.header();
       CHECK(header.templateId() == 1004);
@@ -677,7 +682,8 @@ TEST_CASE("sbe_multiple_datagrams", "[sbe_parser]") {
     int counter = 0;
     void operator()(Trace<deribit_multicast::Instrument> const &, sbe::Frame const &) override { FAIL(); }
     void operator()(Trace<deribit_multicast::Book> const &event, sbe::Frame const &frame) override {
-      auto &[trace_info, book] = event;
+      using value_type = std::remove_cvref<decltype(event)>::type::value_type;
+      auto &book = const_cast<value_type &>(event.value);  // note! not const-safe
       switch (++counter) {
         case 1: {
           // frame
