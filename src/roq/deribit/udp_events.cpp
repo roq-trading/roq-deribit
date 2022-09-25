@@ -10,6 +10,8 @@
 
 #include "roq/core/back_emplacer.hpp"
 
+#include "roq/core/charconv/number.hpp"
+
 #include "roq/debug/hex/message.hpp"
 
 #include "roq/core/metrics/factory.hpp"
@@ -91,13 +93,16 @@ bool test_sequence(auto &cache, auto instrument_id, auto sequence_number) {
 }
 
 template <typename T>
-void emplace(Trade &result, double multiplier, const T &value) {
+void emplace(Trade &result, double multiplier, T const &value) {
   new (&result) Trade{
       .side = sbe::map_direction(value.direction()),
       .price = value.price(),
       .quantity = value.amount() * multiplier,
-      .trade_id = {},  // XXX value.tradeId() is uint64
+      .trade_id = {},
+      .taker_order_id = {},
+      .maker_order_id = {},
   };
+  core::charconv::to_string(std::back_inserter(result.trade_id), value.tradeId());
 }
 }  // namespace
 
@@ -341,6 +346,7 @@ void UDPEvents::operator()(Trace<deribit_multicast::Trades> const &event, sbe::F
                 .symbol = instrument.symbol,
                 .trades = trades_,
                 .exchange_time_utc = exchange_time_utc,
+                .exchange_sequence = {},
             };
             log::info<3>("trade_summary={}"sv, trade_summary);
             create_trace_and_dispatch(handler_, trace_info, trade_summary, true);
@@ -383,7 +389,7 @@ void UDPEvents::publish_stream_status(TraceInfo const &trace_info, ConnectionSta
 }
 
 template <typename T, typename U>
-void UDPEvents::emplace_back(const T &item, double multiplier, U &bids, U &asks) {
+void UDPEvents::emplace_back(T const &item, double multiplier, U &bids, U &asks) {
   const MBPUpdate mbp_update{
       .price = item.price(),
       .quantity = item.amount() * multiplier,

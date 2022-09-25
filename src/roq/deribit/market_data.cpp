@@ -80,7 +80,7 @@ T combine(T date_part, T time_part) {
 }
 
 template <typename T>
-void validate(const T &value) {
+void validate(T const &value) {
   switch (value.md_update_action) {
     using enum core::fix::MDUpdateAction;
     case UNKNOWN:
@@ -102,7 +102,7 @@ void validate(const T &value) {
 }
 
 template <typename T>
-void emplace(MBPUpdate &result, const T &value) {
+void emplace(MBPUpdate &result, T const &value) {
   new (&result) MBPUpdate{
       .price = value.md_entry_px,
       .quantity = value.md_entry_size,
@@ -114,12 +114,14 @@ void emplace(MBPUpdate &result, const T &value) {
 }
 
 template <typename T>
-void emplace(Trade &result, const T &value) {
+void emplace(Trade &result, T const &value) {
   new (&result) Trade{
       .side = core::fix::map(value.side),
       .price = value.md_entry_px,
       .quantity = value.md_entry_size,
       .trade_id = value.deribit_trade_id,
+      .taker_order_id = value.order_id,
+      .maker_order_id = value.secondary_order_id,
   };
 }
 }  // namespace
@@ -773,6 +775,7 @@ void MarketData::operator()(Trace<fix::MarketDataIncrementalRefresh> const &even
         .symbol = symbol,
         .trades = trades,
         .exchange_time_utc = exchange_time_utc,
+        .exchange_sequence = {},
     };
     auto is_last = std::empty(statistics);
     create_trace_and_dispatch(handler_, trace_info, trade_summary, is_last);
@@ -893,13 +896,13 @@ void MarketData::operator()(Trace<fix::MarketDataSnapshotFullRefresh> const &eve
 // utilities
 
 template <typename T>
-void MarketData::send(const T &event) {
+void MarketData::send(T const &event) {
   auto now = core::clock::GetRealTime();
   send(event, now);
 }
 
 template <typename T>
-void MarketData::send(const T &event, std::chrono::nanoseconds sending_time) {
+void MarketData::send(T const &event, std::chrono::nanoseconds sending_time) {
   core::fix::Writer writer(
       encode_buffer_, FIX_VERSION, T::msg_type, SENDER_COMP_ID, TARGET_COMP_ID, outbound_.msg_seq_num, sending_time);
   auto message = event.encode(writer);
