@@ -26,20 +26,22 @@ using namespace std::literals;
 namespace roq {
 namespace deribit {
 
+// === CONSTANTS ===
+
 namespace {
+auto const NAME = "ex"sv;
+
 const Mask SUPPORTS{
     SupportType::FUNDS,
 };
+}  // namespace
 
-auto create_name(auto const &stream_id, auto const &security) {
-  auto name = "ex"sv;
-  return fmt::format("{}:{}:{}"sv, stream_id, name, security.get_account());
+// === HELPERS ===
+
+namespace {
+auto create_name(auto stream_id, auto const &account) {
+  return fmt::format("{}:{}:{}"sv, stream_id, NAME, account);
 }
-
-struct create_metrics final : public core::metrics::Factory {
-  explicit create_metrics(std::string_view const &group, std::string_view const &function)
-      : core::metrics::Factory(server::Flags::name(), group, function) {}
-};
 
 auto create_connection(auto &handler, auto &context) {
   auto uri = flags::WebSocket::ws_uri();
@@ -56,10 +58,17 @@ auto create_connection(auto &handler, auto &context) {
   };
   return web::socket::ClientFactory::create(handler, context, config, []() { return std::string(); });
 }
+
+struct create_metrics final : public core::metrics::Factory {
+  explicit create_metrics(auto const &group, auto const &function)
+      : core::metrics::Factory(server::Flags::name(), group, function) {}
+};
 }  // namespace
 
+// === IMPLEMENTATION ===
+
 DropCopy::DropCopy(Handler &handler, io::Context &context, uint16_t stream_id, Security &security, Shared &shared)
-    : handler_(handler), stream_id_(stream_id), name_(create_name(stream_id_, security)),
+    : handler_(handler), stream_id_(stream_id), name_(create_name(stream_id_, security.get_account())),
       connection_(create_connection(*this, context)), decode_buffer_(flags::Common::decode_buffer_size()),
       counter_{
           .disconnect = create_metrics(name_, "disconnect"sv),

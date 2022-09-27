@@ -40,8 +40,10 @@ using namespace std::literals;
 namespace roq {
 namespace deribit {
 
+// === CONSTANTS ===
+
 namespace {
-auto const LOGOUT_RESPONSE = "LOGOUT"sv;
+auto const NAME = "om"sv;
 
 const Mask SUPPORTS{
     SupportType::CREATE_ORDER,
@@ -53,15 +55,15 @@ const Mask SUPPORTS{
     SupportType::POSITION,
 };
 
-auto create_name(auto const &stream_id, auto const &security) {
-  auto name = "om"sv;
-  return fmt::format("{}:{}:{}"sv, stream_id, name, security.get_account());
-}
+auto const LOGOUT_RESPONSE = "LOGOUT"sv;
+}  // namespace
 
-struct create_metrics final : public core::metrics::Factory {
-  explicit create_metrics(std::string_view const &group, std::string_view const &function)
-      : core::metrics::Factory(server::Flags::name(), group, function) {}
-};
+// === HELPERS ===
+
+namespace {
+auto create_name(auto stream_id, auto const &account) {
+  return fmt::format("{}:{}:{}"sv, stream_id, NAME, account);
+}
 
 auto create_connection_factory(auto &context) {
   auto uri = flags::FIX::fix_uri();
@@ -81,19 +83,16 @@ auto create_connection_manager(auto &handler, auto &connection_factory) {
   return io::net::ConnectionManager::create(handler, connection_factory, config);
 }
 
-template <typename T>
-void emplace(Fill &result, const T &value) {
-  new (&result) Fill{
-      .external_trade_id = value.fill_exec_id,
-      .quantity = value.fill_qty,
-      .price = value.fill_px,
-      .liquidity = {},
-  };
-}
+struct create_metrics final : public core::metrics::Factory {
+  explicit create_metrics(auto const &group, auto const &function)
+      : core::metrics::Factory(server::Flags::name(), group, function) {}
+};
 }  // namespace
 
+// === IMPLEMENTATION ===
+
 OrderEntry::OrderEntry(Handler &handler, io::Context &context, uint16_t stream_id, Security &security, Shared &shared)
-    : handler_(handler), stream_id_(stream_id), name_(create_name(stream_id_, security)),
+    : handler_(handler), stream_id_(stream_id), name_(create_name(stream_id_, security.get_account())),
       connection_factory_(create_connection_factory(context)),
       connection_manager_(create_connection_manager(*this, *connection_factory_)),
       encode_buffer_(flags::Common::encode_buffer_size()), decode_buffer_(flags::Common::decode_buffer_size()),
@@ -439,7 +438,6 @@ void OrderEntry::parse(Trace<core::fix::Message> const &event) {
 }
 
 void OrderEntry::parse_helper(Trace<core::fix::Message> const &event) {
-  // auto &[trace_info, message] = event;
   auto &trace_info = event.trace_info;
   auto &message = event.value;
   core::fix::Buffer buffer(decode_buffer_);
@@ -791,9 +789,17 @@ void OrderEntry::operator()(Trace<fix::ExecutionReport> const &event, core::fix:
           order_update,
           [&](auto &order) {
             // log::debug("found order={}"sv, order);
+            auto create_fill = []<typename T>(T &result, auto const &value) {
+              new (&result) T{
+                  .external_trade_id = value.fill_exec_id,
+                  .quantity = value.fill_qty,
+                  .price = value.fill_px,
+                  .liquidity = {},
+              };
+            };
             core::back_emplacer fills(shared_.fills);
             for (auto &item : execution_report.no_fills) {
-              fills.emplace_back([&](auto &result) { emplace(result, item); });
+              fills.emplace_back([&](auto &result) { create_fill(result, item); });
             }
             if (!std::empty(fills)) {
               const TradeUpdate trade_update{
@@ -829,7 +835,6 @@ void OrderEntry::operator()(Trace<fix::ExecutionReport> const &event, core::fix:
 }
 
 void OrderEntry::operator()(Trace<fix::OrderCancelReject> const &event, core::fix::Header const &header) {
-  // auto &[trace_info, order_cancel_reject] = event;  // XXX clang13
   auto &trace_info = event.trace_info;
   auto &order_cancel_reject = event.value;
   log::warn<1>("event={{header={}, order_cancel_reject={}}}"sv, header, order_cancel_reject);

@@ -29,8 +29,22 @@ using namespace std::literals;
 namespace roq {
 namespace deribit {
 
+// === CONSTANTS ===
+
 namespace {
 auto const NAME = "udps"sv;
+}
+
+// === HELPERS ===
+
+namespace {
+auto create_name(auto stream_id) {
+  return fmt::format("{}:{}"sv, stream_id, NAME);
+}
+
+auto publish_market_by_price() {
+  return !flags::Multicast::multicast_disable_market_by_price();
+}
 
 auto get_supports(auto publish_market_by_price) {
   Mask<SupportType> result;
@@ -38,11 +52,6 @@ auto get_supports(auto publish_market_by_price) {
     result |= SupportType::MARKET_BY_PRICE;
   return result;
 }
-
-struct create_metrics final : public core::metrics::Factory {
-  explicit create_metrics(std::string_view const &group, std::string_view const &function)
-      : core::metrics::Factory(server::Flags::name(), group, function) {}
-};
 
 auto create_receiver(auto &handler, auto &context, auto port) {
   log::info<1>("Create multicast socket port={}"sv, port);
@@ -63,12 +72,18 @@ auto create_receiver(auto &handler, auto &context, auto port) {
   }
   return receiver;
 }
+
+struct create_metrics final : public core::metrics::Factory {
+  explicit create_metrics(auto const &group, auto const &function)
+      : core::metrics::Factory(server::Flags::name(), group, function) {}
+};
 }  // namespace
 
+// === IMPLEMENTATION ===
+
 UDPSnapshot::UDPSnapshot(Handler &handler, io::Context &context, uint16_t stream_id, Shared &shared)
-    : handler_(handler), stream_id_(stream_id), name_(fmt::format("{}:{}"sv, stream_id_, NAME)),
-      publish_market_by_price_(!flags::Multicast::multicast_disable_market_by_price()),
-      supports_(get_supports(publish_market_by_price_)),
+    : handler_(handler), stream_id_(stream_id), name_(create_name(stream_id_)),
+      publish_market_by_price_(publish_market_by_price()), supports_(get_supports(publish_market_by_price_)),
       receiver_(create_receiver(*this, context, flags::Multicast::multicast_port_snapshot())),
       counter_{
           .disconnect = create_metrics(name_, "disconnect"sv),

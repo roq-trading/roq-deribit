@@ -29,7 +29,23 @@ using namespace std::literals;
 namespace roq {
 namespace deribit {
 
+// === CONSTANTS ===
+
 namespace {
+auto const NAME = "ws"sv;
+}
+
+// === HELPERS ===
+
+namespace {
+auto create_name(auto stream_id) {
+  return fmt::format("{}:{}"sv, stream_id, NAME);
+}
+
+auto publish_top_of_book(auto const &shared) {
+  return !shared.has_multicast() || flags::Multicast::multicast_disable_top_of_book();
+}
+
 auto get_supports(auto master, auto publish_top_of_book) {
   Mask<SupportType> result;
   if (master)
@@ -38,16 +54,6 @@ auto get_supports(auto master, auto publish_top_of_book) {
     result |= SupportType::TOP_OF_BOOK;
   return result;
 }
-
-auto create_name(auto const &stream_id) {
-  auto name = "ws"sv;
-  return fmt::format("{}:{}"sv, stream_id, name);
-}
-
-struct create_metrics final : public core::metrics::Factory {
-  explicit create_metrics(std::string_view const &group, std::string_view const &function)
-      : core::metrics::Factory(server::Flags::name(), group, function) {}
-};
 
 auto create_connection(auto &handler, auto &context) {
   auto uri = flags::WebSocket::ws_uri();
@@ -64,14 +70,20 @@ auto create_connection(auto &handler, auto &context) {
   };
   return web::socket::ClientFactory::create(handler, context, config, []() { return std::string(); });
 }
+
+struct create_metrics final : public core::metrics::Factory {
+  explicit create_metrics(auto const &group, auto const &function)
+      : core::metrics::Factory(server::Flags::name(), group, function) {}
+};
 }  // namespace
+
+// === IMPLEMENTATION ===
 
 WebSocket::WebSocket(
     Handler &handler, io::Context &context, uint16_t stream_id, Shared &shared, size_t index, bool master)
     : handler_(handler), stream_id_(stream_id), name_(create_name(stream_id_)), index_(index), master_(master),
-      publish_top_of_book_(!shared.has_multicast() || flags::Multicast::multicast_disable_top_of_book()),
-      supports_(get_supports(master_, publish_top_of_book_)), connection_(create_connection(*this, context)),
-      decode_buffer_(flags::Common::decode_buffer_size()),
+      publish_top_of_book_(publish_top_of_book(shared)), supports_(get_supports(master_, publish_top_of_book_)),
+      connection_(create_connection(*this, context)), decode_buffer_(flags::Common::decode_buffer_size()),
       counter_{
           .disconnect = create_metrics(name_, "disconnect"sv),
       },
@@ -486,7 +498,6 @@ void WebSocket::operator()(Trace<json::InstrumentState> const &) {
 
 void WebSocket::operator()(Trace<json::Quote> const &event) {
   profile_.quote([&]() {
-    // auto &[trace_info, quote] = event;  // XXX clang13
     auto &trace_info = event.trace_info;
     auto &quote = event.value;
     log::info<3>("quote={}"sv, quote);

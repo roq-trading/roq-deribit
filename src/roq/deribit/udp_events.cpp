@@ -31,8 +31,30 @@ using namespace std::literals;
 namespace roq {
 namespace deribit {
 
+// === CONSTANTS ===
+
 namespace {
 auto const NAME = "udpe"sv;
+}
+
+// === HELPERS ===
+
+namespace {
+auto create_name(auto stream_id) {
+  return fmt::format("{}:{}"sv, stream_id, NAME);
+}
+
+auto publish_top_of_book() {
+  return !flags::Multicast::multicast_disable_top_of_book();
+}
+
+auto publish_market_by_price() {
+  return !flags::Multicast::multicast_disable_market_by_price();
+}
+
+auto publish_trade_summary() {
+  return !flags::Multicast::multicast_disable_trade_summary();
+}
 
 auto get_supports(auto publish_top_of_book, auto publish_market_by_price, auto publish_trade_summary) {
   Mask<SupportType> result;
@@ -44,11 +66,6 @@ auto get_supports(auto publish_top_of_book, auto publish_market_by_price, auto p
     result |= SupportType::TRADE_SUMMARY;
   return result;
 }
-
-struct create_metrics final : public core::metrics::Factory {
-  explicit create_metrics(std::string_view const &group, std::string_view const &function)
-      : core::metrics::Factory(server::Flags::name(), group, function) {}
-};
 
 auto create_receiver(auto &handler, auto &context, auto port) {
   log::info<1>("Create multicast socket port={}"sv, port);
@@ -69,6 +86,13 @@ auto create_receiver(auto &handler, auto &context, auto port) {
   }
   return receiver;
 }
+
+struct create_metrics final : public core::metrics::Factory {
+  explicit create_metrics(auto const &group, auto const &function)
+      : core::metrics::Factory(server::Flags::name(), group, function) {}
+};
+
+// following is used from several places
 
 bool test_sequence(auto &cache, auto instrument_id, auto sequence_number) {
   auto result = false;
@@ -91,26 +115,14 @@ bool test_sequence(auto &cache, auto instrument_id, auto sequence_number) {
     (*iter).second = sequence_number;
   return result;
 }
-
-template <typename T>
-void emplace(Trade &result, double multiplier, T const &value) {
-  new (&result) Trade{
-      .side = sbe::map_direction(value.direction()),
-      .price = value.price(),
-      .quantity = value.amount() * multiplier,
-      .trade_id = {},
-      .taker_order_id = {},
-      .maker_order_id = {},
-  };
-  core::charconv::to_string(std::back_inserter(result.trade_id), value.tradeId());
-}
 }  // namespace
 
+// === IMPLEMENTATION ===
+
 UDPEvents::UDPEvents(Handler &handler, io::Context &context, uint16_t stream_id, Shared &shared)
-    : handler_(handler), stream_id_(stream_id), name_(fmt::format("{}:{}"sv, stream_id_, NAME)),
-      publish_top_of_book_(!flags::Multicast::multicast_disable_top_of_book()),
-      publish_market_by_price_(!flags::Multicast::multicast_disable_market_by_price()),
-      publish_trade_summary_(!flags::Multicast::multicast_disable_trade_summary()),
+    : handler_(handler), stream_id_(stream_id), name_(create_name(stream_id_)),
+      publish_top_of_book_(publish_top_of_book()), publish_market_by_price_(publish_market_by_price()),
+      publish_trade_summary_(publish_trade_summary()),
       supports_(get_supports(publish_top_of_book_, publish_market_by_price_, publish_trade_summary_)),
       receiver_(create_receiver(*this, context, flags::Multicast::multicast_port_events())),
       counter_{
@@ -332,13 +344,23 @@ void UDPEvents::operator()(Trace<deribit_multicast::Trades> const &event, sbe::F
     if (test_sequence(last_trades_, instrument_id, frame.sequence_number)) {
       if (shared_.find_instrument(instrument_id, [&](auto &instrument) {
             std::chrono::milliseconds exchange_time_utc{};
+            auto create_trade = []<typename T>(T &result, auto multiplier, auto const &value) {
+              new (&result) T{
+                  .side = sbe::map_direction(value.direction()),
+                  .price = value.price(),
+                  .quantity = value.amount() * multiplier,
+                  .trade_id = {},
+                  .taker_order_id = {},
+                  .maker_order_id = {},
+              };
+              core::charconv::to_string(std::back_inserter(result.trade_id), value.tradeId());
+            };
             core::back_emplacer trades_(shared_.trades);
             trades.sbeRewind();
             trades.tradesList().forEach([&](auto const &item) {
               std::chrono::milliseconds const timestamp{item.timestampMs()};
               exchange_time_utc = std::max(exchange_time_utc, timestamp);
-              trades_.emplace_back(
-                  [&instrument, &item](auto &result) { emplace(result, instrument.multiplier, item); });
+              trades_.emplace_back([&](auto &result) { create_trade(result, instrument.multiplier, item); });
             });
             const TradeSummary trade_summary{
                 .stream_id = stream_id_,

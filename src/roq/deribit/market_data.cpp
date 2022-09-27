@@ -35,10 +35,28 @@ using namespace std::literals;
 namespace roq {
 namespace deribit {
 
-namespace {
-auto const LOGOUT_RESPONSE = "LOGOUT"sv;  // XXX
+// === CONSTANTS ===
 
+namespace {
 auto const NAME = "md"sv;
+
+auto const LOGOUT_RESPONSE = "LOGOUT"sv;
+}  // namespace
+
+// === HELPERS ===
+
+namespace {
+auto create_name(auto stream_id) {
+  return fmt::format("{}:{}"sv, stream_id, NAME);
+}
+
+auto publish_market_by_price(auto const &shared) {
+  return !shared.has_multicast() || flags::Multicast::multicast_disable_market_by_price();
+}
+
+auto publish_trade_summary(auto const &shared) {
+  return !shared.has_multicast() || flags::Multicast::multicast_disable_trade_summary();
+}
 
 auto get_supports(auto master, auto publish_market_by_price, auto publish_trade_summary) {
   Mask<SupportType> result;
@@ -50,11 +68,6 @@ auto get_supports(auto master, auto publish_market_by_price, auto publish_trade_
     result |= SupportType::TRADE_SUMMARY;
   return result;
 }
-
-struct create_metrics final : public core::metrics::Factory {
-  explicit create_metrics(std::string_view const &group, std::string_view const &function)
-      : core::metrics::Factory(server::Flags::name(), group, function) {}
-};
 
 auto create_connection_factory(auto &context) {
   auto uri = flags::FIX::fix_uri();
@@ -74,13 +87,14 @@ auto create_connection_manager(auto &handler, auto &connection_factory) {
   return io::net::ConnectionManager::create(handler, connection_factory, config);
 }
 
-template <typename T>
-T combine(T date_part, T time_part) {
-  return date_part < T::max() ? date_part + time_part : T::max();
-}
+struct create_metrics final : public core::metrics::Factory {
+  explicit create_metrics(auto const &group, auto const &function)
+      : core::metrics::Factory(server::Flags::name(), group, function) {}
+};
 
-template <typename T>
-void validate(T const &value) {
+// following are used from several places
+
+void validate(auto const &value) {
   switch (value.md_update_action) {
     using enum core::fix::MDUpdateAction;
     case UNKNOWN:
@@ -101,9 +115,9 @@ void validate(T const &value) {
   }
 }
 
-template <typename T>
-void emplace(MBPUpdate &result, T const &value) {
-  new (&result) MBPUpdate{
+template <typename T, typename std::enable_if<std::is_same<T, MBPUpdate>::value, int>::type = 0>
+void create_mbp_update(T &result, auto const &value) {
+  new (&result) T{
       .price = value.md_entry_px,
       .quantity = value.md_entry_size,
       .implied_quantity = NaN,
@@ -113,9 +127,9 @@ void emplace(MBPUpdate &result, T const &value) {
   };
 }
 
-template <typename T>
-void emplace(Trade &result, T const &value) {
-  new (&result) Trade{
+template <typename T, typename std::enable_if<std::is_same<T, Trade>::value, int>::type = 0>
+void create_trade(T &result, auto const &value) {
+  new (&result) T{
       .side = core::fix::map(value.side),
       .price = value.md_entry_px,
       .quantity = value.md_entry_size,
@@ -126,6 +140,8 @@ void emplace(Trade &result, T const &value) {
 }
 }  // namespace
 
+// === IMPLEMENTATION ===
+
 MarketData::MarketData(
     Handler &handler,
     io::Context &context,
@@ -134,10 +150,8 @@ MarketData::MarketData(
     Shared &shared,
     size_t index,
     bool master)
-    : handler_(handler), stream_id_(stream_id), name_(fmt::format("{}:{}"sv, stream_id_, NAME)), index_(index),
-      master_(master),
-      publish_market_by_price_(!shared.has_multicast() || flags::Multicast::multicast_disable_market_by_price()),
-      publish_trade_summary_(!shared.has_multicast() || flags::Multicast::multicast_disable_trade_summary()),
+    : handler_(handler), stream_id_(stream_id), name_(create_name(stream_id_)), index_(index), master_(master),
+      publish_market_by_price_(publish_market_by_price(shared)), publish_trade_summary_(publish_trade_summary(shared)),
       supports_(get_supports(master_, publish_market_by_price_, publish_trade_summary_)),
       connection_factory_(create_connection_factory(context)),
       connection_manager_(create_connection_manager(*this, *connection_factory_)),
@@ -473,7 +487,6 @@ void MarketData::parse(Trace<core::fix::Message> const &event) {
 }
 
 void MarketData::parse_helper(Trace<core::fix::Message> const &event) {
-  // auto &[trace_info, message] = event;
   auto &trace_info = event.trace_info;
   auto &message = event.value;
   core::fix::Buffer buffer(decode_buffer_);
@@ -607,6 +620,9 @@ void MarketData::operator()(Trace<fix::SecurityList> const &event, core::fix::He
   auto &[trace_info, security_list] = event;
   log::info<2>("event={{header={}, security_list={}}}"sv, header, security_list);
   (*connection_manager_).touch(trace_info.source_receive_time);
+  auto combine = []<typename T>(T date_part, T time_part) {
+    return date_part < T::max() ? date_part + time_part : T::max();
+  };
   if (std::size(security_list.no_related_sym) > 0) {
     size_t counter = {};
     std::vector<Symbol> symbols;
@@ -673,7 +689,6 @@ void MarketData::operator()(Trace<fix::SecurityStatus> const &event, core::fix::
 }
 
 void MarketData::operator()(Trace<fix::MarketDataIncrementalRefresh> const &event, core::fix::Header const &header) {
-  // auto &[trace_info, market_data_incremental_refresh] = event;
   auto &trace_info = event.trace_info;
   auto &market_data_incremental_refresh = event.value;
   log::info<3>("event={{header={}, market_data_incremental_refresh={}}}"sv, header, market_data_incremental_refresh);
@@ -708,16 +723,16 @@ void MarketData::operator()(Trace<fix::MarketDataIncrementalRefresh> const &even
       using enum core::fix::MDEntryType;
       case BID: {
         validate(item);
-        bids.emplace_back([&item](auto &result) { emplace(result, item); });
+        bids.emplace_back([&item](auto &result) { create_mbp_update(result, item); });
         break;
       }
       case OFFER: {
         validate(item);
-        asks.emplace_back([&item](auto &result) { emplace(result, item); });
+        asks.emplace_back([&item](auto &result) { create_mbp_update(result, item); });
         break;
       }
       case TRADE: {
-        trades.emplace_back([&item](auto &result) { emplace(result, item); });
+        trades.emplace_back([&item](auto &result) { create_trade(result, item); });
         break;
       }
       case INDEX_VALUE:
@@ -821,12 +836,12 @@ void MarketData::operator()(Trace<fix::MarketDataSnapshotFullRefresh> const &eve
       using enum core::fix::MDEntryType;
       case BID: {
         validate(item);
-        bids.emplace_back([&item](auto &result) { emplace(result, item); });
+        bids.emplace_back([&item](auto &result) { create_mbp_update(result, item); });
         break;
       }
       case OFFER: {
         validate(item);
-        asks.emplace_back([&item](auto &result) { emplace(result, item); });
+        asks.emplace_back([&item](auto &result) { create_mbp_update(result, item); });
         break;
       }
       case TRADE:
