@@ -199,42 +199,38 @@ void UDPSnapshot::operator()(Trace<deribit_multicast::Snapshot> const &event, sb
           if (is_last && !(std::empty(bids) && std::empty(asks))) {
             std::chrono::milliseconds const timestamp{snapshot.timestampMs()};
             auto &collector = shared_.mbp_collector[instrument.symbol];
-            collector(
-                bids,
-                asks,
-                change_id,
-                [&](auto &bids, auto &asks, auto sequence) {  // snapshot
-                  log::info<1>(R"(Received snapshot: symbol="{}")"sv, instrument.symbol);
-                  // log::debug(R"(PUBLISH SNAPSHOT symbol="{}", sequence={})"sv, symbol, sequence);
-                  log::info<5>(
-                      R"(DEBUG: PUBLISH SNAPSHOT symbol="{}", sequence={}, change_id={}, timestamp={})"sv,
-                      instrument.symbol,
-                      sequence,
-                      change_id,
-                      timestamp);
-                  const MarketByPriceUpdate market_by_price_update{
-                      .stream_id = stream_id_,
-                      .exchange = flags::Config::exchange(),
-                      .symbol = instrument.symbol,
-                      .bids = bids,
-                      .asks = asks,
-                      .update_type = UpdateType::SNAPSHOT,
-                      .exchange_time_utc = timestamp,
-                      .exchange_sequence = sequence,
-                      .price_decimals = {},
-                      .quantity_decimals = {},
-                      .checksum = {},
-                  };
-                  Trace event(trace_info, market_by_price_update);
-                  shared_(
-                      event, true, [&](auto &market_by_price) { collector.apply(market_by_price, sequence, true); });
-                },
-                [&](auto retries) {  // request
-                  log::info<1>(R"(Waiting for snapshot: symbol="{}")"sv, instrument.symbol);
-                  // log::debug(R"(REQUEST symbol="{}" (retries={}))"sv, instrument.symbol, retries);
-                  log::info<5>(R"(DEBUG: REQUEST symbol="{}" (retries={}))"sv, instrument.symbol, retries);
-                  // note! don't have to do anything -- just wait for snapshot
-                });
+            auto publish_snapshot = [&](auto &bids, auto &asks, auto sequence) {
+              log::info<1>(R"(Received snapshot: symbol="{}")"sv, instrument.symbol);
+              // log::debug(R"(PUBLISH SNAPSHOT symbol="{}", sequence={})"sv, symbol, sequence);
+              log::info<5>(
+                  R"(DEBUG: PUBLISH SNAPSHOT symbol="{}", sequence={}, change_id={}, timestamp={})"sv,
+                  instrument.symbol,
+                  sequence,
+                  change_id,
+                  timestamp);
+              const MarketByPriceUpdate market_by_price_update{
+                  .stream_id = stream_id_,
+                  .exchange = flags::Config::exchange(),
+                  .symbol = instrument.symbol,
+                  .bids = bids,
+                  .asks = asks,
+                  .update_type = UpdateType::SNAPSHOT,
+                  .exchange_time_utc = timestamp,
+                  .exchange_sequence = sequence,
+                  .price_decimals = {},
+                  .quantity_decimals = {},
+                  .checksum = {},
+              };
+              Trace event(trace_info, market_by_price_update);
+              shared_(event, true, [&](auto &market_by_price) { collector.apply(market_by_price, sequence, true); });
+            };
+            auto request_snapshot = [&](auto retries) {
+              log::info<1>(R"(Waiting for snapshot: symbol="{}")"sv, instrument.symbol);
+              // log::debug(R"(REQUEST symbol="{}" (retries={}))"sv, instrument.symbol, retries);
+              log::info<5>(R"(DEBUG: REQUEST symbol="{}" (retries={}))"sv, instrument.symbol, retries);
+              // note! don't have to do anything -- just wait for snapshot
+            };
+            collector(bids, asks, change_id, publish_snapshot, request_snapshot);
           }
         })) {
     } else {

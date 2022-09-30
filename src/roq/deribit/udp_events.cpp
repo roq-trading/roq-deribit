@@ -212,65 +212,52 @@ void UDPEvents::operator()(Trace<deribit_multicast::Book> const &event, sbe::Fra
           book.changesList().forEach([&](auto &item) { emplace_back(item, instrument.multiplier, bids, asks); });
           auto &collector = shared_.mbp_collector[instrument.symbol];
           try {
+            auto create_update = [&](auto &bids, auto &asks, auto update_type, auto exchange_sequence) {
+              return MarketByPriceUpdate{
+                  .stream_id = stream_id_,
+                  .exchange = flags::Config::exchange(),
+                  .symbol = instrument.symbol,
+                  .bids = bids,
+                  .asks = asks,
+                  .update_type = update_type,
+                  .exchange_time_utc = timestamp,
+                  .exchange_sequence = exchange_sequence,
+                  .price_decimals = {},
+                  .quantity_decimals = {},
+                  .checksum = {},
+              };
+            };
+            auto publish_update = [&](auto &bids, auto &asks) {
+              // log::debug(R"(PUBLISH UPDATE symbol="{}")"sv, instrument.symbol);
+              log::info<5>(
+                  R"(DEBUG: PUBLISH UPDATE symbol="{}", change_id={}, prev_change_id={})"sv,
+                  instrument.symbol,
+                  change_id,
+                  prev_change_id);
+              auto market_by_price_update =
+                  create_update(bids, asks, UpdateType::INCREMENTAL, static_cast<int64_t>(change_id));
+              create_trace_and_dispatch(handler_, trace_info, market_by_price_update, true, false);
+            };
+            auto publish_snapshot = [&](auto &bids, auto &asks, auto sequence) {
+              // log::debug(R"(PUBLISH SNAPSHOT symbol="{}", sequence={})"sv, instrument.symbol, sequence);
+              log::info<5>(
+                  R"(DEBUG: PUBLISH SNAPSHOT symbol="{}", sequence={}, change_id={}, prev_change_id={})"sv,
+                  instrument.symbol,
+                  sequence,
+                  change_id,
+                  prev_change_id);
+              auto market_by_price_update = create_update(bids, asks, UpdateType::SNAPSHOT, sequence);
+              Trace event(trace_info, market_by_price_update);
+              shared_(event, true, [&](auto &market_by_price) { collector.apply(market_by_price, sequence, true); });
+            };
+            auto request_snapshot = [&](auto retries) {
+              log::info<1>(R"(Waiting for snapshot: symbol="{}")"sv, instrument.symbol);
+              // log::debug(R"(REQUEST symbol="{}" (retries={}))"sv, instrument.symbol, retries);
+              log::info<5>(R"(DEBUG: REQUEST symbol="{}" (retries={}))"sv, instrument.symbol, retries);
+              // note! don't have to do anything -- just wait for snapshot
+            };
             collector(
-                bids,
-                asks,
-                change_id,
-                change_id,
-                prev_change_id,
-                [&](auto &bids, auto &asks) {  // update
-                  // log::debug(R"(PUBLISH UPDATE symbol="{}")"sv, instrument.symbol);
-                  log::info<5>(
-                      R"(DEBUG: PUBLISH UPDATE symbol="{}", change_id={}, prev_change_id={})"sv,
-                      instrument.symbol,
-                      change_id,
-                      prev_change_id);
-                  const MarketByPriceUpdate market_by_price_update{
-                      .stream_id = stream_id_,
-                      .exchange = flags::Config::exchange(),
-                      .symbol = instrument.symbol,
-                      .bids = bids,
-                      .asks = asks,
-                      .update_type = UpdateType::INCREMENTAL,
-                      .exchange_time_utc = timestamp,
-                      .exchange_sequence = static_cast<int64_t>(change_id),  // XXX
-                      .price_decimals = {},
-                      .quantity_decimals = {},
-                      .checksum = {},
-                  };
-                  create_trace_and_dispatch(handler_, trace_info, market_by_price_update, true, false);
-                },
-                [&](auto &bids, auto &asks, auto sequence) {  // snapshot
-                  // log::debug(R"(PUBLISH SNAPSHOT symbol="{}", sequence={})"sv, instrument.symbol, sequence);
-                  log::info<5>(
-                      R"(DEBUG: PUBLISH SNAPSHOT symbol="{}", sequence={}, change_id={}, prev_change_id={})"sv,
-                      instrument.symbol,
-                      sequence,
-                      change_id,
-                      prev_change_id);
-                  const MarketByPriceUpdate market_by_price_update{
-                      .stream_id = stream_id_,
-                      .exchange = flags::Config::exchange(),
-                      .symbol = instrument.symbol,
-                      .bids = bids,
-                      .asks = asks,
-                      .update_type = UpdateType::SNAPSHOT,
-                      .exchange_time_utc = timestamp,
-                      .exchange_sequence = sequence,
-                      .price_decimals = {},
-                      .quantity_decimals = {},
-                      .checksum = {},
-                  };
-                  Trace event(trace_info, market_by_price_update);
-                  shared_(
-                      event, true, [&](auto &market_by_price) { collector.apply(market_by_price, sequence, true); });
-                },
-                [&](auto retries) {  // request
-                  log::info<1>(R"(Waiting for snapshot: symbol="{}")"sv, instrument.symbol);
-                  // log::debug(R"(REQUEST symbol="{}" (retries={}))"sv, instrument.symbol, retries);
-                  log::info<5>(R"(DEBUG: REQUEST symbol="{}" (retries={}))"sv, instrument.symbol, retries);
-                  // note! don't have to do anything -- just wait for snapshot
-                });
+                bids, asks, change_id, change_id, prev_change_id, publish_update, publish_snapshot, request_snapshot);
           } catch (BadState &) {
             log::fatal("BAD STATE"sv);
             /*
