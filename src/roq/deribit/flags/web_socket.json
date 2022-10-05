@@ -5,7 +5,7 @@
     {
       "name": "ws_uri",
       "type": "roq::io::web::URI",
-      "validator": "roq::core::flags::URI<std::string>",
+      "validator": "roq::core::flags::URI",
       "default": "wss://test.deribit.com/ws/api/v2",
       "description": "WebSocket end-point (URI)"
     },
