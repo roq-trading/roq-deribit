@@ -92,7 +92,7 @@ Gateway::Gateway(server::Dispatcher &dispatcher, Config const &config, io::Conte
 }
 
 void Gateway::operator()(Event<Start> const &event) {
-  log::info("Starting the gateway..."sv);
+  log::info("Starting..."sv);
   for (auto &[_, iter] : order_entry_)
     (*iter)(event);
   for (auto &[_, iter] : drop_copy_)
@@ -108,7 +108,7 @@ void Gateway::operator()(Event<Start> const &event) {
 }
 
 void Gateway::operator()(Event<Stop> const &event) {
-  log::info("Stopping the gateway..."sv);
+  log::info("Stopping..."sv);
   if (udp_events_)
     (*udp_events_)(event);
   if (udp_snapshot_)
