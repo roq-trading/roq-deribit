@@ -40,7 +40,7 @@ Error map_error(std::string_view const &value) {
   return Error::UNKNOWN;
 }
 
-std::string_view map(Mask<ExecutionInstruction> const &execution_instructions) {
+std::string_view map(Mask<ExecutionInstruction> execution_instructions) {
   if (std::empty(execution_instructions))
     return {};
   if (execution_instructions.has(ExecutionInstruction::PARTICIPATE_DO_NOT_INITIATE))
