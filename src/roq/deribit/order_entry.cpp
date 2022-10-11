@@ -45,7 +45,7 @@ namespace deribit {
 namespace {
 auto const NAME = "om"sv;
 
-const Mask SUPPORTS{
+Mask const SUPPORTS{
     SupportType::CREATE_ORDER,
     SupportType::MODIFY_ORDER,
     SupportType::CANCEL_ORDER,
@@ -160,12 +160,12 @@ void OrderEntry::operator()(Event<Timer> const &event) {
 uint16_t OrderEntry::operator()(
     Event<CreateOrder> const &event, oms::Order const &order, std::string_view const &request_id) {
   if (!ready())
-    throw oms::NotReady("not ready"sv);
+    throw oms::NotReady{"not ready"sv};
   auto &[message_info, create_order] = event;
   if (std::isfinite(create_order.stop_price))
-    throw RuntimeError("stop_price not supported"sv);
+    throw RuntimeError{"stop_price not supported"sv};
   if (std::isfinite(create_order.max_show_quantity))
-    throw RuntimeError("max_show_quantity not supported"sv);
+    throw RuntimeError{"max_show_quantity not supported"sv};
   auto side = core::fix::map(create_order.side);
   auto exec_inst = fix::map(create_order.execution_instructions);
   auto ord_type = core::fix::map(create_order.order_type);
@@ -198,7 +198,7 @@ uint16_t OrderEntry::operator()(
     std::string_view const &request_id,
     [[maybe_unused]] std::string_view const &previous_request_id) {
   if (!ready())
-    throw oms::NotReady("not ready"sv);
+    throw oms::NotReady{"not ready"sv};
   auto const &modify_order = event.value;
   auto side = core::fix::map(order.side);
   auto ord_type = core::fix::map(order.order_type);
@@ -226,7 +226,7 @@ uint16_t OrderEntry::operator()(
     std::string_view const &request_id,
     [[maybe_unused]] std::string_view const &previous_request_id) {
   if (!ready())
-    throw oms::NotReady("not ready"sv);
+    throw oms::NotReady{"not ready"sv};
   fix::OrderCancelRequest order_cancel_request{
       .cl_ord_id = request_id,
       .orig_cl_ord_id = order.external_order_id,
@@ -440,7 +440,7 @@ void OrderEntry::parse(Trace<core::fix::Message> const &event) {
 void OrderEntry::parse_helper(Trace<core::fix::Message> const &event) {
   auto &trace_info = event.trace_info;
   auto &message = event.value;
-  core::fix::Buffer buffer(decode_buffer_);
+  core::fix::Buffer buffer{decode_buffer_};
   switch (message.header.msg_type) {
     using enum core::fix::MsgType;
     // session
@@ -693,7 +693,6 @@ UpdateType compute_update_type(auto const &download) {
 }  // namespace
 
 void OrderEntry::operator()(Trace<fix::ExecutionReport> const &event, core::fix::Header const &header) {
-  // auto &[trace_info, execution_report] = event;  // XXX clang13
   auto &trace_info = event.trace_info;
   auto &execution_report = event.value;
   log::info<2>("event={{header={}, execution_report={}}}"sv, header, execution_report);
@@ -797,7 +796,7 @@ void OrderEntry::operator()(Trace<fix::ExecutionReport> const &event, core::fix:
                   .liquidity = {},
               };
             };
-            core::back_emplacer fills(shared_.fills);
+            core::back_emplacer fills{shared_.fills};
             for (auto &item : execution_report.no_fills) {
               fills.emplace_back([&](auto &result) { create_fill(result, item); });
             }

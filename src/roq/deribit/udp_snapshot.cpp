@@ -221,7 +221,7 @@ void UDPSnapshot::operator()(Trace<deribit_multicast::Snapshot> const &event, sb
                   .quantity_decimals = {},
                   .checksum = {},
               };
-              Trace event(trace_info, market_by_price_update);
+              Trace event{trace_info, market_by_price_update};
               shared_(event, true, [&](auto &market_by_price) { collector.apply(market_by_price, sequence, true); });
             };
             auto request_snapshot = [&](auto retries) {
@@ -289,9 +289,8 @@ void UDPSnapshot::emplace_back(const T &item, double multiplier, U &bids, U &ask
 
 Aggregator &UDPSnapshot::get_aggregator(uint16_t channel_id) {
   auto iter = aggregator_.find(channel_id);
-  if (iter == std::end(aggregator_)) {
+  if (iter == std::end(aggregator_))
     iter = aggregator_.emplace(channel_id, server::Flags::cache_mbp_max_depth()).first;
-  }
   return (*iter).second;
 }
 

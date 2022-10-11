@@ -347,7 +347,7 @@ void WebSocket::parse(std::string_view const &message) {
 
 void WebSocket::operator()(Trace<core::jsonrpc::Error> const &event, core::json::Value &value) {
   auto &[trace_info, error] = event;
-  json::Error error_2(value);
+  json::Error error_2{value};
   log::fatal(R"(error={}, id="{}")"sv, error_2, error.id);
 }
 
@@ -365,15 +365,15 @@ void WebSocket::operator()(Trace<core::jsonrpc::Result> const &event, core::json
       break;  // unexpected
     case GET_CURRENCIES: {
       core::json::Buffer buffer(decode_buffer_);
-      const json::Currencies currencies(value, buffer);
-      Trace event(trace_info, currencies);
+      const json::Currencies currencies{value, buffer};
+      Trace event{trace_info, currencies};
       (*this)(event);
       return;
     }
     case GET_INSTRUMENTS: {
-      core::json::Buffer buffer(decode_buffer_);
-      const json::Instruments instruments(value, buffer);
-      Trace event(trace_info, instruments);
+      core::json::Buffer buffer{decode_buffer_};
+      const json::Instruments instruments{value, buffer};
+      Trace event{trace_info, instruments};
       (*this)(event);
       return;
     }
@@ -397,7 +397,7 @@ void WebSocket::operator()(Trace<core::jsonrpc::Result> const &event, core::json
 
 void WebSocket::operator()(Trace<core::jsonrpc::Notification> const &event, core::json::Value &value) {
   auto &[trace_info, notification] = event;
-  json::Method method(notification.method);
+  json::Method method{notification.method};
   switch (method) {
     using enum json::Method::type_t;
     case UNDEFINED:
@@ -406,7 +406,7 @@ void WebSocket::operator()(Trace<core::jsonrpc::Notification> const &event, core
       log::fatal(R"(Unknown method="{}")"sv, notification.method);
       break;
     case SUBSCRIPTION: {
-      core::json::Buffer buffer(decode_buffer_);
+      core::json::Buffer buffer{decode_buffer_};
       json::Parser::dispatch(*this, value, buffer, trace_info);
       break;
     }

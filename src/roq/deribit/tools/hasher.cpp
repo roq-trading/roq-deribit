@@ -19,6 +19,8 @@ namespace roq {
 namespace deribit {
 namespace tools {
 
+// === CONSTANTS ===
+
 namespace {
 const constexpr auto CHARSET_DATA = "abcdefghijklmnopqrstuvwxyz0123456789"sv;
 const constexpr auto RANDOM_BYTES = 32;
@@ -31,11 +33,13 @@ std::uniform_int_distribution<int> CHARSET_DISTRIBUTION(
 std::uniform_int_distribution<uint32_t> DISTRIBUTION;
 }  // namespace
 
+// === IMPLEMENTATION ===
+
 Hasher::Hasher(std::string_view const &access_secret) : secret_(access_secret), hmac_(secret_) {
 }
 
 std::string Hasher::create_nonce() {
-  std::string result(RANDOM_BYTES, '-');
+  std::string result{RANDOM_BYTES, '-'};
   std::generate(std::begin(result), std::end(result), []() { return CHARSET_DATA[CHARSET_DISTRIBUTION(GENERATOR)]; });
   return result;
 }

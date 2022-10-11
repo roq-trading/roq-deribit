@@ -31,7 +31,7 @@ namespace deribit {
 namespace {
 auto const NAME = "ex"sv;
 
-const Mask SUPPORTS{
+Mask const SUPPORTS{
     SupportType::FUNDS,
 };
 }  // namespace
@@ -339,17 +339,16 @@ void DropCopy::parse(std::string_view const &message) {
 
 void DropCopy::operator()(Trace<core::jsonrpc::Error> const &event, core::json::Value &value) {
   auto &[trace_info, error] = event;
-  json::Error error_2(value);
-  if (flags::WebSocket::ws_allow_errors()) {
+  json::Error error_2{value};
+  if (flags::WebSocket::ws_allow_errors())
     log::warn(R"(error={}, id="{}")"sv, error_2, error.id);
-  } else {
+  else
     log::fatal(R"(error={}, id="{}")"sv, error_2, error.id);
-  }
 }
 
 void DropCopy::operator()(Trace<core::jsonrpc::Result> const &event, core::json::Value &value) {
   auto &[trace_info, result] = event;
-  json::RequestType request_type(result.id);
+  json::RequestType request_type{result.id};
   switch (request_type) {
     using enum json::RequestType::type_t;
     case UNDEFINED:
@@ -358,8 +357,8 @@ void DropCopy::operator()(Trace<core::jsonrpc::Result> const &event, core::json:
       log::fatal(R"(Unknown request_type="{}")"sv, result.id);
       return;
     case AUTH: {
-      const json::Auth auth(value);
-      Trace event(trace_info, auth);
+      const json::Auth auth{value};
+      Trace event{trace_info, auth};
       (*this)(event);
       return;
     }
@@ -377,13 +376,13 @@ void DropCopy::operator()(Trace<core::jsonrpc::Result> const &event, core::json:
       // note! no need to parse
       return;
     case GET_ACCOUNT_SUMMARY: {
-      const json::Portfolio portfolio(value);
+      const json::Portfolio portfolio{value};
       create_trace_and_dispatch(*this, trace_info, portfolio);
       return;
     }
     case GET_TRADES: {
-      core::json::Buffer buffer(decode_buffer_);
-      const json::Trades trades(value, buffer);
+      core::json::Buffer buffer{decode_buffer_};
+      const json::Trades trades{value, buffer};
       create_trace_and_dispatch(*this, trace_info, trades);
       return;
     }
@@ -395,7 +394,7 @@ void DropCopy::operator()(Trace<core::jsonrpc::Result> const &event, core::json:
 
 void DropCopy::operator()(Trace<core::jsonrpc::Notification> const &event, core::json::Value &value) {
   auto &[trace_info, notification] = event;
-  json::Method method(notification.method);
+  json::Method method{notification.method};
   switch (method) {
     using enum json::Method::type_t;
     case UNDEFINED:
@@ -404,7 +403,7 @@ void DropCopy::operator()(Trace<core::jsonrpc::Notification> const &event, core:
       log::fatal(R"(Unknown method="{}")"sv, notification.method);
       break;
     case SUBSCRIPTION: {
-      core::json::Buffer buffer(decode_buffer_);
+      core::json::Buffer buffer{decode_buffer_};
       json::Parser::dispatch(*this, value, buffer, trace_info);
       break;
     }

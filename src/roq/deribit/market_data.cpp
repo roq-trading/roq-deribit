@@ -489,7 +489,7 @@ void MarketData::parse(Trace<core::fix::Message> const &event) {
 void MarketData::parse_helper(Trace<core::fix::Message> const &event) {
   auto &trace_info = event.trace_info;
   auto &message = event.value;
-  core::fix::Buffer buffer(decode_buffer_);
+  core::fix::Buffer buffer{decode_buffer_};
   switch (message.header.msg_type) {
     using enum core::fix::MsgType;
     // session
@@ -694,9 +694,9 @@ void MarketData::operator()(Trace<fix::MarketDataIncrementalRefresh> const &even
   log::info<3>("event={{header={}, market_data_incremental_refresh={}}}"sv, header, market_data_incremental_refresh);
   (*connection_manager_).touch(trace_info.source_receive_time);
   auto symbol = market_data_incremental_refresh.symbol;
-  core::back_emplacer bids(shared_.bids), asks(shared_.asks);
-  core::back_emplacer trades(shared_.trades);
-  core::back_emplacer statistics(shared_.statistics);
+  core::back_emplacer bids{shared_.bids}, asks{shared_.asks};
+  core::back_emplacer trades{shared_.trades};
+  core::back_emplacer statistics{shared_.statistics};
   // open interest
   statistics.emplace_back([&](auto &result) {
     new (&result) Statistics{
@@ -826,8 +826,8 @@ void MarketData::operator()(Trace<fix::MarketDataSnapshotFullRefresh> const &eve
     log::info<1>(R"(Unlatch symbol="{}")"sv, symbol);
     latch_.erase(iter);
   }
-  core::back_emplacer bids(shared_.bids), asks(shared_.asks);
-  core::back_emplacer statistics(shared_.statistics);
+  core::back_emplacer bids{shared_.bids}, asks{shared_.asks};
+  core::back_emplacer statistics{shared_.statistics};
   std::chrono::nanoseconds exchange_time_utc = {};
   for (auto &item : market_data_snapshot_full_refresh.no_md_entries) {
     if (exchange_time_utc < item.md_entry_date)

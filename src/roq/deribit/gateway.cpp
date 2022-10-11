@@ -13,66 +13,69 @@ using namespace std::literals;
 namespace roq {
 namespace deribit {
 
+// === HELPERS ===
+
 namespace {
 template <typename R>
-auto create_security(Config const &config) {
+auto create_security(auto const &config) {
   R result;
-  for (auto &[_, iter] : config.accounts)
-    result.try_emplace(iter.name, std::make_unique<Security>(config, iter.name));
+  for (auto &[_, account] : config.accounts)
+    result.try_emplace(account.name, std::make_unique<Security>(config, account.name));
   return result;
 }
 
-auto &get_security(auto const &security, std::string_view const &master_account) {
-  auto iter = security.find(master_account);
-  if (iter != security.end())
+auto &get_security(auto const &security_by_name, auto const &master_account) {
+  auto iter = security_by_name.find(master_account);
+  if (iter != security_by_name.end())
     return *(*iter).second;
   log::fatal("Market data requires a master account"sv);
 }
 
-template <typename R, typename T>
-auto create_order_entry(Gateway &gateway, io::Context &context, uint16_t &stream_id, T &security, Shared &shared) {
+template <typename R>
+auto create_order_entry(auto &gateway, auto &context, auto &stream_id, auto &security_by_name, auto &shared) {
   R result;
-  for (auto &iter : security)
-    result.try_emplace(iter.first, std::make_unique<OrderEntry>(gateway, context, ++stream_id, *iter.second, shared));
-  return result;
-}
-
-template <typename R, typename T>
-auto create_drop_copy(Gateway &gateway, io::Context &context, uint16_t &stream_id, T &security, Shared &shared) {
-  R result;
-  for (auto &iter : security)
-    result.try_emplace(iter.first, std::make_unique<DropCopy>(gateway, context, ++stream_id, *iter.second, shared));
+  for (auto &[account, security] : security_by_name)
+    result.try_emplace(account, std::make_unique<OrderEntry>(gateway, context, ++stream_id, *security, shared));
   return result;
 }
 
 template <typename R>
-auto create_web_socket(Gateway &gateway, io::Context &context, uint16_t &stream_id, Shared &shared) {
+auto create_drop_copy(auto &gateway, auto &context, auto &stream_id, auto &security_by_name, auto &shared) {
+  R result;
+  for (auto &[account, security] : security_by_name)
+    result.try_emplace(account, std::make_unique<DropCopy>(gateway, context, ++stream_id, *security, shared));
+  return result;
+}
+
+template <typename R>
+auto create_web_socket(auto &gateway, auto &context, auto &stream_id, auto &shared) {
   R result;
   result.emplace_back(std::make_unique<WebSocket>(gateway, context, ++stream_id, shared, std::size(result), true));
   return result;
 }
 
 template <typename R>
-auto create_market_data(
-    Gateway &gateway, io::Context &context, uint16_t &stream_id, Security &security, Shared &shared) {
+auto create_market_data(auto &gateway, auto &context, auto &stream_id, auto &security, auto &shared) {
   R result;
   result.emplace_back(
       std::make_unique<MarketData>(gateway, context, stream_id, security, shared, std::size(result), true));
   return result;
 }
 
-auto create_udp_snapshot(Gateway &gateway, io::Context &context, uint16_t &stream_id, Shared &shared) {
+auto create_udp_snapshot(auto &gateway, auto &context, auto &stream_id, auto &shared) {
   if (shared.has_multicast())
     return std::make_unique<UDPSnapshot>(gateway, context, stream_id, shared);
   return std::unique_ptr<UDPSnapshot>{};
 }
 
-auto create_udp_events(Gateway &gateway, io::Context &context, uint16_t &stream_id, Shared &shared) {
+auto create_udp_events(auto &gateway, auto &context, auto &stream_id, auto &shared) {
   if (shared.has_multicast())
     return std::make_unique<UDPEvents>(gateway, context, stream_id, shared);
   return std::unique_ptr<UDPEvents>{};
 }
 }  // namespace
+
+// === IMPLEMENTATION ===
 
 Gateway::Gateway(server::Dispatcher &dispatcher, Config const &config, io::Context &context)
     : dispatcher_(dispatcher), master_account_(config.get_master_account()),
@@ -84,9 +87,8 @@ Gateway::Gateway(server::Dispatcher &dispatcher, Config const &config, io::Conte
           *this, context_, ++stream_id_, get_security(security_, master_account_), shared_)),
       udp_snapshot_(create_udp_snapshot(*this, context_, ++stream_id_, shared_)),
       udp_events_(create_udp_events(*this, context_, ++stream_id_, shared_)) {
-  if (std::empty(master_account_) && !flags::Common::disable_master_account_check()) {
+  if (std::empty(master_account_) && !flags::Common::disable_master_account_check())
     log::fatal("A master account is always required (due to FIX logon)"sv);
-  }
   if (!flags::FIX::fix_cancel_on_disconnect())
     log::warn("Orders will *NOT* be cancelled on disconnect"sv);
 }
@@ -162,7 +164,7 @@ void Gateway::operator()(Event<Disconnected> const &event) {
           CancelAllOrders cancel_all_orders{
               .account = account,
           };
-          Event event(message_info, cancel_all_orders);
+          Event event{message_info, cancel_all_orders};
           (*order_entry)(event, {});
         }
       }
@@ -315,7 +317,7 @@ OrderEntry &Gateway::get_order_entry(std::string_view const &account) {
   auto iter = order_entry_.find(account);
   if (iter != std::end(order_entry_))
     return *(*iter).second;
-  throw RuntimeError(R"(Unknown account="{}")"sv, account);
+  throw RuntimeError{R"(Unknown account="{}")"sv, account};
 }
 
 }  // namespace deribit

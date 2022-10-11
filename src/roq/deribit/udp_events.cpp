@@ -247,7 +247,7 @@ void UDPEvents::operator()(Trace<deribit_multicast::Book> const &event, sbe::Fra
                   change_id,
                   prev_change_id);
               auto market_by_price_update = create_update(bids, asks, UpdateType::SNAPSHOT, sequence);
-              Trace event(trace_info, market_by_price_update);
+              Trace event{trace_info, market_by_price_update};
               shared_(event, true, [&](auto &market_by_price) { collector.apply(market_by_price, sequence, true); });
             };
             auto request_snapshot = [&](auto retries) {
@@ -342,7 +342,7 @@ void UDPEvents::operator()(Trace<deribit_multicast::Trades> const &event, sbe::F
               };
               core::charconv::to_string(std::back_inserter(result.trade_id), value.tradeId());
             };
-            core::back_emplacer trades_(shared_.trades);
+            core::back_emplacer trades_{shared_.trades};
             trades.sbeRewind();
             trades.tradesList().forEach([&](auto const &item) {
               std::chrono::milliseconds const timestamp{item.timestampMs()};
@@ -423,9 +423,8 @@ void UDPEvents::emplace_back(T const &item, double multiplier, U &bids, U &asks)
 
 Aggregator &UDPEvents::get_aggregator(uint16_t channel_id) {
   auto iter = aggregator_.find(channel_id);
-  if (iter == std::end(aggregator_)) {
+  if (iter == std::end(aggregator_))
     iter = aggregator_.emplace(channel_id, server::Flags::cache_mbp_max_depth()).first;
-  }
   return (*iter).second;
 }
 

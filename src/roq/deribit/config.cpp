@@ -13,8 +13,35 @@ using namespace std::literals;
 namespace roq {
 namespace deribit {
 
+// === CONSTANTS ===
+
+namespace {
+Mask const SUPPORTS{
+    SupportType::REFERENCE_DATA,
+    SupportType::MARKET_STATUS,
+    SupportType::TOP_OF_BOOK,
+    SupportType::MARKET_BY_PRICE,
+    SupportType::TRADE_SUMMARY,
+    SupportType::STATISTICS,
+    SupportType::CREATE_ORDER,
+    SupportType::MODIFY_ORDER,
+    SupportType::CANCEL_ORDER,
+    SupportType::ORDER_ACK,
+    SupportType::ORDER,
+    SupportType::TRADE,
+    SupportType::POSITION,
+    SupportType::FUNDS,
+};
+auto const MBP_TICK_SIZE_MULTIPLIER = 1.0e-1;  // have seen fractional
+auto const MBP_ALLOW_REMOVE_NON_EXISTING = true;
+auto const OMS_REQUEST_ID_TYPE = RequestIdType::BASE64;
+}  // namespace
+
+// === IMPLEMENTATION ===
+
 Config::Config() {
   server::ConfigReader::parse_file(*this);
+  log::info<1>("config={}"sv, *this);
 }
 
 Account const &Config::get_master_account() const {
@@ -23,17 +50,15 @@ Account const &Config::get_master_account() const {
 
 std::string const &Config::get_access_key(Account const &account) const {
   auto iter = accounts.find(account);
-  if (iter == std::end(accounts)) {
+  if (iter == std::end(accounts))
     log::fatal(R"(Unknown account="{}")"sv, account);
-  }
   return (*iter).second.login;
 }
 
 std::string const &Config::get_access_secret(Account const &account) const {
   auto iter = accounts.find(account);
-  if (iter == std::end(accounts)) {
+  if (iter == std::end(accounts))
     log::fatal(R"(Unknown account="{}")"sv, account);
-  }
   return (*iter).second.secret;
 }
 
@@ -45,31 +70,16 @@ void Config::dispatch(server::Config::Handler &handler) const {
   for (auto &user : users)
     handler(user);
   GatewaySettings gateway_settings{
-      .supports{
-          SupportType::REFERENCE_DATA,
-          SupportType::MARKET_STATUS,
-          SupportType::TOP_OF_BOOK,
-          SupportType::MARKET_BY_PRICE,
-          SupportType::TRADE_SUMMARY,
-          SupportType::STATISTICS,
-          SupportType::CREATE_ORDER,
-          SupportType::MODIFY_ORDER,
-          SupportType::CANCEL_ORDER,
-          SupportType::ORDER_ACK,
-          SupportType::ORDER,
-          SupportType::TRADE,
-          SupportType::POSITION,
-          SupportType::FUNDS,
-      },
+      .supports = SUPPORTS,
       .mbp_max_depth = {},
-      .mbp_tick_size_multiplier = 1.0e-1,  // have seen fractional
+      .mbp_tick_size_multiplier = MBP_TICK_SIZE_MULTIPLIER,
       .mbp_min_trade_vol_multiplier = NaN,
-      .mbp_allow_remove_non_existing = true,
+      .mbp_allow_remove_non_existing = MBP_ALLOW_REMOVE_NON_EXISTING,
       .mbp_allow_price_inversion = flags::Config::mbp_allow_price_inversion(),
       .mbp_checksum = server::Flags::cache_mbp_checksum(),
       .oms_download_has_state = {},
       .oms_download_has_routing_id = {},
-      .oms_request_id_type = RequestIdType::BASE64,
+      .oms_request_id_type = OMS_REQUEST_ID_TYPE,
   };
   handler(gateway_settings);
   for (auto &iter : rate_limits)
