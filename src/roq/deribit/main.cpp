@@ -21,5 +21,5 @@ roq::Service::Info const INFO{
 // === IMPLEMENTATION ===
 
 int main(int argc, char **argv) {
-  return roq::deribit::Application(argc, argv, INFO).run();
+  return roq::deribit::Application{argc, argv, INFO}.run();
 }
