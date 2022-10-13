@@ -166,7 +166,7 @@ class WebSocket final : public web::socket::Client::Handler,
   } latency_;
   // cache
   Shared &shared_;
-  absl::flat_hash_map<std::string, std::pair<roq::Layer, double> > top_of_book_;
+  absl::flat_hash_map<std::string, std::pair<roq::Layer, double>> top_of_book_;
   absl::flat_hash_map<std::string, TradingStatus> trading_status_;
   // state
   bool ready_ = false;
