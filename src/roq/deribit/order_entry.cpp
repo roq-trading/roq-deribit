@@ -696,7 +696,6 @@ void OrderEntry::operator()(Trace<fix::ExecutionReport> const &event, core::fix:
   auto &trace_info = event.trace_info;
   auto &execution_report = event.value;
   log::info<2>("event={{header={}, execution_report={}}}"sv, header, execution_report);
-  // log::debug("execution_report={}"sv, execution_report);
   // download begin?
   switch (execution_report.mass_status_req_type) {
     using enum core::fix::MassStatusReqType;
@@ -787,7 +786,6 @@ void OrderEntry::operator()(Trace<fix::ExecutionReport> const &event, core::fix:
           response,
           order_update,
           [&](auto &order) {
-            // log::debug("found order={}"sv, order);
             auto create_fill = []<typename T>(T &result, auto const &value) {
               new (&result) T{
                   .external_trade_id = value.fill_exec_id,
@@ -850,7 +848,6 @@ void OrderEntry::operator()(Trace<fix::OrderCancelReject> const &event, core::fi
       .price = NaN,
   };
   if (shared_.update_order(order_cancel_reject.orig_cl_ord_id, stream_id_, trace_info, response, [&](auto &order) {
-        // log::debug("found order={}"sv, order);
         auto status = core::fix::map(order_cancel_reject.ord_status);
         if (status != order.status) {
           log::warn("Unexpected: order status received={}, expected={}"sv, status, order.status);
@@ -909,7 +906,9 @@ void OrderEntry::operator()(Trace<fix::Reject> const &event, core::fix::Header c
     log::info("closing connection"sv);
     (*connection_manager_).close();
   } else {
-    log::fatal("Unexpected"sv);
+    log::fatal("Unexpected: reject={}"sv, reject);
+    // log::warn("Unexpected: reject={}"sv, reject);
+    // download_.check_relaxed(OrderEntryState::ORDERS);
   }
 }
 
