@@ -57,7 +57,7 @@ class UDPSnapshot final : public io::net::udp::Receiver::Handler, public sbe::Pa
 
   // utils
   template <typename T, typename U>
-  static void emplace_back(const T &item, double multiplier, U &bids, U &asks);
+  static void emplace_back(T const &item, double multiplier, U &bids, U &asks);
 
   Aggregator &get_aggregator(uint16_t channel_id);
 

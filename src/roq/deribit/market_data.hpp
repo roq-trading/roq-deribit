@@ -120,10 +120,10 @@ class MarketData final : public io::net::ConnectionManager::Handler {
   // utilities
 
   template <typename T>
-  void send(const T &event);
+  void send(T const &event);
 
   template <typename T>
-  void send(const T &event, std::chrono::nanoseconds sending_time);
+  void send(T const &event, std::chrono::nanoseconds sending_time);
 
   void check(core::fix::Header const &);
 

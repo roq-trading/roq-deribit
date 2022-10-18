@@ -929,13 +929,13 @@ void OrderEntry::operator()(Trace<fix::OrderMassCancelReport> const &event, core
 }
 
 template <typename T>
-uint64_t OrderEntry::send(const T &event) {
+uint64_t OrderEntry::send(T const &event) {
   auto now = core::clock::GetRealTime();
   return send(event, now);
 }
 
 template <typename T>
-uint64_t OrderEntry::send(const T &event, std::chrono::nanoseconds sending_time) {
+uint64_t OrderEntry::send(T const &event, std::chrono::nanoseconds sending_time) {
   core::fix::Writer writer(
       encode_buffer_, FIX_VERSION, T::msg_type, SENDER_COMP_ID, TARGET_COMP_ID, outbound_.msg_seq_num, sending_time);
   auto message = event.encode(writer);

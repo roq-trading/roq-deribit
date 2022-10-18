@@ -264,7 +264,7 @@ void UDPSnapshot::publish_stream_status(TraceInfo const &trace_info, ConnectionS
 }
 
 template <typename T, typename U>
-void UDPSnapshot::emplace_back(const T &item, double multiplier, U &bids, U &asks) {
+void UDPSnapshot::emplace_back(T const &item, double multiplier, U &bids, U &asks) {
   const MBPUpdate mbp_update{
       .price = item.price(),
       .quantity = item.amount() * multiplier,
