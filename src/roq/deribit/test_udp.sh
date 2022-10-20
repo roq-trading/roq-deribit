@@ -25,22 +25,23 @@ if [ "$1" == "debug" ]; then
   esac
   shift 1
 else
-	PREFIX=
+  PREFIX=
 fi
 
 # launch
 
 $PREFIX "./roq-deribit" \
-	--name "$NAME" \
-	--config_file "$CONFIG_FILE" \
-	--secrets_file "$SECRETS_FILE" \
+  --name "$NAME" \
+  --config_file "$CONFIG_FILE" \
+  --secrets_file "$SECRETS_FILE" \
+  --cache_dir "$HOME/var/lib/roq/cache" \
   --event_log_dir "$HOME/var/lib/roq/data" \
-  --event_log_symlink \
-	--client_listen_address "$HOME/run/$NAME.sock" \
-	--metrics_listen_address "$HOME/run/${NAME}_metrics.sock" \
-	--fix_uri "$FIX_URI" \
-	--ws_uri "$WS_URI" \
+  --event_log_symlink true \
+  --client_listen_address "$HOME/run/$NAME.sock" \
+  --metrics_listen_address "$HOME/run/metrics/${NAME}.sock" \
+  --fix_uri "$FIX_URI" \
+  --ws_uri "$WS_URI" \
   --udp_encoding "flatbuffers" \
   --udp_snapshot_port 5678 \
   --udp_incremental_port 6789 \
-	$@
+  $@
