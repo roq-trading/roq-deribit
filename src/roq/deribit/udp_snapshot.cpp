@@ -96,7 +96,7 @@ UDPSnapshot::UDPSnapshot(Handler &handler, io::Context &context, uint16_t stream
 }
 
 void UDPSnapshot::operator()(Event<Start> const &) {
-  auto trace_info = server::create_trace_info();
+  TraceInfo trace_info;
   last_update_time_ = trace_info.source_receive_time;
   publish_stream_status(trace_info, ConnectionStatus::CONNECTING);
 }
@@ -112,7 +112,7 @@ void UDPSnapshot::operator()(Event<Timer> const &event) {
 }
 
 void UDPSnapshot::operator()(io::net::udp::Receiver::Read const &) {
-  auto trace_info = server::create_trace_info();
+  TraceInfo trace_info;
   last_update_time_ = trace_info.source_receive_time;
   publish_stream_status(trace_info, ConnectionStatus::READY);  // first message will publish
   while (receive_buffer_.append(*receiver_)) {

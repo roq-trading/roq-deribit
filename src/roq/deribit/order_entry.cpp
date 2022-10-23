@@ -142,7 +142,7 @@ void OrderEntry::operator()(Event<Timer> const &event) {
         if (next_heartbeat_ <= event.value.now) {
           assert(flags::FIX::fix_ping_freq().count() > 0);
           next_heartbeat_ = event.value.now + flags::FIX::fix_ping_freq();
-          send_test_request(core::clock::GetSystem());
+          send_test_request(clock::get_system());
         }
       }
     } else {
@@ -268,7 +268,7 @@ void OrderEntry::operator()(metrics::Writer &writer) {
 
 void OrderEntry::operator()(io::net::ConnectionManager::Connected const &) {
   assert(test_logon_time_.count() == 0);
-  auto now = core::clock::GetSystem();
+  auto now = clock::get_system();
   test_logon_time_ = now + flags::FIX::fix_test_order_logon();
   if (flags::FIX::fix_test_order_disconnect().count())
     test_disconnect_time_ = now + flags::FIX::fix_test_order_disconnect();
@@ -291,7 +291,7 @@ void OrderEntry::operator()(io::net::ConnectionManager::Read const &) {
   auto buffer = (*connection_manager_).buffer();
   size_t total_bytes = 0;
   while (!std::empty(buffer)) {
-    auto trace_info = server::create_trace_info();
+    TraceInfo trace_info;
     auto bytes = core::fix::Reader<FIX_VERSION>::dispatch(
         [&](core::fix::Message const &message) {
           try {
@@ -326,7 +326,7 @@ void OrderEntry::operator()(io::net::ConnectionManager::Read const &) {
 
 void OrderEntry::operator()(ConnectionStatus status) {
   if (utils::update(status_, status)) {
-    auto trace_info = server::create_trace_info();
+    TraceInfo trace_info;
     const StreamStatus stream_status{
         .stream_id = stream_id_,
         .account = security_.get_account(),
@@ -344,7 +344,7 @@ void OrderEntry::operator()(ConnectionStatus status) {
 
 void OrderEntry::send_logon() {
   auto ping_freq = std::chrono::duration_cast<std::chrono::seconds>(flags::FIX::fix_ping_freq());
-  auto now = core::clock::GetRealTime<std::chrono::milliseconds>();
+  auto now = clock::get_realtime<std::chrono::milliseconds>();
   auto raw_data = security_.create_raw_data(now);
   auto password = security_.create_password(raw_data);
   fix::Logon logon{
@@ -361,7 +361,7 @@ void OrderEntry::send_logon() {
       .unsubscribe_execution_reports = false,
   };
   send(logon);
-  last_logon_or_heartbeat_ = core::clock::GetSystem();
+  last_logon_or_heartbeat_ = clock::get_system();
 }
 
 void OrderEntry::send_logout(std::string_view const &text) {
@@ -512,7 +512,7 @@ void OrderEntry::parse_helper(Trace<core::fix::Message> const &event) {
 }
 
 void OrderEntry::operator()(Trace<fix::Heartbeat> const &event, core::fix::Header const &header) {
-  auto now = core::clock::GetSystem();
+  auto now = clock::get_system();
   auto &[trace_info, heartbeat] = event;
   log::info<3>("event={{header={}, heartbeat={}}}"sv, header, heartbeat);
   last_logon_or_heartbeat_ = {};
@@ -930,7 +930,7 @@ void OrderEntry::operator()(Trace<fix::OrderMassCancelReport> const &event, core
 
 template <typename T>
 uint64_t OrderEntry::send(T const &event) {
-  auto now = core::clock::GetRealTime();
+  auto now = clock::get_realtime();
   return send(event, now);
 }
 

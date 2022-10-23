@@ -136,7 +136,7 @@ void DropCopy::operator()(web::socket::Client::Close const &) {
 }
 
 void DropCopy::operator()(web::socket::Client::Latency const &latency) {
-  auto trace_info = server::create_trace_info();
+  TraceInfo trace_info;
   const ExternalLatency external_latency{
       .stream_id = stream_id_,
       .account = security_.get_account(),
@@ -156,7 +156,7 @@ void DropCopy::operator()(web::socket::Client::Binary const &) {
 
 void DropCopy::operator()(ConnectionStatus status) {
   if (utils::update(status_, status)) {
-    auto trace_info = server::create_trace_info();
+    TraceInfo trace_info;
     const StreamStatus stream_status{
         .stream_id = stream_id_,
         .account = security_.get_account(),
@@ -174,7 +174,7 @@ void DropCopy::operator()(ConnectionStatus status) {
 
 void DropCopy::login() {
   constexpr json::RequestType request_type = json::RequestType::AUTH;
-  auto now = core::clock::GetRealTime<std::chrono::milliseconds>();
+  auto now = clock::get_realtime<std::chrono::milliseconds>();
   auto nonce = security_.create_nonce();
   auto [signature, timestamp] = security_.create_signature(now, nonce);
   auto message = fmt::format(
@@ -328,7 +328,7 @@ void DropCopy::get_trades(std::span<std::string> const &currencies) {
 void DropCopy::parse(std::string_view const &message) {
   profile_.parse([&]() {
     try {
-      auto trace_info = server::create_trace_info();
+      TraceInfo trace_info;
       core::jsonrpc::Parser::dispatch(*this, message, trace_info);
     } catch (...) {
       log::warn(R"(message="{}")"sv, message);

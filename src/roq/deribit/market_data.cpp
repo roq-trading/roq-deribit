@@ -205,7 +205,7 @@ void MarketData::operator()(Event<Timer> const &event) {
         if (next_heartbeat_ <= event.value.now) {
           assert(flags::FIX::fix_ping_freq().count() > 0);
           next_heartbeat_ = event.value.now + flags::FIX::fix_ping_freq();
-          send_test_request(core::clock::GetSystem());
+          send_test_request(clock::get_system());
         }
       }
     }
@@ -233,7 +233,7 @@ void MarketData::operator()(io::net::ConnectionManager::Read const &) {
   auto buffer = (*connection_manager_).buffer();
   size_t total_bytes = 0;
   while (!std::empty(buffer)) {
-    auto trace_info = server::create_trace_info();
+    TraceInfo trace_info;
     auto bytes = core::fix::Reader<FIX_VERSION>::dispatch(
         [&](core::fix::Message const &message) {
           try {
@@ -264,7 +264,7 @@ void MarketData::operator()(io::net::ConnectionManager::Read const &) {
 
 void MarketData::operator()(ConnectionStatus status) {
   if (utils::update(status_, status)) {
-    auto trace_info = server::create_trace_info();
+    TraceInfo trace_info;
     const StreamStatus stream_status{
         .stream_id = stream_id_,
         .account = {},
@@ -282,7 +282,7 @@ void MarketData::operator()(ConnectionStatus status) {
 
 void MarketData::send_logon() {
   auto heart_bt_int = std::chrono::duration_cast<std::chrono::seconds>(flags::FIX::fix_ping_freq()).count();
-  auto now = core::clock::GetRealTime<std::chrono::milliseconds>();
+  auto now = clock::get_realtime<std::chrono::milliseconds>();
   auto raw_data = security_.create_raw_data(now);
   auto password = security_.create_password(raw_data);
   auto cancel_on_disconnect = flags::FIX::fix_cancel_on_disconnect();
@@ -300,7 +300,7 @@ void MarketData::send_logon() {
       .unsubscribe_execution_reports = true,
   };
   send(logon);
-  last_logon_or_heartbeat_ = core::clock::GetSystem();
+  last_logon_or_heartbeat_ = clock::get_system();
 }
 
 void MarketData::send_logout(std::string_view const &text) {
@@ -351,7 +351,7 @@ uint32_t MarketData::download(MarketDataState state) {
     case DONE: {
       (*this)(ConnectionStatus::READY);
       // test
-      auto now = core::clock::GetSystem();
+      auto now = clock::get_system();
       if (flags::FIX::fix_test_market_data_disconnect().count()) {
         test_disconnect_time_ = now + flags::FIX::fix_test_market_data_disconnect();
         log::warn(
@@ -568,7 +568,7 @@ void MarketData::parse_helper(Trace<core::fix::Message> const &event) {
 }
 
 void MarketData::operator()(Trace<fix::Heartbeat> const &event, core::fix::Header const &header) {
-  auto now = core::clock::GetSystem();
+  auto now = clock::get_system();
   auto &[trace_info, heartbeat] = event;
   log::info<3>("event={{header={}, heartbeat={}}}"sv, header, heartbeat);
   last_logon_or_heartbeat_ = {};
@@ -912,7 +912,7 @@ void MarketData::operator()(Trace<fix::MarketDataSnapshotFullRefresh> const &eve
 
 template <typename T>
 void MarketData::send(T const &event) {
-  auto now = core::clock::GetRealTime();
+  auto now = clock::get_realtime();
   send(event, now);
 }
 
