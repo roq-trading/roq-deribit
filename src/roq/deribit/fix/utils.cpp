@@ -47,7 +47,7 @@ std::string_view map(Mask<ExecutionInstruction> execution_instructions) {
     return "6"sv;
   if (execution_instructions.has(ExecutionInstruction::DO_NOT_INCREASE))
     return "E"sv;
-  throw RuntimeError("Not a supported execution instruction"sv);
+  throw RuntimeError{"Not a supported execution instruction"sv};
 }
 
 Error reject_to_error(std::string_view const &reason, std::string_view const &text) {
