@@ -45,7 +45,7 @@ namespace deribit {
 namespace {
 auto const NAME = "om"sv;
 
-Mask const SUPPORTS{
+auto const SUPPORTS = Mask{
     SupportType::CREATE_ORDER,
     SupportType::MODIFY_ORDER,
     SupportType::CANCEL_ORDER,
@@ -92,10 +92,10 @@ struct create_metrics final : public core::metrics::Factory {
 // === IMPLEMENTATION ===
 
 OrderEntry::OrderEntry(Handler &handler, io::Context &context, uint16_t stream_id, Security &security, Shared &shared)
-    : handler_(handler), stream_id_(stream_id), name_(create_name(stream_id_, security.get_account())),
-      connection_factory_(create_connection_factory(context)),
-      connection_manager_(create_connection_manager(*this, *connection_factory_)),
-      encode_buffer_(flags::Common::encode_buffer_size()), decode_buffer_(flags::Common::decode_buffer_size()),
+    : handler_{handler}, stream_id_{stream_id}, name_{create_name(stream_id_, security.get_account())},
+      connection_factory_{create_connection_factory(context)}, connection_manager_{create_connection_manager(
+                                                                   *this, *connection_factory_)},
+      encode_buffer_{flags::Common::encode_buffer_size()}, decode_buffer_{flags::Common::decode_buffer_size()},
       counter_{
           .disconnect = create_metrics(name_, "disconnect"sv),
       },
@@ -110,8 +110,9 @@ OrderEntry::OrderEntry(Handler &handler, io::Context &context, uint16_t stream_i
       latency_{
           .ping = create_metrics(name_, "ping"sv),
       },
-      security_(security), shared_(shared),
-      download_(flags::FIX::fix_request_timeout(), [this](auto state) { return download(state); }) {
+      security_{security}, shared_{shared}, download_{flags::FIX::fix_request_timeout(), [this](auto state) {
+                                                        return download(state);
+                                                      }} {
 }
 
 void OrderEntry::operator()(Event<Start> const &) {

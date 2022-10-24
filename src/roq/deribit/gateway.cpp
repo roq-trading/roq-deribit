@@ -78,15 +78,15 @@ auto create_udp_events(auto &gateway, auto &context, auto &stream_id, auto &shar
 // === IMPLEMENTATION ===
 
 Gateway::Gateway(server::Dispatcher &dispatcher, Config const &config, io::Context &context)
-    : dispatcher_(dispatcher), master_account_(config.get_master_account()),
-      security_(create_security<decltype(security_)>(config)), context_(context), shared_(dispatcher_),
-      order_entry_(create_order_entry<decltype(order_entry_)>(*this, context_, stream_id_, security_, shared_)),
-      drop_copy_(create_drop_copy<decltype(drop_copy_)>(*this, context_, stream_id_, security_, shared_)),
-      web_socket_(create_web_socket<decltype(web_socket_)>(*this, context_, stream_id_, shared_)),
-      market_data_(create_market_data<decltype(market_data_)>(
-          *this, context_, ++stream_id_, get_security(security_, master_account_), shared_)),
-      udp_snapshot_(create_udp_snapshot(*this, context_, ++stream_id_, shared_)),
-      udp_events_(create_udp_events(*this, context_, ++stream_id_, shared_)) {
+    : dispatcher_{dispatcher}, master_account_{config.get_master_account()},
+      security_{create_security<decltype(security_)>(config)}, context_{context}, shared_{dispatcher_},
+      order_entry_{create_order_entry<decltype(order_entry_)>(*this, context_, stream_id_, security_, shared_)},
+      drop_copy_{create_drop_copy<decltype(drop_copy_)>(*this, context_, stream_id_, security_, shared_)},
+      web_socket_{create_web_socket<decltype(web_socket_)>(*this, context_, stream_id_, shared_)},
+      market_data_{create_market_data<decltype(market_data_)>(
+          *this, context_, ++stream_id_, get_security(security_, master_account_), shared_)},
+      udp_snapshot_{create_udp_snapshot(*this, context_, ++stream_id_, shared_)},
+      udp_events_{create_udp_events(*this, context_, ++stream_id_, shared_)} {
   if (std::empty(master_account_) && !flags::Common::disable_master_account_check())
     log::fatal("A master account is always required (due to FIX logon)"sv);
   if (!flags::FIX::fix_cancel_on_disconnect())

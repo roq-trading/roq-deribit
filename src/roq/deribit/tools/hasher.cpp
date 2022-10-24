@@ -22,8 +22,8 @@ namespace tools {
 // === CONSTANTS ===
 
 namespace {
-const constexpr auto CHARSET_DATA = "abcdefghijklmnopqrstuvwxyz0123456789"sv;
-const constexpr auto RANDOM_BYTES = 32;
+constexpr auto const CHARSET_DATA = "abcdefghijklmnopqrstuvwxyz0123456789"sv;
+constexpr auto const RANDOM_BYTES = size_t{32};
 
 static_assert(std::size(CHARSET_DATA) == 36);
 
@@ -35,7 +35,7 @@ std::uniform_int_distribution<uint32_t> DISTRIBUTION;
 
 // === IMPLEMENTATION ===
 
-Hasher::Hasher(std::string_view const &access_secret) : secret_(access_secret), hmac_(secret_) {
+Hasher::Hasher(std::string_view const &access_secret) : secret_{access_secret}, hmac_{secret_} {
 }
 
 std::string Hasher::create_nonce() {

@@ -8,7 +8,7 @@ namespace deribit {
 // === IMPLEMENTATION ===
 
 Security::Security(Config const &config, std::string_view const &account)
-    : account_(account), key_(config.get_access_key(account)), hasher_(config.get_access_secret(account)) {
+    : account_{account}, key_{config.get_access_key(account)}, hasher_{config.get_access_secret(account)} {
 }
 
 std::string Security::create_nonce() {

@@ -150,12 +150,12 @@ MarketData::MarketData(
     Shared &shared,
     size_t index,
     bool master)
-    : handler_(handler), stream_id_(stream_id), name_(create_name(stream_id_)), index_(index), master_(master),
-      publish_market_by_price_(publish_market_by_price(shared)), publish_trade_summary_(publish_trade_summary(shared)),
-      supports_(get_supports(master_, publish_market_by_price_, publish_trade_summary_)),
-      connection_factory_(create_connection_factory(context)),
-      connection_manager_(create_connection_manager(*this, *connection_factory_)),
-      encode_buffer_(flags::Common::encode_buffer_size()), decode_buffer_(flags::Common::decode_buffer_size()),
+    : handler_{handler}, stream_id_{stream_id}, name_{create_name(stream_id_)}, index_{index}, master_{master},
+      publish_market_by_price_{publish_market_by_price(shared)}, publish_trade_summary_{publish_trade_summary(shared)},
+      supports_{get_supports(master_, publish_market_by_price_, publish_trade_summary_)},
+      connection_factory_{create_connection_factory(context)}, connection_manager_{create_connection_manager(
+                                                                   *this, *connection_factory_)},
+      encode_buffer_{flags::Common::encode_buffer_size()}, decode_buffer_{flags::Common::decode_buffer_size()},
       counter_{
           .disconnect = create_metrics(name_, "disconnect"sv),
       },
@@ -171,8 +171,9 @@ MarketData::MarketData(
       latency_{
           .ping = create_metrics(name_, "ping"sv),
       },
-      security_(security), shared_(shared),
-      download_(flags::FIX::fix_request_timeout(), [this](auto state) { return download(state); }) {
+      security_{security}, shared_{shared}, download_{flags::FIX::fix_request_timeout(), [this](auto state) {
+                                                        return download(state);
+                                                      }} {
   log::info("DEBUG: publish_market_by_price={}"sv, publish_market_by_price_);
   log::info("DEBUG: publish_trade_summary={}"sv, publish_trade_summary_);
 }

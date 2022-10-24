@@ -81,9 +81,9 @@ struct create_metrics final : public core::metrics::Factory {
 
 WebSocket::WebSocket(
     Handler &handler, io::Context &context, uint16_t stream_id, Shared &shared, size_t index, bool master)
-    : handler_(handler), stream_id_(stream_id), name_(create_name(stream_id_)), index_(index), master_(master),
-      publish_top_of_book_(publish_top_of_book(shared)), supports_(get_supports(master_, publish_top_of_book_)),
-      connection_(create_connection(*this, context)), decode_buffer_(flags::Common::decode_buffer_size()),
+    : handler_{handler}, stream_id_{stream_id}, name_{create_name(stream_id_)}, index_{index}, master_{master},
+      publish_top_of_book_{publish_top_of_book(shared)}, supports_{get_supports(master_, publish_top_of_book_)},
+      connection_{create_connection(*this, context)}, decode_buffer_{flags::Common::decode_buffer_size()},
       counter_{
           .disconnect = create_metrics(name_, "disconnect"sv),
       },
@@ -99,8 +99,8 @@ WebSocket::WebSocket(
           .ping = create_metrics(name_, "ping"sv),
           .heartbeat = create_metrics(name_, "heartbeat"sv),
       },
-      shared_(shared),
-      download_(flags::WebSocket::ws_request_timeout(), [this](auto state) { return download(state); }) {
+      shared_{shared}, download_{
+                           flags::WebSocket::ws_request_timeout(), [this](auto state) { return download(state); }} {
   log::info("DEBUG: publish_top_of_book={}"sv, publish_top_of_book_);
 }
 

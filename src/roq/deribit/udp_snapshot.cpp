@@ -82,16 +82,16 @@ struct create_metrics final : public core::metrics::Factory {
 // === IMPLEMENTATION ===
 
 UDPSnapshot::UDPSnapshot(Handler &handler, io::Context &context, uint16_t stream_id, Shared &shared)
-    : handler_(handler), stream_id_(stream_id), name_(create_name(stream_id_)),
-      publish_market_by_price_(publish_market_by_price()), supports_(get_supports(publish_market_by_price_)),
-      receiver_(create_receiver(*this, context, flags::Multicast::multicast_port_snapshot())),
+    : handler_{handler}, stream_id_{stream_id}, name_{create_name(stream_id_)},
+      publish_market_by_price_{publish_market_by_price()}, supports_{get_supports(publish_market_by_price_)},
+      receiver_{create_receiver(*this, context, flags::Multicast::multicast_port_snapshot())},
       counter_{
           .disconnect = create_metrics(name_, "disconnect"sv),
       },
       profile_{
           .parse = create_metrics(name_, "parse"sv),
       },
-      shared_(shared) {
+      shared_{shared} {
   log::info("DEBUG: publish_market_by_price={}"sv, publish_market_by_price_);
 }
 

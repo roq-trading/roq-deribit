@@ -120,18 +120,18 @@ bool test_sequence(auto &cache, auto instrument_id, auto sequence_number) {
 // === IMPLEMENTATION ===
 
 UDPEvents::UDPEvents(Handler &handler, io::Context &context, uint16_t stream_id, Shared &shared)
-    : handler_(handler), stream_id_(stream_id), name_(create_name(stream_id_)),
-      publish_top_of_book_(publish_top_of_book()), publish_market_by_price_(publish_market_by_price()),
-      publish_trade_summary_(publish_trade_summary()),
-      supports_(get_supports(publish_top_of_book_, publish_market_by_price_, publish_trade_summary_)),
-      receiver_(create_receiver(*this, context, flags::Multicast::multicast_port_events())),
+    : handler_{handler}, stream_id_{stream_id}, name_{create_name(stream_id_)},
+      publish_top_of_book_{publish_top_of_book()}, publish_market_by_price_{publish_market_by_price()},
+      publish_trade_summary_{publish_trade_summary()},
+      supports_{get_supports(publish_top_of_book_, publish_market_by_price_, publish_trade_summary_)},
+      receiver_{create_receiver(*this, context, flags::Multicast::multicast_port_events())},
       counter_{
           .disconnect = create_metrics(name_, "disconnect"sv),
       },
       profile_{
           .parse = create_metrics(name_, "parse"sv),
       },
-      shared_(shared) {
+      shared_{shared} {
   log::info("DEBUG: publish_top_of_book={}"sv, publish_top_of_book_);
   log::info("DEBUG: publish_market_by_price={}"sv, publish_market_by_price_);
   log::info("DEBUG: publish_trade_summary={}"sv, publish_trade_summary_);
