@@ -101,6 +101,14 @@
     {
       "name": "price_index",
       "type": "std::string_view"
+    },
+    {
+      "name": "block_trade_tick_size",
+      "type": "double"
+    },
+    {
+      "name": "block_trade_min_trade_amount",
+      "type": "double"
     }
   ]
 }
