@@ -10,6 +10,7 @@ target_link_libraries(
   roq-server::roq-server
   roq-core::roq-core
   roq-logging::roq-logging
+  aklomp::base64
   ${UUID_LIBRARIES}
   ${RT_LIBRARIES})
 
