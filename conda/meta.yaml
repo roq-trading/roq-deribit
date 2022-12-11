@@ -20,6 +20,7 @@ requirements:
     - clangdev
     - cmake
     - make
+    - pkg-config
   host:
     - roq-core
     - roq-deribit-multicast
@@ -30,7 +31,6 @@ requirements:
     - catch2  # [linux]
     - roq-oss-catch2  # [osx]
     - roq-oss-cppitertools
-    - roq-oss-libsodium
     - roq-oss-libsodium
     - roq-oss-magic_enum
     - roq-oss-range-v3
