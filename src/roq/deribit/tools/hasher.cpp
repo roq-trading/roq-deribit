@@ -50,10 +50,12 @@ std::pair<std::string, std::chrono::milliseconds> Hasher::create_signature(
   auto message = fmt::format("{}\n{}\n"sv, sequence, nonce);
   hmac_.clear();
   hmac_.update(message);
-  std::array<char, 32> buffer;
+  std::array<std::byte, 32> buffer;
   auto length = hmac_.digest(buffer);
   assert(length == std::size(buffer));
-  return {core::binascii::Hex::encode(buffer), std::chrono::milliseconds{sequence}};
+  std::string result;
+  core::binascii::Hex::encode(result, buffer);
+  return {result, std::chrono::milliseconds{sequence}};
 }
 
 std::string Hasher::create_raw_data(std::chrono::milliseconds timestamp) {
