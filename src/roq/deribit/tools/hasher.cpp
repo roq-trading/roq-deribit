@@ -35,7 +35,7 @@ std::uniform_int_distribution<uint32_t> DISTRIBUTION;
 
 // === IMPLEMENTATION ===
 
-Hasher::Hasher(std::string_view const &access_secret) : secret_{access_secret}, hmac_{secret_} {
+Hasher::Hasher(std::string_view const &access_secret) : secret_{access_secret}, mac_{secret_} {
 }
 
 std::string Hasher::create_nonce() {
@@ -48,13 +48,11 @@ std::pair<std::string, std::chrono::milliseconds> Hasher::create_signature(
     std::chrono::milliseconds timestamp, std::string_view const &nonce) {
   auto sequence = get_sequence(timestamp);
   auto message = fmt::format("{}\n{}\n"sv, sequence, nonce);
-  hmac_.clear();
-  hmac_.update(message);
-  std::array<std::byte, 32> buffer;
-  auto length = hmac_.digest(buffer);
-  assert(length == std::size(buffer));
+  mac_.clear();
+  mac_.update(message);
+  auto digest = mac_.final(digest_);
   std::string result;
-  core::binascii::Hex::encode(result, buffer);
+  core::binascii::Hex::encode(result, digest);
   return {result, std::chrono::milliseconds{sequence}};
 }
 
@@ -77,14 +75,13 @@ std::string Hasher::create_raw_data(std::chrono::milliseconds timestamp, std::st
 }
 
 std::string Hasher::create_password(std::string_view const &raw_data) {
-  sha_.clear();
-  sha_.update(raw_data);
-  sha_.update(secret_);
-  std::array<std::byte, 32> buffer;
-  auto length = sha_.digest(buffer);
-  assert(length == std::size(buffer));
+  hash_.clear();
+  hash_.update(raw_data);
+  hash_.update(secret_);
+  std::array<std::byte, Hash::DIGEST_LENGTH> buffer;
+  auto digest = hash_.final(buffer);
   std::string result;
-  core::binascii::Base64::encode(result, buffer, false);
+  core::binascii::Base64::encode(result, digest, false);
   return result;
 }
 

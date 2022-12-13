@@ -8,7 +8,8 @@
 #include <utility>
 
 #include "roq/core/hash/sha256.hpp"
-#include "roq/core/mac/hmac_sha256.hpp"
+
+#include "roq/core/mac/hmac.hpp"
 
 namespace roq {
 namespace deribit {
@@ -35,9 +36,14 @@ class Hasher final {
   int64_t get_sequence(std::chrono::milliseconds timestamp);
 
  private:
-  const std::string secret_;
-  core::hash::SHA256 sha_;
-  core::mac::HMAC_SHA256 hmac_;
+  using Hash = core::hash::SHA256;
+  using MAC = core::mac::HMAC<core::hash::SHA256>;
+  using Digest = std::array<std::byte, MAC::DIGEST_LENGTH>;
+
+  std::string const secret_;
+  Hash hash_;
+  MAC mac_;
+  Digest digest_;
   std::chrono::milliseconds timestamp_ = {};
 };
 
