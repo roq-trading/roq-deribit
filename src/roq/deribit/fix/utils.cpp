@@ -27,6 +27,10 @@ SecurityType map_security_type(std::string_view const &value) {
 Error map_error(std::string_view const &value) {
   if (std::size(value) > 0) {
     switch (std::data(value)[0]) {
+      case 'a':
+        if (value.compare("already_cancelled"sv) == 0)
+          return Error::TOO_LATE_TO_MODIFY_OR_CANCEL;
+        break;
       case 'c':
         if (value.compare("canceled"sv) == 0)
           return Error::UNDEFINED;
