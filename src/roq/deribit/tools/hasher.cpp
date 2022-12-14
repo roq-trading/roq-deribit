@@ -64,7 +64,7 @@ std::string Hasher::create_raw_data(std::chrono::milliseconds timestamp) {
     buffer[i] = DISTRIBUTION(GENERATOR);
   std::span tmp{reinterpret_cast<std::byte *>(std::data(buffer)), std::size(buffer) * sizeof(value_type)};
   std::string nonce;
-  core::binascii::Base64::encode(nonce, tmp, false);
+  core::binascii::Base64::encode(nonce, tmp, false, false);
   return create_raw_data(timestamp, nonce);
 }
 
@@ -81,7 +81,7 @@ std::string Hasher::create_password(std::string_view const &raw_data) {
   std::array<std::byte, Hash::DIGEST_LENGTH> buffer;
   auto digest = hash_.final(buffer);
   std::string result;
-  core::binascii::Base64::encode(result, digest, false);
+  core::binascii::Base64::encode(result, digest, false, false);
   return result;
 }
 
