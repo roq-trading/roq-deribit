@@ -39,6 +39,10 @@ Error map_error(std::string_view const &value) {
         if (value.compare("success"sv) == 0)
           return Error::UNDEFINED;
         break;
+      case 'r':
+        if (value.compare("rejected: order is closed"sv) == 0)
+          return Error::TOO_LATE_TO_MODIFY_OR_CANCEL;
+        break;
     }
   }
   return Error::UNKNOWN;
