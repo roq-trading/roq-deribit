@@ -188,7 +188,7 @@ uint16_t OrderEntry::operator()(
   };
   auto msg_seq_num = send(new_order_single);
   // XXX HANS EXPERIMENTAL -- it's a leak / currently no way to clean up
-  log::info(R"(DEBUG: msg_seq_num={} --> request_id="{}")"sv, msg_seq_num, request_id);
+  log::info<1>(R"(DEBUG: msg_seq_num={} --> request_id="{}")"sv, msg_seq_num, request_id);
   msg_seq_num_to_request_id_.emplace(msg_seq_num, request_id);
   return stream_id_;
 }
@@ -216,7 +216,7 @@ uint16_t OrderEntry::operator()(
   };
   auto msg_seq_num = send(order_cancel_replace_request);
   // XXX HANS EXPERIMENTAL -- it's a leak / currently no way to clean up
-  log::info(R"(DEBUG: msg_seq_num={} --> request_id="{}")"sv, msg_seq_num, request_id);
+  log::info<1>(R"(DEBUG: msg_seq_num={} --> request_id="{}")"sv, msg_seq_num, request_id);
   msg_seq_num_to_request_id_.emplace(msg_seq_num, request_id);
   return stream_id_;
 }
@@ -234,7 +234,7 @@ uint16_t OrderEntry::operator()(
   };
   auto msg_seq_num = send(order_cancel_request);
   // XXX HANS EXPERIMENTAL -- it's a leak / currently no way to clean up
-  log::info(R"(DEBUG: msg_seq_num={} --> request_id="{}")"sv, msg_seq_num, request_id);
+  log::info<1>(R"(DEBUG: msg_seq_num={} --> request_id="{}")"sv, msg_seq_num, request_id);
   msg_seq_num_to_request_id_.emplace(msg_seq_num, request_id);
   return stream_id_;
 }
