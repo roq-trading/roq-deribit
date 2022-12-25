@@ -2,8 +2,8 @@
 
 #pragma once
 
-#include <absl/container/flat_hash_map.h>
 #include <absl/container/flat_hash_set.h>
+#include <absl/container/node_hash_map.h>
 
 #include <string>
 
@@ -164,7 +164,7 @@ class OrderEntry final : public io::net::ConnectionManager::Handler {
   core::Download<OrderEntryState> download_;
   std::chrono::nanoseconds last_logon_or_heartbeat_ = {};
   // EXPERIMENTAL
-  absl::flat_hash_map<uint64_t, std::string> msg_seq_num_to_request_id_;
+  absl::node_hash_map<uint64_t, RequestId> msg_seq_num_to_request_id_;
   std::chrono::nanoseconds test_disconnect_time_ = {};
   std::chrono::nanoseconds test_logon_time_ = {};
 };

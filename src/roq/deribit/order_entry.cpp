@@ -160,20 +160,17 @@ void OrderEntry::operator()(Event<Timer> const &event) {
 
 uint16_t OrderEntry::operator()(
     Event<CreateOrder> const &event, oms::Order const &order, std::string_view const &request_id) {
-  if (!ready())
+  if (!ready()) [[unlikely]]
     throw oms::NotReady{"not ready"sv};
   auto &[message_info, create_order] = event;
-  if (std::isfinite(create_order.stop_price))
+  if (std::isfinite(create_order.stop_price)) [[unlikely]]
     throw RuntimeError{"stop_price not supported"sv};
-  if (std::isfinite(create_order.max_show_quantity))
+  if (std::isfinite(create_order.max_show_quantity)) [[unlikely]]
     throw RuntimeError{"max_show_quantity not supported"sv};
   auto side = core::fix::map(create_order.side);
   auto exec_inst = fix::map(create_order.execution_instructions);
   auto ord_type = core::fix::map(create_order.order_type);
   auto time_in_force = core::fix::map(create_order.time_in_force);
-  core::stack::Buffer<char, sizeof(RequestId)> buffer;
-  fmt::format_to(std::back_inserter(buffer), "roq-{}-{}"sv, message_info.source, create_order.order_id);
-  std::string_view deribit_label(std::data(buffer), std::size(buffer));
   fix::NewOrderSingle new_order_single{
       .cl_ord_id = request_id,
       .side = side,
@@ -183,7 +180,7 @@ uint16_t OrderEntry::operator()(
       .exec_inst = exec_inst,
       .ord_type = ord_type,
       .time_in_force = time_in_force,
-      .deribit_label = deribit_label,
+      .deribit_label = request_id,
       .deribit_adv_order_type = '\0',
   };
   auto msg_seq_num = send(new_order_single);
