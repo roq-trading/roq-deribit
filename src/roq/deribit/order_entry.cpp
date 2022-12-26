@@ -934,18 +934,12 @@ uint64_t OrderEntry::send(T const &event) {
 
 template <typename T>
 uint64_t OrderEntry::send(T const &event, std::chrono::nanoseconds sending_time) {
-  auto t0 = clock::get_system();  // DEBUG
   core::fix::Writer writer{
       encode_buffer_, FIX_VERSION, T::msg_type, SENDER_COMP_ID, TARGET_COMP_ID, outbound_.msg_seq_num, sending_time};
-  auto t1 = clock::get_system();  // DEBUG
   auto message = event.encode(writer);
-  auto t2 = clock::get_system();  // DEBUG
   if (flags::FIX::fix_debug()) [[unlikely]]
     log::info("{}"sv, debug::fix::Message{message});
-  auto t3 = clock::get_system();  // DEBUG
   (*connection_manager_).send(message);
-  auto t4 = clock::get_system();  // DEBUG
-  // log::info("DEBUG {} = {} + {} + {} + {}"sv, t4 - t0, t1 - t0, t2 - t1, t3 - t2, t4 - t3);
   return outbound_.msg_seq_num;
 }
 
