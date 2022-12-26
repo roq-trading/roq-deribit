@@ -315,9 +315,9 @@ void Gateway::ensure_symbol_slices(size_t size) {
 
 OrderEntry &Gateway::get_order_entry(std::string_view const &account) {
   auto iter = order_entry_.find(account);
-  if (iter != std::end(order_entry_))
-    return *(*iter).second;
-  throw RuntimeError{R"(Unknown account="{}")"sv, account};
+  if (iter == std::end(order_entry_)) [[unlikely]]
+    throw RuntimeError{R"(Unknown account="{}")"sv, account};
+  return *(*iter).second;
 }
 
 }  // namespace deribit

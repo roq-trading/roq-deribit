@@ -160,6 +160,7 @@ void OrderEntry::operator()(Event<Timer> const &event) {
 
 uint16_t OrderEntry::operator()(
     Event<CreateOrder> const &event, oms::Order const &order, std::string_view const &request_id) {
+  auto t0 = clock::get_system();
   if (!ready()) [[unlikely]]
     throw oms::NotReady{"not ready"sv};
   auto &[message_info, create_order] = event;
@@ -167,6 +168,7 @@ uint16_t OrderEntry::operator()(
     throw RuntimeError{"stop_price not supported"sv};
   if (std::isfinite(create_order.max_show_quantity)) [[unlikely]]
     throw RuntimeError{"max_show_quantity not supported"sv};
+  auto t1 = clock::get_system();
   auto side = core::fix::map(create_order.side);
   auto exec_inst = fix::map(create_order.execution_instructions);
   auto ord_type = core::fix::map(create_order.order_type);
@@ -183,10 +185,14 @@ uint16_t OrderEntry::operator()(
       .deribit_label = request_id,
       .deribit_adv_order_type = '\0',
   };
+  auto t2 = clock::get_system();
   auto msg_seq_num = send(new_order_single);
+  auto t3 = clock::get_system();
   // XXX HANS EXPERIMENTAL -- it's a leak / currently no way to clean up
   log::info<1>(R"(DEBUG: msg_seq_num={} --> request_id="{}")"sv, msg_seq_num, request_id);
   msg_seq_num_to_request_id_.emplace(msg_seq_num, request_id);
+  auto t4 = clock::get_system();
+  log::info("DEBUG {} = {} + {} + {} + {}"sv, t4 - t3, t3 - t2, t2 - t0, t1 - t0, t2 - t1);
   return stream_id_;
 }
 
