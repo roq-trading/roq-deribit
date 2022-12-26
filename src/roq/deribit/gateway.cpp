@@ -173,14 +173,8 @@ void Gateway::operator()(Event<Disconnected> const &event) {
 
 uint16_t Gateway::operator()(
     Event<CreateOrder> const &event, oms::Order const &order, std::string_view const &request_id) {
-  auto t0 = clock::get_system();
   assert(!std::empty(event.value.account));
-  auto &order_entry = get_order_entry(event.value.account);
-  auto t1 = clock::get_system();
-  auto result = order_entry(event, order, request_id);
-  auto t2 = clock::get_system();
-  log::info("DEBUG {} = {} + {}"sv, t2 - t0, t1 - t0, t2 - t1);
-  return result;
+  return get_order_entry(event.value.account)(event, order, request_id);
 }
 
 uint16_t Gateway::operator()(
