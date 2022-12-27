@@ -28,6 +28,8 @@
 
 using namespace std::literals;
 
+using namespace fmt::literals;
+
 namespace roq {
 namespace deribit {
 
@@ -41,7 +43,7 @@ auto const NAME = "udpe"sv;
 
 namespace {
 auto create_name(auto stream_id) {
-  return fmt::format("{}:{}"sv, stream_id, NAME);
+  return fmt::format("{}:{}"_cf, stream_id, NAME);
 }
 
 auto publish_top_of_book() {

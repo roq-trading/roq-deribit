@@ -10,6 +10,8 @@
 
 using namespace std::literals;
 
+using namespace fmt::literals;
+
 namespace roq {
 namespace deribit {
 
@@ -39,7 +41,7 @@ Shared::Shared(server::Dispatcher &dispatcher)
 std::string_view Shared::next_request_id() {
   auto request_id = ++request_id_;
   stack_buffer_.clear();
-  fmt::format_to(std::back_inserter(stack_buffer_), "roq-{}"sv, request_id);
+  fmt::format_to(std::back_inserter(stack_buffer_), "roq-{}"_cf, request_id);
   return {std::data(stack_buffer_), std::size(stack_buffer_)};
 }
 

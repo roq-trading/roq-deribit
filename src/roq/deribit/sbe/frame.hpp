@@ -2,6 +2,7 @@
 
 #pragma once
 
+#include <fmt/compile.h>
 #include <fmt/format.h>
 
 #include <cstdint>
@@ -42,14 +43,14 @@ struct fmt::formatter<roq::deribit::sbe::Frame> {
   }
   template <typename Context>
   auto format(roq::deribit::sbe::Frame const &value, Context &context) const {
-    using namespace std::literals;
+    using namespace fmt::literals;
     return fmt::format_to(
         context.out(),
         R"({{)"
         R"(packet_length={}, )"
         R"(channel_id={}, )"
         R"(sequence_number={})"
-        R"(}})"sv,
+        R"(}})"_cf,
         value.packet_length,
         value.channel_id,
         value.sequence_number);

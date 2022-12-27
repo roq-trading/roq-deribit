@@ -37,6 +37,8 @@
 
 using namespace std::literals;
 
+using namespace fmt::literals;
+
 namespace roq {
 namespace deribit {
 
@@ -62,7 +64,7 @@ auto const LOGOUT_RESPONSE = "LOGOUT"sv;
 
 namespace {
 auto create_name(auto stream_id, auto const &account) {
-  return fmt::format("{}:{}:{}"sv, stream_id, NAME, account);
+  return fmt::format("{}:{}:{}"_cf, stream_id, NAME, account);
 }
 
 auto create_connection_factory(auto &context) {
@@ -195,7 +197,7 @@ uint16_t OrderEntry::operator()(
     oms::Order const &order,
     std::string_view const &request_id,
     [[maybe_unused]] std::string_view const &previous_request_id) {
-  if (!ready())
+  if (!ready()) [[unlikely]]
     throw oms::NotReady{"not ready"sv};
   auto const &modify_order = event.value;
   auto side = core::fix::map(order.side);
@@ -223,7 +225,7 @@ uint16_t OrderEntry::operator()(
     oms::Order const &order,
     std::string_view const &request_id,
     [[maybe_unused]] std::string_view const &previous_request_id) {
-  if (!ready())
+  if (!ready()) [[unlikely]]
     throw oms::NotReady{"not ready"sv};
   fix::OrderCancelRequest order_cancel_request{
       .cl_ord_id = request_id,

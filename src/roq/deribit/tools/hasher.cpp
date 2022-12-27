@@ -8,12 +8,15 @@
 #include <random>
 #include <span>
 
+#include <fmt/compile.h>
 #include <fmt/format.h>
 
 #include "roq/core/codec/base64.hpp"
 #include "roq/core/codec/hex.hpp"
 
 using namespace std::literals;
+
+using namespace fmt::literals;
 
 namespace roq {
 namespace deribit {
@@ -47,7 +50,7 @@ std::string Hasher::create_nonce() {
 std::pair<std::string, std::chrono::milliseconds> Hasher::create_signature(
     std::chrono::milliseconds timestamp, std::string_view const &nonce) {
   auto sequence = get_sequence(timestamp);
-  auto message = fmt::format("{}\n{}\n"sv, sequence, nonce);
+  auto message = fmt::format("{}\n{}\n"_cf, sequence, nonce);
   mac_.clear();
   mac_.update(message);
   auto digest = mac_.final(digest_);
@@ -70,7 +73,7 @@ std::string Hasher::create_raw_data(std::chrono::milliseconds timestamp) {
 
 std::string Hasher::create_raw_data(std::chrono::milliseconds timestamp, std::string_view const &nonce) {
   auto sequence = get_sequence(timestamp);
-  auto raw_data = fmt::format("{:013}.{}"sv, sequence, nonce);
+  auto raw_data = fmt::format("{:013}.{}"_cf, sequence, nonce);
   return raw_data;
 }
 

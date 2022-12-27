@@ -2,6 +2,7 @@
 
 #pragma once
 
+#include <fmt/compile.h>
 #include <fmt/format.h>
 
 #include <string_view>
@@ -32,7 +33,7 @@ struct fmt::formatter<roq::deribit::fix::AdvOrderType> {
   }
   template <typename Context>
   auto format(roq::deribit::fix::AdvOrderType const &value, Context &context) const {
-    using namespace std::literals;
-    return fmt::format_to(context.out(), "{}"sv, roq::deribit::fix::EnumNameAdvOrderType(value));
+    using namespace fmt::literals;
+    return fmt::format_to(context.out(), "{}"_cf, roq::deribit::fix::EnumNameAdvOrderType(value));
   }
 };

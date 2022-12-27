@@ -23,6 +23,8 @@
 
 using namespace std::literals;
 
+using namespace fmt::literals;
+
 namespace roq {
 namespace deribit {
 
@@ -40,7 +42,7 @@ auto const SUPPORTS = Mask{
 
 namespace {
 auto create_name(auto stream_id, auto const &account) {
-  return fmt::format("{}:{}:{}"sv, stream_id, NAME, account);
+  return fmt::format("{}:{}:{}"_cf, stream_id, NAME, account);
 }
 
 auto create_connection(auto &handler, auto &context) {
@@ -190,7 +192,7 @@ void DropCopy::login() {
       R"("signature":"{}")"
       R"(}},)"
       R"("id":"{}")"
-      R"(}})"sv,
+      R"(}})"_cf,
       security_.get_access_key(),
       timestamp.count(),
       nonce,
@@ -241,7 +243,7 @@ void DropCopy::subscribe_portfolios(std::span<std::string> const &currencies) {
       R"("channels":["user.portfolio.{}"])"
       R"(}},)"
       R"("id":"{}")"
-      R"(}})"sv,
+      R"(}})"_cf,
       fmt::join(currencies, R"(","user.portfolio.)"sv),
       request_type.as_raw_text());
   (*connection_).send_text(message);
@@ -256,7 +258,7 @@ void DropCopy::subscribe_changes() {
       R"("channels":["user.changes.any.any.raw"])"
       R"(}},)"
       R"("id":"{}")"
-      R"(}})"sv,
+      R"(}})"_cf,
       request_type.as_raw_text());
   (*connection_).send_text(message);
 }
@@ -270,7 +272,7 @@ void DropCopy::subscribe_orders() {
       R"("channels":["user.orders.any.any.raw"])"
       R"(}},)"
       R"("id":"{}")"
-      R"(}})"sv,
+      R"(}})"_cf,
       request_type.as_raw_text());
   (*connection_).send_text(message);
 }
@@ -284,7 +286,7 @@ void DropCopy::subscribe_trades() {
       R"("channels":["user.trades.any.any.raw"])"
       R"(}},)"
       R"("id":"{}")"
-      R"(}})"sv,
+      R"(}})"_cf,
       request_type.as_raw_text());
   (*connection_).send_text(message);
 }
@@ -300,7 +302,7 @@ void DropCopy::get_account_summary(std::span<std::string> const &currencies) {
         R"("extended":true)"
         R"(}},)"
         R"("id":"{}")"
-        R"(}})"sv,
+        R"(}})"_cf,
         currency,
         request_type.as_raw_text());
     (*connection_).send_text(message);
@@ -318,7 +320,7 @@ void DropCopy::get_trades(std::span<std::string> const &currencies) {
         R"("count":{})"
         R"(}},)"
         R"("id":"{}")"
-        R"(}})"sv,
+        R"(}})"_cf,
         currency,
         flags::WebSocket::ws_max_trades(),
         request_type.as_raw_text());
