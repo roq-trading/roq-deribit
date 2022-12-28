@@ -15,7 +15,7 @@ using namespace std::chrono_literals;
 using namespace Catch::literals;
 
 TEST_CASE("fix_new_order_single_create_message", "[fix_new_order_single]") {
-  core::Buffer buffer(4096);
+  std::vector<std::byte> buffer(4096);
   auto msg_seq_num = uint64_t{0};
   auto sending_time = 1568702810s;
   fix::NewOrderSingle new_order_single = {
@@ -40,10 +40,22 @@ TEST_CASE("fix_new_order_single_create_message", "[fix_new_order_single]") {
       sending_time);
   auto message = new_order_single.encode(writer);
   auto const expected =
-      "8=FIX.4.4\0019=0000146\00135=D\00149=ROQ_TRADING\00156=DERIBIT"
-      "SERVER\00134=1\00152=20190917-06:46:50.000\00111=roq-ord-006\001"
-      "54=1\00138=2.0\00144=0.45\00155=BTC-27SEP19\00140=2\00159=1\001"
-      "100010=roq;123;345\00110=042\001"sv;
+      "8=FIX.4.4\001"
+      "9=0000146\001"
+      "35=D\001"
+      "49=ROQ_TRADING\001"
+      "56=DERIBITSERVER\001"
+      "34=1\001"
+      "52=20190917-06:46:50.000\001"
+      "11=roq-ord-006\001"
+      "54=1\001"
+      "38=2.0\001"
+      "44=0.45\001"
+      "55=BTC-27SEP19\001"
+      "40=2\001"
+      "59=1\001"
+      "100010=roq;123;345\001"
+      "10=042\001"sv;
   REQUIRE(std::size(message) == std::size(expected));
   for (size_t i = 0; i < std::size(message); ++i)
     CHECK(static_cast<char>(std::data(message)[i]) == expected[i]);

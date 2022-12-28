@@ -1235,7 +1235,6 @@ TEST_CASE("fix_security_list_parse_message", "[fix_security_list]") {
   int results = 0;
   auto bytes = core::fix::Reader<core::fix::Version::FIX_44>::dispatch(
       [&](core::fix::Message const &message_2) {
-        fprintf(stderr, "HEADER\n");
         ++results;
         CHECK(message_2.header.msg_type == core::fix::MsgType::SECURITY_LIST);
         /*auto security_list =*/fix::SecurityList::create(message_2, decode_buffer);

@@ -23,7 +23,7 @@ auto const SENDING_TIME = 1568702810s;
 
 // cppcheck-suppress constParameterCallback
 void BM_fix_new_order_single_create_message(benchmark::State &state) {
-  core::Buffer buffer{4096};
+  std::vector<std::byte> buffer(4096);
   uint64_t msg_seq_num = 0;
   uint64_t processed = 0;
   for (auto _ : state) {

@@ -17,13 +17,13 @@
     {
       "tag": 38,
       "name": "OrderQty",
-      "type": "roq::core::fix::Number",
+      "type": "roq::utils::Number",
       "required": true
     },
     {
       "tag": 44,
       "name": "Price",
-      "type": "roq::core::fix::Number",
+      "type": "roq::utils::Number",
       "required": true
     },
     {
