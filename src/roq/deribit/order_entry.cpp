@@ -936,12 +936,26 @@ uint64_t OrderEntry::send(T const &event) {
 
 template <typename T>
 uint64_t OrderEntry::send(T const &event, std::chrono::nanoseconds sending_time) {
+#if (0)
   core::fix::Writer writer{
       encode_buffer_, FIX_VERSION, T::msg_type, SENDER_COMP_ID, TARGET_COMP_ID, outbound_.msg_seq_num, sending_time};
   auto message = event.encode(writer);
   if (flags::FIX::fix_debug()) [[unlikely]]
     log::info("{}"sv, debug::fix::Message{message});
   (*connection_manager_).send(message);
+  return outbound_.msg_seq_num;
+#else
+  (*connection_manager_).send([&](auto &buffer) {
+    log::debug("HERE {} {}"sv, reinterpret_cast<void const *>(std::data(buffer)), buffer.capacity());
+    buffer.resize(4096);
+    core::fix::Writer writer{
+        buffer, FIX_VERSION, T::msg_type, SENDER_COMP_ID, TARGET_COMP_ID, outbound_.msg_seq_num, sending_time};
+    auto message = event.encode(writer);
+    buffer.resize(std::size(message));
+    if (flags::FIX::fix_debug()) [[unlikely]]
+      log::info("{}"sv, debug::fix::Message{message});
+  });
+#endif
   return outbound_.msg_seq_num;
 }
 
