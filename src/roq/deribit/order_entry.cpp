@@ -97,7 +97,7 @@ OrderEntry::OrderEntry(Handler &handler, io::Context &context, uint16_t stream_i
     : handler_{handler}, stream_id_{stream_id}, name_{create_name(stream_id_, security.get_account())},
       connection_factory_{create_connection_factory(context)}, connection_manager_{create_connection_manager(
                                                                    *this, *connection_factory_)},
-      encode_buffer_{flags::Common::encode_buffer_size()}, decode_buffer_{flags::Common::decode_buffer_size()},
+      decode_buffer_{flags::Common::decode_buffer_size()},
       counter_{
           .disconnect = create_metrics(name_, "disconnect"sv),
       },
@@ -187,7 +187,6 @@ uint16_t OrderEntry::operator()(
   };
   auto msg_seq_num = send(new_order_single);
   // XXX HANS EXPERIMENTAL -- it's a leak / currently no way to clean up
-  log::info<1>(R"(DEBUG: msg_seq_num={} --> request_id="{}")"sv, msg_seq_num, request_id);
   msg_seq_num_to_request_id_.emplace(msg_seq_num, request_id);
   return stream_id_;
 }
@@ -215,7 +214,6 @@ uint16_t OrderEntry::operator()(
   };
   auto msg_seq_num = send(order_cancel_replace_request);
   // XXX HANS EXPERIMENTAL -- it's a leak / currently no way to clean up
-  log::info<1>(R"(DEBUG: msg_seq_num={} --> request_id="{}")"sv, msg_seq_num, request_id);
   msg_seq_num_to_request_id_.emplace(msg_seq_num, request_id);
   return stream_id_;
 }
@@ -233,7 +231,6 @@ uint16_t OrderEntry::operator()(
   };
   auto msg_seq_num = send(order_cancel_request);
   // XXX HANS EXPERIMENTAL -- it's a leak / currently no way to clean up
-  log::info<1>(R"(DEBUG: msg_seq_num={} --> request_id="{}")"sv, msg_seq_num, request_id);
   msg_seq_num_to_request_id_.emplace(msg_seq_num, request_id);
   return stream_id_;
 }
@@ -380,11 +377,10 @@ void OrderEntry::send_heartbeat(std::string_view const &test_req_id) {
 
 void OrderEntry::send_test_request(std::chrono::nanoseconds now) {
   // request_id is current time
-  stack_buffer_.clear();
-  core::charconv::to_string(std::back_inserter(stack_buffer_), now.count());
-  auto request_id = std::string_view(std::data(stack_buffer_), std::size(stack_buffer_));
+  encode_buffer_.clear();
+  core::charconv::to_string(std::back_inserter(encode_buffer_), now.count());
   fix::TestRequest test_request{
-      .test_req_id = request_id,
+      .test_req_id = encode_buffer_,
   };
   send(test_request);
   if (!last_logon_or_heartbeat_.count())
@@ -936,17 +932,7 @@ uint64_t OrderEntry::send(T const &event) {
 
 template <typename T>
 uint64_t OrderEntry::send(T const &event, std::chrono::nanoseconds sending_time) {
-#if (0)
-  core::fix::Writer writer{
-      encode_buffer_, FIX_VERSION, T::msg_type, SENDER_COMP_ID, TARGET_COMP_ID, outbound_.msg_seq_num, sending_time};
-  auto message = event.encode(writer);
-  if (flags::FIX::fix_debug()) [[unlikely]]
-    log::info("{}"sv, debug::fix::Message{message});
-  (*connection_manager_).send(message);
-  return outbound_.msg_seq_num;
-#else
   (*connection_manager_).send([&](auto &buffer) {
-    log::debug("HERE {} {}"sv, reinterpret_cast<void const *>(std::data(buffer)), buffer.capacity());
     buffer.resize(4096);
     core::fix::Writer writer{
         buffer, FIX_VERSION, T::msg_type, SENDER_COMP_ID, TARGET_COMP_ID, outbound_.msg_seq_num, sending_time};
@@ -955,7 +941,6 @@ uint64_t OrderEntry::send(T const &event, std::chrono::nanoseconds sending_time)
     if (flags::FIX::fix_debug()) [[unlikely]]
       log::info("{}"sv, debug::fix::Message{message});
   });
-#endif
   return outbound_.msg_seq_num;
 }
 

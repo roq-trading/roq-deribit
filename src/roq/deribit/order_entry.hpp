@@ -2,8 +2,8 @@
 
 #pragma once
 
+#include <absl/container/flat_hash_map.h>
 #include <absl/container/flat_hash_set.h>
-#include <absl/container/node_hash_map.h>
 
 #include <string>
 
@@ -125,15 +125,14 @@ class OrderEntry final : public io::net::ConnectionManager::Handler {
  private:
   Handler &handler_;
   // config
-  const uint16_t stream_id_;
-  const std::string name_;
+  uint16_t const stream_id_;
+  Source const name_;
   // connection
   std::unique_ptr<io::net::ConnectionFactory> connection_factory_;
   std::unique_ptr<io::net::ConnectionManager> connection_manager_;
   // buffers
-  core::Buffer encode_buffer_;
   core::Buffer decode_buffer_;
-  core::stack::Buffer<char, 32> stack_buffer_;
+  std::string encode_buffer_;
   // metrics
   struct {
     core::metrics::Counter disconnect;
@@ -156,15 +155,16 @@ class OrderEntry final : public io::net::ConnectionManager::Handler {
   Security &security_;
   // cache
   Shared &shared_;
-  absl::flat_hash_set<std::string> all_currencies_;  // only master
+  // state
+  ConnectionStatus status_ = {};
+
   // state
   bool ready_ = false;
   std::chrono::nanoseconds next_heartbeat_ = {};
-  ConnectionStatus status_ = {};
   core::Download<OrderEntryState> download_;
   std::chrono::nanoseconds last_logon_or_heartbeat_ = {};
   // EXPERIMENTAL
-  absl::node_hash_map<uint64_t, RequestId> msg_seq_num_to_request_id_;
+  absl::flat_hash_map<uint64_t, RequestId> msg_seq_num_to_request_id_;
   std::chrono::nanoseconds test_disconnect_time_ = {};
   std::chrono::nanoseconds test_logon_time_ = {};
 };

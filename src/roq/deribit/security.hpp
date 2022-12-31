@@ -36,8 +36,8 @@ class Security final {
   std::string create_password(std::string_view const &raw_data);
 
  private:
-  const std::string account_;
-  const std::string key_;
+  Account const account_;
+  std::string const key_;
   tools::Hasher hasher_;
 };
 
