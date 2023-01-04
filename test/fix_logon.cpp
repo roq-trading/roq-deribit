@@ -40,7 +40,7 @@ TEST_CASE("fix_logon_parse_message", "[fix_logon]") {
 }
 
 TEST_CASE("fix_logon_create_message", "[fix_logon]") {
-  core::Buffer buffer(4096);
+  std::vector<std::byte> buffer(4096);
   uint64_t msg_seq_num = 0;
   auto sending_time = 1568702810s;
   std::string_view raw_data = "1567874758168.y4/hA3i6qxm4yVL+3N7IrGcINVAFMLFhy4l7ATSehxc="sv;

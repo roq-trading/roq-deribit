@@ -12,7 +12,7 @@ using namespace std::chrono_literals;
 
 void BM_fix_order_cancel_replace_request_create_message(
     benchmark::State &state) {  // cppcheck-suppress constParameterCallback
-  core::Buffer buffer(4096);
+  std::vector<std::byte> buffer(4096);
   uint64_t msg_seq_num = 0;
   auto sending_time = 1568702810s;
   uint64_t processed = 0;
