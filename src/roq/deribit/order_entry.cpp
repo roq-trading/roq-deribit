@@ -162,6 +162,7 @@ void OrderEntry::operator()(Event<Timer> const &event) {
 
 uint16_t OrderEntry::operator()(
     Event<CreateOrder> const &event, oms::Order const &order, std::string_view const &request_id) {
+  auto now_0 = clock::get_system();
   if (!ready()) [[unlikely]]
     throw oms::NotReady{"not ready"sv};
   auto &[message_info, create_order] = event;
@@ -185,9 +186,13 @@ uint16_t OrderEntry::operator()(
       .deribit_label = request_id,
       .deribit_adv_order_type = '\0',
   };
+  auto now_1 = clock::get_system();
   auto msg_seq_num = send(new_order_single);
   // XXX HANS EXPERIMENTAL -- it's a leak / currently no way to clean up
+  auto now_2 = clock::get_system();
   msg_seq_num_to_request_id_.emplace(msg_seq_num, request_id);
+  auto now_3 = clock::get_system();
+  log::info("DEBUG gateway latency : {} = {} + {} + {}"sv, now_3 - now_0, now_1 - now_0, now_2 - now_1, now_3 - now_2);
   return stream_id_;
 }
 
