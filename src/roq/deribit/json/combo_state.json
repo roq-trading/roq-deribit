@@ -10,6 +10,9 @@
     },
     {
       "name": "closed"
+    },
+    {
+      "name": "inactivate"
     }
   ]
 }
