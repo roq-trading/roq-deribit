@@ -400,7 +400,7 @@ void MarketData::subscribe(size_t start_from) {
 void MarketData::subscribe(std::span<Symbol const> const &symbols) {
   if (std::empty(symbols))
     return;
-  log::info("Subscribe market data"sv);
+  log::info("Subscribe symbols=[{}]"sv, fmt::join(symbols, ","sv));
   auto market_depth = flags::FIX::fix_market_data_market_depth();
   auto md_update_type =
       market_depth ? core::fix::MDUpdateType::INCREMENTAL_REFRESH : core::fix::MDUpdateType::FULL_REFRESH;
@@ -474,7 +474,8 @@ void MarketData::unsubscribe(std::span<Symbol const> const &symbols) {
 }
 
 void MarketData::resubscribe(std::string_view const &symbol) {
-  log::warn<1>("*** RESUBSCRIBE ***"sv);
+  log::debug(R"(*** RESUBSCRIBE *** (symbol="{}"))"sv, symbol);
+  log::warn<1>(R"(*** RESUBSCRIBE *** (symbol="{}"))"sv, symbol);
   if (latch_.find(symbol) != std::end(latch_))
     return;
   log::info<1>(R"(Latch symbol="{}")"sv, symbol);
