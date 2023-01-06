@@ -167,6 +167,7 @@ class OrderEntry final : public io::net::ConnectionManager::Handler {
   absl::flat_hash_map<uint64_t, RequestId> msg_seq_num_to_request_id_;
   std::chrono::nanoseconds test_disconnect_time_ = {};
   std::chrono::nanoseconds test_logon_time_ = {};
+  bool const enable_round_trip_latency_;
 };
 
 }  // namespace deribit

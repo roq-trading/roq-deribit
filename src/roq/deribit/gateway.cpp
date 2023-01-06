@@ -95,49 +95,19 @@ Gateway::Gateway(server::Dispatcher &dispatcher, Config const &config, io::Conte
 
 void Gateway::operator()(Event<Start> const &event) {
   log::info("Starting..."sv);
-  for (auto &[_, iter] : order_entry_)
-    (*iter)(event);
-  for (auto &[_, iter] : drop_copy_)
-    (*iter)(event);
-  for (auto &iter : web_socket_)
-    (*iter)(event);
-  for (auto &iter : market_data_)
-    (*iter)(event);
-  if (udp_snapshot_)
-    (*udp_snapshot_)(event);
-  if (udp_events_)
-    (*udp_events_)(event);
+  apply_to_all_streams(event);
 }
 
 void Gateway::operator()(Event<Stop> const &event) {
   log::info("Stopping..."sv);
-  if (udp_events_)
-    (*udp_events_)(event);
-  if (udp_snapshot_)
-    (*udp_snapshot_)(event);
-  for (auto &iter : market_data_)
-    (*iter)(event);
-  for (auto &iter : web_socket_)
-    (*iter)(event);
-  for (auto &[_, iter] : drop_copy_)
-    (*iter)(event);
-  for (auto &[_, iter] : order_entry_)
-    (*iter)(event);
+  apply_to_all_streams(event);
 }
 
 void Gateway::operator()(Event<Timer> const &event) {
-  for (auto &[_, iter] : order_entry_)
-    (*iter)(event);
-  for (auto &[_, iter] : drop_copy_)
-    (*iter)(event);
-  for (auto &iter : web_socket_)
-    (*iter)(event);
-  for (auto &iter : market_data_)
-    (*iter)(event);
-  if (udp_snapshot_)
-    (*udp_snapshot_)(event);
-  if (udp_events_)
-    (*udp_events_)(event);
+  apply_to_all_streams(event);
+}
+
+void Gateway::operator()(Event<server::Refresh> const &) {
 }
 
 void Gateway::operator()(Event<Connected> const &) {
@@ -203,18 +173,7 @@ uint16_t Gateway::operator()(Event<CancelAllOrders> const &event, std::string_vi
 }
 
 void Gateway::operator()(metrics::Writer &writer) {
-  for (auto &[_, iter] : order_entry_)
-    (*iter)(writer);
-  for (auto &[_, iter] : drop_copy_)
-    (*iter)(writer);
-  for (auto &iter : web_socket_)
-    (*iter)(writer);
-  for (auto &iter : market_data_)
-    (*iter)(writer);
-  if (udp_snapshot_)
-    (*udp_snapshot_)(writer);
-  if (udp_events_)
-    (*udp_events_)(writer);
+  apply_to_all_streams(writer);
 }
 
 void Gateway::operator()(Trace<StreamStatus> const &event) {
@@ -318,6 +277,21 @@ OrderEntry &Gateway::get_order_entry(std::string_view const &account) {
   if (iter == std::end(order_entry_)) [[unlikely]]
     throw RuntimeError{R"(Unknown account="{}")"sv, account};
   return *(*iter).second;
+}
+
+void Gateway::apply_to_all_streams(auto &event) {
+  for (auto &[_, iter] : order_entry_)
+    (*iter)(event);
+  for (auto &[_, iter] : drop_copy_)
+    (*iter)(event);
+  for (auto &iter : web_socket_)
+    (*iter)(event);
+  for (auto &iter : market_data_)
+    (*iter)(event);
+  if (udp_snapshot_)
+    (*udp_snapshot_)(event);
+  if (udp_events_)
+    (*udp_events_)(event);
 }
 
 }  // namespace deribit

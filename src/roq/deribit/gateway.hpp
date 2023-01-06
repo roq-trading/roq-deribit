@@ -44,6 +44,7 @@ class Gateway final : public server::Handler,
   void operator()(Event<Start> const &) override;
   void operator()(Event<Stop> const &) override;
   void operator()(Event<Timer> const &) override;
+  void operator()(Event<server::Refresh> const &) override;
   void operator()(Event<Connected> const &) override;
   void operator()(Event<Disconnected> const &) override;
 
@@ -87,6 +88,8 @@ class Gateway final : public server::Handler,
   // utilities
 
   OrderEntry &get_order_entry(std::string_view const &account);
+
+  void apply_to_all_streams(auto &);
 
  private:
   server::Dispatcher &dispatcher_;

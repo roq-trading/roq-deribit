@@ -112,9 +112,9 @@ OrderEntry::OrderEntry(Handler &handler, io::Context &context, uint16_t stream_i
       latency_{
           .ping = create_metrics(name_, "ping"sv),
       },
-      security_{security}, shared_{shared}, download_{flags::FIX::fix_request_timeout(), [this](auto state) {
-                                                        return download(state);
-                                                      }} {
+      security_{security}, shared_{shared},
+      download_{flags::FIX::fix_request_timeout(), [this](auto state) { return download(state); }},
+      enable_round_trip_latency_{server::Flags::enable_round_trip_latency()} {
 }
 
 void OrderEntry::operator()(Event<Start> const &) {
@@ -192,13 +192,15 @@ uint16_t OrderEntry::operator()(
   auto now_3 = clock::get_system();
   msg_seq_num_to_request_id_.emplace(msg_seq_num, request_id);
   auto now_4 = clock::get_system();
-  log::info(
-      "DEBUG gateway latency : {} = {} + {} + {} + {}"sv,
-      now_4 - now_0,
-      now_1 - now_0,
-      now_2 - now_1,
-      now_3 - now_2,
-      now_4 - now_3);
+  if (enable_round_trip_latency_) {
+    log::info(
+        "DEBUG gateway latency : {} = {} + {} (encode) + {} (send) + {}"sv,
+        now_4 - now_0,
+        now_1 - now_0,
+        now_2 - now_1,
+        now_3 - now_2,
+        now_4 - now_3);
+  }
   return stream_id_;
 }
 
@@ -950,11 +952,11 @@ std::pair<uint64_t, std::chrono::nanoseconds> OrderEntry::send(T const &event, s
         buffer, FIX_VERSION, T::msg_type, SENDER_COMP_ID, TARGET_COMP_ID, outbound_.msg_seq_num, sending_time};
     auto message = event.encode(writer);
     auto now_1 = clock::get_system();
-    buffer.resize(std::size(message));
     if (flags::FIX::fix_debug()) [[unlikely]]
       log::info("{}"sv, debug::fix::Message{message});
+    return std::size(message);
   });
-  return std::make_pair(outbound_.msg_seq_num, now_1);
+  return {outbound_.msg_seq_num, now_1};
 }
 
 void OrderEntry::check(core::fix::Header const &header) {

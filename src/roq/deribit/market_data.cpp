@@ -233,36 +233,35 @@ void MarketData::operator()(io::net::ConnectionManager::Disconnected const &) {
 }
 
 void MarketData::operator()(io::net::ConnectionManager::Read const &) {
+  TraceInfo trace_info;
+  auto parse_message = [&](auto &message) {
+    check(message.header);
+    Trace event{trace_info, message};
+    parse(event);
+  };
+  auto log_message = [](auto &message) {
+    if (flags::FIX::fix_debug()) [[unlikely]]
+      log::info("{}"sv, debug::fix::Message{message});
+  };
   auto buffer = (*connection_manager_).buffer();
-  size_t total_bytes = 0;
-  while (!std::empty(buffer)) {
-    TraceInfo trace_info;
-    auto bytes = core::fix::Reader<FIX_VERSION>::dispatch(
-        [&](core::fix::Message const &message) {
-          try {
-            check(message.header);
-            Trace event{trace_info, message};
-            parse(event);
-          } catch (std::exception &) {
-            log::warn("{}"sv, debug::fix::Message{buffer});
+  try {
+    size_t total_bytes = 0;
+    while (!std::empty(buffer)) {
+      auto bytes = core::fix::Reader<FIX_VERSION>::dispatch(parse_message, buffer, log_message);
+      if (bytes == 0)
+        break;
+      assert(bytes <= std::size(buffer));
+      total_bytes += bytes;
+      buffer = buffer.subspan(bytes);
+    }
+    (*connection_manager_).drain(total_bytes);
+  } catch (std::exception &) {
+    log::warn("{}"sv, debug::fix::Message{buffer});
 #ifndef NDEBUG
-            log::warn("{}"sv, debug::hex::Message{buffer});
+    log::warn("{}"sv, debug::hex::Message{buffer});
 #endif
-            throw;
-          }
-        },
-        buffer,
-        [](auto &message) {
-          if (flags::FIX::fix_debug())
-            log::info("{}"sv, debug::fix::Message{message});
-        });
-    if (bytes == 0)
-      break;
-    assert(bytes <= std::size(buffer));
-    total_bytes += bytes;
-    buffer = buffer.subspan(bytes);
+    throw;
   }
-  (*connection_manager_).drain(total_bytes);
 }
 
 void MarketData::operator()(ConnectionStatus status) {
