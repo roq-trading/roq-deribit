@@ -951,7 +951,7 @@ std::pair<uint64_t, std::chrono::nanoseconds> OrderEntry::send(T const &event, s
     core::fix::Writer writer{
         buffer, FIX_VERSION, T::msg_type, SENDER_COMP_ID, TARGET_COMP_ID, outbound_.msg_seq_num, sending_time};
     auto message = event.encode(writer);
-    auto now_1 = clock::get_system();
+    now_1 = clock::get_system();
     if (flags::FIX::fix_debug()) [[unlikely]]
       log::info("{}"sv, debug::fix::Message{message});
     return std::size(message);
