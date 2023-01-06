@@ -115,10 +115,10 @@ class OrderEntry final : public io::net::ConnectionManager::Handler {
   // utilities
 
   template <typename T>
-  uint64_t send(T const &event);
+  std::pair<uint64_t, std::chrono::nanoseconds> send(T const &event);
 
   template <typename T>
-  uint64_t send(T const &event, std::chrono::nanoseconds sending_time);
+  std::pair<uint64_t, std::chrono::nanoseconds> send(T const &event, std::chrono::nanoseconds sending_time);
 
   void check(core::fix::Header const &);
 
