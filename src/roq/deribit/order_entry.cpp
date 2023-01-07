@@ -187,19 +187,20 @@ uint16_t OrderEntry::operator()(
       .deribit_adv_order_type = '\0',
   };
   auto now_1 = clock::get_system();
-  auto [msg_seq_num, now_2] = send(new_order_single);
+  auto [msg_seq_num, now_2, now_3] = send(new_order_single);
   // XXX HANS EXPERIMENTAL -- it's a leak / currently no way to clean up
-  auto now_3 = clock::get_system();
-  msg_seq_num_to_request_id_.emplace(msg_seq_num, request_id);
   auto now_4 = clock::get_system();
+  msg_seq_num_to_request_id_.emplace(msg_seq_num, request_id);
+  auto now_5 = clock::get_system();
   if (enable_round_trip_latency_) {
     log::info(
-        "DEBUG gateway latency : {} = {} + {} (encode) + {} (send) + {}"sv,
-        now_4 - now_0,
+        "DEBUG gateway latency : {} = {} + {} + {} (encode) + {} (send) + {}"sv,
+        now_5 - now_0,
         now_1 - now_0,
         now_2 - now_1,
         now_3 - now_2,
-        now_4 - now_3);
+        now_4 - now_3,
+        now_5 - now_4);
   }
   return stream_id_;
 }
@@ -225,7 +226,7 @@ uint16_t OrderEntry::operator()(
       .symbol = order.symbol,
       .exec_inst = {},
   };
-  auto [msg_seq_num, _] = send(order_cancel_replace_request);
+  auto [msg_seq_num, _1, _2] = send(order_cancel_replace_request);
   // XXX HANS EXPERIMENTAL -- it's a leak / currently no way to clean up
   msg_seq_num_to_request_id_.emplace(msg_seq_num, request_id);
   return stream_id_;
@@ -242,7 +243,7 @@ uint16_t OrderEntry::operator()(
       .cl_ord_id = request_id,
       .orig_cl_ord_id = order.external_order_id,
   };
-  auto [msg_seq_num, _] = send(order_cancel_request);
+  auto [msg_seq_num, _1, _2] = send(order_cancel_request);
   // XXX HANS EXPERIMENTAL -- it's a leak / currently no way to clean up
   msg_seq_num_to_request_id_.emplace(msg_seq_num, request_id);
   return stream_id_;
@@ -938,25 +939,27 @@ void OrderEntry::operator()(Trace<fix::OrderMassCancelReport> const &event, core
 }
 
 template <typename T>
-std::pair<uint64_t, std::chrono::nanoseconds> OrderEntry::send(T const &event) {
+std::tuple<uint64_t, std::chrono::nanoseconds, std::chrono::nanoseconds> OrderEntry::send(T const &event) {
   auto now = clock::get_realtime();
   return send(event, now);
 }
 
 template <typename T>
-std::pair<uint64_t, std::chrono::nanoseconds> OrderEntry::send(T const &event, std::chrono::nanoseconds sending_time) {
-  std::chrono::nanoseconds now_1 = {};
+std::tuple<uint64_t, std::chrono::nanoseconds, std::chrono::nanoseconds> OrderEntry::send(
+    T const &event, std::chrono::nanoseconds sending_time) {
+  std::chrono::nanoseconds now_1 = {}, now_2 = {};
   (*connection_manager_).send([&](auto &buffer) {
     buffer.resize(4096);
+    now_1 = clock::get_system();
     core::fix::Writer writer{
         buffer, FIX_VERSION, T::msg_type, SENDER_COMP_ID, TARGET_COMP_ID, outbound_.msg_seq_num, sending_time};
     auto message = event.encode(writer);
-    now_1 = clock::get_system();
+    now_2 = clock::get_system();
     if (flags::FIX::fix_debug()) [[unlikely]]
       log::info("{}"sv, debug::fix::Message{message});
     return std::size(message);
   });
-  return {outbound_.msg_seq_num, now_1};
+  return {outbound_.msg_seq_num, now_1, now_2};
 }
 
 void OrderEntry::check(core::fix::Header const &header) {
