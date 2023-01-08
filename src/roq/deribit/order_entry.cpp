@@ -193,14 +193,20 @@ uint16_t OrderEntry::operator()(
   msg_seq_num_to_request_id_.emplace(msg_seq_num, request_id);
   auto now_5 = clock::get_system();
   if (enable_round_trip_latency_) {
-    log::info(
-        "DEBUG gateway latency : {} = {} + {} + {} (encode) + {} (send) + {}"sv,
-        now_5 - now_0,
-        now_1 - now_0,
-        now_2 - now_1,
-        now_3 - now_2,
-        now_4 - now_3,
-        now_5 - now_4);
+    auto dt = now_5 - now_0;
+    auto t1 = now_1 - now_0;
+    auto t2 = now_2 - now_1;
+    auto t3 = now_3 - now_2;
+    auto t4 = now_4 - now_3;
+    auto t5 = now_5 - now_4;
+    assert(dt == (t1 + t2 + t3 + t4 + t5));
+    log::info("gateway latency = {}"sv, dt);
+    log::info("(1) validate + prepare : {}"sv, t1);
+    log::info("(2) fetch recycle buffer :  {}"sv, t2);
+    log::info("(3) encode fix message : {}"sv, t3);
+    log::info("(4) send : {}"sv, t4);
+    log::info("(5) clean-up : {}"sv, t5);
+    log::info("GWL:{},{},{},{},{},{}"sv, dt, t1, t2, t3, t4, t5);
   }
   return stream_id_;
 }
