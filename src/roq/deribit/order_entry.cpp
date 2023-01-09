@@ -201,12 +201,12 @@ uint16_t OrderEntry::operator()(
     auto t5 = now_5 - now_4;
     assert(dt == (t1 + t2 + t3 + t4 + t5));
     log::info("gateway latency = {}"sv, dt);
-    log::info("(1) validate + prepare : {}"sv, t1);
-    log::info("(2) fetch recycle buffer :  {}"sv, t2);
-    log::info("(3) encode fix message : {}"sv, t3);
-    log::info("(4) send : {}"sv, t4);
-    log::info("(5) clean-up : {}"sv, t5);
-    log::info("GWL:{},{},{},{},{},{}"sv, dt, t1, t2, t3, t4, t5);
+    log::info("(1) validate + prepare   : {}"sv, t1);
+    log::info("(2) fetch recycle buffer : {}"sv, t2);
+    log::info("(3) encode fix message   : {}"sv, t3);
+    log::info("(4) socket send          : {}"sv, t4);
+    log::info("(5) clean-up             : {}"sv, t5);
+    log::info("GWL:{},{},{},{},{},{}"sv, dt.count(), t1.count(), t2.count(), t3.count(), t4.count(), t5.count());
   }
   return stream_id_;
 }
