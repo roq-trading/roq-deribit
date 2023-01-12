@@ -130,13 +130,18 @@ class MarketData final : public io::net::ConnectionManager::Handler {
  private:
   Handler &handler_;
   // config
-  const uint16_t stream_id_;
-  const std::string name_;
-  const size_t index_;
+  uint16_t const stream_id_;
+  std::string const name_;
+  size_t const index_;
   bool const master_;
   bool const publish_market_by_price_;
   bool const publish_trade_summary_;
   Mask<SupportType> const supports_;
+  // flags
+  std::string const exchange_;
+  bool const fix_debug_;
+  std::chrono::nanoseconds const fix_request_timeout_;
+  std::chrono::nanoseconds const fix_ping_freq_;
   // connection
   std::unique_ptr<io::net::ConnectionFactory> connection_factory_;
   std::unique_ptr<io::net::ConnectionManager> connection_manager_;

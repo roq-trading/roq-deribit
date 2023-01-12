@@ -155,6 +155,8 @@ MarketData::MarketData(
     : handler_{handler}, stream_id_{stream_id}, name_{create_name(stream_id_)}, index_{index}, master_{master},
       publish_market_by_price_{publish_market_by_price(shared)}, publish_trade_summary_{publish_trade_summary(shared)},
       supports_{get_supports(master_, publish_market_by_price_, publish_trade_summary_)},
+      exchange_{flags::Config::exchange()}, fix_debug_{flags::FIX::fix_debug()},
+      fix_request_timeout_{flags::FIX::fix_request_timeout()}, fix_ping_freq_{flags::FIX::fix_ping_freq()},
       connection_factory_{create_connection_factory(context)}, connection_manager_{create_connection_manager(
                                                                    *this, *connection_factory_)},
       encode_buffer_{flags::Common::encode_buffer_size()}, decode_buffer_{flags::Common::decode_buffer_size()},
@@ -173,9 +175,8 @@ MarketData::MarketData(
       latency_{
           .ping = create_metrics(name_, "ping"sv),
       },
-      security_{security}, shared_{shared}, download_{flags::FIX::fix_request_timeout(), [this](auto state) {
-                                                        return download(state);
-                                                      }} {
+      security_{security}, shared_{shared}, download_{
+                                                fix_request_timeout_, [this](auto state) { return download(state); }} {
   log::info("DEBUG: publish_market_by_price={}"sv, publish_market_by_price_);
   log::info("DEBUG: publish_trade_summary={}"sv, publish_trade_summary_);
 }
@@ -191,8 +192,8 @@ void MarketData::operator()(Event<Stop> const &) {
 void MarketData::operator()(Event<Timer> const &event) {
   if (!(*connection_manager_).refresh(event.value.now))
     return;
-  if (last_logon_or_heartbeat_.count() && flags::FIX::fix_request_timeout().count() &&
-      (event.value.now - last_logon_or_heartbeat_) > flags::FIX::fix_request_timeout()) {
+  if (last_logon_or_heartbeat_.count() && fix_request_timeout_.count() &&
+      (event.value.now - last_logon_or_heartbeat_) > fix_request_timeout_) {
     log::warn("*** DETECTED TIMEOUT ***"sv);
     log::info("closing connection"sv);
     (*connection_manager_).close();
@@ -206,8 +207,8 @@ void MarketData::operator()(Event<Timer> const &event) {
         }
       } else {
         if (next_heartbeat_ <= event.value.now) {
-          assert(flags::FIX::fix_ping_freq().count() > 0);
-          next_heartbeat_ = event.value.now + flags::FIX::fix_ping_freq();
+          assert(fix_ping_freq_.count() > 0);
+          next_heartbeat_ = event.value.now + fix_ping_freq_;
           send_test_request(clock::get_system());
         }
       }
@@ -239,8 +240,8 @@ void MarketData::operator()(io::net::ConnectionManager::Read const &) {
     Trace event{trace_info, message};
     parse(event);
   };
-  auto log_message = [](auto &message) {
-    if (flags::FIX::fix_debug()) [[unlikely]]
+  auto log_message = [this](auto &message) {
+    if (fix_debug_) [[unlikely]]
       log::info("{}"sv, debug::fix::Message{message});
   };
   auto buffer = (*connection_manager_).buffer();
@@ -283,7 +284,7 @@ void MarketData::operator()(ConnectionStatus status) {
 }
 
 void MarketData::send_logon() {
-  auto heart_bt_int = std::chrono::duration_cast<std::chrono::seconds>(flags::FIX::fix_ping_freq()).count();
+  auto heart_bt_int = std::chrono::duration_cast<std::chrono::seconds>(fix_ping_freq_).count();
   auto now = clock::get_realtime<std::chrono::milliseconds>();
   auto raw_data = security_.create_raw_data(now);
   auto password = security_.create_password(raw_data);
@@ -497,77 +498,70 @@ void MarketData::parse_helper(Trace<core::fix::Message> const &event) {
     using enum core::fix::MsgType;
     // session
     case HEARTBEAT: {
-      auto const heartbeat = fix::Heartbeat::create(message);
+      auto heartbeat = fix::Heartbeat::create(message);
       create_trace_and_dispatch(*this, trace_info, heartbeat, message.header);
-      return;
+      break;
     }
     case LOGON: {
-      auto const logon = fix::Logon::create(message);
+      auto logon = fix::Logon::create(message);
       create_trace_and_dispatch(*this, trace_info, logon, message.header);
-      return;
+      break;
     }
     case LOGOUT: {
-      auto const logout = fix::Logout::create(message);
+      auto logout = fix::Logout::create(message);
       create_trace_and_dispatch(*this, trace_info, logout, message.header);
-      return;
+      break;
     }
     case RESEND_REQUEST: {
-      auto const resend_request = fix::ResendRequest::create(message);
+      auto resend_request = fix::ResendRequest::create(message);
       create_trace_and_dispatch(*this, trace_info, resend_request, message.header);
-      return;
+      break;
     }
     case TEST_REQUEST: {
-      auto const test_request = fix::TestRequest::create(message);
+      auto test_request = fix::TestRequest::create(message);
       create_trace_and_dispatch(*this, trace_info, test_request, message.header);
-      return;
+      break;
     }
     // ...
-    case MARKET_DATA_INCREMENTAL_REFRESH: {
+    case MARKET_DATA_INCREMENTAL_REFRESH:
       profile_.market_data_incremental_refresh([&]() {
-        const auto market_data_incremental_refresh = fix::MarketDataIncrementalRefresh::create(message, buffer);
+        auto market_data_incremental_refresh = fix::MarketDataIncrementalRefresh::create(message, buffer);
         create_trace_and_dispatch(*this, trace_info, market_data_incremental_refresh, message.header);
       });
-      return;
-    }
-    case MARKET_DATA_REQUEST_REJECT: {
+      break;
+    case MARKET_DATA_REQUEST_REJECT:
       profile_.market_data_request_reject([&]() {
-        const auto market_data_request_reject = fix::MarketDataRequestReject::create(message);
+        auto market_data_request_reject = fix::MarketDataRequestReject::create(message);
         create_trace_and_dispatch(*this, trace_info, market_data_request_reject, message.header);
       });
-      return;
-    }
-    case MARKET_DATA_SNAPSHOT_FULL_REFRESH: {
+      break;
+    case MARKET_DATA_SNAPSHOT_FULL_REFRESH:
       profile_.market_data_snapshot_full_refresh([&]() {
-        const auto market_data_snapshot_full_refresh = fix::MarketDataSnapshotFullRefresh::create(message, buffer);
+        auto market_data_snapshot_full_refresh = fix::MarketDataSnapshotFullRefresh::create(message, buffer);
         create_trace_and_dispatch(*this, trace_info, market_data_snapshot_full_refresh, message.header);
       });
-      return;
-    }
-    case SECURITY_LIST: {
+      break;
+    case SECURITY_LIST:
       profile_.security_list([&]() {
-        const auto security_list = fix::SecurityList::create(message, buffer);
+        auto security_list = fix::SecurityList::create(message, buffer);
         create_trace_and_dispatch(*this, trace_info, security_list, message.header);
       });
-      return;
-    }
-    case SECURITY_STATUS: {
+      break;
+    case SECURITY_STATUS:
       profile_.security_status([&]() {
-        const auto security_status = fix::SecurityStatus::create(message, buffer);
+        auto security_status = fix::SecurityStatus::create(message, buffer);
         create_trace_and_dispatch(*this, trace_info, security_status, message.header);
       });
-      return;
-    }
+      break;
     // weird
-    case MARKET_DATA_REQUEST: {
+    case MARKET_DATA_REQUEST:
       profile_.market_data_request([&]() {
         // XXX HANS why do we get this message?
       });
-      return;
-    }
-    default:
       break;
+    default:
+      log::warn("Unexpected msg_type={}"sv, message.header.msg_type);
   }
-  log::warn("Unexpected msg_type={}"sv, message.header.msg_type);
 }
 
 void MarketData::operator()(Trace<fix::Heartbeat> const &event, core::fix::Header const &header) {
@@ -578,7 +572,7 @@ void MarketData::operator()(Trace<fix::Heartbeat> const &event, core::fix::Heade
   if (!std::empty(heartbeat.test_req_id)) {
     auto send_time = std::chrono::nanoseconds{core::from_chars<uint64_t>(heartbeat.test_req_id)};
     auto latency = (now - send_time) / 2;  // 1-way
-    const ExternalLatency external_latency{
+    auto external_latency = ExternalLatency{
         .stream_id = stream_id_,
         .account = {},
         .latency = latency,
@@ -627,7 +621,7 @@ void MarketData::operator()(Trace<fix::SecurityList> const &event, core::fix::He
     return date_part < T::max() ? date_part + time_part : T::max();
   };
   if (std::size(security_list.no_related_sym) > 0) {
-    size_t counter = {};
+    auto counter = size_t{0};
     std::vector<Symbol> symbols;
     symbols.reserve(std::size(security_list.no_related_sym));
     for (auto &instrument : security_list.no_related_sym) {
@@ -640,9 +634,9 @@ void MarketData::operator()(Trace<fix::SecurityList> const &event, core::fix::He
           instrument.maturity_date,
           core::charconv::time_from_string<std::chrono::milliseconds>(instrument.maturity_time));
       auto expiry_datetime_utc = expiry_datetime;
-      const ReferenceData reference_data{
+      auto reference_data = ReferenceData{
           .stream_id = stream_id_,
-          .exchange = flags::Config::exchange(),
+          .exchange = exchange_,
           .symbol = symbol,
           .description = instrument.security_desc,
           .security_type = security_type,
@@ -676,7 +670,7 @@ void MarketData::operator()(Trace<fix::SecurityList> const &event, core::fix::He
     }
     log::info<2>("- securities: {} (/{})"sv, counter, std::size(security_list.no_related_sym));
     if (!std::empty(symbols)) {
-      SymbolsUpdate symbols_update{
+      auto symbols_update = SymbolsUpdate{
           .symbols = symbols,
       };
       handler_(symbols_update);
@@ -724,20 +718,17 @@ void MarketData::operator()(Trace<fix::MarketDataIncrementalRefresh> const &even
       exchange_time_utc = item.md_entry_date;
     switch (item.md_entry_type) {
       using enum core::fix::MDEntryType;
-      case BID: {
+      case BID:
         validate(item);
         bids.emplace_back([&item](auto &result) { create_mbp_update(result, item); });
         break;
-      }
-      case OFFER: {
+      case OFFER:
         validate(item);
         asks.emplace_back([&item](auto &result) { create_mbp_update(result, item); });
         break;
-      }
-      case TRADE: {
+      case TRADE:
         trades.emplace_back([&item](auto &result) { create_trade(result, item); });
         break;
-      }
       case INDEX_VALUE:
         statistics.emplace_back([&](auto &result) {
           new (&result) Statistics{
@@ -765,9 +756,9 @@ void MarketData::operator()(Trace<fix::MarketDataIncrementalRefresh> const &even
   }
   if (!(std::empty(bids) && std::empty(asks)) && publish_market_by_price_) {
     if (latch_.find(symbol) == std::end(latch_)) {
-      const MarketByPriceUpdate market_by_price_update{
+      auto market_by_price_update = MarketByPriceUpdate{
           .stream_id = stream_id_,
-          .exchange = flags::Config::exchange(),
+          .exchange = exchange_,
           .symbol = symbol,
           .bids = bids,
           .asks = asks,
@@ -787,9 +778,9 @@ void MarketData::operator()(Trace<fix::MarketDataIncrementalRefresh> const &even
     }
   }
   if (!std::empty(trades) && publish_trade_summary_) {
-    const TradeSummary trade_summary{
+    auto trade_summary = TradeSummary{
         .stream_id = stream_id_,
-        .exchange = flags::Config::exchange(),
+        .exchange = exchange_,
         .symbol = symbol,
         .trades = trades,
         .exchange_time_utc = exchange_time_utc,
@@ -799,9 +790,9 @@ void MarketData::operator()(Trace<fix::MarketDataIncrementalRefresh> const &even
     create_trace_and_dispatch(handler_, trace_info, trade_summary, is_last);
   }
   if (!std::empty(statistics)) {
-    const StatisticsUpdate statistics_update{
+    auto statistics_update = StatisticsUpdate{
         .stream_id = stream_id_,
-        .exchange = flags::Config::exchange(),
+        .exchange = exchange_,
         .symbol = market_data_incremental_refresh.symbol,
         .statistics = statistics,
         .update_type = UpdateType::INCREMENTAL,
@@ -837,16 +828,14 @@ void MarketData::operator()(Trace<fix::MarketDataSnapshotFullRefresh> const &eve
       exchange_time_utc = item.md_entry_date;
     switch (item.md_entry_type) {
       using enum core::fix::MDEntryType;
-      case BID: {
+      case BID:
         validate(item);
         bids.emplace_back([&item](auto &result) { create_mbp_update(result, item); });
         break;
-      }
-      case OFFER: {
+      case OFFER:
         validate(item);
         asks.emplace_back([&item](auto &result) { create_mbp_update(result, item); });
         break;
-      }
       case TRADE:
         break;  // drop
       case INDEX_VALUE:
@@ -876,9 +865,9 @@ void MarketData::operator()(Trace<fix::MarketDataSnapshotFullRefresh> const &eve
   }
   if (!(std::empty(bids) && std::empty(asks)) && publish_market_by_price_) {
     auto is_last = std::empty(statistics);
-    const MarketByPriceUpdate market_by_price_update{
+    auto market_by_price_update = MarketByPriceUpdate{
         .stream_id = stream_id_,
-        .exchange = flags::Config::exchange(),
+        .exchange = exchange_,
         .symbol = symbol,
         .bids = bids,
         .asks = asks,
@@ -899,9 +888,9 @@ void MarketData::operator()(Trace<fix::MarketDataSnapshotFullRefresh> const &eve
     }
   }
   if (!std::empty(statistics)) {
-    const StatisticsUpdate statistics_update{
+    auto statistics_update = StatisticsUpdate{
         .stream_id = stream_id_,
-        .exchange = flags::Config::exchange(),
+        .exchange = exchange_,
         .symbol = symbol,
         .statistics = statistics,
         .update_type = UpdateType::SNAPSHOT,
@@ -924,7 +913,7 @@ void MarketData::send(T const &event, std::chrono::nanoseconds sending_time) {
   core::fix::Writer writer(
       encode_buffer_, FIX_VERSION, T::msg_type, SENDER_COMP_ID, TARGET_COMP_ID, outbound_.msg_seq_num, sending_time);
   auto message = event.encode(writer);
-  if (flags::FIX::fix_debug())
+  if (fix_debug_) [[unlikely]]
     log::info("{}"sv, debug::fix::Message{message});
   // note!
   //   it is desirable to use a timer queue here
