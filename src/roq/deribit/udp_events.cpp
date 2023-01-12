@@ -8,8 +8,6 @@
 
 #include "roq/utils/update.hpp"
 
-#include "roq/core/back_emplacer.hpp"
-
 #include "roq/core/charconv/number.hpp"
 
 #include "roq/debug/hex/message.hpp"
@@ -333,8 +331,8 @@ void UDPEvents::operator()(Trace<deribit_multicast::Trades> const &event, sbe::F
     if (test_sequence(last_trades_, instrument_id, frame.sequence_number)) {
       if (shared_.find_instrument(instrument_id, [&](auto &instrument) {
             std::chrono::milliseconds exchange_time_utc{};
-            auto create_trade = []<typename T>(T &result, auto multiplier, auto const &value) {
-              new (&result) T{
+            auto create_trade = [](auto &result, auto multiplier, auto const &value) {
+              auto trade = Trade{
                   .side = sbe::map_direction(value.direction()),
                   .price = value.price(),
                   .quantity = value.amount() * multiplier,
@@ -342,20 +340,21 @@ void UDPEvents::operator()(Trace<deribit_multicast::Trades> const &event, sbe::F
                   .taker_order_id = {},
                   .maker_order_id = {},
               };
-              core::charconv::to_string(std::back_inserter(result.trade_id), value.tradeId());
+              core::charconv::to_string(std::back_inserter(trade.trade_id), value.tradeId());
+              result.emplace_back(std::move(trade));
             };
-            core::back_emplacer trades_{shared_.trades};
+            shared_.trades.clear();
             trades.sbeRewind();
             trades.tradesList().forEach([&](auto const &item) {
               std::chrono::milliseconds const timestamp{item.timestampMs()};
               exchange_time_utc = std::max(exchange_time_utc, timestamp);
-              trades_.emplace_back([&](auto &result) { create_trade(result, instrument.multiplier, item); });
+              create_trade(shared_.trades, instrument.multiplier, item);
             });
-            const TradeSummary trade_summary{
+            auto trade_summary = TradeSummary{
                 .stream_id = stream_id_,
                 .exchange = flags::Config::exchange(),
                 .symbol = instrument.symbol,
-                .trades = trades_,
+                .trades = shared_.trades,
                 .exchange_time_utc = exchange_time_utc,
                 .exchange_sequence = {},
             };
@@ -401,7 +400,7 @@ void UDPEvents::publish_stream_status(TraceInfo const &trace_info, ConnectionSta
 
 template <typename T, typename U>
 void UDPEvents::emplace_back(T const &item, double multiplier, U &bids, U &asks) {
-  const MBPUpdate mbp_update{
+  auto mbp_update = MBPUpdate{
       .price = item.price(),
       .quantity = item.amount() * multiplier,
       .implied_quantity = NaN,
