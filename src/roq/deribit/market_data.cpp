@@ -117,7 +117,7 @@ void validate(auto const &value) {
 
 template <typename T>
 void emplace_back(T &result, auto const &value) {
-  using value_type = T::value_type;
+  using value_type = typename T::value_type;
   if constexpr (std::is_same<value_type, MBPUpdate>::value) {
     auto mbp_update = MBPUpdate{
         .price = value.md_entry_px,
