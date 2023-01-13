@@ -210,7 +210,7 @@ void UDPSnapshot::operator()(Trace<deribit_multicast::Snapshot> const &event, sb
                   sequence,
                   change_id,
                   timestamp);
-              const MarketByPriceUpdate market_by_price_update{
+              auto market_by_price_update = MarketByPriceUpdate{
                   .stream_id = stream_id_,
                   .exchange = flags::Config::exchange(),
                   .symbol = instrument.symbol,
@@ -251,7 +251,7 @@ void UDPSnapshot::operator()(metrics::Writer &writer) {
 void UDPSnapshot::publish_stream_status(TraceInfo const &trace_info, ConnectionStatus connection_status) {
   if (!utils::update(connection_status_, connection_status))
     return;
-  const StreamStatus stream_status{
+  auto stream_status = StreamStatus{
       .stream_id = stream_id_,
       .account = {},
       .supports = supports_,
@@ -267,7 +267,7 @@ void UDPSnapshot::publish_stream_status(TraceInfo const &trace_info, ConnectionS
 
 template <typename T, typename U>
 void UDPSnapshot::emplace_back(T const &item, double multiplier, U &bids, U &asks) {
-  const MBPUpdate mbp_update{
+  auto mbp_update = MBPUpdate{
       .price = item.price(),
       .quantity = item.amount() * multiplier,
       .implied_quantity = NaN,

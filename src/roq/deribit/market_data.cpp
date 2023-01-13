@@ -268,7 +268,7 @@ void MarketData::operator()(io::net::ConnectionManager::Read const &) {
 void MarketData::operator()(ConnectionStatus status) {
   if (utils::update(status_, status)) {
     TraceInfo trace_info;
-    const StreamStatus stream_status{
+    auto stream_status = StreamStatus{
         .stream_id = stream_id_,
         .account = {},
         .supports = supports_,
@@ -289,7 +289,7 @@ void MarketData::send_logon() {
   auto raw_data = security_.create_raw_data(now);
   auto password = security_.create_password(raw_data);
   auto cancel_on_disconnect = flags::FIX::fix_cancel_on_disconnect();
-  fix::Logon logon{
+  auto logon = fix::Logon{
       .heart_bt_int = utils::safe_cast(heart_bt_int),
       .raw_data_length = utils::safe_cast(std::size(raw_data)),
       .raw_data = raw_data,
@@ -307,14 +307,14 @@ void MarketData::send_logon() {
 }
 
 void MarketData::send_logout(std::string_view const &text) {
-  fix::Logout logout{
+  auto logout = fix::Logout{
       .text = text,
   };
   send(logout);
 }
 
 void MarketData::send_heartbeat(std::string_view const &test_req_id) {
-  fix::Heartbeat heartbeat{
+  auto heartbeat = fix::Heartbeat{
       .test_req_id = test_req_id,
   };
   send(heartbeat);
@@ -324,8 +324,8 @@ void MarketData::send_test_request(std::chrono::nanoseconds now) {
   // request_id is current time
   stack_buffer_.clear();
   core::charconv::to_string(std::back_inserter(stack_buffer_), now.count());
-  auto request_id = std::string_view(std::data(stack_buffer_), std::size(stack_buffer_));
-  fix::TestRequest test_request{
+  auto request_id = std::string_view{std::data(stack_buffer_), std::size(stack_buffer_)};
+  auto test_request = fix::TestRequest{
       .test_req_id = request_id,
   };
   send(test_request);
@@ -371,7 +371,7 @@ uint32_t MarketData::download(MarketDataState state) {
 
 void MarketData::download_securities() {
   auto request_id = shared_.next_request_id();
-  fix::SecurityListRequest security_list_request{
+  auto security_list_request = fix::SecurityListRequest{
       .security_req_id = request_id,
       .security_list_request_type = core::fix::SecurityListRequestType::ALL_SECURITIES,
       .subscription_request_type = core::fix::SubscriptionRequestType::SNAPSHOT_UPDATES,
@@ -423,7 +423,7 @@ void MarketData::subscribe(std::span<Symbol const> const &symbols) {
           .symbol = symbols[offset + i],
       };
     auto request_id = shared_.next_request_id();
-    fix::MarketDataRequest market_data_request{
+    auto market_data_request = fix::MarketDataRequest{
         .md_req_id = request_id,
         .subscription_request_type = core::fix::SubscriptionRequestType::SNAPSHOT_UPDATES,
         .market_depth = market_depth,
@@ -459,7 +459,7 @@ void MarketData::unsubscribe(std::span<Symbol const> const &symbols) {
           .symbol = symbols[offset + i],
       };
     auto request_id = shared_.next_request_id();
-    fix::MarketDataRequest market_data_request{
+    auto market_data_request = fix::MarketDataRequest{
         .md_req_id = request_id,
         .subscription_request_type = core::fix::SubscriptionRequestType::UNSUBSCRIBE,
         .market_depth = {},

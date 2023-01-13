@@ -292,7 +292,7 @@ void UDPEvents::operator()(Trace<deribit_multicast::Ticker> const &event, sbe::F
       if (shared_.find_instrument(instrument_id, [&](auto &instrument) {
             std::chrono::milliseconds const timestamp{ticker.timestampMs()};
             // note! unlike the WS feed, it looks like we do *not* have to scale amounts here
-            const TopOfBook top_of_book{
+            auto top_of_book = TopOfBook{
                 .stream_id = stream_id_,
                 .exchange = flags::Config::exchange(),
                 .symbol = instrument.symbol,
@@ -384,7 +384,7 @@ void UDPEvents::operator()(metrics::Writer &writer) {
 void UDPEvents::publish_stream_status(TraceInfo const &trace_info, ConnectionStatus connection_status) {
   if (!utils::update(connection_status_, connection_status))
     return;
-  const StreamStatus stream_status{
+  auto stream_status = StreamStatus{
       .stream_id = stream_id_,
       .account = {},
       .supports = supports_,

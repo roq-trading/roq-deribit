@@ -174,7 +174,7 @@ uint16_t OrderEntry::operator()(
   auto exec_inst = fix::map(create_order.execution_instructions);
   auto ord_type = core::fix::map(create_order.order_type);
   auto time_in_force = core::fix::map(create_order.time_in_force);
-  fix::NewOrderSingle new_order_single{
+  auto new_order_single = fix::NewOrderSingle{
       .cl_ord_id = request_id,
       .side = side,
       .order_qty = {create_order.quantity, order.quantity_decimals},
@@ -221,7 +221,7 @@ uint16_t OrderEntry::operator()(
   auto const &modify_order = event.value;
   auto side = core::fix::map(order.side);
   auto ord_type = core::fix::map(order.order_type);
-  fix::OrderCancelReplaceRequest order_cancel_replace_request{
+  auto order_cancel_replace_request = fix::OrderCancelReplaceRequest{
       .orig_cl_ord_id = order.external_order_id,
       .cl_ord_id = request_id,
       .transact_time = utils::safe_cast(order.update_time_utc),
@@ -245,7 +245,7 @@ uint16_t OrderEntry::operator()(
     [[maybe_unused]] std::string_view const &previous_request_id) {
   if (!ready()) [[unlikely]]
     throw oms::NotReady{"not ready"sv};
-  fix::OrderCancelRequest order_cancel_request{
+  auto order_cancel_request = fix::OrderCancelRequest{
       .cl_ord_id = request_id,
       .orig_cl_ord_id = order.external_order_id,
   };
@@ -257,7 +257,7 @@ uint16_t OrderEntry::operator()(
 
 uint16_t OrderEntry::operator()(Event<CancelAllOrders> const &event, std::string_view const &request_id) {
   if (ready()) {
-    fix::OrderMassCancelRequest order_mass_cancel_request{
+    auto order_mass_cancel_request = fix::OrderMassCancelRequest{
         .cl_ord_id = request_id,
         .mass_cancel_request_type = core::fix::MassCancelRequestType::CANCEL_ALL_ORDERS,
         .security_type = {},
@@ -344,7 +344,7 @@ void OrderEntry::operator()(io::net::ConnectionManager::Read const &) {
 void OrderEntry::operator()(ConnectionStatus status) {
   if (utils::update(status_, status)) {
     TraceInfo trace_info;
-    const StreamStatus stream_status{
+    auto stream_status = StreamStatus{
         .stream_id = stream_id_,
         .account = security_.get_account(),
         .supports = SUPPORTS,
@@ -364,7 +364,7 @@ void OrderEntry::send_logon() {
   auto now = clock::get_realtime<std::chrono::milliseconds>();
   auto raw_data = security_.create_raw_data(now);
   auto password = security_.create_password(raw_data);
-  fix::Logon logon{
+  auto logon = fix::Logon{
       .heart_bt_int = static_cast<uint16_t>(ping_freq.count()),
       .raw_data_length = static_cast<uint32_t>(std::size(raw_data)),
       .raw_data = raw_data,
@@ -431,7 +431,7 @@ uint32_t OrderEntry::download(OrderEntryState state) {
 
 void OrderEntry::subscribe_positions() {
   auto request_id = shared_.next_request_id();
-  fix::RequestForPositions request_for_positions{
+  auto request_for_positions = fix::RequestForPositions{
       .pos_req_id = request_id,
       .pos_req_type = roq::core::fix::PosReqType::POSITIONS,
       .subscription_request_type = roq::core::fix::SubscriptionRequestType::SNAPSHOT_UPDATES,
@@ -442,7 +442,7 @@ void OrderEntry::subscribe_positions() {
 
 void OrderEntry::download_orders() {
   auto request_id = shared_.next_request_id();
-  fix::OrderMassStatusRequest order_mass_status_request{
+  auto order_mass_status_request = fix::OrderMassStatusRequest{
       .mass_status_req_id = request_id,
       .mass_status_req_type = core::fix::MassStatusReqType::ORDERS,
   };
@@ -461,62 +461,62 @@ void OrderEntry::parse_helper(Trace<core::fix::Message> const &event) {
     using enum core::fix::MsgType;
     // session
     case HEARTBEAT: {
-      auto const heartbeat = fix::Heartbeat::create(message);
+      auto heartbeat = fix::Heartbeat::create(message);
       create_trace_and_dispatch(*this, trace_info, heartbeat, message.header);
       return;
     }
     case LOGON: {
-      auto const logon = fix::Logon::create(message);
+      auto logon = fix::Logon::create(message);
       create_trace_and_dispatch(*this, trace_info, logon, message.header);
       return;
     }
     case LOGOUT: {
-      auto const logout = fix::Logout::create(message);
+      auto logout = fix::Logout::create(message);
       create_trace_and_dispatch(*this, trace_info, logout, message.header);
       return;
     }
     case RESEND_REQUEST: {
-      auto const resend_request = fix::ResendRequest::create(message);
+      auto resend_request = fix::ResendRequest::create(message);
       create_trace_and_dispatch(*this, trace_info, resend_request, message.header);
       return;
     }
     case TEST_REQUEST: {
-      auto const test_request = fix::TestRequest::create(message);
+      auto test_request = fix::TestRequest::create(message);
       create_trace_and_dispatch(*this, trace_info, test_request, message.header);
       return;
     }
     // ...
     case POSITION_REPORT: {
       profile_.position_report([&]() {
-        const auto position_report = fix::PositionReport::create(message, buffer);
+        auto position_report = fix::PositionReport::create(message, buffer);
         create_trace_and_dispatch(*this, trace_info, position_report, message.header);
       });
       return;
     }
     case EXECUTION_REPORT: {
       profile_.execution_report([&]() {
-        const auto execution_report = fix::ExecutionReport::create(message, buffer);
+        auto execution_report = fix::ExecutionReport::create(message, buffer);
         create_trace_and_dispatch(*this, trace_info, execution_report, message.header);
       });
       return;
     }
     case ORDER_CANCEL_REJECT: {
       profile_.order_cancel_reject([&]() {
-        const auto order_cancel_reject = fix::OrderCancelReject::create(message);
+        auto order_cancel_reject = fix::OrderCancelReject::create(message);
         create_trace_and_dispatch(*this, trace_info, order_cancel_reject, message.header);
       });
       return;
     }
     case REJECT: {
       profile_.reject([&]() {
-        const auto reject = fix::Reject::create(message);
+        auto reject = fix::Reject::create(message);
         create_trace_and_dispatch(*this, trace_info, reject, message.header);
       });
       return;
     }
     case ORDER_MASS_CANCEL_REPORT: {
       profile_.order_mass_cancel_report([&]() {
-        const auto order_mass_cancel_report = fix::OrderMassCancelReport::create(message, buffer);
+        auto order_mass_cancel_report = fix::OrderMassCancelReport::create(message, buffer);
         create_trace_and_dispatch(*this, trace_info, order_mass_cancel_report, message.header);
       });
       return;
@@ -535,7 +535,7 @@ void OrderEntry::operator()(Trace<fix::Heartbeat> const &event, core::fix::Heade
   if (!std::empty(heartbeat.test_req_id)) {
     auto send_time = std::chrono::nanoseconds{core::from_chars<uint64_t>(heartbeat.test_req_id)};
     auto latency = (now - send_time) / 2;  // 1-way
-    const ExternalLatency external_latency{
+    auto external_latency = ExternalLatency{
         .stream_id = stream_id_,
         .account = security_.get_account(),
         .latency = latency,
@@ -584,7 +584,7 @@ void OrderEntry::operator()(Trace<fix::PositionReport> const &event, core::fix::
     auto &position_qty = position_report.no_positions[i];
     auto long_quantity = std::max(0.0, position_qty.long_qty);
     auto short_quantity = std::max(0.0, position_qty.short_qty);
-    const PositionUpdate position_update{
+    auto position_update = PositionUpdate{
         .stream_id = stream_id_,
         .account = security_.get_account(),
         .exchange = flags::Config::exchange(),
@@ -757,7 +757,7 @@ void OrderEntry::operator()(Trace<fix::ExecutionReport> const &event, core::fix:
   // we have very little information to match requests as we can't rewrite ClOrdID
   // - create and modify both have exec_type=ORDER_STATUS and ord_status=NEW
   // - reject has nothing
-  oms::Response response{
+  auto response = oms::Response{
       .type = request_type,
       .origin = Origin::EXCHANGE,
       .status = request_status,
@@ -768,7 +768,7 @@ void OrderEntry::operator()(Trace<fix::ExecutionReport> const &event, core::fix:
       .quantity = execution_report.order_qty,
       .price = execution_report.price,
   };
-  oms::OrderUpdate order_update{
+  auto order_update = oms::OrderUpdate{
       .account = security_.get_account(),
       .exchange = flags::Config::exchange(),
       .symbol = execution_report.symbol,
@@ -815,7 +815,7 @@ void OrderEntry::operator()(Trace<fix::ExecutionReport> const &event, core::fix:
               fills.emplace_back([&](auto &result) { create_fill(result, item); });
             }
             if (!std::empty(fills)) {
-              const TradeUpdate trade_update{
+              auto trade_update = TradeUpdate{
                   .stream_id = stream_id_,
                   .account = order.account,
                   .order_id = order.order_id,
@@ -852,7 +852,7 @@ void OrderEntry::operator()(Trace<fix::OrderCancelReject> const &event, core::fi
   auto &order_cancel_reject = event.value;
   log::warn<1>("event={{header={}, order_cancel_reject={}}}"sv, header, order_cancel_reject);
   auto error = fix::map_error(order_cancel_reject.text);
-  oms::Response response{
+  auto response = oms::Response{
       .type = {},  // modify or cancel
       .origin = Origin::EXCHANGE,
       .status = RequestStatus::REJECTED,
@@ -900,7 +900,7 @@ void OrderEntry::operator()(Trace<fix::Reject> const &event, core::fix::Header c
     if (iter != std::end(msg_seq_num_to_request_id_)) {
       auto &request_id = (*iter).second;
       auto error = fix::reject_to_error(reject.session_reject_reason, reject.text);
-      oms::Response response{
+      auto response = oms::Response{
           .type = request_type,
           .origin = Origin::EXCHANGE,
           .status = RequestStatus::REJECTED,

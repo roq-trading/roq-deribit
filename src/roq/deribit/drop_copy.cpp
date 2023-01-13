@@ -160,7 +160,7 @@ void DropCopy::operator()(web::socket::Client::Binary const &) {
 void DropCopy::operator()(ConnectionStatus status) {
   if (utils::update(status_, status)) {
     TraceInfo trace_info;
-    const StreamStatus stream_status{
+    auto stream_status = StreamStatus{
         .stream_id = stream_id_,
         .account = security_.get_account(),
         .supports = SUPPORTS,
@@ -441,7 +441,7 @@ void DropCopy::operator()(Trace<json::Ticker> const &) {
 void DropCopy::operator()(Trace<json::Portfolio> const &event) {
   log::info<2>("portfolio={}"sv, event.value);
   auto &[trace_info, portfolio] = event;
-  const FundsUpdate funds_update{
+  auto funds_update = FundsUpdate{
       .stream_id = stream_id_,
       .account = security_.get_account(),
       .currency = portfolio.currency,

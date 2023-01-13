@@ -59,7 +59,7 @@ auto get_supports(auto master, auto publish_top_of_book) {
 
 auto create_connection(auto &handler, auto &context) {
   auto uri = flags::WebSocket::ws_uri();
-  web::socket::Client::Config config{
+  auto config = web::socket::Client::Config{
       .always_reconnect = true,
       .connection_timeout = server::Flags::net_connection_timeout(),
       .disconnect_on_idle_timeout = server::Flags::net_disconnect_on_idle_timeout(),
@@ -181,7 +181,7 @@ void WebSocket::operator()(web::socket::Client::Binary const &) {
 void WebSocket::operator()(ConnectionStatus status) {
   if (utils::update(status_, status)) {
     TraceInfo trace_info;
-    const StreamStatus stream_status{
+    auto stream_status = StreamStatus{
         .stream_id = stream_id_,
         .account = {},
         .supports = supports_,
@@ -475,7 +475,7 @@ void WebSocket::operator()(Trace<json::Instruments> const &event) {
     }
     download_.check(WebSocketState::INSTRUMENTS);
     if (!std::empty(symbols)) {
-      SymbolsUpdate symbols_update{
+      auto symbols_update = SymbolsUpdate{
           .symbols = symbols,
       };
       handler_(symbols_update);
@@ -509,7 +509,7 @@ void WebSocket::operator()(Trace<json::Quote> const &event) {
             // note! as real amounts to match MbP
             auto bid_quantity = multiplier * quote.best_bid_amount;
             auto ask_quantity = multiplier * quote.best_ask_amount;
-            const TopOfBook top_of_book = {
+            auto top_of_book = TopOfBook{
                 .stream_id = stream_id_,
                 .exchange = flags::Config::exchange(),
                 .symbol = quote.instrument_name,
@@ -543,7 +543,7 @@ void WebSocket::operator()(Trace<json::Ticker> const &event) {
     auto trading_status = json::map(ticker.state);
     auto &item = trading_status_[ticker.instrument_name];
     if (trading_status != TradingStatus{} && utils::update(item, trading_status)) {
-      const MarketStatus market_status{
+      auto market_status = MarketStatus{
           .stream_id = stream_id_,
           .exchange = flags::Config::exchange(),
           .symbol = ticker.instrument_name,
