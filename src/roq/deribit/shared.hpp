@@ -19,7 +19,7 @@
 
 #include "roq/core/stack/buffer.hpp"
 
-#include "roq/core/market/mbp_sequencer.hpp"
+#include "roq/core/mbp/sequencer.hpp"
 
 #include "roq/deribit/instrument.hpp"
 
@@ -93,7 +93,7 @@ struct Shared final {
   absl::flat_hash_set<Symbol> all_symbols;
   core::Symbols symbols;
   absl::node_hash_map<uint32_t, std::pair<Instrument, bool>> instruments;
-  absl::node_hash_map<Symbol, core::market::MBP_Sequencer> mbp_collector;
+  absl::node_hash_map<Symbol, core::mbp::Sequencer> mbp_collector;
 };
 
 }  // namespace deribit
