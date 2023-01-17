@@ -25,14 +25,13 @@
 namespace roq {
 namespace deribit {
 
-class Gateway final : public server::Handler,
-                      public OrderEntry::Handler,
-                      public DropCopy::Handler,
-                      public WebSocket::Handler,
-                      public MarketData::Handler,
-                      public UDPSnapshot::Handler,
-                      public UDPEvents::Handler {
- public:
+struct Gateway final : public server::Handler,
+                       public OrderEntry::Handler,
+                       public DropCopy::Handler,
+                       public WebSocket::Handler,
+                       public MarketData::Handler,
+                       public UDPSnapshot::Handler,
+                       public UDPEvents::Handler {
   Gateway(server::Dispatcher &, Config const &, io::Context &);
 
   Gateway(Gateway &&) = delete;

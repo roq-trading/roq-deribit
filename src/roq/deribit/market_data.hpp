@@ -47,8 +47,7 @@
 namespace roq {
 namespace deribit {
 
-class MarketData final : public io::net::ConnectionManager::Handler {
- public:
+struct MarketData final : public io::net::ConnectionManager::Handler {
   struct SymbolsUpdate final {
     std::vector<Symbol> &symbols;
   };

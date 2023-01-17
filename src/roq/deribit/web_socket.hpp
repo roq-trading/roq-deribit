@@ -39,10 +39,9 @@
 namespace roq {
 namespace deribit {
 
-class WebSocket final : public web::socket::Client::Handler,
-                        public core::jsonrpc::Parser::Handler,
-                        public json::Parser::Handler {
- public:
+struct WebSocket final : public web::socket::Client::Handler,
+                         public core::jsonrpc::Parser::Handler,
+                         public json::Parser::Handler {
   struct CurrenciesUpdate final {
     std::vector<std::string> &currencies;
   };

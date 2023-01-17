@@ -42,8 +42,7 @@
 namespace roq {
 namespace deribit {
 
-class OrderEntry final : public io::net::ConnectionManager::Handler {
- public:
+struct OrderEntry final : public io::net::ConnectionManager::Handler {
   struct Handler {
     virtual void operator()(Trace<StreamStatus> const &) = 0;
     virtual void operator()(Trace<ExternalLatency> const &) = 0;

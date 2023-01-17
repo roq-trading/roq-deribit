@@ -15,8 +15,7 @@ namespace roq {
 namespace deribit {
 namespace tools {
 
-class Hasher final {
- public:
+struct Hasher final {
   explicit Hasher(std::string_view const &secret);
 
   Hasher(Hasher &&) = delete;

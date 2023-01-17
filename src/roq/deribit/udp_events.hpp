@@ -22,8 +22,7 @@
 namespace roq {
 namespace deribit {
 
-class UDPEvents final : public io::net::udp::Receiver::Handler, public sbe::Parser::Handler {
- public:
+struct UDPEvents final : public io::net::udp::Receiver::Handler, public sbe::Parser::Handler {
   struct Handler {
     virtual void operator()(Trace<StreamStatus> const &) = 0;
     virtual void operator()(Trace<TopOfBook> const &, bool is_last) = 0;

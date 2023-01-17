@@ -7,8 +7,7 @@
 namespace roq {
 namespace deribit {
 
-class Application final : public roq::Service {
- public:
+struct Application final : public roq::Service {
   using roq::Service::Service;
 
  protected:
