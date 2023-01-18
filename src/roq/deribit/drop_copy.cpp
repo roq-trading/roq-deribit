@@ -47,7 +47,7 @@ auto create_name(auto stream_id, auto const &account) {
 
 auto create_connection(auto &handler, auto &context) {
   auto uri = flags::WebSocket::ws_uri();
-  web::socket::Client::Config config{
+  auto config = web::socket::Client::Config{
       .always_reconnect = true,
       .connection_timeout = server::Flags::net_connection_timeout(),
       .disconnect_on_idle_timeout = {},
@@ -140,7 +140,7 @@ void DropCopy::operator()(web::socket::Client::Close const &) {
 
 void DropCopy::operator()(web::socket::Client::Latency const &latency) {
   TraceInfo trace_info;
-  const ExternalLatency external_latency{
+  auto external_latency = ExternalLatency{
       .stream_id = stream_id_,
       .account = security_.get_account(),
       .latency = latency.sample,

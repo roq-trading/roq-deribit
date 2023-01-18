@@ -8,8 +8,6 @@
 
 #include "roq/utils/update.hpp"
 
-#include "roq/core/back_emplacer.hpp"
-
 #include "roq/debug/hex/message.hpp"
 
 #include "roq/io/network_address.hpp"
@@ -141,10 +139,10 @@ void UDPSnapshot::operator()(Trace<deribit_multicast::Instrument> const &event, 
   if (aggregator(frame.sequence_number)) {
     // note! always include
     auto const instrument_id = instrument.instrumentId();
-    shared_.find_instrument_name_with_create(instrument_id, [&]() {
+    shared_.find_instrument_name_with_create(instrument_id, [&]() -> Instrument {
       auto contract_size = instrument.contractSize();
       auto multiplier = compute_contracts_multiplier(contract_size);
-      return Instrument{
+      return {
           sbe::get_instrument_name(instrument),  // note! alloc
           contract_size,
           multiplier,

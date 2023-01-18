@@ -3,6 +3,7 @@
 #include "roq/deribit/market_data.hpp"
 
 #include <algorithm>
+#include <utility>
 
 #include "roq/mask.hpp"
 
@@ -71,7 +72,7 @@ auto get_supports(auto master, auto publish_market_by_price, auto publish_trade_
 
 auto create_connection_factory(auto &context) {
   auto uri = flags::FIX::fix_uri();
-  io::net::ConnectionFactory::Config config{
+  auto config = io::net::ConnectionFactory::Config{
       .uris = {&uri, 1},
       .validate_certificate = server::Flags::net_tls_validate_certificate(),
   };
@@ -79,7 +80,7 @@ auto create_connection_factory(auto &context) {
 }
 
 auto create_connection_manager(auto &handler, auto &connection_factory) {
-  io::net::ConnectionManager::Config config{
+  auto config = io::net::ConnectionManager::Config{
       .always_reconnect = true,
       .connection_timeout = server::Flags::net_connection_timeout(),
       .disconnect_on_idle_timeout = server::Flags::net_disconnect_on_idle_timeout(),

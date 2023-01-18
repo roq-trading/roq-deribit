@@ -109,6 +109,8 @@ struct Gateway final : public server::Handler,
   std::vector<std::unique_ptr<MarketData>> market_data_;
   std::unique_ptr<UDPSnapshot> udp_snapshot_;
   std::unique_ptr<UDPEvents> udp_events_;
+  // cache
+  std::vector<MBPUpdate> bids_, asks_;
 };
 
 }  // namespace deribit

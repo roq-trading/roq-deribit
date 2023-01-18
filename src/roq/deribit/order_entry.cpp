@@ -13,8 +13,6 @@
 #include "roq/debug/fix/message.hpp"
 #include "roq/debug/hex/message.hpp"
 
-#include "roq/core/back_emplacer.hpp"
-
 #include "roq/core/metrics/factory.hpp"
 
 #include "roq/core/fix/utils.hpp"
@@ -69,7 +67,7 @@ auto create_name(auto stream_id, auto const &account) {
 
 auto create_connection_factory(auto &context) {
   auto uri = flags::FIX::fix_uri();
-  io::net::ConnectionFactory::Config config{
+  auto config = io::net::ConnectionFactory::Config{
       .uris = {&uri, 1},
       .validate_certificate = server::Flags::net_tls_validate_certificate(),
   };
@@ -77,7 +75,7 @@ auto create_connection_factory(auto &context) {
 }
 
 auto create_connection_manager(auto &handler, auto &connection_factory) {
-  io::net::ConnectionManager::Config config{
+  auto config = io::net::ConnectionManager::Config{
       .always_reconnect = true,
       .connection_timeout = server::Flags::net_connection_timeout(),
       .disconnect_on_idle_timeout = {},
@@ -382,14 +380,14 @@ void OrderEntry::send_logon() {
 }
 
 void OrderEntry::send_logout(std::string_view const &text) {
-  fix::Logout logout{
+  auto logout = fix::Logout{
       .text = text,
   };
   send(logout);
 }
 
 void OrderEntry::send_heartbeat(std::string_view const &test_req_id) {
-  fix::Heartbeat heartbeat{
+  auto heartbeat = fix::Heartbeat{
       .test_req_id = test_req_id,
   };
   send(heartbeat);
@@ -399,7 +397,7 @@ void OrderEntry::send_test_request(std::chrono::nanoseconds now) {
   // request_id is current time
   encode_buffer_.clear();
   core::charconv::to_string(std::back_inserter(encode_buffer_), now.count());
-  fix::TestRequest test_request{
+  auto test_request = fix::TestRequest{
       .test_req_id = encode_buffer_,
   };
   send(test_request);
@@ -802,38 +800,37 @@ void OrderEntry::operator()(Trace<fix::ExecutionReport> const &event, core::fix:
           response,
           order_update,
           [&](auto &order) {
-            auto create_fill = []<typename T>(T &result, auto const &value) {
-              new (&result) T{
-                  .external_trade_id = value.fill_exec_id,
-                  .quantity = value.fill_qty,
-                  .price = value.fill_px,
+            if (std::empty(execution_report.no_fills))
+              return;
+            shared_.fills.clear();
+            for (auto &item : execution_report.no_fills) {
+              auto fill = Fill{
+                  .external_trade_id = item.fill_exec_id,
+                  .quantity = item.fill_qty,
+                  .price = item.fill_px,
                   .liquidity = {},
               };
+              shared_.fills.emplace_back(std::move(fill));
+            }
+            assert(!std::empty(shared_.fills));
+            auto trade_update = TradeUpdate{
+                .stream_id = stream_id_,
+                .account = order.account,
+                .order_id = order.order_id,
+                .exchange = order.exchange,
+                .symbol = order.symbol,
+                .side = order.side,
+                .position_effect = order.position_effect,
+                .create_time_utc = execution_report.transact_time,
+                .update_time_utc = execution_report.transact_time,
+                .external_account = order.external_account,
+                .external_order_id = order.external_order_id,
+                .fills = shared_.fills,
+                .routing_id = order.routing_id,
+                .update_type = update_type,
+                .user = {},
             };
-            core::back_emplacer fills{shared_.fills};
-            for (auto &item : execution_report.no_fills) {
-              fills.emplace_back([&](auto &result) { create_fill(result, item); });
-            }
-            if (!std::empty(fills)) {
-              auto trade_update = TradeUpdate{
-                  .stream_id = stream_id_,
-                  .account = order.account,
-                  .order_id = order.order_id,
-                  .exchange = order.exchange,
-                  .symbol = order.symbol,
-                  .side = order.side,
-                  .position_effect = order.position_effect,
-                  .create_time_utc = execution_report.transact_time,
-                  .update_time_utc = execution_report.transact_time,
-                  .external_account = order.external_account,
-                  .external_order_id = order.external_order_id,
-                  .fills = fills,
-                  .routing_id = order.routing_id,
-                  .update_type = update_type,
-                  .user = {},
-              };
-              create_trace_and_dispatch(handler_, trace_info, trade_update, true, order.user_id);
-            }
+            create_trace_and_dispatch(handler_, trace_info, trade_update, true, order.user_id);
           })) {
   } else {
     auto external = std::empty(execution_report.deribit_label);

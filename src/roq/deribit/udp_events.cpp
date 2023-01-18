@@ -212,8 +212,9 @@ void UDPEvents::operator()(Trace<deribit_multicast::Book> const &event, sbe::Fra
           book.changesList().forEach([&](auto &item) { emplace_back(item, instrument.multiplier, bids, asks); });
           auto &collector = shared_.mbp_collector[instrument.symbol];
           try {
-            auto create_update = [&](auto &bids, auto &asks, auto update_type, auto exchange_sequence) {
-              return MarketByPriceUpdate{
+            auto create_update =
+                [&](auto &bids, auto &asks, auto update_type, auto exchange_sequence) -> MarketByPriceUpdate {
+              return {
                   .stream_id = stream_id_,
                   .exchange = flags::Config::exchange(),
                   .symbol = instrument.symbol,
@@ -331,7 +332,8 @@ void UDPEvents::operator()(Trace<deribit_multicast::Trades> const &event, sbe::F
     if (test_sequence(last_trades_, instrument_id, frame.sequence_number)) {
       if (shared_.find_instrument(instrument_id, [&](auto &instrument) {
             std::chrono::milliseconds exchange_time_utc{};
-            auto create_trade = [](auto &result, auto multiplier, auto const &value) {
+            shared_.trades.clear();
+            auto emplace_back = [](auto &result, auto multiplier, auto &value) {
               auto trade = Trade{
                   .side = sbe::map_direction(value.direction()),
                   .price = value.price(),
@@ -343,12 +345,11 @@ void UDPEvents::operator()(Trace<deribit_multicast::Trades> const &event, sbe::F
               core::charconv::to_string(std::back_inserter(trade.trade_id), value.tradeId());
               result.emplace_back(std::move(trade));
             };
-            shared_.trades.clear();
             trades.sbeRewind();
             trades.tradesList().forEach([&](auto const &item) {
               std::chrono::milliseconds const timestamp{item.timestampMs()};
               exchange_time_utc = std::max(exchange_time_utc, timestamp);
-              create_trade(shared_.trades, instrument.multiplier, item);
+              emplace_back(shared_.trades, instrument.multiplier, item);
             });
             auto trade_summary = TradeSummary{
                 .stream_id = stream_id_,
