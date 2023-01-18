@@ -775,7 +775,7 @@ void MarketData::operator()(Trace<fix::MarketDataIncrementalRefresh> const &even
       };
       auto is_last = std::empty(shared_.statistics) && std::empty(shared_.trades);
       try {
-        create_trace_and_dispatch(handler_, trace_info, market_by_price_update, is_last, false);
+        create_trace_and_dispatch(handler_, trace_info, market_by_price_update, is_last);
       } catch (BadState &) {
         resubscribe(symbol);
       }
@@ -883,7 +883,7 @@ void MarketData::operator()(Trace<fix::MarketDataSnapshotFullRefresh> const &eve
         .checksum = {},
     };
     try {
-      create_trace_and_dispatch(handler_, trace_info, market_by_price_update, is_last, false);
+      create_trace_and_dispatch(handler_, trace_info, market_by_price_update, is_last);
     } catch (BadState &) {
       log::warn("market_by_price_update={}"sv, market_by_price_update);
       auto &bids = market_by_price_update.bids;

@@ -24,7 +24,7 @@ namespace deribit {
 struct UDPSnapshot final : public io::net::udp::Receiver::Handler, public sbe::Parser::Handler {
   struct Handler {
     virtual void operator()(Trace<StreamStatus> const &) = 0;
-    virtual void operator()(Trace<MarketByPriceUpdate> const &, bool is_last, bool refresh) = 0;
+    virtual void operator()(Trace<MarketByPriceUpdate> const &, bool is_last) = 0;
   };
 
   UDPSnapshot(Handler &, io::Context &, uint16_t stream_id, Shared &);

@@ -26,7 +26,7 @@ struct UDPEvents final : public io::net::udp::Receiver::Handler, public sbe::Par
   struct Handler {
     virtual void operator()(Trace<StreamStatus> const &) = 0;
     virtual void operator()(Trace<TopOfBook> const &, bool is_last) = 0;
-    virtual void operator()(Trace<MarketByPriceUpdate> const &, bool is_last, bool refresh) = 0;
+    virtual void operator()(Trace<MarketByPriceUpdate> const &, bool is_last) = 0;
     virtual void operator()(Trace<TradeSummary> const &, bool is_last) = 0;
   };
 
