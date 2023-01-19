@@ -221,8 +221,9 @@ void UDPSnapshot::operator()(Trace<deribit_multicast::Snapshot> const &event, sb
                   .quantity_decimals = {},
                   .checksum = {},
               };
+              auto apply_updates = [&](auto &market_by_price) { collector.apply(market_by_price, sequence, true); };
               Trace event{trace_info, market_by_price_update};
-              shared_(event, true, [&](auto &market_by_price) { collector.apply(market_by_price, sequence, true); });
+              shared_(event, true, apply_updates);
             };
             auto request_snapshot = [&](auto retries) {
               log::info<1>(R"(Waiting for snapshot: symbol="{}")"sv, instrument.symbol);

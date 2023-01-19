@@ -248,8 +248,9 @@ void UDPEvents::operator()(Trace<deribit_multicast::Book> const &event, sbe::Fra
                   change_id,
                   prev_change_id);
               auto market_by_price_update = create_update(bids, asks, UpdateType::SNAPSHOT, sequence);
+              auto apply_updates = [&](auto &market_by_price) { collector.apply(market_by_price, sequence, true); };
               Trace event{trace_info, market_by_price_update};
-              shared_(event, true, [&](auto &market_by_price) { collector.apply(market_by_price, sequence, true); });
+              shared_(event, true, apply_updates);
             };
             auto request_snapshot = [&](auto retries) {
               log::info<1>(R"(Waiting for snapshot: symbol="{}")"sv, instrument.symbol);
