@@ -161,7 +161,7 @@ void WebSocket::operator()(web::socket::Client::Close const &) {
 
 void WebSocket::operator()(web::socket::Client::Latency const &latency) {
   TraceInfo trace_info;
-  const ExternalLatency external_latency{
+  auto external_latency = ExternalLatency{
       .stream_id = stream_id_,
       .account = {},
       .latency = latency.sample,
@@ -295,7 +295,8 @@ void WebSocket::subscribe_instrument_state() {
 void WebSocket::subscribe(std::span<Symbol const> const &symbols) {
   if (std::empty(symbols))
     return;
-  subscribe_quote(symbols);
+  if (!flags::WebSocket::ws_disable_quote())
+    subscribe_quote(symbols);
   subscribe_ticker(symbols);
 }
 

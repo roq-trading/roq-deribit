@@ -47,6 +47,11 @@
       "name": "ws_allow_errors",
       "type": "bool",
       "description": "allow errors (debug)"
+    },
+    {
+      "name": "ws_disable_quote",
+      "type": "bool",
+      "description": "disable quote subscription"
     }
   ]
 }
