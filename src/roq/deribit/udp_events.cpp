@@ -75,14 +75,11 @@ auto create_receiver(auto &handler, auto &context, auto port) {
   };
   auto receiver = context.create_udp_receiver(handler, network_address, socket_options);
   log::info<1>(R"(Local interface is "{}")"sv, flags::Multicast::local_interface());
-  std::string local_interface{flags::Multicast::local_interface()};
-  struct in_addr local = {};
-  local.s_addr = inet_addr(local_interface.c_str());
+  auto local_interface = io::NetworkAddress::create_blocking(flags::Multicast::local_interface());
   for (auto &multicast_address : flags::Multicast::multicast_address()) {
     log::info<1>(R"(Add membership "{}")"sv, multicast_address);
-    struct in_addr multicast = {};
-    multicast.s_addr = inet_addr(multicast_address.c_str());
-    (*receiver).add_membership(io::NetworkAddress{0, multicast}, io::NetworkAddress{0, local});
+    auto multicast_address_2 = io::NetworkAddress::create_blocking(multicast_address);
+    (*receiver).add_membership(multicast_address_2, local_interface);
   }
   return receiver;
 }
