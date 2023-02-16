@@ -224,7 +224,7 @@ void UDPSnapshot::operator()(Trace<deribit_multicast::Snapshot> const &event, sb
               log::info<5>(R"(DEBUG: REQUEST symbol="{}" (retries={}))"sv, instrument.symbol, retries);
               // note! don't have to do anything -- just wait for snapshot
             };
-            collector(bids, asks, change_id, publish_snapshot, request_snapshot);
+            collector(bids, asks, change_id, false, publish_snapshot, request_snapshot);
           }
         })) {
     } else {
