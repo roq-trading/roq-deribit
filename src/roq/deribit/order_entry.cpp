@@ -802,7 +802,7 @@ void OrderEntry::operator()(Trace<fix::ExecutionReport> const &event, core::fix:
           [&](auto &order) {
             if (std::empty(execution_report.no_fills))
               return;
-            shared_.fills.clear();
+            auto &fills = shared_.get_fills();
             for (auto &item : execution_report.no_fills) {
               auto fill = Fill{
                   .external_trade_id = item.fill_exec_id,
@@ -810,9 +810,9 @@ void OrderEntry::operator()(Trace<fix::ExecutionReport> const &event, core::fix:
                   .price = item.fill_px,
                   .liquidity = {},
               };
-              shared_.fills.emplace_back(std::move(fill));
+              fills.emplace_back(std::move(fill));
             }
-            assert(!std::empty(shared_.fills));
+            assert(!std::empty(fills));
             auto trade_update = TradeUpdate{
                 .stream_id = stream_id_,
                 .account = order.account,
@@ -825,7 +825,7 @@ void OrderEntry::operator()(Trace<fix::ExecutionReport> const &event, core::fix:
                 .update_time_utc = execution_report.transact_time,
                 .external_account = order.external_account,
                 .external_order_id = order.external_order_id,
-                .fills = shared_.fills,
+                .fills = fills,
                 .routing_id = order.routing_id,
                 .update_type = update_type,
                 .user = {},

@@ -73,11 +73,37 @@ struct Shared final {
     return dispatcher_(std::forward<Args>(args)...);
   }
 
- public:
+ private:
   std::vector<Fill> fills;
-  std::vector<MBPUpdate> bids, asks;
+  struct {
+    std::vector<MBPUpdate> bids, asks;
+    auto &clear() {
+      bids.clear();
+      asks.clear();
+      return *this;
+    }
+    bool empty() const { return std::empty(bids) && std::empty(asks); }
+  } mbp;
   std::vector<Trade> trades;
   std::vector<Statistics> statistics;
+
+ public:
+  auto &get_fills() {
+    fills.clear();
+    return fills;
+  }
+
+  auto &get_mbp() { return mbp.clear(); }
+
+  auto &get_trades() {
+    trades.clear();
+    return trades;
+  }
+
+  auto &get_statistics() {
+    statistics.clear();
+    return statistics;
+  }
 
   absl::flat_hash_map<Symbol, double> multiplier;
 
@@ -93,7 +119,7 @@ struct Shared final {
   absl::flat_hash_set<Symbol> all_symbols;
   core::Symbols symbols;
   absl::node_hash_map<uint32_t, std::pair<Instrument, bool>> instruments;
-  absl::node_hash_map<Symbol, core::mbp::Sequencer> mbp_collector;
+  absl::node_hash_map<Symbol, core::mbp::Sequencer> mbp_sequencer;
 };
 
 }  // namespace deribit

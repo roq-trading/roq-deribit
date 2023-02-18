@@ -692,29 +692,28 @@ void MarketData::operator()(Trace<fix::MarketDataIncrementalRefresh> const &even
   log::info<3>("event={{header={}, market_data_incremental_refresh={}}}"sv, header, market_data_incremental_refresh);
   (*connection_manager_).touch(trace_info.source_receive_time);
   auto symbol = market_data_incremental_refresh.symbol;
-  shared_.bids.clear();
-  shared_.asks.clear();
-  shared_.trades.clear();
-  shared_.statistics.clear();
+  auto &mbp = shared_.get_mbp();
+  auto &trades = shared_.get_trades();
+  auto &statistics = shared_.get_statistics();
   // open interest
   {
-    auto statistics = Statistics{
+    auto statistics_2 = Statistics{
         .type = StatisticsType::PRE_OPEN_INTEREST,
         .value = market_data_incremental_refresh.open_interest,
         .begin_time_utc = {},
         .end_time_utc = {},
     };
-    shared_.statistics.emplace_back(std::move(statistics));
+    statistics.emplace_back(std::move(statistics_2));
   }
   // mark price
   {
-    auto statistics = Statistics{
+    auto statistics_2 = Statistics{
         .type = StatisticsType::PRE_SETTLEMENT_PRICE,
         .value = market_data_incremental_refresh.mark_price,
         .begin_time_utc = {},
         .end_time_utc = {},
     };
-    shared_.statistics.emplace_back(std::move(statistics));
+    statistics.emplace_back(std::move(statistics_2));
   }
   std::chrono::nanoseconds exchange_time_utc = {};
   for (auto &item : market_data_incremental_refresh.no_md_entries) {
@@ -724,33 +723,33 @@ void MarketData::operator()(Trace<fix::MarketDataIncrementalRefresh> const &even
       using enum core::fix::MDEntryType;
       case BID:
         validate(item);
-        emplace_back(shared_.bids, item);
+        emplace_back(mbp.bids, item);
         break;
       case OFFER:
         validate(item);
-        emplace_back(shared_.asks, item);
+        emplace_back(mbp.asks, item);
         break;
       case TRADE:
-        emplace_back(shared_.trades, item);
+        emplace_back(trades, item);
         break;
       case INDEX_VALUE: {
-        auto statistics = Statistics{
+        auto statistics_2 = Statistics{
             .type = StatisticsType::INDEX_VALUE,
             .value = item.md_entry_px,
             .begin_time_utc = {},
             .end_time_utc = {},
         };
-        shared_.statistics.emplace_back(std::move(statistics));
+        statistics.emplace_back(std::move(statistics_2));
         break;
       }
       case SETTLEMENT_PRICE: {
-        auto statistics = Statistics{
+        auto statistics_2 = Statistics{
             .type = StatisticsType::SETTLEMENT_PRICE,
             .value = item.md_entry_px,
             .begin_time_utc = {},
             .end_time_utc = {},
         };
-        shared_.statistics.emplace_back(std::move(statistics));
+        statistics.emplace_back(std::move(statistics_2));
         break;
       }
       default:
@@ -758,14 +757,14 @@ void MarketData::operator()(Trace<fix::MarketDataIncrementalRefresh> const &even
         break;
     }
   }
-  if (!(std::empty(shared_.bids) && std::empty(shared_.asks)) && publish_market_by_price_) {
+  if (!(std::empty(mbp.bids) && std::empty(mbp.asks)) && publish_market_by_price_) {
     if (latch_.find(symbol) == std::end(latch_)) {
       auto market_by_price_update = MarketByPriceUpdate{
           .stream_id = stream_id_,
           .exchange = exchange_,
           .symbol = symbol,
-          .bids = shared_.bids,
-          .asks = shared_.asks,
+          .bids = mbp.bids,
+          .asks = mbp.asks,
           .update_type = UpdateType::INCREMENTAL,
           .exchange_time_utc = exchange_time_utc,
           .exchange_sequence = {},
@@ -773,7 +772,7 @@ void MarketData::operator()(Trace<fix::MarketDataIncrementalRefresh> const &even
           .quantity_decimals = {},
           .checksum = {},
       };
-      auto is_last = std::empty(shared_.statistics) && std::empty(shared_.trades);
+      auto is_last = std::empty(statistics) && std::empty(trades);
       try {
         create_trace_and_dispatch(handler_, trace_info, market_by_price_update, is_last);
       } catch (BadState &) {
@@ -781,24 +780,24 @@ void MarketData::operator()(Trace<fix::MarketDataIncrementalRefresh> const &even
       }
     }
   }
-  if (!std::empty(shared_.trades) && publish_trade_summary_) {
+  if (!std::empty(trades) && publish_trade_summary_) {
     auto trade_summary = TradeSummary{
         .stream_id = stream_id_,
         .exchange = exchange_,
         .symbol = symbol,
-        .trades = shared_.trades,
+        .trades = trades,
         .exchange_time_utc = exchange_time_utc,
         .exchange_sequence = {},
     };
-    auto is_last = std::empty(shared_.statistics);
+    auto is_last = std::empty(statistics);
     create_trace_and_dispatch(handler_, trace_info, trade_summary, is_last);
   }
-  if (!std::empty(shared_.statistics)) {
+  if (!std::empty(statistics)) {
     auto statistics_update = StatisticsUpdate{
         .stream_id = stream_id_,
         .exchange = exchange_,
         .symbol = market_data_incremental_refresh.symbol,
-        .statistics = shared_.statistics,
+        .statistics = statistics,
         .update_type = UpdateType::INCREMENTAL,
         .exchange_time_utc = exchange_time_utc,
     };
@@ -824,9 +823,8 @@ void MarketData::operator()(Trace<fix::MarketDataSnapshotFullRefresh> const &eve
     log::info<1>(R"(Unlatch symbol="{}")"sv, symbol);
     latch_.erase(iter);
   }
-  shared_.bids.clear();
-  shared_.asks.clear();
-  shared_.statistics.clear();
+  auto &mbp = shared_.get_mbp();
+  auto &statistics = shared_.get_statistics();
   std::chrono::nanoseconds exchange_time_utc = {};
   for (auto &item : market_data_snapshot_full_refresh.no_md_entries) {
     if (exchange_time_utc < item.md_entry_date)
@@ -835,32 +833,32 @@ void MarketData::operator()(Trace<fix::MarketDataSnapshotFullRefresh> const &eve
       using enum core::fix::MDEntryType;
       case BID:
         validate(item);
-        emplace_back(shared_.bids, item);
+        emplace_back(mbp.bids, item);
         break;
       case OFFER:
         validate(item);
-        emplace_back(shared_.asks, item);
+        emplace_back(mbp.asks, item);
         break;
       case TRADE:
         break;  // drop
       case INDEX_VALUE: {
-        auto statistics = Statistics{
+        auto statistics_2 = Statistics{
             .type = StatisticsType::INDEX_VALUE,
             .value = item.md_entry_px,
             .begin_time_utc = {},
             .end_time_utc = {},
         };
-        shared_.statistics.emplace_back(std::move(statistics));
+        statistics.emplace_back(std::move(statistics_2));
         break;
       }
       case SETTLEMENT_PRICE: {
-        auto statistics = Statistics{
+        auto statistics_2 = Statistics{
             .type = StatisticsType::SETTLEMENT_PRICE,
             .value = item.md_entry_px,
             .begin_time_utc = {},
             .end_time_utc = {},
         };
-        shared_.statistics.emplace_back(std::move(statistics));
+        statistics.emplace_back(std::move(statistics_2));
         break;
       }
       default:
@@ -868,14 +866,14 @@ void MarketData::operator()(Trace<fix::MarketDataSnapshotFullRefresh> const &eve
         break;
     }
   }
-  if (!(std::empty(shared_.bids) && std::empty(shared_.asks)) && publish_market_by_price_) {
-    auto is_last = std::empty(shared_.statistics);
+  if (!(std::empty(mbp.bids) && std::empty(mbp.asks)) && publish_market_by_price_) {
+    auto is_last = std::empty(statistics);
     auto market_by_price_update = MarketByPriceUpdate{
         .stream_id = stream_id_,
         .exchange = exchange_,
         .symbol = symbol,
-        .bids = shared_.bids,
-        .asks = shared_.asks,
+        .bids = mbp.bids,
+        .asks = mbp.asks,
         .update_type = UpdateType::SNAPSHOT,
         .exchange_time_utc = exchange_time_utc,
         .price_decimals = {},
@@ -892,12 +890,12 @@ void MarketData::operator()(Trace<fix::MarketDataSnapshotFullRefresh> const &eve
       log::fatal(R"(*** BAD SNAPSHOT *** (symbol="{}"))"sv, symbol);
     }
   }
-  if (!std::empty(shared_.statistics)) {
+  if (!std::empty(statistics)) {
     auto statistics_update = StatisticsUpdate{
         .stream_id = stream_id_,
         .exchange = exchange_,
         .symbol = symbol,
-        .statistics = shared_.statistics,
+        .statistics = statistics,
         .update_type = UpdateType::SNAPSHOT,
         .exchange_time_utc = exchange_time_utc,
     };

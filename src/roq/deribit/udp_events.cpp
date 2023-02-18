@@ -207,7 +207,7 @@ void UDPEvents::operator()(Trace<deribit_multicast::Book> const &event, sbe::Fra
           std::chrono::milliseconds const timestamp{book.timestampMs()};
           book.sbeRewind();
           book.changesList().forEach([&](auto &item) { emplace_back(item, instrument.multiplier, bids, asks); });
-          auto &collector = shared_.mbp_collector[instrument.symbol];
+          auto &sequencer = shared_.mbp_sequencer[instrument.symbol];
           try {
             auto create_update =
                 [&](auto &bids, auto &asks, auto update_type, auto exchange_sequence) -> MarketByPriceUpdate {
@@ -245,7 +245,7 @@ void UDPEvents::operator()(Trace<deribit_multicast::Book> const &event, sbe::Fra
                   change_id,
                   prev_change_id);
               auto market_by_price_update = create_update(bids, asks, UpdateType::SNAPSHOT, sequence);
-              auto apply_updates = [&](auto &market_by_price) { collector.apply(market_by_price, sequence, true); };
+              auto apply_updates = [&](auto &market_by_price) { sequencer.apply(market_by_price, sequence, true); };
               Trace event{trace_info, market_by_price_update};
               shared_(event, true, apply_updates);
             };
@@ -255,14 +255,14 @@ void UDPEvents::operator()(Trace<deribit_multicast::Book> const &event, sbe::Fra
               log::info<5>(R"(DEBUG: REQUEST symbol="{}" (retries={}))"sv, instrument.symbol, retries);
               // note! don't have to do anything -- just wait for snapshot
             };
-            collector(
+            sequencer(
                 bids, asks, change_id, change_id, prev_change_id, publish_update, publish_snapshot, request_snapshot);
           } catch (BadState &) {
             log::fatal("BAD STATE"sv);
             /*
             log::warn(R"(RESUBSCRIBE symbol="{}")"sv, instrument.symbol);
             // XXX HANS publish stale
-            collector.clear();
+            sequencer.clear();
             shared_.depth_request_queue.emplace_back(instrument.symbol);
             */
           }
@@ -330,7 +330,7 @@ void UDPEvents::operator()(Trace<deribit_multicast::Trades> const &event, sbe::F
     if (test_sequence(last_trades_, instrument_id, frame.sequence_number)) {
       if (shared_.find_instrument(instrument_id, [&](auto &instrument) {
             std::chrono::milliseconds exchange_time_utc{};
-            shared_.trades.clear();
+            auto &trades_2 = shared_.get_trades();
             auto emplace_back = [](auto &result, auto multiplier, auto &value) {
               auto trade = Trade{
                   .side = sbe::map_direction(value.direction()),
@@ -347,13 +347,13 @@ void UDPEvents::operator()(Trace<deribit_multicast::Trades> const &event, sbe::F
             trades.tradesList().forEach([&](auto const &item) {
               std::chrono::milliseconds const timestamp{item.timestampMs()};
               exchange_time_utc = std::max(exchange_time_utc, timestamp);
-              emplace_back(shared_.trades, instrument.multiplier, item);
+              emplace_back(trades_2, instrument.multiplier, item);
             });
             auto trade_summary = TradeSummary{
                 .stream_id = stream_id_,
                 .exchange = flags::Config::exchange(),
                 .symbol = instrument.symbol,
-                .trades = shared_.trades,
+                .trades = trades_2,
                 .exchange_time_utc = exchange_time_utc,
                 .exchange_sequence = {},
             };

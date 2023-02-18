@@ -191,7 +191,7 @@ void UDPSnapshot::operator()(Trace<deribit_multicast::Snapshot> const &event, sb
           // XXX allow empty? (after all, we need to record the sequence number...)
           if (is_last && !(std::empty(bids) && std::empty(asks))) {
             std::chrono::milliseconds const timestamp{snapshot.timestampMs()};
-            auto &collector = shared_.mbp_collector[instrument.symbol];
+            auto &sequencer = shared_.mbp_sequencer[instrument.symbol];
             auto publish_snapshot = [&](auto &bids, auto &asks, auto sequence) {
               log::info<1>(R"(Received snapshot: symbol="{}")"sv, instrument.symbol);
               // log::debug(R"(PUBLISH SNAPSHOT symbol="{}", sequence={})"sv, symbol, sequence);
@@ -214,7 +214,7 @@ void UDPSnapshot::operator()(Trace<deribit_multicast::Snapshot> const &event, sb
                   .quantity_decimals = {},
                   .checksum = {},
               };
-              auto apply_updates = [&](auto &market_by_price) { collector.apply(market_by_price, sequence, true); };
+              auto apply_updates = [&](auto &market_by_price) { sequencer.apply(market_by_price, sequence, true); };
               Trace event{trace_info, market_by_price_update};
               shared_(event, true, apply_updates);
             };
@@ -224,7 +224,7 @@ void UDPSnapshot::operator()(Trace<deribit_multicast::Snapshot> const &event, sb
               log::info<5>(R"(DEBUG: REQUEST symbol="{}" (retries={}))"sv, instrument.symbol, retries);
               // note! don't have to do anything -- just wait for snapshot
             };
-            collector(bids, asks, change_id, false, publish_snapshot, request_snapshot);
+            sequencer(bids, asks, change_id, false, publish_snapshot, request_snapshot);
           }
         })) {
     } else {
