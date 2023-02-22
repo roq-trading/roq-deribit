@@ -182,6 +182,11 @@
       "name": "login_enabled",
       "type": "bool",
       "comment": "undoc"
+    },
+    {
+      "name": "spot_reserve",
+      "type": "double",
+      "comment": "undoc"
     }
   ]
 }
