@@ -149,7 +149,7 @@ MarketData::MarketData(
     Handler &handler,
     io::Context &context,
     uint16_t stream_id,
-    Security &security,
+    Authenticator &authenticator,
     Shared &shared,
     size_t index,
     bool master)
@@ -176,8 +176,9 @@ MarketData::MarketData(
       latency_{
           .ping = create_metrics(name_, "ping"sv),
       },
-      security_{security}, shared_{shared}, download_{
-                                                fix_request_timeout_, [this](auto state) { return download(state); }} {
+      authenticator_{authenticator}, shared_{shared}, download_{fix_request_timeout_, [this](auto state) {
+                                                                  return download(state);
+                                                                }} {
   log::info("DEBUG: publish_market_by_price={}"sv, publish_market_by_price_);
   log::info("DEBUG: publish_trade_summary={}"sv, publish_trade_summary_);
 }
@@ -287,14 +288,14 @@ void MarketData::operator()(ConnectionStatus status) {
 void MarketData::send_logon() {
   auto heart_bt_int = std::chrono::duration_cast<std::chrono::seconds>(fix_ping_freq_).count();
   auto now = clock::get_realtime<std::chrono::milliseconds>();
-  auto raw_data = security_.create_raw_data(now);
-  auto password = security_.create_password(raw_data);
+  auto raw_data = authenticator_.create_raw_data(now);
+  auto password = authenticator_.create_password(raw_data);
   auto cancel_on_disconnect = flags::FIX::fix_cancel_on_disconnect();
   auto logon = fix::Logon{
       .heart_bt_int = utils::safe_cast(heart_bt_int),
       .raw_data_length = utils::safe_cast(std::size(raw_data)),
       .raw_data = raw_data,
-      .username = security_.get_access_key(),
+      .username = authenticator_.get_access_key(),
       .password = password,
       .use_wordsafe_tags = false,
       .cancel_on_disconnect = cancel_on_disconnect,

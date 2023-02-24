@@ -91,8 +91,9 @@ struct create_metrics final : public core::metrics::Factory {
 
 // === IMPLEMENTATION ===
 
-OrderEntry::OrderEntry(Handler &handler, io::Context &context, uint16_t stream_id, Security &security, Shared &shared)
-    : handler_{handler}, stream_id_{stream_id}, name_{create_name(stream_id_, security.get_account())},
+OrderEntry::OrderEntry(
+    Handler &handler, io::Context &context, uint16_t stream_id, Authenticator &authenticator, Shared &shared)
+    : handler_{handler}, stream_id_{stream_id}, name_{create_name(stream_id_, authenticator.get_account())},
       connection_factory_{create_connection_factory(context)}, connection_manager_{create_connection_manager(
                                                                    *this, *connection_factory_)},
       decode_buffer_{flags::Common::decode_buffer_size()},
@@ -110,7 +111,7 @@ OrderEntry::OrderEntry(Handler &handler, io::Context &context, uint16_t stream_i
       latency_{
           .ping = create_metrics(name_, "ping"sv),
       },
-      security_{security}, shared_{shared},
+      authenticator_{authenticator}, shared_{shared},
       download_{flags::FIX::fix_request_timeout(), [this](auto state) { return download(state); }},
       enable_round_trip_latency_{server::Flags::enable_round_trip_latency()} {
 }
@@ -344,7 +345,7 @@ void OrderEntry::operator()(ConnectionStatus status) {
     TraceInfo trace_info;
     auto stream_status = StreamStatus{
         .stream_id = stream_id_,
-        .account = security_.get_account(),
+        .account = authenticator_.get_account(),
         .supports = SUPPORTS,
         .transport = Transport::TCP,
         .protocol = Protocol::FIX,
@@ -360,13 +361,13 @@ void OrderEntry::operator()(ConnectionStatus status) {
 void OrderEntry::send_logon() {
   auto ping_freq = std::chrono::duration_cast<std::chrono::seconds>(flags::FIX::fix_ping_freq());
   auto now = clock::get_realtime<std::chrono::milliseconds>();
-  auto raw_data = security_.create_raw_data(now);
-  auto password = security_.create_password(raw_data);
+  auto raw_data = authenticator_.create_raw_data(now);
+  auto password = authenticator_.create_password(raw_data);
   auto logon = fix::Logon{
       .heart_bt_int = static_cast<uint16_t>(ping_freq.count()),
       .raw_data_length = static_cast<uint32_t>(std::size(raw_data)),
       .raw_data = raw_data,
-      .username = security_.get_access_key(),
+      .username = authenticator_.get_access_key(),
       .password = password,
       .use_wordsafe_tags = false,
       .cancel_on_disconnect = flags::FIX::fix_cancel_on_disconnect(),
@@ -535,7 +536,7 @@ void OrderEntry::operator()(Trace<fix::Heartbeat> const &event, core::fix::Heade
     auto latency = (now - send_time) / 2;  // 1-way
     auto external_latency = ExternalLatency{
         .stream_id = stream_id_,
-        .account = security_.get_account(),
+        .account = authenticator_.get_account(),
         .latency = latency,
     };
     create_trace_and_dispatch(handler_, trace_info, external_latency);
@@ -584,7 +585,7 @@ void OrderEntry::operator()(Trace<fix::PositionReport> const &event, core::fix::
     auto short_quantity = std::max(0.0, position_qty.short_qty);
     auto position_update = PositionUpdate{
         .stream_id = stream_id_,
-        .account = security_.get_account(),
+        .account = authenticator_.get_account(),
         .exchange = flags::Config::exchange(),
         .symbol = position_qty.symbol,
         .external_account = {},
@@ -767,7 +768,7 @@ void OrderEntry::operator()(Trace<fix::ExecutionReport> const &event, core::fix:
       .price = execution_report.price,
   };
   auto order_update = oms::OrderUpdate{
-      .account = security_.get_account(),
+      .account = authenticator_.get_account(),
       .exchange = flags::Config::exchange(),
       .symbol = execution_report.symbol,
       .side = side,

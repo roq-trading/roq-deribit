@@ -1,6 +1,6 @@
 /* Copyright (c) 2017-2023, Hans Erik Thrane */
 
-#include "roq/deribit/tools/hasher.hpp"
+#include "roq/deribit/tools/crypto.hpp"
 
 #include <algorithm>
 #include <array>
@@ -38,16 +38,16 @@ std::uniform_int_distribution<uint32_t> DISTRIBUTION;
 
 // === IMPLEMENTATION ===
 
-Hasher::Hasher(std::string_view const &access_secret) : secret_{access_secret}, mac_{secret_} {
+Crypto::Crypto(std::string_view const &access_secret) : secret_{access_secret}, mac_{secret_} {
 }
 
-std::string Hasher::create_nonce() {
+std::string Crypto::create_nonce() {
   std::string result{RANDOM_BYTES, '-'};
   std::generate(std::begin(result), std::end(result), []() { return CHARSET_DATA[CHARSET_DISTRIBUTION(GENERATOR)]; });
   return result;
 }
 
-std::pair<std::string, std::chrono::milliseconds> Hasher::create_signature(
+std::pair<std::string, std::chrono::milliseconds> Crypto::create_signature(
     std::chrono::milliseconds timestamp, std::string_view const &nonce) {
   auto sequence = get_sequence(timestamp);
   auto message = fmt::format("{}\n{}\n"_cf, sequence, nonce);
@@ -59,7 +59,7 @@ std::pair<std::string, std::chrono::milliseconds> Hasher::create_signature(
   return {result, std::chrono::milliseconds{sequence}};
 }
 
-std::string Hasher::create_raw_data(std::chrono::milliseconds timestamp) {
+std::string Crypto::create_raw_data(std::chrono::milliseconds timestamp) {
   using value_type = decltype(DISTRIBUTION)::result_type;
   constexpr auto n = RANDOM_BYTES / sizeof(value_type);
   std::array<value_type, n> buffer;
@@ -71,13 +71,13 @@ std::string Hasher::create_raw_data(std::chrono::milliseconds timestamp) {
   return create_raw_data(timestamp, nonce);
 }
 
-std::string Hasher::create_raw_data(std::chrono::milliseconds timestamp, std::string_view const &nonce) {
+std::string Crypto::create_raw_data(std::chrono::milliseconds timestamp, std::string_view const &nonce) {
   auto sequence = get_sequence(timestamp);
   auto raw_data = fmt::format("{:013}.{}"_cf, sequence, nonce);
   return raw_data;
 }
 
-std::string Hasher::create_password(std::string_view const &raw_data) {
+std::string Crypto::create_password(std::string_view const &raw_data) {
   hash_.clear();
   hash_.update(raw_data);
   hash_.update(secret_);
@@ -88,7 +88,7 @@ std::string Hasher::create_password(std::string_view const &raw_data) {
   return result;
 }
 
-int64_t Hasher::get_sequence(std::chrono::milliseconds timestamp) {
+int64_t Crypto::get_sequence(std::chrono::milliseconds timestamp) {
   if (timestamp_ < timestamp) {
     timestamp_ = timestamp;
   } else {

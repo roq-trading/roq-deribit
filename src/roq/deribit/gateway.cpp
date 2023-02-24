@@ -17,33 +17,33 @@ namespace deribit {
 
 namespace {
 template <typename R>
-auto create_security(auto const &config) {
+auto create_authenticator(auto const &config) {
   R result;
   for (auto &[_, account] : config.accounts)
-    result.try_emplace(account.name, std::make_unique<Security>(config, account.name));
+    result.try_emplace(account.name, std::make_unique<Authenticator>(config, account.name));
   return result;
 }
 
-auto &get_security(auto const &security_by_name, auto const &master_account) {
-  auto iter = security_by_name.find(master_account);
-  if (iter != security_by_name.end())
+auto &get_authenticator(auto const &authenticator_by_name, auto const &master_account) {
+  auto iter = authenticator_by_name.find(master_account);
+  if (iter != authenticator_by_name.end())
     return *(*iter).second;
   log::fatal("Market data requires a master account"sv);
 }
 
 template <typename R>
-auto create_order_entry(auto &gateway, auto &context, auto &stream_id, auto &security_by_name, auto &shared) {
+auto create_order_entry(auto &gateway, auto &context, auto &stream_id, auto &authenticator_by_name, auto &shared) {
   R result;
-  for (auto &[account, security] : security_by_name)
-    result.try_emplace(account, std::make_unique<OrderEntry>(gateway, context, ++stream_id, *security, shared));
+  for (auto &[account, authenticator] : authenticator_by_name)
+    result.try_emplace(account, std::make_unique<OrderEntry>(gateway, context, ++stream_id, *authenticator, shared));
   return result;
 }
 
 template <typename R>
-auto create_drop_copy(auto &gateway, auto &context, auto &stream_id, auto &security_by_name, auto &shared) {
+auto create_drop_copy(auto &gateway, auto &context, auto &stream_id, auto &authenticator_by_name, auto &shared) {
   R result;
-  for (auto &[account, security] : security_by_name)
-    result.try_emplace(account, std::make_unique<DropCopy>(gateway, context, ++stream_id, *security, shared));
+  for (auto &[account, authenticator] : authenticator_by_name)
+    result.try_emplace(account, std::make_unique<DropCopy>(gateway, context, ++stream_id, *authenticator, shared));
   return result;
 }
 
@@ -55,10 +55,10 @@ auto create_web_socket(auto &gateway, auto &context, auto &stream_id, auto &shar
 }
 
 template <typename R>
-auto create_market_data(auto &gateway, auto &context, auto &stream_id, auto &security, auto &shared) {
+auto create_market_data(auto &gateway, auto &context, auto &stream_id, auto &authenticator, auto &shared) {
   R result;
   result.emplace_back(
-      std::make_unique<MarketData>(gateway, context, stream_id, security, shared, std::size(result), true));
+      std::make_unique<MarketData>(gateway, context, stream_id, authenticator, shared, std::size(result), true));
   return result;
 }
 
@@ -79,12 +79,12 @@ auto create_udp_events(auto &gateway, auto &context, auto &stream_id, auto &shar
 
 Gateway::Gateway(server::Dispatcher &dispatcher, Config const &config, io::Context &context)
     : dispatcher_{dispatcher}, master_account_{config.get_master_account()},
-      security_{create_security<decltype(security_)>(config)}, context_{context}, shared_{dispatcher_},
-      order_entry_{create_order_entry<decltype(order_entry_)>(*this, context_, stream_id_, security_, shared_)},
-      drop_copy_{create_drop_copy<decltype(drop_copy_)>(*this, context_, stream_id_, security_, shared_)},
+      authenticator_{create_authenticator<decltype(authenticator_)>(config)}, context_{context}, shared_{dispatcher_},
+      order_entry_{create_order_entry<decltype(order_entry_)>(*this, context_, stream_id_, authenticator_, shared_)},
+      drop_copy_{create_drop_copy<decltype(drop_copy_)>(*this, context_, stream_id_, authenticator_, shared_)},
       web_socket_{create_web_socket<decltype(web_socket_)>(*this, context_, stream_id_, shared_)},
       market_data_{create_market_data<decltype(market_data_)>(
-          *this, context_, ++stream_id_, get_security(security_, master_account_), shared_)},
+          *this, context_, ++stream_id_, get_authenticator(authenticator_, master_account_), shared_)},
       udp_snapshot_{create_udp_snapshot(*this, context_, ++stream_id_, shared_)},
       udp_events_{create_udp_events(*this, context_, ++stream_id_, shared_)} {
   if (std::empty(master_account_) && !flags::Common::disable_master_account_check())
@@ -252,8 +252,8 @@ void Gateway::ensure_symbol_slices(size_t size) {
     auto stream_id = ++stream_id_;
     auto index = std::size(market_data_);
     log::debug("Create MarketData(stream_id={}, index={})"sv, stream_id, index);
-    auto market_data =
-        std::make_unique<MarketData>(*this, context_, stream_id, *security_[master_account_], shared_, index, false);
+    auto market_data = std::make_unique<MarketData>(
+        *this, context_, stream_id, *authenticator_[master_account_], shared_, index, false);
     MessageInfo message_info;
     Start start;
     create_event_and_dispatch(*market_data, message_info, start);

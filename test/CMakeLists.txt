@@ -1,6 +1,7 @@
 set(TARGET_NAME "${PROJECT_NAME}-test")
 
 set(SOURCES
+    crypto.cpp
     fix_execution_report.cpp
     fix_heartbeat.cpp
     fix_logon.cpp
@@ -16,7 +17,6 @@ set(SOURCES
     fix_reject.cpp
     fix_security_list.cpp
     fix_user_response.cpp
-    hasher.cpp
     json_currencies.cpp
     json_instruments.cpp
     json_subscription.cpp

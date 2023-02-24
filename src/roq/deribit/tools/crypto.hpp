@@ -15,11 +15,11 @@ namespace roq {
 namespace deribit {
 namespace tools {
 
-struct Hasher final {
-  explicit Hasher(std::string_view const &secret);
+struct Crypto final {
+  explicit Crypto(std::string_view const &secret);
 
-  Hasher(Hasher &&) = delete;
-  Hasher(Hasher const &) = delete;
+  Crypto(Crypto &&) = delete;
+  Crypto(Crypto const &) = delete;
 
   std::string create_nonce();
 

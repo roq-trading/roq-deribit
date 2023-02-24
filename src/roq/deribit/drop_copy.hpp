@@ -21,8 +21,8 @@
 
 #include "roq/server.hpp"
 
+#include "roq/deribit/authenticator.hpp"
 #include "roq/deribit/drop_copy_state.hpp"
-#include "roq/deribit/security.hpp"
 #include "roq/deribit/shared.hpp"
 
 #include "roq/deribit/json/auth.hpp"
@@ -46,7 +46,7 @@ struct DropCopy final : public web::socket::Client::Handler,
     virtual void operator()(Trace<PositionUpdate> const &, bool is_last) = 0;
   };
 
-  DropCopy(Handler &, io::Context &, uint16_t stream_id, Security &, Shared &);
+  DropCopy(Handler &, io::Context &, uint16_t stream_id, Authenticator &, Shared &);
 
   DropCopy(DropCopy &&) = delete;
   DropCopy(DropCopy const &) = delete;
@@ -125,8 +125,8 @@ struct DropCopy final : public web::socket::Client::Handler,
   struct {
     core::metrics::Latency ping, heartbeat;
   } latency_;
-  // security
-  Security &security_;
+  // authenticator
+  Authenticator &authenticator_;
   // cache
   Shared &shared_;
   std::vector<std::string> currencies_;

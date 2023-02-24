@@ -25,7 +25,6 @@
 
 #include "roq/server.hpp"
 
-#include "roq/deribit/security.hpp"
 #include "roq/deribit/shared.hpp"
 #include "roq/deribit/web_socket_state.hpp"
 

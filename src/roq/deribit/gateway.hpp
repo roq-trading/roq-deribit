@@ -12,11 +12,11 @@
 
 #include "roq/io/context.hpp"
 
+#include "roq/deribit/authenticator.hpp"
 #include "roq/deribit/config.hpp"
 #include "roq/deribit/drop_copy.hpp"
 #include "roq/deribit/market_data.hpp"
 #include "roq/deribit/order_entry.hpp"
-#include "roq/deribit/security.hpp"
 #include "roq/deribit/shared.hpp"
 #include "roq/deribit/udp_events.hpp"
 #include "roq/deribit/udp_snapshot.hpp"
@@ -94,8 +94,8 @@ struct Gateway final : public server::Handler,
   server::Dispatcher &dispatcher_;
   // config
   const std::string master_account_;
-  // security
-  absl::flat_hash_map<Account, std::unique_ptr<Security>> security_;
+  // authentication
+  absl::flat_hash_map<Account, std::unique_ptr<Authenticator>> authenticator_;
   // io
   io::Context &context_;
   // shared

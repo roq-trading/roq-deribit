@@ -21,8 +21,8 @@
 
 #include "roq/server.hpp"
 
+#include "roq/deribit/authenticator.hpp"
 #include "roq/deribit/order_entry_state.hpp"
-#include "roq/deribit/security.hpp"
 #include "roq/deribit/shared.hpp"
 
 // session
@@ -50,7 +50,7 @@ struct OrderEntry final : public io::net::ConnectionManager::Handler {
     virtual void operator()(Trace<PositionUpdate> const &, bool is_last) = 0;
   };
 
-  OrderEntry(Handler &, io::Context &, uint16_t stream_id, Security &, Shared &);
+  OrderEntry(Handler &, io::Context &, uint16_t stream_id, Authenticator &, Shared &);
 
   OrderEntry(OrderEntry const &) = delete;
   OrderEntry(OrderEntry &&) = delete;
@@ -151,8 +151,8 @@ struct OrderEntry final : public io::net::ConnectionManager::Handler {
   struct {
     uint64_t msg_seq_num = {};
   } inbound_;
-  // security
-  Security &security_;
+  // authenticator
+  Authenticator &authenticator_;
   // cache
   Shared &shared_;
   // state

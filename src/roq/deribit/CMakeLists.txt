@@ -8,12 +8,12 @@ add_subdirectory("sbe")
 
 set(SOURCES
     application.cpp
+    authenticator.cpp
     config.cpp
     drop_copy.cpp
     gateway.cpp
     market_data.cpp
     order_entry.cpp
-    security.cpp
     shared.cpp
     udp_events.cpp
     udp_snapshot.cpp

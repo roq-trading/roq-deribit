@@ -21,8 +21,8 @@
 
 #include "roq/server.hpp"
 
+#include "roq/deribit/authenticator.hpp"
 #include "roq/deribit/market_data_state.hpp"
-#include "roq/deribit/security.hpp"
 #include "roq/deribit/shared.hpp"
 
 // session
@@ -63,7 +63,7 @@ struct MarketData final : public io::net::ConnectionManager::Handler {
     virtual void operator()(SymbolsUpdate &) = 0;
   };
 
-  MarketData(Handler &, io::Context &, uint16_t stream_id, Security &, Shared &, size_t index, bool master);
+  MarketData(Handler &, io::Context &, uint16_t stream_id, Authenticator &, Shared &, size_t index, bool master);
 
   MarketData(MarketData const &) = delete;
   MarketData(MarketData &&) = delete;
@@ -166,8 +166,8 @@ struct MarketData final : public io::net::ConnectionManager::Handler {
   struct {
     uint64_t msg_seq_num = {};
   } inbound_;
-  // security
-  Security &security_;
+  // authenticator
+  Authenticator &authenticator_;
   // cache
   Shared &shared_;
   // state
