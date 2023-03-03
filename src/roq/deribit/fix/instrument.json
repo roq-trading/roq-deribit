@@ -104,6 +104,12 @@
       "tag": 965,
       "name": "SecurityStatus",
       "type": "std::string_view"
+    },
+    {
+      "tag": 1524,
+      "name": "PriceQuoteCurrency",
+      "type": "std::string_view",
+      "custom": true
     }
   ]
 }
