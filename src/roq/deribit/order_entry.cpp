@@ -814,8 +814,7 @@ void OrderEntry::operator()(Trace<fix::ExecutionReport> const &event, core::fix:
               fills.emplace_back(std::move(fill));
             }
             assert(!std::empty(fills));
-            auto trade_update = TradeUpdate{
-                .stream_id = stream_id_,
+            auto trade_update = oms::TradeUpdate{
                 .account = order.account,
                 .order_id = order.order_id,
                 .exchange = order.exchange,
@@ -827,11 +826,9 @@ void OrderEntry::operator()(Trace<fix::ExecutionReport> const &event, core::fix:
                 .external_account = order.external_account,
                 .external_order_id = order.external_order_id,
                 .fills = fills,
-                .routing_id = order.routing_id,
                 .update_type = update_type,
-                .user = shared_.get_user_name(order.user_id),
             };
-            create_trace_and_dispatch(handler_, trace_info, trade_update, true, order.user_id);
+            create_trace_and_dispatch(handler_, trace_info, trade_update, stream_id_, true, order.user_id);
           })) {
   } else {
     auto external = std::empty(execution_report.deribit_label);
