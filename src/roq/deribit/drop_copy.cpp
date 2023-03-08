@@ -14,6 +14,7 @@
 #include "roq/web/socket/client_factory.hpp"
 
 #include "roq/deribit/flags/common.hpp"
+#include "roq/deribit/flags/config.hpp"
 #include "roq/deribit/flags/web_socket.hpp"
 
 #include "roq/deribit/json/error.hpp"
@@ -483,10 +484,32 @@ void DropCopy::operator()(Trace<json::Trades2> const &event) {
   // do nothing?
 }
 
-void DropCopy::operator()(Trace<json::Trade> const &event, [[maybe_unused]] bool is_last) {
+void DropCopy::operator()(Trace<json::Trade> const &event, bool is_last) {
   auto &[trace_info, trade] = event;
   log::info<1>("trade={}"sv, trade);
-  // do nothing?
+  // note! trade.label might be our ClOrdID
+  auto fill = Fill{
+      .external_trade_id = trade.trade_id,
+      .quantity = trade.amount,
+      .price = trade.price,
+      .liquidity = {},
+  };
+  auto side = json::map(trade.direction);
+  auto trade_update = oms::TradeUpdate{
+      .account = {},
+      .order_id = ORDER_ID_NONE,
+      .exchange = flags::Config::exchange(),
+      .symbol = trade.instrument_name,
+      .side = side,
+      .position_effect = {},
+      .create_time_utc = trade.timestamp,
+      .update_time_utc = trade.timestamp,
+      .external_account = {},
+      .external_order_id = trade.order_id,
+      .fills = {&fill, 1},
+      .update_type = {},
+  };
+  create_trace_and_dispatch(handler_, trace_info, trade_update, stream_id_, is_last, SOURCE_SELF);
 }
 
 }  // namespace deribit
