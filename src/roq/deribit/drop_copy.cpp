@@ -454,12 +454,13 @@ void DropCopy::operator()(Trace<json::Portfolio> const &event) {
   create_trace_and_dispatch(handler_, event.trace_info, funds_update, true);
 }
 
+// note! includes trades
 void DropCopy::operator()(Trace<json::Changes> const &event) {
   auto &[trace_info, changes] = event;
   auto &trades = changes.trades;
   for (auto &&[i, trade] : iter::enumerate(trades)) {
     auto is_last = i == (std::size(trades) - 1);
-    create_trace_and_dispatch(*this, event.trace_info, std::as_const(trade), is_last);
+    create_trace_and_dispatch(*this, event.trace_info, std::as_const(trade), false, is_last);
   }
 }
 
@@ -468,7 +469,7 @@ void DropCopy::operator()(Trace<json::Trades> const &event) {
   auto &trades_2 = trades.trades;
   for (auto &&[i, trade] : iter::enumerate(trades_2)) {
     auto is_last = i == (std::size(trades_2) - 1);
-    create_trace_and_dispatch(*this, event.trace_info, std::as_const(trade), is_last);
+    create_trace_and_dispatch(*this, event.trace_info, std::as_const(trade), true, is_last);
   }
 }
 
@@ -478,38 +479,68 @@ void DropCopy::operator()(Trace<json::Order> const &event) {
   // do nothing?
 }
 
+// note! managed by changes
 void DropCopy::operator()(Trace<json::Trades2> const &event) {
   auto &[trace_info, trades2] = event;
   log::info<1>("trades={}"sv, trades2);
   // do nothing?
 }
 
-void DropCopy::operator()(Trace<json::Trade> const &event, bool is_last) {
+// XXX maybe drop this an aggregate by order?
+void DropCopy::operator()(Trace<json::Trade> const &event, bool is_download, bool is_last) {
   auto &[trace_info, trade] = event;
   log::info<1>("trade={}"sv, trade);
   // note! trade.label might be our ClOrdID
+  auto iter = shared_.multiplier.find(trade.instrument_name);
+  auto multiplier = iter == std::end(shared_.multiplier) ? 1.0 : (*iter).second;
+  auto quantity = multiplier * trade.amount;
+  auto liquidity = json::map(trade.liquidity);
   auto fill = Fill{
-      .external_trade_id = trade.trade_id,
-      .quantity = trade.amount,
+      .external_trade_id = {},
+      .quantity = quantity,
       .price = trade.price,
-      .liquidity = {},
+      .liquidity = liquidity,
   };
-  auto side = json::map(trade.direction);
-  auto trade_update = oms::TradeUpdate{
-      .account = {},
-      .order_id = ORDER_ID_NONE,
-      .exchange = flags::Config::exchange(),
-      .symbol = trade.instrument_name,
-      .side = side,
-      .position_effect = {},
-      .create_time_utc = trade.timestamp,
-      .update_time_utc = trade.timestamp,
-      .external_account = {},
-      .external_order_id = trade.order_id,
-      .fills = {&fill, 1},
-      .update_type = {},
-  };
-  create_trace_and_dispatch(handler_, trace_info, trade_update, stream_id_, is_last, SOURCE_SELF);
+  // note! this is consistent with FIX (there is also a trade_id field)
+  fmt::format_to(std::back_inserter(fill.external_trade_id), "{}#{}"_cf, trade.instrument_name, trade.trade_seq);
+  auto update_type = is_download ? UpdateType::SNAPSHOT : UpdateType::INCREMENTAL;
+  if (shared_.find_order(trade.order_id, [&](auto &order) {
+        auto trade_update = oms::TradeUpdate{
+            .account = order.account,
+            .order_id = order.order_id,
+            .exchange = order.exchange,
+            .symbol = order.symbol,
+            .side = order.side,
+            .position_effect = order.position_effect,
+            .create_time_utc = trade.timestamp,
+            .update_time_utc = trade.timestamp,
+            .external_account = {},
+            .external_order_id = order.external_order_id,
+            .fills = {&fill, 1},
+            .update_type = update_type,
+        };
+        create_trace_and_dispatch(handler_, trace_info, trade_update, stream_id_, is_last, order.user_id);
+      })) {
+  } else {
+    // external
+    auto side = json::map(trade.direction);
+    auto user_id = shared_.get_user_from_request_id(trade.label);
+    auto trade_update = oms::TradeUpdate{
+        .account = authenticator_.get_account(),
+        .order_id = ORDER_ID_NONE,
+        .exchange = flags::Config::exchange(),
+        .symbol = trade.instrument_name,
+        .side = side,
+        .position_effect = {},
+        .create_time_utc = trade.timestamp,
+        .update_time_utc = trade.timestamp,
+        .external_account = {},
+        .external_order_id = trade.order_id,
+        .fills = {&fill, 1},
+        .update_type = update_type,
+    };
+    create_trace_and_dispatch(handler_, trace_info, trade_update, stream_id_, is_last, user_id);
+  }
 }
 
 }  // namespace deribit

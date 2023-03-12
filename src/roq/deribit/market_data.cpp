@@ -666,6 +666,7 @@ void MarketData::operator()(Trace<fix::SecurityList> const &event, core::fix::He
       create_trace_and_dispatch(handler_, trace_info, reference_data, true);
       if (discard)
         continue;
+      shared_.multiplier[symbol] = instrument.contract_multiplier;
       if (shared_.all_symbols.emplace(symbol).second)  // only include new
         symbols.emplace_back(symbol);
       ++counter;

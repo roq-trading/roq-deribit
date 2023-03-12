@@ -805,11 +805,12 @@ void OrderEntry::operator()(Trace<fix::ExecutionReport> const &event, core::fix:
               return;
             auto &fills = shared_.get_fills();
             for (auto &item : execution_report.no_fills) {
+              auto liquidity = core::fix::map(item.fill_liquidity_ind);
               auto fill = Fill{
                   .external_trade_id = item.fill_exec_id,
                   .quantity = item.fill_qty,
                   .price = item.fill_px,
-                  .liquidity = {},
+                  .liquidity = liquidity,
               };
               fills.emplace_back(std::move(fill));
             }

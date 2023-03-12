@@ -9,6 +9,7 @@
 #include "roq/core/charconv/datetime.hpp"
 
 #include "roq/deribit/json/direction.hpp"
+#include "roq/deribit/json/liquidity.hpp"
 #include "roq/deribit/json/state.hpp"
 
 namespace roq {
@@ -73,6 +74,21 @@ inline TradingStatus map(State state) {
       break;
   }
   return TradingStatus::UNDEFINED;
+}
+
+inline roq::Liquidity map(Liquidity liquidity) {
+  switch (liquidity) {
+    using enum Liquidity::type_t;
+    case UNDEFINED:
+      break;
+    case UNKNOWN:
+      break;
+    case MAKER:
+      return roq::Liquidity::MAKER;
+    case TAKER:
+      return roq::Liquidity::TAKER;
+  }
+  return roq::Liquidity::UNDEFINED;
 }
 
 }  // namespace json

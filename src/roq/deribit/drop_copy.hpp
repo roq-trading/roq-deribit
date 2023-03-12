@@ -105,7 +105,7 @@ struct DropCopy final : public web::socket::Client::Handler,
   void operator()(Trace<json::Order> const &) override;
   void operator()(Trace<json::Trades2> const &) override;
 
-  void operator()(Trace<json::Trade> const &, bool is_last);
+  void operator()(Trace<json::Trade> const &, bool is_download, bool is_last);
 
  private:
   Handler &handler_;

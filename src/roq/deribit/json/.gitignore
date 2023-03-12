@@ -13,6 +13,7 @@ instrument.hpp
 instruments.hpp
 instrument_state.hpp
 kind.hpp
+liquidity.hpp
 method.hpp
 option_type.hpp
 order_book.hpp
@@ -45,6 +46,7 @@ instrument.cpp
 instruments.cpp
 instrument_state.cpp
 kind.cpp
+liquidity.cpp
 method.cpp
 option_type.cpp
 order_book.cpp

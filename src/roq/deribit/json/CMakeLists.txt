@@ -18,6 +18,7 @@ set(AUTOGEN_SCHEMAS
     instruments.json
     instrument_state.json
     kind.json
+    liquidity.json
     method.json
     option_type.json
     order_book.json

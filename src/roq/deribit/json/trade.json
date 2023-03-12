@@ -44,7 +44,7 @@
     },
     {
       "name": "liquidity",
-      "type": "std::string_view"
+      "type": "Liquidity"
     },
     {
       "name": "mark_price",
