@@ -488,7 +488,8 @@ void DropCopy::operator()(Trace<json::Trades2> const &event) {
 
 // XXX maybe drop this an aggregate by order?
 void DropCopy::operator()(Trace<json::Trade> const &event, bool is_download, bool is_last) {
-  auto &[trace_info, trade] = event;
+  auto &trace_info = event.trace_info;
+  auto &trade = event.value;
   log::info<1>("trade={}"sv, trade);
   // note! trade.label might be our ClOrdID
   auto iter = shared_.multiplier.find(trade.instrument_name);
