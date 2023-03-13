@@ -210,6 +210,7 @@ void UDPSnapshot::operator()(Trace<deribit_multicast::Snapshot> const &event, sb
                   .update_type = UpdateType::SNAPSHOT,
                   .exchange_time_utc = timestamp,
                   .exchange_sequence = sequence,
+                  .sending_time_utc = {},
                   .price_decimals = {},
                   .quantity_decimals = {},
                   .checksum = {},

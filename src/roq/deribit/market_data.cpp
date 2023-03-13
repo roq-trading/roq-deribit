@@ -770,6 +770,7 @@ void MarketData::operator()(Trace<fix::MarketDataIncrementalRefresh> const &even
           .update_type = UpdateType::INCREMENTAL,
           .exchange_time_utc = exchange_time_utc,
           .exchange_sequence = {},
+          .sending_time_utc = header.sending_time,
           .price_decimals = {},
           .quantity_decimals = {},
           .checksum = {},
@@ -790,6 +791,7 @@ void MarketData::operator()(Trace<fix::MarketDataIncrementalRefresh> const &even
         .trades = trades,
         .exchange_time_utc = exchange_time_utc,
         .exchange_sequence = {},
+        .sending_time_utc = header.sending_time,
     };
     auto is_last = std::empty(statistics);
     create_trace_and_dispatch(handler_, trace_info, trade_summary, is_last);
@@ -802,6 +804,8 @@ void MarketData::operator()(Trace<fix::MarketDataIncrementalRefresh> const &even
         .statistics = statistics,
         .update_type = UpdateType::INCREMENTAL,
         .exchange_time_utc = exchange_time_utc,
+        .exchange_sequence = {},
+        .sending_time_utc = header.sending_time,
     };
     create_trace_and_dispatch(handler_, trace_info, statistics_update, true);
   }
@@ -878,6 +882,8 @@ void MarketData::operator()(Trace<fix::MarketDataSnapshotFullRefresh> const &eve
         .asks = mbp.asks,
         .update_type = UpdateType::SNAPSHOT,
         .exchange_time_utc = exchange_time_utc,
+        .exchange_sequence = {},
+        .sending_time_utc = header.sending_time,
         .price_decimals = {},
         .quantity_decimals = {},
         .checksum = {},
@@ -900,6 +906,8 @@ void MarketData::operator()(Trace<fix::MarketDataSnapshotFullRefresh> const &eve
         .statistics = statistics,
         .update_type = UpdateType::SNAPSHOT,
         .exchange_time_utc = exchange_time_utc,
+        .exchange_sequence = {},
+        .sending_time_utc = header.sending_time,
     };
     create_trace_and_dispatch(handler_, trace_info, statistics_update, true);
   }

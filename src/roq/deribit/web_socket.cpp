@@ -521,8 +521,9 @@ void WebSocket::operator()(Trace<json::Quote> const &event) {
                     .ask_quantity = ask_quantity,
                 },
                 .update_type = UpdateType::INCREMENTAL,
-                .exchange_time_utc = quote.timestamp,
+                .exchange_time_utc = quote.timestamp,  // XXX not sure
                 .exchange_sequence = {},
+                .sending_time_utc = {},
             };
             if (!utils::is_equal(layer, top_of_book.layer)) {
               layer = top_of_book.layer;

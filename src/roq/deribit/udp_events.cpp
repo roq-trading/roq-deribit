@@ -220,6 +220,7 @@ void UDPEvents::operator()(Trace<deribit_multicast::Book> const &event, sbe::Fra
                   .update_type = update_type,
                   .exchange_time_utc = timestamp,
                   .exchange_sequence = exchange_sequence,
+                  .sending_time_utc = {},
                   .price_decimals = {},
                   .quantity_decimals = {},
                   .checksum = {},
@@ -304,6 +305,7 @@ void UDPEvents::operator()(Trace<deribit_multicast::Ticker> const &event, sbe::F
                 .update_type = UpdateType::INCREMENTAL,
                 .exchange_time_utc = timestamp,
                 .exchange_sequence = {},
+                .sending_time_utc = {},
             };
             log::info<3>("top_of_book={}"sv, top_of_book);
             create_trace_and_dispatch(handler_, trace_info, top_of_book, true);
@@ -356,6 +358,7 @@ void UDPEvents::operator()(Trace<deribit_multicast::Trades> const &event, sbe::F
                 .trades = trades_2,
                 .exchange_time_utc = exchange_time_utc,
                 .exchange_sequence = {},
+                .sending_time_utc = {},
             };
             log::info<3>("trade_summary={}"sv, trade_summary);
             create_trace_and_dispatch(handler_, trace_info, trade_summary, true);
