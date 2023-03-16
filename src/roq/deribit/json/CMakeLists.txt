@@ -17,6 +17,7 @@ set(AUTOGEN_SCHEMAS
     instrument.json
     instruments.json
     instrument_state.json
+    instrument_type.json
     kind.json
     liquidity.json
     method.json

@@ -12,6 +12,7 @@ field.hpp
 instrument.hpp
 instruments.hpp
 instrument_state.hpp
+instrument_type.hpp
 kind.hpp
 liquidity.hpp
 method.hpp
@@ -45,6 +46,7 @@ field.cpp
 instrument.cpp
 instruments.cpp
 instrument_state.cpp
+instrument_type.cpp
 kind.cpp
 liquidity.cpp
 method.cpp

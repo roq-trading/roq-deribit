@@ -1,0 +1,12 @@
+{
+  "name": "InstrumentType",
+  "type": "enum",
+  "values": [
+    {
+      "name": "linear"
+    },
+    {
+      "name": "reversed"
+    }
+  ]
+}

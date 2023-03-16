@@ -109,6 +109,10 @@
     {
       "name": "block_trade_min_trade_amount",
       "type": "double"
+    },
+    {
+      "name": "instrument_type",
+      "type": "InstrumentType"
     }
   ]
 }
