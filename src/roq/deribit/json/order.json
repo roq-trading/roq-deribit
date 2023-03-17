@@ -97,6 +97,10 @@
     {
       "name": "mmp",
       "type": "bool"
+    },
+    {
+      "name": "cancel_reason",
+      "type": "std::string_view"
     }
   ]
 }
