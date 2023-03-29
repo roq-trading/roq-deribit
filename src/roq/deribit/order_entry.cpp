@@ -68,6 +68,7 @@ auto create_name(auto stream_id, auto const &account) {
 auto create_connection_factory(auto &context) {
   auto uri = flags::FIX::fix_uri();
   auto config = io::net::ConnectionFactory::Config{
+      .interface = {},
       .uris = {&uri, 1},
       .validate_certificate = server::Flags::net_tls_validate_certificate(),
   };
