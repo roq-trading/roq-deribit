@@ -77,9 +77,9 @@ auto create_connection_factory(auto &context) {
 
 auto create_connection_manager(auto &handler, auto &connection_factory) {
   auto config = io::net::ConnectionManager::Config{
-      .always_reconnect = true,
       .connection_timeout = server::Flags::net_connection_timeout(),
       .disconnect_on_idle_timeout = {},
+      .always_reconnect = true,
   };
   return io::net::ConnectionManager::create(handler, connection_factory, config);
 }
@@ -95,8 +95,8 @@ struct create_metrics final : public core::metrics::Factory {
 OrderEntry::OrderEntry(
     Handler &handler, io::Context &context, uint16_t stream_id, Authenticator &authenticator, Shared &shared)
     : handler_{handler}, stream_id_{stream_id}, name_{create_name(stream_id_, authenticator.get_account())},
-      connection_factory_{create_connection_factory(context)}, connection_manager_{create_connection_manager(
-                                                                   *this, *connection_factory_)},
+      connection_factory_{create_connection_factory(context)},
+      connection_manager_{create_connection_manager(*this, *connection_factory_)},
       decode_buffer_{flags::Common::decode_buffer_size()},
       counter_{
           .disconnect = create_metrics(name_, "disconnect"sv),

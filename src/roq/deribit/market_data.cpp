@@ -82,9 +82,9 @@ auto create_connection_factory(auto &context) {
 
 auto create_connection_manager(auto &handler, auto &connection_factory) {
   auto config = io::net::ConnectionManager::Config{
-      .always_reconnect = true,
       .connection_timeout = server::Flags::net_connection_timeout(),
       .disconnect_on_idle_timeout = server::Flags::net_disconnect_on_idle_timeout(),
+      .always_reconnect = true,
   };
   return io::net::ConnectionManager::create(handler, connection_factory, config);
 }
@@ -159,8 +159,8 @@ MarketData::MarketData(
       supports_{get_supports(master_, publish_market_by_price_, publish_trade_summary_)},
       exchange_{flags::Config::exchange()}, fix_debug_{flags::FIX::fix_debug()},
       fix_request_timeout_{flags::FIX::fix_request_timeout()}, fix_ping_freq_{flags::FIX::fix_ping_freq()},
-      connection_factory_{create_connection_factory(context)}, connection_manager_{create_connection_manager(
-                                                                   *this, *connection_factory_)},
+      connection_factory_{create_connection_factory(context)},
+      connection_manager_{create_connection_manager(*this, *connection_factory_)},
       encode_buffer_{flags::Common::encode_buffer_size()}, decode_buffer_{flags::Common::decode_buffer_size()},
       counter_{
           .disconnect = create_metrics(name_, "disconnect"sv),
@@ -177,9 +177,8 @@ MarketData::MarketData(
       latency_{
           .ping = create_metrics(name_, "ping"sv),
       },
-      authenticator_{authenticator}, shared_{shared}, download_{fix_request_timeout_, [this](auto state) {
-                                                                  return download(state);
-                                                                }} {
+      authenticator_{authenticator}, shared_{shared},
+      download_{fix_request_timeout_, [this](auto state) { return download(state); }} {
   log::info("DEBUG: publish_market_by_price={}"sv, publish_market_by_price_);
   log::info("DEBUG: publish_trade_summary={}"sv, publish_trade_summary_);
 }
