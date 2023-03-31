@@ -279,6 +279,10 @@ void MarketData::operator()(ConnectionStatus status) {
         .encoding = {Encoding::FIX},
         .priority = Priority::PRIMARY,
         .connection_status = status_,
+        .interface = (*connection_factory_).get_interface(),
+        .authority = (*connection_factory_).get_current_authority(),
+        .path = (*connection_factory_).get_current_path(),
+        .proxy = {},
     };
     log::info<1>("stream_status={}"sv, stream_status);
     create_trace_and_dispatch(handler_, trace_info, stream_status);
