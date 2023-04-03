@@ -1,6 +1,13 @@
 /* Copyright (c) 2017-2023, Hans Erik Thrane */
 
-#include <catch2/catch_all.hpp>
+#include <chrono>
+#include <string>
+#include <string_view>
+
+#include <catch2/catch_approx.hpp>
+#include <catch2/catch_test_macros.hpp>
+
+#include <roq/core/hash/sha256.hpp>
 
 #include "roq/deribit/tools/crypto.hpp"
 
