@@ -954,7 +954,7 @@ template <typename T>
 std::tuple<uint64_t, std::chrono::nanoseconds, std::chrono::nanoseconds> OrderEntry::send(
     T const &event, std::chrono::nanoseconds sending_time) {
   std::chrono::nanoseconds now_1 = {}, now_2 = {};
-  (*connection_manager_).send([&](auto &buffer) {
+  (*connection_manager_).send_with_completion([&](auto &buffer) {
     buffer.resize(4096);
     now_1 = clock::get_system();
     core::fix::Writer writer{
