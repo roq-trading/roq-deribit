@@ -596,8 +596,9 @@ void OrderEntry::operator()(Trace<fix::PositionReport> const &event, core::fix::
         .external_account = {},
         .long_quantity = long_quantity,
         .short_quantity = short_quantity,
-        .long_quantity_begin = NaN,
-        .short_quantity_begin = NaN,
+        .update_type = UpdateType::INCREMENTAL,
+        .exchange_time_utc = {},
+        .sending_time_utc = {},
     };
     create_trace_and_dispatch(handler_, trace_info, position_update, is_last);
   }
@@ -797,6 +798,7 @@ void OrderEntry::operator()(Trace<fix::ExecutionReport> const &event, core::fix:
       .last_traded_price = last_traded_price,
       .last_liquidity = last_liquidity,
       .update_type = update_type,
+      .sending_time_utc = header.sending_time,
   };
   if (shared_.update_order(
           execution_report.orig_cl_ord_id,  // note! *always* from create order (can't rewrite)
@@ -832,6 +834,7 @@ void OrderEntry::operator()(Trace<fix::ExecutionReport> const &event, core::fix:
                 .external_order_id = order.external_order_id,
                 .fills = fills,
                 .update_type = update_type,
+                .sending_time_utc = header.sending_time,
             };
             create_trace_and_dispatch(handler_, trace_info, trade_update, stream_id_, true, order.user_id);
           })) {

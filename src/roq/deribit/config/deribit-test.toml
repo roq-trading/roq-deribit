@@ -18,6 +18,10 @@ symbols="BTC-PERPETUAL"
 
 [users]
 
+  [users.position]
+  password = "secret"
+  drop_copy = true
+
   [users.test]
   password = "1234"
   symbols = ".*"

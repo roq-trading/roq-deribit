@@ -462,6 +462,9 @@ void DropCopy::operator()(Trace<json::Portfolio> const &event) {
       .balance = portfolio.balance,
       .hold = NaN,
       .external_account = {},
+      .update_type = UpdateType::INCREMENTAL,
+      .exchange_time_utc = portfolio.creation_timestamp,
+      .sending_time_utc = {},
   };
   create_trace_and_dispatch(handler_, event.trace_info, funds_update, true);
 }
@@ -531,6 +534,7 @@ void DropCopy::operator()(Trace<json::Trade> const &event, bool is_download, boo
             .external_order_id = order.external_order_id,
             .fills = {&fill, 1},
             .update_type = update_type,
+            .sending_time_utc = {},
         };
         create_trace_and_dispatch(handler_, trace_info, trade_update, stream_id_, is_last, order.user_id);
       })) {
@@ -551,6 +555,7 @@ void DropCopy::operator()(Trace<json::Trade> const &event, bool is_download, boo
         .external_order_id = trade.order_id,
         .fills = {&fill, 1},
         .update_type = update_type,
+        .sending_time_utc = {},
     };
     create_trace_and_dispatch(handler_, trace_info, trade_update, stream_id_, is_last, user_id);
   }
