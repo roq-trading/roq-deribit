@@ -69,7 +69,7 @@ roq_autogen(
 
 roq_gitignore(OUTPUT ".gitignore" SOURCES "${TARGET_NAME}" ${AUTOGEN_HEADERS} ${AUTOGEN_SOURCES})
 
-add_library("${TARGET_NAME}" STATIC ${SOURCES} ${AUTOGEN_SOURCES})
+add_library("${TARGET_NAME}" OBJECT ${SOURCES} ${AUTOGEN_SOURCES})
 
 add_dependencies("${TARGET_NAME}" autogen-fix-headers)
 
