@@ -533,7 +533,7 @@ void WebSocket::operator()(Trace<json::Quote> const &event) {
                     .ask_price = quote.best_ask_price,
                     .ask_quantity = ask_quantity,
                 },
-                .update_type = UpdateType::INCREMENTAL,
+                .update_type = UpdateType::SNAPSHOT,
                 .exchange_time_utc = quote.timestamp,  // XXX not sure
                 .exchange_sequence = {},
                 .sending_time_utc = {},

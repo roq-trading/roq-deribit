@@ -302,7 +302,7 @@ void UDPEvents::operator()(Trace<deribit_multicast::Ticker> const &event, sbe::F
                     .ask_price = ticker.bestAskPrice(),
                     .ask_quantity = ticker.bestAskAmount() * instrument.multiplier,
                 },
-                .update_type = UpdateType::INCREMENTAL,
+                .update_type = UpdateType::SNAPSHOT,
                 .exchange_time_utc = timestamp,
                 .exchange_sequence = {},
                 .sending_time_utc = {},
