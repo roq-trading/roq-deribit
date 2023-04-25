@@ -40,9 +40,8 @@ inline void update(std::chrono::milliseconds &result, core::json::Value const &v
 inline Side map(Direction direction) {
   switch (direction) {
     using enum Direction::type_t;
-    case UNDEFINED:
-      break;
-    case UNKNOWN:
+    case UNDEFINED__:
+    case UNKNOWN__:
       break;
     case BUY:
       return Side::BUY;
@@ -51,15 +50,14 @@ inline Side map(Direction direction) {
     case ZERO:
       return Side::UNDEFINED;
   }
-  return Side::UNDEFINED;
+  return {};
 }
 
 inline TradingStatus map(State state) {
   switch (state) {
     using enum State::type_t;
-    case UNDEFINED:
-      break;
-    case UNKNOWN:
+    case UNDEFINED__:
+    case UNKNOWN__:
       break;
     case CLOSED:
       return TradingStatus::OPEN;
@@ -73,22 +71,21 @@ inline TradingStatus map(State state) {
     case STARTED:      // XXX don't know how to map
       break;
   }
-  return TradingStatus::UNDEFINED;
+  return {};
 }
 
 inline roq::Liquidity map(Liquidity liquidity) {
   switch (liquidity) {
     using enum Liquidity::type_t;
-    case UNDEFINED:
-      break;
-    case UNKNOWN:
+    case UNDEFINED__:
+    case UNKNOWN__:
       break;
     case MAKER:
       return roq::Liquidity::MAKER;
     case TAKER:
       return roq::Liquidity::TAKER;
   }
-  return roq::Liquidity::UNDEFINED;
+  return {};
 }
 
 }  // namespace json

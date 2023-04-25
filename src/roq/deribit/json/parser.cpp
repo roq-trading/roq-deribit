@@ -48,7 +48,7 @@ static_assert(get_token("instrument.state.123"sv) == "instrument_state"sv);
 Channel parse_channel(std::string_view const &name) {
   auto token = get_token(name);
   if (std::empty(token)) [[unlikely]]
-    return Channel::UNKNOWN;
+    return Channel::UNKNOWN__;
   return Channel(token);
 }
 
@@ -105,7 +105,7 @@ void Parser::dispatch(
     Parser::Handler &handler, core::json::Value &value, core::json::Buffer &buffer, TraceInfo const &trace_info) {
   // note! message is nested / channel name is at level 2
   auto message = core::json::get<std::string_view>(value);
-  auto channel = Channel::UNDEFINED;
+  auto channel = Channel::UNDEFINED__;
   bool dispatched = false;
   for (int i = 0; i < 2 && !dispatched; ++i) {
     core::json::Parser parser(message);
@@ -114,26 +114,26 @@ void Parser::dispatch(
       auto field = Field(key);
       switch (field) {
         using enum Field::type_t;
-        case UNDEFINED:
+        case UNDEFINED__:
           log::fatal("Unexpected"sv);
           break;
-        case UNKNOWN:
+        case UNKNOWN__:
           log::fatal(R"(Unknown key="{}")"sv, key);
           break;
         case CHANNEL: {
           auto name = std::get<std::string_view>(value_);
           channel = parse_channel(name);
-          if (channel == Channel::UNKNOWN) [[unlikely]]
+          if (channel == Channel::UNKNOWN__) [[unlikely]]
             log::warn(R"(Can't parse channel="{}")"sv, name);
           break;
         }
         case DATA:
-          if (channel != Channel::UNDEFINED) {
+          if (channel != Channel::UNDEFINED__) {
             switch (channel) {
               using enum Channel::type_t;
-              case UNDEFINED:
+              case UNDEFINED__:
                 break;  // not ready
-              case UNKNOWN:
+              case UNKNOWN__:
                 log::fatal("Unknown channel"sv);
                 break;
               // public
