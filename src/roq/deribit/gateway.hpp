@@ -86,9 +86,10 @@ struct Gateway final : public server::Handler,
 
   // utilities
 
-  OrderEntry &get_order_entry(std::string_view const &account);
+  template <typename... Args>
+  void dispatch(Args &&...);
 
-  void apply_to_all_streams(auto &);
+  OrderEntry &get_order_entry(std::string_view const &account);
 
  private:
   server::Dispatcher &dispatcher_;

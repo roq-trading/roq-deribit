@@ -21,6 +21,8 @@ SecurityType map_security_type(std::string_view const &value) {
         break;
     }
   }
+  if (value.compare("FXSPOT"sv) == 0)
+    return SecurityType::SPOT;
   return SecurityType::UNDEFINED;
 }
 

@@ -42,4 +42,5 @@ $PREFIX "./roq-deribit" \
   --url_prefix roq \
   --fix_uri "$FIX_URI" \
   --ws_uri "$WS_URI" \
+  --cache_all_reference_data true \
   $@

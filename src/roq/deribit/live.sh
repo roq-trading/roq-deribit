@@ -38,4 +38,5 @@ $PREFIX "./roq-deribit" \
   --service_listen_address "$HOME/run/metrics/${NAME}.sock" \
   --fix_uri "$FIX_URI" \
   --ws_uri "$WS_URI" \
+  --cache_all_reference_data true \
   $@

@@ -49,54 +49,54 @@ Channel parse_channel(std::string_view const &name) {
   auto token = get_token(name);
   if (std::empty(token)) [[unlikely]]
     return Channel::UNKNOWN__;
-  return Channel(token);
+  return Channel{token};
 }
 
 template <typename T>
 void dispatch_platform_state(Parser::Handler &handler, T &value, TraceInfo const &trace_info) {
-  const PlatformState platform_state(value);
+  PlatformState platform_state{value};
   create_trace_and_dispatch(handler, trace_info, platform_state);
 }
 
 template <typename T>
 void dispatch_instrument_state(Parser::Handler &handler, T &value, TraceInfo const &trace_info) {
-  const InstrumentState instrument_state(value);
+  InstrumentState instrument_state{value};
   create_trace_and_dispatch(handler, trace_info, instrument_state);
 }
 
 template <typename T>
 void dispatch_quote(Parser::Handler &handler, T &value, TraceInfo const &trace_info) {
-  const Quote quote(value);
+  Quote quote{value};
   create_trace_and_dispatch(handler, trace_info, quote);
 }
 
 template <typename T>
 void dispatch_ticker(Parser::Handler &handler, T &value, TraceInfo const &trace_info) {
-  const Ticker ticker(value);
+  Ticker ticker{value};
   create_trace_and_dispatch(handler, trace_info, ticker);
 }
 
 template <typename T>
 void dispatch_portfolio(Parser::Handler &handler, T &value, TraceInfo const &trace_info) {
-  const Portfolio portfolio(value);
+  Portfolio portfolio{value};
   create_trace_and_dispatch(handler, trace_info, portfolio);
 }
 
 template <typename T>
 void dispatch_changes(Parser::Handler &handler, T &value, core::json::Buffer &buffer, TraceInfo const &trace_info) {
-  const Changes changes(value, buffer);
+  Changes changes{value, buffer};
   create_trace_and_dispatch(handler, trace_info, changes);
 }
 
 template <typename T>
 void dispatch_orders(Parser::Handler &handler, T &value, core::json::Buffer &, TraceInfo const &trace_info) {
-  const Order order(value);
+  Order order{value};
   create_trace_and_dispatch(handler, trace_info, order);
 }
 
 template <typename T>
 void dispatch_trades(Parser::Handler &handler, T &value, core::json::Buffer &buffer, TraceInfo const &trace_info) {
-  const Trades2 trades(value, buffer);
+  Trades2 trades{value, buffer};
   create_trace_and_dispatch(handler, trace_info, trades);
 }
 }  // namespace
@@ -108,7 +108,7 @@ void Parser::dispatch(
   auto channel = Channel::UNDEFINED__;
   bool dispatched = false;
   for (int i = 0; i < 2 && !dispatched; ++i) {
-    core::json::Parser parser(message);
+    core::json::Parser parser{message};
     auto root = parser.root();
     for (auto [key, value_] : std::get<core::json::Object>(root)) {
       auto field = Field(key);

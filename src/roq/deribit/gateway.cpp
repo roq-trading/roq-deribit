@@ -95,16 +95,16 @@ Gateway::Gateway(server::Dispatcher &dispatcher, Config const &config, io::Conte
 
 void Gateway::operator()(Event<Start> const &event) {
   log::info("Starting..."sv);
-  apply_to_all_streams(event);
+  dispatch(event);
 }
 
 void Gateway::operator()(Event<Stop> const &event) {
   log::info("Stopping..."sv);
-  apply_to_all_streams(event);
+  dispatch(event);
 }
 
 void Gateway::operator()(Event<Timer> const &event) {
-  apply_to_all_streams(event);
+  dispatch(event);
 }
 
 void Gateway::operator()(Event<server::Refresh> const &) {
@@ -173,7 +173,7 @@ uint16_t Gateway::operator()(Event<CancelAllOrders> const &event, std::string_vi
 }
 
 void Gateway::operator()(metrics::Writer &writer) {
-  apply_to_all_streams(writer);
+  dispatch(writer);
 }
 
 void Gateway::operator()(Trace<StreamStatus> const &event) {
@@ -272,26 +272,27 @@ void Gateway::ensure_symbol_slices(size_t size) {
   }
 }
 
+template <typename... Args>
+void Gateway::dispatch(Args &&...args) {
+  for (auto &[_, item] : order_entry_)
+    (*item)(std::forward<Args>(args)...);
+  for (auto &[_, item] : drop_copy_)
+    (*item)(std::forward<Args>(args)...);
+  for (auto &item : web_socket_)
+    (*item)(std::forward<Args>(args)...);
+  for (auto &item : market_data_)
+    (*item)(std::forward<Args>(args)...);
+  if (udp_snapshot_)
+    (*udp_snapshot_)(std::forward<Args>(args)...);
+  if (udp_events_)
+    (*udp_events_)(std::forward<Args>(args)...);
+}
+
 OrderEntry &Gateway::get_order_entry(std::string_view const &account) {
   auto iter = order_entry_.find(account);
   if (iter == std::end(order_entry_)) [[unlikely]]
     throw RuntimeError{R"(Unknown account="{}")"sv, account};
   return *(*iter).second;
-}
-
-void Gateway::apply_to_all_streams(auto &event) {
-  for (auto &[_, iter] : order_entry_)
-    (*iter)(event);
-  for (auto &[_, iter] : drop_copy_)
-    (*iter)(event);
-  for (auto &iter : web_socket_)
-    (*iter)(event);
-  for (auto &iter : market_data_)
-    (*iter)(event);
-  if (udp_snapshot_)
-    (*udp_snapshot_)(event);
-  if (udp_events_)
-    (*udp_events_)(event);
 }
 
 }  // namespace deribit
