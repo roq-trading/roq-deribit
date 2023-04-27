@@ -171,7 +171,7 @@ struct WebSocket final : public web::socket::Client::Handler,
   ConnectionStatus status_ = {};
   core::Download<WebSocketState> download_;
   // queue
-  core::TimerQueue subscribe_queue_;
+  core::TimerQueue<std::string> subscribe_queue_;
 };
 
 }  // namespace deribit
