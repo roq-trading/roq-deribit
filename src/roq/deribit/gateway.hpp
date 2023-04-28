@@ -12,7 +12,7 @@
 
 #include "roq/io/context.hpp"
 
-#include "roq/deribit/authenticator.hpp"
+#include "roq/deribit/account.hpp"
 #include "roq/deribit/config.hpp"
 #include "roq/deribit/drop_copy.hpp"
 #include "roq/deribit/market_data.hpp"
@@ -94,9 +94,9 @@ struct Gateway final : public server::Handler,
  private:
   server::Dispatcher &dispatcher_;
   // config
-  const std::string master_account_;
-  // authentication
-  absl::flat_hash_map<Account, std::unique_ptr<Authenticator>> authenticator_;
+  std::string const master_account_;
+  // accounts
+  absl::flat_hash_map<std::string, std::unique_ptr<Account>> const accounts_;
   // io
   io::Context &context_;
   // shared
@@ -104,8 +104,8 @@ struct Gateway final : public server::Handler,
   // seed
   uint16_t stream_id_ = {};
   // streams
-  absl::flat_hash_map<Account, std::unique_ptr<OrderEntry>> order_entry_;
-  absl::flat_hash_map<Account, std::unique_ptr<DropCopy>> drop_copy_;
+  absl::flat_hash_map<std::string, std::unique_ptr<OrderEntry>> order_entry_;
+  absl::flat_hash_map<std::string, std::unique_ptr<DropCopy>> drop_copy_;
   std::vector<std::unique_ptr<WebSocket>> web_socket_;
   std::vector<std::unique_ptr<MarketData>> market_data_;
   std::unique_ptr<UDPSnapshot> udp_snapshot_;

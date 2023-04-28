@@ -63,12 +63,13 @@ struct UDPSnapshot final : public io::net::udp::Receiver::Handler, public sbe::P
  private:
   Handler &handler_;
   // config
-  const uint16_t stream_id_;
-  const std::string name_;
+  uint16_t const stream_id_;
+  std::string const name_;
   bool const publish_market_by_price_;
   Mask<SupportType> const supports_;
   // receiver
-  std::unique_ptr<io::net::udp::Receiver> receiver_;
+  std::unique_ptr<io::net::udp::Receiver> const receiver_;
+  // buffers
   io::Buffer receive_buffer_;
   // metrics
   struct {

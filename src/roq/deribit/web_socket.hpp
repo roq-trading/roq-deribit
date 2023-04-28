@@ -142,14 +142,14 @@ struct WebSocket final : public web::socket::Client::Handler,
  private:
   Handler &handler_;
   // config
-  const uint16_t stream_id_;
-  const std::string name_;
-  const size_t index_;
+  uint16_t const stream_id_;
+  std::string const name_;
+  size_t const index_;
   bool const master_;
   bool const publish_top_of_book_;
   Mask<SupportType> const supports_;
   // web socket
-  std::unique_ptr<web::socket::Client> connection_;
+  std::unique_ptr<web::socket::Client> const connection_;
   // buffers
   core::Buffer decode_buffer_;
   // metrics

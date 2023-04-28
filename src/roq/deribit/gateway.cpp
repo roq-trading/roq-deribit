@@ -17,48 +17,53 @@ namespace deribit {
 
 namespace {
 template <typename R>
-auto create_authenticator(auto const &config) {
-  R result;
+R create_accounts(auto &config) {
+  using result_type = std::remove_cvref<R>::type;
+  result_type result;
   for (auto &[_, account] : config.accounts)
-    result.try_emplace(account.name, std::make_unique<Authenticator>(config, account.name));
+    result.try_emplace(account.name, std::make_unique<Account>(config, account.name));
   return result;
 }
 
-auto &get_authenticator(auto const &authenticator_by_name, auto const &master_account) {
-  auto iter = authenticator_by_name.find(master_account);
-  if (iter != authenticator_by_name.end())
+auto &get_account(auto &accounts, auto &master_account) {
+  auto iter = accounts.find(master_account);
+  if (iter != std::end(accounts))
     return *(*iter).second;
   log::fatal("Market data requires a master account"sv);
 }
 
 template <typename R>
-auto create_order_entry(auto &gateway, auto &context, auto &stream_id, auto &authenticator_by_name, auto &shared) {
-  R result;
-  for (auto &[account, authenticator] : authenticator_by_name)
-    result.try_emplace(account, std::make_unique<OrderEntry>(gateway, context, ++stream_id, *authenticator, shared));
+R create_order_entry(auto &gateway, auto &context, auto &stream_id, auto &accounts, auto &shared) {
+  using result_type = std::remove_cvref<R>::type;
+  result_type result;
+  for (auto &[name, account] : accounts)
+    result.try_emplace(name, std::make_unique<OrderEntry>(gateway, context, ++stream_id, *account, shared));
   return result;
 }
 
 template <typename R>
-auto create_drop_copy(auto &gateway, auto &context, auto &stream_id, auto &authenticator_by_name, auto &shared) {
-  R result;
-  for (auto &[account, authenticator] : authenticator_by_name)
-    result.try_emplace(account, std::make_unique<DropCopy>(gateway, context, ++stream_id, *authenticator, shared));
+R create_drop_copy(auto &gateway, auto &context, auto &stream_id, auto &accounts, auto &shared) {
+  using result_type = std::remove_cvref<R>::type;
+  result_type result;
+  for (auto &[name, account] : accounts)
+    result.try_emplace(name, std::make_unique<DropCopy>(gateway, context, ++stream_id, *account, shared));
   return result;
 }
 
 template <typename R>
-auto create_web_socket(auto &gateway, auto &context, auto &stream_id, auto &shared) {
-  R result;
+R create_web_socket(auto &gateway, auto &context, auto &stream_id, auto &shared) {
+  using result_type = std::remove_cvref<R>::type;
+  result_type result;
   result.emplace_back(std::make_unique<WebSocket>(gateway, context, ++stream_id, shared, std::size(result), true));
   return result;
 }
 
 template <typename R>
-auto create_market_data(auto &gateway, auto &context, auto &stream_id, auto &authenticator, auto &shared) {
-  R result;
+R create_market_data(auto &gateway, auto &context, auto &stream_id, auto &account, auto &shared) {
+  using result_type = std::remove_cvref<R>::type;
+  result_type result;
   result.emplace_back(
-      std::make_unique<MarketData>(gateway, context, stream_id, authenticator, shared, std::size(result), true));
+      std::make_unique<MarketData>(gateway, context, stream_id, account, shared, std::size(result), true));
   return result;
 }
 
@@ -79,12 +84,12 @@ auto create_udp_events(auto &gateway, auto &context, auto &stream_id, auto &shar
 
 Gateway::Gateway(server::Dispatcher &dispatcher, Config const &config, io::Context &context)
     : dispatcher_{dispatcher}, master_account_{config.get_master_account()},
-      authenticator_{create_authenticator<decltype(authenticator_)>(config)}, context_{context}, shared_{dispatcher_},
-      order_entry_{create_order_entry<decltype(order_entry_)>(*this, context_, stream_id_, authenticator_, shared_)},
-      drop_copy_{create_drop_copy<decltype(drop_copy_)>(*this, context_, stream_id_, authenticator_, shared_)},
+      accounts_{create_accounts<decltype(accounts_)>(config)}, context_{context}, shared_{dispatcher_},
+      order_entry_{create_order_entry<decltype(order_entry_)>(*this, context_, stream_id_, accounts_, shared_)},
+      drop_copy_{create_drop_copy<decltype(drop_copy_)>(*this, context_, stream_id_, accounts_, shared_)},
       web_socket_{create_web_socket<decltype(web_socket_)>(*this, context_, stream_id_, shared_)},
       market_data_{create_market_data<decltype(market_data_)>(
-          *this, context_, ++stream_id_, get_authenticator(authenticator_, master_account_), shared_)},
+          *this, context_, ++stream_id_, get_account(accounts_, master_account_), shared_)},
       udp_snapshot_{create_udp_snapshot(*this, context_, ++stream_id_, shared_)},
       udp_events_{create_udp_events(*this, context_, ++stream_id_, shared_)} {
   if (std::empty(master_account_) && !flags::Common::disable_master_account_check())
@@ -131,7 +136,7 @@ void Gateway::operator()(Event<Disconnected> const &event) {
       for (auto &[account, order_entry] : order_entry_) {
         if (dispatcher_.can_user_trade_account(account, message_info.source)) {
           log::warn(R"(- account="{}")"sv, account);
-          CancelAllOrders cancel_all_orders{
+          auto cancel_all_orders = CancelAllOrders{
               .account = account,
           };
           Event event{message_info, cancel_all_orders};
@@ -252,8 +257,8 @@ void Gateway::ensure_symbol_slices(size_t size) {
     auto stream_id = ++stream_id_;
     auto index = std::size(market_data_);
     log::debug("Create MarketData(stream_id={}, index={})"sv, stream_id, index);
-    auto market_data = std::make_unique<MarketData>(
-        *this, context_, stream_id, *authenticator_[master_account_], shared_, index, false);
+    auto market_data =
+        std::make_unique<MarketData>(*this, context_, stream_id, *accounts_.at(master_account_), shared_, index, false);
     MessageInfo message_info;
     Start start;
     create_event_and_dispatch(*market_data, message_info, start);
@@ -274,18 +279,19 @@ void Gateway::ensure_symbol_slices(size_t size) {
 
 template <typename... Args>
 void Gateway::dispatch(Args &&...args) {
+  auto helper = [&](auto &target) { target(std::forward<Args>(args)...); };
   for (auto &[_, item] : order_entry_)
-    (*item)(std::forward<Args>(args)...);
+    helper(*item);
   for (auto &[_, item] : drop_copy_)
-    (*item)(std::forward<Args>(args)...);
+    helper(*item);
   for (auto &item : web_socket_)
-    (*item)(std::forward<Args>(args)...);
+    helper(*item);
   for (auto &item : market_data_)
-    (*item)(std::forward<Args>(args)...);
+    helper(*item);
   if (udp_snapshot_)
-    (*udp_snapshot_)(std::forward<Args>(args)...);
+    helper(*udp_snapshot_);
   if (udp_events_)
-    (*udp_events_)(std::forward<Args>(args)...);
+    helper(*udp_events_);
 }
 
 OrderEntry &Gateway::get_order_entry(std::string_view const &account) {

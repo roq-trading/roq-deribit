@@ -14,13 +14,13 @@
 namespace roq {
 namespace deribit {
 
-struct Authenticator final {
-  Authenticator(Config const &, std::string_view const &account);
+struct Account final {
+  Account(Config const &, std::string_view const &name);
 
-  Authenticator(Authenticator &&) = delete;
-  Authenticator(Authenticator const &) = delete;
+  Account(Account &&) = delete;
+  Account(Account const &) = delete;
 
-  std::string_view get_account() const { return account_; }
+  std::string_view get_name() const { return name_; }
   std::string_view get_access_key() const { return key_; }
 
   std::string create_nonce();
@@ -35,7 +35,7 @@ struct Authenticator final {
   std::string create_password(std::string_view const &raw_data);
 
  private:
-  Account const account_;
+  std::string const name_;
   std::string const key_;
   tools::Crypto crypto_;
 };

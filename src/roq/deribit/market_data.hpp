@@ -21,7 +21,7 @@
 
 #include "roq/server.hpp"
 
-#include "roq/deribit/authenticator.hpp"
+#include "roq/deribit/account.hpp"
 #include "roq/deribit/market_data_state.hpp"
 #include "roq/deribit/shared.hpp"
 
@@ -63,7 +63,7 @@ struct MarketData final : public io::net::ConnectionManager::Handler {
     virtual void operator()(SymbolsUpdate &) = 0;
   };
 
-  MarketData(Handler &, io::Context &, uint16_t stream_id, Authenticator &, Shared &, size_t index, bool master);
+  MarketData(Handler &, io::Context &, uint16_t stream_id, Account &, Shared &, size_t index, bool master);
 
   MarketData(MarketData const &) = delete;
   MarketData(MarketData &&) = delete;
@@ -142,8 +142,8 @@ struct MarketData final : public io::net::ConnectionManager::Handler {
   std::chrono::nanoseconds const fix_request_timeout_;
   std::chrono::nanoseconds const fix_ping_freq_;
   // connection
-  std::unique_ptr<io::net::ConnectionFactory> connection_factory_;
-  std::unique_ptr<io::net::ConnectionManager> connection_manager_;
+  std::unique_ptr<io::net::ConnectionFactory> const connection_factory_;
+  std::unique_ptr<io::net::ConnectionManager> const connection_manager_;
   // buffers
   core::Buffer encode_buffer_;
   core::Buffer decode_buffer_;
@@ -166,8 +166,8 @@ struct MarketData final : public io::net::ConnectionManager::Handler {
   struct {
     uint64_t msg_seq_num = {};
   } inbound_;
-  // authenticator
-  Authenticator &authenticator_;
+  // account
+  Account &account_;
   // cache
   Shared &shared_;
   // state

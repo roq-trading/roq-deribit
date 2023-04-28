@@ -7,8 +7,8 @@ add_subdirectory("tools")
 add_subdirectory("sbe")
 
 set(SOURCES
+    account.cpp
     application.cpp
-    authenticator.cpp
     config.cpp
     drop_copy.cpp
     gateway.cpp

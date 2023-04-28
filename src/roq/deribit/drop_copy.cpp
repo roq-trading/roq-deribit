@@ -79,9 +79,8 @@ struct create_metrics final : public core::metrics::Factory {
 
 // === IMPLEMENTATION ===
 
-DropCopy::DropCopy(
-    Handler &handler, io::Context &context, uint16_t stream_id, Authenticator &authenticator, Shared &shared)
-    : handler_{handler}, stream_id_{stream_id}, name_{create_name(stream_id_, authenticator.get_account())},
+DropCopy::DropCopy(Handler &handler, io::Context &context, uint16_t stream_id, Account &account, Shared &shared)
+    : handler_{handler}, stream_id_{stream_id}, name_{create_name(stream_id_, account.get_name())},
       connection_{create_connection(*this, context)}, decode_buffer_{flags::Common::decode_buffer_size()},
       counter_{
           .disconnect = create_metrics(name_, "disconnect"sv),
@@ -94,7 +93,7 @@ DropCopy::DropCopy(
           .ping = create_metrics(name_, "ping"sv),
           .heartbeat = create_metrics(name_, "heartbeat"sv),
       },
-      authenticator_{authenticator}, shared_{shared},
+      account_{account}, shared_{shared},
       download_{flags::WebSocket::ws_request_timeout(), [this](auto state) { return download(state); }} {
 }
 
@@ -152,7 +151,7 @@ void DropCopy::operator()(web::socket::Client::Latency const &latency) {
   TraceInfo trace_info;
   auto external_latency = ExternalLatency{
       .stream_id = stream_id_,
-      .account = authenticator_.get_account(),
+      .account = account_.get_name(),
       .latency = latency.sample,
   };
   create_trace_and_dispatch(handler_, trace_info, external_latency);
@@ -172,7 +171,7 @@ void DropCopy::operator()(ConnectionStatus status) {
     TraceInfo trace_info;
     auto stream_status = StreamStatus{
         .stream_id = stream_id_,
-        .account = authenticator_.get_account(),
+        .account = account_.get_name(),
         .supports = SUPPORTS,
         .transport = Transport::TCP,
         .protocol = Protocol::WS,
@@ -192,8 +191,8 @@ void DropCopy::operator()(ConnectionStatus status) {
 void DropCopy::login() {
   constexpr json::RequestType request_type = json::RequestType::AUTH;
   auto now = clock::get_realtime<std::chrono::milliseconds>();
-  auto nonce = authenticator_.create_nonce();
-  auto [signature, timestamp] = authenticator_.create_signature(now, nonce);
+  auto nonce = account_.create_nonce();
+  auto [signature, timestamp] = account_.create_signature(now, nonce);
   auto message = fmt::format(
       R"({{)"
       R"("method":"public/auth",)"
@@ -207,7 +206,7 @@ void DropCopy::login() {
       R"(}},)"
       R"("id":"{}")"
       R"(}})"_cf,
-      authenticator_.get_access_key(),
+      account_.get_access_key(),
       timestamp.count(),
       nonce,
       signature,
@@ -457,7 +456,7 @@ void DropCopy::operator()(Trace<json::Portfolio> const &event) {
   auto &[trace_info, portfolio] = event;
   auto funds_update = FundsUpdate{
       .stream_id = stream_id_,
-      .account = authenticator_.get_account(),
+      .account = account_.get_name(),
       .currency = portfolio.currency,
       .balance = portfolio.balance,
       .hold = NaN,
@@ -543,7 +542,7 @@ void DropCopy::operator()(Trace<json::Trade> const &event, bool is_download, boo
     auto side = json::map(trade.direction);
     auto user_id = shared_.get_user_from_request_id(trade.label);
     auto trade_update = oms::TradeUpdate{
-        .account = authenticator_.get_account(),
+        .account = account_.get_name(),
         .order_id = ORDER_ID_NONE,
         .exchange = flags::Config::exchange(),
         .symbol = trade.instrument_name,

@@ -21,7 +21,7 @@
 
 #include "roq/server.hpp"
 
-#include "roq/deribit/authenticator.hpp"
+#include "roq/deribit/account.hpp"
 #include "roq/deribit/order_entry_state.hpp"
 #include "roq/deribit/shared.hpp"
 
@@ -50,7 +50,7 @@ struct OrderEntry final : public io::net::ConnectionManager::Handler {
     virtual void operator()(Trace<PositionUpdate> const &, bool is_last) = 0;
   };
 
-  OrderEntry(Handler &, io::Context &, uint16_t stream_id, Authenticator &, Shared &);
+  OrderEntry(Handler &, io::Context &, uint16_t stream_id, Account &, Shared &);
 
   OrderEntry(OrderEntry const &) = delete;
   OrderEntry(OrderEntry &&) = delete;
@@ -128,8 +128,8 @@ struct OrderEntry final : public io::net::ConnectionManager::Handler {
   uint16_t const stream_id_;
   Source const name_;
   // connection
-  std::unique_ptr<io::net::ConnectionFactory> connection_factory_;
-  std::unique_ptr<io::net::ConnectionManager> connection_manager_;
+  std::unique_ptr<io::net::ConnectionFactory> const connection_factory_;
+  std::unique_ptr<io::net::ConnectionManager> const connection_manager_;
   // buffers
   core::Buffer decode_buffer_;
   std::string encode_buffer_;
@@ -151,8 +151,8 @@ struct OrderEntry final : public io::net::ConnectionManager::Handler {
   struct {
     uint64_t msg_seq_num = {};
   } inbound_;
-  // authenticator
-  Authenticator &authenticator_;
+  // account
+  Account &account_;
   // cache
   Shared &shared_;
   // state
