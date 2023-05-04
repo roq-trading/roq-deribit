@@ -799,6 +799,8 @@ void OrderEntry::operator()(Trace<fix::ExecutionReport> const &event, core::fix:
       .update_type = update_type,
       .sending_time_utc = header.sending_time,
   };
+  auto order_id = ORDER_ID_NONE;
+  auto user_id = SOURCE_NONE;
   if (shared_.update_order(
           execution_report.orig_cl_ord_id,  // note! *always* from create order (can't rewrite)
           stream_id_,
@@ -806,36 +808,8 @@ void OrderEntry::operator()(Trace<fix::ExecutionReport> const &event, core::fix:
           response,
           order_update,
           [&](auto &order) {
-            if (std::empty(execution_report.no_fills))
-              return;
-            auto &fills = shared_.get_fills();
-            for (auto &item : execution_report.no_fills) {
-              auto liquidity = core::fix::map(item.fill_liquidity_ind);
-              auto fill = Fill{
-                  .external_trade_id = item.fill_exec_id,
-                  .quantity = item.fill_qty,
-                  .price = item.fill_px,
-                  .liquidity = liquidity,
-              };
-              fills.emplace_back(std::move(fill));
-            }
-            assert(!std::empty(fills));
-            auto trade_update = oms::TradeUpdate{
-                .account = order.account,
-                .order_id = order.order_id,
-                .exchange = order.exchange,
-                .symbol = order.symbol,
-                .side = order.side,
-                .position_effect = order.position_effect,
-                .create_time_utc = execution_report.transact_time,
-                .update_time_utc = execution_report.transact_time,
-                .external_account = order.external_account,
-                .external_order_id = order.external_order_id,
-                .fills = fills,
-                .update_type = update_type,
-                .sending_time_utc = header.sending_time,
-            };
-            create_trace_and_dispatch(handler_, trace_info, trade_update, stream_id_, true, order.user_id);
+            order_id = order.order_id;
+            user_id = order.user_id;
           })) {
   } else {
     auto external = std::empty(execution_report.deribit_label);
@@ -844,6 +818,38 @@ void OrderEntry::operator()(Trace<fix::ExecutionReport> const &event, core::fix:
     else
       log::warn("*** UNKNOWN INTERNAL ORDER ***"sv);
     log::warn("execution_report={}"sv, execution_report);
+  }
+  if (!std::empty(execution_report.no_fills)) {
+    auto &fills = shared_.get_fills();
+    for (auto &item : execution_report.no_fills) {
+      auto liquidity = core::fix::map(item.fill_liquidity_ind);
+      auto fill = Fill{
+          .external_trade_id = item.fill_exec_id,
+          .quantity = item.fill_qty,
+          .price = item.fill_px,
+          .liquidity = liquidity,
+      };
+      fills.emplace_back(std::move(fill));
+    }
+    assert(!std::empty(fills));
+    auto trade_update = oms::TradeUpdate{
+        .account = account_.get_name(),
+        .order_id = order_id,
+        .exchange = flags::Config::exchange(),
+        .symbol = execution_report.symbol,
+        .side = side,
+        .position_effect = {},
+        .create_time_utc = execution_report.transact_time,
+        .update_time_utc = execution_report.transact_time,
+        .external_account = {},
+        .external_order_id = execution_report.order_id,
+        .fills = fills,
+        .update_type = update_type,
+        .sending_time_utc = header.sending_time,
+    };
+    if (user_id == SOURCE_NONE)
+      user_id = shared_.get_user_from_request_id(execution_report.deribit_label);
+    create_trace_and_dispatch(handler_, trace_info, trade_update, stream_id_, true, user_id);
   }
   // download end?
   download_.check_relaxed(OrderEntryState::ORDERS);
