@@ -520,7 +520,8 @@ void DropCopy::operator()(Trace<json::Trade> const &event, bool is_download, boo
   // note! this is consistent with FIX (there is also a trade_id field, but it's not consistent)
   fmt::format_to(std::back_inserter(fill.external_trade_id), "{}#{}"_cf, trade.instrument_name, trade.trade_seq);
   auto update_type = is_download ? UpdateType::SNAPSHOT : UpdateType::INCREMENTAL;
-  auto trade_update = oms::TradeUpdate{
+  auto trade_update = TradeUpdate{
+      .stream_id = stream_id_,
       .account = account_.get_name(),
       .order_id = ORDER_ID_NONE,
       .exchange = flags::Config::exchange(),
@@ -532,15 +533,12 @@ void DropCopy::operator()(Trace<json::Trade> const &event, bool is_download, boo
       .external_account = {},
       .external_order_id = trade.order_id,
       .fills = {&fill, 1},
+      .routing_id = {},
       .update_type = update_type,
       .sending_time_utc = {},
+      .user = {},
   };
-  auto user_id = shared_.get_user_from_request_id(trade.label);
-  // XXX HANS REWORK THIS
-  assert(user_id != SOURCE_NONE);  // XXX HANS DEBUG
-  if (user_id == SOURCE_SELF)
-    user_id = SOURCE_NONE;
-  create_trace_and_dispatch(handler_, trace_info, trade_update, stream_id_, is_last, user_id);
+  create_trace_and_dispatch(handler_, trace_info, trade_update, is_last, SOURCE_NONE, trade.label);
 }
 
 }  // namespace deribit

@@ -36,21 +36,16 @@ struct Shared final {
 
   std::string_view next_request_id();
 
-  auto discard_symbol(std::string_view const &name) const { return dispatcher_.discard_symbol(name); }
-
-  template <typename... Args>
-  auto get_user_from_request_id(Args &&...args) {
-    return dispatcher_.get_user_from_request_id(std::forward<Args>(args)...);
-  }
+  auto discard_symbol(std::string_view const &name) const { return dispatcher.discard_symbol(name); }
 
   template <typename... Args>
   auto find_order(Args &&...args) {
-    return dispatcher_.find_order(std::forward<Args>(args)...);
+    return dispatcher.find_order(std::forward<Args>(args)...);
   }
 
   template <typename... Args>
   auto update_order(Args &&...args) {
-    return dispatcher_.update_order(std::forward<Args>(args)...);
+    return dispatcher.update_order(std::forward<Args>(args)...);
   }
 
   template <typename Callback>
@@ -80,7 +75,7 @@ struct Shared final {
 
   template <typename... Args>
   auto operator()(Args &&...args) {
-    return dispatcher_(std::forward<Args>(args)...);
+    return dispatcher(std::forward<Args>(args)...);
   }
 
  private:
@@ -117,8 +112,10 @@ struct Shared final {
 
   absl::flat_hash_map<Symbol, double> multiplier;
 
+ public:
+  server::Dispatcher &dispatcher;
+
  private:
-  server::Dispatcher &dispatcher_;
   uint32_t request_id_ = 0;
   core::stack::Buffer<char, 32> stack_buffer_;
   bool const multicast_;

@@ -832,7 +832,8 @@ void OrderEntry::operator()(Trace<fix::ExecutionReport> const &event, core::fix:
       fills.emplace_back(std::move(fill));
     }
     assert(!std::empty(fills));
-    auto trade_update = oms::TradeUpdate{
+    auto trade_update = TradeUpdate{
+        .stream_id = stream_id_,
         .account = account_.get_name(),
         .order_id = order_id,
         .exchange = flags::Config::exchange(),
@@ -844,12 +845,12 @@ void OrderEntry::operator()(Trace<fix::ExecutionReport> const &event, core::fix:
         .external_account = {},
         .external_order_id = execution_report.order_id,
         .fills = fills,
+        .routing_id = {},
         .update_type = update_type,
         .sending_time_utc = header.sending_time,
+        .user = {},
     };
-    if (user_id == SOURCE_NONE)
-      user_id = shared_.get_user_from_request_id(execution_report.deribit_label);
-    create_trace_and_dispatch(handler_, trace_info, trade_update, stream_id_, true, user_id);
+    create_trace_and_dispatch(handler_, trace_info, trade_update, true, user_id, execution_report.deribit_label);
   }
   // download end?
   download_.check_relaxed(OrderEntryState::ORDERS);
