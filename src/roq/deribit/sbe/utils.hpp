@@ -19,6 +19,8 @@
 #include <deribit_multicast/Ticker.h>
 #include <deribit_multicast/Trades.h>
 
+#include <deribit_multicast/YesNo.h>
+
 #include "roq/api.hpp"
 
 #include "roq/core/sbe/iterator.hpp"
@@ -194,6 +196,21 @@ struct fmt::formatter<deribit_multicast::MessageHeader> {
         value.version(),
         value.numGroups(),
         value.numVarDataFields());
+  }
+};
+
+// enums
+
+template <>
+struct fmt::formatter<deribit_multicast::YesNo::Value> {
+  template <typename Context>
+  constexpr auto parse(Context &context) {
+    return std::begin(context);
+  }
+  template <typename Context>
+  auto format(deribit_multicast::YesNo::Value const &value, Context &context) const {
+    using namespace std::literals;
+    return fmt::format_to(context.out(), "{}"sv, magic_enum::enum_name(value));
   }
 };
 
