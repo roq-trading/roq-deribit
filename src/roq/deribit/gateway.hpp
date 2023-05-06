@@ -17,6 +17,7 @@
 #include "roq/deribit/drop_copy.hpp"
 #include "roq/deribit/market_data.hpp"
 #include "roq/deribit/order_entry.hpp"
+#include "roq/deribit/settings.hpp"
 #include "roq/deribit/shared.hpp"
 #include "roq/deribit/udp_events.hpp"
 #include "roq/deribit/udp_snapshot.hpp"
@@ -32,7 +33,7 @@ struct Gateway final : public server::Handler,
                        public MarketData::Handler,
                        public UDPSnapshot::Handler,
                        public UDPEvents::Handler {
-  Gateway(server::Dispatcher &, Config const &, io::Context &);
+  Gateway(server::Dispatcher &, Settings const &, Config const &, io::Context &);
 
   Gateway(Gateway &&) = delete;
   Gateway(Gateway const &) = delete;

@@ -14,6 +14,7 @@ set(SOURCES
     gateway.cpp
     market_data.cpp
     order_entry.cpp
+    settings.cpp
     shared.cpp
     udp_events.cpp
     udp_snapshot.cpp
