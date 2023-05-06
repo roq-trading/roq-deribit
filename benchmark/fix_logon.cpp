@@ -21,15 +21,9 @@ auto const MESSAGE =
 
 // cppcheck-suppress constParameterCallback
 void BM_fix_logon_parse_message(benchmark::State &state) {
-  uint64_t processed = 0;
   for (auto _ : state) {
     core::fix::Reader<core::fix::Version::FIX_44>::dispatch(
-        [&](core::fix::Message const &message) {
-          auto result = fix::Logon::create(message);
-          if (result.heart_bt_int > 0)
-            ++processed;
-        },
-        MESSAGE);
+        [&](core::fix::Message const &message) { fix::Logon::create(message); }, MESSAGE);
   }
 }
 
@@ -41,7 +35,6 @@ void BM_fix_logon_create_message(benchmark::State &state) {
   uint64_t msg_seq_num = 0;
   auto sending_time = 1568702810s;
   auto raw_data = "1567874758168.y4/hA3i6qxm4yVL+3N7IrGcINVAFMLFhy4l7ATSehxc="sv;
-  uint64_t processed = 0;
   for (auto _ : state) {
     fix::Logon logon = {
         .heart_bt_int = uint16_t{10},
@@ -62,9 +55,7 @@ void BM_fix_logon_create_message(benchmark::State &state) {
         "DERIBITSERVER"sv,
         msg_seq_num,
         sending_time);
-    auto message = logon.encode(writer);
-    if (std::size(message))
-      ++processed;
+    logon.encode(writer);
   }
 }
 

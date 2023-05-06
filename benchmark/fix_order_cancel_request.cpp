@@ -15,7 +15,6 @@ void BM_fix_order_cancel_request_create_message(benchmark::State &state) {
   std::vector<std::byte> buffer(4096);
   uint64_t msg_seq_num = 0;
   auto sending_time = 1568702810s;
-  uint64_t processed = 0;
   for (auto _ : state) {
     fix::OrderCancelRequest order_cancel_request = {
         .cl_ord_id = "123"sv,
@@ -29,9 +28,7 @@ void BM_fix_order_cancel_request_create_message(benchmark::State &state) {
         "DERIBITSERVER"sv,
         msg_seq_num,
         sending_time);
-    auto message = order_cancel_request.encode(writer);
-    if (std::size(message))
-      ++processed;
+    order_cancel_request.encode(writer);
   }
 }
 

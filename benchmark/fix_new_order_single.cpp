@@ -25,7 +25,6 @@ auto const SENDING_TIME = 1568702810s;
 void BM_fix_new_order_single_create_message(benchmark::State &state) {
   std::vector<std::byte> buffer(4096);
   uint64_t msg_seq_num = 0;
-  uint64_t processed = 0;
   for (auto _ : state) {
     fix::NewOrderSingle new_order_single{
         .cl_ord_id = REQUEST_ID,
@@ -47,9 +46,7 @@ void BM_fix_new_order_single_create_message(benchmark::State &state) {
         SENDER_COMP_ID,
         msg_seq_num,
         SENDING_TIME};
-    auto message = new_order_single.encode(writer);
-    if (!std::empty(message))
-      ++processed;
+    new_order_single.encode(writer);
   }
 }
 
