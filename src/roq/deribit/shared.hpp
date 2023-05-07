@@ -22,12 +22,13 @@
 #include "roq/core/mbp/sequencer.hpp"
 
 #include "roq/deribit/instrument.hpp"
+#include "roq/deribit/settings.hpp"
 
 namespace roq {
 namespace deribit {
 
 struct Shared final {
-  explicit Shared(server::Dispatcher &);
+  Shared(server::Dispatcher &, Settings const &);
 
   Shared(Shared &&) = default;
   Shared(Shared const &) = delete;
@@ -114,6 +115,7 @@ struct Shared final {
 
  public:
   server::Dispatcher &dispatcher;
+  Settings const &settings;
 
  private:
   uint32_t request_id_ = 0;

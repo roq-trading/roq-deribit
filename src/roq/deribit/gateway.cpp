@@ -82,9 +82,9 @@ auto create_udp_events(auto &gateway, auto &context, auto &stream_id, auto &shar
 
 // === IMPLEMENTATION ===
 
-Gateway::Gateway(server::Dispatcher &dispatcher, Settings const &, Config const &config, io::Context &context)
+Gateway::Gateway(server::Dispatcher &dispatcher, Settings const &settings, Config const &config, io::Context &context)
     : dispatcher_{dispatcher}, master_account_{config.get_master_account()},
-      accounts_{create_accounts<decltype(accounts_)>(config)}, context_{context}, shared_{dispatcher_},
+      accounts_{create_accounts<decltype(accounts_)>(config)}, context_{context}, shared_{dispatcher_, settings},
       order_entry_{create_order_entry<decltype(order_entry_)>(*this, context_, stream_id_, accounts_, shared_)},
       drop_copy_{create_drop_copy<decltype(drop_copy_)>(*this, context_, stream_id_, accounts_, shared_)},
       web_socket_{create_web_socket<decltype(web_socket_)>(*this, context_, stream_id_, shared_)},

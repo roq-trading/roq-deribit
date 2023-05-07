@@ -70,28 +70,28 @@ auto get_supports(auto master, auto publish_market_by_price, auto publish_trade_
   return result;
 }
 
-auto create_connection_factory(auto &context) {
+auto create_connection_factory(auto &settings, auto &context) {
   auto uri = flags::FIX::fix_uri();
   auto config = io::net::ConnectionFactory::Config{
       .interface = {},
       .uris = {&uri, 1},
-      .validate_certificate = server::Flags::net_tls_validate_certificate(),
+      .validate_certificate = settings.net.tls_validate_certificate,
   };
   return io::net::ConnectionFactory::create(context, config);
 }
 
-auto create_connection_manager(auto &handler, auto &connection_factory) {
+auto create_connection_manager(auto &handler, auto &settings, auto &connection_factory) {
   auto config = io::net::ConnectionManager::Config{
-      .connection_timeout = server::Flags::net_connection_timeout(),
-      .disconnect_on_idle_timeout = server::Flags::net_disconnect_on_idle_timeout(),
+      .connection_timeout = settings.net.connection_timeout,
+      .disconnect_on_idle_timeout = settings.net.disconnect_on_idle_timeout,
       .always_reconnect = true,
   };
   return io::net::ConnectionManager::create(handler, connection_factory, config);
 }
 
 struct create_metrics final : public core::metrics::Factory {
-  explicit create_metrics(auto const &group, auto const &function)
-      : core::metrics::Factory(server::Flags::name(), group, function) {}
+  explicit create_metrics(auto &settings, auto const &group, auto const &function)
+      : core::metrics::Factory(settings.app.name, group, function) {}
 };
 
 // following are used from several places
@@ -159,23 +159,25 @@ MarketData::MarketData(
       supports_{get_supports(master_, publish_market_by_price_, publish_trade_summary_)},
       exchange_{flags::Config::exchange()}, fix_debug_{flags::FIX::fix_debug()},
       fix_request_timeout_{flags::FIX::fix_request_timeout()}, fix_ping_freq_{flags::FIX::fix_ping_freq()},
-      connection_factory_{create_connection_factory(context)},
-      connection_manager_{create_connection_manager(*this, *connection_factory_)},
+      connection_factory_{create_connection_factory(shared.settings, context)},
+      connection_manager_{create_connection_manager(*this, shared.settings, *connection_factory_)},
       encode_buffer_{flags::Common::encode_buffer_size()}, decode_buffer_{flags::Common::decode_buffer_size()},
       counter_{
-          .disconnect = create_metrics(name_, "disconnect"sv),
+          .disconnect = create_metrics(shared.settings, name_, "disconnect"sv),
       },
       profile_{
-          .parse = create_metrics(name_, "parse"sv),
-          .security_list = create_metrics(name_, "security_list"sv),
-          .security_status = create_metrics(name_, "security_status"sv),
-          .market_data_incremental_refresh = create_metrics(name_, "market_data_incremental_refresh"sv),
-          .market_data_request_reject = create_metrics(name_, "market_data_request_reject"sv),
-          .market_data_snapshot_full_refresh = create_metrics(name_, "market_data_snapshot_full_refresh"sv),
-          .market_data_request = create_metrics(name_, "market_data_request"sv),
+          .parse = create_metrics(shared.settings, name_, "parse"sv),
+          .security_list = create_metrics(shared.settings, name_, "security_list"sv),
+          .security_status = create_metrics(shared.settings, name_, "security_status"sv),
+          .market_data_incremental_refresh =
+              create_metrics(shared.settings, name_, "market_data_incremental_refresh"sv),
+          .market_data_request_reject = create_metrics(shared.settings, name_, "market_data_request_reject"sv),
+          .market_data_snapshot_full_refresh =
+              create_metrics(shared.settings, name_, "market_data_snapshot_full_refresh"sv),
+          .market_data_request = create_metrics(shared.settings, name_, "market_data_request"sv),
       },
       latency_{
-          .ping = create_metrics(name_, "ping"sv),
+          .ping = create_metrics(shared.settings, name_, "ping"sv),
       },
       account_{account}, shared_{shared},
       download_{fix_request_timeout_, [this](auto state) { return download(state); }} {

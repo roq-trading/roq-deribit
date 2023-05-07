@@ -91,6 +91,7 @@ struct UDPEvents final : public io::net::udp::Receiver::Handler, public sbe::Par
   absl::node_hash_map<uint16_t, Aggregator> aggregator_;
   // state
   std::chrono::nanoseconds last_update_time_ = {};
+  uint32_t const mbp_max_depth_;
 };
 
 }  // namespace deribit

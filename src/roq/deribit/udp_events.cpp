@@ -85,8 +85,8 @@ auto create_receiver(auto &handler, auto &context, auto port) {
 }
 
 struct create_metrics final : public core::metrics::Factory {
-  explicit create_metrics(auto const &group, auto const &function)
-      : core::metrics::Factory(server::Flags::name(), group, function) {}
+  explicit create_metrics(auto &settings, auto const &group, auto const &function)
+      : core::metrics::Factory(settings.app.name, group, function) {}
 };
 
 // following is used from several places
@@ -123,12 +123,12 @@ UDPEvents::UDPEvents(Handler &handler, io::Context &context, uint16_t stream_id,
       supports_{get_supports(publish_top_of_book_, publish_market_by_price_, publish_trade_summary_)},
       receiver_{create_receiver(*this, context, flags::Multicast::multicast_port_events())},
       counter_{
-          .disconnect = create_metrics(name_, "disconnect"sv),
+          .disconnect = create_metrics(shared.settings, name_, "disconnect"sv),
       },
       profile_{
-          .parse = create_metrics(name_, "parse"sv),
+          .parse = create_metrics(shared.settings, name_, "parse"sv),
       },
-      shared_{shared} {
+      shared_{shared}, mbp_max_depth_{shared.settings.cache.mbp_max_depth} {
   log::info("DEBUG: publish_top_of_book={}"sv, publish_top_of_book_);
   log::info("DEBUG: publish_market_by_price={}"sv, publish_market_by_price_);
   log::info("DEBUG: publish_trade_summary={}"sv, publish_trade_summary_);
@@ -431,7 +431,7 @@ void UDPEvents::emplace_back(T const &item, double multiplier, U &bids, U &asks)
 Aggregator &UDPEvents::get_aggregator(uint16_t channel_id) {
   auto iter = aggregator_.find(channel_id);
   if (iter == std::end(aggregator_))
-    iter = aggregator_.emplace(channel_id, server::Flags::cache_mbp_max_depth()).first;
+    iter = aggregator_.emplace(channel_id, mbp_max_depth_).first;
   return (*iter).second;
 }
 

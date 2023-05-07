@@ -29,8 +29,8 @@ auto get_multicast() {
 
 // === IMPLEMENTATION ===
 
-Shared::Shared(server::Dispatcher &dispatcher)
-    : dispatcher{dispatcher}, multicast_{get_multicast()},
+Shared::Shared(server::Dispatcher &dispatcher, Settings const &settings)
+    : dispatcher{dispatcher}, settings{settings}, multicast_{get_multicast()},
       rate_limiter{flags::Common::request_limit(), flags::Common::request_limit_interval()},
       symbols{flags::FIX::fix_market_data_max_subscriptions_per_stream()} {
 }
