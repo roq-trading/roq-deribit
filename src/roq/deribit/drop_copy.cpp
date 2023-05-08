@@ -13,10 +13,6 @@
 
 #include "roq/web/socket/client_factory.hpp"
 
-#include "roq/deribit/flags/common.hpp"
-#include "roq/deribit/flags/config.hpp"
-#include "roq/deribit/flags/web_socket.hpp"
-
 #include "roq/deribit/json/error.hpp"
 #include "roq/deribit/json/method.hpp"
 #include "roq/deribit/json/request_type.hpp"
@@ -47,7 +43,7 @@ auto create_name(auto stream_id, auto const &account) {
 }
 
 auto create_connection(auto &handler, auto &settings, auto &context) {
-  auto uri = flags::WebSocket::ws_uri();
+  auto uri = settings.ws.uri;
   auto config = web::socket::Client::Config{
       // connection
       .interface = {},
@@ -63,10 +59,10 @@ auto create_connection(auto &handler, auto &settings, auto &context) {
       .query = {},
       .user_agent = ROQ_PACKAGE_NAME,
       .request_timeout = {},
-      .ping_frequency = flags::WebSocket::ws_ping_freq(),
+      .ping_frequency = settings.ws.ping_freq,
       // implementation
-      .decode_buffer_size = flags::Common::decode_buffer_size(),
-      .encode_buffer_size = flags::Common::encode_buffer_size(),
+      .decode_buffer_size = settings.common.decode_buffer_size,
+      .encode_buffer_size = settings.common.encode_buffer_size,
   };
   return web::socket::ClientFactory::create(handler, context, config, []() { return std::string(); });
 }
@@ -82,7 +78,7 @@ struct create_metrics final : public core::metrics::Factory {
 DropCopy::DropCopy(Handler &handler, io::Context &context, uint16_t stream_id, Account &account, Shared &shared)
     : handler_{handler}, stream_id_{stream_id}, name_{create_name(stream_id_, account.get_name())},
       connection_{create_connection(*this, shared.settings, context)},
-      decode_buffer_{flags::Common::decode_buffer_size()},
+      decode_buffer_{shared.settings.common.decode_buffer_size},
       counter_{
           .disconnect = create_metrics(shared.settings, name_, "disconnect"sv),
       },
@@ -95,7 +91,7 @@ DropCopy::DropCopy(Handler &handler, io::Context &context, uint16_t stream_id, A
           .heartbeat = create_metrics(shared.settings, name_, "heartbeat"sv),
       },
       account_{account}, shared_{shared},
-      download_{flags::WebSocket::ws_request_timeout(), [this](auto state) { return download(state); }} {
+      download_{shared.settings.ws.request_timeout, [this](auto state) { return download(state); }} {
 }
 
 void DropCopy::operator()(Event<Start> const &) {
@@ -336,7 +332,7 @@ void DropCopy::get_trades(std::span<std::string> const &currencies) {
         R"("id":"{}")"
         R"(}})"_cf,
         currency,
-        flags::WebSocket::ws_max_trades(),
+        shared_.settings.ws.max_trades,
         request_type.as_raw_text());
     (*connection_).send_text(message);
   }
@@ -357,7 +353,7 @@ void DropCopy::parse(std::string_view const &message) {
 void DropCopy::operator()(Trace<core::jsonrpc::Error> const &event, core::json::Value &value) {
   auto &[trace_info, error] = event;
   json::Error error_2{value};
-  if (flags::WebSocket::ws_allow_errors())
+  if (shared_.settings.ws.allow_errors)
     log::warn(R"(error={}, id="{}")"sv, error_2, error.id);
   else
     log::fatal(R"(error={}, id="{}")"sv, error_2, error.id);
@@ -525,7 +521,7 @@ void DropCopy::operator()(Trace<json::Trade> const &event, bool is_download, boo
       .stream_id = stream_id_,
       .account = account_.get_name(),
       .order_id = ORDER_ID_NONE,
-      .exchange = flags::Config::exchange(),
+      .exchange = shared_.settings.exchange,
       .symbol = trade.instrument_name,
       .side = side,
       .position_effect = {},

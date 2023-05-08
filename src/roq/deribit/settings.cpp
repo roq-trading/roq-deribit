@@ -2,14 +2,19 @@
 
 #include "roq/deribit/settings.hpp"
 
+#include "roq/logging.hpp"
+
+#include "roq/deribit/flags/flags.hpp"
+
 using namespace std::literals;
 
 namespace roq {
 namespace deribit {
 
-Settings Settings::create(server::Type type) {
-  auto settings = server::create_settings(type, ROQ_PACKAGE_NAME, ROQ_BUILD_NUMBER);
-  return {settings};
+Settings::Settings(server::Type type)
+    : server::Settings{server::create_settings(type, ROQ_PACKAGE_NAME, ROQ_BUILD_NUMBER)},
+      exchange{flags::Flags::exchange()} {
+  log::debug("settings={}"sv, *this);
 }
 
 }  // namespace deribit

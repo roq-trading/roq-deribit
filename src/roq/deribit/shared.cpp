@@ -4,10 +4,6 @@
 
 #include "roq/logging.hpp"
 
-#include "roq/deribit/flags/common.hpp"
-#include "roq/deribit/flags/fix.hpp"
-#include "roq/deribit/flags/multicast.hpp"
-
 using namespace std::literals;
 
 using namespace fmt::literals;
@@ -18,9 +14,9 @@ namespace deribit {
 // === HELPERS ===
 
 namespace {
-auto get_multicast() {
+auto get_multicast(auto &settings) {
   // XXX maybe check more flags?
-  if (std::empty(flags::Multicast::local_interface()))
+  if (std::empty(settings.common.local_interface))
     return false;
   log::info("Using multicast"sv);
   return true;
@@ -30,9 +26,9 @@ auto get_multicast() {
 // === IMPLEMENTATION ===
 
 Shared::Shared(server::Dispatcher &dispatcher, Settings const &settings)
-    : dispatcher{dispatcher}, settings{settings}, multicast_{get_multicast()},
-      rate_limiter{flags::Common::request_limit(), flags::Common::request_limit_interval()},
-      symbols{flags::FIX::fix_market_data_max_subscriptions_per_stream()} {
+    : dispatcher{dispatcher}, settings{settings}, multicast_{get_multicast(settings)},
+      rate_limiter{settings.common.request_limit, settings.common.request_limit_interval},
+      symbols{settings.fix.market_data_max_subscriptions_per_stream} {
 }
 
 std::string_view Shared::next_request_id() {

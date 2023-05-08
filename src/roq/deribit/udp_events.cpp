@@ -18,10 +18,6 @@
 
 #include "roq/deribit/utils.hpp"
 
-#include "roq/deribit/flags/common.hpp"
-#include "roq/deribit/flags/config.hpp"
-#include "roq/deribit/flags/multicast.hpp"
-
 #include "roq/deribit/sbe/utils.hpp"
 
 using namespace std::literals;
@@ -44,16 +40,16 @@ auto create_name(auto stream_id) {
   return fmt::format("{}:{}"_cf, stream_id, NAME);
 }
 
-auto publish_top_of_book() {
-  return !flags::Multicast::multicast_disable_top_of_book();
+auto publish_top_of_book(auto &settings) {
+  return !settings.multicast.disable_top_of_book;
 }
 
-auto publish_market_by_price() {
-  return !flags::Multicast::multicast_disable_market_by_price();
+auto publish_market_by_price(auto &settings) {
+  return !settings.multicast.disable_market_by_price;
 }
 
-auto publish_trade_summary() {
-  return !flags::Multicast::multicast_disable_trade_summary();
+auto publish_trade_summary(auto &settings) {
+  return !settings.multicast.disable_trade_summary;
 }
 
 auto get_supports(auto publish_top_of_book, auto publish_market_by_price, auto publish_trade_summary) {
@@ -67,16 +63,16 @@ auto get_supports(auto publish_top_of_book, auto publish_market_by_price, auto p
   return result;
 }
 
-auto create_receiver(auto &handler, auto &context, auto port) {
+auto create_receiver(auto &handler, auto &settings, auto &context, auto port) {
   log::info<1>("Create multicast socket port={}"sv, port);
   auto network_address = io::NetworkAddress{port};
   auto socket_options = Mask{
       io::SocketOption::REUSE_ADDRESS,
   };
   auto receiver = context.create_udp_receiver(handler, network_address, socket_options);
-  log::info<1>(R"(Local interface is "{}")"sv, flags::Multicast::local_interface());
-  auto local_interface = io::NetworkAddress::create_blocking(flags::Multicast::local_interface());
-  for (auto &multicast_address : flags::Multicast::multicast_address()) {
+  log::info<1>(R"(Local interface is "{}")"sv, settings.common.local_interface);
+  auto local_interface = io::NetworkAddress::create_blocking(settings.common.local_interface);
+  for (auto &multicast_address : settings.multicast.address) {
     log::info<1>(R"(Add membership "{}")"sv, multicast_address);
     auto multicast_address_2 = io::NetworkAddress::create_blocking(multicast_address);
     (*receiver).add_membership(multicast_address_2, local_interface);
@@ -118,10 +114,11 @@ bool test_sequence(auto &cache, auto instrument_id, auto sequence_number) {
 
 UDPEvents::UDPEvents(Handler &handler, io::Context &context, uint16_t stream_id, Shared &shared)
     : handler_{handler}, stream_id_{stream_id}, name_{create_name(stream_id_)},
-      publish_top_of_book_{publish_top_of_book()}, publish_market_by_price_{publish_market_by_price()},
-      publish_trade_summary_{publish_trade_summary()},
+      publish_top_of_book_{publish_top_of_book(shared.settings)},
+      publish_market_by_price_{publish_market_by_price(shared.settings)},
+      publish_trade_summary_{publish_trade_summary(shared.settings)},
       supports_{get_supports(publish_top_of_book_, publish_market_by_price_, publish_trade_summary_)},
-      receiver_{create_receiver(*this, context, flags::Multicast::multicast_port_events())},
+      receiver_{create_receiver(*this, shared.settings, context, shared.settings.multicast.port_events)},
       counter_{
           .disconnect = create_metrics(shared.settings, name_, "disconnect"sv),
       },
@@ -144,7 +141,7 @@ void UDPEvents::operator()(Event<Stop> const &) {
 }
 
 void UDPEvents::operator()(Event<Timer> const &event) {
-  if (last_update_time_.count() && (last_update_time_ + flags::Multicast::multicast_timeout()) < event.value.now) {
+  if (last_update_time_.count() && (last_update_time_ + shared_.settings.multicast.timeout) < event.value.now) {
     log::warn("*** DETECTED TIMEOUT ***"sv);
     last_update_time_ = {};
   }
@@ -213,7 +210,7 @@ void UDPEvents::operator()(Trace<deribit_multicast::Book> const &event, sbe::Fra
                 [&](auto &bids, auto &asks, auto update_type, auto exchange_sequence) -> MarketByPriceUpdate {
               return {
                   .stream_id = stream_id_,
-                  .exchange = flags::Config::exchange(),
+                  .exchange = shared_.settings.exchange,
                   .symbol = instrument.symbol,
                   .bids = bids,
                   .asks = asks,
@@ -294,7 +291,7 @@ void UDPEvents::operator()(Trace<deribit_multicast::Ticker> const &event, sbe::F
             // note! unlike the WS feed, it looks like we do *not* have to scale amounts here
             auto top_of_book = TopOfBook{
                 .stream_id = stream_id_,
-                .exchange = flags::Config::exchange(),
+                .exchange = shared_.settings.exchange,
                 .symbol = instrument.symbol,
                 .layer{
                     .bid_price = ticker.bestBidPrice(),
@@ -353,7 +350,7 @@ void UDPEvents::operator()(Trace<deribit_multicast::Trades> const &event, sbe::F
             });
             auto trade_summary = TradeSummary{
                 .stream_id = stream_id_,
-                .exchange = flags::Config::exchange(),
+                .exchange = shared_.settings.exchange,
                 .symbol = instrument.symbol,
                 .trades = trades_2,
                 .exchange_time_utc = exchange_time_utc,

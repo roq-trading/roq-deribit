@@ -22,11 +22,6 @@
 
 #include "roq/deribit/common.hpp"
 
-#include "roq/deribit/flags/common.hpp"
-#include "roq/deribit/flags/config.hpp"
-#include "roq/deribit/flags/fix.hpp"
-#include "roq/deribit/flags/multicast.hpp"
-
 #include "roq/deribit/fix/utils.hpp"
 
 using namespace std::literals;
@@ -52,11 +47,11 @@ auto create_name(auto stream_id) {
 }
 
 auto publish_market_by_price(auto const &shared) {
-  return !shared.has_multicast() || flags::Multicast::multicast_disable_market_by_price();
+  return !shared.has_multicast() || shared.settings.multicast.disable_market_by_price;
 }
 
 auto publish_trade_summary(auto const &shared) {
-  return !shared.has_multicast() || flags::Multicast::multicast_disable_trade_summary();
+  return !shared.has_multicast() || shared.settings.multicast.disable_trade_summary;
 }
 
 auto get_supports(auto master, auto publish_market_by_price, auto publish_trade_summary) {
@@ -71,7 +66,7 @@ auto get_supports(auto master, auto publish_market_by_price, auto publish_trade_
 }
 
 auto create_connection_factory(auto &settings, auto &context) {
-  auto uri = flags::FIX::fix_uri();
+  auto uri = settings.fix.uri;
   auto config = io::net::ConnectionFactory::Config{
       .interface = {},
       .uris = {&uri, 1},
@@ -157,11 +152,12 @@ MarketData::MarketData(
     : handler_{handler}, stream_id_{stream_id}, name_{create_name(stream_id_)}, index_{index}, master_{master},
       publish_market_by_price_{publish_market_by_price(shared)}, publish_trade_summary_{publish_trade_summary(shared)},
       supports_{get_supports(master_, publish_market_by_price_, publish_trade_summary_)},
-      exchange_{flags::Config::exchange()}, fix_debug_{flags::FIX::fix_debug()},
-      fix_request_timeout_{flags::FIX::fix_request_timeout()}, fix_ping_freq_{flags::FIX::fix_ping_freq()},
+      exchange_{shared.settings.exchange}, fix_debug_{shared.settings.fix.debug},
+      fix_request_timeout_{shared.settings.fix.request_timeout}, fix_ping_freq_{shared.settings.fix.ping_freq},
       connection_factory_{create_connection_factory(shared.settings, context)},
       connection_manager_{create_connection_manager(*this, shared.settings, *connection_factory_)},
-      encode_buffer_{flags::Common::encode_buffer_size()}, decode_buffer_{flags::Common::decode_buffer_size()},
+      encode_buffer_{shared.settings.common.encode_buffer_size},
+      decode_buffer_{shared.settings.common.decode_buffer_size},
       counter_{
           .disconnect = create_metrics(shared.settings, name_, "disconnect"sv),
       },
@@ -204,7 +200,7 @@ void MarketData::operator()(Event<Timer> const &event) {
   } else {
     if (status_ == ConnectionStatus::READY) {
       if (test_disconnect_time_.count() && test_disconnect_time_ < event.value.now) [[unlikely]] {
-        if (flags::FIX::fix_test_market_data_disconnect().count()) {
+        if (shared_.settings.fix.test_market_data_disconnect.count()) {
           log::warn("*** TEST: DISCONNECT (stream_id={}) ***"sv, stream_id_);
           log::info("closing connection"sv);
           (*connection_manager_).close();
@@ -296,7 +292,7 @@ void MarketData::send_logon() {
   auto now = clock::get_realtime<std::chrono::milliseconds>();
   auto raw_data = account_.create_raw_data(now);
   auto password = account_.create_password(raw_data);
-  auto cancel_on_disconnect = flags::FIX::fix_cancel_on_disconnect();
+  auto cancel_on_disconnect = shared_.settings.fix.cancel_on_disconnect;
   auto logon = fix::Logon{
       .heart_bt_int = utils::safe_cast(heart_bt_int),
       .raw_data_length = utils::safe_cast(std::size(raw_data)),
@@ -363,11 +359,11 @@ uint32_t MarketData::download(MarketDataState state) {
       (*this)(ConnectionStatus::READY);
       // test
       auto now = clock::get_system();
-      if (flags::FIX::fix_test_market_data_disconnect().count()) {
-        test_disconnect_time_ = now + flags::FIX::fix_test_market_data_disconnect();
+      if (shared_.settings.fix.test_market_data_disconnect.count()) {
+        test_disconnect_time_ = now + shared_.settings.fix.test_market_data_disconnect;
         log::warn(
             "*** TEST: DISCONNECT IN {} (stream_id={}) ***"sv,
-            std::chrono::duration_cast<std::chrono::seconds>(flags::FIX::fix_test_market_data_disconnect()),
+            std::chrono::duration_cast<std::chrono::seconds>(shared_.settings.fix.test_market_data_disconnect),
             stream_id_);
       }
       return {};
@@ -409,7 +405,7 @@ void MarketData::subscribe(std::span<Symbol const> const &symbols) {
   if (std::empty(symbols))
     return;
   log::info("Subscribe symbols=[{}]"sv, fmt::join(symbols, ","sv));
-  auto market_depth = flags::FIX::fix_market_data_market_depth();
+  auto market_depth = shared_.settings.fix.market_data_market_depth;
   auto md_update_type =
       market_depth ? core::fix::MDUpdateType::INCREMENTAL_REFRESH : core::fix::MDUpdateType::FULL_REFRESH;
   fix::MDReq md_entry_types[] = {
@@ -418,8 +414,8 @@ void MarketData::subscribe(std::span<Symbol const> const &symbols) {
       {.md_entry_type = core::fix::MDEntryType::TRADE},
   };
   // deribit has acknowledged a limit on # of symbols per request
-  auto max_size = flags::FIX::fix_market_data_request_max_size() ? flags::FIX::fix_market_data_request_max_size()
-                                                                 : std::size(symbols);
+  auto max_size = shared_.settings.fix.market_data_request_max_size ? shared_.settings.fix.market_data_request_max_size
+                                                                    : std::size(symbols);
   std::vector<fix::InstrmtMDReq> related_sym(max_size);
   for (size_t offset = 0;; offset += max_size) {
     if (std::size(symbols) <= offset)
@@ -454,8 +450,8 @@ void MarketData::unsubscribe(std::span<Symbol const> const &symbols) {
       {.md_entry_type = core::fix::MDEntryType::TRADE},
   };
   // deribit has acknowledged a limit on # of symbols per request
-  auto max_size = flags::FIX::fix_market_data_request_max_size() ? flags::FIX::fix_market_data_request_max_size()
-                                                                 : std::size(symbols);
+  auto max_size = shared_.settings.fix.market_data_request_max_size ? shared_.settings.fix.market_data_request_max_size
+                                                                    : std::size(symbols);
   std::vector<fix::InstrmtMDReq> related_sym(max_size);
   for (size_t offset = 0;; offset += max_size) {
     if (std::size(symbols) <= offset)
@@ -820,7 +816,7 @@ void MarketData::operator()(Trace<fix::MarketDataIncrementalRefresh> const &even
 void MarketData::operator()(Trace<fix::MarketDataRequestReject> const &event, core::fix::Header const &header) {
   auto &[trace_info, market_data_request_reject] = event;
   log::warn<1>("event={{header={}, market_data_request_reject={}}}"sv, header, market_data_request_reject);
-  if (flags::FIX::fix_terminate_on_market_data_request_reject())
+  if (shared_.settings.fix.terminate_on_market_data_request_reject)
     log::fatal("Unexpected"sv);
 }
 

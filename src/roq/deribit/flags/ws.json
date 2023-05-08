@@ -1,55 +1,56 @@
 {
-  "name": "WebSocket",
+  "name": "WS",
   "type": "flags",
+  "prefix": "ws_",
   "values": [
     {
-      "name": "ws_uri",
+      "name": "uri",
       "type": "roq::io::web::URI",
       "validator": "roq::core::flags::URI",
       "default": "wss://test.deribit.com/ws/api/v2",
       "description": "WebSocket end-point (URI)"
     },
     {
-      "name": "ws_ping_freq",
+      "name": "ping_freq",
       "type": "std::chrono::nanoseconds",
       "validator": "roq::core::flags::TimePeriod",
       "default": "5s",
       "description": "ping frequency"
     },
     {
-      "name": "ws_request_timeout",
+      "name": "request_timeout",
       "type": "std::chrono::nanoseconds",
       "validator": "roq::core::flags::TimePeriod",
       "default": "15s",
       "description": "request timeout"
     },
     {
-      "name": "ws_market_data_max_subscriptions_per_stream",
+      "name": "market_data_max_subscriptions_per_stream",
       "type": "uint32_t",
       "validator": "roq::core::flags::NonZero<uint32_t>",
       "default": 256,
       "description": "max subscriptions per connection (count)"
     },
     {
-      "name": "ws_max_trades",
+      "name": "max_trades",
       "type": "uint32_t",
       "validator": "roq::core::flags::NonZero<uint32_t>",
       "default": 100,
       "description": "max number of trades for historical lookup (count)"
     },
     {
-      "name": "ws_ticker_interval",
+      "name": "ticker_interval",
       "type": "std::string",
       "default": "100ms",
       "description": "ticker interval"
     },
     {
-      "name": "ws_allow_errors",
+      "name": "allow_errors",
       "type": "bool",
       "description": "allow errors (debug)"
     },
     {
-      "name": "ws_disable_quote",
+      "name": "disable_quote",
       "type": "bool",
       "description": "disable quote subscription"
     }

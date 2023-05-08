@@ -40,6 +40,18 @@
       "type": "bool",
       "default": false,
       "description": "disable requirement for master account"
+    },
+    {
+      "name": "mbp_allow_price_inversion",
+      "type": "bool",
+      "default": true,
+      "description": "allow price inversion?"
+    },
+    {
+      "name": "local_interface",
+      "type": "std::string",
+      "description": "Multicast local interface",
+      "comment": "ONLY HERE BECAUSE OF multicast_ PREFIX"
     }
   ]
 }

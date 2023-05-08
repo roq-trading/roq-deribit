@@ -19,10 +19,6 @@
 
 #include "roq/deribit/common.hpp"
 
-#include "roq/deribit/flags/common.hpp"
-#include "roq/deribit/flags/config.hpp"
-#include "roq/deribit/flags/fix.hpp"
-
 #include "roq/deribit/fix/utils.hpp"
 
 // business (outbound)
@@ -66,7 +62,7 @@ auto create_name(auto stream_id, auto const &account) {
 }
 
 auto create_connection_factory(auto &settings, auto &context) {
-  auto uri = flags::FIX::fix_uri();
+  auto uri = settings.fix.uri;
   auto config = io::net::ConnectionFactory::Config{
       .interface = {},
       .uris = {&uri, 1},
@@ -96,7 +92,7 @@ OrderEntry::OrderEntry(Handler &handler, io::Context &context, uint16_t stream_i
     : handler_{handler}, stream_id_{stream_id}, name_{create_name(stream_id_, account.get_name())},
       connection_factory_{create_connection_factory(shared.settings, context)},
       connection_manager_{create_connection_manager(*this, shared.settings, *connection_factory_)},
-      decode_buffer_{flags::Common::decode_buffer_size()},
+      decode_buffer_{shared.settings.common.decode_buffer_size},
       counter_{
           .disconnect = create_metrics(shared.settings, name_, "disconnect"sv),
       },
@@ -112,7 +108,7 @@ OrderEntry::OrderEntry(Handler &handler, io::Context &context, uint16_t stream_i
           .ping = create_metrics(shared.settings, name_, "ping"sv),
       },
       account_{account}, shared_{shared},
-      download_{flags::FIX::fix_request_timeout(), [this](auto state) { return download(state); }},
+      download_{shared.settings.fix.request_timeout, [this](auto state) { return download(state); }},
       enable_round_trip_latency_{shared_.settings.test.enable_round_trip_latency} {
 }
 
@@ -127,29 +123,29 @@ void OrderEntry::operator()(Event<Stop> const &) {
 void OrderEntry::operator()(Event<Timer> const &event) {
   if (!(*connection_manager_).refresh(event.value.now))
     return;
-  if (last_logon_or_heartbeat_.count() && flags::FIX::fix_request_timeout().count() &&
-      (event.value.now - last_logon_or_heartbeat_) > flags::FIX::fix_request_timeout()) {
+  if (last_logon_or_heartbeat_.count() && shared_.settings.fix.request_timeout.count() &&
+      (event.value.now - last_logon_or_heartbeat_) > shared_.settings.fix.request_timeout) {
     log::warn("*** DETECTED TIMEOUT ***"sv);
     log::info("closing connection"sv);
     (*connection_manager_).close();
   } else {
     if (ready_) {
       if (test_disconnect_time_.count() && test_disconnect_time_ < event.value.now) [[unlikely]] {
-        if (flags::FIX::fix_test_order_disconnect().count()) {
+        if (shared_.settings.fix.test_order_disconnect.count()) {
           log::warn("*** TEST: DISCONNECT ***"sv);
           log::info("closing connection"sv);
           (*connection_manager_).close();
         }
       } else {
         if (next_heartbeat_ <= event.value.now) {
-          assert(flags::FIX::fix_ping_freq().count() > 0);
-          next_heartbeat_ = event.value.now + flags::FIX::fix_ping_freq();
+          assert(shared_.settings.fix.ping_freq.count() > 0);
+          next_heartbeat_ = event.value.now + shared_.settings.fix.ping_freq;
           send_test_request(clock::get_system());
         }
       }
     } else {
       if (test_logon_time_.count() && test_logon_time_ < event.value.now) {
-        if (flags::FIX::fix_test_order_logon().count())
+        if (shared_.settings.fix.test_order_logon.count())
           log::warn("*** TEST: LOGON ***"sv);
         test_logon_time_ = {};
         send_logon();
@@ -285,9 +281,9 @@ void OrderEntry::operator()(metrics::Writer &writer) {
 void OrderEntry::operator()(io::net::ConnectionManager::Connected const &) {
   assert(test_logon_time_.count() == 0);
   auto now = clock::get_system();
-  test_logon_time_ = now + flags::FIX::fix_test_order_logon();
-  if (flags::FIX::fix_test_order_disconnect().count())
-    test_disconnect_time_ = now + flags::FIX::fix_test_order_disconnect();
+  test_logon_time_ = now + shared_.settings.fix.test_order_logon;
+  if (shared_.settings.fix.test_order_disconnect.count())
+    test_disconnect_time_ = now + shared_.settings.fix.test_order_disconnect;
 }
 
 void OrderEntry::operator()(io::net::ConnectionManager::Disconnected const &) {
@@ -319,7 +315,7 @@ void OrderEntry::operator()(io::net::ConnectionManager::Read const &) {
 #ifndef NDEBUG
             log::warn("{}"sv, debug::hex::Message{buffer});
 #endif
-            if (!flags::FIX::fix_continue_from_parse_exception()) [[likely]] {
+            if (!shared_.settings.fix.continue_from_parse_exception) [[likely]] {
               throw;
             } else {
               log::error("Message could not be parsed. PLEASE REPORT!"sv);
@@ -327,8 +323,8 @@ void OrderEntry::operator()(io::net::ConnectionManager::Read const &) {
           }
         },
         buffer,
-        [](auto &message) {
-          if (flags::FIX::fix_debug())
+        [this](auto &message) {
+          if (shared_.settings.fix.debug)
             log::info("{}"sv, debug::fix::Message{message});
         });
     if (bytes == 0)
@@ -363,7 +359,7 @@ void OrderEntry::operator()(ConnectionStatus status) {
 }
 
 void OrderEntry::send_logon() {
-  auto ping_freq = std::chrono::duration_cast<std::chrono::seconds>(flags::FIX::fix_ping_freq());
+  auto ping_freq = std::chrono::duration_cast<std::chrono::seconds>(shared_.settings.fix.ping_freq);
   auto now = clock::get_realtime<std::chrono::milliseconds>();
   auto raw_data = account_.create_raw_data(now);
   auto password = account_.create_password(raw_data);
@@ -374,7 +370,7 @@ void OrderEntry::send_logon() {
       .username = account_.get_access_key(),
       .password = password,
       .use_wordsafe_tags = false,
-      .cancel_on_disconnect = flags::FIX::fix_cancel_on_disconnect(),
+      .cancel_on_disconnect = shared_.settings.fix.cancel_on_disconnect,
       .deribit_app_id = {},
       .deribit_app_sig = {},
       .deribit_sequential = false,
@@ -590,7 +586,7 @@ void OrderEntry::operator()(Trace<fix::PositionReport> const &event, core::fix::
     auto position_update = PositionUpdate{
         .stream_id = stream_id_,
         .account = account_.get_name(),
-        .exchange = flags::Config::exchange(),
+        .exchange = shared_.settings.exchange,
         .symbol = position_qty.symbol,
         .external_account = {},
         .long_quantity = long_quantity,
@@ -740,7 +736,7 @@ void OrderEntry::operator()(Trace<fix::ExecutionReport> const &event, core::fix:
   auto exec_type = execution_report.exec_type;
   auto ord_status = execution_report.ord_status;
   // special case: partial fill can overlap cancel request (#143)
-  if (!flags::Common::disable_deribit_143()) {
+  if (!shared_.settings.common.disable_deribit_143) {
     if (exec_type == core::fix::ExecType::CANCELED && ord_status == core::fix::OrdStatus::CANCELED) {
       log::warn<1>("Drop execution report due to FIX compliance"sv);
       return;
@@ -774,7 +770,7 @@ void OrderEntry::operator()(Trace<fix::ExecutionReport> const &event, core::fix:
   };
   auto order_update = oms::OrderUpdate{
       .account = account_.get_name(),
-      .exchange = flags::Config::exchange(),
+      .exchange = shared_.settings.exchange,
       .symbol = execution_report.symbol,
       .side = side,
       .position_effect = {},
@@ -836,7 +832,7 @@ void OrderEntry::operator()(Trace<fix::ExecutionReport> const &event, core::fix:
         .stream_id = stream_id_,
         .account = account_.get_name(),
         .order_id = order_id,
-        .exchange = flags::Config::exchange(),
+        .exchange = shared_.settings.exchange,
         .symbol = execution_report.symbol,
         .side = side,
         .position_effect = {},
@@ -970,7 +966,7 @@ std::tuple<uint64_t, std::chrono::nanoseconds, std::chrono::nanoseconds> OrderEn
         buffer, FIX_VERSION, T::msg_type, SENDER_COMP_ID, TARGET_COMP_ID, outbound_.msg_seq_num, sending_time};
     auto message = event.encode(writer);
     now_2 = clock::get_system();
-    if (flags::FIX::fix_debug()) [[unlikely]]
+    if (shared_.settings.fix.debug) [[unlikely]]
       log::info("{}"sv, debug::fix::Message{message});
     return std::size(message);
   });

@@ -14,11 +14,6 @@
 
 #include "roq/deribit/utils.hpp"
 
-#include "roq/deribit/flags/common.hpp"
-#include "roq/deribit/flags/config.hpp"
-#include "roq/deribit/flags/multicast.hpp"
-#include "roq/deribit/flags/web_socket.hpp"
-
 #include "roq/deribit/json/error.hpp"
 #include "roq/deribit/json/method.hpp"
 #include "roq/deribit/json/request_type.hpp"
@@ -45,7 +40,7 @@ auto create_name(auto stream_id) {
 }
 
 auto publish_top_of_book(auto const &shared) {
-  return !shared.has_multicast() || flags::Multicast::multicast_disable_top_of_book();
+  return !shared.has_multicast() || shared.settings.multicast.disable_top_of_book;
 }
 
 auto get_supports(auto master, auto publish_top_of_book) {
@@ -58,7 +53,7 @@ auto get_supports(auto master, auto publish_top_of_book) {
 }
 
 auto create_connection(auto &handler, auto &settings, auto &context) {
-  auto uri = flags::WebSocket::ws_uri();
+  auto uri = settings.ws.uri;
   auto config = web::socket::Client::Config{
       // connection
       .interface = {},
@@ -74,10 +69,10 @@ auto create_connection(auto &handler, auto &settings, auto &context) {
       .query = {},
       .user_agent = ROQ_PACKAGE_NAME,
       .request_timeout = {},
-      .ping_frequency = flags::WebSocket::ws_ping_freq(),
+      .ping_frequency = settings.ws.ping_freq,
       // implementation
-      .decode_buffer_size = flags::Common::decode_buffer_size(),
-      .encode_buffer_size = flags::Common::encode_buffer_size(),
+      .decode_buffer_size = settings.common.decode_buffer_size,
+      .encode_buffer_size = settings.common.encode_buffer_size,
   };
   return web::socket::ClientFactory::create(handler, context, config, []() { return std::string(); });
 }
@@ -95,7 +90,7 @@ WebSocket::WebSocket(
     : handler_{handler}, stream_id_{stream_id}, name_{create_name(stream_id_)}, index_{index}, master_{master},
       publish_top_of_book_{publish_top_of_book(shared)}, supports_{get_supports(master_, publish_top_of_book_)},
       connection_{create_connection(*this, shared.settings, context)},
-      decode_buffer_{flags::Common::decode_buffer_size()},
+      decode_buffer_{shared.settings.common.decode_buffer_size},
       counter_{
           .disconnect = create_metrics(shared.settings, name_, "disconnect"sv),
       },
@@ -111,8 +106,7 @@ WebSocket::WebSocket(
           .ping = create_metrics(shared.settings, name_, "ping"sv),
           .heartbeat = create_metrics(shared.settings, name_, "heartbeat"sv),
       },
-      shared_{shared},
-      download_{flags::WebSocket::ws_request_timeout(), [this](auto state) { return download(state); }} {
+      shared_{shared}, download_{shared.settings.ws.request_timeout, [this](auto state) { return download(state); }} {
   log::info("DEBUG: publish_top_of_book={}"sv, publish_top_of_book_);
 }
 
@@ -309,7 +303,7 @@ void WebSocket::subscribe_instrument_state() {
 void WebSocket::subscribe(std::span<Symbol const> const &symbols) {
   if (std::empty(symbols))
     return;
-  if (!flags::WebSocket::ws_disable_quote())
+  if (!shared_.settings.ws.disable_quote)
     subscribe_quote(symbols);
   subscribe_ticker(symbols);
 }
@@ -333,7 +327,7 @@ void WebSocket::subscribe_quote(std::span<Symbol const> const &symbols) {
 void WebSocket::subscribe_ticker(std::span<Symbol const> const &symbols) {
   assert(!std::empty(symbols));
   const json::RequestType request_type = json::RequestType::SUBSCRIBE_TICKER;
-  auto interval = flags::WebSocket::ws_ticker_interval();
+  auto interval = shared_.settings.ws.ticker_interval;
   auto separator = fmt::format(R"(.{}","ticker.)"sv, interval);
   auto message = fmt::format(
       R"({{)"
@@ -526,7 +520,7 @@ void WebSocket::operator()(Trace<json::Quote> const &event) {
             auto ask_quantity = multiplier * quote.best_ask_amount;
             auto top_of_book = TopOfBook{
                 .stream_id = stream_id_,
-                .exchange = flags::Config::exchange(),
+                .exchange = shared_.settings.exchange,
                 .symbol = quote.instrument_name,
                 .layer{
                     .bid_price = quote.best_bid_price,
@@ -561,7 +555,7 @@ void WebSocket::operator()(Trace<json::Ticker> const &event) {
     if (trading_status != TradingStatus{} && utils::update(item, trading_status)) {
       auto market_status = MarketStatus{
           .stream_id = stream_id_,
-          .exchange = flags::Config::exchange(),
+          .exchange = shared_.settings.exchange,
           .symbol = ticker.instrument_name,
           .trading_status = trading_status,
       };
