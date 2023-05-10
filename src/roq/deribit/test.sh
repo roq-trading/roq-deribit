@@ -38,8 +38,7 @@ $PREFIX "./roq-deribit" \
   --event_log_dir "$HOME/var/lib/roq/data" \
   --event_log_symlink true \
   --client_listen_address "$HOME/run/$NAME.sock" \
-  --service_listen_address 1234 \
-  --url_prefix roq \
+  --service_listen_address "$HOME/run/metrics/$NAME.sock" \
   --fix_uri "$FIX_URI" \
   --ws_uri "$WS_URI" \
   --cache_all_reference_data true \
