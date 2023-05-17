@@ -202,8 +202,8 @@ void UDPSnapshot::operator()(Trace<deribit_multicast::Snapshot> const &event, sb
                   .stream_id = stream_id_,
                   .exchange = shared_.settings.exchange,
                   .symbol = instrument.symbol,
-                  .bids = bids,
-                  .asks = asks,
+                  .bids = {const_cast<MBPUpdate *>(std::data(bids)), std::size(bids)},  // FIXME
+                  .asks = {const_cast<MBPUpdate *>(std::data(asks)), std::size(asks)},  // FIXME
                   .update_type = UpdateType::SNAPSHOT,
                   .exchange_time_utc = timestamp,
                   .exchange_sequence = sequence,
