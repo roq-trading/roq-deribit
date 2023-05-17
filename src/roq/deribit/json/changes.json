@@ -8,15 +8,15 @@
     },
     {
       "name": "trades",
-      "type": "std::span<Trade>"
+      "type": "std::span<Trade const>"
     },
     {
       "name": "positions",
-      "type": "std::span<Position>"
+      "type": "std::span<Position const>"
     },
     {
       "name": "orders",
-      "type": "std::span<Order>"
+      "type": "std::span<Order const>"
     }
   ]
 }

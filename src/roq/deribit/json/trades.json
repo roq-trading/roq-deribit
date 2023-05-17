@@ -4,7 +4,7 @@
   "values": [
     {
       "name": "trades",
-      "type": "std::span<Trade>"
+      "type": "std::span<Trade const>"
     },
     {
       "name": "has_more",

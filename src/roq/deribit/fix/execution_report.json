@@ -148,7 +148,7 @@
     {
       "tag": 1362,
       "name": "NoFills",
-      "type": "std::span<Fill>"
+      "type": "std::span<Fill const>"
     },
     {
       "tag": 584,

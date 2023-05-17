@@ -23,7 +23,7 @@
     {
       "tag": 146,
       "name": "NoRelatedSym",
-      "type": "std::span<Instrument>"
+      "type": "std::span<Instrument const>"
     }
   ]
 }

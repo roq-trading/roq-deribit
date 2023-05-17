@@ -68,7 +68,7 @@
     {
       "tag": 268,
       "name": "NoMdEntries",
-      "type": "std::span<MDFull>",
+      "type": "std::span<MDFull const>",
       "required": true
     }
   ]

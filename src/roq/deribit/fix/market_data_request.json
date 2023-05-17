@@ -39,13 +39,13 @@
     {
       "tag": 267,
       "name": "NoMdEntryTypes",
-      "type": "std::span<MDReq>",
+      "type": "std::span<MDReq const>",
       "required": true
     },
     {
       "tag": 146,
       "name": "NoRelatedSym",
-      "type": "std::span<InstrmtMDReq>"
+      "type": "std::span<InstrmtMDReq const>"
     }
   ]
 }

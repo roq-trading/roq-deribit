@@ -38,7 +38,7 @@
     {
       "tag": 268,
       "name": "NoMdEntries",
-      "type": "std::span<MDInc>",
+      "type": "std::span<MDInc const>",
       "required": true
     },
     {

@@ -44,7 +44,7 @@
     {
       "tag": 534,
       "name": "NoAffectedOrders",
-      "type": "std::span<AffectedOrd>",
+      "type": "std::span<AffectedOrd const>",
       "comment": "undoc"
     }
   ]

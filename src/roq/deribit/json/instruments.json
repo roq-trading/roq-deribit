@@ -4,7 +4,7 @@
   "values": [
     {
       "name": "data",
-      "type": "std::span<Instrument>"
+      "type": "std::span<Instrument const>"
     }
   ]
 }
