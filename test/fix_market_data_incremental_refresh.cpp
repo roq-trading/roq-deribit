@@ -21,14 +21,13 @@ TEST_CASE("fix_market_data_incremental_refresh_parse_message_1", "fix_market_dat
       "100087=10831047\001100090=10517.4400\001746=9465994.0000\00126"
       "2=123\001268=1\001279=0\001269=1\001270=10523.0000\001271=1000"
       ".0000\001272=20190907-15:37:00.896\00110=241\001"sv;
-  core::Buffer buffer(4096);
-  core::fix::Buffer decode_buffer(buffer);
+  std::vector<std::byte> buffer(4096);
   int results = 0;
   auto bytes = core::fix::Reader<core::fix::Version::FIX_44>::dispatch(
       [&](core::fix::Message const &message_2) {
         ++results;
         CHECK(message_2.header.msg_type == core::fix::MsgType::MARKET_DATA_INCREMENTAL_REFRESH);
-        auto result = fix::MarketDataIncrementalRefresh::create(message_2, decode_buffer);
+        auto result = fix::MarketDataIncrementalRefresh::create(message_2, buffer);
         CHECK(result.symbol == "BTC-27SEP19"sv);
         CHECK(result.trade_volume24h == 10831047.0_a);
         CHECK(result.mark_price == 10517.44_a);
@@ -66,14 +65,13 @@ TEST_CASE("fix_market_data_incremental_refresh_parse_message_2", "fix_market_dat
       "0520.0000\001271=27.0000\001272=20190907-15:37:00.378\00110000"
       "9=18254685\00154=1\00137=0\001198=0\00139=2\00144=10445.9300\001"
       "58=2889358\00110=087\001"sv;
-  core::Buffer buffer(4096);
-  core::fix::Buffer decode_buffer(buffer);
+  std::vector<std::byte> buffer(4096);
   int results = 0;
   auto bytes = core::fix::Reader<core::fix::Version::FIX_44>::dispatch(
       [&](core::fix::Message const &message_2) {
         ++results;
         CHECK(message_2.header.msg_type == core::fix::MsgType::MARKET_DATA_INCREMENTAL_REFRESH);
-        auto result = fix::MarketDataIncrementalRefresh::create(message_2, decode_buffer);
+        auto result = fix::MarketDataIncrementalRefresh::create(message_2, buffer);
         CHECK(result.symbol == "BTC-27SEP19"sv);
         CHECK(std::size(result.no_md_entries) == size_t{5});
         // item 0
@@ -159,14 +157,13 @@ TEST_CASE("fix_market_data_incremental_refresh_parse_message_3", "fix_market_dat
       "\001268=1\001279=0\001269=2\001270=170.1500\001271=22.0000\001"
       "272=20190928-15:48:12.830\001100009=ETH-1192275\00154=1\00137="
       "0\001198=0\00139=1\00144=170.3600\00158=586940\00110=030\001"sv;
-  core::Buffer buffer(4096);
-  core::fix::Buffer decode_buffer(buffer);
+  std::vector<std::byte> buffer(4096);
   int results = 0;
   auto bytes = core::fix::Reader<core::fix::Version::FIX_44>::dispatch(
       [&](core::fix::Message const &message_2) {
         ++results;
         CHECK(message_2.header.msg_type == core::fix::MsgType::MARKET_DATA_INCREMENTAL_REFRESH);
-        auto result = fix::MarketDataIncrementalRefresh::create(message_2, decode_buffer);
+        auto result = fix::MarketDataIncrementalRefresh::create(message_2, buffer);
         CHECK(result.symbol == "ETH-PERPETUAL"sv);
         CHECK(std::size(result.no_md_entries) == size_t{1});
         // item 0

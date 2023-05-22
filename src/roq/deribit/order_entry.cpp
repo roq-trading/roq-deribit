@@ -15,6 +15,7 @@
 
 #include "roq/core/metrics/factory.hpp"
 
+#include "roq/core/fix/reader.hpp"
 #include "roq/core/fix/utils.hpp"
 
 #include "roq/deribit/common.hpp"
@@ -92,7 +93,7 @@ OrderEntry::OrderEntry(Handler &handler, io::Context &context, uint16_t stream_i
     : handler_{handler}, stream_id_{stream_id}, name_{create_name(stream_id_, account.get_name())},
       connection_factory_{create_connection_factory(shared.settings, context)},
       connection_manager_{create_connection_manager(*this, shared.settings, *connection_factory_)},
-      decode_buffer_{shared.settings.common.decode_buffer_size},
+      decode_buffer_(shared.settings.common.decode_buffer_size),
       counter_{
           .disconnect = create_metrics(shared.settings, name_, "disconnect"sv),
       },
@@ -455,7 +456,6 @@ void OrderEntry::parse(Trace<core::fix::Message> const &event) {
 void OrderEntry::parse_helper(Trace<core::fix::Message> const &event) {
   auto &trace_info = event.trace_info;
   auto &message = event.value;
-  core::fix::Buffer buffer{decode_buffer_};
   switch (message.header.msg_type) {
     using enum core::fix::MsgType;
     // session
@@ -487,14 +487,14 @@ void OrderEntry::parse_helper(Trace<core::fix::Message> const &event) {
     // ...
     case POSITION_REPORT: {
       profile_.position_report([&]() {
-        auto position_report = fix::PositionReport::create(message, buffer);
+        auto position_report = fix::PositionReport::create(message, decode_buffer_);
         create_trace_and_dispatch(*this, trace_info, position_report, message.header);
       });
       return;
     }
     case EXECUTION_REPORT: {
       profile_.execution_report([&]() {
-        auto execution_report = fix::ExecutionReport::create(message, buffer);
+        auto execution_report = fix::ExecutionReport::create(message, decode_buffer_);
         create_trace_and_dispatch(*this, trace_info, execution_report, message.header);
       });
       return;
@@ -515,7 +515,7 @@ void OrderEntry::parse_helper(Trace<core::fix::Message> const &event) {
     }
     case ORDER_MASS_CANCEL_REPORT: {
       profile_.order_mass_cancel_report([&]() {
-        auto order_mass_cancel_report = fix::OrderMassCancelReport::create(message, buffer);
+        auto order_mass_cancel_report = fix::OrderMassCancelReport::create(message, decode_buffer_);
         create_trace_and_dispatch(*this, trace_info, order_mass_cancel_report, message.header);
       });
       return;

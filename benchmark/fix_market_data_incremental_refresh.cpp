@@ -2,6 +2,8 @@
 
 #include <benchmark/benchmark.h>
 
+#include "roq/core/fix/reader.hpp"
+
 #include "roq/deribit/fix/market_data_incremental_refresh.hpp"
 
 using namespace roq;
@@ -37,13 +39,12 @@ auto const message_2 =
 
 void BM_fix_market_data_increment_refresh_parse_message_1(
     benchmark::State &state) {  // cppcheck-suppress constParameterCallback
-  core::Buffer buffer(8192);
+  std::vector<std::byte> buffer(8192);
   uint64_t processed = 0;
   for (auto _ : state) {
-    core::fix::Buffer decode_buffer(buffer);
     core::fix::Reader<core::fix::Version::FIX_44>::dispatch(
         [&](core::fix::Message const &message) {
-          auto result = fix::MarketDataIncrementalRefresh::create(message, decode_buffer);
+          auto result = fix::MarketDataIncrementalRefresh::create(message, buffer);
           if (!std::empty(result.md_req_id))
             ++processed;
         },
@@ -55,13 +56,12 @@ BENCHMARK(BM_fix_market_data_increment_refresh_parse_message_1);
 
 void BM_fix_market_data_increment_refresh_parse_message_2(
     benchmark::State &state) {  // cppcheck-suppress constParameterCallback
-  core::Buffer buffer(8192);
+  std::vector<std::byte> buffer(8192);
   uint64_t processed = 0;
   for (auto _ : state) {
-    core::fix::Buffer decode_buffer(buffer);
     core::fix::Reader<core::fix::Version::FIX_44>::dispatch(
         [&](core::fix::Message const &message) {
-          auto result = fix::MarketDataIncrementalRefresh::create(message, decode_buffer);
+          auto result = fix::MarketDataIncrementalRefresh::create(message, buffer);
           if (!std::empty(result.md_req_id))
             ++processed;
         },

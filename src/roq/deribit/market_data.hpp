@@ -145,8 +145,8 @@ struct MarketData final : public io::net::ConnectionManager::Handler {
   std::unique_ptr<io::net::ConnectionFactory> const connection_factory_;
   std::unique_ptr<io::net::ConnectionManager> const connection_manager_;
   // buffers
-  core::Buffer encode_buffer_;
-  core::Buffer decode_buffer_;
+  std::vector<std::byte> encode_buffer_;
+  std::vector<std::byte> decode_buffer_;
   core::stack::Buffer<char, 32> stack_buffer_;
   // metrics
   struct {

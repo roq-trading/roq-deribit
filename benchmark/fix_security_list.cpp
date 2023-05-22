@@ -2,6 +2,8 @@
 
 #include <benchmark/benchmark.h>
 
+#include "roq/core/fix/reader.hpp"
+
 #include "roq/deribit/fix/security_list.hpp"
 
 using namespace roq;
@@ -1227,13 +1229,12 @@ auto const MESSAGE =
 
 // cppcheck-suppress constParameterCallback
 void BM_fix_security_list_parse_message(benchmark::State &state) {
-  core::Buffer buffer{1024 * 1024};
+  std::vector<std::byte> buffer(1024 * 1024);
   uint64_t processed = 0;
   for (auto _ : state) {
-    core::fix::Buffer decode_buffer{buffer};
     core::fix::Reader<core::fix::Version::FIX_44>::dispatch(
         [&](core::fix::Message const &message) {
-          auto security_list = fix::SecurityList::create(message, decode_buffer);
+          auto security_list = fix::SecurityList::create(message, buffer);
           if (std::size(security_list.no_related_sym) > 0)
             ++processed;
         },

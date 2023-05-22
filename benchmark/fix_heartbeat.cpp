@@ -2,6 +2,8 @@
 
 #include <benchmark/benchmark.h>
 
+#include "roq/core/fix/reader.hpp"
+
 #include "roq/deribit/fix/heartbeat.hpp"
 
 using namespace roq;

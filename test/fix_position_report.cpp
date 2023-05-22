@@ -21,14 +21,13 @@ TEST_CASE("fix_position_report_parse_message", "[fix_position_report]") {
       "05=0\00155=BTC-27SEP19\001854=1\001231=10.0000\001883=10184.50"
       "00\001730=0.0000\00195=11\00196=0.0;0.0;0.0\001100088=0.0000\001"
       "100089=0.00000000\00110=026\001"sv;
-  core::Buffer buffer(1024 * 1024);
-  core::fix::Buffer decode_buffer(buffer);
+  std::vector<std::byte> buffer(1024 * 1024);
   int results = 0;
   auto bytes = core::fix::Reader<core::fix::Version::FIX_44>::dispatch(
       [&](core::fix::Message const &message_2) {
         ++results;
         CHECK(message_2.header.msg_type == core::fix::MsgType::POSITION_REPORT);
-        auto position_report = fix::PositionReport::create(message_2, decode_buffer);
+        auto position_report = fix::PositionReport::create(message_2, buffer);
         CHECK(position_report.pos_maint_rpt_id == "3221109"sv);
         CHECK(position_report.pos_req_id == "roq-pos-003"sv);
         CHECK(position_report.pos_req_type == core::fix::PosReqType::POSITIONS);

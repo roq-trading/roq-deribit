@@ -2,6 +2,8 @@
 
 #include <benchmark/benchmark.h>
 
+#include "roq/core/fix/reader.hpp"
+
 #include "roq/deribit/fix/execution_report.hpp"
 
 using namespace roq;
@@ -22,13 +24,12 @@ auto const MESSAGE =
 
 // cppcheck-suppress constParameterCallback
 void BM_fix_execution_report_parse_message(benchmark::State &state) {
-  core::Buffer buffer(8192);
+  std::vector<std::byte> buffer(8192);
   uint64_t processed = 0;
   for (auto _ : state) {
-    core::fix::Buffer decode_buffer(buffer);
     core::fix::Reader<core::fix::Version::FIX_44>::dispatch(
         [&](core::fix::Message const &message) {
-          auto result = fix::ExecutionReport::create(message, decode_buffer);
+          auto result = fix::ExecutionReport::create(message, buffer);
           if (!std::empty(result.order_id))
             ++processed;
         },

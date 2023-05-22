@@ -1230,14 +1230,13 @@ auto const message =
 }  // namespace
 
 TEST_CASE("fix_security_list_parse_message", "[fix_security_list]") {
-  core::Buffer buffer(1024 * 1024);
-  core::fix::Buffer decode_buffer(buffer);
+  std::vector<std::byte> buffer(1024 * 1024);
   int results = 0;
   auto bytes = core::fix::Reader<core::fix::Version::FIX_44>::dispatch(
       [&](core::fix::Message const &message_2) {
         ++results;
         CHECK(message_2.header.msg_type == core::fix::MsgType::SECURITY_LIST);
-        /*auto security_list =*/fix::SecurityList::create(message_2, decode_buffer);
+        /*auto security_list =*/fix::SecurityList::create(message_2, buffer);
         /*
         CHECK(security_list.heart_bt_int == uint32_t{10});
         EXPECT_EQ(security_list.raw_data,

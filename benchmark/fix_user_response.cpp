@@ -2,6 +2,8 @@
 
 #include <benchmark/benchmark.h>
 
+#include "roq/core/fix/reader.hpp"
+
 #include "roq/deribit/fix/user_response.hpp"
 
 using namespace roq;

@@ -18,6 +18,7 @@
 
 #include "roq/core/metrics/factory.hpp"
 
+#include "roq/core/fix/reader.hpp"
 #include "roq/core/fix/utils.hpp"
 
 #include "roq/deribit/common.hpp"
@@ -156,8 +157,8 @@ MarketData::MarketData(
       fix_request_timeout_{shared.settings.fix.request_timeout}, fix_ping_freq_{shared.settings.fix.ping_freq},
       connection_factory_{create_connection_factory(shared.settings, context)},
       connection_manager_{create_connection_manager(*this, shared.settings, *connection_factory_)},
-      encode_buffer_{shared.settings.common.encode_buffer_size},
-      decode_buffer_{shared.settings.common.decode_buffer_size},
+      encode_buffer_(shared.settings.common.encode_buffer_size),
+      decode_buffer_(shared.settings.common.decode_buffer_size),
       counter_{
           .disconnect = create_metrics(shared.settings, name_, "disconnect"sv),
       },
@@ -497,7 +498,6 @@ void MarketData::parse(Trace<core::fix::Message> const &event) {
 void MarketData::parse_helper(Trace<core::fix::Message> const &event) {
   auto &trace_info = event.trace_info;
   auto &message = event.value;
-  core::fix::Buffer buffer{decode_buffer_};
   switch (message.header.msg_type) {
     using enum core::fix::MsgType;
     // session
@@ -529,7 +529,7 @@ void MarketData::parse_helper(Trace<core::fix::Message> const &event) {
     // ...
     case MARKET_DATA_INCREMENTAL_REFRESH:
       profile_.market_data_incremental_refresh([&]() {
-        auto market_data_incremental_refresh = fix::MarketDataIncrementalRefresh::create(message, buffer);
+        auto market_data_incremental_refresh = fix::MarketDataIncrementalRefresh::create(message, decode_buffer_);
         create_trace_and_dispatch(*this, trace_info, market_data_incremental_refresh, message.header);
       });
       break;
@@ -541,19 +541,19 @@ void MarketData::parse_helper(Trace<core::fix::Message> const &event) {
       break;
     case MARKET_DATA_SNAPSHOT_FULL_REFRESH:
       profile_.market_data_snapshot_full_refresh([&]() {
-        auto market_data_snapshot_full_refresh = fix::MarketDataSnapshotFullRefresh::create(message, buffer);
+        auto market_data_snapshot_full_refresh = fix::MarketDataSnapshotFullRefresh::create(message, decode_buffer_);
         create_trace_and_dispatch(*this, trace_info, market_data_snapshot_full_refresh, message.header);
       });
       break;
     case SECURITY_LIST:
       profile_.security_list([&]() {
-        auto security_list = fix::SecurityList::create(message, buffer);
+        auto security_list = fix::SecurityList::create(message, decode_buffer_);
         create_trace_and_dispatch(*this, trace_info, security_list, message.header);
       });
       break;
     case SECURITY_STATUS:
       profile_.security_status([&]() {
-        auto security_status = fix::SecurityStatus::create(message, buffer);
+        auto security_status = fix::SecurityStatus::create(message, decode_buffer_);
         create_trace_and_dispatch(*this, trace_info, security_status, message.header);
       });
       break;
@@ -925,8 +925,8 @@ void MarketData::send(T const &event) {
 
 template <typename T>
 void MarketData::send(T const &event, std::chrono::nanoseconds sending_time) {
-  core::fix::Writer writer(
-      encode_buffer_, FIX_VERSION, T::msg_type, SENDER_COMP_ID, TARGET_COMP_ID, outbound_.msg_seq_num, sending_time);
+  core::fix::Writer writer{
+      encode_buffer_, FIX_VERSION, T::msg_type, SENDER_COMP_ID, TARGET_COMP_ID, outbound_.msg_seq_num, sending_time};
   auto message = event.encode(writer);
   if (fix_debug_) [[unlikely]]
     log::info("{}"sv, debug::fix::Message{message});

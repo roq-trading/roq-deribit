@@ -2,6 +2,8 @@
 
 #include <benchmark/benchmark.h>
 
+#include "roq/core/fix/reader.hpp"
+
 #include "roq/deribit/fix/market_data_snapshot_full_refresh.hpp"
 
 using namespace roq;
@@ -171,13 +173,12 @@ auto const MESSAGE =
 
 void BM_fix_market_data_snapshot_full_refresh_parse_message(
     benchmark::State &state) {  // cppcheck-suppress constParameterCallback
-  core::Buffer buffer(1024 * 1024);
+  std::vector<std::byte> buffer(1024 * 1024);
   uint64_t processed = 0;
   for (auto _ : state) {
-    core::fix::Buffer decode_buffer(buffer);
     core::fix::Reader<core::fix::Version::FIX_44>::dispatch(
         [&](core::fix::Message const &message) {
-          auto market_data = fix::MarketDataSnapshotFullRefresh::create(message, decode_buffer);
+          auto market_data = fix::MarketDataSnapshotFullRefresh::create(message, buffer);
           if (std::size(market_data.no_md_entries) > 0)
             ++processed;
         },

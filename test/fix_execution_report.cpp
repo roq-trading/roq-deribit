@@ -22,14 +22,13 @@ TEST_CASE("fix_execution_report_parse_message", "[fix_execution_report]") {
       "03=0\00158=success\001207=DERIBITSERVER\00155=BTC-27SEP19\0018"
       "54=1\001231=10.0000\0016=0.000\001210=1\001100010=roq;123;345\001"
       "10=195\001"sv;
-  core::Buffer buffer(4096);
-  core::fix::Buffer decode_buffer(buffer);
+  std::vector<std::byte> buffer(4096);
   int results = 0;
   auto bytes = core::fix::Reader<core::fix::Version::FIX_44>::dispatch(
       [&](core::fix::Message const &message_2) {
         ++results;
         CHECK(message_2.header.msg_type == core::fix::MsgType::EXECUTION_REPORT);
-        auto result = fix::ExecutionReport::create(message_2, decode_buffer);
+        auto result = fix::ExecutionReport::create(message_2, buffer);
         CHECK(result.order_id == "2831903667"sv);
         CHECK(result.cl_ord_id == "2831903667"sv);
         CHECK(result.orig_cl_ord_id == "123"sv);
@@ -62,14 +61,13 @@ TEST_CASE("fix_execution_report_parse_order_mass_status", "[fix_execution_report
       "8=FIX.4.4\0019=112\00135=8\00149=DERIBITSERVER\00156=ROQ_TRADI"
       "NG\00134=4\00152=20190909-07:58:54.679\001584=roq-oms-005\0015"
       "85=7\00158=total_reports\001911=1\00110=045\001"sv;
-  core::Buffer buffer(4096);
-  core::fix::Buffer decode_buffer(buffer);
+  std::vector<std::byte> buffer(4096);
   int results = 0;
   auto bytes = core::fix::Reader<core::fix::Version::FIX_44>::dispatch(
       [&](core::fix::Message const &message_2) {
         ++results;
         CHECK(message_2.header.msg_type == core::fix::MsgType::EXECUTION_REPORT);
-        auto result = fix::ExecutionReport::create(message_2, decode_buffer);
+        auto result = fix::ExecutionReport::create(message_2, buffer);
         CHECK(result.mass_status_req_id == "roq-oms-005"sv);
         CHECK(result.mass_status_req_type == core::fix::MassStatusReqType::ORDERS);
         CHECK(result.tot_num_reports == uint32_t{1});
@@ -91,14 +89,13 @@ TEST_CASE("fix_execution_report_parse_fill", "[fix_execution_report]") {
       "=9593.504\001210=1\001100010=roq:1:1:1000\00132=1.0000\00131=9"
       "593.5000\0011362=1\0011363=BTC-27DEC19#2350428\0011364=9593.50"
       "00\0011365=1.0000\0011443=1\00110=177\001"sv;
-  core::Buffer buffer(4096);
-  core::fix::Buffer decode_buffer(buffer);
+  std::vector<std::byte> buffer(4096);
   int results = 0;
   auto bytes = core::fix::Reader<core::fix::Version::FIX_44>::dispatch(
       [&](core::fix::Message const &message_2) {
         ++results;
         CHECK(message_2.header.msg_type == core::fix::MsgType::EXECUTION_REPORT);
-        auto result = fix::ExecutionReport::create(message_2, decode_buffer);
+        auto result = fix::ExecutionReport::create(message_2, buffer);
         CHECK(result.order_id == "3026811591"sv);
         CHECK(result.cl_ord_id == "3026811591"sv);
         CHECK(result.orig_cl_ord_id == "roq:000000014"sv);
