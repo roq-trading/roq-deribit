@@ -78,7 +78,7 @@ struct create_metrics final : public core::metrics::Factory {
 DropCopy::DropCopy(Handler &handler, io::Context &context, uint16_t stream_id, Account &account, Shared &shared)
     : handler_{handler}, stream_id_{stream_id}, name_{create_name(stream_id_, account.get_name())},
       connection_{create_connection(*this, shared.settings, context)},
-      decode_buffer_{shared.settings.common.decode_buffer_size},
+      decode_buffer_(shared.settings.common.decode_buffer_size),
       counter_{
           .disconnect = create_metrics(shared.settings, name_, "disconnect"sv),
       },
@@ -389,13 +389,13 @@ void DropCopy::operator()(Trace<core::jsonrpc::Result> const &event, core::json:
       // note! no need to parse
       return;
     case GET_ACCOUNT_SUMMARY: {
-      const json::Portfolio portfolio{value};
+      auto portfolio = json::Portfolio{value};
       create_trace_and_dispatch(*this, trace_info, portfolio);
       return;
     }
     case GET_TRADES: {
       core::json::Buffer buffer{decode_buffer_};
-      const json::Trades trades{value, buffer};
+      auto trades = json::Trades{value, buffer};
       create_trace_and_dispatch(*this, trace_info, trades);
       return;
     }
@@ -415,11 +415,9 @@ void DropCopy::operator()(Trace<core::jsonrpc::Notification> const &event, core:
     case UNKNOWN__:
       log::fatal(R"(Unknown method="{}")"sv, notification.method);
       break;
-    case SUBSCRIPTION: {
-      core::json::Buffer buffer{decode_buffer_};
-      json::Parser::dispatch(*this, value, buffer, trace_info);
+    case SUBSCRIPTION:
+      json::Parser::dispatch(*this, value, decode_buffer_, trace_info);
       break;
-    }
   }
 }
 

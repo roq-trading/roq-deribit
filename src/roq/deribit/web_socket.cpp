@@ -90,7 +90,7 @@ WebSocket::WebSocket(
     : handler_{handler}, stream_id_{stream_id}, name_{create_name(stream_id_)}, index_{index}, master_{master},
       publish_top_of_book_{publish_top_of_book(shared)}, supports_{get_supports(master_, publish_top_of_book_)},
       connection_{create_connection(*this, shared.settings, context)},
-      decode_buffer_{shared.settings.common.decode_buffer_size},
+      decode_buffer_(shared.settings.common.decode_buffer_size),
       counter_{
           .disconnect = create_metrics(shared.settings, name_, "disconnect"sv),
       },
@@ -364,7 +364,7 @@ void WebSocket::operator()(Trace<core::jsonrpc::Error> const &event, core::json:
 
 void WebSocket::operator()(Trace<core::jsonrpc::Result> const &event, core::json::Value &value) {
   auto &[trace_info, result] = event;
-  json::RequestType request_type(result.id);
+  json::RequestType request_type{result.id};
   switch (request_type) {
     using enum json::RequestType::type_t;
     case UNDEFINED__:
@@ -375,15 +375,15 @@ void WebSocket::operator()(Trace<core::jsonrpc::Result> const &event, core::json
     case AUTH:
       break;  // unexpected
     case GET_CURRENCIES: {
-      core::json::Buffer buffer(decode_buffer_);
-      const json::Currencies currencies{value, buffer};
+      core::json::Buffer buffer{decode_buffer_};
+      auto currencies = json::Currencies{value, buffer};
       Trace event{trace_info, currencies};
       (*this)(event);
       return;
     }
     case GET_INSTRUMENTS: {
       core::json::Buffer buffer{decode_buffer_};
-      const json::Instruments instruments{value, buffer};
+      auto instruments = json::Instruments{value, buffer};
       Trace event{trace_info, instruments};
       (*this)(event);
       return;
@@ -416,11 +416,9 @@ void WebSocket::operator()(Trace<core::jsonrpc::Notification> const &event, core
     case UNKNOWN__:
       log::fatal(R"(Unknown method="{}")"sv, notification.method);
       break;
-    case SUBSCRIPTION: {
-      core::json::Buffer buffer{decode_buffer_};
-      json::Parser::dispatch(*this, value, buffer, trace_info);
+    case SUBSCRIPTION:
+      json::Parser::dispatch(*this, value, decode_buffer_, trace_info);
       break;
-    }
   }
 }
 

@@ -110,11 +110,10 @@ TEST_CASE("json_subscription_parse_message", "[json_subscription]") {
                        R"("ask_iv":500.0)"
                        R"(})"
                        R"(})"sv;
-  core::Buffer buffer(4096);
-  core::json::Buffer buffer_(buffer);
-  core::json::Parser parser(message);
+  std::vector<std::byte> buffer(8192);
+  core::json::Parser parser{message};
   auto root = parser.root();
   MyHandler handler;
   TraceInfo trace_info;
-  json::Parser::dispatch(handler, root, buffer_, trace_info);
+  json::Parser::dispatch(handler, root, buffer, trace_info);
 }

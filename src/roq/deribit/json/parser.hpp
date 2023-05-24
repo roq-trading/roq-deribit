@@ -4,10 +4,7 @@
 
 #include <string_view>
 
-#include "roq/core/json/buffer.hpp"
-#include "roq/core/json/parser.hpp"
-
-#include "roq/server.hpp"
+#include "roq/trace_info.hpp"
 
 // public
 #include "roq/deribit/json/ticker.hpp"
@@ -39,7 +36,7 @@ struct Parser final {
     virtual void operator()(Trace<Trades2> const &) = 0;
   };
 
-  static void dispatch(Handler &, core::json::Value &, core::json::Buffer &, TraceInfo const &);
+  static void dispatch(Handler &, core::json::Value &, std::span<std::byte> const &, TraceInfo const &);
 };
 
 }  // namespace json

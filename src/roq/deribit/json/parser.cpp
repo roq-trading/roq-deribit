@@ -16,8 +16,10 @@ namespace roq {
 namespace deribit {
 namespace json {
 
+// === HELPERS ===
+
 namespace {
-constexpr std::string_view get_token(std::string_view const &name) {
+constexpr auto get_token(auto const &name) -> std::string_view {
   auto delim = name.find_first_of('.');
   auto part = name.substr(0, delim);
   if (part.compare("user"sv) == 0 && delim != name.npos) [[unlikely]] {
@@ -35,7 +37,7 @@ constexpr std::string_view get_token(std::string_view const &name) {
   } else {
     return part;
   }
-  return ""sv;
+  return {};
 }
 
 static_assert(get_token("ticker"sv) == "ticker"sv);
@@ -45,64 +47,21 @@ static_assert(get_token("user.changes.123"sv) == "changes"sv);
 static_assert(get_token("instrument.state"sv) == "instrument_state"sv);
 static_assert(get_token("instrument.state.123"sv) == "instrument_state"sv);
 
-Channel parse_channel(std::string_view const &name) {
+auto parse_channel(auto const &name) -> Channel {
   auto token = get_token(name);
   if (std::empty(token)) [[unlikely]]
     return Channel::UNKNOWN__;
   return Channel{token};
 }
-
-template <typename T>
-void dispatch_platform_state(Parser::Handler &handler, T &value, TraceInfo const &trace_info) {
-  PlatformState platform_state{value};
-  create_trace_and_dispatch(handler, trace_info, platform_state);
-}
-
-template <typename T>
-void dispatch_instrument_state(Parser::Handler &handler, T &value, TraceInfo const &trace_info) {
-  InstrumentState instrument_state{value};
-  create_trace_and_dispatch(handler, trace_info, instrument_state);
-}
-
-template <typename T>
-void dispatch_quote(Parser::Handler &handler, T &value, TraceInfo const &trace_info) {
-  Quote quote{value};
-  create_trace_and_dispatch(handler, trace_info, quote);
-}
-
-template <typename T>
-void dispatch_ticker(Parser::Handler &handler, T &value, TraceInfo const &trace_info) {
-  Ticker ticker{value};
-  create_trace_and_dispatch(handler, trace_info, ticker);
-}
-
-template <typename T>
-void dispatch_portfolio(Parser::Handler &handler, T &value, TraceInfo const &trace_info) {
-  Portfolio portfolio{value};
-  create_trace_and_dispatch(handler, trace_info, portfolio);
-}
-
-template <typename T>
-void dispatch_changes(Parser::Handler &handler, T &value, core::json::Buffer &buffer, TraceInfo const &trace_info) {
-  Changes changes{value, buffer};
-  create_trace_and_dispatch(handler, trace_info, changes);
-}
-
-template <typename T>
-void dispatch_orders(Parser::Handler &handler, T &value, core::json::Buffer &, TraceInfo const &trace_info) {
-  Order order{value};
-  create_trace_and_dispatch(handler, trace_info, order);
-}
-
-template <typename T>
-void dispatch_trades(Parser::Handler &handler, T &value, core::json::Buffer &buffer, TraceInfo const &trace_info) {
-  Trades2 trades{value, buffer};
-  create_trace_and_dispatch(handler, trace_info, trades);
-}
 }  // namespace
 
+// === IMPLEMENTATION ===
+
 void Parser::dispatch(
-    Parser::Handler &handler, core::json::Value &value, core::json::Buffer &buffer, TraceInfo const &trace_info) {
+    Parser::Handler &handler,
+    core::json::Value &value,
+    std::span<std::byte> const &buffer,
+    TraceInfo const &trace_info) {
   // note! message is nested / channel name is at level 2
   auto message = core::json::get<std::string_view>(value);
   auto channel = Channel::UNDEFINED__;
@@ -129,6 +88,7 @@ void Parser::dispatch(
         }
         case DATA:
           if (channel != Channel::UNDEFINED__) {
+            core::json::Buffer buffer_2{buffer};
             switch (channel) {
               using enum Channel::type_t;
               case UNDEFINED__:
@@ -137,39 +97,55 @@ void Parser::dispatch(
                 log::fatal("Unknown channel"sv);
                 break;
               // public
-              case PLATFORM_STATE:
+              case PLATFORM_STATE: {
                 dispatched = true;
-                dispatch_platform_state(handler, value_, trace_info);
+                auto platform_state = PlatformState{value_, buffer_2};
+                create_trace_and_dispatch(handler, trace_info, platform_state);
                 break;
-              case INSTRUMENT_STATE:
+              }
+              case INSTRUMENT_STATE: {
                 dispatched = true;
-                dispatch_instrument_state(handler, value_, trace_info);
+                auto instrument_state = InstrumentState{value, buffer_2};
+                create_trace_and_dispatch(handler, trace_info, instrument_state);
                 break;
-              case QUOTE:
+              }
+              case QUOTE: {
                 dispatched = true;
-                dispatch_quote(handler, value_, trace_info);
+                auto quote = Quote{value, buffer_2};
+                create_trace_and_dispatch(handler, trace_info, quote);
                 break;
-              case TICKER:
+              }
+              case TICKER: {
                 dispatched = true;
-                dispatch_ticker(handler, value_, trace_info);
+                auto ticker = Ticker{value, buffer_2};
+                create_trace_and_dispatch(handler, trace_info, ticker);
                 break;
+              }
               // private
-              case PORTFOLIO:
+              case PORTFOLIO: {
                 dispatched = true;
-                dispatch_portfolio(handler, value_, trace_info);
+                auto portfolio = Portfolio{value, buffer_2};
+                create_trace_and_dispatch(handler, trace_info, portfolio);
                 break;
-              case CHANGES:
+              }
+              case CHANGES: {
                 dispatched = true;
-                dispatch_changes(handler, value_, buffer, trace_info);
+                auto changes = Changes{value, buffer_2};
+                create_trace_and_dispatch(handler, trace_info, changes);
                 break;
-              case ORDERS:
+              }
+              case ORDERS: {
                 dispatched = true;
-                dispatch_orders(handler, value_, buffer, trace_info);
+                auto order = Order{value, buffer_2};
+                create_trace_and_dispatch(handler, trace_info, order);
                 break;
-              case TRADES:
+              }
+              case TRADES: {
                 dispatched = true;
-                dispatch_trades(handler, value_, buffer, trace_info);
+                auto trades = Trades2{value, buffer_2};
+                create_trace_and_dispatch(handler, trace_info, trades);
                 break;
+              }
             }
           }
           break;

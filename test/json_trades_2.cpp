@@ -36,9 +36,8 @@ TEST_CASE("json_trades_2_parse_message", "[json_trades_2]") {
                        R"("direction":"buy",)"
                        R"("amount":10.0)"
                        R"(}])"sv;
-  core::Buffer buffer(8192);
-  core::json::Buffer decode_buffer(buffer);
-  auto trades = core::json::Parser::create<json::Trades2>(message, decode_buffer);
+  std::vector<std::byte> buffer(8192);
+  auto trades = json::Trades2::create(message, buffer);
   CHECK(std::size(trades.data) == 1);
   CHECK(trades.data[0].trade_seq == 52491427);
 }
