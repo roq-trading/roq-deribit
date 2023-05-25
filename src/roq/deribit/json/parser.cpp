@@ -105,44 +105,44 @@ void Parser::dispatch(
               }
               case INSTRUMENT_STATE: {
                 dispatched = true;
-                auto instrument_state = InstrumentState{value, buffer_2};
+                auto instrument_state = InstrumentState{value_, buffer_2};
                 create_trace_and_dispatch(handler, trace_info, instrument_state);
                 break;
               }
               case QUOTE: {
                 dispatched = true;
-                auto quote = Quote{value, buffer_2};
+                auto quote = Quote{value_, buffer_2};
                 create_trace_and_dispatch(handler, trace_info, quote);
                 break;
               }
               case TICKER: {
                 dispatched = true;
-                auto ticker = Ticker{value, buffer_2};
+                auto ticker = Ticker{value_, buffer_2};
                 create_trace_and_dispatch(handler, trace_info, ticker);
                 break;
               }
               // private
               case PORTFOLIO: {
                 dispatched = true;
-                auto portfolio = Portfolio{value, buffer_2};
+                auto portfolio = Portfolio{value_, buffer_2};
                 create_trace_and_dispatch(handler, trace_info, portfolio);
                 break;
               }
               case CHANGES: {
                 dispatched = true;
-                auto changes = Changes{value, buffer_2};
+                auto changes = Changes{value_, buffer_2};
                 create_trace_and_dispatch(handler, trace_info, changes);
                 break;
               }
               case ORDERS: {
                 dispatched = true;
-                auto order = Order{value, buffer_2};
+                auto order = Order{value_, buffer_2};
                 create_trace_and_dispatch(handler, trace_info, order);
                 break;
               }
               case TRADES: {
                 dispatched = true;
-                auto trades = Trades2{value, buffer_2};
+                auto trades = Trades2{value_, buffer_2};
                 create_trace_and_dispatch(handler, trace_info, trades);
                 break;
               }

@@ -23,9 +23,9 @@ auto const MESSAGE =
 
 // cppcheck-suppress constParameterCallback
 void BM_fix_logon_parse_message(benchmark::State &state) {
+  auto parser = [&](auto &message_2) { fix::Logon::create(message_2); };
   for (auto _ : state) {
-    core::fix::Reader<core::fix::Version::FIX_44>::dispatch(
-        [&](core::fix::Message const &message) { fix::Logon::create(message); }, MESSAGE);
+    core::fix::Reader<core::fix::Version::FIX_44>::dispatch(MESSAGE, parser);
   }
 }
 
@@ -49,15 +49,15 @@ void BM_fix_logon_create_message(benchmark::State &state) {
         .deribit_app_id = {},
         .deribit_app_sig = {},
     };
-    core::fix::Writer writer{
-        buffer,
-        core::fix::Version::FIX_44,
-        decltype(logon)::msg_type,
-        "ROQ_TRADING"sv,
-        "DERIBITSERVER"sv,
-        msg_seq_num,
-        sending_time};
-    logon.encode(writer);
+    auto header = core::fix::Header{
+        .version = core::fix::Version::FIX_44,
+        .msg_type = decltype(logon)::msg_type,
+        .sender_comp_id = "ROQ_TRADING"sv,
+        .target_comp_id = "DERIBITSERVER"sv,
+        .msg_seq_num = ++msg_seq_num,  // note!
+        .sending_time = sending_time,
+    };
+    logon.encode(header, buffer);
   }
 }
 

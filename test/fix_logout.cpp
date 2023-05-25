@@ -19,14 +19,13 @@ TEST_CASE("fix_logout_parse_message", "[fix_logout]") {
       "G\00134=1\00152=20190907-16:56:43.398\00158=invalid_credential"
       "s\00110=166\001"sv;
   int results = 0;
-  auto bytes = core::fix::Reader<core::fix::Version::FIX_44>::dispatch(
-      [&](core::fix::Message const &message_2) {
-        ++results;
-        CHECK(message_2.header.msg_type == core::fix::MsgType::LOGOUT);
-        auto logout = fix::Logout::create(message_2);
-        CHECK(logout.text == "invalid_credentials");
-      },
-      message);
+  auto parser = [&](auto &message_2) {
+    ++results;
+    CHECK(message_2.header.msg_type == core::fix::MsgType::LOGOUT);
+    auto logout = fix::Logout::create(message_2);
+    CHECK(logout.text == "invalid_credentials");
+  };
+  auto bytes = core::fix::Reader<core::fix::Version::FIX_44>::dispatch(message, parser);
   CHECK(bytes == std::size(message));
   CHECK(results == 1);
 }

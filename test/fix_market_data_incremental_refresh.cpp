@@ -23,26 +23,25 @@ TEST_CASE("fix_market_data_incremental_refresh_parse_message_1", "fix_market_dat
       ".0000\001272=20190907-15:37:00.896\00110=241\001"sv;
   std::vector<std::byte> buffer(4096);
   int results = 0;
-  auto bytes = core::fix::Reader<core::fix::Version::FIX_44>::dispatch(
-      [&](core::fix::Message const &message_2) {
-        ++results;
-        CHECK(message_2.header.msg_type == core::fix::MsgType::MARKET_DATA_INCREMENTAL_REFRESH);
-        auto result = fix::MarketDataIncrementalRefresh::create(message_2, buffer);
-        CHECK(result.symbol == "BTC-27SEP19"sv);
-        CHECK(result.trade_volume24h == 10831047.0_a);
-        CHECK(result.mark_price == 10517.44_a);
-        CHECK(result.open_interest == 9465994.0_a);
-        CHECK(result.md_req_id == "123"sv);
-        CHECK(std::size(result.no_md_entries) == size_t{1});
-        // item 0
-        auto &item_0 = result.no_md_entries[0];
-        CHECK(item_0.md_update_action == core::fix::MDUpdateAction::NEW);
-        CHECK(item_0.md_entry_type == core::fix::MDEntryType::OFFER);
-        CHECK(item_0.md_entry_px == 10523.0_a);
-        CHECK(item_0.md_entry_size == 1000.0_a);
-        CHECK(item_0.md_entry_date == 1567870620896ms);
-      },
-      message);
+  auto parser = [&](auto &message_2) {
+    ++results;
+    CHECK(message_2.header.msg_type == core::fix::MsgType::MARKET_DATA_INCREMENTAL_REFRESH);
+    auto result = fix::MarketDataIncrementalRefresh::create(message_2, buffer);
+    CHECK(result.symbol == "BTC-27SEP19"sv);
+    CHECK(result.trade_volume24h == 10831047.0_a);
+    CHECK(result.mark_price == 10517.44_a);
+    CHECK(result.open_interest == 9465994.0_a);
+    CHECK(result.md_req_id == "123"sv);
+    CHECK(std::size(result.no_md_entries) == size_t{1});
+    // item 0
+    auto &item_0 = result.no_md_entries[0];
+    CHECK(item_0.md_update_action == core::fix::MDUpdateAction::NEW);
+    CHECK(item_0.md_entry_type == core::fix::MDEntryType::OFFER);
+    CHECK(item_0.md_entry_px == 10523.0_a);
+    CHECK(item_0.md_entry_size == 1000.0_a);
+    CHECK(item_0.md_entry_date == 1567870620896ms);
+  };
+  auto bytes = core::fix::Reader<core::fix::Version::FIX_44>::dispatch(message, parser);
   CHECK(bytes == std::size(message));
   CHECK(results == 1);
 }
@@ -67,85 +66,84 @@ TEST_CASE("fix_market_data_incremental_refresh_parse_message_2", "fix_market_dat
       "58=2889358\00110=087\001"sv;
   std::vector<std::byte> buffer(4096);
   int results = 0;
-  auto bytes = core::fix::Reader<core::fix::Version::FIX_44>::dispatch(
-      [&](core::fix::Message const &message_2) {
-        ++results;
-        CHECK(message_2.header.msg_type == core::fix::MsgType::MARKET_DATA_INCREMENTAL_REFRESH);
-        auto result = fix::MarketDataIncrementalRefresh::create(message_2, buffer);
-        CHECK(result.symbol == "BTC-27SEP19"sv);
-        CHECK(std::size(result.no_md_entries) == size_t{5});
-        // item 0
-        auto &item_0 = result.no_md_entries[0];
-        CHECK(item_0.md_update_action == core::fix::MDUpdateAction::NEW);
-        CHECK(item_0.md_entry_type == core::fix::MDEntryType::TRADE);
-        CHECK(item_0.md_entry_px == 10519.5_a);
-        CHECK(item_0.md_entry_size == 826.0_a);
-        CHECK(item_0.md_entry_date == 1567870620378ms);
-        CHECK(item_0.deribit_trade_id == "18254681"sv);
-        CHECK(item_0.side == core::fix::Side::BUY);
-        CHECK(item_0.order_id == "0"sv);
-        CHECK(item_0.secondary_order_id == "0"sv);
-        CHECK(item_0.ord_status == core::fix::OrdStatus::FILLED);
-        CHECK(item_0.index_price == 10445.93_a);
-        CHECK(item_0.text == "2889354"sv);
-        // item 1
-        auto &item_1 = result.no_md_entries[1];
-        CHECK(item_1.md_update_action == core::fix::MDUpdateAction::NEW);
-        CHECK(item_1.md_entry_type == core::fix::MDEntryType::TRADE);
-        CHECK(item_1.md_entry_px == 10520.0_a);
-        CHECK(item_1.md_entry_size == 42.0_a);
-        CHECK(item_1.md_entry_date == 1567870620378ms);
-        CHECK(item_1.deribit_trade_id == "18254682"sv);
-        CHECK(item_1.side == core::fix::Side::BUY);
-        CHECK(item_1.order_id == "0"sv);
-        CHECK(item_1.secondary_order_id == "0"sv);
-        CHECK(item_1.ord_status == core::fix::OrdStatus::FILLED);
-        CHECK(item_1.index_price == 10445.93_a);
-        CHECK(item_1.text == "2889355"sv);
-        // item 2
-        auto &item_2 = result.no_md_entries[2];
-        CHECK(item_2.md_update_action == core::fix::MDUpdateAction::NEW);
-        CHECK(item_2.md_entry_type == core::fix::MDEntryType::TRADE);
-        CHECK(item_2.md_entry_px == 10520.0_a);
-        CHECK(item_2.md_entry_size == 42.0_a);
-        CHECK(item_2.md_entry_date == 1567870620378ms);
-        CHECK(item_2.deribit_trade_id == "18254683"sv);
-        CHECK(item_2.side == core::fix::Side::BUY);
-        CHECK(item_2.order_id == "0"sv);
-        CHECK(item_2.secondary_order_id == "0"sv);
-        CHECK(item_2.ord_status == core::fix::OrdStatus::FILLED);
-        CHECK(item_2.index_price == 10445.93_a);
-        CHECK(item_2.text == "2889356"sv);
-        // item 3
-        auto &item_3 = result.no_md_entries[3];
-        CHECK(item_3.md_update_action == core::fix::MDUpdateAction::NEW);
-        CHECK(item_3.md_entry_type == core::fix::MDEntryType::TRADE);
-        CHECK(item_3.md_entry_px == 10520.0_a);
-        CHECK(item_3.md_entry_size == 42.0_a);
-        CHECK(item_3.md_entry_date == 1567870620378ms);
-        CHECK(item_3.deribit_trade_id == "18254684"sv);
-        CHECK(item_3.side == core::fix::Side::BUY);
-        CHECK(item_3.order_id == "0"sv);
-        CHECK(item_3.secondary_order_id == "0"sv);
-        CHECK(item_3.ord_status == core::fix::OrdStatus::FILLED);
-        CHECK(item_3.index_price == 10445.93_a);
-        CHECK(item_3.text == "2889357"sv);
-        // item 4
-        auto &item_4 = result.no_md_entries[4];
-        CHECK(item_4.md_update_action == core::fix::MDUpdateAction::NEW);
-        CHECK(item_4.md_entry_type == core::fix::MDEntryType::TRADE);
-        CHECK(item_4.md_entry_px == 10520.0_a);
-        CHECK(item_4.md_entry_size == 27.0_a);
-        CHECK(item_4.md_entry_date == 1567870620378ms);
-        CHECK(item_4.deribit_trade_id == "18254685"sv);
-        CHECK(item_4.side == core::fix::Side::BUY);
-        CHECK(item_4.order_id == "0"sv);
-        CHECK(item_4.secondary_order_id == "0"sv);
-        CHECK(item_4.ord_status == core::fix::OrdStatus::FILLED);
-        CHECK(item_4.index_price == 10445.93_a);
-        CHECK(item_4.text == "2889358"sv);
-      },
-      message);
+  auto parser = [&](auto &message_2) {
+    ++results;
+    CHECK(message_2.header.msg_type == core::fix::MsgType::MARKET_DATA_INCREMENTAL_REFRESH);
+    auto result = fix::MarketDataIncrementalRefresh::create(message_2, buffer);
+    CHECK(result.symbol == "BTC-27SEP19"sv);
+    CHECK(std::size(result.no_md_entries) == size_t{5});
+    // item 0
+    auto &item_0 = result.no_md_entries[0];
+    CHECK(item_0.md_update_action == core::fix::MDUpdateAction::NEW);
+    CHECK(item_0.md_entry_type == core::fix::MDEntryType::TRADE);
+    CHECK(item_0.md_entry_px == 10519.5_a);
+    CHECK(item_0.md_entry_size == 826.0_a);
+    CHECK(item_0.md_entry_date == 1567870620378ms);
+    CHECK(item_0.deribit_trade_id == "18254681"sv);
+    CHECK(item_0.side == core::fix::Side::BUY);
+    CHECK(item_0.order_id == "0"sv);
+    CHECK(item_0.secondary_order_id == "0"sv);
+    CHECK(item_0.ord_status == core::fix::OrdStatus::FILLED);
+    CHECK(item_0.index_price == 10445.93_a);
+    CHECK(item_0.text == "2889354"sv);
+    // item 1
+    auto &item_1 = result.no_md_entries[1];
+    CHECK(item_1.md_update_action == core::fix::MDUpdateAction::NEW);
+    CHECK(item_1.md_entry_type == core::fix::MDEntryType::TRADE);
+    CHECK(item_1.md_entry_px == 10520.0_a);
+    CHECK(item_1.md_entry_size == 42.0_a);
+    CHECK(item_1.md_entry_date == 1567870620378ms);
+    CHECK(item_1.deribit_trade_id == "18254682"sv);
+    CHECK(item_1.side == core::fix::Side::BUY);
+    CHECK(item_1.order_id == "0"sv);
+    CHECK(item_1.secondary_order_id == "0"sv);
+    CHECK(item_1.ord_status == core::fix::OrdStatus::FILLED);
+    CHECK(item_1.index_price == 10445.93_a);
+    CHECK(item_1.text == "2889355"sv);
+    // item 2
+    auto &item_2 = result.no_md_entries[2];
+    CHECK(item_2.md_update_action == core::fix::MDUpdateAction::NEW);
+    CHECK(item_2.md_entry_type == core::fix::MDEntryType::TRADE);
+    CHECK(item_2.md_entry_px == 10520.0_a);
+    CHECK(item_2.md_entry_size == 42.0_a);
+    CHECK(item_2.md_entry_date == 1567870620378ms);
+    CHECK(item_2.deribit_trade_id == "18254683"sv);
+    CHECK(item_2.side == core::fix::Side::BUY);
+    CHECK(item_2.order_id == "0"sv);
+    CHECK(item_2.secondary_order_id == "0"sv);
+    CHECK(item_2.ord_status == core::fix::OrdStatus::FILLED);
+    CHECK(item_2.index_price == 10445.93_a);
+    CHECK(item_2.text == "2889356"sv);
+    // item 3
+    auto &item_3 = result.no_md_entries[3];
+    CHECK(item_3.md_update_action == core::fix::MDUpdateAction::NEW);
+    CHECK(item_3.md_entry_type == core::fix::MDEntryType::TRADE);
+    CHECK(item_3.md_entry_px == 10520.0_a);
+    CHECK(item_3.md_entry_size == 42.0_a);
+    CHECK(item_3.md_entry_date == 1567870620378ms);
+    CHECK(item_3.deribit_trade_id == "18254684"sv);
+    CHECK(item_3.side == core::fix::Side::BUY);
+    CHECK(item_3.order_id == "0"sv);
+    CHECK(item_3.secondary_order_id == "0"sv);
+    CHECK(item_3.ord_status == core::fix::OrdStatus::FILLED);
+    CHECK(item_3.index_price == 10445.93_a);
+    CHECK(item_3.text == "2889357"sv);
+    // item 4
+    auto &item_4 = result.no_md_entries[4];
+    CHECK(item_4.md_update_action == core::fix::MDUpdateAction::NEW);
+    CHECK(item_4.md_entry_type == core::fix::MDEntryType::TRADE);
+    CHECK(item_4.md_entry_px == 10520.0_a);
+    CHECK(item_4.md_entry_size == 27.0_a);
+    CHECK(item_4.md_entry_date == 1567870620378ms);
+    CHECK(item_4.deribit_trade_id == "18254685"sv);
+    CHECK(item_4.side == core::fix::Side::BUY);
+    CHECK(item_4.order_id == "0"sv);
+    CHECK(item_4.secondary_order_id == "0"sv);
+    CHECK(item_4.ord_status == core::fix::OrdStatus::FILLED);
+    CHECK(item_4.index_price == 10445.93_a);
+    CHECK(item_4.text == "2889358"sv);
+  };
+  auto bytes = core::fix::Reader<core::fix::Version::FIX_44>::dispatch(message, parser);
   CHECK(bytes == std::size(message));
   CHECK(results == 1);
 }
@@ -159,29 +157,28 @@ TEST_CASE("fix_market_data_incremental_refresh_parse_message_3", "fix_market_dat
       "0\001198=0\00139=1\00144=170.3600\00158=586940\00110=030\001"sv;
   std::vector<std::byte> buffer(4096);
   int results = 0;
-  auto bytes = core::fix::Reader<core::fix::Version::FIX_44>::dispatch(
-      [&](core::fix::Message const &message_2) {
-        ++results;
-        CHECK(message_2.header.msg_type == core::fix::MsgType::MARKET_DATA_INCREMENTAL_REFRESH);
-        auto result = fix::MarketDataIncrementalRefresh::create(message_2, buffer);
-        CHECK(result.symbol == "ETH-PERPETUAL"sv);
-        CHECK(std::size(result.no_md_entries) == size_t{1});
-        // item 0
-        auto &item_0 = result.no_md_entries[0];
-        CHECK(item_0.md_update_action == core::fix::MDUpdateAction::NEW);
-        CHECK(item_0.md_entry_type == core::fix::MDEntryType::TRADE);
-        CHECK(item_0.md_entry_px == 170.15_a);
-        CHECK(item_0.md_entry_size == 22.0_a);
-        CHECK(item_0.md_entry_date == 1569685692830ms);
-        CHECK(item_0.deribit_trade_id == "ETH-1192275"sv);
-        CHECK(item_0.side == core::fix::Side::BUY);
-        CHECK(item_0.order_id == "0"sv);
-        CHECK(item_0.secondary_order_id == "0"sv);
-        CHECK(item_0.ord_status == core::fix::OrdStatus::PARTIALLY_FILLED);
-        CHECK(item_0.index_price == 170.36_a);
-        CHECK(item_0.text == "586940"sv);
-      },
-      message);
+  auto parser = [&](auto &message_2) {
+    ++results;
+    CHECK(message_2.header.msg_type == core::fix::MsgType::MARKET_DATA_INCREMENTAL_REFRESH);
+    auto result = fix::MarketDataIncrementalRefresh::create(message_2, buffer);
+    CHECK(result.symbol == "ETH-PERPETUAL"sv);
+    CHECK(std::size(result.no_md_entries) == size_t{1});
+    // item 0
+    auto &item_0 = result.no_md_entries[0];
+    CHECK(item_0.md_update_action == core::fix::MDUpdateAction::NEW);
+    CHECK(item_0.md_entry_type == core::fix::MDEntryType::TRADE);
+    CHECK(item_0.md_entry_px == 170.15_a);
+    CHECK(item_0.md_entry_size == 22.0_a);
+    CHECK(item_0.md_entry_date == 1569685692830ms);
+    CHECK(item_0.deribit_trade_id == "ETH-1192275"sv);
+    CHECK(item_0.side == core::fix::Side::BUY);
+    CHECK(item_0.order_id == "0"sv);
+    CHECK(item_0.secondary_order_id == "0"sv);
+    CHECK(item_0.ord_status == core::fix::OrdStatus::PARTIALLY_FILLED);
+    CHECK(item_0.index_price == 170.36_a);
+    CHECK(item_0.text == "586940"sv);
+  };
+  auto bytes = core::fix::Reader<core::fix::Version::FIX_44>::dispatch(message, parser);
   CHECK(bytes == std::size(message));
   CHECK(results == 1);
 }

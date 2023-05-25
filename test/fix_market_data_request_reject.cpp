@@ -19,16 +19,15 @@ TEST_CASE("fix_market_data_request_reject_parse_message", "[fix_market_data_requ
       "NG\00134=4\00152=20190908-10:54:45.738\001262=123\00158=unknow"
       "n Symbol: BTC-XXX\00110=152\001"sv;
   int results = 0;
-  auto bytes = core::fix::Reader<core::fix::Version::FIX_44>::dispatch(
-      [&](core::fix::Message const &message_2) {
-        ++results;
-        CHECK(message_2.header.msg_type == core::fix::MsgType::MARKET_DATA_REQUEST_REJECT);
-        auto reject = fix::MarketDataRequestReject::create(message_2);
-        CHECK(reject.md_req_id == "123"sv);
-        CHECK(reject.md_req_rej_reason == core::fix::MDReqRejReason::UNKNOWN);
-        CHECK(reject.text == "unknown Symbol: BTC-XXX"sv);
-      },
-      message);
+  auto parser = [&](auto &message_2) {
+    ++results;
+    CHECK(message_2.header.msg_type == core::fix::MsgType::MARKET_DATA_REQUEST_REJECT);
+    auto reject = fix::MarketDataRequestReject::create(message_2);
+    CHECK(reject.md_req_id == "123"sv);
+    CHECK(reject.md_req_rej_reason == core::fix::MDReqRejReason::UNKNOWN);
+    CHECK(reject.text == "unknown Symbol: BTC-XXX"sv);
+  };
+  auto bytes = core::fix::Reader<core::fix::Version::FIX_44>::dispatch(message, parser);
   CHECK(bytes == std::size(message));
   CHECK(results == 1);
 }

@@ -20,7 +20,7 @@ TEST_CASE("fix_new_order_single_create_message", "[fix_new_order_single]") {
   std::vector<std::byte> buffer(4096);
   auto msg_seq_num = uint64_t{0};
   auto sending_time = 1568702810s;
-  fix::NewOrderSingle new_order_single = {
+  auto new_order_single = fix::NewOrderSingle{
       .cl_ord_id = "roq-ord-006"sv,
       .side = core::fix::Side::BUY,
       .order_qty = {2.0, utils::to_decimals(1)},
@@ -32,15 +32,15 @@ TEST_CASE("fix_new_order_single_create_message", "[fix_new_order_single]") {
       .deribit_label = "roq;123;345"sv,
       .deribit_adv_order_type = '\0',
   };
-  core::fix::Writer writer(
-      buffer,
-      core::fix::Version::FIX_44,
-      decltype(new_order_single)::msg_type,
-      "ROQ_TRADING"sv,
-      "DERIBITSERVER"sv,
-      msg_seq_num,
-      sending_time);
-  auto message = new_order_single.encode(writer);
+  auto header = core::fix::Header{
+      .version = core::fix::Version::FIX_44,
+      .msg_type = decltype(new_order_single)::msg_type,
+      .sender_comp_id = "ROQ_TRADING"sv,
+      .target_comp_id = "DERIBITSERVER"sv,
+      .msg_seq_num = ++msg_seq_num,  // note!
+      .sending_time = sending_time,
+  };
+  auto message = new_order_single.encode(header, buffer);
   auto const expected =
       "8=FIX.4.4\001"
       "9=0000146\001"

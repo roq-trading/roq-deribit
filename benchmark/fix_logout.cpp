@@ -21,14 +21,13 @@ auto const MESSAGE =
 // cppcheck-suppress constParameterCallback
 void BM_fix_logout_parse_message(benchmark::State &state) {
   uint64_t processed = 0;
+  auto parser = [&](auto &message_2) {
+    auto logout = fix::Logout::create(message_2);
+    if (!std::empty(logout.text))
+      ++processed;
+  };
   for (auto _ : state) {
-    core::fix::Reader<core::fix::Version::FIX_44>::dispatch(
-        [&](core::fix::Message const &message) {
-          auto logout = fix::Logout::create(message);
-          if (!std::empty(logout.text))
-            ++processed;
-        },
-        MESSAGE);
+    core::fix::Reader<core::fix::Version::FIX_44>::dispatch(MESSAGE, parser);
   }
 }
 

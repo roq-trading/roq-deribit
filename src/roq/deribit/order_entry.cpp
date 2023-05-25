@@ -306,6 +306,7 @@ void OrderEntry::operator()(io::net::ConnectionManager::Read const &) {
   while (!std::empty(buffer)) {
     TraceInfo trace_info;
     auto bytes = core::fix::Reader<FIX_VERSION>::dispatch(
+        buffer,
         [&](core::fix::Message const &message) {
           try {
             check(message.header);
@@ -323,7 +324,6 @@ void OrderEntry::operator()(io::net::ConnectionManager::Read const &) {
             }
           }
         },
-        buffer,
         [this](auto &message) {
           if (shared_.settings.fix.debug)
             log::info("{}"sv, debug::fix::Message{message});
@@ -962,9 +962,15 @@ std::tuple<uint64_t, std::chrono::nanoseconds, std::chrono::nanoseconds> OrderEn
   (*connection_manager_).send_with_completion([&](auto &buffer) {
     buffer.resize(4096);
     now_1 = clock::get_system();
-    core::fix::Writer writer{
-        buffer, FIX_VERSION, T::msg_type, SENDER_COMP_ID, TARGET_COMP_ID, outbound_.msg_seq_num, sending_time};
-    auto message = event.encode(writer);
+    auto header = core::fix::Header{
+        .version = FIX_VERSION,
+        .msg_type = T::msg_type,
+        .sender_comp_id = SENDER_COMP_ID,
+        .target_comp_id = TARGET_COMP_ID,
+        .msg_seq_num = ++outbound_.msg_seq_num,  // note!
+        .sending_time = sending_time,
+    };
+    auto message = event.encode(header, buffer);
     now_2 = clock::get_system();
     if (shared_.settings.fix.debug) [[unlikely]]
       log::info("{}"sv, debug::fix::Message{message});

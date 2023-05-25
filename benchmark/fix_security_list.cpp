@@ -1231,14 +1231,13 @@ auto const MESSAGE =
 void BM_fix_security_list_parse_message(benchmark::State &state) {
   std::vector<std::byte> buffer(1024 * 1024);
   uint64_t processed = 0;
+  auto parser = [&](auto &message_2) {
+    auto security_list = fix::SecurityList::create(message_2, buffer);
+    if (std::size(security_list.no_related_sym) > 0)
+      ++processed;
+  };
   for (auto _ : state) {
-    core::fix::Reader<core::fix::Version::FIX_44>::dispatch(
-        [&](core::fix::Message const &message) {
-          auto security_list = fix::SecurityList::create(message, buffer);
-          if (std::size(security_list.no_related_sym) > 0)
-            ++processed;
-        },
-        MESSAGE);
+    core::fix::Reader<core::fix::Version::FIX_44>::dispatch(MESSAGE, parser);
   }
 }
 

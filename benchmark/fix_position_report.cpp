@@ -25,14 +25,13 @@ auto const MESSAGE =
 void BM_fix_position_report_parse_message(benchmark::State &state) {
   std::vector<std::byte> buffer(8192);
   uint64_t processed = 0;
+  auto parser = [&](auto &message_2) {
+    auto position_report = fix::PositionReport::create(message_2, buffer);
+    if (!std::empty(position_report.pos_req_id))
+      ++processed;
+  };
   for (auto _ : state) {
-    core::fix::Reader<core::fix::Version::FIX_44>::dispatch(
-        [&](core::fix::Message const &message) {
-          auto position_report = fix::PositionReport::create(message, buffer);
-          if (!std::empty(position_report.pos_req_id))
-            ++processed;
-        },
-        MESSAGE);
+    core::fix::Reader<core::fix::Version::FIX_44>::dispatch(MESSAGE, parser);
   }
 }
 

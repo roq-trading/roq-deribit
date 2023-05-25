@@ -23,26 +23,25 @@ TEST_CASE("fix_position_report_parse_message", "[fix_position_report]") {
       "100089=0.00000000\00110=026\001"sv;
   std::vector<std::byte> buffer(1024 * 1024);
   int results = 0;
-  auto bytes = core::fix::Reader<core::fix::Version::FIX_44>::dispatch(
-      [&](core::fix::Message const &message_2) {
-        ++results;
-        CHECK(message_2.header.msg_type == core::fix::MsgType::POSITION_REPORT);
-        auto position_report = fix::PositionReport::create(message_2, buffer);
-        CHECK(position_report.pos_maint_rpt_id == "3221109"sv);
-        CHECK(position_report.pos_req_id == "roq-pos-003"sv);
-        CHECK(position_report.pos_req_type == core::fix::PosReqType::POSITIONS);
-        CHECK(position_report.pos_req_result == core::fix::PosReqResult::VALID);
-        CHECK(std::size(position_report.no_positions) == size_t{1});
-        auto &item = position_report.no_positions[0];
-        CHECK(item.long_qty == 0.0_a);
-        CHECK(item.short_qty == 0.0_a);
-        CHECK(item.symbol == "BTC-27SEP19"sv);
-        CHECK(item.qty_type == core::fix::QtyType::CONTRACTS);
-        CHECK(item.contract_multiplier == 10.0_a);
-        CHECK(item.underlying_end_price == 10184.50_a);
-        CHECK(item.settl_price == 0.0_a);
-      },
-      message);
+  auto parser = [&](auto &message_2) {
+    ++results;
+    CHECK(message_2.header.msg_type == core::fix::MsgType::POSITION_REPORT);
+    auto position_report = fix::PositionReport::create(message_2, buffer);
+    CHECK(position_report.pos_maint_rpt_id == "3221109"sv);
+    CHECK(position_report.pos_req_id == "roq-pos-003"sv);
+    CHECK(position_report.pos_req_type == core::fix::PosReqType::POSITIONS);
+    CHECK(position_report.pos_req_result == core::fix::PosReqResult::VALID);
+    CHECK(std::size(position_report.no_positions) == size_t{1});
+    auto &item = position_report.no_positions[0];
+    CHECK(item.long_qty == 0.0_a);
+    CHECK(item.short_qty == 0.0_a);
+    CHECK(item.symbol == "BTC-27SEP19"sv);
+    CHECK(item.qty_type == core::fix::QtyType::CONTRACTS);
+    CHECK(item.contract_multiplier == 10.0_a);
+    CHECK(item.underlying_end_price == 10184.50_a);
+    CHECK(item.settl_price == 0.0_a);
+  };
+  auto bytes = core::fix::Reader<core::fix::Version::FIX_44>::dispatch(message, parser);
   CHECK(bytes == std::size(message));
   CHECK(results == 1);
 }

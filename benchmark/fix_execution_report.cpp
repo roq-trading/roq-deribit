@@ -26,14 +26,13 @@ auto const MESSAGE =
 void BM_fix_execution_report_parse_message(benchmark::State &state) {
   std::vector<std::byte> buffer(8192);
   uint64_t processed = 0;
+  auto parser = [&](auto &message_2) {
+    auto result = fix::ExecutionReport::create(message_2, buffer);
+    if (!std::empty(result.order_id))
+      ++processed;
+  };
   for (auto _ : state) {
-    core::fix::Reader<core::fix::Version::FIX_44>::dispatch(
-        [&](core::fix::Message const &message) {
-          auto result = fix::ExecutionReport::create(message, buffer);
-          if (!std::empty(result.order_id))
-            ++processed;
-        },
-        MESSAGE);
+    core::fix::Reader<core::fix::Version::FIX_44>::dispatch(MESSAGE, parser);
   }
 }
 

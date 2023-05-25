@@ -19,14 +19,13 @@ TEST_CASE("fix_heartbeat_parse_message", "[fix_heartbeat]") {
       "G\00134=2\00152=20190908-08:47:31.503\001112=anybody in there?"
       "\00110=084\001"sv;
   int results = 0;
-  auto bytes = core::fix::Reader<core::fix::Version::FIX_44>::dispatch(
-      [&](core::fix::Message const &message_2) {
-        ++results;
-        CHECK(message_2.header.msg_type == core::fix::MsgType::HEARTBEAT);
-        auto heartbeat = fix::Heartbeat::create(message_2);
-        CHECK(heartbeat.test_req_id == "anybody in there?");
-      },
-      message);
+  auto parser = [&](auto &message_2) {
+    ++results;
+    CHECK(message_2.header.msg_type == core::fix::MsgType::HEARTBEAT);
+    auto heartbeat = fix::Heartbeat::create(message_2);
+    CHECK(heartbeat.test_req_id == "anybody in there?");
+  };
+  auto bytes = core::fix::Reader<core::fix::Version::FIX_44>::dispatch(message, parser);
   CHECK(bytes == std::size(message));
   CHECK(results == 1);
 }

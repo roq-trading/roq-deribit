@@ -1232,23 +1232,22 @@ auto const message =
 TEST_CASE("fix_security_list_parse_message", "[fix_security_list]") {
   std::vector<std::byte> buffer(1024 * 1024);
   int results = 0;
-  auto bytes = core::fix::Reader<core::fix::Version::FIX_44>::dispatch(
-      [&](core::fix::Message const &message_2) {
-        ++results;
-        CHECK(message_2.header.msg_type == core::fix::MsgType::SECURITY_LIST);
-        /*auto security_list =*/fix::SecurityList::create(message_2, buffer);
-        /*
-        CHECK(security_list.heart_bt_int == uint32_t{10});
-        EXPECT_EQ(security_list.raw_data,
-        "1567874758168.y4/hA3i6qxm4yVL+3N7IrGcINVAFMLFhy4l7ATSehxc=");
-        CHECK(security_list.username == "5MP40u9h");
-        EXPECT_EQ(security_list.password,
-        "j/tVe9IsQuc+RjegscnHcJ6czMVNM1+ib7vjbY3UV0M=");
-        CHECK(security_list.deribit_cancel_on_disconnect == true);
-        CHECK(security_list.deribit_use_wordsafe_tags == false);
-        */
-      },
-      message);
+  auto parser = [&](auto &message_2) {
+    ++results;
+    CHECK(message_2.header.msg_type == core::fix::MsgType::SECURITY_LIST);
+    /*auto security_list =*/fix::SecurityList::create(message_2, buffer);
+    /*
+    CHECK(security_list.heart_bt_int == uint32_t{10});
+    EXPECT_EQ(security_list.raw_data,
+    "1567874758168.y4/hA3i6qxm4yVL+3N7IrGcINVAFMLFhy4l7ATSehxc=");
+    CHECK(security_list.username == "5MP40u9h");
+    EXPECT_EQ(security_list.password,
+    "j/tVe9IsQuc+RjegscnHcJ6czMVNM1+ib7vjbY3UV0M=");
+    CHECK(security_list.deribit_cancel_on_disconnect == true);
+    CHECK(security_list.deribit_use_wordsafe_tags == false);
+    */
+  };
+  auto bytes = core::fix::Reader<core::fix::Version::FIX_44>::dispatch(message, parser);
   CHECK(bytes == std::size(message));
   CHECK(results == 1);
 }

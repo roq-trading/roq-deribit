@@ -16,7 +16,7 @@ void BM_fix_order_cancel_replace_request_create_message(
   uint64_t msg_seq_num = 0;
   auto sending_time = 1568702810s;
   for (auto _ : state) {
-    fix::OrderCancelReplaceRequest order_cancel_replace_request = {
+    auto order_cancel_replace_request = fix::OrderCancelReplaceRequest{
         .orig_cl_ord_id = "123"sv,
         .cl_ord_id = "123"sv,
         .transact_time = sending_time,
@@ -27,15 +27,15 @@ void BM_fix_order_cancel_replace_request_create_message(
         .symbol = "BTC-27SEP19"sv,
         .exec_inst = {},
     };
-    core::fix::Writer writer(
-        buffer,
-        core::fix::Version::FIX_44,
-        decltype(order_cancel_replace_request)::msg_type,
-        "ROQ_TRADING"sv,
-        "DERIBITSERVER"sv,
-        msg_seq_num,
-        sending_time);
-    order_cancel_replace_request.encode(writer);
+    auto header = core::fix::Header{
+        .version = core::fix::Version::FIX_44,
+        .msg_type = decltype(order_cancel_replace_request)::msg_type,
+        .sender_comp_id = "ROQ_TRADING"sv,
+        .target_comp_id = "DERIBITSERVER"sv,
+        .msg_seq_num = ++msg_seq_num,  // note!
+        .sending_time = sending_time,
+    };
+    order_cancel_replace_request.encode(header, buffer);
   }
 }
 

@@ -175,14 +175,13 @@ void BM_fix_market_data_snapshot_full_refresh_parse_message(
     benchmark::State &state) {  // cppcheck-suppress constParameterCallback
   std::vector<std::byte> buffer(1024 * 1024);
   uint64_t processed = 0;
+  auto parser = [&](auto &message_2) {
+    auto market_data = fix::MarketDataSnapshotFullRefresh::create(message_2, buffer);
+    if (std::size(market_data.no_md_entries) > 0)
+      ++processed;
+  };
   for (auto _ : state) {
-    core::fix::Reader<core::fix::Version::FIX_44>::dispatch(
-        [&](core::fix::Message const &message) {
-          auto market_data = fix::MarketDataSnapshotFullRefresh::create(message, buffer);
-          if (std::size(market_data.no_md_entries) > 0)
-            ++processed;
-        },
-        MESSAGE);
+    core::fix::Reader<core::fix::Version::FIX_44>::dispatch(MESSAGE, parser);
   }
 }
 

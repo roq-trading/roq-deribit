@@ -23,14 +23,13 @@ auto const MESSAGE =
 // cppcheck-suppress constParameterCallback
 void BM_fix_user_response_parse_message(benchmark::State &state) {
   uint64_t processed = 0;
+  auto parser = [&](auto &message_2) {
+    auto user_response = fix::UserResponse::create(message_2);
+    if (!std::empty(user_response.user_request_id))
+      ++processed;
+  };
   for (auto _ : state) {
-    core::fix::Reader<core::fix::Version::FIX_44>::dispatch(
-        [&](core::fix::Message const &message) {
-          auto user_response = fix::UserResponse::create(message);
-          if (!std::empty(user_response.user_request_id))
-            ++processed;
-        },
-        MESSAGE);
+    core::fix::Reader<core::fix::Version::FIX_44>::dispatch(MESSAGE, parser);
   }
 }
 

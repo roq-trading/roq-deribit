@@ -16,19 +16,19 @@ void BM_fix_order_cancel_request_create_message(benchmark::State &state) {
   uint64_t msg_seq_num = 0;
   auto sending_time = 1568702810s;
   for (auto _ : state) {
-    fix::OrderCancelRequest order_cancel_request = {
+    auto order_cancel_request = fix::OrderCancelRequest{
         .cl_ord_id = "123"sv,
         .orig_cl_ord_id = "123"sv,
     };
-    core::fix::Writer writer(
-        buffer,
-        core::fix::Version::FIX_44,
-        decltype(order_cancel_request)::msg_type,
-        "ROQ_TRADING"sv,
-        "DERIBITSERVER"sv,
-        msg_seq_num,
-        sending_time);
-    order_cancel_request.encode(writer);
+    auto header = core::fix::Header{
+        .version = core::fix::Version::FIX_44,
+        .msg_type = decltype(order_cancel_request)::msg_type,
+        .sender_comp_id = "ROQ_TRADING"sv,
+        .target_comp_id = "DERIBITSERVER"sv,
+        .msg_seq_num = ++msg_seq_num,  // note!
+        .sending_time = sending_time,
+    };
+    order_cancel_request.encode(header, buffer);
   }
 }
 

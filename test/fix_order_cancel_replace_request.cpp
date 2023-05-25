@@ -18,7 +18,7 @@ TEST_CASE("fix_order_cancel_replace_request_create_message", "[fix_order_cancel_
   std::vector<std::byte> buffer(4096);
   auto msg_seq_num = uint64_t{0};
   auto sending_time = 1568702810s;
-  fix::OrderCancelReplaceRequest order_cancel_replace_request = {
+  auto order_cancel_replace_request = fix::OrderCancelReplaceRequest{
       .orig_cl_ord_id = "123"sv,
       .cl_ord_id = "123"sv,
       .transact_time = sending_time,
@@ -29,15 +29,15 @@ TEST_CASE("fix_order_cancel_replace_request_create_message", "[fix_order_cancel_
       .symbol = "BTC-27SEP19"sv,
       .exec_inst = {},
   };
-  core::fix::Writer writer(
-      buffer,
-      core::fix::Version::FIX_44,
-      decltype(order_cancel_replace_request)::msg_type,
-      "ROQ_TRADING"sv,
-      "DERIBITSERVER"sv,
-      msg_seq_num,
-      sending_time);
-  auto message = order_cancel_replace_request.encode(writer);
+  auto header = core::fix::Header{
+      .version = core::fix::Version::FIX_44,
+      .msg_type = decltype(order_cancel_replace_request)::msg_type,
+      .sender_comp_id = "ROQ_TRADING"sv,
+      .target_comp_id = "DERIBITSERVER"sv,
+      .msg_seq_num = ++msg_seq_num,  // note!
+      .sending_time = sending_time,
+  };
+  auto message = order_cancel_replace_request.encode(header, buffer);
   auto const expected =
       "8=FIX.4.4\0019=0000148\00135=G\00149=ROQ_TRADING\00156=DERIBIT"
       "SERVER\00134=1\00152=20190917-06:46:50.000\00141=123\00111=123"

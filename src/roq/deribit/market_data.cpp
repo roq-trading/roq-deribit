@@ -249,7 +249,7 @@ void MarketData::operator()(io::net::ConnectionManager::Read const &) {
   try {
     size_t total_bytes = 0;
     while (!std::empty(buffer)) {
-      auto bytes = core::fix::Reader<FIX_VERSION>::dispatch(parse_message, buffer, log_message);
+      auto bytes = core::fix::Reader<FIX_VERSION>::dispatch(buffer, parse_message, log_message);
       if (bytes == 0)
         break;
       assert(bytes <= std::size(buffer));
@@ -925,9 +925,15 @@ void MarketData::send(T const &event) {
 
 template <typename T>
 void MarketData::send(T const &event, std::chrono::nanoseconds sending_time) {
-  core::fix::Writer writer{
-      encode_buffer_, FIX_VERSION, T::msg_type, SENDER_COMP_ID, TARGET_COMP_ID, outbound_.msg_seq_num, sending_time};
-  auto message = event.encode(writer);
+  auto header = core::fix::Header{
+      .version = FIX_VERSION,
+      .msg_type = T::msg_type,
+      .sender_comp_id = SENDER_COMP_ID,
+      .target_comp_id = TARGET_COMP_ID,
+      .msg_seq_num = ++outbound_.msg_seq_num,  // note!
+      .sending_time = sending_time,
+  };
+  auto message = event.encode(header, encode_buffer_);
   if (fix_debug_) [[unlikely]]
     log::info("{}"sv, debug::fix::Message{message});
   // note!

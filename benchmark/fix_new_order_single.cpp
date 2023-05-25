@@ -26,7 +26,7 @@ void BM_fix_new_order_single_create_message(benchmark::State &state) {
   std::vector<std::byte> buffer(4096);
   uint64_t msg_seq_num = 0;
   for (auto _ : state) {
-    fix::NewOrderSingle new_order_single{
+    auto new_order_single = fix::NewOrderSingle{
         .cl_ord_id = REQUEST_ID,
         .side = core::fix::Side::BUY,
         .order_qty = {123.0, Decimals::_0},
@@ -38,15 +38,15 @@ void BM_fix_new_order_single_create_message(benchmark::State &state) {
         .deribit_label = REQUEST_ID,
         .deribit_adv_order_type = '\0',
     };
-    core::fix::Writer writer{
-        buffer,
-        core::fix::Version::FIX_44,
-        decltype(new_order_single)::msg_type,
-        TARGET_COMP_ID,
-        SENDER_COMP_ID,
-        msg_seq_num,
-        SENDING_TIME};
-    new_order_single.encode(writer);
+    auto header = core::fix::Header{
+        .version = core::fix::Version::FIX_44,
+        .msg_type = decltype(new_order_single)::msg_type,
+        .sender_comp_id = SENDER_COMP_ID,
+        .target_comp_id = TARGET_COMP_ID,
+        .msg_seq_num = ++msg_seq_num,  // note!
+        .sending_time = SENDING_TIME,
+    };
+    new_order_single.encode(header, buffer);
   }
 }
 

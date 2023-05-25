@@ -173,23 +173,22 @@ TEST_CASE("fix_market_data_snapshot_full_refresh_parse_message", "fix_market_dat
       "0000\001272=20190907-17:49:56.053\00110=037\001"sv;
   std::vector<std::byte> buffer(1024 * 1024);
   int results = 0;
-  auto bytes = core::fix::Reader<core::fix::Version::FIX_44>::dispatch(
-      [&](core::fix::Message const &message_2) {
-        ++results;
-        CHECK(message_2.header.msg_type == core::fix::MsgType::MARKET_DATA_SNAPSHOT_FULL_REFRESH);
-        /*auto market_data =*/fix::MarketDataSnapshotFullRefresh::create(message_2, buffer);
-        /*
-        CHECK(result.heart_bt_int == uint32_t{10});
-        EXPECT_EQ(result.raw_data,
-        "1567874758168.y4/hA3i6qxm4yVL+3N7IrGcINVAFMLFhy4l7ATSehxc=");
-        CHECK(result.username == "5MP40u9h");
-        EXPECT_EQ(result.password,
-        "j/tVe9IsQuc+RjegscnHcJ6czMVNM1+ib7vjbY3UV0M=");
-        CHECK(result.deribit_cancel_on_disconnect == true);
-        CHECK(result.deribit_use_wordsafe_tags == false);
-        */
-      },
-      message);
+  auto parser = [&](auto &message_2) {
+    ++results;
+    CHECK(message_2.header.msg_type == core::fix::MsgType::MARKET_DATA_SNAPSHOT_FULL_REFRESH);
+    /*auto market_data =*/fix::MarketDataSnapshotFullRefresh::create(message_2, buffer);
+    /*
+    CHECK(result.heart_bt_int == uint32_t{10});
+    EXPECT_EQ(result.raw_data,
+    "1567874758168.y4/hA3i6qxm4yVL+3N7IrGcINVAFMLFhy4l7ATSehxc=");
+    CHECK(result.username == "5MP40u9h");
+    EXPECT_EQ(result.password,
+    "j/tVe9IsQuc+RjegscnHcJ6czMVNM1+ib7vjbY3UV0M=");
+    CHECK(result.deribit_cancel_on_disconnect == true);
+    CHECK(result.deribit_use_wordsafe_tags == false);
+    */
+  };
+  auto bytes = core::fix::Reader<core::fix::Version::FIX_44>::dispatch(message, parser);
   CHECK(bytes == std::size(message));
   CHECK(results == 1);
 }

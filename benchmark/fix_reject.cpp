@@ -21,14 +21,13 @@ auto const MESSAGE =
 // cppcheck-suppress constParameterCallback
 void BM_fix_reject_parse_message(benchmark::State &state) {
   uint64_t processed = 0;
+  auto parser = [&](auto &message_2) {
+    auto reject = fix::Reject::create(message_2);
+    if (!std::empty(reject.text))
+      ++processed;
+  };
   for (auto _ : state) {
-    core::fix::Reader<core::fix::Version::FIX_44>::dispatch(
-        [&](core::fix::Message const &message) {
-          auto reject = fix::Reject::create(message);
-          if (!std::empty(reject.text))
-            ++processed;
-        },
-        MESSAGE);
+    core::fix::Reader<core::fix::Version::FIX_44>::dispatch(MESSAGE, parser);
   }
 }
 
