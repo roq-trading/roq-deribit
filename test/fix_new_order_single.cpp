@@ -4,6 +4,8 @@
 
 #include <fmt/format.h>
 
+#include "roq/debug/fix/message.hpp"
+
 #include "roq/core/fix/reader.hpp"
 
 #include "roq/deribit/fix/new_order_single.hpp"
