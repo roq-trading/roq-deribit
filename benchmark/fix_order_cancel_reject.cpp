@@ -2,7 +2,7 @@
 
 #include <benchmark/benchmark.h>
 
-#include "roq/core/fix/reader.hpp"
+#include "roq/fix/reader.hpp"
 
 #include "roq/deribit/fix/order_cancel_reject.hpp"
 
@@ -10,6 +10,8 @@ using namespace roq;
 using namespace roq::deribit;
 
 using namespace std::literals;
+
+using OrderCancelReject = deribit::fix::OrderCancelReject;
 
 namespace {
 auto const MESSAGE =
@@ -22,12 +24,12 @@ auto const MESSAGE =
 void BM_fix_order_cancel_reject_parse_message(benchmark::State &state) {
   uint64_t processed = 0;
   auto parser = [&](auto &message_2) {
-    auto result = fix::OrderCancelReject::create(message_2);
+    auto result = OrderCancelReject::create(message_2);
     if (!std::empty(result.text))
       ++processed;
   };
   for (auto _ : state) {
-    core::fix::Reader<core::fix::Version::FIX_44>::dispatch(MESSAGE, parser);
+    roq::fix::Reader<roq::fix::Version::FIX_44>::dispatch(MESSAGE, parser);
   }
 }
 

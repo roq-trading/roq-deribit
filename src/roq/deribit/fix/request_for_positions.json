@@ -11,13 +11,13 @@
     {
       "tag": 724,
       "name": "PosReqType",
-      "type": "roq::core::fix::PosReqType",
+      "type": "roq::fix::PosReqType",
       "required": true
     },
     {
       "tag": 263,
       "name": "SubscriptionRequestType",
-      "type": "roq::core::fix::SubscriptionRequestType"
+      "type": "roq::fix::SubscriptionRequestType"
     },
     {
       "tag": 15,

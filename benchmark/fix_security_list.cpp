@@ -2,7 +2,7 @@
 
 #include <benchmark/benchmark.h>
 
-#include "roq/core/fix/reader.hpp"
+#include "roq/fix/reader.hpp"
 
 #include "roq/deribit/fix/security_list.hpp"
 
@@ -10,6 +10,8 @@ using namespace roq;
 using namespace roq::deribit;
 
 using namespace std::literals;
+
+using SecurityList = deribit::fix::SecurityList;
 
 namespace {
 auto const MESSAGE =
@@ -1232,12 +1234,12 @@ void BM_fix_security_list_parse_message(benchmark::State &state) {
   std::vector<std::byte> buffer(1024 * 1024);
   uint64_t processed = 0;
   auto parser = [&](auto &message_2) {
-    auto security_list = fix::SecurityList::create(message_2, buffer);
+    auto security_list = SecurityList::create(message_2, buffer);
     if (std::size(security_list.no_related_sym) > 0)
       ++processed;
   };
   for (auto _ : state) {
-    core::fix::Reader<core::fix::Version::FIX_44>::dispatch(MESSAGE, parser);
+    roq::fix::Reader<roq::fix::Version::FIX_44>::dispatch(MESSAGE, parser);
   }
 }
 

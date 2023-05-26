@@ -17,7 +17,7 @@
     {
       "tag": 560,
       "name": "SecurityRequestResult",
-      "type": "roq::core::fix::SecurityRequestResult",
+      "type": "roq::fix::SecurityRequestResult",
       "required": true
     },
     {

@@ -2,7 +2,7 @@
 
 #include <catch2/catch_all.hpp>
 
-#include "roq/core/fix/reader.hpp"
+#include "roq/fix/reader.hpp"
 
 #include "roq/deribit/fix/order_cancel_request.hpp"
 
@@ -14,16 +14,18 @@ using namespace std::chrono_literals;
 
 using namespace Catch::literals;
 
+using OrderCancelRequest = deribit::fix::OrderCancelRequest;
+
 TEST_CASE("fix_order_cancel_request_create_message", "[fix_order_cancel_request]") {
   std::vector<std::byte> buffer(4096);
   auto msg_seq_num = uint64_t{0};
   auto sending_time = 1568702810s;
-  auto order_cancel_request = fix::OrderCancelRequest{
+  auto order_cancel_request = OrderCancelRequest{
       .cl_ord_id = "123"sv,
       .orig_cl_ord_id = "123"sv,
   };
-  auto header = core::fix::Header{
-      .version = core::fix::Version::FIX_44,
+  auto header = roq::fix::Header{
+      .version = roq::fix::Version::FIX_44,
       .msg_type = decltype(order_cancel_request)::msg_type,
       .sender_comp_id = "ROQ_TRADING"sv,
       .target_comp_id = "DERIBITSERVER"sv,

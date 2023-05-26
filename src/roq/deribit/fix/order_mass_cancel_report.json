@@ -17,13 +17,13 @@
     {
       "tag": 530,
       "name": "MassCancelRequestType",
-      "type": "roq::core::fix::MassCancelRequestType",
+      "type": "roq::fix::MassCancelRequestType",
       "required": true
     },
     {
       "tag": 531,
       "name": "MassCancelResponse",
-      "type": "roq::core::fix::MassCancelResponse"
+      "type": "roq::fix::MassCancelResponse"
     },
     {
       "tag": 58,

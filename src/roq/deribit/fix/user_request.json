@@ -11,7 +11,7 @@
     {
       "tag": 924,
       "name": "UserRequestType",
-      "type": "roq::core::fix::UserRequestType",
+      "type": "roq::fix::UserRequestType",
       "required": true
     },
     {

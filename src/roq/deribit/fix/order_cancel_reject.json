@@ -24,7 +24,7 @@
     {
       "tag": 39,
       "name": "OrdStatus",
-      "type": "roq::core::fix::OrdStatus"
+      "type": "roq::fix::OrdStatus"
     },
     {
       "tag": 58,

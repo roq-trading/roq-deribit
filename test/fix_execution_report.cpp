@@ -2,7 +2,7 @@
 
 #include <catch2/catch_all.hpp>
 
-#include "roq/core/fix/reader.hpp"
+#include "roq/fix/reader.hpp"
 
 #include "roq/deribit/fix/execution_report.hpp"
 
@@ -12,6 +12,8 @@ using namespace roq::deribit;
 using namespace std::literals;
 
 using namespace Catch::literals;
+
+using ExecutionReport = deribit::fix::ExecutionReport;
 
 TEST_CASE("fix_execution_report_parse_message", "[fix_execution_report]") {
   auto const message =
@@ -26,31 +28,31 @@ TEST_CASE("fix_execution_report_parse_message", "[fix_execution_report]") {
   int results = 0;
   auto parser = [&](auto &message_2) {
     ++results;
-    CHECK(message_2.header.msg_type == core::fix::MsgType::EXECUTION_REPORT);
-    auto result = fix::ExecutionReport::create(message_2, buffer);
+    CHECK(message_2.header.msg_type == roq::fix::MsgType::EXECUTION_REPORT);
+    auto result = ExecutionReport::create(message_2, buffer);
     CHECK(result.order_id == "2831903667"sv);
     CHECK(result.cl_ord_id == "2831903667"sv);
     CHECK(result.orig_cl_ord_id == "123"sv);
-    CHECK(result.exec_type == core::fix::ExecType::ORDER_STATUS);
-    CHECK(result.ord_status == core::fix::OrdStatus::CANCELED);
-    CHECK(result.side == core::fix::Side::BUY);
+    CHECK(result.exec_type == roq::fix::ExecType::ORDER_STATUS);
+    CHECK(result.ord_status == roq::fix::OrdStatus::CANCELED);
+    CHECK(result.side == roq::fix::Side::BUY);
     // 60
     CHECK(result.leaves_qty == 1.0_a);
     CHECK(result.cum_qty == 0.0_a);
     CHECK(result.order_qty == 1.0_a);
-    CHECK(result.ord_type == core::fix::OrdType::LIMIT);
+    CHECK(result.ord_type == roq::fix::OrdType::LIMIT);
     CHECK(result.price == 0.5_a);
-    CHECK(result.ord_rej_reason == core::fix::OrdRejReason::BROKER_EXCHANGE_OPTION);
+    CHECK(result.ord_rej_reason == roq::fix::OrdRejReason::BROKER_EXCHANGE_OPTION);
     CHECK(result.text == "success"sv);
     CHECK(result.security_exchange == "DERIBITSERVER"sv);
     CHECK(result.symbol == "BTC-27SEP19"sv);
-    CHECK(result.qty_type == core::fix::QtyType::CONTRACTS);
+    CHECK(result.qty_type == roq::fix::QtyType::CONTRACTS);
     CHECK(result.contract_multiplier == 10.0_a);
     CHECK(result.avg_px == 0.0_a);
     CHECK(result.max_show == 1.0_a);
     CHECK(result.deribit_label == "roq;123;345"sv);
   };
-  auto bytes = core::fix::Reader<core::fix::Version::FIX_44>::dispatch(message, parser);
+  auto bytes = roq::fix::Reader<roq::fix::Version::FIX_44>::dispatch(message, parser);
   CHECK(bytes == std::size(message));
   CHECK(results == 1);
 }
@@ -64,14 +66,14 @@ TEST_CASE("fix_execution_report_parse_order_mass_status", "[fix_execution_report
   int results = 0;
   auto parser = [&](auto &message_2) {
     ++results;
-    CHECK(message_2.header.msg_type == core::fix::MsgType::EXECUTION_REPORT);
-    auto result = fix::ExecutionReport::create(message_2, buffer);
+    CHECK(message_2.header.msg_type == roq::fix::MsgType::EXECUTION_REPORT);
+    auto result = ExecutionReport::create(message_2, buffer);
     CHECK(result.mass_status_req_id == "roq-oms-005"sv);
-    CHECK(result.mass_status_req_type == core::fix::MassStatusReqType::ORDERS);
+    CHECK(result.mass_status_req_type == roq::fix::MassStatusReqType::ORDERS);
     CHECK(result.tot_num_reports == uint32_t{1});
     CHECK(result.text == "total_reports"sv);
   };
-  auto bytes = core::fix::Reader<core::fix::Version::FIX_44>::dispatch(message, parser);
+  auto bytes = roq::fix::Reader<roq::fix::Version::FIX_44>::dispatch(message, parser);
   CHECK(bytes == std::size(message));
   CHECK(results == 1);
 }
@@ -91,26 +93,26 @@ TEST_CASE("fix_execution_report_parse_fill", "[fix_execution_report]") {
   int results = 0;
   auto parser = [&](auto &message_2) {
     ++results;
-    CHECK(message_2.header.msg_type == core::fix::MsgType::EXECUTION_REPORT);
-    auto result = fix::ExecutionReport::create(message_2, buffer);
+    CHECK(message_2.header.msg_type == roq::fix::MsgType::EXECUTION_REPORT);
+    auto result = ExecutionReport::create(message_2, buffer);
     CHECK(result.order_id == "3026811591"sv);
     CHECK(result.cl_ord_id == "3026811591"sv);
     CHECK(result.orig_cl_ord_id == "roq:000000014"sv);
-    CHECK(result.exec_type == core::fix::ExecType::ORDER_STATUS);
-    CHECK(result.ord_status == core::fix::OrdStatus::FILLED);
-    CHECK(result.side == core::fix::Side::BUY);
+    CHECK(result.exec_type == roq::fix::ExecType::ORDER_STATUS);
+    CHECK(result.ord_status == roq::fix::OrdStatus::FILLED);
+    CHECK(result.side == roq::fix::Side::BUY);
     // 60
     CHECK(result.commission == -0.00000021_a);
     CHECK(result.leaves_qty == 0.0_a);
     CHECK(result.cum_qty == 1.0_a);
     CHECK(result.order_qty == 1.0_a);
-    CHECK(result.ord_type == core::fix::OrdType::LIMIT);
+    CHECK(result.ord_type == roq::fix::OrdType::LIMIT);
     CHECK(result.price == 9593.5_a);
-    CHECK(result.ord_rej_reason == core::fix::OrdRejReason::BROKER_EXCHANGE_OPTION);
+    CHECK(result.ord_rej_reason == roq::fix::OrdRejReason::BROKER_EXCHANGE_OPTION);
     CHECK(result.text == "notification"sv);
     CHECK(result.security_exchange == "DERIBITSERVER"sv);
     CHECK(result.symbol == "BTC-27DEC19"sv);
-    CHECK(result.qty_type == core::fix::QtyType::CONTRACTS);
+    CHECK(result.qty_type == roq::fix::QtyType::CONTRACTS);
     CHECK(result.contract_multiplier == 10.0_a);
     CHECK(result.avg_px == 9593.504_a);  // TODO(thraneh): why different? not just
                                          // the commission...
@@ -124,9 +126,9 @@ TEST_CASE("fix_execution_report_parse_fill", "[fix_execution_report]") {
     CHECK(item_0.fill_exec_id == "BTC-27DEC19#2350428"sv);
     CHECK(item_0.fill_px == 9593.5_a);
     CHECK(item_0.fill_qty == 1.0_a);
-    CHECK(item_0.fill_liquidity_ind == core::fix::FillLiquidityInd::MAKER);
+    CHECK(item_0.fill_liquidity_ind == roq::fix::FillLiquidityInd::MAKER);
   };
-  auto bytes = core::fix::Reader<core::fix::Version::FIX_44>::dispatch(message, parser);
+  auto bytes = roq::fix::Reader<roq::fix::Version::FIX_44>::dispatch(message, parser);
   CHECK(bytes == std::size(message));
   CHECK(results == 1);
 }

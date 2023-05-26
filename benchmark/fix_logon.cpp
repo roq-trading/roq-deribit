@@ -2,7 +2,7 @@
 
 #include <benchmark/benchmark.h>
 
-#include "roq/core/fix/reader.hpp"
+#include "roq/fix/reader.hpp"
 
 #include "roq/deribit/fix/logon.hpp"
 
@@ -11,6 +11,8 @@ using namespace roq::deribit;
 
 using namespace std::literals;
 using namespace std::chrono_literals;
+
+using Logon = deribit::fix::Logon;
 
 namespace {
 auto const MESSAGE =
@@ -23,9 +25,9 @@ auto const MESSAGE =
 
 // cppcheck-suppress constParameterCallback
 void BM_fix_logon_parse_message(benchmark::State &state) {
-  auto parser = [&](auto &message_2) { fix::Logon::create(message_2); };
+  auto parser = [&](auto &message_2) { Logon::create(message_2); };
   for (auto _ : state) {
-    core::fix::Reader<core::fix::Version::FIX_44>::dispatch(MESSAGE, parser);
+    roq::fix::Reader<roq::fix::Version::FIX_44>::dispatch(MESSAGE, parser);
   }
 }
 
@@ -38,7 +40,7 @@ void BM_fix_logon_create_message(benchmark::State &state) {
   auto sending_time = 1568702810s;
   auto raw_data = "1567874758168.y4/hA3i6qxm4yVL+3N7IrGcINVAFMLFhy4l7ATSehxc="sv;
   for (auto _ : state) {
-    auto logon = fix::Logon{
+    auto logon = Logon{
         .heart_bt_int = uint16_t{10},
         .raw_data_length = static_cast<uint32_t>(std::size(raw_data)),
         .raw_data = std::data(raw_data),
@@ -49,8 +51,8 @@ void BM_fix_logon_create_message(benchmark::State &state) {
         .deribit_app_id = {},
         .deribit_app_sig = {},
     };
-    auto header = core::fix::Header{
-        .version = core::fix::Version::FIX_44,
+    auto header = roq::fix::Header{
+        .version = roq::fix::Version::FIX_44,
         .msg_type = decltype(logon)::msg_type,
         .sender_comp_id = "ROQ_TRADING"sv,
         .target_comp_id = "DERIBITSERVER"sv,

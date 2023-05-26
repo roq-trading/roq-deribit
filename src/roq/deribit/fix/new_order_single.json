@@ -11,7 +11,7 @@
     {
       "tag": 54,
       "name": "Side",
-      "type": "roq::core::fix::Side",
+      "type": "roq::fix::Side",
       "required": true
     },
     {
@@ -40,12 +40,12 @@
     {
       "tag": 40,
       "name": "OrdType",
-      "type": "roq::core::fix::OrdType"
+      "type": "roq::fix::OrdType"
     },
     {
       "tag": 59,
       "name": "TimeInForce",
-      "type": "roq::core::fix::TimeInForce"
+      "type": "roq::fix::TimeInForce"
     },
     {
       "tag": 100010,

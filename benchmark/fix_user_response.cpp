@@ -2,7 +2,7 @@
 
 #include <benchmark/benchmark.h>
 
-#include "roq/core/fix/reader.hpp"
+#include "roq/fix/reader.hpp"
 
 #include "roq/deribit/fix/user_response.hpp"
 
@@ -10,6 +10,8 @@ using namespace roq;
 using namespace roq::deribit;
 
 using namespace std::literals;
+
+using UserResponse = deribit::fix::UserResponse;
 
 namespace {
 auto const MESSAGE =
@@ -24,12 +26,12 @@ auto const MESSAGE =
 void BM_fix_user_response_parse_message(benchmark::State &state) {
   uint64_t processed = 0;
   auto parser = [&](auto &message_2) {
-    auto user_response = fix::UserResponse::create(message_2);
+    auto user_response = UserResponse::create(message_2);
     if (!std::empty(user_response.user_request_id))
       ++processed;
   };
   for (auto _ : state) {
-    core::fix::Reader<core::fix::Version::FIX_44>::dispatch(MESSAGE, parser);
+    roq::fix::Reader<roq::fix::Version::FIX_44>::dispatch(MESSAGE, parser);
   }
 }
 

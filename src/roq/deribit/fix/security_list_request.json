@@ -11,13 +11,13 @@
     {
       "tag": 559,
       "name": "SecurityListRequestType",
-      "type": "roq::core::fix::SecurityListRequestType",
+      "type": "roq::fix::SecurityListRequestType",
       "required": true
     },
     {
       "tag": 263,
       "name": "SubscriptionRequestType",
-      "type": "roq::core::fix::SubscriptionRequestType",
+      "type": "roq::fix::SubscriptionRequestType",
       "required": true
     }
   ]

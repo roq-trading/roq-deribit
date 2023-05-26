@@ -21,7 +21,7 @@
     {
       "tag": 201,
       "name": "PutOrCall",
-      "type": "roq::core::fix::PutOrCall"
+      "type": "roq::fix::PutOrCall"
     },
     {
       "tag": 100090,

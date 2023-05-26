@@ -78,18 +78,18 @@ struct MarketData final : public io::net::ConnectionManager::Handler {
 
   void subscribe(size_t start_from = 0);
 
-  void operator()(Trace<fix::Heartbeat> const &, core::fix::Header const &);
-  void operator()(Trace<fix::Logon> const &, core::fix::Header const &);
-  void operator()(Trace<fix::Logout> const &, core::fix::Header const &);
-  void operator()(Trace<fix::ResendRequest> const &, core::fix::Header const &);
-  void operator()(Trace<fix::TestRequest> const &, core::fix::Header const &);
+  void operator()(Trace<fix::Heartbeat> const &, roq::fix::Header const &);
+  void operator()(Trace<fix::Logon> const &, roq::fix::Header const &);
+  void operator()(Trace<fix::Logout> const &, roq::fix::Header const &);
+  void operator()(Trace<fix::ResendRequest> const &, roq::fix::Header const &);
+  void operator()(Trace<fix::TestRequest> const &, roq::fix::Header const &);
 
-  void operator()(Trace<fix::SecurityList> const &, core::fix::Header const &);
-  void operator()(Trace<fix::SecurityStatus> const &, core::fix::Header const &);
+  void operator()(Trace<fix::SecurityList> const &, roq::fix::Header const &);
+  void operator()(Trace<fix::SecurityStatus> const &, roq::fix::Header const &);
 
-  void operator()(Trace<fix::MarketDataIncrementalRefresh> const &, core::fix::Header const &);
-  void operator()(Trace<fix::MarketDataRequestReject> const &, core::fix::Header const &);
-  void operator()(Trace<fix::MarketDataSnapshotFullRefresh> const &, core::fix::Header const &);
+  void operator()(Trace<fix::MarketDataIncrementalRefresh> const &, roq::fix::Header const &);
+  void operator()(Trace<fix::MarketDataRequestReject> const &, roq::fix::Header const &);
+  void operator()(Trace<fix::MarketDataSnapshotFullRefresh> const &, roq::fix::Header const &);
 
  protected:
   void operator()(io::net::ConnectionManager::Connected const &) override;
@@ -113,8 +113,8 @@ struct MarketData final : public io::net::ConnectionManager::Handler {
 
   void resubscribe(std::string_view const &symbol);
 
-  void parse(Trace<core::fix::Message> const &);
-  void parse_helper(Trace<core::fix::Message> const &);
+  void parse(Trace<roq::fix::Message> const &);
+  void parse_helper(Trace<roq::fix::Message> const &);
 
   // utilities
 
@@ -124,7 +124,7 @@ struct MarketData final : public io::net::ConnectionManager::Handler {
   template <typename T>
   void send(T const &event, std::chrono::nanoseconds sending_time);
 
-  void check(core::fix::Header const &);
+  void check(roq::fix::Header const &);
 
  private:
   Handler &handler_;

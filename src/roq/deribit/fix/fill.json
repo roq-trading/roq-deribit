@@ -20,7 +20,7 @@
     {
       "tag": 1443,
       "name": "FillLiquidityInd",
-      "type": "roq::core::fix::FillLiquidityInd"
+      "type": "roq::fix::FillLiquidityInd"
     }
   ]
 }

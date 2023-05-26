@@ -2,7 +2,7 @@
 
 #include <catch2/catch_all.hpp>
 
-#include "roq/core/fix/reader.hpp"
+#include "roq/fix/reader.hpp"
 
 #include "roq/deribit/fix/logon.hpp"
 
@@ -14,6 +14,8 @@ using namespace std::chrono_literals;
 
 using namespace Catch::literals;
 
+using Logon = deribit::fix::Logon;
+
 TEST_CASE("fix_logon_parse_message", "[fix_logon]") {
   auto const message =
       "8=FIX.4.4\0019=211\00135=A\00149=DERIBITSERVER\00156=ROQ_TRADI"
@@ -24,8 +26,8 @@ TEST_CASE("fix_logon_parse_message", "[fix_logon]") {
   int results = 0;
   auto parser = [&](auto &message_2) {
     ++results;
-    CHECK(message_2.header.msg_type == core::fix::MsgType::LOGON);
-    auto result = fix::Logon::create(message_2);
+    CHECK(message_2.header.msg_type == roq::fix::MsgType::LOGON);
+    auto result = Logon::create(message_2);
     CHECK(result.heart_bt_int == uint32_t{10});
     CHECK(result.raw_data == "1567874758168.y4/hA3i6qxm4yVL+3N7IrGcINVAFMLFhy4l7ATSehxc="sv);
     CHECK(result.username == "5MP40u9h"sv);
@@ -33,7 +35,7 @@ TEST_CASE("fix_logon_parse_message", "[fix_logon]") {
     CHECK(result.cancel_on_disconnect == true);
     CHECK(result.use_wordsafe_tags == false);
   };
-  auto bytes = core::fix::Reader<core::fix::Version::FIX_44>::dispatch(message, parser);
+  auto bytes = roq::fix::Reader<roq::fix::Version::FIX_44>::dispatch(message, parser);
   CHECK(bytes == std::size(message));
   CHECK(results == 1);
 }
@@ -43,7 +45,7 @@ TEST_CASE("fix_logon_create_message", "[fix_logon]") {
   uint64_t msg_seq_num = 0;
   auto sending_time = 1568702810s;
   std::string_view raw_data = "1567874758168.y4/hA3i6qxm4yVL+3N7IrGcINVAFMLFhy4l7ATSehxc="sv;
-  auto logon = fix::Logon{
+  auto logon = Logon{
       .heart_bt_int = uint16_t{10},
       .raw_data_length = static_cast<uint32_t>(std::size(raw_data)),
       .raw_data = std::data(raw_data),
@@ -54,8 +56,8 @@ TEST_CASE("fix_logon_create_message", "[fix_logon]") {
       .deribit_app_id = {},
       .deribit_app_sig = {},
   };
-  auto header = core::fix::Header{
-      .version = core::fix::Version::FIX_44,
+  auto header = roq::fix::Header{
+      .version = roq::fix::Version::FIX_44,
       .msg_type = decltype(logon)::msg_type,
       .sender_comp_id = "ROQ_TRADING"sv,
       .target_comp_id = "DERIBITSERVER"sv,

@@ -5,7 +5,7 @@
     {
       "tag": 269,
       "name": "MDEntryType",
-      "type": "roq::core::fix::MDEntryType",
+      "type": "roq::fix::MDEntryType",
       "required": true
     }
   ]

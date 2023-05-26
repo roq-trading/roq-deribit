@@ -5,7 +5,7 @@
     {
       "tag": 703,
       "name": "PosType",
-      "type": "roq::core::fix::PosType",
+      "type": "roq::fix::PosType",
       "required": true
     },
     {
@@ -27,7 +27,7 @@
     {
       "tag": 854,
       "name": "QtyType",
-      "type": "roq::core::fix::QtyType",
+      "type": "roq::fix::QtyType",
       "custom": true
     },
     {
@@ -45,7 +45,7 @@
     {
       "tag": 54,
       "name": "Side",
-      "type": "roq::core::fix::Side",
+      "type": "roq::fix::Side",
       "custom": true
     },
     {

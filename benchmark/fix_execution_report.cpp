@@ -2,7 +2,7 @@
 
 #include <benchmark/benchmark.h>
 
-#include "roq/core/fix/reader.hpp"
+#include "roq/fix/reader.hpp"
 
 #include "roq/deribit/fix/execution_report.hpp"
 
@@ -10,6 +10,8 @@ using namespace roq;
 using namespace roq::deribit;
 
 using namespace std::literals;
+
+using ExecutionReport = deribit::fix::ExecutionReport;
 
 namespace {
 auto const MESSAGE =
@@ -27,12 +29,12 @@ void BM_fix_execution_report_parse_message(benchmark::State &state) {
   std::vector<std::byte> buffer(8192);
   uint64_t processed = 0;
   auto parser = [&](auto &message_2) {
-    auto result = fix::ExecutionReport::create(message_2, buffer);
+    auto result = ExecutionReport::create(message_2, buffer);
     if (!std::empty(result.order_id))
       ++processed;
   };
   for (auto _ : state) {
-    core::fix::Reader<core::fix::Version::FIX_44>::dispatch(MESSAGE, parser);
+    roq::fix::Reader<roq::fix::Version::FIX_44>::dispatch(MESSAGE, parser);
   }
 }
 

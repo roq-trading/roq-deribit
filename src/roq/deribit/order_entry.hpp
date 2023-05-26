@@ -78,18 +78,18 @@ struct OrderEntry final : public io::net::ConnectionManager::Handler {
 
   void operator()(metrics::Writer &);
 
-  void operator()(Trace<fix::Heartbeat> const &, core::fix::Header const &);
-  void operator()(Trace<fix::Logon> const &, core::fix::Header const &);
-  void operator()(Trace<fix::Logout> const &, core::fix::Header const &);
-  void operator()(Trace<fix::ResendRequest> const &, core::fix::Header const &);
-  void operator()(Trace<fix::TestRequest> const &, core::fix::Header const &);
+  void operator()(Trace<fix::Heartbeat> const &, roq::fix::Header const &);
+  void operator()(Trace<fix::Logon> const &, roq::fix::Header const &);
+  void operator()(Trace<fix::Logout> const &, roq::fix::Header const &);
+  void operator()(Trace<fix::ResendRequest> const &, roq::fix::Header const &);
+  void operator()(Trace<fix::TestRequest> const &, roq::fix::Header const &);
 
-  void operator()(Trace<fix::PositionReport> const &, core::fix::Header const &);
+  void operator()(Trace<fix::PositionReport> const &, roq::fix::Header const &);
 
-  void operator()(Trace<fix::ExecutionReport> const &, core::fix::Header const &);
-  void operator()(Trace<fix::OrderCancelReject> const &, core::fix::Header const &);
-  void operator()(Trace<fix::Reject> const &, core::fix::Header const &);
-  void operator()(Trace<fix::OrderMassCancelReport> const &, core::fix::Header const &);
+  void operator()(Trace<fix::ExecutionReport> const &, roq::fix::Header const &);
+  void operator()(Trace<fix::OrderCancelReject> const &, roq::fix::Header const &);
+  void operator()(Trace<fix::Reject> const &, roq::fix::Header const &);
+  void operator()(Trace<fix::OrderMassCancelReport> const &, roq::fix::Header const &);
 
  protected:
   void operator()(io::net::ConnectionManager::Connected const &) override;
@@ -109,8 +109,8 @@ struct OrderEntry final : public io::net::ConnectionManager::Handler {
   void subscribe_positions();
   void download_orders();
 
-  void parse(Trace<core::fix::Message> const &);
-  void parse_helper(Trace<core::fix::Message> const &);
+  void parse(Trace<roq::fix::Message> const &);
+  void parse_helper(Trace<roq::fix::Message> const &);
 
   // utilities
 
@@ -121,7 +121,7 @@ struct OrderEntry final : public io::net::ConnectionManager::Handler {
   std::tuple<uint64_t, std::chrono::nanoseconds, std::chrono::nanoseconds> send(
       T const &event, std::chrono::nanoseconds sending_time);
 
-  void check(core::fix::Header const &);
+  void check(roq::fix::Header const &);
 
  private:
   Handler &handler_;

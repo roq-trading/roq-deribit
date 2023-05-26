@@ -16,12 +16,12 @@
     {
       "tag": 724,
       "name": "PosReqType",
-      "type": "roq::core::fix::PosReqType"
+      "type": "roq::fix::PosReqType"
     },
     {
       "tag": 728,
       "name": "PosReqResult",
-      "type": "roq::core::fix::PosReqResult"
+      "type": "roq::fix::PosReqResult"
     },
     {
       "tag": 702,

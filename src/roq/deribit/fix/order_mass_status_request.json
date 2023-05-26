@@ -11,7 +11,7 @@
     {
       "tag": 585,
       "name": "MassStatusReqType",
-      "type": "roq::core::fix::MassStatusReqType",
+      "type": "roq::fix::MassStatusReqType",
       "required": true
     }
   ]

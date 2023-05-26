@@ -14,12 +14,14 @@
 #include "roq/debug/fix/message.hpp"
 #include "roq/debug/hex/message.hpp"
 
+#include "roq/core/charconv.hpp"
+
 #include "roq/core/charconv/datetime.hpp"
 
 #include "roq/core/metrics/factory.hpp"
 
-#include "roq/core/fix/reader.hpp"
-#include "roq/core/fix/utils.hpp"
+#include "roq/fix/reader.hpp"
+#include "roq/fix/utils.hpp"
 
 #include "roq/deribit/common.hpp"
 
@@ -94,7 +96,7 @@ struct create_metrics final : public core::metrics::Factory {
 
 void validate(auto const &value) {
   switch (value.md_update_action) {
-    using enum core::fix::MDUpdateAction;
+    using enum roq::fix::MDUpdateAction;
     case UNKNOWN:
       break;
     case NEW:
@@ -104,7 +106,12 @@ void validate(auto const &value) {
       // assert(utils::is_greater(value.md_entry_size, 0.0));
       break;
     case DELETE:
-      assert(utils::is_zero(value.md_entry_size));
+#ifndef NDEBUG
+      if (!utils::is_zero(value.md_entry_size)) {
+        log::error("md_entry={}"sv, value);
+      }
+#endif
+      // assert(utils::is_zero(value.md_entry_size));
       break;
     case DELETE_THRU:
     case DELETE_FROM:
@@ -128,7 +135,7 @@ void emplace_back(T &result, auto const &value) {
     result.emplace_back(std::move(mbp_update));
   } else if constexpr (std::is_same<value_type, Trade>::value) {
     auto trade = Trade{
-        .side = core::fix::map(value.side),
+        .side = roq::fix::map(value.side),
         .price = value.md_entry_px,
         .quantity = value.md_entry_size,
         .trade_id = value.deribit_trade_id,
@@ -249,7 +256,7 @@ void MarketData::operator()(io::net::ConnectionManager::Read const &) {
   try {
     size_t total_bytes = 0;
     while (!std::empty(buffer)) {
-      auto bytes = core::fix::Reader<FIX_VERSION>::dispatch(buffer, parse_message, log_message);
+      auto bytes = roq::fix::Reader<FIX_VERSION>::dispatch(buffer, parse_message, log_message);
       if (bytes == 0)
         break;
       assert(bytes <= std::size(buffer));
@@ -378,8 +385,8 @@ void MarketData::download_securities() {
   auto request_id = shared_.next_request_id();
   auto security_list_request = fix::SecurityListRequest{
       .security_req_id = request_id,
-      .security_list_request_type = core::fix::SecurityListRequestType::ALL_SECURITIES,
-      .subscription_request_type = core::fix::SubscriptionRequestType::SNAPSHOT_UPDATES,
+      .security_list_request_type = roq::fix::SecurityListRequestType::ALL_SECURITIES,
+      .subscription_request_type = roq::fix::SubscriptionRequestType::SNAPSHOT_UPDATES,
   };
   send(security_list_request);
 }
@@ -408,11 +415,11 @@ void MarketData::subscribe(std::span<Symbol const> const &symbols) {
   log::info("Subscribe symbols=[{}]"sv, fmt::join(symbols, ","sv));
   auto market_depth = shared_.settings.fix.market_data_market_depth;
   auto md_update_type =
-      market_depth ? core::fix::MDUpdateType::INCREMENTAL_REFRESH : core::fix::MDUpdateType::FULL_REFRESH;
+      market_depth ? roq::fix::MDUpdateType::INCREMENTAL_REFRESH : roq::fix::MDUpdateType::FULL_REFRESH;
   fix::MDReq md_entry_types[] = {
-      {.md_entry_type = core::fix::MDEntryType::BID},
-      {.md_entry_type = core::fix::MDEntryType::OFFER},
-      {.md_entry_type = core::fix::MDEntryType::TRADE},
+      {.md_entry_type = roq::fix::MDEntryType::BID},
+      {.md_entry_type = roq::fix::MDEntryType::OFFER},
+      {.md_entry_type = roq::fix::MDEntryType::TRADE},
   };
   // deribit has acknowledged a limit on # of symbols per request
   auto max_size = shared_.settings.fix.market_data_request_max_size ? shared_.settings.fix.market_data_request_max_size
@@ -430,7 +437,7 @@ void MarketData::subscribe(std::span<Symbol const> const &symbols) {
     auto request_id = shared_.next_request_id();
     auto market_data_request = fix::MarketDataRequest{
         .md_req_id = request_id,
-        .subscription_request_type = core::fix::SubscriptionRequestType::SNAPSHOT_UPDATES,
+        .subscription_request_type = roq::fix::SubscriptionRequestType::SNAPSHOT_UPDATES,
         .market_depth = market_depth,
         .md_update_type = md_update_type,
         .deribit_trade_amount = {},     // 0=none
@@ -446,9 +453,9 @@ void MarketData::unsubscribe(std::span<Symbol const> const &symbols) {
   log::info("Unsubscribe market data"sv);
   assert(!std::empty(symbols));
   fix::MDReq md_entry_types[] = {
-      {.md_entry_type = core::fix::MDEntryType::BID},
-      {.md_entry_type = core::fix::MDEntryType::OFFER},
-      {.md_entry_type = core::fix::MDEntryType::TRADE},
+      {.md_entry_type = roq::fix::MDEntryType::BID},
+      {.md_entry_type = roq::fix::MDEntryType::OFFER},
+      {.md_entry_type = roq::fix::MDEntryType::TRADE},
   };
   // deribit has acknowledged a limit on # of symbols per request
   auto max_size = shared_.settings.fix.market_data_request_max_size ? shared_.settings.fix.market_data_request_max_size
@@ -466,7 +473,7 @@ void MarketData::unsubscribe(std::span<Symbol const> const &symbols) {
     auto request_id = shared_.next_request_id();
     auto market_data_request = fix::MarketDataRequest{
         .md_req_id = request_id,
-        .subscription_request_type = core::fix::SubscriptionRequestType::UNSUBSCRIBE,
+        .subscription_request_type = roq::fix::SubscriptionRequestType::UNSUBSCRIBE,
         .market_depth = {},
         .md_update_type = {},
         .deribit_trade_amount = {},
@@ -491,15 +498,15 @@ void MarketData::resubscribe(std::string_view const &symbol) {
   subscribe(symbols);
 }
 
-void MarketData::parse(Trace<core::fix::Message> const &event) {
+void MarketData::parse(Trace<roq::fix::Message> const &event) {
   profile_.parse([&]() { parse_helper(event); });
 }
 
-void MarketData::parse_helper(Trace<core::fix::Message> const &event) {
+void MarketData::parse_helper(Trace<roq::fix::Message> const &event) {
   auto &trace_info = event.trace_info;
   auto &message = event.value;
   switch (message.header.msg_type) {
-    using enum core::fix::MsgType;
+    using enum roq::fix::MsgType;
     // session
     case HEARTBEAT: {
       auto heartbeat = fix::Heartbeat::create(message);
@@ -568,7 +575,7 @@ void MarketData::parse_helper(Trace<core::fix::Message> const &event) {
   }
 }
 
-void MarketData::operator()(Trace<fix::Heartbeat> const &event, core::fix::Header const &header) {
+void MarketData::operator()(Trace<fix::Heartbeat> const &event, roq::fix::Header const &header) {
   auto now = clock::get_system();
   auto &[trace_info, heartbeat] = event;
   log::info<3>("event={{header={}, heartbeat={}}}"sv, header, heartbeat);
@@ -586,14 +593,14 @@ void MarketData::operator()(Trace<fix::Heartbeat> const &event, core::fix::Heade
   }
 }
 
-void MarketData::operator()(Trace<fix::Logon> const &event, core::fix::Header const &header) {
+void MarketData::operator()(Trace<fix::Logon> const &event, roq::fix::Header const &header) {
   auto &[trace_info, logon] = event;
   log::info<2>("event={{header={}, logon={}}}"sv, header, logon);
   (*this)(ConnectionStatus::DOWNLOADING);
   download_.begin();
 }
 
-void MarketData::operator()(Trace<fix::Logout> const &event, core::fix::Header const &header) {
+void MarketData::operator()(Trace<fix::Logout> const &event, roq::fix::Header const &header) {
   auto &[trace_info, logout] = event;
   log::warn("event={{header={}, logout={}}}"sv, header, logout);
   (*this)(ConnectionStatus::LOGGED_OUT);
@@ -604,20 +611,20 @@ void MarketData::operator()(Trace<fix::Logout> const &event, core::fix::Header c
   (*connection_manager_).close();
 }
 
-void MarketData::operator()(Trace<fix::ResendRequest> const &event, core::fix::Header const &header) {
+void MarketData::operator()(Trace<fix::ResendRequest> const &event, roq::fix::Header const &header) {
   auto &[trace_info, resend_request] = event;
   log::warn("event={{header={}, resend_request={}}}"sv, header, resend_request);
   log::info("closing connection"sv);
   (*connection_manager_).close();
 }
 
-void MarketData::operator()(Trace<fix::TestRequest> const &event, core::fix::Header const &header) {
+void MarketData::operator()(Trace<fix::TestRequest> const &event, roq::fix::Header const &header) {
   auto &[trace_info, test_request] = event;
   log::info<1>("event={{header={}, test_request={}}}"sv, header, test_request);
   send_heartbeat(test_request.test_req_id);
 }
 
-void MarketData::operator()(Trace<fix::SecurityList> const &event, core::fix::Header const &header) {
+void MarketData::operator()(Trace<fix::SecurityList> const &event, roq::fix::Header const &header) {
   auto &[trace_info, security_list] = event;
   log::info<2>("event={{header={}, security_list={}}}"sv, header, security_list);
   (*connection_manager_).touch(trace_info.source_receive_time);
@@ -633,7 +640,7 @@ void MarketData::operator()(Trace<fix::SecurityList> const &event, core::fix::He
       auto &symbol = instrument.symbol;
       auto discard = shared_.discard_symbol(symbol);
       auto security_type = fix::map_security_type(instrument.security_type);
-      auto option_type = core::fix::map(instrument.put_or_call);
+      auto option_type = roq::fix::map(instrument.put_or_call);
       auto expiry_datetime = combine(
           instrument.maturity_date,
           core::charconv::time_from_string<std::chrono::milliseconds>(instrument.maturity_time));
@@ -684,13 +691,13 @@ void MarketData::operator()(Trace<fix::SecurityList> const &event, core::fix::He
   download_.check_relaxed(MarketDataState::SECURITIES);
 }
 
-void MarketData::operator()(Trace<fix::SecurityStatus> const &event, core::fix::Header const &header) {
+void MarketData::operator()(Trace<fix::SecurityStatus> const &event, roq::fix::Header const &header) {
   auto &[trace_info, security_status] = event;
   log::info<2>("event={{header={}, security_status={}}}"sv, header, security_status);
   // XXX should we use it or not?
 }
 
-void MarketData::operator()(Trace<fix::MarketDataIncrementalRefresh> const &event, core::fix::Header const &header) {
+void MarketData::operator()(Trace<fix::MarketDataIncrementalRefresh> const &event, roq::fix::Header const &header) {
   auto &trace_info = event.trace_info;
   auto &market_data_incremental_refresh = event.value;
   log::info<3>("event={{header={}, market_data_incremental_refresh={}}}"sv, header, market_data_incremental_refresh);
@@ -724,7 +731,7 @@ void MarketData::operator()(Trace<fix::MarketDataIncrementalRefresh> const &even
     if (exchange_time_utc < item.md_entry_date)
       exchange_time_utc = item.md_entry_date;
     switch (item.md_entry_type) {
-      using enum core::fix::MDEntryType;
+      using enum roq::fix::MDEntryType;
       case BID:
         validate(item);
         emplace_back(mbp.bids, item);
@@ -813,14 +820,14 @@ void MarketData::operator()(Trace<fix::MarketDataIncrementalRefresh> const &even
   }
 }
 
-void MarketData::operator()(Trace<fix::MarketDataRequestReject> const &event, core::fix::Header const &header) {
+void MarketData::operator()(Trace<fix::MarketDataRequestReject> const &event, roq::fix::Header const &header) {
   auto &[trace_info, market_data_request_reject] = event;
   log::warn<1>("event={{header={}, market_data_request_reject={}}}"sv, header, market_data_request_reject);
   if (shared_.settings.fix.terminate_on_market_data_request_reject)
     log::fatal("Unexpected"sv);
 }
 
-void MarketData::operator()(Trace<fix::MarketDataSnapshotFullRefresh> const &event, core::fix::Header const &header) {
+void MarketData::operator()(Trace<fix::MarketDataSnapshotFullRefresh> const &event, roq::fix::Header const &header) {
   auto &[trace_info, market_data_snapshot_full_refresh] = event;
   log::info<3>(
       "event={{header={}, market_data_snapshot_full_refresh={}}}"sv, header, market_data_snapshot_full_refresh);
@@ -838,7 +845,7 @@ void MarketData::operator()(Trace<fix::MarketDataSnapshotFullRefresh> const &eve
     if (exchange_time_utc < item.md_entry_date)
       exchange_time_utc = item.md_entry_date;
     switch (item.md_entry_type) {
-      using enum core::fix::MDEntryType;
+      using enum roq::fix::MDEntryType;
       case BID:
         validate(item);
         emplace_back(mbp.bids, item);
@@ -925,7 +932,7 @@ void MarketData::send(T const &event) {
 
 template <typename T>
 void MarketData::send(T const &event, std::chrono::nanoseconds sending_time) {
-  auto header = core::fix::Header{
+  auto header = roq::fix::Header{
       .version = FIX_VERSION,
       .msg_type = T::msg_type,
       .sender_comp_id = SENDER_COMP_ID,
@@ -943,7 +950,7 @@ void MarketData::send(T const &event, std::chrono::nanoseconds sending_time) {
   (*connection_manager_).send(message);
 }
 
-void MarketData::check(core::fix::Header const &header) {
+void MarketData::check(roq::fix::Header const &header) {
   auto current = header.msg_seq_num;
   auto expected = inbound_.msg_seq_num + 1;
   if (current != expected) [[unlikely]] {

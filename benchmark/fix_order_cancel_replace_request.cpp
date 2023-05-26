@@ -10,25 +10,27 @@ using namespace roq::deribit;
 using namespace std::literals;
 using namespace std::chrono_literals;
 
+using OrderCancelReplaceRequest = deribit::fix::OrderCancelReplaceRequest;
+
 void BM_fix_order_cancel_replace_request_create_message(
     benchmark::State &state) {  // cppcheck-suppress constParameterCallback
   std::vector<std::byte> buffer(4096);
   uint64_t msg_seq_num = 0;
   auto sending_time = 1568702810s;
   for (auto _ : state) {
-    auto order_cancel_replace_request = fix::OrderCancelReplaceRequest{
+    auto order_cancel_replace_request = OrderCancelReplaceRequest{
         .orig_cl_ord_id = "123"sv,
         .cl_ord_id = "123"sv,
         .transact_time = sending_time,
-        .side = core::fix::Side::BUY,
+        .side = roq::fix::Side::BUY,
         .order_qty = {1.0, utils::to_decimals(1)},
-        .ord_type = core::fix::OrdType::LIMIT,
+        .ord_type = roq::fix::OrdType::LIMIT,
         .price = {123.45, utils::to_decimals(2)},
         .symbol = "BTC-27SEP19"sv,
         .exec_inst = {},
     };
-    auto header = core::fix::Header{
-        .version = core::fix::Version::FIX_44,
+    auto header = roq::fix::Header{
+        .version = roq::fix::Version::FIX_44,
         .msg_type = decltype(order_cancel_replace_request)::msg_type,
         .sender_comp_id = "ROQ_TRADING"sv,
         .target_comp_id = "DERIBITSERVER"sv,

@@ -2,7 +2,7 @@
 
 #include <benchmark/benchmark.h>
 
-#include "roq/core/fix/reader.hpp"
+#include "roq/fix/reader.hpp"
 
 #include "roq/deribit/fix/market_data_incremental_refresh.hpp"
 
@@ -10,6 +10,8 @@ using namespace roq;
 using namespace roq::deribit;
 
 using namespace std::literals;
+
+using MarketDataIncrementalRefresh = deribit::fix::MarketDataIncrementalRefresh;
 
 namespace {
 auto const message_1 =
@@ -42,12 +44,12 @@ void BM_fix_market_data_increment_refresh_parse_message_1(
   std::vector<std::byte> buffer(8192);
   uint64_t processed = 0;
   auto parser = [&](auto &message_2) {
-    auto result = fix::MarketDataIncrementalRefresh::create(message_2, buffer);
+    auto result = MarketDataIncrementalRefresh::create(message_2, buffer);
     if (!std::empty(result.md_req_id))
       ++processed;
   };
   for (auto _ : state) {
-    core::fix::Reader<core::fix::Version::FIX_44>::dispatch(message_1, parser);
+    roq::fix::Reader<roq::fix::Version::FIX_44>::dispatch(message_1, parser);
   }
 }
 
@@ -58,12 +60,12 @@ void BM_fix_market_data_increment_refresh_parse_message_2(
   std::vector<std::byte> buffer(8192);
   uint64_t processed = 0;
   auto parser = [&](auto &message_2) {
-    auto result = fix::MarketDataIncrementalRefresh::create(message_2, buffer);
+    auto result = MarketDataIncrementalRefresh::create(message_2, buffer);
     if (!std::empty(result.md_req_id))
       ++processed;
   };
   for (auto _ : state) {
-    core::fix::Reader<core::fix::Version::FIX_44>::dispatch(message_2, parser);
+    roq::fix::Reader<roq::fix::Version::FIX_44>::dispatch(message_2, parser);
   }
 }
 

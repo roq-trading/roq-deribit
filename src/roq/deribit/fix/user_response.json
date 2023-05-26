@@ -17,7 +17,7 @@
     {
       "tag": 926,
       "name": "UserStatus",
-      "type": "roq::core::fix::UserStatus"
+      "type": "roq::fix::UserStatus"
     },
     {
       "tag": 15,

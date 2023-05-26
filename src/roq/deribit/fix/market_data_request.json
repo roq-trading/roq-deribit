@@ -11,7 +11,7 @@
     {
       "tag": 263,
       "name": "SubscriptionRequestType",
-      "type": "roq::core::fix::SubscriptionRequestType",
+      "type": "roq::fix::SubscriptionRequestType",
       "required": true
     },
     {
@@ -22,7 +22,7 @@
     {
       "tag": 265,
       "name": "MDUpdateType",
-      "type": "roq::core::fix::MDUpdateType"
+      "type": "roq::fix::MDUpdateType"
     },
     {
       "tag": 100007,

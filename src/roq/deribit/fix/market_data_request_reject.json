@@ -16,7 +16,7 @@
     {
       "tag": 281,
       "name": "MDReqRejReason",
-      "type": "roq::core::fix::MDReqRejReason",
+      "type": "roq::fix::MDReqRejReason",
       "required": true
     }
   ]

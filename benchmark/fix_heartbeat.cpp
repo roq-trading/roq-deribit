@@ -2,7 +2,7 @@
 
 #include <benchmark/benchmark.h>
 
-#include "roq/core/fix/reader.hpp"
+#include "roq/fix/reader.hpp"
 
 #include "roq/deribit/fix/heartbeat.hpp"
 
@@ -10,6 +10,8 @@ using namespace roq;
 using namespace roq::deribit;
 
 using namespace std::literals;
+
+using Heartbeat = deribit::fix::Heartbeat;
 
 namespace {
 auto const MESSAGE =
@@ -22,12 +24,12 @@ auto const MESSAGE =
 void BM_fix_heartbeat_parse_message(benchmark::State &state) {
   uint64_t processed = 0;
   auto parser = [&](auto &message_2) {
-    auto heartbeat = fix::Heartbeat::create(message_2);
+    auto heartbeat = Heartbeat::create(message_2);
     if (std::empty(heartbeat.test_req_id))
       ++processed;
   };
   for (auto _ : state) {
-    core::fix::Reader<core::fix::Version::FIX_44>::dispatch(MESSAGE, parser);
+    roq::fix::Reader<roq::fix::Version::FIX_44>::dispatch(MESSAGE, parser);
   }
 }
 

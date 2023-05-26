@@ -17,13 +17,13 @@
     {
       "tag": 39,
       "name": "OrdStatus",
-      "type": "roq::core::fix::OrdStatus",
+      "type": "roq::fix::OrdStatus",
       "required": true
     },
     {
       "tag": 54,
       "name": "Side",
-      "type": "roq::core::fix::Side",
+      "type": "roq::fix::Side",
       "required": true
     },
     {
@@ -58,7 +58,7 @@
     {
       "tag": 40,
       "name": "OrdType",
-      "type": "roq::core::fix::OrdType",
+      "type": "roq::fix::OrdType",
       "required": true
     },
     {
@@ -80,7 +80,7 @@
     {
       "tag": 103,
       "name": "OrdRejReason",
-      "type": "roq::core::fix::OrdRejReason",
+      "type": "roq::fix::OrdRejReason",
       "required": true
     },
     {
@@ -102,7 +102,7 @@
     {
       "tag": 854,
       "name": "QtyType",
-      "type": "roq::core::fix::QtyType"
+      "type": "roq::fix::QtyType"
     },
     {
       "tag": 231,
@@ -158,7 +158,7 @@
     {
       "tag": 585,
       "name": "MassStatusReqType",
-      "type": "roq::core::fix::MassStatusReqType",
+      "type": "roq::fix::MassStatusReqType",
       "custom": true
     },
     {
@@ -175,7 +175,7 @@
     {
       "tag": 150,
       "name": "ExecType",
-      "type": "roq::core::fix::ExecType"
+      "type": "roq::fix::ExecType"
     },
     {
       "tag": 37,

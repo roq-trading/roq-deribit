@@ -16,7 +16,7 @@
     {
       "tag": 372,
       "name": "RefMsgType",
-      "type": "roq::core::fix::MsgType"
+      "type": "roq::fix::MsgType"
     },
     {
       "tag": 373,

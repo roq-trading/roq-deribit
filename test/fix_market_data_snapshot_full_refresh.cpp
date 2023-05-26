@@ -2,7 +2,7 @@
 
 #include <catch2/catch_all.hpp>
 
-#include "roq/core/fix/reader.hpp"
+#include "roq/fix/reader.hpp"
 
 #include "roq/deribit/fix/market_data_snapshot_full_refresh.hpp"
 
@@ -12,6 +12,8 @@ using namespace roq::deribit;
 using namespace std::literals;
 
 using namespace Catch::literals;
+
+using MarketDataSnapshotFullRefresh = deribit::fix::MarketDataSnapshotFullRefresh;
 
 TEST_CASE("fix_market_data_snapshot_full_refresh_parse_message", "fix_market_data_snapshot_full_refresh") {
   auto const message =
@@ -175,8 +177,8 @@ TEST_CASE("fix_market_data_snapshot_full_refresh_parse_message", "fix_market_dat
   int results = 0;
   auto parser = [&](auto &message_2) {
     ++results;
-    CHECK(message_2.header.msg_type == core::fix::MsgType::MARKET_DATA_SNAPSHOT_FULL_REFRESH);
-    /*auto market_data =*/fix::MarketDataSnapshotFullRefresh::create(message_2, buffer);
+    CHECK(message_2.header.msg_type == roq::fix::MsgType::MARKET_DATA_SNAPSHOT_FULL_REFRESH);
+    /*auto market_data =*/MarketDataSnapshotFullRefresh::create(message_2, buffer);
     /*
     CHECK(result.heart_bt_int == uint32_t{10});
     EXPECT_EQ(result.raw_data,
@@ -188,7 +190,7 @@ TEST_CASE("fix_market_data_snapshot_full_refresh_parse_message", "fix_market_dat
     CHECK(result.deribit_use_wordsafe_tags == false);
     */
   };
-  auto bytes = core::fix::Reader<core::fix::Version::FIX_44>::dispatch(message, parser);
+  auto bytes = roq::fix::Reader<roq::fix::Version::FIX_44>::dispatch(message, parser);
   CHECK(bytes == std::size(message));
   CHECK(results == 1);
 }

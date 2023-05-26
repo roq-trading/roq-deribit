@@ -10,18 +10,20 @@ using namespace roq::deribit;
 using namespace std::literals;
 using namespace std::chrono_literals;
 
+using OrderCancelRequest = deribit::fix::OrderCancelRequest;
+
 // cppcheck-suppress constParameterCallback
 void BM_fix_order_cancel_request_create_message(benchmark::State &state) {
   std::vector<std::byte> buffer(4096);
   uint64_t msg_seq_num = 0;
   auto sending_time = 1568702810s;
   for (auto _ : state) {
-    auto order_cancel_request = fix::OrderCancelRequest{
+    auto order_cancel_request = OrderCancelRequest{
         .cl_ord_id = "123"sv,
         .orig_cl_ord_id = "123"sv,
     };
-    auto header = core::fix::Header{
-        .version = core::fix::Version::FIX_44,
+    auto header = roq::fix::Header{
+        .version = roq::fix::Version::FIX_44,
         .msg_type = decltype(order_cancel_request)::msg_type,
         .sender_comp_id = "ROQ_TRADING"sv,
         .target_comp_id = "DERIBITSERVER"sv,

@@ -16,7 +16,7 @@
     {
       "tag": 326,
       "name": "SecurityTradingStatus",
-      "type": "roq::core::fix::SecurityTradingStatus"
+      "type": "roq::fix::SecurityTradingStatus"
     },
     {
       "tag": 330,

@@ -2,7 +2,7 @@
 
 #include <catch2/catch_all.hpp>
 
-#include "roq/core/fix/reader.hpp"
+#include "roq/fix/reader.hpp"
 
 #include "roq/deribit/fix/security_list.hpp"
 
@@ -12,6 +12,8 @@ using namespace roq::deribit;
 using namespace std::literals;
 
 using namespace Catch::literals;
+
+using SecurityList = deribit::fix::SecurityList;
 
 namespace {
 auto const message =
@@ -1234,8 +1236,8 @@ TEST_CASE("fix_security_list_parse_message", "[fix_security_list]") {
   int results = 0;
   auto parser = [&](auto &message_2) {
     ++results;
-    CHECK(message_2.header.msg_type == core::fix::MsgType::SECURITY_LIST);
-    /*auto security_list =*/fix::SecurityList::create(message_2, buffer);
+    CHECK(message_2.header.msg_type == roq::fix::MsgType::SECURITY_LIST);
+    /*auto security_list =*/SecurityList::create(message_2, buffer);
     /*
     CHECK(security_list.heart_bt_int == uint32_t{10});
     EXPECT_EQ(security_list.raw_data,
@@ -1247,7 +1249,7 @@ TEST_CASE("fix_security_list_parse_message", "[fix_security_list]") {
     CHECK(security_list.deribit_use_wordsafe_tags == false);
     */
   };
-  auto bytes = core::fix::Reader<core::fix::Version::FIX_44>::dispatch(message, parser);
+  auto bytes = roq::fix::Reader<roq::fix::Version::FIX_44>::dispatch(message, parser);
   CHECK(bytes == std::size(message));
   CHECK(results == 1);
 }
