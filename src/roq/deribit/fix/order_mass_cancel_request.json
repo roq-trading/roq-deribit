@@ -1,6 +1,6 @@
 {
   "name": "OrderMassCancelRequest",
-  "type": "struct",
+  "type": "comp",
   "values": [
     {
       "tag": 11,

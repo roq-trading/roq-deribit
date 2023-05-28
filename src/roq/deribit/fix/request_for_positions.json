@@ -1,6 +1,6 @@
 {
   "name": "RequestForPositions",
-  "type": "struct",
+  "type": "comp",
   "values": [
     {
       "tag": 710,

@@ -1,6 +1,6 @@
 {
   "name": "NewOrderSingle",
-  "type": "struct",
+  "type": "comp",
   "values": [
     {
       "tag": 11,

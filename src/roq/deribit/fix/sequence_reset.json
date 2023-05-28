@@ -1,6 +1,6 @@
 {
   "name": "SequenceReset",
-  "type": "struct",
+  "type": "comp",
   "values": [
     {
       "tag": 36,

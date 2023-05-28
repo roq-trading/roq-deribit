@@ -1,6 +1,6 @@
 {
   "name": "MarketDataRequest",
-  "type": "struct",
+  "type": "comp",
   "values": [
     {
       "tag": 262,

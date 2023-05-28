@@ -1,6 +1,6 @@
 {
   "name": "SecurityListRequest",
-  "type": "struct",
+  "type": "comp",
   "values": [
     {
       "tag": 320,

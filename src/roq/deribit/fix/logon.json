@@ -1,6 +1,6 @@
 {
   "name": "Logon",
-  "type": "simple2",
+  "type": "simple",
   "values": [
     {
       "tag": 108,

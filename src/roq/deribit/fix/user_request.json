@@ -1,6 +1,6 @@
 {
   "name": "UserRequest",
-  "type": "struct",
+  "type": "comp",
   "values": [
     {
       "tag": 923,
