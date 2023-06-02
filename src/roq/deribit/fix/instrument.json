@@ -42,7 +42,7 @@
     {
       "tag": 2576,
       "name": "InstrumentPricePrecision",
-      "type": "uint8_t",
+      "type": "uint16_t",
       "custom": true
     },
     {
