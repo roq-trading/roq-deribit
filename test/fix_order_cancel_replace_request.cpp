@@ -2,6 +2,8 @@
 
 #include <catch2/catch_all.hpp>
 
+#include "roq/debug/fix/message.hpp"
+
 #include "roq/fix/reader.hpp"
 
 #include "roq/deribit/fix/order_cancel_replace_request.hpp"
@@ -21,15 +23,17 @@ TEST_CASE("fix_order_cancel_replace_request_create_message", "[fix_order_cancel_
   auto msg_seq_num = uint64_t{0};
   auto sending_time = 1568702810s;
   auto order_cancel_replace_request = OrderCancelReplaceRequest{
-      .orig_cl_ord_id = "123"sv,
       .cl_ord_id = "123"sv,
-      .transact_time = sending_time,
+      .orig_cl_ord_id = "123"sv,
+      .deribit_label = "123"sv,
+      .symbol = "BTC-27SEP19"sv,
+      .currency = {},
       .side = roq::fix::Side::BUY,
       .order_qty = {1.0, utils::to_decimals(1)},
       .ord_type = roq::fix::OrdType::LIMIT,
       .price = {123.45, utils::to_decimals(2)},
-      .symbol = "BTC-27SEP19"sv,
       .exec_inst = {},
+      .deribit_mm_protection = {},
   };
   auto header = roq::fix::Header{
       .version = roq::fix::Version::FIX_44,
@@ -40,12 +44,9 @@ TEST_CASE("fix_order_cancel_replace_request_create_message", "[fix_order_cancel_
       .sending_time = sending_time,
   };
   auto message = order_cancel_replace_request.encode(header, buffer);
-  auto const expected =
-      "8=FIX.4.4\0019=0000148\00135=G\00149=ROQ_TRADING\00156=DERIBIT"
-      "SERVER\00134=1\00152=20190917-06:46:50.000\00141=123\00111=123"
-      "\00160=20190917-06:46:50.000\00154=1\00138=1.0\00140=2\00144=1"
-      "23.45\00155=BTC-27SEP19\00110=122\001"sv;
+  auto tmp = fmt::format("{}"sv, debug::fix::Message{message});
+  auto expected =
+      "8=FIX.4.4|9=0000134|35=G|49=ROQ_TRADING|56=DERIBITSERVER|34=1|52=20190917-06:46:50.000|11=123|41=123|100010=123|55=BTC-27SEP19|54=1|38=1.0|40=2|44=123.45|10=150|"sv;
   REQUIRE(std::size(message) == std::size(expected));
-  for (size_t i = 0; i < std::size(message); ++i)
-    CHECK(static_cast<char>(std::data(message)[i]) == expected[i]);
+  CHECK(tmp == expected);
 }

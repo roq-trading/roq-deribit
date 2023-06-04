@@ -21,6 +21,9 @@ void BM_fix_order_cancel_request_create_message(benchmark::State &state) {
     auto order_cancel_request = OrderCancelRequest{
         .cl_ord_id = "123"sv,
         .orig_cl_ord_id = "123"sv,
+        .deribit_label = "123"sv,
+        .symbol = "BTC-PERPETUAL"sv,
+        .currency = {},
     };
     auto header = roq::fix::Header{
         .version = roq::fix::Version::FIX_44,

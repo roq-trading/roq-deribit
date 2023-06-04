@@ -19,15 +19,17 @@ void BM_fix_order_cancel_replace_request_create_message(
   auto sending_time = 1568702810s;
   for (auto _ : state) {
     auto order_cancel_replace_request = OrderCancelReplaceRequest{
-        .orig_cl_ord_id = "123"sv,
         .cl_ord_id = "123"sv,
-        .transact_time = sending_time,
+        .orig_cl_ord_id = "123"sv,
+        .deribit_label = "123"sv,
+        .symbol = "BTC-27SEP19"sv,
+        .currency = {},
         .side = roq::fix::Side::BUY,
         .order_qty = {1.0, utils::to_decimals(1)},
         .ord_type = roq::fix::OrdType::LIMIT,
         .price = {123.45, utils::to_decimals(2)},
-        .symbol = "BTC-27SEP19"sv,
         .exec_inst = {},
+        .deribit_mm_protection = {},
     };
     auto header = roq::fix::Header{
         .version = roq::fix::Version::FIX_44,

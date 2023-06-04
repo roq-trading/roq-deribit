@@ -181,8 +181,11 @@ uint16_t OrderEntry::operator()(
       .exec_inst = exec_inst,
       .ord_type = ord_type,
       .time_in_force = time_in_force,
+      .stop_px = {create_order.stop_price, order.price_decimals},
       .deribit_label = request_id,
       .deribit_adv_order_type = '\0',
+      .deribit_mm_protection = {},
+      .deribit_condition_trigger_method = {},
   };
   auto now_1 = clock::get_system();
   auto [msg_seq_num, now_2, now_3] = send(new_order_single);
@@ -219,16 +222,19 @@ uint16_t OrderEntry::operator()(
   auto const &modify_order = event.value;
   auto side = roq::fix::map(order.side);
   auto ord_type = roq::fix::map(order.order_type);
+  // note! using deribit_label might be slower, but using orig_cl_ord_id seems error-prone
   auto order_cancel_replace_request = fix::OrderCancelReplaceRequest{
-      .orig_cl_ord_id = order.external_order_id,
-      .cl_ord_id = request_id,
-      .transact_time = utils::safe_cast(order.update_time_utc),
+      .cl_ord_id = {},
+      .orig_cl_ord_id = {},
+      .deribit_label = order.client_order_id,
+      .symbol = order.symbol,
+      .currency = {},
       .side = side,
       .order_qty = {modify_order.quantity, order.quantity_decimals},
       .ord_type = ord_type,
       .price = {modify_order.price, order.price_decimals},
-      .symbol = order.symbol,
       .exec_inst = {},
+      .deribit_mm_protection = {},
   };
   auto [msg_seq_num, _1, _2] = send(order_cancel_replace_request);
   // XXX HANS EXPERIMENTAL -- it's a leak / currently no way to clean up
@@ -243,9 +249,13 @@ uint16_t OrderEntry::operator()(
     [[maybe_unused]] std::string_view const &previous_request_id) {
   if (!ready()) [[unlikely]]
     throw oms::NotReady{"not ready"sv};
+  // note! using deribit_label might be slower, but using orig_cl_ord_id seems error-prone
   auto order_cancel_request = fix::OrderCancelRequest{
-      .cl_ord_id = request_id,
-      .orig_cl_ord_id = order.external_order_id,
+      .cl_ord_id = {},
+      .orig_cl_ord_id = {},
+      .deribit_label = order.client_order_id,
+      .symbol = order.symbol,
+      .currency = {},
   };
   auto [msg_seq_num, _1, _2] = send(order_cancel_request);
   // XXX HANS EXPERIMENTAL -- it's a leak / currently no way to clean up
@@ -784,6 +794,7 @@ void OrderEntry::operator()(Trace<fix::ExecutionReport> const &event, roq::fix::
       .update_time_utc = execution_report.transact_time,
       .external_account = {},
       .external_order_id = execution_report.order_id,
+      .client_order_id = execution_report.deribit_label,
       .status = order_status,
       .quantity = execution_report.order_qty,
       .price = execution_report.price,

@@ -5,14 +5,30 @@
     {
       "tag": 11,
       "name": "ClOrdID",
-      "type": "std::string_view",
-      "required": true
+      "type": "std::string_view"
     },
     {
       "tag": 41,
       "name": "OrigClOrdID",
+      "type": "std::string_view"
+    },
+    {
+      "tag": 100010,
+      "name": "DeribitLabel",
+      "type": "std::string_view",
+      "custom": true
+    },
+    {
+      "tag": 55,
+      "name": "Symbol",
       "type": "std::string_view",
       "required": true
+    },
+    {
+      "tag": 15,
+      "name": "Currency",
+      "type": "std::string_view",
+      "custom": true
     }
   ]
 }

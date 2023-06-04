@@ -48,6 +48,11 @@
       "type": "roq::fix::TimeInForce"
     },
     {
+      "tag": 99,
+      "name": "StopPx",
+      "type": "roq::utils::Number"
+    },
+    {
       "tag": 100010,
       "name": "DeribitLabel",
       "type": "std::string_view",
@@ -57,6 +62,18 @@
       "tag": 100012,
       "name": "DeribitAdvOrderType",
       "type": "char",
+      "custom": true
+    },
+    {
+      "tag": 9008,
+      "name": "DeribitMMProtection",
+      "type": "bool",
+      "custom": true
+    },
+    {
+      "tag": 5127,
+      "name": "DeribitConditionTriggerMethod",
+      "type": "int32_t",
       "custom": true
     }
   ]

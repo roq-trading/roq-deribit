@@ -37,8 +37,11 @@ void BM_fix_new_order_single_create_message(benchmark::State &state) {
         .exec_inst = {},
         .ord_type = roq::fix::OrdType::LIMIT,
         .time_in_force = roq::fix::TimeInForce::GTC,
+        .stop_px = {},
         .deribit_label = REQUEST_ID,
         .deribit_adv_order_type = '\0',
+        .deribit_mm_protection = {},
+        .deribit_condition_trigger_method = {},
     };
     auto header = roq::fix::Header{
         .version = roq::fix::Version::FIX_44,
