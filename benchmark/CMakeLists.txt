@@ -27,6 +27,7 @@ target_link_libraries(
   "${PROJECT_NAME}-fix"
   "${PROJECT_NAME}-json"
   roq-fix::roq-fix
+  roq-utils::roq-utils
   roq-core::roq-core
   roq-logging::roq-logging
   fmt::fmt

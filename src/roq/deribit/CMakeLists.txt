@@ -57,6 +57,7 @@ target_link_libraries(
           roq-fix::roq-fix
           roq-web::roq-web
           roq-io::roq-io
+          roq-utils::roq-utils
           roq-core::roq-core
           roq-logging::roq-logging
           roq-api::roq-api

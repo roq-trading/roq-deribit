@@ -41,6 +41,7 @@ requirements:
     - roq-oss-tomlplusplus
     - roq-oss-zlib-ng
     - roq-server
+    - roq-utils
     - roq-web
 
 about:

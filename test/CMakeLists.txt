@@ -38,6 +38,7 @@ target_link_libraries(
   "${PROJECT_NAME}-tools"
   roq-server::roq-server
   roq-fix::roq-fix
+  roq-utils::roq-utils
   roq-core::roq-core
   roq-io::roq-io
   roq-logging::roq-logging

@@ -59,6 +59,7 @@ find_package(roq-io REQUIRED)
 find_package(roq-fix REQUIRED)
 find_package(roq-logging REQUIRED)
 find_package(roq-server REQUIRED)
+find_package(roq-utils REQUIRED)
 find_package(roq-web REQUIRED)
 
 if(UNIX AND NOT APPLE)
