@@ -97,6 +97,7 @@ struct create_metrics final : public core::metrics::Factory {
 void validate(auto const &value) {
   switch (value.md_update_action) {
     using enum roq::fix::MDUpdateAction;
+    case UNDEFINED:
     case UNKNOWN:
       break;
     case NEW:

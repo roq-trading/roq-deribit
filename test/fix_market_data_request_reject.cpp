@@ -26,7 +26,7 @@ TEST_CASE("fix_market_data_request_reject_parse_message", "[fix_market_data_requ
     CHECK(message_2.header.msg_type == roq::fix::MsgType::MARKET_DATA_REQUEST_REJECT);
     auto reject = MarketDataRequestReject::create(message_2);
     CHECK(reject.md_req_id == "123"sv);
-    CHECK(reject.md_req_rej_reason == roq::fix::MDReqRejReason::UNKNOWN);
+    CHECK(reject.md_req_rej_reason == roq::fix::MDReqRejReason::UNDEFINED);
     CHECK(reject.text == "unknown Symbol: BTC-XXX"sv);
   };
   auto bytes = roq::fix::Reader<roq::fix::Version::FIX_44>::dispatch(message, parser);
