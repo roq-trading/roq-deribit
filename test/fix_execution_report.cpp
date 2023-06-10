@@ -126,7 +126,7 @@ TEST_CASE("fix_execution_report_parse_fill", "[fix_execution_report]") {
     CHECK(item_0.fill_exec_id == "BTC-27DEC19#2350428"sv);
     CHECK(item_0.fill_px == 9593.5_a);
     CHECK(item_0.fill_qty == 1.0_a);
-    CHECK(item_0.fill_liquidity_ind == roq::fix::FillLiquidityInd::MAKER);
+    CHECK(item_0.fill_liquidity_ind == roq::fix::FillLiquidityInd::ADDED_LIQUIDITY);
   };
   auto bytes = roq::fix::Reader<roq::fix::Version::FIX_44>::dispatch(message, parser);
   CHECK(bytes == std::size(message));
