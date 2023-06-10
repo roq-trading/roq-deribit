@@ -33,7 +33,7 @@ void BM_fix_order_cancel_replace_request_create_message(
     };
     auto header = roq::fix::Header{
         .version = roq::fix::Version::FIX_44,
-        .msg_type = decltype(order_cancel_replace_request)::msg_type,
+        .msg_type = decltype(order_cancel_replace_request)::MSG_TYPE,
         .sender_comp_id = "ROQ_TRADING"sv,
         .target_comp_id = "DERIBITSERVER"sv,
         .msg_seq_num = ++msg_seq_num,  // note!

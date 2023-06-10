@@ -45,7 +45,7 @@ void BM_fix_new_order_single_create_message(benchmark::State &state) {
     };
     auto header = roq::fix::Header{
         .version = roq::fix::Version::FIX_44,
-        .msg_type = decltype(new_order_single)::msg_type,
+        .msg_type = decltype(new_order_single)::MSG_TYPE,
         .sender_comp_id = SENDER_COMP_ID,
         .target_comp_id = TARGET_COMP_ID,
         .msg_seq_num = ++msg_seq_num,  // note!

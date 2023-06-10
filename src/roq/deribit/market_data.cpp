@@ -935,7 +935,7 @@ template <typename T>
 void MarketData::send(T const &event, std::chrono::nanoseconds sending_time) {
   auto header = roq::fix::Header{
       .version = FIX_VERSION,
-      .msg_type = T::msg_type,
+      .msg_type = T::MSG_TYPE,
       .sender_comp_id = SENDER_COMP_ID,
       .target_comp_id = TARGET_COMP_ID,
       .msg_seq_num = ++outbound_.msg_seq_num,  // note!

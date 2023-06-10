@@ -53,7 +53,7 @@ void BM_fix_logon_create_message(benchmark::State &state) {
     };
     auto header = roq::fix::Header{
         .version = roq::fix::Version::FIX_44,
-        .msg_type = decltype(logon)::msg_type,
+        .msg_type = decltype(logon)::MSG_TYPE,
         .sender_comp_id = "ROQ_TRADING"sv,
         .target_comp_id = "DERIBITSERVER"sv,
         .msg_seq_num = ++msg_seq_num,  // note!
