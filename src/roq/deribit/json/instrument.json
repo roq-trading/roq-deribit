@@ -113,6 +113,9 @@
     {
       "name": "instrument_type",
       "type": "InstrumentType"
+    },
+    {
+      "name": "tick_size_steps"
     }
   ]
 }
