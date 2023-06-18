@@ -187,6 +187,10 @@
       "name": "spot_reserve",
       "type": "double",
       "comment": "undoc"
+    },
+    {
+      "name": "self_trading_reject_mode",
+      "type": "std::string_view"
     }
   ]
 }
