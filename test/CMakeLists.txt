@@ -23,7 +23,7 @@ set(SOURCES
     json_ticker.cpp
     json_trades_2.cpp
     json_types.cpp
-    #sbe_parser.cpp
+    # sbe_parser.cpp
     main.cpp)
 
 roq_gitignore(OUTPUT ".gitignore" SOURCES "${TARGET_NAME}")
