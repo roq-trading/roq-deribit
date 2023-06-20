@@ -114,11 +114,6 @@ template <typename T>
 size_t compute_length(T &);
 
 template <>
-inline size_t compute_length(deribit_multicast::MessageHeader &value) {
-  return value.encodedLength();
-}
-
-template <>
 inline size_t compute_length(deribit_multicast::Instrument &value) {
   auto instrument_name_length = value.instrumentNameLength();
   return value.computeLength(instrument_name_length);
@@ -168,36 +163,6 @@ inline std::string get_instrument_name(deribit_multicast::Instrument &value) {
 }  // namespace sbe
 }  // namespace deribit
 }  // namespace roq
-
-// header
-
-template <>
-struct fmt::formatter<deribit_multicast::MessageHeader> {
-  template <typename Context>
-  constexpr auto parse(Context &context) {
-    return std::begin(context);
-  }
-  template <typename Context>
-  auto format(deribit_multicast::MessageHeader const &value, Context &context) const {
-    using namespace fmt::literals;
-    return fmt::format_to(
-        context.out(),
-        R"({{)"
-        R"(blockLength={}, )"
-        R"(templateId={}, )"
-        R"(schemaId={}, )"
-        R"(version={}, )"
-        R"(numGroups={}, )"
-        R"(numVarDataFields={})"
-        R"(}})"_cf,
-        value.blockLength(),
-        value.templateId(),
-        value.schemaId(),
-        value.version(),
-        value.numGroups(),
-        value.numVarDataFields());
-  }
-};
 
 // enums
 
@@ -322,7 +287,6 @@ struct fmt::formatter<deribit_multicast::Book> {
     return fmt::format_to(
         context.out(),
         R"({{)"
-        R"(header={}, )"
         R"(instrumentId={}, )"
         R"(timestampMs={}, )"
         R"(prevChangeId={}, )"
@@ -330,7 +294,6 @@ struct fmt::formatter<deribit_multicast::Book> {
         R"(isLast={}, )"
         R"(changesList=[{}])"
         R"(}})"_cf,
-        value.header(),
         value.instrumentId(),
         std::chrono::milliseconds{value.timestampMs()},
         value.prevChangeId(),
@@ -354,7 +317,6 @@ struct fmt::formatter<deribit_multicast::Instrument> {
     return fmt::format_to(
         context.out(),
         R"({{)"
-        R"(header={}, )"
         R"(instrumentId={}, )"
         R"(instrumentState={}, )"
         R"(kind={}, )"
@@ -381,11 +343,10 @@ struct fmt::formatter<deribit_multicast::Instrument> {
         R"(maxLeverage={}, )"
         R"(instrumentName="{}")"
         R"(}})"_cf,
-        value.header(),
         value.instrumentId(),
         deribit_multicast::InstrumentState::c_str(value.instrumentState()),
         deribit_multicast::InstrumentKind::c_str(value.kind()),
-        deribit_multicast::FutureType::c_str(value.futureType()),
+        deribit_multicast::InstrumentType::c_str(value.instrumentType()),
         deribit_multicast::OptionType::c_str(value.optionType()),
         roq::deribit::sbe::map_yes_no(value.rfq()),
         deribit_multicast::Period::c_str(value.settlementPeriod()),
@@ -422,7 +383,6 @@ struct fmt::formatter<deribit_multicast::Ticker> {
     return fmt::format_to(
         context.out(),
         R"({{)"
-        R"(header={}, )"
         R"(instrumentId={}, )"
         R"(instrumentState={}, )"
         R"(timestampMs={}, )"
@@ -442,7 +402,6 @@ struct fmt::formatter<deribit_multicast::Ticker> {
         R"(deliveryPrice={}, )"
         R"(settlementPrice={})"
         R"(}})"_cf,
-        value.header(),
         value.instrumentId(),
         deribit_multicast::InstrumentState::c_str(value.instrumentState()),
         std::chrono::milliseconds{value.timestampMs()},
@@ -478,7 +437,6 @@ struct fmt::formatter<deribit_multicast::Snapshot> {
     return fmt::format_to(
         context.out(),
         R"({{)"
-        R"(header={}, )"
         R"(instrumentId={}, )"
         R"(timestampMs={}, )"
         R"(changeId={}, )"
@@ -486,7 +444,6 @@ struct fmt::formatter<deribit_multicast::Snapshot> {
         R"(isLastInBook={}, )"
         R"(levelsList=[{}])"
         R"(}})"_cf,
-        value.header(),
         value.instrumentId(),
         std::chrono::milliseconds{value.timestampMs()},
         value.changeId(),
@@ -509,11 +466,9 @@ struct fmt::formatter<deribit_multicast::Trades> {
     return fmt::format_to(
         context.out(),
         R"({{)"
-        R"(header={}, )"
         R"(instrumentId={}, )"
         R"(tradesList=[{}])"
         R"(}})"_cf,
-        value.header(),
         value.instrumentId(),
         fmt::join(roq::core::sbe::iterator{value.tradesList()}, roq::core::sbe::sentinel{}, ", "sv));
   }

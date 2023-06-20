@@ -96,15 +96,17 @@ TEST_CASE("sbe_instrument", "[sbe_parser]") {  // 1000 (note! bundled)
       using value_type = std::remove_cvref<decltype(event)>::type::value_type;
       auto &instrument = const_cast<value_type &>(event.value);  // note! not const-safe
       // header
+      /*
       auto &header = instrument.header();
       CHECK(header.templateId() == 1000);
       CHECK(header.sbeSchemaId() == 1);
       CHECK(header.version() == 1);
+      */
       // instrument
       CHECK(instrument.instrumentId() == 211663);
       CHECK(instrument.instrumentState() == deribit_multicast::InstrumentState::open);
       CHECK(instrument.kind() == deribit_multicast::InstrumentKind::future);
-      CHECK(instrument.futureType() == deribit_multicast::FutureType::linear);
+      CHECK(instrument.instrumentType() == deribit_multicast::InstrumentType::linear);
       CHECK(instrument.optionType() == deribit_multicast::OptionType::not_applicable);
       CHECK(instrument.rfq() == deribit_multicast::YesNo::no);
       CHECK(instrument.settlementPeriod() == deribit_multicast::Period::perpetual);
@@ -180,10 +182,12 @@ TEST_CASE("sbe_book", "[sbe_parser]") {  // 1001 (note! bundled)
       using value_type = std::remove_cvref<decltype(event)>::type::value_type;
       auto &trades = const_cast<value_type &>(event.value);  // note! not const-safe
       // header
+      /*
       auto &header = trades.header();
       CHECK(header.templateId() == 1002);
       CHECK(header.sbeSchemaId() == 1);
       CHECK(header.version() == 1);
+      */
       // trades
       CHECK(trades.instrumentId() == 211410);
       trades.sbeRewind();  // wtf!
@@ -255,10 +259,12 @@ TEST_CASE("sbe_trades", "[sbe_parser]") {  // 1002 (note! bundled)
       using value_type = std::remove_cvref<decltype(event)>::type::value_type;
       auto &trades = const_cast<value_type &>(event.value);  // note! not const-safe
       // header
+      /*
       auto &header = trades.header();
       CHECK(header.templateId() == 1002);
       CHECK(header.sbeSchemaId() == 1);
       CHECK(header.version() == 1);
+      */
       // trades
       CHECK(trades.instrumentId() == 211410);
       trades.sbeRewind();  // wtf!
@@ -324,10 +330,12 @@ TEST_CASE("sbe_ticker", "[sbe_parser]") {  // 1003
       using value_type = std::remove_cvref<decltype(event)>::type::value_type;
       auto &ticker = const_cast<value_type &>(event.value);  // note! not const-safe
       // header
+      /*
       auto &header = ticker.header();
       CHECK(header.templateId() == 1003);
       CHECK(header.sbeSchemaId() == 1);
       CHECK(header.version() == 1);
+      */
       // ticker
       CHECK(ticker.instrumentId() == 215758);
       CHECK(ticker.instrumentState() == deribit_multicast::InstrumentState::open);
@@ -436,10 +444,12 @@ TEST_CASE("sbe_snapshot", "[sbe_parser]") {  // 1004 (note! bundled)
       using value_type = std::remove_cvref<decltype(event)>::type::value_type;
       auto &snapshot = const_cast<value_type &>(event.value);  // note! not const-safe
       // header
+      /*
       auto &header = snapshot.header();
       CHECK(header.templateId() == 1004);
       CHECK(header.sbeSchemaId() == 1);
       CHECK(header.version() == 1);
+      */
       // snapshot
       CHECK(snapshot.instrumentId() == 211663);
       CHECK(snapshot.timestampMs() == 1652932762038);
@@ -690,10 +700,12 @@ TEST_CASE("sbe_multiple_datagrams", "[sbe_parser]") {
           CHECK(frame.channel_id == 4);
           CHECK(frame.sequence_number == 319757383);
           // header
+          /*
           auto &header = book.header();
           CHECK(header.templateId() == 1001);
           CHECK(header.sbeSchemaId() == 1);
           CHECK(header.version() == 1);
+          */
           // book
           CHECK(book.instrumentId() == 210760);
           CHECK(book.timestampMs() == 1659338619037);
@@ -707,10 +719,12 @@ TEST_CASE("sbe_multiple_datagrams", "[sbe_parser]") {
           CHECK(frame.channel_id == 4);
           CHECK(frame.sequence_number == 319757384);
           // header
+          /*
           auto &header = book.header();
           CHECK(header.templateId() == 1001);
           CHECK(header.sbeSchemaId() == 1);
           CHECK(header.version() == 1);
+          */
           // book
           CHECK(book.instrumentId() == 210760);
           CHECK(book.timestampMs() == 1659338619040);
