@@ -191,6 +191,10 @@
     {
       "name": "self_trading_reject_mode",
       "type": "std::string_view"
+    },
+    {
+      "name": "self_trading_extended_to_subaccounts",
+      "type": "bool"
     }
   ]
 }
