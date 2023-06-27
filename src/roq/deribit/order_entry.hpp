@@ -115,11 +115,10 @@ struct OrderEntry final : public io::net::ConnectionManager::Handler {
   // utilities
 
   template <typename T>
-  std::tuple<uint64_t, std::chrono::nanoseconds, std::chrono::nanoseconds> send(T const &event);
+  uint64_t send(T const &event);
 
   template <typename T>
-  std::tuple<uint64_t, std::chrono::nanoseconds, std::chrono::nanoseconds> send(
-      T const &event, std::chrono::nanoseconds sending_time);
+  uint64_t send(T const &event, std::chrono::nanoseconds sending_time);
 
   void check(roq::fix::Header const &);
 
@@ -168,7 +167,6 @@ struct OrderEntry final : public io::net::ConnectionManager::Handler {
   absl::flat_hash_map<uint64_t, RequestId> msg_seq_num_to_request_id_;
   std::chrono::nanoseconds test_disconnect_time_ = {};
   std::chrono::nanoseconds test_logon_time_ = {};
-  bool const enable_round_trip_latency_;
 };
 
 }  // namespace deribit

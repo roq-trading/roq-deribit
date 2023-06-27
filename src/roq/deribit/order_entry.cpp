@@ -111,8 +111,7 @@ OrderEntry::OrderEntry(Handler &handler, io::Context &context, uint16_t stream_i
           .ping = create_metrics(shared.settings, name_, "ping"sv),
       },
       account_{account}, shared_{shared},
-      download_{shared.settings.fix.request_timeout, [this](auto state) { return download(state); }},
-      enable_round_trip_latency_{shared_.settings.test.enable_round_trip_latency} {
+      download_{shared.settings.fix.request_timeout, [this](auto state) { return download(state); }} {
 }
 
 void OrderEntry::operator()(Event<Start> const &) {
@@ -160,7 +159,6 @@ void OrderEntry::operator()(Event<Timer> const &event) {
 
 uint16_t OrderEntry::operator()(
     Event<CreateOrder> const &event, oms::Order const &order, std::string_view const &request_id) {
-  auto now_0 = clock::get_system();
   if (!ready()) [[unlikely]]
     throw oms::NotReady{"not ready"sv};
   auto &[message_info, create_order] = event;
@@ -187,28 +185,9 @@ uint16_t OrderEntry::operator()(
       .deribit_mm_protection = {},
       .deribit_condition_trigger_method = {},
   };
-  auto now_1 = clock::get_system();
-  auto [msg_seq_num, now_2, now_3] = send(new_order_single);
+  auto msg_seq_num = send(new_order_single);
   // XXX HANS EXPERIMENTAL -- it's a leak / currently no way to clean up
-  auto now_4 = clock::get_system();
   msg_seq_num_to_request_id_.emplace(msg_seq_num, request_id);
-  auto now_5 = clock::get_system();
-  if (enable_round_trip_latency_) {
-    auto dt = now_5 - now_0;
-    auto t1 = now_1 - now_0;
-    auto t2 = now_2 - now_1;
-    auto t3 = now_3 - now_2;
-    auto t4 = now_4 - now_3;
-    auto t5 = now_5 - now_4;
-    assert(dt == (t1 + t2 + t3 + t4 + t5));
-    log::info("gateway latency = {}"sv, dt);
-    log::info("(1) validate + prepare   : {}"sv, t1);
-    log::info("(2) fetch recycle buffer : {}"sv, t2);
-    log::info("(3) encode fix message   : {}"sv, t3);
-    log::info("(4) socket send          : {}"sv, t4);
-    log::info("(5) clean-up             : {}"sv, t5);
-    log::info("GWL:{},{},{},{},{},{}"sv, dt.count(), t1.count(), t2.count(), t3.count(), t4.count(), t5.count());
-  }
   return stream_id_;
 }
 
@@ -236,7 +215,7 @@ uint16_t OrderEntry::operator()(
       .exec_inst = {},
       .deribit_mm_protection = {},
   };
-  auto [msg_seq_num, _1, _2] = send(order_cancel_replace_request);
+  auto msg_seq_num = send(order_cancel_replace_request);
   // XXX HANS EXPERIMENTAL -- it's a leak / currently no way to clean up
   msg_seq_num_to_request_id_.emplace(msg_seq_num, request_id);
   return stream_id_;
@@ -257,7 +236,7 @@ uint16_t OrderEntry::operator()(
       .symbol = order.symbol,
       .currency = {},
   };
-  auto [msg_seq_num, _1, _2] = send(order_cancel_request);
+  auto msg_seq_num = send(order_cancel_request);
   // XXX HANS EXPERIMENTAL -- it's a leak / currently no way to clean up
   msg_seq_num_to_request_id_.emplace(msg_seq_num, request_id);
   return stream_id_;
@@ -963,18 +942,15 @@ void OrderEntry::operator()(Trace<fix::OrderMassCancelReport> const &event, roq:
 }
 
 template <typename T>
-std::tuple<uint64_t, std::chrono::nanoseconds, std::chrono::nanoseconds> OrderEntry::send(T const &event) {
+uint64_t OrderEntry::send(T const &event) {
   auto now = clock::get_realtime();
   return send(event, now);
 }
 
 template <typename T>
-std::tuple<uint64_t, std::chrono::nanoseconds, std::chrono::nanoseconds> OrderEntry::send(
-    T const &event, std::chrono::nanoseconds sending_time) {
-  std::chrono::nanoseconds now_1 = {}, now_2 = {};
+uint64_t OrderEntry::send(T const &event, std::chrono::nanoseconds sending_time) {
   (*connection_manager_).send_with_completion([&](auto &buffer) {
     buffer.resize(4096);
-    now_1 = clock::get_system();
     auto header = roq::fix::Header{
         .version = FIX_VERSION,
         .msg_type = T::MSG_TYPE,
@@ -984,12 +960,11 @@ std::tuple<uint64_t, std::chrono::nanoseconds, std::chrono::nanoseconds> OrderEn
         .sending_time = sending_time,
     };
     auto message = event.encode(header, buffer);
-    now_2 = clock::get_system();
     if (shared_.settings.fix.debug) [[unlikely]]
       log::info("{}"sv, debug::fix::Message{message});
     return std::size(message);
   });
-  return {outbound_.msg_seq_num, now_1, now_2};
+  return outbound_.msg_seq_num;
 }
 
 void OrderEntry::check(roq::fix::Header const &header) {
