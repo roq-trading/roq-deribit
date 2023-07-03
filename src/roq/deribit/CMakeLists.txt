@@ -54,6 +54,7 @@ target_link_libraries(
           "${PROJECT_NAME}-tools"
           "${PROJECT_NAME}-sbe"
           roq-server::roq-server
+          roq-server::roq-server-flags
           roq-fix::roq-fix
           roq-web::roq-web
           roq-io::roq-io
