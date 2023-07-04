@@ -61,6 +61,7 @@ target_link_libraries(
           roq-utils::roq-utils
           roq-core::roq-core
           roq-logging::roq-logging
+          roq-logging::roq-logging-flags
           roq-api::roq-api
           absl::flags
           absl::flat_hash_map
