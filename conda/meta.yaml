@@ -27,6 +27,7 @@ requirements:
     - catch2  # [linux]
     - fmt
     - roq-core
+    - roq-flags
     - roq-fix
     - roq-deribit-multicast
     - roq-oss-base64

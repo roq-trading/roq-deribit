@@ -5,7 +5,7 @@
 #include <fmt/compile.h>
 #include <fmt/format.h>
 
-#include "roq/server.hpp"
+#include "roq/server/flags/settings.hpp"
 
 #include "roq/deribit/flags/common.hpp"
 #include "roq/deribit/flags/fix.hpp"
@@ -15,8 +15,8 @@
 namespace roq {
 namespace deribit {
 
-struct Settings final : public server::Settings {
-  explicit Settings(server::Type);
+struct Settings final : public server::flags::Settings {
+  explicit Settings(args::Parser const &, server::Type);
 
   std::string_view exchange;
 
