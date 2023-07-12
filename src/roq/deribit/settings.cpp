@@ -13,7 +13,7 @@ namespace deribit {
 
 Settings::Settings(args::Parser const &args, server::Type type)
     : server::flags::Settings{args, type, ROQ_PACKAGE_NAME, ROQ_BUILD_NUMBER}, exchange{flags::Flags::exchange()} {
-  // log::debug("settings={}"sv, *this);
+  log::debug("settings={}"sv, *this);
 }
 
 }  // namespace deribit
