@@ -1,4 +1,4 @@
-set(TARGET_NAME "${PROJECT_NAME}-fix")
+set(TARGET_NAME ${PROJECT_NAME}-fix)
 
 set(SOURCES adv_order_type.cpp utils.cpp)
 
@@ -67,10 +67,10 @@ roq_autogen(
   SOURCES
   ${AUTOGEN_SCHEMAS})
 
-roq_gitignore(OUTPUT ".gitignore" SOURCES "${TARGET_NAME}" ${AUTOGEN_HEADERS} ${AUTOGEN_SOURCES})
+roq_gitignore(OUTPUT .gitignore SOURCES ${TARGET_NAME} ${AUTOGEN_HEADERS} ${AUTOGEN_SOURCES})
 
-add_library("${TARGET_NAME}" OBJECT ${SOURCES} ${AUTOGEN_SOURCES})
+add_library(${TARGET_NAME} OBJECT ${SOURCES} ${AUTOGEN_SOURCES})
 
-add_dependencies("${TARGET_NAME}" autogen-fix-headers)
+add_dependencies(${TARGET_NAME} autogen-fix-headers)
 
-target_link_libraries("${TARGET_NAME}" roq-core::roq-core roq-logging::roq-logging fmt::fmt)
+target_link_libraries(${TARGET_NAME} roq-core::roq-core roq-logging::roq-logging fmt::fmt)

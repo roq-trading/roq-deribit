@@ -1,4 +1,4 @@
-set(TARGET_NAME "${PROJECT_NAME}-benchmark")
+set(TARGET_NAME ${PROJECT_NAME}-benchmark)
 
 set(SOURCES
     fix_execution_report.cpp
@@ -18,14 +18,14 @@ set(SOURCES
     fix_user_response.cpp
     main.cpp)
 
-roq_gitignore(OUTPUT ".gitignore" SOURCES "${TARGET_NAME}")
+roq_gitignore(OUTPUT .gitignore SOURCES ${TARGET_NAME})
 
-add_executable("${TARGET_NAME}" ${SOURCES})
+add_executable(${TARGET_NAME} ${SOURCES})
 
 target_link_libraries(
-  "${TARGET_NAME}"
-  "${PROJECT_NAME}-fix"
-  "${PROJECT_NAME}-json"
+  ${TARGET_NAME}
+  ${PROJECT_NAME}-fix
+  ${PROJECT_NAME}-json
   roq-fix::roq-fix
   roq-utils::roq-utils
   roq-core::roq-core
@@ -34,6 +34,6 @@ target_link_libraries(
   benchmark::benchmark
   ${RT_LIBRARIES})
 
-set_target_properties("${TARGET_NAME}" PROPERTIES LINK_FLAGS_RELEASE -s)
+set_target_properties(${TARGET_NAME} PROPERTIES LINK_FLAGS_RELEASE -s)
 
 install(TARGETS ${TARGET_NAME})
