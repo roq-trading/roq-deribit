@@ -8,6 +8,7 @@
       "type": "roq::io::web::URI",
       "validator": "roq::core::flags::URI",
       "default": "wss://test.deribit.com/ws/api/v2",
+      "required": true,
       "description": "WebSocket end-point (URI)"
     },
     {
@@ -42,6 +43,7 @@
       "name": "ticker_interval",
       "type": "std::string",
       "default": "100ms",
+      "required": true,
       "description": "ticker interval"
     },
     {
