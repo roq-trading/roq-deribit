@@ -195,6 +195,19 @@
     {
       "name": "self_trading_extended_to_subaccounts",
       "type": "bool"
+    },
+    {
+      "name": "cross_collateral_enabled",
+      "type": "bool"
+    },
+    {
+      "name": "options_vega_map"
+    },
+    {
+      "name": "options_gamma_map"
+    },
+    {
+      "name": "options_theta_map"
     }
   ]
 }
