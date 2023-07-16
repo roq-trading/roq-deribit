@@ -4,15 +4,15 @@
 
 #include "roq/logging.hpp"
 
-#include "roq/deribit/flags/flags.hpp"
-
 using namespace std::literals;
 
 namespace roq {
 namespace deribit {
 
 Settings::Settings(args::Parser const &args)
-    : server::flags::Settings{args, ROQ_PACKAGE_NAME, ROQ_BUILD_NUMBER}, exchange{flags::Flags::exchange()} {
+    : server::flags::Settings{args, ROQ_PACKAGE_NAME, ROQ_BUILD_NUMBER}, flags::Flags{flags::Flags::create()},
+      common{flags::Common::create()}, fix{flags::FIX::create()}, ws{flags::WS::create()},
+      multicast{flags::Multicast::create()} {
   log::debug("settings={}"sv, *this);
 }
 
