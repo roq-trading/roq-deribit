@@ -2,9 +2,11 @@
 
 NAME="deribit"
 
-CONFIG_FILE="config/$NAME-test.toml"
+CONFIG="${CONFIG:-$NAME-test}"
 
-SECRETS_FILE="config/$NAME-test-secrets.toml"
+CONFIG_FILE="$ROQ_CONFIG_PATH/roq-deribit/$CONFIG.toml"
+
+SECRETS_FILE="$ROQ_CONFIG_PATH/roq-deribit/$CONFIG-secrets.toml"
 
 URI="test.deribit.com"
 
