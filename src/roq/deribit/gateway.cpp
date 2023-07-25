@@ -223,6 +223,12 @@ void Gateway::operator()(Trace<FundsUpdate> const &event, bool is_last) {
   dispatcher_(event, is_last);
 }
 
+void Gateway::operator()(WebSocket::CurrenciesUpdate &currencies_update) {
+  auto &currencies = currencies_update.currencies;
+  for (auto &[_, iter] : drop_copy_)
+    (*iter).update_subscriptions(currencies);
+}
+
 void Gateway::operator()(WebSocket::SymbolsUpdate &symbols_update) {
   auto [size, start_from] = shared_.symbols(symbols_update.symbols);
   ensure_symbol_slices(size);
@@ -232,11 +238,9 @@ void Gateway::operator()(WebSocket::SymbolsUpdate &symbols_update) {
     (*iter).subscribe(start_from);
 }
 
-void Gateway::operator()(WebSocket::CurrenciesUpdate &currencies_update) {
-  auto &currencies = currencies_update.currencies;
-  for (auto &[_, iter] : drop_copy_) {
-    (*iter).update_subscriptions(currencies);
-  }
+void Gateway::operator()(WebSocket::Latch const &) {
+  for (auto &[_, iter] : drop_copy_)
+    (*iter).download();
 }
 
 void Gateway::operator()(MarketData::SymbolsUpdate &symbols_update) {

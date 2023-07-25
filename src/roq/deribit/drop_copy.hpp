@@ -61,6 +61,8 @@ struct DropCopy final : public web::socket::Client::Handler,
 
   void update_subscriptions(std::span<std::string> const &currencies);
 
+  void download();
+
  protected:
   void operator()(web::socket::Client::Connected const &) override;
   void operator()(web::socket::Client::Disconnected const &) override;
@@ -136,6 +138,7 @@ struct DropCopy final : public web::socket::Client::Handler,
   bool ready_ = false;
   ConnectionStatus status_ = {};
   core::Download<DropCopyState> download_;
+  bool can_download_ = false;
 };
 
 }  // namespace deribit

@@ -118,10 +118,21 @@ void DropCopy::operator()(metrics::Writer &writer) {
 void DropCopy::update_subscriptions(std::span<std::string> const &currencies) {
   for (auto &currency : currencies)
     currencies_.emplace_back(currency);
-  if (ready_) {
+  if (ready_ && can_download_) {
     subscribe_portfolios(currencies);
     get_account_summary(currencies);
     get_trades(currencies);
+  }
+}
+
+void DropCopy::download() {
+  if (can_download_)
+    return;
+  can_download_ = true;
+  if (ready_) {
+    subscribe_portfolios(currencies_);
+    get_account_summary(currencies_);
+    get_trades(currencies_);
   }
 }
 
@@ -217,7 +228,8 @@ uint32_t DropCopy::download(DropCopyState state) {
     case UNDEFINED:
       break;
     case SUBSCRIBE_PORTFOLIOS:
-      subscribe_portfolios(currencies_);
+      if (can_download_)
+        subscribe_portfolios(currencies_);
       return {};
     case SUBSCRIBE_CHANGES:
       subscribe_changes();
@@ -229,10 +241,12 @@ uint32_t DropCopy::download(DropCopyState state) {
       subscribe_trades();
       return {};
     case GET_ACCOUNT_SUMMARY:
-      get_account_summary(currencies_);
+      if (can_download_)
+        get_account_summary(currencies_);
       return {};
     case GET_TRADES:
-      get_trades(currencies_);
+      if (can_download_)
+        get_trades(currencies_);
       return {};
     case DONE:
       (*this)(ConnectionStatus::READY);
@@ -503,8 +517,8 @@ void DropCopy::operator()(Trace<json::Trade> const &event, bool is_download, boo
   log::info<1>("trade={}"sv, trade);
   auto side = json::map(trade.direction);
   auto iter = shared_.multiplier.find(trade.instrument_name);
-  auto multiplier = iter == std::end(shared_.multiplier) ? 1.0 : (*iter).second;
-  auto quantity = multiplier * trade.amount;
+  auto multiplier = iter == std::end(shared_.multiplier) ? 1.0 : (*iter).second;  // XXX not good
+  auto quantity = trade.amount / multiplier;
   auto liquidity = json::map(trade.liquidity);
   auto fill = Fill{
       .external_trade_id = {},

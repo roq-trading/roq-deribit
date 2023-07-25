@@ -227,6 +227,7 @@ uint32_t WebSocket::download(WebSocketState state) {
       subscribe();
       return {};
     case DONE:
+      handler_(Latch{});
       (*this)(ConnectionStatus::READY);
       return {};
   }
@@ -444,7 +445,7 @@ void WebSocket::operator()(Trace<json::Currencies> const &event) {
     }
     download_.check(WebSocketState::CURRENCIES);
     if (!std::empty(tmp)) {
-      CurrenciesUpdate currencies_update{
+      auto currencies_update = CurrenciesUpdate{
           .currencies = tmp,
       };
       handler_(currencies_update);

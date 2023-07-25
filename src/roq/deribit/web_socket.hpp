@@ -47,6 +47,7 @@ struct WebSocket final : public web::socket::Client::Handler,
   struct SymbolsUpdate final {
     std::vector<Symbol> &symbols;
   };
+  struct Latch final {};
 
   struct Handler {
     virtual void operator()(Trace<StreamStatus> const &) = 0;
@@ -56,6 +57,7 @@ struct WebSocket final : public web::socket::Client::Handler,
     // cross-communication
     virtual void operator()(CurrenciesUpdate &) = 0;
     virtual void operator()(SymbolsUpdate &) = 0;
+    virtual void operator()(Latch const &) = 0;
   };
 
   WebSocket(Handler &, io::Context &, uint16_t stream_id, Shared &, size_t index, bool master);

@@ -81,6 +81,7 @@ struct Gateway final : public server::Handler,
 
   void operator()(WebSocket::CurrenciesUpdate &) override;
   void operator()(WebSocket::SymbolsUpdate &) override;
+  void operator()(WebSocket::Latch const &) override;
 
   void operator()(MarketData::SymbolsUpdate &) override;
 

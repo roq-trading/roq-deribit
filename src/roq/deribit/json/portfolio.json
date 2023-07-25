@@ -208,6 +208,10 @@
     },
     {
       "name": "options_theta_map"
+    },
+    {
+      "name": "mmp_enabled",
+      "type": "bool"
     }
   ]
 }
