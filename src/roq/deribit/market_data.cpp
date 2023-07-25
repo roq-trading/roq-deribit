@@ -24,6 +24,7 @@
 #include "roq/fix/utils.hpp"
 
 #include "roq/deribit/common.hpp"
+#include "roq/deribit/utils.hpp"
 
 #include "roq/deribit/fix/utils.hpp"
 
@@ -641,6 +642,7 @@ void MarketData::operator()(Trace<fix::SecurityList> const &event, roq::fix::Hea
       auto &symbol = instrument.symbol;
       auto discard = shared_.discard_symbol(symbol);
       auto security_type = fix::map_security_type(instrument.security_type);
+      auto multiplier = compute_contracts_multiplier(instrument.contract_multiplier);
       auto option_type = roq::fix::map(instrument.put_or_call);
       auto expiry_datetime = combine(
           instrument.maturity_date,
@@ -657,7 +659,7 @@ void MarketData::operator()(Trace<fix::SecurityList> const &event, roq::fix::Hea
           .margin_currency = {},
           .commission_currency = instrument.comm_currency,
           .tick_size = instrument.min_price_increment,
-          .multiplier = instrument.contract_multiplier,
+          .multiplier = instrument.contract_multiplier,  // XXX which one is it ???
           .min_notional = NaN,
           .min_trade_vol = instrument.min_trade_vol,
           .max_trade_vol = NaN,
@@ -676,7 +678,7 @@ void MarketData::operator()(Trace<fix::SecurityList> const &event, roq::fix::Hea
       create_trace_and_dispatch(handler_, trace_info, reference_data, true);
       if (discard)
         continue;
-      shared_.multiplier[symbol] = instrument.contract_multiplier;
+      shared_.multiplier[symbol] = multiplier;
       if (shared_.all_symbols.emplace(symbol).second)  // only include new
         symbols.emplace_back(symbol);
       ++counter;

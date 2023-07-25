@@ -517,8 +517,10 @@ void DropCopy::operator()(Trace<json::Trade> const &event, bool is_download, boo
   log::info<1>("trade={}"sv, trade);
   auto side = json::map(trade.direction);
   auto iter = shared_.multiplier.find(trade.instrument_name);
+  if (iter == std::end(shared_.multiplier))
+    log::warn(R"(*** NO MULTIPLIER FOR SYMBOL="{}" ***)"sv, trade.instrument_name);
   auto multiplier = iter == std::end(shared_.multiplier) ? 1.0 : (*iter).second;  // XXX not good
-  auto quantity = trade.amount / multiplier;
+  auto quantity = trade.amount * multiplier;
   auto liquidity = json::map(trade.liquidity);
   auto fill = Fill{
       .external_trade_id = {},
