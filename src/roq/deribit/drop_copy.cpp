@@ -534,7 +534,7 @@ void DropCopy::operator()(Trace<json::Trade> const &event, bool is_download, boo
   auto trade_update = TradeUpdate{
       .stream_id = stream_id_,
       .account = account_.get_name(),
-      .order_id = ORDER_ID_NONE,
+      .order_id = {},
       .exchange = shared_.settings.exchange,
       .symbol = trade.instrument_name,
       .side = side,
@@ -548,6 +548,7 @@ void DropCopy::operator()(Trace<json::Trade> const &event, bool is_download, boo
       .update_type = update_type,
       .sending_time_utc = {},
       .user = {},
+      .strategy_id = {},
   };
   create_trace_and_dispatch(handler_, trace_info, trade_update, is_last, SOURCE_NONE, trade.label);
 }

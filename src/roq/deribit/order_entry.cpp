@@ -787,8 +787,9 @@ void OrderEntry::operator()(Trace<fix::ExecutionReport> const &event, roq::fix::
       .update_type = update_type,
       .sending_time_utc = header.sending_time,
   };
-  auto order_id = ORDER_ID_NONE;
   auto user_id = SOURCE_NONE;
+  auto order_id = ORDER_ID_NONE;
+  auto strategy_id = STRATEGY_ID_NONE;
   if (shared_.update_order(
           execution_report.orig_cl_ord_id,  // note! *always* from create order (can't rewrite)
           stream_id_,
@@ -796,8 +797,9 @@ void OrderEntry::operator()(Trace<fix::ExecutionReport> const &event, roq::fix::
           response,
           order_update,
           [&](auto &order) {
-            order_id = order.order_id;
             user_id = order.user_id;
+            order_id = order.order_id;
+            strategy_id = order.strategy_id;
           })) {
   } else {
     auto external = std::empty(execution_report.deribit_label);
@@ -837,6 +839,7 @@ void OrderEntry::operator()(Trace<fix::ExecutionReport> const &event, roq::fix::
         .update_type = update_type,
         .sending_time_utc = header.sending_time,
         .user = {},
+        .strategy_id = strategy_id,
     };
     create_trace_and_dispatch(handler_, trace_info, trade_update, true, user_id, execution_report.deribit_label);
   }
