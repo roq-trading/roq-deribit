@@ -1,0 +1,123 @@
+event={header={version=FIX_44,
+ msg_type=EXECUTION_REPORT,
+ sender_comp_id="DERIBITSERVER",
+ target_comp_id="ROQ_TRADING",
+ msg_seq_num=17,
+ sending_time=1692285213589000000ns},
+
+execution_report={
+cl_ord_id="",
+ orig_cl_ord_id="",
+
+ord_status=REJECTED,
+
+ side=BUY,
+ transact_time=1692285213589ms,
+ commission=nan,
+ leaves_qty=nan,
+ cum_qty=0,
+ order_qty=1,
+ ord_type=LIMIT,
+ price=30000,
+ exec_inst="",
+ stop_px=nan,
+
+ord_rej_reason=OTHER,
+text="rejected: price too high",
+
+ security_exchange="DERIBITSERVER",
+ symbol="BTC-PERPETUAL",
+ qty_type=<UNDEFINED>,
+ contract_multiplier=nan,
+ avg_px=nan,
+ max_show=nan,
+ deribit_adv_order_type="",
+ volatility=nan,
+ pegged_price=nan,
+ last_px=nan,
+ last_qty=nan,
+ no_fills=[],
+ mass_status_req_id="",
+ mass_status_req_type=<UNDEFINED>,
+ tot_num_reports=0,
+ deribit_label="",
+
+exec_type=REJECTED,
+order_id="17215955069",
+
+ condition_trigger_method="",
+ secondary_exec_id=""}
+
+
+
+execution_report={
+cl_ord_id="",
+ orig_cl_ord_id="5gICAbCipBcAAQAAAAAA",    ############
+
+ ord_status=REJECTED,
+
+ side=BUY,
+ transact_time=1692295477363ms,
+ commission=nan,
+ leaves_qty=nan,
+ cum_qty=0,
+ order_qty=1,
+ ord_type=LIMIT,
+ price=50000,
+ exec_inst="",
+ stop_px=nan,
+
+ ord_rej_reason=OTHER,
+ text="rejected: {price_too_high, 28412.999058489}",
+
+ security_exchange="DERIBITSERVER",
+ symbol="BTC-PERPETUAL",
+ qty_type=<UNDEFINED>,
+ contract_multiplier=nan,
+ avg_px=nan,
+ max_show=nan,
+ deribit_adv_order_type="",
+ volatility=nan,
+ pegged_price=nan,
+ last_px=nan,
+ last_qty=nan,
+ no_fills=[],
+ mass_status_req_id="",
+ mass_status_req_type=<UNDEFINED>,
+ tot_num_reports=0,
+ deribit_label="",
+
+ exec_type=REJECTED,
+ order_id="5gICAbCipBcAAQAAAAAA",
+
+ condition_trigger_method="",
+ secondary_exec_id=""}}
+
+
+
+
+
+I0817 17:13:33.600034 1824443 L2 order_entry.cpp:705] event={header={version=FIX_44, msg_type=EXECUTION_REPORT, sender_comp_id="DERIBITSERVER", target_comp_id="ROQ_TRADING", msg_seq_num=17, sending_time=1692285213589000000ns}, execution_report={cl_ord_id="", orig_cl_ord_id="", ord_status=REJECTED, side=BUY, transact_time=1692285213589ms, commission=nan, leaves_qty=nan, cum_qty=0, order_qty=1, ord_type=LIMIT, price=30000, exec_inst="", stop_px=nan, ord_rej_reason=OTHER, text="rejected: price too high", security_exchange="DERIBITSERVER", symbol="BTC-PERPETUAL", qty_type=<UNDEFINED>, contract_multiplier=nan, avg_px=nan, max_show=nan, deribit_adv_order_type="", volatility=nan, pegged_price=nan, last_px=nan, last_qty=nan, no_fills=[], mass_status_req_id="", mass_status_req_type=<UNDEFINED>, tot_num_reports=0, deribit_label="", exec_type=REJECTED, order_id="17215955069", condition_trigger_method="", secondary_exec_id=""}}
+I0817 17:13:33.600199 1824443 L2 dispatcher.cpp:894] response={type=UNDEFINED, origin=EXCHANGE, status=REJECTED, error=UNKNOWN, text="rejected: price too high", version=0, request_id="", quantity=1, price=30000}, order_update={account="A1", exchange="deribit", symbol="BTC-PERPETUAL", side=BUY, position_effect=UNDEFINED, max_show_quantity=nan, order_type=LIMIT, time_in_force=UNDEFINED, execution_instructions=, create_time_utc=0ns, update_time_utc=1692285213589000000ns, external_account="", external_order_id="17215955069", client_order_id="", status=REJECTED, quantity=1, price=30000, stop_price=nan, remaining_quantity=nan, traded_quantity=0, average_traded_price=nan, last_traded_quantity=nan, last_traded_price=nan, last_liquidity=UNDEFINED, update_type=INCREMENTAL, sending_time_utc=1692285213589000000ns}
+I0817 17:13:33.600305 1824443 L2 order_state.cpp:983] DEBUG: >>> oms >>>
+I0817 17:13:33.600415 1824443 L2 order_state.cpp:984] DEBUG: order={dirty=false, order={user_id=2, account="A1", order_id=100519405328, exchange="deribit", symbol="BTC-PERPETUAL", side=BUY, position_effect=UNDEFINED, max_show_quantity=1, order_type=LIMIT, time_in_force=GTC, execution_instructions=, create_time_utc=1692285206214000000ns, update_time_utc=1692285206214000000ns, external_account="", external_order_id="17215955069", client_order_id="LQICEGdsZxcAAQAAAAAA", status=WORKING, quantity=1, price=15000, stop_price=nan, risk_exposure=1, remaining_quantity=1, traded_quantity=0, average_traded_price=nan, last_traded_price=nan, last_traded_quantity=nan, last_liquidity=UNDEFINED, routing_id="", max_request_version=2, max_response_version=1, max_accepted_version=1, price_decimals=_1, quantity_decimals=_0, update_type=INCREMENTAL, user="trader", strategy_id=0}}
+I0817 17:13:33.600444 1824443 L2 order_state.cpp:985] DEBUG: len(requests)=2
+I0817 17:13:33.600480 1824443 L2 order_state.cpp:987] DEBUG: request=[1] {version=1, type=CREATE_ORDER, create_time=631397191512815ns, routing_id="", quantity=1, price=15000, request_id="LQICEGdsZxcAAQAAAAAA", status=ACCEPTED}
+I0817 17:13:33.600511 1824443 L2 order_state.cpp:987] DEBUG: request=[2] {version=2, type=MODIFY_ORDER, create_time=631404566342852ns, routing_id="", quantity=1, price=30000, request_id="LgICEGdsZxcAAgAAAAAA", status=FORWARDED}
+I0817 17:13:33.600526 1824443 L2 order_state.cpp:988] DEBUG: <<< oms <<<
+I0817 17:13:33.600547 1824443 L1 order_state.cpp:739] Request was matched using heuristics: user_id=2, order_id=100519405328, version=2
+W0817 17:13:33.600581 1824443 L1 order_state.cpp:552] Reset request_id to last accepted request: order_id=100519405328, version=2, max_accepted_version=1"
+I0817 17:13:33.600661 1824443 L2 state.cpp:344] event={order_ack={stream_id=1, account="A1", order_id=100519405328, exchange="deribit", symbol="BTC-PERPETUAL", side=BUY, type=MODIFY_ORDER, origin=EXCHANGE, status=REJECTED, error=UNKNOWN, text="rejected: price too high", request_id="LgICEGdsZxcAAgAAAAAA", external_account="", external_order_id="17215955069", routing_id="", version=2, risk_exposure=0, risk_exposure_change=nan, traded_quantity=0, round_trip_latency=27491621ns, user="trader", strategy_id=0}, trace_info={source_receive_time=631404593834473ns, origin_create_time=631404593834473ns, origin_create_time_utc=1692285213599851761ns}}, is_last=false, user_id=2
+I0817 17:13:33.600823 1824443 L2 state.cpp:364] event={order_update={stream_id=1, account="A1", order_id=100519405328, exchange="deribit", symbol="BTC-PERPETUAL", side=BUY, position_effect=UNDEFINED, max_show_quantity=1, order_type=LIMIT, time_in_force=GTC, execution_instructions=, create_time_utc=1692285206214000000ns, update_time_utc=1692285213589000000ns, external_account="", external_order_id="17215955069", client_order_id="LQICEGdsZxcAAQAAAAAA", status=REJECTED, quantity=1, price=30000, stop_price=nan, risk_exposure=0, risk_exposure_change=-1, remaining_quantity=1, traded_quantity=0, average_traded_price=nan, last_traded_quantity=nan, last_traded_price=nan, last_liquidity=UNDEFINED, routing_id="", max_request_version=2, max_response_version=2, max_accepted_version=1, update_type=INCREMENTAL, sending_time_utc=1692285213589000000ns, user="trader", strategy_id=0}, trace_info={source_receive_time=631404593834473ns, origin_create_time=631404593834473ns, origin_create_time_utc=1692285213599851761ns}}, is_last=true, user_id=2
+W0817 17:14:59.097973 1824442 L0 connection.cpp:142] Disconnected
+
+
+
+
+
+
+
+
+
+
+execution_report={cl_ord_id="", orig_cl_ord_id="5gICAbCipBcAAQAAAAAA", ord_status=REJECTED, side=BUY, transact_time=1692295477363ms, commission=nan, leaves_qty=nan, cum_qty=0, order_qty=1, ord_type=LIMIT, price=50000, exec_inst="", stop_px=nan, ord_rej_reason=OTHER, text="rejected: {price_too_high,28412.999058489}", security_exchange="DERIBITSERVER", symbol="BTC-PERPETUAL", qty_type=<UNDEFINED>, contract_multiplier=nan, avg_px=nan, max_show=nan, deribit_adv_order_type="", volatility=nan, pegged_price=nan, last_px=nan, last_qty=nan, no_fills=[], mass_status_req_id="", mass_status_req_type=<UNDEFINED>, tot_num_reports=0, deribit_label="", exec_type=REJECTED, order_id="5gICAbCipBcAAQAAAAAA", condition_trigger_method="", secondary_exec_id=""}}
