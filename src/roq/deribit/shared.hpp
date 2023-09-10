@@ -19,7 +19,7 @@
 
 #include "roq/core/stack/buffer.hpp"
 
-#include "roq/core/mbp/sequencer.hpp"
+#include "roq/utils/mbp/sequencer.hpp"
 
 #include "roq/deribit/instrument.hpp"
 #include "roq/deribit/settings.hpp"
@@ -128,7 +128,7 @@ struct Shared final {
   absl::flat_hash_set<Symbol> all_symbols;
   core::Symbols symbols;
   absl::node_hash_map<uint32_t, std::pair<Instrument, bool>> instruments;
-  absl::node_hash_map<Symbol, core::mbp::Sequencer> mbp_sequencer;
+  absl::node_hash_map<Symbol, utils::mbp::Sequencer> mbp_sequencer;
 };
 
 }  // namespace deribit

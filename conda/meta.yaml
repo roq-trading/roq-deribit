@@ -24,16 +24,16 @@ requirements:
     - pkg-config
   host:
     - abseil-cpp
+    - brotli
     - catch2  # [linux]
     - fmt
     - roq-core
-    - roq-flags
-    - roq-fix
     - roq-deribit-multicast
+    - roq-fix
+    - roq-flags
     - roq-oss-base64
     - roq-oss-benchmark
     - roq-oss-botan
-    - brotli
     - roq-oss-catch2  # [osx]
     - roq-oss-cppitertools
     - roq-oss-libsodium

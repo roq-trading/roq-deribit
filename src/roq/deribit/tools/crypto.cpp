@@ -11,8 +11,8 @@
 #include <fmt/compile.h>
 #include <fmt/format.h>
 
-#include "roq/core/codec/base64.hpp"
-#include "roq/core/codec/hex.hpp"
+#include "roq/utils/codec/base64.hpp"
+#include "roq/utils/codec/hex.hpp"
 
 using namespace std::literals;
 
@@ -55,7 +55,7 @@ std::pair<std::string, std::chrono::milliseconds> Crypto::create_signature(
   mac_.update(message);
   auto digest = mac_.final(digest_);
   std::string result;
-  core::codec::Hex::encode(result, digest);
+  utils::codec::Hex::encode(result, digest);
   return {result, std::chrono::milliseconds{sequence}};
 }
 
@@ -67,7 +67,7 @@ std::string Crypto::create_raw_data(std::chrono::milliseconds timestamp) {
     buffer[i] = DISTRIBUTION(GENERATOR);
   std::span tmp{reinterpret_cast<std::byte *>(std::data(buffer)), std::size(buffer) * sizeof(value_type)};
   std::string nonce;
-  core::codec::Base64::encode(nonce, tmp, false, false);
+  utils::codec::Base64::encode(nonce, tmp, false, false);
   return create_raw_data(timestamp, nonce);
 }
 
@@ -84,7 +84,7 @@ std::string Crypto::create_password(std::string_view const &raw_data) {
   std::array<std::byte, Hash::DIGEST_LENGTH> buffer;
   auto digest = hash_.final(buffer);
   std::string result;
-  core::codec::Base64::encode(result, digest, false, false);
+  utils::codec::Base64::encode(result, digest, false, false);
   return result;
 }
 
