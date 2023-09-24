@@ -7,9 +7,9 @@
 #include <string_view>
 #include <utility>
 
-#include "roq/core/hash/sha256.hpp"
+#include "roq/utils/hash/sha256.hpp"
 
-#include "roq/core/mac/hmac.hpp"
+#include "roq/utils/mac/hmac.hpp"
 
 namespace roq {
 namespace deribit {
@@ -35,8 +35,8 @@ struct Crypto final {
   int64_t get_sequence(std::chrono::milliseconds timestamp);
 
  private:
-  using Hash = core::hash::SHA256;
-  using MAC = core::mac::HMAC<core::hash::SHA256>;
+  using Hash = utils::hash::SHA256;
+  using MAC = utils::mac::HMAC<utils::hash::SHA256>;
   using Digest = std::array<std::byte, MAC::DIGEST_LENGTH>;
 
   std::string const secret_;
