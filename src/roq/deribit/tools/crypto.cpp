@@ -11,6 +11,8 @@
 #include <fmt/compile.h>
 #include <fmt/format.h>
 
+#include "roq/logging.hpp"
+
 #include "roq/utils/codec/base64.hpp"
 #include "roq/utils/codec/hex.hpp"
 
@@ -39,6 +41,8 @@ std::uniform_int_distribution<uint32_t> DISTRIBUTION;
 // === IMPLEMENTATION ===
 
 Crypto::Crypto(std::string_view const &access_secret) : secret_{access_secret}, mac_{secret_} {
+  if (std::empty(secret_))
+    log::fatal("The API secret key is required"sv);
 }
 
 std::string Crypto::create_nonce() {
