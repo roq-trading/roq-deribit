@@ -785,6 +785,9 @@ void OrderEntry::operator()(Trace<fix::ExecutionReport> const &event, roq::fix::
       .last_traded_price = last_traded_price,
       .last_liquidity = last_liquidity,
       .routing_id = {},
+      .max_request_version = {},
+      .max_response_version = {},
+      .max_accepted_version = {},
       .update_type = update_type,
       .sending_time_utc = header.sending_time,
   };
