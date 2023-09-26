@@ -34,21 +34,19 @@ add_executable(${TARGET_NAME} ${SOURCES})
 
 target_link_libraries(
   ${TARGET_NAME}
-  ${PROJECT_NAME}-fix
-  ${PROJECT_NAME}-json
-  ${PROJECT_NAME}-sbe
-  ${PROJECT_NAME}-tools
-  roq-server::roq-server
-  roq-fix::roq-fix
-  roq-utils::roq-utils
-  roq-core::roq-core
-  roq-io::roq-io
-  roq-utils::roq-utils
-  roq-logging::roq-logging
-  aklomp::base64
-  Catch2::Catch2
-  ${UUID_LIBRARIES}
-  ${RT_LIBRARIES})
+  PRIVATE ${PROJECT_NAME}-fix
+          ${PROJECT_NAME}-json
+          ${PROJECT_NAME}-sbe
+          ${PROJECT_NAME}-tools
+          roq-server::roq-server
+          roq-fix::roq-fix
+          roq-utils::roq-utils
+          roq-core::roq-core
+          roq-io::roq-io
+          roq-utils::roq-utils
+          roq-logging::roq-logging
+          Catch2::Catch2
+          ${RT_LIBRARIES})
 
 if(ROQ_BUILD_TYPE STREQUAL "Release")
   set_target_properties(${TARGET_NAME} PROPERTIES LINK_FLAGS_RELEASE -s)
