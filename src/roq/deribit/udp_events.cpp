@@ -89,7 +89,7 @@ struct create_metrics final : public core::metrics::Factory {
 
 bool test_sequence(auto &cache, auto instrument_id, auto sequence_number) {
   auto result = false;
-  const constexpr uint32_t midpoint = 1 << 31;
+  constexpr uint32_t const midpoint = 1 << 31;
   auto iter = cache.find(instrument_id);
   if (iter != cache.end()) {
     auto previous = (*iter).second;

@@ -384,7 +384,7 @@ void DropCopy::operator()(Trace<core::jsonrpc::Result> const &event, core::json:
       log::fatal(R"(Unknown request_type="{}")"sv, result.id);
       return;
     case AUTH: {
-      const json::Auth auth{value};
+      json::Auth const auth{value};
       Trace event{trace_info, auth};
       (*this)(event);
       return;
