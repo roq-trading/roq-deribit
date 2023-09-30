@@ -733,6 +733,12 @@ void OrderEntry::operator()(Trace<fix::ExecutionReport> const &event, roq::fix::
       return;
     }
   }
+  auto request_or_exchange_id = [&]() {
+    // note! rejects does not send orig_cl_ord_id
+    if (std::empty(execution_report.orig_cl_ord_id))
+      return execution_report.order_id;
+    return execution_report.orig_cl_ord_id;
+  }();
   auto side = roq::fix::map(execution_report.side);
   auto order_status = roq::fix::map(execution_report.ord_status);
   auto order_type = roq::fix::map(execution_report.ord_type);
@@ -794,17 +800,11 @@ void OrderEntry::operator()(Trace<fix::ExecutionReport> const &event, roq::fix::
   auto user_id = SOURCE_NONE;
   auto order_id = ORDER_ID_NONE;
   auto strategy_id = STRATEGY_ID_NONE;
-  if (shared_.update_order(
-          execution_report.orig_cl_ord_id,  // note! *always* from create order (can't rewrite)
-          stream_id_,
-          trace_info,
-          response,
-          order_update,
-          [&](auto &order) {
-            user_id = order.user_id;
-            order_id = order.order_id;
-            strategy_id = order.strategy_id;
-          })) {
+  if (shared_.update_order(request_or_exchange_id, stream_id_, trace_info, response, order_update, [&](auto &order) {
+        user_id = order.user_id;
+        order_id = order.order_id;
+        strategy_id = order.strategy_id;
+      })) {
   } else {
     auto external = std::empty(execution_report.deribit_label);
     if (external)
