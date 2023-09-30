@@ -4,6 +4,10 @@ All notable changes will be documented in this file.
 
 ## Head
 
+### Fixed
+
+* Revert to exchange `OrderID` when our `OrigClOrdID` is missing (rejects) (#412)
+
 ## 0.9.7 &ndash; 2023-09-18
 
 ### Fixed
