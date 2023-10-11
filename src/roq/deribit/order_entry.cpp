@@ -245,13 +245,19 @@ uint16_t OrderEntry::operator()(
 uint16_t OrderEntry::operator()(Event<CancelAllOrders> const &event, std::string_view const &request_id) {
   auto &[message_info, cancel_all_orders] = event;
   if (ready()) {
+    auto mass_cancel_request_type = [&]() {
+      if (!std::empty(cancel_all_orders.symbol))
+        return roq::fix::MassCancelRequestType::CANCEL_ORDERS_FOR_SECURITY;
+      return roq::fix::MassCancelRequestType::CANCEL_ALL_ORDERS;
+    }();
     auto order_mass_cancel_request = fix::OrderMassCancelRequest{
         .cl_ord_id = request_id,
-        .mass_cancel_request_type = roq::fix::MassCancelRequestType::CANCEL_ALL_ORDERS,
+        .mass_cancel_request_type = mass_cancel_request_type,
         .security_type = {},
         .symbol = cancel_all_orders.symbol,
         .currency = {},
     };
+    log::warn("DEBUG: order_mass_cancel_request={}"sv, order_mass_cancel_request);
     send(order_mass_cancel_request);
   } else {
     log::warn(R"(*** NOT CONNECTED! UNABLE TO CANCEL ALL ORDERS FOR ACCOUNT="{}")"sv, cancel_all_orders.account);
