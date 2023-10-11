@@ -33,6 +33,11 @@ auto const SUPPORTS = Mask{
 auto const MBP_TICK_SIZE_MULTIPLIER = 1.0e-1;  // have seen fractional
 auto const MBP_ALLOW_REMOVE_NON_EXISTING = true;
 auto const OMS_REQUEST_ID_TYPE = RequestIdType::BASE64;
+auto const OMS_CANCEL_ALL_ORDERS = Mask{
+    CancelAllOrdersFilter::ACCOUNT,
+    CancelAllOrdersFilter::EXCHANGE,
+    CancelAllOrdersFilter::SYMBOL,
+};
 }  // namespace
 
 // === HELPERS ===
@@ -50,6 +55,7 @@ auto create_gateway_settings(auto &settings) -> GatewaySettings {
       .oms_download_has_state = {},
       .oms_download_has_routing_id = {},
       .oms_request_id_type = OMS_REQUEST_ID_TYPE,
+      .oms_cancel_all_orders = OMS_CANCEL_ALL_ORDERS,
   };
 }
 }  // namespace
