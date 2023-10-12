@@ -7,6 +7,7 @@
 
 #include "roq/mask.hpp"
 
+#include "roq/utils/common.hpp"
 #include "roq/utils/safe_cast.hpp"
 #include "roq/utils/update.hpp"
 
@@ -245,10 +246,15 @@ uint16_t OrderEntry::operator()(
 uint16_t OrderEntry::operator()(Event<CancelAllOrders> const &event, std::string_view const &request_id) {
   auto &[message_info, cancel_all_orders] = event;
   if (ready()) {
+    auto filter = utils::create_filter(cancel_all_orders) & ~Mask{Filter::ACCOUNT};
     auto mass_cancel_request_type = [&]() {
-      if (!std::empty(cancel_all_orders.symbol))
+      if (std::empty(filter))
+        return roq::fix::MassCancelRequestType::CANCEL_ALL_ORDERS;
+      // note! no need to validate exchange
+      if (!std::empty(filter & Mask{Filter::SYMBOL}) && std::empty(filter & ~Mask{Filter::EXCHANGE, Filter::SYMBOL}))
         return roq::fix::MassCancelRequestType::CANCEL_ORDERS_FOR_SECURITY;
-      return roq::fix::MassCancelRequestType::CANCEL_ALL_ORDERS;
+      log::warn("DEBUG: filter={}"sv, filter);
+      throw oms::Rejected{Origin::GATEWAY, Error::INVALID_FILTER, "filter"sv};
     }();
     auto order_mass_cancel_request = fix::OrderMassCancelRequest{
         .cl_ord_id = request_id,
@@ -261,6 +267,7 @@ uint16_t OrderEntry::operator()(Event<CancelAllOrders> const &event, std::string
     send(order_mass_cancel_request);
   } else {
     log::warn(R"(*** NOT CONNECTED! UNABLE TO CANCEL ALL ORDERS FOR ACCOUNT="{}")"sv, cancel_all_orders.account);
+    throw oms::Rejected{Origin::GATEWAY, Error::GATEWAY_NOT_READY, "not ready"sv};
   }
   return stream_id_;
 }
