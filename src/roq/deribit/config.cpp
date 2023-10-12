@@ -34,9 +34,9 @@ auto const MBP_TICK_SIZE_MULTIPLIER = 1.0e-1;  // have seen fractional
 auto const MBP_ALLOW_REMOVE_NON_EXISTING = true;
 auto const OMS_REQUEST_ID_TYPE = RequestIdType::BASE64;
 auto const OMS_CANCEL_ALL_ORDERS = Mask{
-    CancelAllOrdersFilter::ACCOUNT,
-    CancelAllOrdersFilter::EXCHANGE,
-    CancelAllOrdersFilter::SYMBOL,
+    Filter::ACCOUNT,
+    Filter::EXCHANGE,
+    Filter::SYMBOL,
 };
 }  // namespace
 
