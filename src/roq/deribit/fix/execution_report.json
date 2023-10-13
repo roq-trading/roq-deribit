@@ -5,14 +5,12 @@
     {
       "tag": 11,
       "name": "ClOrdID",
-      "type": "std::string_view",
-      "required": true
+      "type": "std::string_view"
     },
     {
       "tag": 41,
       "name": "OrigClOrdID",
-      "type": "std::string_view",
-      "required": true
+      "type": "std::string_view"
     },
     {
       "tag": 39,
@@ -64,8 +62,7 @@
     {
       "tag": 44,
       "name": "Price",
-      "type": "double",
-      "required": true
+      "type": "double"
     },
     {
       "tag": 18,
