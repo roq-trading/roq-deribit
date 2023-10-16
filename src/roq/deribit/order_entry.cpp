@@ -244,49 +244,52 @@ uint16_t OrderEntry::operator()(
 }
 
 uint16_t OrderEntry::operator()(Event<CancelAllOrders> const &event, std::string_view const &request_id) {
+  if (!ready()) [[unlikely]]
+    throw oms::NotReady{"not ready"sv};
   auto &[message_info, cancel_all_orders] = event;
-  if (ready()) {
-    auto filter = utils::create_filter(cancel_all_orders) & ~Mask{Filter::ACCOUNT};
-    auto mass_cancel_request_type = [&]() {
-      if (std::empty(filter))
-        return roq::fix::MassCancelRequestType::CANCEL_ALL_ORDERS;
-      // note! no need to validate exchange
-      if (!std::empty(filter & Mask{Filter::SYMBOL}) && std::empty(filter & ~Mask{Filter::EXCHANGE, Filter::SYMBOL}))
-        return roq::fix::MassCancelRequestType::CANCEL_ORDERS_FOR_SECURITY;
-      log::warn("DEBUG: filter={}"sv, filter);
-      throw oms::Rejected{Origin::GATEWAY, Error::INVALID_FILTER, "filter"sv};
-    }();
-    auto order_mass_cancel_request = fix::OrderMassCancelRequest{
-        .cl_ord_id = request_id,
-        .mass_cancel_request_type = mass_cancel_request_type,
-        .security_type = {},
-        .symbol = cancel_all_orders.symbol,
-        .currency = {},
-    };
-    log::warn("DEBUG: order_mass_cancel_request={}"sv, order_mass_cancel_request);
-    send(order_mass_cancel_request);
+  auto send_ack = [&]() {
     auto cancel_all_orders_ack = CancelAllOrdersAck{
         .stream_id = stream_id_,
         .account = account_.get_name(),
-        .order_id = cancel_all_orders.order_id,  // note! request_id
+        .order_id = cancel_all_orders.order_id,
+        .exchange = cancel_all_orders.exchange,
+        .symbol = cancel_all_orders.symbol,
+        .side = cancel_all_orders.side,
         .origin = Origin::GATEWAY,
         .status = RequestStatus::FORWARDED,
         .error = {},
         .text = {},
         .request_id = request_id,
-        .external_account = {},  // XXX
+        .external_account = {},
         .number_of_affected_orders = {},
-        .round_trip_latency = {},                      // XXX
-        .user = {},                                    // note! request_id
-        .strategy_id = cancel_all_orders.strategy_id,  // note! request_id
+        .round_trip_latency = {},
+        .user = {},
+        .strategy_id = cancel_all_orders.strategy_id,
     };
     TraceInfo trace_info{event};
     Trace event_2{trace_info, cancel_all_orders_ack};
     shared_(event_2);
-  } else {
-    log::warn(R"(*** NOT CONNECTED! UNABLE TO CANCEL ALL ORDERS FOR ACCOUNT="{}")"sv, cancel_all_orders.account);
-    throw oms::Rejected{Origin::GATEWAY, Error::GATEWAY_NOT_READY, "not ready"sv};
-  }
+  };
+  auto filter = utils::create_filter(cancel_all_orders) & ~Mask{Filter::ACCOUNT};
+  auto mass_cancel_request_type = [&]() {
+    if (std::empty(filter))
+      return roq::fix::MassCancelRequestType::CANCEL_ALL_ORDERS;
+    // note! no need to validate exchange
+    if (!std::empty(filter & Mask{Filter::SYMBOL}) && std::empty(filter & ~Mask{Filter::EXCHANGE, Filter::SYMBOL}))
+      return roq::fix::MassCancelRequestType::CANCEL_ORDERS_FOR_SECURITY;
+    log::warn("DEBUG: filter={}"sv, filter);
+    throw oms::Rejected{Origin::GATEWAY, Error::INVALID_FILTER, "filter"sv};
+  }();
+  auto order_mass_cancel_request = fix::OrderMassCancelRequest{
+      .cl_ord_id = request_id,
+      .mass_cancel_request_type = mass_cancel_request_type,
+      .security_type = {},
+      .symbol = cancel_all_orders.symbol,
+      .currency = {},
+  };
+  log::warn("DEBUG: order_mass_cancel_request={}"sv, order_mass_cancel_request);
+  send(order_mass_cancel_request);
+  send_ack();
   return stream_id_;
 }
 
@@ -990,17 +993,20 @@ void OrderEntry::operator()(Trace<fix::OrderMassCancelReport> const &event, roq:
   auto cancel_all_orders_ack = CancelAllOrdersAck{
       .stream_id = stream_id_,
       .account = account_.get_name(),
-      .order_id = {},  // note! request_id
+      .order_id = {},
+      .exchange = {},
+      .symbol = {},
+      .side = {},
       .origin = Origin::EXCHANGE,
       .status = status,
       .error = {},
       .text = order_mass_cancel_report.text,
       .request_id = order_mass_cancel_report.cl_ord_id,
-      .external_account = {},  // XXX
+      .external_account = {},
       .number_of_affected_orders = order_mass_cancel_report.total_affected_orders,
-      .round_trip_latency = {},  // XXX
-      .user = {},                // note! request_id
-      .strategy_id = {},         // note! request_id
+      .round_trip_latency = {},
+      .user = {},
+      .strategy_id = {},
   };
   Trace event_2{trace_info, cancel_all_orders_ack};
   shared_(event_2);
