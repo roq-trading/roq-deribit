@@ -9,8 +9,6 @@
 
 #include "roq/core/download.hpp"
 
-#include "roq/core/stack/buffer.hpp"
-
 #include "roq/core/metrics/counter.hpp"
 #include "roq/core/metrics/latency.hpp"
 #include "roq/core/metrics/profile.hpp"

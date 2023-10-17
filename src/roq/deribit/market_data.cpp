@@ -336,11 +336,10 @@ void MarketData::send_heartbeat(std::string_view const &test_req_id) {
 
 void MarketData::send_test_request(std::chrono::nanoseconds now) {
   // request_id is current time
-  stack_buffer_.clear();
-  core::charconv::to_string(std::back_inserter(stack_buffer_), now.count());
-  auto request_id = std::string_view{std::data(stack_buffer_), std::size(stack_buffer_)};
+  request_id_.clear();
+  core::charconv::to_string(std::back_inserter(request_id_), now.count());
   auto test_request = fix::TestRequest{
-      .test_req_id = request_id,
+      .test_req_id = request_id_,
   };
   send(test_request);
   if (!last_logon_or_heartbeat_.count())

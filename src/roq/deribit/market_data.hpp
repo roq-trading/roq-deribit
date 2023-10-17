@@ -9,8 +9,6 @@
 
 #include "roq/core/download.hpp"
 
-#include "roq/core/stack/buffer.hpp"
-
 #include "roq/core/metrics/counter.hpp"
 #include "roq/core/metrics/latency.hpp"
 #include "roq/core/metrics/profile.hpp"
@@ -147,7 +145,7 @@ struct MarketData final : public io::net::ConnectionManager::Handler {
   // buffers
   std::vector<std::byte> encode_buffer_;
   std::vector<std::byte> decode_buffer_;
-  core::stack::Buffer<char, 32> stack_buffer_;
+  std::string request_id_;
   // metrics
   struct {
     core::metrics::Counter disconnect;

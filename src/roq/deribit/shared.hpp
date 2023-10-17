@@ -17,8 +17,6 @@
 
 #include "roq/core/limit/rate_limiter.hpp"
 
-#include "roq/core/stack/buffer.hpp"
-
 #include "roq/utils/mbp/sequencer.hpp"
 
 #include "roq/deribit/instrument.hpp"
@@ -119,7 +117,7 @@ struct Shared final {
 
  private:
   uint32_t request_id_ = 0;
-  core::stack::Buffer<char, 32> stack_buffer_;
+  std::string request_id_encode_buffer_;
   bool const multicast_;
 
  public:
