@@ -45,4 +45,5 @@ $PREFIX "./roq-deribit" \
   --ws_uri "$WS_URI" \
   --cache_all_reference_data true \
   --oms_cache=true \
+  --fix_cancel_on_disconnect=false \
   $@
