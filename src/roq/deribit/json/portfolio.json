@@ -215,6 +215,9 @@
     },
     {
       "name": "fees"
+    },
+    {
+      "name": "margin_model"
     }
   ]
 }
