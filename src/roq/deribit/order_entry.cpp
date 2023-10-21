@@ -852,6 +852,7 @@ void OrderEntry::operator()(Trace<fix::ExecutionReport> const &event, roq::fix::
     for (auto &item : execution_report.no_fills) {
       auto liquidity = roq::fix::map(item.fill_liquidity_ind);
       auto fill = Fill{
+          .exchange_time_utc = execution_report.transact_time,
           .external_trade_id = item.fill_exec_id,
           .quantity = item.fill_qty,
           .price = item.fill_px,

@@ -523,6 +523,7 @@ void DropCopy::operator()(Trace<json::Trade> const &event, bool is_download, boo
   auto quantity = trade.amount * multiplier;
   auto liquidity = json::map(trade.liquidity);
   auto fill = Fill{
+      .exchange_time_utc = trade.timestamp,
       .external_trade_id = {},
       .quantity = quantity,
       .price = trade.price,
