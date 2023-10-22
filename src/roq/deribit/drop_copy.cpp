@@ -544,7 +544,7 @@ void DropCopy::operator()(Trace<json::Trade> const &event, bool is_download, boo
       .update_time_utc = trade.timestamp,
       .external_account = {},
       .external_order_id = trade.order_id,
-      .client_order_id = {},
+      .client_order_id = trade.label,  // XXX FIXME roq-server should own this
       .fills = {&fill, 1},
       .routing_id = {},
       .update_type = update_type,

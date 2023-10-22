@@ -873,7 +873,7 @@ void OrderEntry::operator()(Trace<fix::ExecutionReport> const &event, roq::fix::
         .update_time_utc = execution_report.transact_time,
         .external_account = {},
         .external_order_id = execution_report.order_id,
-        .client_order_id = {},
+        .client_order_id = execution_report.orig_cl_ord_id,  // XXX FIXME roq-server should own this
         .fills = fills,
         .routing_id = {},
         .update_type = update_type,
