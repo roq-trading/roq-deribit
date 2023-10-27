@@ -333,6 +333,8 @@ void DropCopy::get_account_summary(std::span<std::string> const &currencies) {
   }
 }
 
+// XXX TODO download trades by time period
+// XXX TODO specify subaccount_id
 void DropCopy::get_trades(std::span<std::string> const &currencies) {
   constexpr json::RequestType request_type = json::RequestType::GET_TRADES;
   for (auto currency : currencies) {
