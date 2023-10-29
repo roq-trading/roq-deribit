@@ -36,6 +36,10 @@
     },
     {
       "name": "withdrawal_priorities"
+    },
+    {
+      "name": "in_cross_collateral_pool",
+      "type": "bool"
     }
   ]
 }
