@@ -45,5 +45,10 @@ $PREFIX "./roq-deribit" \
   --ws_uri "$WS_URI" \
   --cache_all_reference_data true \
   --oms_cache=true \
+  --oms_multicast_port 1234 \
+  --oms_multicast_address 224.1.1.1 \                                                                              
+  --oms_local_interface 192.168.188.64 \                                                                                    
+  --oms_multicast_ttl 4 \
+  --oms_multicast_loop=true \
   --fix_cancel_on_disconnect=false \
   $@
