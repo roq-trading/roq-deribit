@@ -38,16 +38,16 @@ $PREFIX "./roq-deribit" \
   --secrets_file "$SECRETS_FILE" \
   --cache_dir "$HOME/var/lib/roq/cache" \
   --event_log_dir "$HOME/var/lib/roq/data" \
-  --event_log_symlink true \
+  --event_log_symlink=true \
   --client_listen_address "$HOME/run/$NAME.sock" \
   --service_listen_address "$HOME/run/metrics/$NAME.sock" \
   --fix_uri "$FIX_URI" \
   --ws_uri "$WS_URI" \
-  --cache_all_reference_data true \
+  --cache_all_reference_data=true \
   --oms_cache=true \
   --oms_multicast_port 1234 \
-  --oms_multicast_address 224.1.1.1 \                                                                              
-  --oms_local_interface 192.168.188.64 \                                                                                    
+  --oms_multicast_address=224.1.1.1 \
+  --oms_local_interface 192.168.188.64 \
   --oms_multicast_ttl 4 \
   --oms_multicast_loop=true \
   --fix_cancel_on_disconnect=false \
