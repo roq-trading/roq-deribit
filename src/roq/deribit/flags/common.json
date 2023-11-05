@@ -52,6 +52,19 @@
       "type": "std::string",
       "description": "Multicast local interface",
       "comment": "ONLY HERE BECAUSE OF multicast_ PREFIX"
+    },
+    {
+      "name": "download_trades_lookback",
+      "type": "std::chrono::nanoseconds",
+      "validator": "roq::flags::validators::TimePeriod",
+      "default": "{}",
+      "description": "download trades lookback period"
+    },
+    {
+      "name": "download_trades_count",
+      "type": "uint32_t",
+      "default": 0,
+      "description": "download trades count"
     }
   ]
 }

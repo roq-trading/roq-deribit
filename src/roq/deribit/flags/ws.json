@@ -33,13 +33,6 @@
       "description": "max subscriptions per connection (count)"
     },
     {
-      "name": "max_trades",
-      "type": "uint32_t",
-      "required": true,
-      "default": 100,
-      "description": "max number of trades for historical lookup (count)"
-    },
-    {
       "name": "ticker_interval",
       "type": "std::string",
       "default": "100ms",

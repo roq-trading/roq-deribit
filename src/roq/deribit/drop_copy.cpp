@@ -333,24 +333,44 @@ void DropCopy::get_account_summary(std::span<std::string> const &currencies) {
   }
 }
 
-// XXX TODO download trades by time period
 // XXX TODO specify subaccount_id
 void DropCopy::get_trades(std::span<std::string> const &currencies) {
   constexpr json::RequestType request_type = json::RequestType::GET_TRADES;
-  for (auto currency : currencies) {
-    auto message = fmt::format(
-        R"({{)"
-        R"("method":"private/get_user_trades_by_currency",)"
-        R"("params":{{)"
-        R"("currency":"{}",)"
-        R"("count":{})"
-        R"(}},)"
-        R"("id":"{}")"
-        R"(}})"_cf,
-        currency,
-        shared_.settings.ws.max_trades,
-        request_type.as_raw_text());
-    (*connection_).send_text(message);
+  if (shared_.settings.common.download_trades_lookback.count()) {
+    auto now = clock::get_realtime<std::chrono::milliseconds>();
+    auto start_timestamp =
+        std::chrono::duration_cast<std::chrono::milliseconds>(now - shared_.settings.common.download_trades_lookback);
+    for (auto currency : currencies) {
+      auto message = fmt::format(
+          R"({{)"
+          R"("method":"private/get_user_trades_by_currency",)"
+          R"("params":{{)"
+          R"("currency":"{}",)"
+          R"("start_timestamp":{})"
+          R"(}},)"
+          R"("id":"{}")"
+          R"(}})"_cf,
+          currency,
+          start_timestamp.count(),
+          request_type.as_raw_text());
+      (*connection_).send_text(message);
+    }
+  } else if (shared_.settings.common.download_trades_count) {
+    for (auto currency : currencies) {
+      auto message = fmt::format(
+          R"({{)"
+          R"("method":"private/get_user_trades_by_currency",)"
+          R"("params":{{)"
+          R"("currency":"{}",)"
+          R"("count":{})"
+          R"(}},)"
+          R"("id":"{}")"
+          R"(}})"_cf,
+          currency,
+          shared_.settings.common.download_trades_count,
+          request_type.as_raw_text());
+      (*connection_).send_text(message);
+    }
   }
 }
 
