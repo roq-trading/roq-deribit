@@ -44,7 +44,7 @@ $PREFIX "./roq-deribit" \
   --fix_uri "$FIX_URI" \
   --ws_uri "$WS_URI" \
   --cache_all_reference_data=true \
-  --download_trades_lookback=1s \
+  --download_trades_count=1000 \
   --oms_cache=true \
   --oms_multicast_port 1234 \
   --oms_multicast_address=224.1.1.1 \
