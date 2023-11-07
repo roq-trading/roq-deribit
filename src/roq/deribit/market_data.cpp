@@ -117,6 +117,7 @@ void validate(auto const &value) {
       break;
     case DELETE_THRU:
     case DELETE_FROM:
+    case OVERLAY:
       log::fatal("MDUpdateAction not supported: {}"sv, value);
       break;
   }
