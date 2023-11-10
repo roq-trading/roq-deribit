@@ -51,5 +51,6 @@ $PREFIX "./roq-deribit" \
   --oms_local_interface 192.168.188.64 \
   --oms_multicast_ttl 4 \
   --oms_multicast_loop=true \
+  --oms_listen_port 9876 \
   --fix_cancel_on_disconnect=false \
   $@
