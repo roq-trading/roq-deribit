@@ -52,7 +52,7 @@ $PREFIX "./roq-deribit" \
   --oms_multicast_ttl 4 \
   --oms_multicast_loop=true \
   --oms_listen_port 9876 \
-  --oms_db_uri "http://192.168.188.90:8123" \
-  --oms_db_database "roq_journal" \
+  --cache_database_uri "http://192.168.188.70:8123" \
+  --cache_database_name "roq_cache" \
   --fix_cancel_on_disconnect=false \
   $@
