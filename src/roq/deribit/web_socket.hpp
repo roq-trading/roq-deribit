@@ -25,6 +25,7 @@
 
 #include "roq/server.hpp"
 
+#include "roq/deribit/account.hpp"
 #include "roq/deribit/shared.hpp"
 #include "roq/deribit/web_socket_state.hpp"
 
@@ -60,7 +61,7 @@ struct WebSocket final : public web::socket::Client::Handler,
     virtual void operator()(Latch const &) = 0;
   };
 
-  WebSocket(Handler &, io::Context &, uint16_t stream_id, Shared &, size_t index, bool master);
+  WebSocket(Handler &, io::Context &, uint16_t stream_id, Account &, Shared &, size_t index, bool master);
 
   WebSocket(WebSocket &&) = delete;
   WebSocket(WebSocket const &) = delete;
@@ -86,6 +87,8 @@ struct WebSocket final : public web::socket::Client::Handler,
 
  private:
   void operator()(ConnectionStatus);
+
+  void login();
 
   uint32_t download(WebSocketState);
 
@@ -164,6 +167,8 @@ struct WebSocket final : public web::socket::Client::Handler,
   struct {
     core::metrics::Latency ping, heartbeat;
   } latency_;
+  // account
+  Account &account_;
   // cache
   Shared &shared_;
   absl::flat_hash_map<std::string, std::pair<roq::Layer, double>> top_of_book_;

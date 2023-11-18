@@ -6,6 +6,10 @@ All notable changes will be documented in this file.
 
 ## 0.9.8 &ndash; 2023-11-20
 
+### Changed
+
+*  Market Data WebSocket now authenticating (#421)
+
 ### Fixed
 
 * Revert to exchange `OrderID` when our `OrigClOrdID` is missing (rejects) (#412)

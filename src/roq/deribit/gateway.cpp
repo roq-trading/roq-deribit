@@ -47,10 +47,11 @@ R create_drop_copy(auto &gateway, auto &context, auto &stream_id, auto &accounts
 }
 
 template <typename R>
-R create_web_socket(auto &gateway, auto &context, auto &stream_id, auto &shared) {
+R create_web_socket(auto &gateway, auto &context, auto &stream_id, auto &account, auto &shared) {
   using result_type = std::remove_cvref<R>::type;
   result_type result;
-  result.emplace_back(std::make_unique<WebSocket>(gateway, context, ++stream_id, shared, std::size(result), true));
+  result.emplace_back(
+      std::make_unique<WebSocket>(gateway, context, ++stream_id, account, shared, std::size(result), true));
   return result;
 }
 
@@ -83,7 +84,8 @@ Gateway::Gateway(server::Dispatcher &dispatcher, Settings const &settings, Confi
       accounts_{create_accounts<decltype(accounts_)>(config)}, context_{context}, shared_{dispatcher_, settings},
       order_entry_{create_order_entry<decltype(order_entry_)>(*this, context_, stream_id_, accounts_, shared_)},
       drop_copy_{create_drop_copy<decltype(drop_copy_)>(*this, context_, stream_id_, accounts_, shared_)},
-      web_socket_{create_web_socket<decltype(web_socket_)>(*this, context_, stream_id_, shared_)},
+      web_socket_{create_web_socket<decltype(web_socket_)>(
+          *this, context_, stream_id_, get_account(accounts_, master_account_), shared_)},
       market_data_{create_market_data<decltype(market_data_)>(
           *this, context_, ++stream_id_, get_account(accounts_, master_account_), shared_)},
       udp_snapshot_{create_udp_snapshot(*this, context_, ++stream_id_, shared_)},
@@ -245,7 +247,8 @@ void Gateway::ensure_symbol_slices(size_t size) {
     auto stream_id = ++stream_id_;
     auto index = std::size(web_socket_);
     log::debug("Create WebSocket (stream_id={}, index={})"sv, stream_id, index);
-    auto web_socket = std::make_unique<WebSocket>(*this, context_, stream_id, shared_, index, false);
+    auto web_socket =
+        std::make_unique<WebSocket>(*this, context_, stream_id, *accounts_.at(master_account_), shared_, index, false);
     MessageInfo message_info;
     Start start;
     create_event_and_dispatch(*web_socket, message_info, start);

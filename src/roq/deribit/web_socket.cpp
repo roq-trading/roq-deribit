@@ -86,7 +86,13 @@ struct create_metrics final : public core::metrics::Factory {
 // === IMPLEMENTATION ===
 
 WebSocket::WebSocket(
-    Handler &handler, io::Context &context, uint16_t stream_id, Shared &shared, size_t index, bool master)
+    Handler &handler,
+    io::Context &context,
+    uint16_t stream_id,
+    Account &account,
+    Shared &shared,
+    size_t index,
+    bool master)
     : handler_{handler}, stream_id_{stream_id}, name_{create_name(stream_id_)}, index_{index}, master_{master},
       publish_top_of_book_{publish_top_of_book(shared)}, supports_{get_supports(master_, publish_top_of_book_)},
       connection_{create_connection(*this, shared.settings, context)},
@@ -106,7 +112,8 @@ WebSocket::WebSocket(
           .ping = create_metrics(shared.settings, name_, "ping"sv),
           .heartbeat = create_metrics(shared.settings, name_, "heartbeat"sv),
       },
-      shared_{shared}, download_{shared.settings.ws.request_timeout, [this](auto state) { return download(state); }} {
+      account_{account}, shared_{shared},
+      download_{shared.settings.ws.request_timeout, [this](auto state) { return download(state); }} {
   log::info("DEBUG: publish_top_of_book={}"sv, publish_top_of_book_);
 }
 
@@ -156,8 +163,8 @@ void WebSocket::operator()(web::socket::Client::Disconnected const &) {
 }
 
 void WebSocket::operator()(web::socket::Client::Ready const &) {
-  (*this)(ConnectionStatus::DOWNLOADING);
-  download_.begin();
+  login();
+  (*this)(ConnectionStatus::LOGIN_SENT);
 }
 
 void WebSocket::operator()(web::socket::Client::Close const &) {
@@ -202,6 +209,32 @@ void WebSocket::operator()(ConnectionStatus status) {
     log::info("stream_status={}"sv, stream_status);
     create_trace_and_dispatch(handler_, trace_info, stream_status);
   }
+}
+
+void WebSocket::login() {
+  constexpr json::RequestType request_type = json::RequestType::AUTH;
+  auto now = clock::get_realtime<std::chrono::milliseconds>();
+  auto nonce = account_.create_nonce();
+  auto [signature, timestamp] = account_.create_signature(now, nonce);
+  auto message = fmt::format(
+      R"({{)"
+      R"("method":"public/auth",)"
+      R"("params":{{)"
+      R"("grant_type":"client_signature",)"
+      R"("client_id":"{}",)"
+      R"("timestamp":"{}",)"
+      R"("nonce":"{}",)"
+      R"("data":"",)"
+      R"("signature":"{}")"
+      R"(}},)"
+      R"("id":"{}")"
+      R"(}})"_cf,
+      account_.get_access_key(),
+      timestamp.count(),
+      nonce,
+      signature,
+      request_type.as_raw_text());
+  (*connection_).send_text(message);
 }
 
 uint32_t WebSocket::download(WebSocketState state) {
@@ -373,8 +406,12 @@ void WebSocket::operator()(Trace<core::jsonrpc::Result> const &event, core::json
     case UNKNOWN__:
       log::fatal(R"(Unknown request_type="{}")"sv, result.id);
       return;
-    case AUTH:
-      break;  // unexpected
+    case AUTH: {
+      json::Auth const auth{value};
+      Trace event{trace_info, auth};
+      (*this)(event);
+      return;
+    }
     case GET_CURRENCIES: {
       core::json::Buffer buffer{decode_buffer_};
       auto currencies = json::Currencies{value, buffer};
@@ -423,8 +460,13 @@ void WebSocket::operator()(Trace<core::jsonrpc::Notification> const &event, core
   }
 }
 
-void WebSocket::operator()(Trace<json::Auth> const &) {
-  log::fatal("Unexpected"sv);
+void WebSocket::operator()(Trace<json::Auth> const &event) {
+  profile_.auth([&]() {
+    auto &[trace_info, auth] = event;
+    log::info<2>("auth={}"sv, auth);
+    (*this)(ConnectionStatus::DOWNLOADING);
+    download_.begin();
+  });
 }
 
 void WebSocket::operator()(Trace<json::Currencies> const &event) {
