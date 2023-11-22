@@ -13,6 +13,17 @@ URI="test.deribit.com"
 FIX_URI="tcp://$URI:9881"
 WS_URI="wss://$URI/ws/api/v2"
 
+KERNEL="$(uname -a)"
+
+case "$KERNEL" in
+  Linux*)
+    LOCAL_INTERFACE=$(ip route get 8.8.8.8 | sed -n 's/.*src \([^\ ]*\).*/\1/p')
+    ;;
+  Darwin*)
+    LOCAL_INTERFACE=$(osascript -e "IPv4 address of (system info)")
+    ;;
+esac
+
 # debug?
 
 if [ "$1" == "debug" ]; then
@@ -48,7 +59,7 @@ $PREFIX "./roq-deribit" \
   --oms_cache=true \
   --oms_multicast_port 1234 \
   --oms_multicast_address=224.1.1.1 \
-  --oms_local_interface 192.168.188.64 \
+  --oms_local_interface="$LOCAL_INTERFACE" \
   --oms_multicast_ttl 4 \
   --oms_multicast_loop=true \
   --oms_listen_port 9876 \
