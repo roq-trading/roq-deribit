@@ -101,6 +101,10 @@
     {
       "name": "cancel_reason",
       "type": "std::string_view"
+    },
+    {
+      "name": "contracts",
+      "type": "uint32_t"
     }
   ]
 }
