@@ -22,12 +22,13 @@ case "$KERNEL" in
   Darwin*)
     LOCAL_INTERFACE=$(osascript -e "IPv4 address of (system info)")
     ;;
+  *)
+    (>&2 echo -e "\033[1;31mERROR: Unknown architecture.\033[0m") && exit 1
 esac
 
 # debug?
 
 if [ "$1" == "debug" ]; then
-  KERNEL="$(uname -a)"
   case "$KERNEL" in
     Linux*)
       PREFIX="gdb --args"
