@@ -673,6 +673,9 @@ void MarketData::operator()(Trace<fix::SecurityList> const &event, roq::fix::Hea
           .settlement_date = {},
           .expiry_datetime = utils::safe_cast(expiry_datetime),
           .expiry_datetime_utc = utils::safe_cast(expiry_datetime_utc),
+          .exchange_time_utc = {},
+          .exchange_sequence = {},
+          .sending_time_utc = {},
           .discard = discard,
       };
       create_trace_and_dispatch(handler_, trace_info, reference_data, true);
