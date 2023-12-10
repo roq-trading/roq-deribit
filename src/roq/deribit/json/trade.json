@@ -116,6 +116,10 @@
     {
       "name": "api",
       "type": "bool"
+    },
+    {
+      "name": "contracts",
+      "type": "double"
     }
   ]
 }
