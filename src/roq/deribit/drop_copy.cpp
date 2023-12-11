@@ -71,6 +71,14 @@ struct create_metrics final : public core::metrics::Factory {
   explicit create_metrics(auto &settings, auto const &group, auto const &function)
       : core::metrics::Factory(settings.app.name, group, function) {}
 };
+
+auto get_download_trades_lookback(auto const &settings, auto download_trades_is_first) {
+  if (download_trades_is_first) {
+    if (settings.common.download_trades_lookback_on_restart.count())
+      return settings.common.download_trades_lookback_on_restart;
+  }
+  return settings.common.download_trades_lookback;
+}
 }  // namespace
 
 // === IMPLEMENTATION ===
@@ -337,8 +345,9 @@ void DropCopy::get_account_summary(std::span<std::string> const &currencies) {
 void DropCopy::get_trades(std::span<std::string> const &currencies) {
   constexpr json::RequestType request_type = json::RequestType::GET_TRADES;
   auto now = clock::get_realtime<std::chrono::milliseconds>();
-  auto start_timestamp =
-      std::chrono::duration_cast<std::chrono::milliseconds>(now - shared_.settings.common.download_trades_lookback);
+  auto lookback = get_download_trades_lookback(shared_.settings, download_trades_is_first_);
+  log::info<1>("Download trades: lookback={}"sv, lookback);
+  auto start_timestamp = std::chrono::duration_cast<std::chrono::milliseconds>(now - lookback);
   for (auto currency : currencies) {
     auto message = fmt::format(
         R"({{)"
@@ -498,6 +507,7 @@ void DropCopy::operator()(Trace<json::Trades> const &event) {
     auto is_last = i == (std::size(trades_2) - 1);
     create_trace_and_dispatch(*this, event.trace_info, std::as_const(trade), true, is_last);
   }
+  download_trades_is_first_ = false;
 }
 
 void DropCopy::operator()(Trace<json::Order> const &event) {

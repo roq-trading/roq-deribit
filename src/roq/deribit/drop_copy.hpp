@@ -139,6 +139,7 @@ struct DropCopy final : public web::socket::Client::Handler,
   ConnectionStatus status_ = {};
   core::Download<DropCopyState> download_;
   bool can_download_ = false;
+  bool download_trades_is_first_ = true;
 };
 
 }  // namespace deribit
