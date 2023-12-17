@@ -611,6 +611,7 @@ void OrderEntry::operator()(Trace<fix::PositionReport> const &event, roq::fix::H
     auto position_update = PositionUpdate{
         .stream_id = stream_id_,
         .account = account_.get_name(),
+        .margin_mode = {},
         .exchange = shared_.settings.exchange,
         .symbol = position_qty.symbol,
         .external_account = {},
