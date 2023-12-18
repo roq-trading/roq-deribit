@@ -606,6 +606,7 @@ void OrderEntry::operator()(Trace<fix::PositionReport> const &event, roq::fix::H
   for (size_t i = 0; i < std::size(position_report.no_positions); ++i) {
     auto is_last = std::size(position_report.no_positions) == (i + 1);
     auto &position_qty = position_report.no_positions[i];
+    // XXX FIXME we only get pos_type which is always Transaction Quantity ==> margin mode = isolated?
     auto long_quantity = std::max(0.0, position_qty.long_qty);
     auto short_quantity = std::max(0.0, position_qty.short_qty);
     auto position_update = PositionUpdate{

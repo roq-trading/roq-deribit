@@ -476,11 +476,12 @@ void DropCopy::operator()(Trace<json::Ticker> const &) {
 void DropCopy::operator()(Trace<json::Portfolio> const &event) {
   log::info<2>("portfolio={}"sv, event.value);
   auto &[trace_info, portfolio] = event;
+  auto margin_mode = portfolio.cross_collateral_enabled ? MarginMode::CROSS : MarginMode::ISOLATED;
   auto funds_update = FundsUpdate{
       .stream_id = stream_id_,
       .account = account_.get_name(),
       .currency = portfolio.currency,
-      .margin_mode = {},
+      .margin_mode = margin_mode,
       .balance = portfolio.balance,
       .hold = NaN,
       .external_account = {},
