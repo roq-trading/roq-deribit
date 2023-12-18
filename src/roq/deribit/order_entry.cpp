@@ -129,6 +129,7 @@ void OrderEntry::operator()(Event<Timer> const &event) {
   if (last_logon_or_heartbeat_.count() && shared_.settings.fix.request_timeout.count() &&
       (event.value.now - last_logon_or_heartbeat_) > shared_.settings.fix.request_timeout) {
     log::warn("*** DETECTED TIMEOUT ***"sv);
+    log::info("DEBUG: now={}, last_logon_or_heartbeat={}"sv, event.value.now, last_logon_or_heartbeat_);
     log::info("closing connection"sv);
     (*connection_manager_).close();
   } else {
