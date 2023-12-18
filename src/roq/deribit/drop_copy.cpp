@@ -479,8 +479,8 @@ void DropCopy::operator()(Trace<json::Portfolio> const &event) {
   auto funds_update = FundsUpdate{
       .stream_id = stream_id_,
       .account = account_.get_name(),
-      .margin_mode = {},
       .currency = portfolio.currency,
+      .margin_mode = {},
       .balance = portfolio.balance,
       .hold = NaN,
       .external_account = {},
