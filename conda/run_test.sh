@@ -2,6 +2,8 @@
 
 set -x
 
+NAME="roq-deribit"
+
 KERNEL="$(uname -s)"
 MACHINE="$(uname -m)"
 
@@ -32,11 +34,11 @@ esac
 
 echo -e "\033[1;34m--- START ---\033[0m"
 
-if roq-deribit --help; then
+if "$NAME" --help; then
   (>&2 echo -e "\033[1;31mERROR: Unexpected error code.\033[0m") && exit 1
 fi
 
-if ! roq-deribit-benchmark --help; then
+if ! "$NAME-benchmark" --help; then
   (>&2 echo -e "\033[1;31mERROR: Unexpected error code.\033[0m") && exit 1
 fi
 
