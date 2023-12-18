@@ -321,6 +321,7 @@ void OrderEntry::operator()(io::net::ConnectionManager::Disconnected const &) {
   next_heartbeat_ = {};
   (*this)(ConnectionStatus::DISCONNECTED);
   download_.reset();
+  last_logon_or_heartbeat_ = {};
   // test
   test_logon_time_ = {};
   test_disconnect_time_ = {};
