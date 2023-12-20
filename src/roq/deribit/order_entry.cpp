@@ -962,8 +962,13 @@ void OrderEntry::operator()(Trace<fix::Reject> const &event, roq::fix::Header co
     } else {
       log::warn<1>(R"(*** NO REQUEST FOR MSG_SEQ_NUM="{}" ***)"sv, reject.ref_seq_num);
     }
-  } else if (reject.session_reject_reason.compare("99"sv) == 0 && reject.text.compare("connection_too_slow"sv) == 0) {
-    log::info("closing connection"sv);
+  } else if (reject.session_reject_reason == "99"sv && reject.text == "connection_too_slow"sv) {
+    log::warn(R"(closing connection (reason: "{}"))"sv, reject.text);
+    (*connection_manager_).close();
+  } else if (
+      reject.ref_msg_type = roq::fix::MsgType::ORDER_MASS_CANCEL_REQUEST && reject.text == "rate_limit_exceeded"sv) {
+    // ???
+    log::warn(R"(closing connection (reason: "{}"))"sv, reject.text);
     (*connection_manager_).close();
   } else {
     log::fatal("Unexpected: reject={}"sv, reject);
