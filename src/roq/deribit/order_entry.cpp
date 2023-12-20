@@ -966,7 +966,7 @@ void OrderEntry::operator()(Trace<fix::Reject> const &event, roq::fix::Header co
     log::warn(R"(closing connection (reason: "{}"))"sv, reject.text);
     (*connection_manager_).close();
   } else if (
-      reject.ref_msg_type = roq::fix::MsgType::ORDER_MASS_CANCEL_REQUEST && reject.text == "rate_limit_exceeded"sv) {
+      reject.ref_msg_type == roq::fix::MsgType::ORDER_MASS_CANCEL_REQUEST && reject.text == "rate_limit_exceeded"sv) {
     // ???
     log::warn(R"(closing connection (reason: "{}"))"sv, reject.text);
     (*connection_manager_).close();
