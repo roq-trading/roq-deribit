@@ -42,6 +42,9 @@ else
   PREFIX=
 fi
 
+#DATABASE_URI="http://192.168.188.70:8123"
+DATABASE_URI="http://localhost:8123"
+
 # launch
 
 $PREFIX "./roq-deribit" \
@@ -65,7 +68,7 @@ $PREFIX "./roq-deribit" \
   --oms_multicast_ttl 4 \
   --oms_multicast_loop=true \
   --oms_listen_port 9876 \
-  --cache_database_uri "http://192.168.188.70:8123" \
+  --cache_database_uri "$DATABASE_URI" \
   --cache_database_name "roq_cache" \
   --fix_cancel_on_disconnect=false \
   $@

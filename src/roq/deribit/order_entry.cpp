@@ -907,7 +907,12 @@ void OrderEntry::operator()(Trace<fix::OrderCancelReject> const &event, roq::fix
       .quantity = NaN,
       .price = NaN,
   };
-  if (shared_.update_order(order_cancel_reject.orig_cl_ord_id, stream_id_, trace_info, response, [&](auto &order) {
+  auto request_or_exchange_id = [&]() {
+    if (!std::empty(order_cancel_reject.deribit_label))
+      return order_cancel_reject.deribit_label;
+    return order_cancel_reject.orig_cl_ord_id;
+  }();
+  if (shared_.update_order(request_or_exchange_id, stream_id_, trace_info, response, [&](auto &order) {
         auto status = roq::fix::map(order_cancel_reject.ord_status);
         if (status != order.status) {
           log::warn("Unexpected: order status received={}, expected={}"sv, status, order.status);
