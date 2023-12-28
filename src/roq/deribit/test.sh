@@ -42,8 +42,8 @@ else
   PREFIX=
 fi
 
-#DATABASE_URI="http://192.168.188.70:8123"
-DATABASE_URI="http://localhost:8123"
+DATABASE_URI="http://192.168.188.70:8123"
+#DATABASE_URI="http://localhost:8123"
 
 # launch
 
