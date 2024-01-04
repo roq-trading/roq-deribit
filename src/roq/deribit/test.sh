@@ -71,4 +71,5 @@ $PREFIX "./roq-deribit" \
   --cache_database_uri "$DATABASE_URI" \
   --cache_database_name "roq_cache" \
   --fix_cancel_on_disconnect=false \
+  --enable_portfolio=true \
   $@
