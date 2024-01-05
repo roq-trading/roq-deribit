@@ -31,7 +31,7 @@ esac
 if [ "$1" == "debug" ]; then
   case "$KERNEL" in
     Linux*)
-      PREFIX="gdb --args"
+      PREFIX="gdb --command=gdb_commands --args"
       ;;
     Darwin*)
       PREFIX="lldb --"
