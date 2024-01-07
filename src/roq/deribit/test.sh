@@ -69,7 +69,7 @@ $PREFIX "./roq-deribit" \
   --oms_multicast_loop=true \
   --oms_listen_port 9876 \
   --cache_database_uri "$DATABASE_URI" \
-  --cache_database_name "roq_cache" \
+  --cache_database_name "roq" \
   --fix_cancel_on_disconnect=false \
   --enable_portfolio=true \
   $@
