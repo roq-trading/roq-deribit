@@ -168,12 +168,8 @@ inline std::string get_instrument_name(deribit_multicast::Instrument &value) {
 
 template <>
 struct fmt::formatter<deribit_multicast::YesNo::Value> {
-  template <typename Context>
-  constexpr auto parse(Context &context) {
-    return std::begin(context);
-  }
-  template <typename Context>
-  auto format(deribit_multicast::YesNo::Value const &value, Context &context) const {
+  constexpr auto parse(format_parse_context &context) { return std::begin(context); }
+  auto format(deribit_multicast::YesNo::Value const &value, format_context &context) const {
     using namespace std::literals;
     return fmt::format_to(context.out(), "{}"sv, magic_enum::enum_name(value));
   }
@@ -183,13 +179,9 @@ struct fmt::formatter<deribit_multicast::YesNo::Value> {
 
 template <>
 struct fmt::formatter<deribit_multicast::Book::ChangesList> {
-  template <typename Context>
-  constexpr auto parse(Context &context) {
-    return std::begin(context);
-  }
-  template <typename Context>
-  auto format(deribit_multicast::Book::ChangesList const &value, Context &context) const {
-    using namespace fmt::literals;
+  constexpr auto parse(format_parse_context &context) { return std::begin(context); }
+  auto format(deribit_multicast::Book::ChangesList const &value, format_context &context) const {
+    using namespace std::literals;
     return fmt::format_to(
         context.out(),
         R"({{)"
@@ -197,7 +189,7 @@ struct fmt::formatter<deribit_multicast::Book::ChangesList> {
         R"(change={}, )"
         R"(price={}, )"
         R"(amount={})"
-        R"(}})"_cf,
+        R"(}})"sv,
         deribit_multicast::BookSide::c_str(value.side()),
         deribit_multicast::BookChange::c_str(value.change()),
         value.price(),
@@ -207,13 +199,9 @@ struct fmt::formatter<deribit_multicast::Book::ChangesList> {
 
 template <>
 struct fmt::formatter<deribit_multicast::Trades::TradesList> {
-  template <typename Context>
-  constexpr auto parse(Context &context) {
-    return std::begin(context);
-  }
-  template <typename Context>
-  auto format(deribit_multicast::Trades::TradesList const &value, Context &context) const {
-    using namespace fmt::literals;
+  constexpr auto parse(format_parse_context &context) { return std::begin(context); }
+  auto format(deribit_multicast::Trades::TradesList const &value, format_context &context) const {
+    using namespace std::literals;
     return fmt::format_to(
         context.out(),
         R"({{)"
@@ -230,7 +218,7 @@ struct fmt::formatter<deribit_multicast::Trades::TradesList> {
         R"(iv={}, )"
         R"(blockTradeId={}, )"
         R"(comboTradeId={})"
-        R"(}})"_cf,
+        R"(}})"sv,
         deribit_multicast::Direction::c_str(value.direction()),
         value.price(),
         value.amount(),
@@ -249,20 +237,16 @@ struct fmt::formatter<deribit_multicast::Trades::TradesList> {
 
 template <>
 struct fmt::formatter<deribit_multicast::Snapshot::LevelsList> {
-  template <typename Context>
-  constexpr auto parse(Context &context) {
-    return std::begin(context);
-  }
-  template <typename Context>
-  auto format(deribit_multicast::Snapshot::LevelsList const &value, Context &context) const {
-    using namespace fmt::literals;
+  constexpr auto parse(format_parse_context &context) { return std::begin(context); }
+  auto format(deribit_multicast::Snapshot::LevelsList const &value, format_context &context) const {
+    using namespace std::literals;
     return fmt::format_to(
         context.out(),
         R"({{)"
         R"(side={}, )"
         R"(price={}, )"
         R"(amount={})"
-        R"(}})"_cf,
+        R"(}})"sv,
         deribit_multicast::BookSide::c_str(value.side()),
         value.price(),
         value.amount());
@@ -275,14 +259,9 @@ struct fmt::formatter<deribit_multicast::Snapshot::LevelsList> {
 
 template <>
 struct fmt::formatter<deribit_multicast::Book> {
-  template <typename Context>
-  constexpr auto parse(Context &context) {
-    return std::begin(context);
-  }
-  template <typename Context>
-  auto format(deribit_multicast::Book &value, Context &context) const {
+  constexpr auto parse(format_parse_context &context) { return std::begin(context); }
+  auto format(deribit_multicast::Book &value, format_context &context) const {
     using namespace std::literals;
-    using namespace fmt::literals;
     value.sbeRewind();
     return fmt::format_to(
         context.out(),
@@ -293,7 +272,7 @@ struct fmt::formatter<deribit_multicast::Book> {
         R"(changeId={}, )"
         R"(isLast={}, )"
         R"(changesList=[{}])"
-        R"(}})"_cf,
+        R"(}})"sv,
         value.instrumentId(),
         std::chrono::milliseconds{value.timestampMs()},
         value.prevChangeId(),
@@ -305,13 +284,9 @@ struct fmt::formatter<deribit_multicast::Book> {
 
 template <>
 struct fmt::formatter<deribit_multicast::Instrument> {
-  template <typename Context>
-  constexpr auto parse(Context &context) {
-    return std::begin(context);
-  }
-  template <typename Context>
-  auto format(deribit_multicast::Instrument &value, Context &context) const {
-    using namespace fmt::literals;
+  constexpr auto parse(format_parse_context &context) { return std::begin(context); }
+  auto format(deribit_multicast::Instrument &value, format_context &context) const {
+    using namespace std::literals;
     auto instrument_name = roq::deribit::sbe::get_instrument_name(value);
     value.sbeRewind();
     return fmt::format_to(
@@ -342,7 +317,7 @@ struct fmt::formatter<deribit_multicast::Instrument> {
         R"(maxLiquidationCommission={}, )"
         R"(maxLeverage={}, )"
         R"(instrumentName="{}")"
-        R"(}})"_cf,
+        R"(}})"sv,
         value.instrumentId(),
         deribit_multicast::InstrumentState::c_str(value.instrumentState()),
         deribit_multicast::InstrumentKind::c_str(value.kind()),
@@ -373,13 +348,9 @@ struct fmt::formatter<deribit_multicast::Instrument> {
 
 template <>
 struct fmt::formatter<deribit_multicast::Ticker> {
-  template <typename Context>
-  constexpr auto parse(Context &context) {
-    return std::begin(context);
-  }
-  template <typename Context>
-  auto format(deribit_multicast::Ticker &value, Context &context) const {
-    using namespace fmt::literals;
+  constexpr auto parse(format_parse_context &context) { return std::begin(context); }
+  auto format(deribit_multicast::Ticker &value, format_context &context) const {
+    using namespace std::literals;
     return fmt::format_to(
         context.out(),
         R"({{)"
@@ -401,7 +372,7 @@ struct fmt::formatter<deribit_multicast::Ticker> {
         R"(estimatedDeliveryPrice={}, )"
         R"(deliveryPrice={}, )"
         R"(settlementPrice={})"
-        R"(}})"_cf,
+        R"(}})"sv,
         value.instrumentId(),
         deribit_multicast::InstrumentState::c_str(value.instrumentState()),
         std::chrono::milliseconds{value.timestampMs()},
@@ -425,14 +396,9 @@ struct fmt::formatter<deribit_multicast::Ticker> {
 
 template <>
 struct fmt::formatter<deribit_multicast::Snapshot> {
-  template <typename Context>
-  constexpr auto parse(Context &context) {
-    return std::begin(context);
-  }
-  template <typename Context>
-  auto format(deribit_multicast::Snapshot &value, Context &context) const {
+  constexpr auto parse(format_parse_context &context) { return std::begin(context); }
+  auto format(deribit_multicast::Snapshot &value, format_context &context) const {
     using namespace std::literals;
-    using namespace fmt::literals;
     value.sbeRewind();
     return fmt::format_to(
         context.out(),
@@ -443,7 +409,7 @@ struct fmt::formatter<deribit_multicast::Snapshot> {
         R"(isBookComplete={}, )"
         R"(isLastInBook={}, )"
         R"(levelsList=[{}])"
-        R"(}})"_cf,
+        R"(}})"sv,
         value.instrumentId(),
         std::chrono::milliseconds{value.timestampMs()},
         value.changeId(),
@@ -455,20 +421,15 @@ struct fmt::formatter<deribit_multicast::Snapshot> {
 
 template <>
 struct fmt::formatter<deribit_multicast::Trades> {
-  template <typename Context>
-  constexpr auto parse(Context &context) {
-    return std::begin(context);
-  }
-  template <typename Context>
-  auto format(deribit_multicast::Trades &value, Context &context) const {
+  constexpr auto parse(format_parse_context &context) { return std::begin(context); }
+  auto format(deribit_multicast::Trades &value, format_context &context) const {
     using namespace std::literals;
-    using namespace fmt::literals;
     return fmt::format_to(
         context.out(),
         R"({{)"
         R"(instrumentId={}, )"
         R"(tradesList=[{}])"
-        R"(}})"_cf,
+        R"(}})"sv,
         value.instrumentId(),
         fmt::join(roq::core::sbe::iterator{value.tradesList()}, roq::core::sbe::sentinel{}, ", "sv));
   }

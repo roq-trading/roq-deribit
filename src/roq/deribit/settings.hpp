@@ -30,13 +30,9 @@ struct Settings final : public server::flags::Settings, public flags::Flags {
 
 template <>
 struct fmt::formatter<roq::deribit::Settings> {
-  template <typename Context>
-  constexpr auto parse(Context &context) {
-    return std::begin(context);
-  }
-  template <typename Context>
-  auto format(roq::deribit::Settings const &value, Context &context) const {
-    using namespace fmt::literals;
+  constexpr auto parse(format_parse_context &context) { return std::begin(context); }
+  auto format(roq::deribit::Settings const &value, format_context &context) const {
+    using namespace std::literals;
     return fmt::format_to(
         context.out(),
         R"({{)"
@@ -45,7 +41,7 @@ struct fmt::formatter<roq::deribit::Settings> {
         R"(ws={}, )"
         R"(multicast={}, )"
         R"(server={})"
-        R"(}})"_cf,
+        R"(}})"sv,
         value.common,
         value.fix,
         value.ws,

@@ -20,8 +20,6 @@
 
 using namespace std::literals;
 
-using namespace fmt::literals;
-
 namespace roq {
 namespace deribit {
 
@@ -39,7 +37,7 @@ auto const SUPPORTS = Mask{
 
 namespace {
 auto create_name(auto stream_id, auto const &account) {
-  return fmt::format("{}:{}:{}"_cf, stream_id, NAME, account);
+  return fmt::format("{}:{}:{}"sv, stream_id, NAME, account);
 }
 
 auto create_connection(auto &handler, auto &settings, auto &context) {
@@ -221,7 +219,7 @@ void DropCopy::login() {
       R"("signature":"{}")"
       R"(}},)"
       R"("id":"{}")"
-      R"(}})"_cf,
+      R"(}})"sv,
       account_.get_access_key(),
       timestamp.count(),
       nonce,
@@ -275,7 +273,7 @@ void DropCopy::subscribe_portfolios(std::span<std::string> const &currencies) {
       R"("channels":["user.portfolio.{}"])"
       R"(}},)"
       R"("id":"{}")"
-      R"(}})"_cf,
+      R"(}})"sv,
       fmt::join(currencies, R"(","user.portfolio.)"sv),
       request_type.as_raw_text());
   (*connection_).send_text(message);
@@ -290,7 +288,7 @@ void DropCopy::subscribe_changes() {
       R"("channels":["user.changes.any.any.raw"])"
       R"(}},)"
       R"("id":"{}")"
-      R"(}})"_cf,
+      R"(}})"sv,
       request_type.as_raw_text());
   (*connection_).send_text(message);
 }
@@ -304,7 +302,7 @@ void DropCopy::subscribe_orders() {
       R"("channels":["user.orders.any.any.raw"])"
       R"(}},)"
       R"("id":"{}")"
-      R"(}})"_cf,
+      R"(}})"sv,
       request_type.as_raw_text());
   (*connection_).send_text(message);
 }
@@ -318,7 +316,7 @@ void DropCopy::subscribe_trades() {
       R"("channels":["user.trades.any.any.raw"])"
       R"(}},)"
       R"("id":"{}")"
-      R"(}})"_cf,
+      R"(}})"sv,
       request_type.as_raw_text());
   (*connection_).send_text(message);
 }
@@ -334,7 +332,7 @@ void DropCopy::get_account_summary(std::span<std::string> const &currencies) {
         R"("extended":true)"
         R"(}},)"
         R"("id":"{}")"
-        R"(}})"_cf,
+        R"(}})"sv,
         currency,
         request_type.as_raw_text());
     (*connection_).send_text(message);
@@ -357,7 +355,7 @@ void DropCopy::get_trades(std::span<std::string> const &currencies) {
         R"("start_timestamp":{})"
         R"(}},)"
         R"("id":"{}")"
-        R"(}})"_cf,
+        R"(}})"sv,
         currency,
         start_timestamp.count(),
         request_type.as_raw_text());
@@ -546,7 +544,7 @@ void DropCopy::operator()(Trace<json::Trade> const &event, bool is_download, boo
       .liquidity = liquidity,
   };
   // note! this is consistent with FIX (there is also a trade_id field, but it's not consistent)
-  fmt::format_to(std::back_inserter(fill.external_trade_id), "{}#{}"_cf, trade.instrument_name, trade.trade_seq);
+  fmt::format_to(std::back_inserter(fill.external_trade_id), "{}#{}"sv, trade.instrument_name, trade.trade_seq);
   auto update_type = is_download ? UpdateType::SNAPSHOT : UpdateType::INCREMENTAL;
   auto trade_update = TradeUpdate{
       .stream_id = stream_id_,

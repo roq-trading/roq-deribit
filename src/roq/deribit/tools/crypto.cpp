@@ -18,8 +18,6 @@
 
 using namespace std::literals;
 
-using namespace fmt::literals;
-
 namespace roq {
 namespace deribit {
 namespace tools {
@@ -54,7 +52,7 @@ std::string Crypto::create_nonce() {
 std::pair<std::string, std::chrono::milliseconds> Crypto::create_signature(
     std::chrono::milliseconds timestamp, std::string_view const &nonce) {
   auto sequence = get_sequence(timestamp);
-  auto message = fmt::format("{}\n{}\n"_cf, sequence, nonce);
+  auto message = fmt::format("{}\n{}\n"sv, sequence, nonce);
   mac_.clear();
   mac_.update(message);
   auto digest = mac_.final(digest_);
@@ -77,7 +75,7 @@ std::string Crypto::create_raw_data(std::chrono::milliseconds timestamp) {
 
 std::string Crypto::create_raw_data(std::chrono::milliseconds timestamp, std::string_view const &nonce) {
   auto sequence = get_sequence(timestamp);
-  auto raw_data = fmt::format("{:013}.{}"_cf, sequence, nonce);
+  auto raw_data = fmt::format("{:013}.{}"sv, sequence, nonce);
   return raw_data;
 }
 

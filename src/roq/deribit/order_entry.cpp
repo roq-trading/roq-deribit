@@ -35,8 +35,6 @@
 
 using namespace std::literals;
 
-using namespace fmt::literals;
-
 namespace roq {
 namespace deribit {
 
@@ -62,7 +60,7 @@ auto const LOGOUT_RESPONSE = "LOGOUT"sv;
 
 namespace {
 auto create_name(auto stream_id, auto const &account) {
-  return fmt::format("{}:{}:{}"_cf, stream_id, NAME, account);
+  return fmt::format("{}:{}:{}"sv, stream_id, NAME, account);
 }
 
 auto create_connection_factory(auto &settings, auto &context) {

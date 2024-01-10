@@ -21,8 +21,6 @@
 
 using namespace std::literals;
 
-using namespace fmt::literals;
-
 namespace roq {
 namespace deribit {
 
@@ -36,7 +34,7 @@ auto const NAME = "ws"sv;
 
 namespace {
 auto create_name(auto stream_id) {
-  return fmt::format("{}:{}"_cf, stream_id, NAME);
+  return fmt::format("{}:{}"sv, stream_id, NAME);
 }
 
 auto publish_top_of_book(auto const &shared) {
@@ -228,7 +226,7 @@ void WebSocket::login() {
       R"("signature":"{}")"
       R"(}},)"
       R"("id":"{}")"
-      R"(}})"_cf,
+      R"(}})"sv,
       account_.get_access_key(),
       timestamp.count(),
       nonce,
@@ -286,7 +284,7 @@ void WebSocket::get_currencies() {
       R"("method":"public/get_currencies",)"
       R"("params":{{}},)"
       R"("id":"{}")"
-      R"(}})"_cf,
+      R"(}})"sv,
       request_type.as_raw_text());
   subscribe_queue_.emplace_back(message);
 }
@@ -300,7 +298,7 @@ void WebSocket::get_instruments(std::string_view const &currency) {
       R"("currency":"{}")"
       R"(}},)"
       R"("id":"{}")"
-      R"(}})"_cf,
+      R"(}})"sv,
       currency,
       request_type.as_raw_text());
   subscribe_queue_.emplace_back(message);
@@ -315,7 +313,7 @@ void WebSocket::subscribe_platform_state() {
       R"("channels":["platform_state"])"
       R"(}},)"
       R"("id":"{}")"
-      R"(}})"_cf,
+      R"(}})"sv,
       request_type.as_raw_text());
   subscribe_queue_.emplace_back(message);
 }
@@ -329,7 +327,7 @@ void WebSocket::subscribe_instrument_state() {
       R"("channels":["instrument.state.any.any"])"
       R"(}},)"
       R"("id":"{}")"
-      R"(}})"_cf,
+      R"(}})"sv,
       request_type.as_raw_text());
   subscribe_queue_.emplace_back(message);
 }
@@ -352,7 +350,7 @@ void WebSocket::subscribe_quote(std::span<Symbol const> const &symbols) {
       R"("channels":["quote.{}"])"
       R"(}},)"
       R"("id":"{}")"
-      R"(}})"_cf,
+      R"(}})"sv,
       fmt::join(symbols, R"(","quote.)"sv),
       request_type.as_raw_text());
   subscribe_queue_.emplace_back(message);
@@ -370,7 +368,7 @@ void WebSocket::subscribe_ticker(std::span<Symbol const> const &symbols) {
       R"("channels":["ticker.{}.{}"])"
       R"(}},)"
       R"("id":"{}")"
-      R"(}})"_cf,
+      R"(}})"sv,
       fmt::join(symbols, separator),
       interval,
       request_type.as_raw_text());
