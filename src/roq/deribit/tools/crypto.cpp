@@ -8,7 +8,6 @@
 #include <random>
 #include <span>
 
-#include <fmt/compile.h>
 #include <fmt/format.h>
 
 #include "roq/logging.hpp"
