@@ -554,6 +554,7 @@ void DropCopy::operator()(Trace<json::Trade> const &event, bool is_download, boo
       .symbol = trade.instrument_name,
       .side = side,
       .position_effect = {},
+      .margin_mode = {},
       .create_time_utc = trade.timestamp,
       .update_time_utc = trade.timestamp,
       .external_account = {},
