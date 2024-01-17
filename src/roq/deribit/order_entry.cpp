@@ -255,7 +255,7 @@ uint16_t OrderEntry::operator()(Event<CancelAllOrders> const &event, std::string
         .symbol = cancel_all_orders.symbol,
         .side = cancel_all_orders.side,
         .origin = Origin::GATEWAY,
-        .status = RequestStatus::FORWARDED,
+        .request_status = RequestStatus::FORWARDED,
         .error = {},
         .text = {},
         .request_id = request_id,
@@ -791,9 +791,9 @@ void OrderEntry::operator()(Trace<fix::ExecutionReport> const &event, roq::fix::
   // - create and modify both have exec_type=ORDER_STATUS and ord_status=NEW
   // - reject has nothing
   auto response = oms::Response{
-      .type = request_type,
+      .request_type = request_type,
       .origin = Origin::EXCHANGE,
-      .status = request_status,
+      .request_status = request_status,
       .error = error,
       .text = execution_report.text,
       .version = {},
@@ -817,7 +817,7 @@ void OrderEntry::operator()(Trace<fix::ExecutionReport> const &event, roq::fix::
       .external_account = {},
       .external_order_id = execution_report.order_id,
       .client_order_id = execution_report.deribit_label,
-      .status = order_status,
+      .order_status = order_status,
       .quantity = execution_report.order_qty,
       .price = execution_report.price,
       .stop_price = execution_report.stop_px,
@@ -897,9 +897,9 @@ void OrderEntry::operator()(Trace<fix::OrderCancelReject> const &event, roq::fix
   log::warn<1>("event={{header={}, order_cancel_reject={}}}"sv, header, order_cancel_reject);
   auto error = fix::map_error(order_cancel_reject.text);
   auto response = oms::Response{
-      .type = {},  // modify or cancel
+      .request_type = {},  // modify or cancel
       .origin = Origin::EXCHANGE,
-      .status = RequestStatus::REJECTED,
+      .request_status = RequestStatus::REJECTED,
       .error = error,
       .text = order_cancel_reject.text,
       .version = {},
@@ -914,8 +914,8 @@ void OrderEntry::operator()(Trace<fix::OrderCancelReject> const &event, roq::fix
   }();
   if (shared_.update_order(request_or_exchange_id, stream_id_, trace_info, response, [&](auto &order) {
         auto status = roq::fix::map(order_cancel_reject.ord_status);
-        if (status != order.status) {
-          log::warn("Unexpected: order status received={}, expected={}"sv, status, order.status);
+        if (status != order.order_status) {
+          log::warn("Unexpected: order status received={}, expected={}"sv, status, order.order_status);
         }
       })) {
   } else {
@@ -950,9 +950,9 @@ void OrderEntry::operator()(Trace<fix::Reject> const &event, roq::fix::Header co
       auto &request_id = (*iter).second;
       auto error = fix::reject_to_error(reject.session_reject_reason, reject.text);
       auto response = oms::Response{
-          .type = request_type,
+          .request_type = request_type,
           .origin = Origin::EXCHANGE,
-          .status = RequestStatus::REJECTED,
+          .request_status = RequestStatus::REJECTED,
           .error = error,
           .text = reject.text,
           .version = {},
@@ -1013,7 +1013,7 @@ void OrderEntry::operator()(Trace<fix::OrderMassCancelReport> const &event, roq:
       .symbol = {},
       .side = {},
       .origin = Origin::EXCHANGE,
-      .status = status,
+      .request_status = status,
       .error = {},
       .text = order_mass_cancel_report.text,
       .request_id = order_mass_cancel_report.cl_ord_id,
