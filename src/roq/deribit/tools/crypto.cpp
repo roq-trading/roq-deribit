@@ -43,7 +43,9 @@ Crypto::Crypto(std::string_view const &access_secret) : secret_{access_secret}, 
 }
 
 std::string Crypto::create_nonce() {
-  std::string result{RANDOM_BYTES, '-'};
+  std::string result;
+  result.resize(RANDOM_BYTES);
+  assert(std::size(result) == RANDOM_BYTES);
   std::generate(std::begin(result), std::end(result), []() { return CHARSET_DATA[CHARSET_DISTRIBUTION(GENERATOR)]; });
   return result;
 }
