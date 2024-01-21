@@ -8,6 +8,8 @@
 
 #include "roq/utils/update.hpp"
 
+#include "roq/utils/metrics/const.hpp"
+
 #include "roq/core/charconv/number.hpp"
 
 #include "roq/debug/hex/message.hpp"
@@ -373,8 +375,8 @@ void UDPEvents::operator()(Trace<deribit_multicast::Snapshot> const &event, sbe:
 
 void UDPEvents::operator()(metrics::Writer &writer) {
   writer  //
-      .write(counter_.disconnect, metrics::COUNTER)
-      .write(profile_.parse, metrics::PROFILE);
+      .write(counter_.disconnect, utils::metrics::COUNTER)
+      .write(profile_.parse, utils::metrics::PROFILE);
 }
 
 void UDPEvents::publish_stream_status(TraceInfo const &trace_info, ConnectionStatus connection_status) {
