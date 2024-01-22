@@ -9,8 +9,6 @@
 #include "roq/utils/compare.hpp"
 #include "roq/utils/update.hpp"
 
-#include "roq/utils/metrics/const.hpp"
-
 #include "roq/core/metrics/factory.hpp"
 
 #include "roq/web/socket/client_factory.hpp"
@@ -135,15 +133,15 @@ void WebSocket::operator()(Event<Timer> const &event) {
 
 void WebSocket::operator()(metrics::Writer &writer) {
   writer  //
-      .write(counter_.disconnect, utils::metrics::COUNTER)
-      .write(profile_.parse, utils::metrics::PROFILE)
-      .write(profile_.auth, utils::metrics::PROFILE)
-      .write(profile_.currencies, utils::metrics::PROFILE)
-      .write(profile_.instruments, utils::metrics::PROFILE)
-      .write(profile_.quote, utils::metrics::PROFILE)
-      .write(profile_.ticker, utils::metrics::PROFILE)
-      .write(latency_.ping, utils::metrics::LATENCY)
-      .write(latency_.heartbeat, utils::metrics::LATENCY);
+      .write(counter_.disconnect, metrics::Type::COUNTER)
+      .write(profile_.parse, metrics::Type::PROFILE)
+      .write(profile_.auth, metrics::Type::PROFILE)
+      .write(profile_.currencies, metrics::Type::PROFILE)
+      .write(profile_.instruments, metrics::Type::PROFILE)
+      .write(profile_.quote, metrics::Type::PROFILE)
+      .write(profile_.ticker, metrics::Type::PROFILE)
+      .write(latency_.ping, metrics::Type::LATENCY)
+      .write(latency_.heartbeat, metrics::Type::LATENCY);
 }
 
 void WebSocket::subscribe(size_t start_from) {

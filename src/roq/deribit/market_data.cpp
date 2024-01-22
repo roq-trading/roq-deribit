@@ -11,8 +11,6 @@
 #include "roq/utils/safe_cast.hpp"
 #include "roq/utils/update.hpp"
 
-#include "roq/utils/metrics/const.hpp"
-
 #include "roq/debug/fix/message.hpp"
 #include "roq/debug/hex/message.hpp"
 
@@ -395,15 +393,15 @@ void MarketData::download_securities() {
 
 void MarketData::operator()(metrics::Writer &writer) {
   writer  //
-      .write(counter_.disconnect, utils::metrics::COUNTER)
-      .write(profile_.parse, utils::metrics::PROFILE)
-      .write(profile_.security_list, utils::metrics::PROFILE)
-      .write(profile_.security_status, utils::metrics::PROFILE)
-      .write(profile_.market_data_incremental_refresh, utils::metrics::PROFILE)
-      .write(profile_.market_data_request_reject, utils::metrics::PROFILE)
-      .write(profile_.market_data_snapshot_full_refresh, utils::metrics::PROFILE)
-      .write(profile_.market_data_request, utils::metrics::PROFILE)
-      .write(latency_.ping, utils::metrics::LATENCY);
+      .write(counter_.disconnect, metrics::Type::COUNTER)
+      .write(profile_.parse, metrics::Type::PROFILE)
+      .write(profile_.security_list, metrics::Type::PROFILE)
+      .write(profile_.security_status, metrics::Type::PROFILE)
+      .write(profile_.market_data_incremental_refresh, metrics::Type::PROFILE)
+      .write(profile_.market_data_request_reject, metrics::Type::PROFILE)
+      .write(profile_.market_data_snapshot_full_refresh, metrics::Type::PROFILE)
+      .write(profile_.market_data_request, metrics::Type::PROFILE)
+      .write(latency_.ping, metrics::Type::LATENCY);
 }
 
 void MarketData::subscribe(size_t start_from) {

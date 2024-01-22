@@ -11,8 +11,6 @@
 #include "roq/utils/safe_cast.hpp"
 #include "roq/utils/update.hpp"
 
-#include "roq/utils/metrics/const.hpp"
-
 #include "roq/debug/fix/message.hpp"
 #include "roq/debug/hex/message.hpp"
 
@@ -296,13 +294,13 @@ uint16_t OrderEntry::operator()(Event<CancelAllOrders> const &event, std::string
 
 void OrderEntry::operator()(metrics::Writer &writer) {
   writer  //
-      .write(counter_.disconnect, utils::metrics::COUNTER)
-      .write(profile_.parse, utils::metrics::PROFILE)
-      .write(profile_.execution_report, utils::metrics::PROFILE)
-      .write(profile_.order_cancel_reject, utils::metrics::PROFILE)
-      .write(profile_.reject, utils::metrics::PROFILE)
-      .write(profile_.order_mass_cancel_report, utils::metrics::PROFILE)
-      .write(latency_.ping, utils::metrics::LATENCY);
+      .write(counter_.disconnect, metrics::Type::COUNTER)
+      .write(profile_.parse, metrics::Type::PROFILE)
+      .write(profile_.execution_report, metrics::Type::PROFILE)
+      .write(profile_.order_cancel_reject, metrics::Type::PROFILE)
+      .write(profile_.reject, metrics::Type::PROFILE)
+      .write(profile_.order_mass_cancel_report, metrics::Type::PROFILE)
+      .write(latency_.ping, metrics::Type::LATENCY);
 }
 
 void OrderEntry::operator()(io::net::ConnectionManager::Connected const &) {
