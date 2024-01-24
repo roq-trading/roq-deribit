@@ -218,6 +218,10 @@
     },
     {
       "name": "margin_model"
+    },
+    {
+      "name": "additional_reserve",
+      "type": "double"
     }
   ]
 }
