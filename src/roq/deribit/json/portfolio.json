@@ -222,6 +222,9 @@
     {
       "name": "additional_reserve",
       "type": "double"
+    },
+    {
+      "name": "change_margin_model_api_limit"
     }
   ]
 }
