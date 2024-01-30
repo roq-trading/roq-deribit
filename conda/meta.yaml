@@ -27,7 +27,6 @@ requirements:
     - pkg-config
   host:
     - abseil-cpp
-    - brotli
     - catch2
     - fmt
     - libsodium
@@ -36,6 +35,7 @@ requirements:
     - roq-fix
     - roq-flags
     - roq-oss-benchmark
+    - roq-oss-brotli
     - roq-oss-cppitertools
     - roq-oss-magic_enum
     - roq-oss-tomlplusplus
