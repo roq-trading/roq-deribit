@@ -7,15 +7,15 @@
 #include <string>
 #include <vector>
 
-#include "roq/core/download.hpp"
-
-#include "roq/core/metrics/counter.hpp"
-#include "roq/core/metrics/latency.hpp"
-#include "roq/core/metrics/profile.hpp"
+#include "roq/utils/metrics/counter.hpp"
+#include "roq/utils/metrics/latency.hpp"
+#include "roq/utils/metrics/profile.hpp"
 
 #include "roq/io/context.hpp"
 #include "roq/io/net/connection_factory.hpp"
 #include "roq/io/net/connection_manager.hpp"
+
+#include "roq/core/download.hpp"
 
 #include "roq/server.hpp"
 
@@ -148,14 +148,14 @@ struct MarketData final : public io::net::ConnectionManager::Handler {
   std::string request_id_;
   // metrics
   struct {
-    core::metrics::Counter disconnect;
+    utils::metrics::Counter disconnect;
   } counter_;
   struct {
-    core::metrics::Profile parse, security_list, security_status, market_data_incremental_refresh,
+    utils::metrics::Profile parse, security_list, security_status, market_data_incremental_refresh,
         market_data_request_reject, market_data_snapshot_full_refresh, market_data_request;
   } profile_;
   struct {
-    core::metrics::Latency ping;
+    utils::metrics::Latency ping;
   } latency_;
   // state
   struct {

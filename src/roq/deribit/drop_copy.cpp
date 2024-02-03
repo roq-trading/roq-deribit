@@ -10,9 +10,11 @@
 #include "roq/utils/safe_cast.hpp"
 #include "roq/utils/update.hpp"
 
-#include "roq/core/metrics/factory.hpp"
-
 #include "roq/web/socket/client_factory.hpp"
+
+#include "roq/core/tools/exception.hpp"
+
+#include "roq/core/metrics/factory.hpp"
 
 #include "roq/deribit/json/error.hpp"
 #include "roq/deribit/json/method.hpp"

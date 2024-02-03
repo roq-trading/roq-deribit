@@ -4,8 +4,8 @@
 
 #include <absl/container/node_hash_map.h>
 
-#include "roq/core/metrics/counter.hpp"
-#include "roq/core/metrics/profile.hpp"
+#include "roq/utils/metrics/counter.hpp"
+#include "roq/utils/metrics/profile.hpp"
 
 #include "roq/io/buffer.hpp"
 #include "roq/io/context.hpp"
@@ -73,10 +73,10 @@ struct UDPSnapshot final : public io::net::udp::Receiver::Handler, public sbe::P
   io::Buffer receive_buffer_;
   // metrics
   struct {
-    core::metrics::Counter disconnect;
+    utils::metrics::Counter disconnect;
   } counter_;
   struct {
-    core::metrics::Profile parse;
+    utils::metrics::Profile parse;
   } profile_;
   // cache
   Shared &shared_;
