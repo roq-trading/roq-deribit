@@ -38,7 +38,7 @@
     {
       "tag": 38,
       "name": "OrderQty",
-      "type": "roq::utils::Number"
+      "type": "Decimal"
     },
     {
       "tag": 40,
@@ -49,7 +49,7 @@
     {
       "tag": 44,
       "name": "Price",
-      "type": "roq::utils::Number"
+      "type": "Decimal"
     },
     {
       "tag": 18,

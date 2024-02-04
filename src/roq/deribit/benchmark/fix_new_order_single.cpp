@@ -31,8 +31,8 @@ void BM_fix_new_order_single_create_message(benchmark::State &state) {
     auto new_order_single = NewOrderSingle{
         .cl_ord_id = REQUEST_ID,
         .side = roq::fix::Side::BUY,
-        .order_qty = {123.0, Decimals::_0},
-        .price = {16833.45, Decimals::_2},
+        .order_qty = {123.0, Precision::_0},
+        .price = {16833.45, Precision::_2},
         .symbol = SYMBOL,
         .exec_inst = {},
         .ord_type = roq::fix::OrdType::LIMIT,
