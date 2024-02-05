@@ -27,8 +27,8 @@ TEST_CASE("fix_new_order_single_create_message", "[fix_new_order_single]") {
   auto new_order_single = NewOrderSingle{
       .cl_ord_id = "roq-ord-006"sv,
       .side = roq::fix::Side::BUY,
-      .order_qty = {2.0, utils::to_decimals(1)},
-      .price = {0.45, utils::to_decimals(2)},
+      .order_qty = {2.0, Precision::_1},
+      .price = {0.45, Precision::_2},
       .symbol = "BTC-27SEP19"sv,
       .exec_inst = {},
       .ord_type = roq::fix::OrdType::LIMIT,
