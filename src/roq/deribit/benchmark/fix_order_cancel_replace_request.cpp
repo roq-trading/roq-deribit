@@ -25,7 +25,7 @@ void BM_fix_order_cancel_replace_request_create_message(
         .symbol = "BTC-27SEP19"sv,
         .currency = {},
         .side = roq::fix::Side::BUY,
-        .order_qty = {1.0, Precisin::_1},
+        .order_qty = {1.0, Precision::_1},
         .ord_type = roq::fix::OrdType::LIMIT,
         .price = {123.45, Precision::_2},
         .exec_inst = {},
