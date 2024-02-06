@@ -231,7 +231,7 @@ void UDPEvents::operator()(Trace<deribit_multicast::Book> const &event, sbe::Fra
               auto market_by_price_update = create_update(bids, asks, UpdateType::INCREMENTAL, change_id);
               create_trace_and_dispatch(handler_, trace_info, market_by_price_update, true);
             };
-            auto publish_snapshot = [&](auto &bids, auto &asks, auto sequence) {
+            auto publish_snapshot = [&](auto &bids, auto &asks, auto sequence, auto retries, auto delay) {
               // log::debug(R"(PUBLISH SNAPSHOT symbol="{}", sequence={})"sv, instrument.symbol, sequence);
               log::info<5>(
                   R"(DEBUG: PUBLISH SNAPSHOT symbol="{}", sequence={}, change_id={}, prev_change_id={})"sv,
