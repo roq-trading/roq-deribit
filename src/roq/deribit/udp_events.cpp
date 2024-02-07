@@ -231,19 +231,20 @@ void UDPEvents::operator()(Trace<deribit_multicast::Book> const &event, sbe::Fra
               auto market_by_price_update = create_update(bids, asks, UpdateType::INCREMENTAL, change_id);
               create_trace_and_dispatch(handler_, trace_info, market_by_price_update, true);
             };
-            auto publish_snapshot = [&](auto &bids, auto &asks, auto sequence, auto retries, auto delay) {
-              // log::debug(R"(PUBLISH SNAPSHOT symbol="{}", sequence={})"sv, instrument.symbol, sequence);
-              log::info<5>(
-                  R"(DEBUG: PUBLISH SNAPSHOT symbol="{}", sequence={}, change_id={}, prev_change_id={})"sv,
-                  instrument.symbol,
-                  sequence,
-                  change_id,
-                  prev_change_id);
-              auto market_by_price_update = create_update(bids, asks, UpdateType::SNAPSHOT, sequence);
-              auto apply_updates = [&](auto &market_by_price) { sequencer.apply(market_by_price, sequence, true); };
-              Trace event{trace_info, market_by_price_update};
-              shared_(event, true, apply_updates);
-            };
+            auto publish_snapshot =
+                [&](auto &bids, auto &asks, auto sequence, [[maybe_unused]] auto retries, [[maybe_unused]] auto delay) {
+                  // log::debug(R"(PUBLISH SNAPSHOT symbol="{}", sequence={})"sv, instrument.symbol, sequence);
+                  log::info<5>(
+                      R"(DEBUG: PUBLISH SNAPSHOT symbol="{}", sequence={}, change_id={}, prev_change_id={})"sv,
+                      instrument.symbol,
+                      sequence,
+                      change_id,
+                      prev_change_id);
+                  auto market_by_price_update = create_update(bids, asks, UpdateType::SNAPSHOT, sequence);
+                  auto apply_updates = [&](auto &market_by_price) { sequencer.apply(market_by_price, sequence, true); };
+                  Trace event{trace_info, market_by_price_update};
+                  shared_(event, true, apply_updates);
+                };
             auto request_snapshot = [&](auto retries) {
               log::info<1>(R"(Waiting for snapshot: symbol="{}")"sv, instrument.symbol);
               // log::debug(R"(REQUEST symbol="{}" (retries={}))"sv, instrument.symbol, retries);

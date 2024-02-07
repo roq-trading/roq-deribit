@@ -187,33 +187,34 @@ void UDPSnapshot::operator()(Trace<deribit_multicast::Snapshot> const &event, sb
           if (is_last && !(std::empty(bids) && std::empty(asks))) {
             std::chrono::milliseconds const timestamp{snapshot.timestampMs()};
             auto &sequencer = shared_.mbp_sequencer[instrument.symbol];
-            auto publish_snapshot = [&](auto &bids, auto &asks, auto sequence, auto retries, auto delay) {
-              log::info<1>(R"(Received snapshot: symbol="{}")"sv, instrument.symbol);
-              // log::debug(R"(PUBLISH SNAPSHOT symbol="{}", sequence={})"sv, symbol, sequence);
-              log::info<5>(
-                  R"(DEBUG: PUBLISH SNAPSHOT symbol="{}", sequence={}, change_id={}, timestamp={})"sv,
-                  instrument.symbol,
-                  sequence,
-                  change_id,
-                  timestamp);
-              auto market_by_price_update = MarketByPriceUpdate{
-                  .stream_id = stream_id_,
-                  .exchange = shared_.settings.exchange,
-                  .symbol = instrument.symbol,
-                  .bids = {const_cast<MBPUpdate *>(std::data(bids)), std::size(bids)},  // FIXME
-                  .asks = {const_cast<MBPUpdate *>(std::data(asks)), std::size(asks)},  // FIXME
-                  .update_type = UpdateType::SNAPSHOT,
-                  .exchange_time_utc = timestamp,
-                  .exchange_sequence = sequence,
-                  .sending_time_utc = {},
-                  .price_decimals = {},
-                  .quantity_decimals = {},
-                  .checksum = {},
-              };
-              auto apply_updates = [&](auto &market_by_price) { sequencer.apply(market_by_price, sequence, true); };
-              Trace event{trace_info, market_by_price_update};
-              shared_(event, true, apply_updates);
-            };
+            auto publish_snapshot =
+                [&](auto &bids, auto &asks, auto sequence, [[maybe_unused]] auto retries, [[maybe_unused]] auto delay) {
+                  log::info<1>(R"(Received snapshot: symbol="{}")"sv, instrument.symbol);
+                  // log::debug(R"(PUBLISH SNAPSHOT symbol="{}", sequence={})"sv, symbol, sequence);
+                  log::info<5>(
+                      R"(DEBUG: PUBLISH SNAPSHOT symbol="{}", sequence={}, change_id={}, timestamp={})"sv,
+                      instrument.symbol,
+                      sequence,
+                      change_id,
+                      timestamp);
+                  auto market_by_price_update = MarketByPriceUpdate{
+                      .stream_id = stream_id_,
+                      .exchange = shared_.settings.exchange,
+                      .symbol = instrument.symbol,
+                      .bids = {const_cast<MBPUpdate *>(std::data(bids)), std::size(bids)},  // FIXME
+                      .asks = {const_cast<MBPUpdate *>(std::data(asks)), std::size(asks)},  // FIXME
+                      .update_type = UpdateType::SNAPSHOT,
+                      .exchange_time_utc = timestamp,
+                      .exchange_sequence = sequence,
+                      .sending_time_utc = {},
+                      .price_decimals = {},
+                      .quantity_decimals = {},
+                      .checksum = {},
+                  };
+                  auto apply_updates = [&](auto &market_by_price) { sequencer.apply(market_by_price, sequence, true); };
+                  Trace event{trace_info, market_by_price_update};
+                  shared_(event, true, apply_updates);
+                };
             auto request_snapshot = [&](auto retries) {
               log::info<1>(R"(Waiting for snapshot: symbol="{}")"sv, instrument.symbol);
               // log::debug(R"(REQUEST symbol="{}" (retries={}))"sv, instrument.symbol, retries);
