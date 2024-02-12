@@ -8,8 +8,6 @@
 
 #include <iostream>
 
-#include "roq/debug/hex/message.hpp"
-
 #include "roq/deribit/sbe/frame.hpp"
 #include "roq/deribit/sbe/parser.hpp"
 #include "roq/deribit/sbe/utils.hpp"

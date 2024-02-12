@@ -4,7 +4,7 @@
 
 #include <fmt/format.h>
 
-#include "roq/debug/fix/message.hpp"
+#include "roq/utils/debug/fix/message.hpp"
 
 #include "roq/fix/reader.hpp"
 
@@ -65,8 +65,8 @@ TEST_CASE("fix_new_order_single_create_message", "[fix_new_order_single]") {
       "59=1\001"
       "100010=roq;123;345\001"
       "10=042\001"sv;
-  fmt::print("{}\n"sv, debug::fix::Message{message});
-  fmt::print("{}\n"sv, debug::fix::Message{expected});
+  fmt::print("{}\n"sv, utils::debug::fix::Message{message});
+  fmt::print("{}\n"sv, utils::debug::fix::Message{expected});
   REQUIRE(std::size(message) == std::size(expected));
   for (size_t i = 0; i < std::size(message); ++i)
     CHECK(static_cast<char>(std::data(message)[i]) == expected[i]);

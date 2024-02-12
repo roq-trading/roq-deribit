@@ -4,7 +4,7 @@
 
 #include "roq/utils/update.hpp"
 
-#include "roq/debug/hex/message.hpp"
+#include "roq/utils/debug/hex/message.hpp"
 
 #include "roq/io/network_address.hpp"
 
@@ -108,7 +108,7 @@ void UDPSnapshot::operator()(io::net::udp::Receiver::Read const &) {
     log::info<5>("received {} byte(s)"sv, std::size(message));
     auto bytes = sbe::Parser::dispatch(*this, message, trace_info);
     if (!bytes || bytes != std::size(message)) {
-      log::warn("{}"sv, debug::hex::Message{message});
+      log::warn("{}"sv, utils::debug::hex::Message{message});
       log::fatal("Failed to parse message"sv);
     }
     receive_buffer_.drain(bytes);  // XXX clear()?

@@ -13,8 +13,8 @@
 #include "roq/utils/safe_cast.hpp"
 #include "roq/utils/update.hpp"
 
-#include "roq/debug/fix/message.hpp"
-#include "roq/debug/hex/message.hpp"
+#include "roq/utils/debug/fix/message.hpp"
+#include "roq/utils/debug/hex/message.hpp"
 
 #include "roq/core/charconv.hpp"
 
@@ -340,9 +340,9 @@ void OrderEntry::operator()(io::net::ConnectionManager::Read const &) {
             Trace event{trace_info, message};
             parse(event);
           } catch (std::exception &) {
-            log::warn("{}"sv, debug::fix::Message{buffer});
+            log::warn("{}"sv, utils::debug::fix::Message{buffer});
 #ifndef NDEBUG
-            log::warn("{}"sv, debug::hex::Message{buffer});
+            log::warn("{}"sv, utils::debug::hex::Message{buffer});
 #endif
             if (!shared_.settings.fix.continue_from_parse_exception) [[likely]] {
               throw;
@@ -353,7 +353,7 @@ void OrderEntry::operator()(io::net::ConnectionManager::Read const &) {
         },
         [this](auto &message) {
           if (shared_.settings.fix.debug)
-            log::info("{}"sv, debug::fix::Message{message});
+            log::info("{}"sv, utils::debug::fix::Message{message});
         });
     if (bytes == 0)
       break;
@@ -1049,7 +1049,7 @@ uint64_t OrderEntry::send(T const &event, std::chrono::nanoseconds sending_time)
     };
     auto message = event.encode(header, buffer);
     if (shared_.settings.fix.debug) [[unlikely]]
-      log::info("{}"sv, debug::fix::Message{message});
+      log::info("{}"sv, utils::debug::fix::Message{message});
     return std::size(message);
   });
   return outbound_.msg_seq_num;

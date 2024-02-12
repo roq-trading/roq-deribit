@@ -2,7 +2,7 @@
 
 #include <catch2/catch_all.hpp>
 
-#include "roq/debug/fix/message.hpp"
+#include "roq/utils/debug/fix/message.hpp"
 
 #include "roq/fix/reader.hpp"
 
@@ -44,7 +44,7 @@ TEST_CASE("fix_order_cancel_replace_request_create_message", "[fix_order_cancel_
       .sending_time = sending_time,
   };
   auto message = order_cancel_replace_request.encode(header, buffer);
-  auto tmp = fmt::format("{}"sv, debug::fix::Message{message});
+  auto tmp = fmt::format("{}"sv, utils::debug::fix::Message{message});
   auto expected =
       "8=FIX.4.4|9=0000134|35=G|49=ROQ_TRADING|56=DERIBITSERVER|34=1|52=20190917-06:46:50.000|11=123|41=123|100010=123|55=BTC-27SEP19|54=1|38=1.0|40=2|44=123.45|10=150|"sv;
   REQUIRE(std::size(message) == std::size(expected));

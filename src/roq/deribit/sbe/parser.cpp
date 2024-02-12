@@ -4,7 +4,7 @@
 
 #include "roq/logging.hpp"
 
-#include "roq/debug/hex/message.hpp"
+#include "roq/utils/debug/hex/message.hpp"
 
 #include "roq/deribit/sbe/frame.hpp"
 #include "roq/deribit/sbe/utils.hpp"
@@ -119,7 +119,7 @@ size_t Parser::dispatch(Handler &handler, std::span<std::byte const> const &buff
     }
   }
   if (failed) [[unlikely]]
-    log::fatal("{}"sv, debug::hex::Message{buffer});
+    log::fatal("{}"sv, utils::debug::hex::Message{buffer});
   return total_bytes;
 }
 

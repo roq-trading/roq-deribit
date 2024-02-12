@@ -11,8 +11,8 @@
 #include "roq/utils/safe_cast.hpp"
 #include "roq/utils/update.hpp"
 
-#include "roq/debug/fix/message.hpp"
-#include "roq/debug/hex/message.hpp"
+#include "roq/utils/debug/fix/message.hpp"
+#include "roq/utils/debug/hex/message.hpp"
 
 #include "roq/core/charconv.hpp"
 
@@ -251,7 +251,7 @@ void MarketData::operator()(io::net::ConnectionManager::Read const &) {
   };
   auto log_message = [this](auto &message) {
     if (fix_debug_) [[unlikely]]
-      log::info("{}"sv, debug::fix::Message{message});
+      log::info("{}"sv, utils::debug::fix::Message{message});
   };
   auto buffer = (*connection_manager_).buffer();
   try {
@@ -266,9 +266,9 @@ void MarketData::operator()(io::net::ConnectionManager::Read const &) {
     }
     (*connection_manager_).drain(total_bytes);
   } catch (std::exception &) {
-    log::warn("{}"sv, debug::fix::Message{buffer});
+    log::warn("{}"sv, utils::debug::fix::Message{buffer});
 #ifndef NDEBUG
-    log::warn("{}"sv, debug::hex::Message{buffer});
+    log::warn("{}"sv, utils::debug::hex::Message{buffer});
 #endif
     throw;
   }
@@ -946,7 +946,7 @@ void MarketData::send(T const &event, std::chrono::nanoseconds sending_time) {
   };
   auto message = event.encode(header, encode_buffer_);
   if (fix_debug_) [[unlikely]]
-    log::info("{}"sv, debug::fix::Message{message});
+    log::info("{}"sv, utils::debug::fix::Message{message});
   // note!
   //   it is desirable to use a timer queue here
   //   however, the message header encodes seq_num and timestamp...!
