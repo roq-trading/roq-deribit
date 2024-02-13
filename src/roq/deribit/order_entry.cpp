@@ -7,7 +7,7 @@
 
 #include "roq/mask.hpp"
 
-#include "roq/oms/exceptions.hpp"
+#include "roq/server/oms/exceptions.hpp"
 
 #include "roq/utils/common.hpp"
 #include "roq/utils/safe_cast.hpp"
@@ -160,9 +160,9 @@ void OrderEntry::operator()(Event<Timer> const &event) {
 }
 
 uint16_t OrderEntry::operator()(
-    Event<CreateOrder> const &event, oms::Order const &order, std::string_view const &request_id) {
+    Event<CreateOrder> const &event, server::oms::Order const &order, std::string_view const &request_id) {
   if (!ready()) [[unlikely]]
-    throw oms::NotReady{"not ready"sv};
+    throw server::oms::NotReady{"not ready"sv};
   auto &[message_info, create_order] = event;
   if (std::isfinite(create_order.stop_price)) [[unlikely]]
     throw RuntimeError{"stop_price not supported"sv};
@@ -195,11 +195,11 @@ uint16_t OrderEntry::operator()(
 
 uint16_t OrderEntry::operator()(
     Event<ModifyOrder> const &event,
-    oms::Order const &order,
+    server::oms::Order const &order,
     std::string_view const &request_id,
     [[maybe_unused]] std::string_view const &previous_request_id) {
   if (!ready()) [[unlikely]]
-    throw oms::NotReady{"not ready"sv};
+    throw server::oms::NotReady{"not ready"sv};
   auto const &modify_order = event.value;
   auto side = roq::fix::map(order.side);
   auto ord_type = roq::fix::map(order.order_type);
@@ -225,11 +225,11 @@ uint16_t OrderEntry::operator()(
 
 uint16_t OrderEntry::operator()(
     Event<CancelOrder> const &,
-    oms::Order const &order,
+    server::oms::Order const &order,
     std::string_view const &request_id,
     [[maybe_unused]] std::string_view const &previous_request_id) {
   if (!ready()) [[unlikely]]
-    throw oms::NotReady{"not ready"sv};
+    throw server::oms::NotReady{"not ready"sv};
   // note! using deribit_label might be slower, but using orig_cl_ord_id seems error-prone
   auto order_cancel_request = fix::OrderCancelRequest{
       .cl_ord_id = {},
@@ -246,7 +246,7 @@ uint16_t OrderEntry::operator()(
 
 uint16_t OrderEntry::operator()(Event<CancelAllOrders> const &event, std::string_view const &request_id) {
   if (!ready()) [[unlikely]]
-    throw oms::NotReady{"not ready"sv};
+    throw server::oms::NotReady{"not ready"sv};
   auto &[message_info, cancel_all_orders] = event;
   auto send_ack = [&]() {
     auto cancel_all_orders_ack = CancelAllOrdersAck{
@@ -279,7 +279,7 @@ uint16_t OrderEntry::operator()(Event<CancelAllOrders> const &event, std::string
     if (!std::empty(filter & Mask{Filter::SYMBOL}) && std::empty(filter & ~Mask{Filter::EXCHANGE, Filter::SYMBOL}))
       return roq::fix::MassCancelRequestType::CANCEL_ORDERS_FOR_SECURITY;
     log::warn("DEBUG: filter={}"sv, filter);
-    throw oms::Rejected{Origin::GATEWAY, Error::INVALID_FILTER, "filter"sv};
+    throw server::oms::Rejected{Origin::GATEWAY, Error::INVALID_FILTER, "filter"sv};
   }();
   auto order_mass_cancel_request = fix::OrderMassCancelRequest{
       .cl_ord_id = request_id,
@@ -792,7 +792,7 @@ void OrderEntry::operator()(Trace<fix::ExecutionReport> const &event, roq::fix::
   // we have very little information to match requests as we can't rewrite ClOrdID
   // - create and modify both have exec_type=ORDER_STATUS and ord_status=NEW
   // - reject has nothing
-  auto response = oms::Response{
+  auto response = server::oms::Response{
       .request_type = request_type,
       .origin = Origin::EXCHANGE,
       .request_status = request_status,
@@ -803,7 +803,7 @@ void OrderEntry::operator()(Trace<fix::ExecutionReport> const &event, roq::fix::
       .quantity = execution_report.order_qty,
       .price = execution_report.price,
   };
-  auto order_update = oms::OrderUpdate{
+  auto order_update = server::oms::OrderUpdate{
       .account = account_.get_name(),
       .exchange = shared_.settings.exchange,
       .symbol = execution_report.symbol,
@@ -898,7 +898,7 @@ void OrderEntry::operator()(Trace<fix::OrderCancelReject> const &event, roq::fix
   auto &order_cancel_reject = event.value;
   log::warn<1>("event={{header={}, order_cancel_reject={}}}"sv, header, order_cancel_reject);
   auto error = fix::map_error(order_cancel_reject.text);
-  auto response = oms::Response{
+  auto response = server::oms::Response{
       .request_type = {},  // modify or cancel
       .origin = Origin::EXCHANGE,
       .request_status = RequestStatus::REJECTED,
@@ -951,7 +951,7 @@ void OrderEntry::operator()(Trace<fix::Reject> const &event, roq::fix::Header co
     if (iter != std::end(msg_seq_num_to_request_id_)) {
       auto &request_id = (*iter).second;
       auto error = fix::reject_to_error(reject.session_reject_reason, reject.text);
-      auto response = oms::Response{
+      auto response = server::oms::Response{
           .request_type = request_type,
           .origin = Origin::EXCHANGE,
           .request_status = RequestStatus::REJECTED,
