@@ -3,7 +3,6 @@
 #pragma once
 
 // #include <absl/container/flat_hash_set.h>
-#include <ankerl/unordered_dense.h>
 
 #include <string>
 #include <vector>
@@ -177,7 +176,7 @@ struct MarketData final : public io::net::ConnectionManager::Handler {
   ConnectionStatus status_ = {};
   core::Download<MarketDataState> download_;
   std::chrono::nanoseconds last_logon_or_heartbeat_ = {};
-  ankerl::unordered_dense::set<std::string, utils::unordered_dense::string_hash, std::equal_to<>> latch_;
+  utils::unordered_dense::set<std::string> latch_;
   // absl::flat_hash_set<Symbol> latch_;
   // EXPERIMENTAL
   std::chrono::nanoseconds test_disconnect_time_ = {};

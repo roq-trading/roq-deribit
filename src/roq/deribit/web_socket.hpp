@@ -174,12 +174,9 @@ struct WebSocket final : public web::socket::Client::Handler,
   Account &account_;
   // cache
   Shared &shared_;
-  ankerl::unordered_dense::
-      map<std::string, std::pair<roq::Layer, double>, utils::unordered_dense::string_hash, std::equal_to<>>
-          top_of_book_;
+  utils::unordered_dense::map<std::string, std::pair<roq::Layer, double>> top_of_book_;
   // absl::flat_hash_map<std::string, std::pair<roq::Layer, double>> top_of_book_;
-  ankerl::unordered_dense::map<std::string, TradingStatus, utils::unordered_dense::string_hash, std::equal_to<>>
-      trading_status_;
+  utils::unordered_dense::map<std::string, TradingStatus> trading_status_;
   // absl::flat_hash_map<std::string, TradingStatus> trading_status_;
   // state
   bool ready_ = false;

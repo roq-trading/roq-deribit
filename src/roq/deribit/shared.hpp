@@ -6,8 +6,6 @@
 // #include <absl/container/flat_hash_set.h>
 // #include <absl/container/node_hash_map.h>
 
-#include <ankerl/unordered_dense.h>
-
 #include <string>
 #include <utility>
 #include <vector>
@@ -113,7 +111,7 @@ struct Shared final {
     return statistics;
   }
 
-  ankerl::unordered_dense::map<std::string, double, utils::unordered_dense::string_hash, std::equal_to<>> multiplier;
+  utils::unordered_dense::map<std::string, double> multiplier;
   // absl::flat_hash_map<Symbol, double> multiplier;
 
   auto &get_mbp_sequencer(std::string_view const &symbol) {
@@ -138,16 +136,14 @@ struct Shared final {
 
  public:
   core::limit::RateLimiter rate_limiter;
-  ankerl::unordered_dense::set<std::string, utils::unordered_dense::string_hash, std::equal_to<>> all_currencies;
+  utils::unordered_dense::set<std::string> all_currencies;
   // absl::flat_hash_set<std::string> all_currencies;
-  ankerl::unordered_dense::set<std::string, utils::unordered_dense::string_hash, std::equal_to<>> all_symbols;
+  utils::unordered_dense::set<std::string> all_symbols;
   // absl::flat_hash_set<Symbol> all_symbols;
   core::Symbols symbols;
-  ankerl::unordered_dense::map<uint32_t, std::pair<Instrument, bool>> instruments;
+  utils::unordered_dense::map<uint32_t, std::pair<Instrument, bool>> instruments;
   // absl::node_hash_map<uint32_t, std::pair<Instrument, bool>> instruments;
-  ankerl::unordered_dense::
-      map<std::string, market::mbp::Sequencer, utils::unordered_dense::string_hash, std::equal_to<>>
-          mbp_sequencer;
+  utils::unordered_dense::map<std::string, market::mbp::Sequencer> mbp_sequencer;
   // absl::node_hash_map<Symbol, market::mbp::Sequencer> mbp_sequencer;
 };
 

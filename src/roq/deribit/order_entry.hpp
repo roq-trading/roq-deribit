@@ -163,7 +163,7 @@ struct OrderEntry final : public io::net::ConnectionManager::Handler {
   core::Download<OrderEntryState> download_;
   std::chrono::nanoseconds last_logon_or_heartbeat_ = {};
   // EXPERIMENTAL
-  ankerl::unordered_dense::map<uint64_t, RequestId> msg_seq_num_to_request_id_;
+  utils::unordered_dense::map<uint64_t, RequestId> msg_seq_num_to_request_id_;
   // absl::flat_hash_map<uint64_t, RequestId> msg_seq_num_to_request_id_;
   std::chrono::nanoseconds test_disconnect_time_ = {};
   std::chrono::nanoseconds test_logon_time_ = {};
