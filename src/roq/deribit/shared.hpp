@@ -2,9 +2,11 @@
 
 #pragma once
 
-#include <absl/container/flat_hash_map.h>
-#include <absl/container/flat_hash_set.h>
-#include <absl/container/node_hash_map.h>
+// #include <absl/container/flat_hash_map.h>
+// #include <absl/container/flat_hash_set.h>
+// #include <absl/container/node_hash_map.h>
+
+#include <ankerl/unordered_dense.h>
 
 #include <string>
 #include <utility>
@@ -13,11 +15,13 @@
 #include "roq/api.hpp"
 #include "roq/server.hpp"
 
+#include "roq/utils/unordered_dense/hash.hpp"
+
+#include "roq/market/mbp/sequencer.hpp"
+
 #include "roq/core/symbols.hpp"
 
 #include "roq/core/limit/rate_limiter.hpp"
-
-#include "roq/market/mbp/sequencer.hpp"
 
 #include "roq/deribit/instrument.hpp"
 #include "roq/deribit/settings.hpp"
@@ -109,7 +113,19 @@ struct Shared final {
     return statistics;
   }
 
-  absl::flat_hash_map<Symbol, double> multiplier;
+  ankerl::unordered_dense::map<std::string, double, utils::unordered_dense::string_hash, std::equal_to<>> multiplier;
+  // absl::flat_hash_map<Symbol, double> multiplier;
+
+  auto &get_mbp_sequencer(std::string_view const &symbol) {
+    auto iter = mbp_sequencer.find(symbol);
+    if (iter != std::end(mbp_sequencer)) {
+      market::mbp::Sequencer sequencer;
+      auto res = mbp_sequencer.try_emplace(symbol, std::move(sequencer));
+      assert(res.second);
+      iter = res.first;
+    }
+    return (*iter).second;
+  }
 
  public:
   server::Dispatcher &dispatcher;
@@ -122,11 +138,17 @@ struct Shared final {
 
  public:
   core::limit::RateLimiter rate_limiter;
-  absl::flat_hash_set<std::string> all_currencies;
-  absl::flat_hash_set<Symbol> all_symbols;
+  ankerl::unordered_dense::set<std::string, utils::unordered_dense::string_hash, std::equal_to<>> all_currencies;
+  // absl::flat_hash_set<std::string> all_currencies;
+  ankerl::unordered_dense::set<std::string, utils::unordered_dense::string_hash, std::equal_to<>> all_symbols;
+  // absl::flat_hash_set<Symbol> all_symbols;
   core::Symbols symbols;
-  absl::node_hash_map<uint32_t, std::pair<Instrument, bool>> instruments;
-  absl::node_hash_map<Symbol, market::mbp::Sequencer> mbp_sequencer;
+  ankerl::unordered_dense::map<uint32_t, std::pair<Instrument, bool>> instruments;
+  // absl::node_hash_map<uint32_t, std::pair<Instrument, bool>> instruments;
+  ankerl::unordered_dense::
+      map<std::string, market::mbp::Sequencer, utils::unordered_dense::string_hash, std::equal_to<>>
+          mbp_sequencer;
+  // absl::node_hash_map<Symbol, market::mbp::Sequencer> mbp_sequencer;
 };
 
 }  // namespace deribit

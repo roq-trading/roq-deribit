@@ -202,7 +202,7 @@ void UDPEvents::operator()(Trace<deribit_multicast::Book> const &event, sbe::Fra
           std::chrono::milliseconds const timestamp{book.timestampMs()};
           book.sbeRewind();
           book.changesList().forEach([&](auto &item) { emplace_back(item, instrument.multiplier, bids, asks); });
-          auto &sequencer = shared_.mbp_sequencer[instrument.symbol];
+          auto &sequencer = shared_.get_mbp_sequencer(instrument.symbol);
           try {
             auto create_update =
                 [&](auto &bids, auto &asks, auto update_type, auto exchange_sequence) -> MarketByPriceUpdate {

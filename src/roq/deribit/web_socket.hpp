@@ -2,13 +2,16 @@
 
 #pragma once
 
-#include <absl/container/flat_hash_map.h>
+// #include <absl/container/flat_hash_map.h>
+#include <ankerl/unordered_dense.h>
 
 #include <memory>
 #include <string>
 #include <string_view>
 #include <utility>
 #include <vector>
+
+#include "roq/utils/unordered_dense/hash.hpp"
 
 #include "roq/utils/metrics/counter.hpp"
 #include "roq/utils/metrics/latency.hpp"
@@ -171,8 +174,13 @@ struct WebSocket final : public web::socket::Client::Handler,
   Account &account_;
   // cache
   Shared &shared_;
-  absl::flat_hash_map<std::string, std::pair<roq::Layer, double>> top_of_book_;
-  absl::flat_hash_map<std::string, TradingStatus> trading_status_;
+  ankerl::unordered_dense::
+      map<std::string, std::pair<roq::Layer, double>, utils::unordered_dense::string_hash, std::equal_to<>>
+          top_of_book_;
+  // absl::flat_hash_map<std::string, std::pair<roq::Layer, double>> top_of_book_;
+  ankerl::unordered_dense::map<std::string, TradingStatus, utils::unordered_dense::string_hash, std::equal_to<>>
+      trading_status_;
+  // absl::flat_hash_map<std::string, TradingStatus> trading_status_;
   // state
   bool ready_ = false;
   ConnectionStatus status_ = {};

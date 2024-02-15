@@ -2,13 +2,16 @@
 
 #pragma once
 
-#include <absl/container/flat_hash_map.h>
+// #include <absl/container/flat_hash_map.h>
+#include <ankerl/unordered_dense.h>
 
 #include <memory>
 #include <string>
 #include <vector>
 
 #include "roq/server.hpp"
+
+#include "roq/utils/unordered_dense/hash.hpp"
 
 #include "roq/io/context.hpp"
 
@@ -100,7 +103,10 @@ struct Gateway final : public server::Handler,
   // config
   std::string const master_account_;
   // accounts
-  absl::flat_hash_map<std::string, std::unique_ptr<Account>> const accounts_;
+  ankerl::unordered_dense::
+      map<std::string, std::unique_ptr<Account>, utils::unordered_dense::string_hash, std::equal_to<>>
+          accounts_;
+  // absl::flat_hash_map<std::string, std::unique_ptr<Account>> const accounts_;
   // io
   io::Context &context_;
   // shared
@@ -108,8 +114,14 @@ struct Gateway final : public server::Handler,
   // seed
   uint16_t stream_id_ = {};
   // streams
-  absl::flat_hash_map<std::string, std::unique_ptr<OrderEntry>> order_entry_;
-  absl::flat_hash_map<std::string, std::unique_ptr<DropCopy>> drop_copy_;
+  ankerl::unordered_dense::
+      map<std::string, std::unique_ptr<OrderEntry>, utils::unordered_dense::string_hash, std::equal_to<>>
+          order_entry_;
+  // absl::flat_hash_map<std::string, std::unique_ptr<OrderEntry>> order_entry_;
+  ankerl::unordered_dense::
+      map<std::string, std::unique_ptr<DropCopy>, utils::unordered_dense::string_hash, std::equal_to<>>
+          drop_copy_;
+  // absl::flat_hash_map<std::string, std::unique_ptr<DropCopy>> drop_copy_;
   std::vector<std::unique_ptr<WebSocket>> web_socket_;
   std::vector<std::unique_ptr<MarketData>> market_data_;
   std::unique_ptr<UDPSnapshot> udp_snapshot_;

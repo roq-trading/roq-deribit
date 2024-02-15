@@ -186,7 +186,7 @@ void UDPSnapshot::operator()(Trace<deribit_multicast::Snapshot> const &event, sb
           // XXX allow empty? (after all, we need to record the sequence number...)
           if (is_last && !(std::empty(bids) && std::empty(asks))) {
             std::chrono::milliseconds const timestamp{snapshot.timestampMs()};
-            auto &sequencer = shared_.mbp_sequencer[instrument.symbol];
+            auto &sequencer = shared_.get_mbp_sequencer(instrument.symbol);
             auto publish_snapshot =
                 [&](auto &bids, auto &asks, auto sequence, [[maybe_unused]] auto retries, [[maybe_unused]] auto delay) {
                   log::info<1>(R"(Received snapshot: symbol="{}")"sv, instrument.symbol);

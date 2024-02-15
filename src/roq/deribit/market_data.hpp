@@ -2,10 +2,13 @@
 
 #pragma once
 
-#include <absl/container/flat_hash_set.h>
+// #include <absl/container/flat_hash_set.h>
+#include <ankerl/unordered_dense.h>
 
 #include <string>
 #include <vector>
+
+#include "roq/utils/unordered_dense/hash.hpp"
 
 #include "roq/utils/metrics/counter.hpp"
 #include "roq/utils/metrics/latency.hpp"
@@ -174,7 +177,8 @@ struct MarketData final : public io::net::ConnectionManager::Handler {
   ConnectionStatus status_ = {};
   core::Download<MarketDataState> download_;
   std::chrono::nanoseconds last_logon_or_heartbeat_ = {};
-  absl::flat_hash_set<Symbol> latch_;
+  ankerl::unordered_dense::set<std::string, utils::unordered_dense::string_hash, std::equal_to<>> latch_;
+  // absl::flat_hash_set<Symbol> latch_;
   // EXPERIMENTAL
   std::chrono::nanoseconds test_disconnect_time_ = {};
 };

@@ -75,6 +75,7 @@ target_link_libraries(
           roq-api::roq-api
           absl::flat_hash_map
           absl::flat_hash_set
+          unordered_dense::unordered_dense
           ${RT_LIBRARIES})
 
 if(ROQ_BUILD_TYPE STREQUAL "Release")
