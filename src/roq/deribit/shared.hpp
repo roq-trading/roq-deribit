@@ -2,10 +2,6 @@
 
 #pragma once
 
-// #include <absl/container/flat_hash_map.h>
-// #include <absl/container/flat_hash_set.h>
-// #include <absl/container/node_hash_map.h>
-
 #include <string>
 #include <utility>
 #include <vector>
@@ -13,7 +9,7 @@
 #include "roq/api.hpp"
 #include "roq/server.hpp"
 
-#include "roq/utils/unordered_dense/hash.hpp"
+#include "roq/utils/container.hpp"
 
 #include "roq/market/mbp/sequencer.hpp"
 
@@ -111,8 +107,7 @@ struct Shared final {
     return statistics;
   }
 
-  utils::unordered_dense::map<std::string, double> multiplier;
-  // absl::flat_hash_map<Symbol, double> multiplier;
+  utils::unordered_map<std::string, double> multiplier;
 
   auto &get_mbp_sequencer(std::string_view const &symbol) {
     auto iter = mbp_sequencer.find(symbol);
@@ -136,15 +131,11 @@ struct Shared final {
 
  public:
   core::limit::RateLimiter rate_limiter;
-  utils::unordered_dense::set<std::string> all_currencies;
-  // absl::flat_hash_set<std::string> all_currencies;
-  utils::unordered_dense::set<std::string> all_symbols;
-  // absl::flat_hash_set<Symbol> all_symbols;
+  utils::unordered_set<std::string> all_currencies;
+  utils::unordered_set<std::string> all_symbols;
   core::Symbols symbols;
-  utils::unordered_dense::map<uint32_t, std::pair<Instrument, bool>> instruments;
-  // absl::node_hash_map<uint32_t, std::pair<Instrument, bool>> instruments;
-  utils::unordered_dense::map<std::string, market::mbp::Sequencer> mbp_sequencer;
-  // absl::node_hash_map<Symbol, market::mbp::Sequencer> mbp_sequencer;
+  utils::unordered_map<uint32_t, std::pair<Instrument, bool>> instruments;
+  utils::unordered_map<std::string, market::mbp::Sequencer> mbp_sequencer;
 };
 
 }  // namespace deribit

@@ -2,7 +2,7 @@
 
 #pragma once
 
-#include <absl/container/node_hash_map.h>
+#include "roq/utils/container.hpp"
 
 #include "roq/utils/metrics/counter.hpp"
 #include "roq/utils/metrics/profile.hpp"
@@ -81,7 +81,7 @@ struct UDPSnapshot final : public io::net::udp::Receiver::Handler, public sbe::P
   // cache
   Shared &shared_;
   ConnectionStatus connection_status_ = {};
-  absl::node_hash_map<uint16_t, Aggregator> aggregator_;
+  utils::unordered_map<uint16_t, Aggregator> aggregator_;
   // state
   std::chrono::nanoseconds last_update_time_ = {};
   uint32_t const mbp_max_depth_;

@@ -2,8 +2,7 @@
 
 #pragma once
 
-#include <absl/container/flat_hash_map.h>
-#include <absl/container/node_hash_map.h>
+#include "roq/utils/container.hpp"
 
 #include "roq/utils/metrics/counter.hpp"
 #include "roq/utils/metrics/profile.hpp"
@@ -86,9 +85,9 @@ struct UDPEvents final : public io::net::udp::Receiver::Handler, public sbe::Par
   // cache
   Shared &shared_;
   ConnectionStatus connection_status_ = {};
-  absl::flat_hash_map<uint32_t, uint32_t> last_ticker_;
-  absl::flat_hash_map<uint32_t, uint32_t> last_trades_;
-  absl::node_hash_map<uint16_t, Aggregator> aggregator_;
+  utils::unordered_map<uint32_t, uint32_t> last_ticker_;
+  utils::unordered_map<uint32_t, uint32_t> last_trades_;
+  utils::unordered_map<uint16_t, Aggregator> aggregator_;
   // state
   std::chrono::nanoseconds last_update_time_ = {};
   uint32_t const mbp_max_depth_;

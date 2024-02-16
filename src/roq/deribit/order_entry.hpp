@@ -2,11 +2,9 @@
 
 #pragma once
 
-// #include <absl/container/flat_hash_map.h>
-// #include <absl/container/flat_hash_set.h>
-#include <ankerl/unordered_dense.h>
-
 #include <string>
+
+#include "roq/utils/container.hpp"
 
 #include "roq/utils/metrics/counter.hpp"
 #include "roq/utils/metrics/latency.hpp"
@@ -163,8 +161,7 @@ struct OrderEntry final : public io::net::ConnectionManager::Handler {
   core::Download<OrderEntryState> download_;
   std::chrono::nanoseconds last_logon_or_heartbeat_ = {};
   // EXPERIMENTAL
-  utils::unordered_dense::map<uint64_t, RequestId> msg_seq_num_to_request_id_;
-  // absl::flat_hash_map<uint64_t, RequestId> msg_seq_num_to_request_id_;
+  utils::unordered_map<uint64_t, RequestId> msg_seq_num_to_request_id_;
   std::chrono::nanoseconds test_disconnect_time_ = {};
   std::chrono::nanoseconds test_logon_time_ = {};
 };
