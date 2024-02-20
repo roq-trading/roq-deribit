@@ -216,8 +216,8 @@ void UDPEvents::operator()(Trace<deribit_multicast::Book> const &event, sbe::Fra
                   .exchange_time_utc = timestamp,
                   .exchange_sequence = exchange_sequence,
                   .sending_time_utc = {},
-                  .price_decimals = {},
-                  .quantity_decimals = {},
+                  .price_precision = {},
+                  .quantity_precision = {},
                   .checksum = {},
               };
             };

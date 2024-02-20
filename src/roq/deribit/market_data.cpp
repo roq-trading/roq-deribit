@@ -784,8 +784,8 @@ void MarketData::operator()(Trace<fix::MarketDataIncrementalRefresh> const &even
           .exchange_time_utc = exchange_time_utc,
           .exchange_sequence = {},
           .sending_time_utc = header.sending_time,
-          .price_decimals = {},
-          .quantity_decimals = {},
+          .price_precision = {},
+          .quantity_precision = {},
           .checksum = {},
       };
       auto is_last = std::empty(statistics) && std::empty(trades);
@@ -897,8 +897,8 @@ void MarketData::operator()(Trace<fix::MarketDataSnapshotFullRefresh> const &eve
         .exchange_time_utc = exchange_time_utc,
         .exchange_sequence = {},
         .sending_time_utc = header.sending_time,
-        .price_decimals = {},
-        .quantity_decimals = {},
+        .price_precision = {},
+        .quantity_precision = {},
         .checksum = {},
     };
     try {
