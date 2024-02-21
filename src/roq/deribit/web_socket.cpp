@@ -115,7 +115,6 @@ WebSocket::WebSocket(
       },
       account_{account}, shared_{shared},
       download_{shared.settings.ws.request_timeout, [this](auto state) { return download(state); }} {
-  log::info("DEBUG: publish_top_of_book={}"sv, publish_top_of_book_);
 }
 
 void WebSocket::operator()(Event<Start> const &) {
@@ -512,7 +511,6 @@ void WebSocket::operator()(Trace<json::Instruments> const &event) {
       assert(!std::empty(symbol));
       auto discard = shared_.discard_symbol(symbol);
       // needed by multicast
-      log::info<5>(R"(DEBUG: CREATE "{}" discard={})"sv, item.instrument_name, discard);
       auto multiplier = compute_contracts_multiplier(item.contract_size);
       shared_.instruments.try_emplace(
           item.instrument_id, Instrument{item.instrument_name, item.contract_size, multiplier}, discard);
