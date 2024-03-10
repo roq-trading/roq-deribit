@@ -6,6 +6,20 @@ set(AUTOGEN_SCHEMAS common.json fix.json multicast.json ws.json flags.json)
 
 roq_autogen(
   OUTPUT
+  AUTOGEN_DOC
+  NAMESPACE
+  "roq/deribit/flags"
+  OUTPUT_TYPE
+  "doc"
+  FILE_TYPE
+  "rstinc"
+  SOURCES
+  ${AUTOGEN_SCHEMAS})
+
+add_custom_target(flags-autogen-doc ALL DEPENDS ${AUTOGEN_DOC})
+
+roq_autogen(
+  OUTPUT
   AUTOGEN_HEADERS
   NAMESPACE
   "roq/deribit/flags"
