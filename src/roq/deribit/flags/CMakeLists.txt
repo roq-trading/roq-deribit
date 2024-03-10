@@ -2,13 +2,15 @@ set(TARGET_NAME ${PROJECT_NAME}-flags)
 
 include(RoqAutogen)
 
+set(NAMESPACE "roq/deribit/flags")
+
 set(AUTOGEN_SCHEMAS common.json fix.json multicast.json ws.json flags.json)
 
-roq_autogen(
+roq_autodoc(
   OUTPUT
   AUTOGEN_DOC
   NAMESPACE
-  "roq/deribit/flags"
+  ${NAMESPACE}
   OUTPUT_TYPE
   "doc"
   FILE_TYPE
@@ -22,7 +24,7 @@ roq_autogen(
   OUTPUT
   AUTOGEN_HEADERS
   NAMESPACE
-  "roq/deribit/flags"
+  ${NAMESPACE}
   OUTPUT_TYPE
   "state"
   FILE_TYPE
@@ -36,7 +38,7 @@ roq_autogen(
   OUTPUT
   AUTOGEN_SOURCES
   NAMESPACE
-  "roq/deribit/flags"
+  ${NAMESPACE}
   OUTPUT_TYPE
   "state"
   FILE_TYPE
@@ -44,10 +46,22 @@ roq_autogen(
   SOURCES
   ${AUTOGEN_SCHEMAS})
 
-roq_gitignore(OUTPUT .gitignore SOURCES ${TARGET_NAME} ${AUTOGEN_HEADERS} ${AUTOGEN_SOURCES})
+roq_gitignore(OUTPUT .gitignore SOURCES ${TARGET_NAME} ${AUTOGEN_DOC} ${AUTOGEN_HEADERS} ${AUTOGEN_SOURCES})
 
 add_library(${TARGET_NAME} OBJECT ${AUTOGEN_SOURCES})
 
 add_dependencies(${TARGET_NAME} flags-autogen-headers)
 
 target_link_libraries(${TARGET_NAME} PRIVATE roq-api::roq-api absl::flags)
+
+# install
+
+set(TARGET_DIR ${CMAKE_INSTALL_DATADIR}/doc/${PROJECT_NAME})
+
+install(
+  DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/
+  DESTINATION ${TARGET_DIR}/rst
+  FILES_MATCHING
+  PATTERN "*.rstinc"
+  PATTERN "CMakeFiles" EXCLUDE)
+
