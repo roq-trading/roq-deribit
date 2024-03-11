@@ -15,57 +15,57 @@
       "type": "std::chrono::nanoseconds",
       "validator": "roq::flags::validators::TimePeriod",
       "default": "5s",
-      "description": "ping frequency"
+      "description": "Ping frequency"
     },
     {
       "name": "request_timeout",
       "type": "std::chrono::nanoseconds",
       "validator": "roq::flags::validators::TimePeriod",
       "default": "15s",
-      "description": "request timeout"
+      "description": "Request timeout"
     },
     {
       "name": "cancel_on_disconnect",
       "type": "bool",
       "default": true,
-      "description": "cancel orders on disconnect? (bool)"
+      "description": "Cancel orders on disconnect? (bool)"
     },
     {
       "name": "market_data_max_subscriptions_per_stream",
       "type": "uint32_t",
       "required": true,
       "default": 256,
-      "description": "max subscriptions per connection (count)"
+      "description": "Max subscriptions per connection (count)"
     },
     {
       "name": "market_data_request_max_size",
       "type": "uint32_t",
       "default": 56,
-      "description": "max batch size (it appears there is a limit)"
+      "description": "Max batch size (it appears there is a limit)"
     },
     {
       "name": "market_data_market_depth",
       "type": "uint32_t",
       "default": 20,
-      "description": "market depth (see deribit documentation)"
+      "description": "Market depth (see deribit documentation)"
     },
     {
       "name": "debug",
       "type": "bool",
       "default": false,
-      "description": "log fix messages?"
+      "description": "Log fix messages?"
     },
     {
       "name": "continue_from_parse_exception",
       "type": "bool",
       "default": false,
-      "description": "continue if message can't be parsed?"
+      "description": "Continue if message can't be parsed?"
     },
     {
       "name": "terminate_on_market_data_request_reject",
       "type": "bool",
       "default": false,
-      "description": "terminate if market data request has been rejected?"
+      "description": "Terminate if market data request has been rejected?"
     },
     {
       "name": "test_order_disconnect",
