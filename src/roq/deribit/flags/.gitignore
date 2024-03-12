@@ -1,10 +1,10 @@
 !!! THIS FILE HAS BEEN AUTO-GENERATED !!!
 roq-deribit-flags
-flags_.rstinc
-common_.rstinc
-fix_.rstinc
-multicast_.rstinc
-ws_.rstinc
+flags.rstinc
+common.rstinc
+fix.rstinc
+multicast.rstinc
+ws.rstinc
 flags.hpp
 common.hpp
 fix.hpp
