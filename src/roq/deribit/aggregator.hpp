@@ -11,10 +11,7 @@ namespace roq {
 namespace deribit {
 
 struct Aggregator final {
-  Aggregator(size_t mbp_size) {
-    bids_.reserve(mbp_size);
-    asks_.reserve(mbp_size);
-  }
+  Aggregator() {}
 
   void reset() {
     previous_instrument_id_ = {};

@@ -79,7 +79,7 @@ UDPSnapshot::UDPSnapshot(Handler &handler, io::Context &context, uint16_t stream
       profile_{
           .parse = create_metrics(shared.settings, name_, "parse"sv),
       },
-      shared_{shared}, mbp_max_depth_{shared.settings.cache.mbp_max_depth} {
+      shared_{shared} {
   log::info("DEBUG: publish_market_by_price={}"sv, publish_market_by_price_);
 }
 
@@ -285,7 +285,7 @@ void UDPSnapshot::emplace_back(T const &item, double multiplier, U &bids, U &ask
 Aggregator &UDPSnapshot::get_aggregator(uint16_t channel_id) {
   auto iter = aggregator_.find(channel_id);
   if (iter == std::end(aggregator_))
-    iter = aggregator_.emplace(channel_id, mbp_max_depth_).first;
+    iter = aggregator_.try_emplace(channel_id).first;
   return (*iter).second;
 }
 
