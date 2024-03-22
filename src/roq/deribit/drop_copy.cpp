@@ -76,10 +76,10 @@ struct create_metrics final : public core::metrics::Factory {
 
 auto get_download_trades_lookback(auto const &settings, auto download_trades_is_first) {
   if (download_trades_is_first) {
-    if (settings.common.download_trades_lookback_on_restart.count())
-      return settings.common.download_trades_lookback_on_restart;
+    if (settings.download.trades_lookback_on_restart.count())
+      return settings.download.trades_lookback_on_restart;
   }
-  return settings.common.download_trades_lookback;
+  return settings.download.trades_lookback;
 }
 }  // namespace
 

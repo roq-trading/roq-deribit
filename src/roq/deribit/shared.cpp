@@ -25,7 +25,7 @@ auto get_multicast(auto &settings) {
 
 Shared::Shared(server::Dispatcher &dispatcher, Settings const &settings)
     : dispatcher{dispatcher}, settings{settings}, multicast_{get_multicast(settings)},
-      rate_limiter{settings.common.request_limit, settings.common.request_limit_interval},
+      rate_limiter{settings.request.limit, settings.request.limit_interval},
       symbols{settings.fix.market_data_max_subscriptions_per_stream} {
 }
 

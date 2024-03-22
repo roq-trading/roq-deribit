@@ -152,10 +152,6 @@ Flags
 
    .. include:: flags/flags.rstinc
 
-.. tab:: Common
-
-   .. include:: flags/common.rstinc
-
 .. tab:: FIX
 
    .. include:: flags/fix.rstinc
@@ -167,6 +163,22 @@ Flags
 .. tab:: WS
 
    .. include:: flags/ws.rstinc
+
+.. tab:: Download
+
+   .. include:: flags/download.rstinc
+
+.. tab:: MBP
+
+   .. include:: flags/mbp.rstinc
+
+.. tab:: Request
+
+   .. include:: flags/request.rstinc
+
+.. tab:: Common
+
+   .. include:: flags/common.rstinc
 
 
 Environments
