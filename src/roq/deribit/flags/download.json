@@ -8,14 +8,14 @@
       "type": "std::chrono::nanoseconds",
       "validator": "roq::flags::validators::TimePeriod",
       "default": "300s",
-      "description": "Download trades lookback period"
+      "description": "Lookback period when downloading trades (following a disconnect)"
     },
     {
       "name": "trades_lookback_on_restart",
       "type": "std::chrono::nanoseconds",
       "validator": "roq::flags::validators::TimePeriod",
       "default": "{}",
-      "description": "Download trades lookback period"
+      "description": "Lookback period when downloading trades (initial download)"
     }
   ]
 }

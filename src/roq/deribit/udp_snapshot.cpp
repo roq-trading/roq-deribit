@@ -50,8 +50,8 @@ auto create_receiver(auto &handler, auto &settings, auto &context, auto port) {
       io::SocketOption::REUSE_ADDRESS,
   };
   auto receiver = context.create_udp_receiver(handler, network_address, socket_options);
-  log::info<1>(R"(Local interface is "{}")"sv, settings.common.local_interface);
-  auto local_interface = io::NetworkAddress::create_blocking(settings.common.local_interface);
+  log::info<1>(R"(Local interface is "{}")"sv, settings.misc.local_interface);
+  auto local_interface = io::NetworkAddress::create_blocking(settings.misc.local_interface);
   for (auto &multicast_address : settings.multicast.address) {
     log::info<1>(R"(Add membership "{}")"sv, multicast_address);
     auto multicast_address_2 = io::NetworkAddress::create_blocking(multicast_address);

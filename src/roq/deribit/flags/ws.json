@@ -9,12 +9,12 @@
       "validator": "roq::core::flags::URI",
       "default": "wss://test.deribit.com/ws/api/v2",
       "required": true,
-      "description": "WebSocket end-point (URI)"
+      "description": "Exchange end-point"
     },
     {
       "name": "host",
       "type": "std::string",
-      "description": "Host (http header) in case uri uses an IP address"
+      "description": "Host (when URI is an IP address)"
     },
     {
       "name": "ping_freq",
@@ -35,7 +35,7 @@
       "type": "uint32_t",
       "required": true,
       "default": 256,
-      "description": "Max subscriptions per connection (count)"
+      "description": "Maximum number of symbols per connection"
     },
     {
       "name": "ticker_interval",
@@ -47,7 +47,7 @@
     {
       "name": "allow_errors",
       "type": "bool",
-      "description": "Allow errors (debug)"
+      "description": "(TEST) Allow errors"
     },
     {
       "name": "disable_quote",

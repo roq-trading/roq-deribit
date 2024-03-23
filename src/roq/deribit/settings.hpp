@@ -6,11 +6,11 @@
 
 #include "roq/server/flags/settings.hpp"
 
-#include "roq/deribit/flags/common.hpp"
 #include "roq/deribit/flags/download.hpp"
 #include "roq/deribit/flags/fix.hpp"
 #include "roq/deribit/flags/flags.hpp"
 #include "roq/deribit/flags/mbp.hpp"
+#include "roq/deribit/flags/misc.hpp"
 #include "roq/deribit/flags/multicast.hpp"
 #include "roq/deribit/flags/request.hpp"
 #include "roq/deribit/flags/ws.hpp"
@@ -21,7 +21,7 @@ namespace deribit {
 struct Settings final : public server::flags::Settings, public flags::Flags {
   explicit Settings(args::Parser const &);
 
-  flags::Common common;
+  flags::Misc misc;
   flags::FIX fix;
   flags::WS ws;
   flags::Multicast multicast;
@@ -41,7 +41,7 @@ struct fmt::formatter<roq::deribit::Settings> {
     return fmt::format_to(
         context.out(),
         R"({{)"
-        R"(common={}, )"
+        R"(misc={}, )"
         R"(fix={}, )"
         R"(ws={}, )"
         R"(multicast={}, )"
@@ -50,7 +50,7 @@ struct fmt::formatter<roq::deribit::Settings> {
         R"(request={}, )"
         R"(server={})"
         R"(}})"sv,
-        value.common,
+        value.misc,
         value.fix,
         value.ws,
         value.multicast,

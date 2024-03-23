@@ -14,7 +14,7 @@ namespace deribit {
 namespace {
 auto get_multicast(auto &settings) {
   // XXX maybe check more flags?
-  if (std::empty(settings.common.local_interface))
+  if (std::empty(settings.misc.local_interface))
     return false;
   log::info("Using multicast"sv);
   return true;

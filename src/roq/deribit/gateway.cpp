@@ -94,7 +94,7 @@ Gateway::Gateway(server::Dispatcher &dispatcher, Settings const &settings, Confi
           *this, context_, ++stream_id_, get_account(accounts_, master_account_), shared_)},
       udp_snapshot_{create_udp_snapshot(*this, context_, ++stream_id_, shared_)},
       udp_events_{create_udp_events(*this, context_, ++stream_id_, shared_)} {
-  if (std::empty(master_account_) && !settings.common.disable_master_account_check)
+  if (std::empty(master_account_) && !settings.misc.disable_master_account_check)
     log::fatal("A master account is always required (due to FIX logon)"sv);
   if (!settings.fix.cancel_on_disconnect)
     log::warn("Orders will *NOT* be cancelled on disconnect"sv);

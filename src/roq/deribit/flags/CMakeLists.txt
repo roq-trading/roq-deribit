@@ -5,11 +5,11 @@ include(RoqAutogen)
 set(NAMESPACE "roq/deribit/flags")
 
 set(AUTOGEN_SCHEMAS
-    flags.json
-    common.json
     download.json
     fix.json
+    flags.json
     mbp.json
+    misc.json
     multicast.json
     request.json
     ws.json)

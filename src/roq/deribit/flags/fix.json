@@ -8,7 +8,7 @@
       "type": "roq::io::web::URI",
       "validator": "roq::core::flags::URI",
       "default": "tcp://test.deribit.com:9881",
-      "description": "FIX end-point (URI)"
+      "description": "Exchange end-point"
     },
     {
       "name": "ping_freq",
@@ -28,14 +28,14 @@
       "name": "cancel_on_disconnect",
       "type": "bool",
       "default": true,
-      "description": "Cancel orders on disconnect? (bool)"
+      "description": "Auto-cancel orders on disconnect?"
     },
     {
       "name": "market_data_max_subscriptions_per_stream",
       "type": "uint32_t",
       "required": true,
       "default": 256,
-      "description": "Max subscriptions per connection (count)"
+      "description": "Maximum number of symbols per connection"
     },
     {
       "name": "market_data_request_max_size",
@@ -53,40 +53,40 @@
       "name": "debug",
       "type": "bool",
       "default": false,
-      "description": "Log fix messages?"
+      "description": "(DEBUG) Log fix messages?"
     },
     {
       "name": "continue_from_parse_exception",
       "type": "bool",
       "default": false,
-      "description": "Continue if message can't be parsed?"
+      "description": "(TEST) Continue if message can't be parsed?"
     },
     {
       "name": "terminate_on_market_data_request_reject",
       "type": "bool",
       "default": false,
-      "description": "Terminate if market data request has been rejected?"
+      "description": "(TEST) Terminate if market data request has been rejected?"
     },
     {
       "name": "test_order_disconnect",
       "type": "std::chrono::nanoseconds",
       "validator": "roq::flags::validators::TimePeriod",
       "default": "{}",
-      "description": "TEST disconnect order stream after this period"
+      "description": "(TEST) Disconnect order stream if silent for this period"
     },
     {
       "name": "test_order_logon",
       "type": "std::chrono::nanoseconds",
       "validator": "roq::flags::validators::TimePeriod",
       "default": "{}",
-      "description": "TEST logon order stream after this period"
+      "description": "(TEST) Logon order stream after this period"
     },
     {
       "name": "test_market_data_disconnect",
       "type": "std::chrono::nanoseconds",
       "validator": "roq::flags::validators::TimePeriod",
       "default": "{}",
-      "description": "TEST disconnect market data stream after this period"
+      "description": "(TEST) Disconnect market data stream after this period"
     }
   ]
 }

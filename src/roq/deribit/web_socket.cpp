@@ -73,8 +73,8 @@ auto create_connection(auto &handler, auto &settings, auto &context) {
       .request_timeout = {},
       .ping_frequency = settings.ws.ping_freq,
       // implementation
-      .decode_buffer_size = settings.common.decode_buffer_size,
-      .encode_buffer_size = settings.common.encode_buffer_size,
+      .decode_buffer_size = settings.misc.decode_buffer_size,
+      .encode_buffer_size = settings.misc.encode_buffer_size,
   };
   return web::socket::Client::create(handler, context, config, []() { return std::string(); });
 }
@@ -98,7 +98,7 @@ WebSocket::WebSocket(
     : handler_{handler}, stream_id_{stream_id}, name_{create_name(stream_id_)}, index_{index}, master_{master},
       publish_top_of_book_{publish_top_of_book(shared)}, supports_{get_supports(master_, publish_top_of_book_)},
       connection_{create_connection(*this, shared.settings, context)},
-      decode_buffer_(shared.settings.common.decode_buffer_size),
+      decode_buffer_(shared.settings.misc.decode_buffer_size),
       counter_{
           .disconnect = create_metrics(shared.settings, name_, "disconnect"sv),
       },

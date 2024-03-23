@@ -1,5 +1,5 @@
 {
-  "name": "Common",
+  "name": "Misc",
   "type": "flags",
   "values": [
     {
@@ -20,13 +20,13 @@
       "name": "disable_deribit_143",
       "type": "bool",
       "default": false,
-      "description": "Disable #143"
+      "description": "(TEST) Disable #143"
     },
     {
       "name": "disable_master_account_check",
       "type": "bool",
       "default": false,
-      "description": "Disable requirement for master account"
+      "description": "(TEST) Disable requirement for master account"
     },
     {
       "name": "local_interface",

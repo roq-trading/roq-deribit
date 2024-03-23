@@ -96,7 +96,7 @@ OrderEntry::OrderEntry(Handler &handler, io::Context &context, uint16_t stream_i
     : handler_{handler}, stream_id_{stream_id}, name_{create_name(stream_id_, account.get_name())},
       connection_factory_{create_connection_factory(shared.settings, context)},
       connection_manager_{create_connection_manager(*this, shared.settings, *connection_factory_)},
-      decode_buffer_(shared.settings.common.decode_buffer_size),
+      decode_buffer_(shared.settings.misc.decode_buffer_size),
       counter_{
           .disconnect = create_metrics(shared.settings, name_, "disconnect"sv),
       },
@@ -765,7 +765,7 @@ void OrderEntry::operator()(Trace<fix::ExecutionReport> const &event, roq::fix::
   auto exec_type = execution_report.exec_type;
   auto ord_status = execution_report.ord_status;
   // special case: partial fill can overlap cancel request (#143)
-  if (!shared_.settings.common.disable_deribit_143) {
+  if (!shared_.settings.misc.disable_deribit_143) {
     if (exec_type == roq::fix::ExecType::CANCELED && ord_status == roq::fix::OrdStatus::CANCELED) {
       log::warn<1>("Drop execution report due to FIX compliance"sv);
       return;
