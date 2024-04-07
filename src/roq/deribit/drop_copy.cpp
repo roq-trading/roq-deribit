@@ -86,7 +86,7 @@ auto get_download_trades_lookback(auto const &settings, auto download_trades_is_
 // === IMPLEMENTATION ===
 
 DropCopy::DropCopy(Handler &handler, io::Context &context, uint16_t stream_id, Account &account, Shared &shared)
-    : handler_{handler}, stream_id_{stream_id}, name_{create_name(stream_id_, account.get_name())},
+    : handler_{handler}, stream_id_{stream_id}, name_{create_name(stream_id_, account.name)},
       connection_{create_connection(*this, shared.settings, context)},
       decode_buffer_(shared.settings.misc.decode_buffer_size),
       counter_{
@@ -169,7 +169,7 @@ void DropCopy::operator()(web::socket::Client::Latency const &latency) {
   TraceInfo trace_info;
   auto external_latency = ExternalLatency{
       .stream_id = stream_id_,
-      .account = account_.get_name(),
+      .account = account_.name,
       .latency = latency.sample,
   };
   create_trace_and_dispatch(handler_, trace_info, external_latency);
@@ -189,7 +189,7 @@ void DropCopy::operator()(ConnectionStatus status) {
     TraceInfo trace_info;
     auto stream_status = StreamStatus{
         .stream_id = stream_id_,
-        .account = account_.get_name(),
+        .account = account_.name,
         .supports = SUPPORTS,
         .transport = Transport::TCP,
         .protocol = Protocol::WS,
@@ -224,7 +224,7 @@ void DropCopy::login() {
       R"(}},)"
       R"("id":"{}")"
       R"(}})"sv,
-      account_.get_access_key(),
+      account_.key,
       timestamp.count(),
       nonce,
       signature,
@@ -240,32 +240,32 @@ uint32_t DropCopy::download(DropCopyState state) {
     case SUBSCRIBE_PORTFOLIOS:
       if (can_download_)
         subscribe_portfolios(currencies_);
-      return {};
+      return 0;
     case SUBSCRIBE_CHANGES:
       subscribe_changes();
-      return {};
+      return 0;
     case SUBSCRIBE_ORDERS:
       subscribe_orders();
-      return {};
+      return 0;
     case SUBSCRIBE_TRADES:
       subscribe_trades();
-      return {};
+      return 0;
     case GET_ACCOUNT_SUMMARY:
       if (can_download_)
         get_account_summary(currencies_);
-      return {};
+      return 0;
     case GET_TRADES:
       if (can_download_)
         get_trades(currencies_);
-      return {};
+      return 0;
     case DONE:
       (*this)(ConnectionStatus::READY);
       assert(!ready_);
       ready_ = true;
-      return {};
+      return 0;
   }
   assert(false);
-  return {};
+  return 0;
 }
 
 void DropCopy::subscribe_portfolios(std::span<std::string> const &currencies) {
@@ -481,7 +481,7 @@ void DropCopy::operator()(Trace<json::Portfolio> const &event) {
   auto margin_mode = portfolio.cross_collateral_enabled ? MarginMode::CROSS : MarginMode::ISOLATED;
   auto funds_update = FundsUpdate{
       .stream_id = stream_id_,
-      .account = account_.get_name(),
+      .account = account_.name,
       .currency = portfolio.currency,
       .margin_mode = margin_mode,
       .balance = portfolio.balance,
@@ -552,7 +552,7 @@ void DropCopy::operator()(Trace<json::Trade> const &event, bool is_download, boo
   auto update_type = is_download ? UpdateType::SNAPSHOT : UpdateType::INCREMENTAL;
   auto trade_update = TradeUpdate{
       .stream_id = stream_id_,
-      .account = account_.get_name(),
+      .account = account_.name,
       .order_id = {},
       .exchange = shared_.settings.exchange,
       .symbol = trade.instrument_name,

@@ -40,7 +40,7 @@ auto create_name(auto stream_id) {
   return fmt::format("{}:{}"sv, stream_id, NAME);
 }
 
-auto publish_top_of_book(auto const &shared) {
+auto publish_top_of_book(auto &shared) {
   return !shared.has_multicast() || shared.settings.multicast.disable_top_of_book;
 }
 
@@ -230,7 +230,7 @@ void WebSocket::login() {
       R"(}},)"
       R"("id":"{}")"
       R"(}})"sv,
-      account_.get_access_key(),
+      account_.key,
       timestamp.count(),
       nonce,
       signature,
@@ -245,11 +245,11 @@ uint32_t WebSocket::download(WebSocketState state) {
       break;
     case CURRENCIES:
       if (!master_)
-        return {};
+        return 0;
       return download_currencies();
     case INSTRUMENTS:
       if (!master_)
-        return {};
+        return 0;
       return download_instruments();
     case SUBSCRIBE:
       assert(!ready_);
@@ -259,14 +259,14 @@ uint32_t WebSocket::download(WebSocketState state) {
         subscribe_instrument_state();
       }
       subscribe();
-      return {};
+      return 0;
     case DONE:
       handler_(Latch{});
       (*this)(ConnectionStatus::READY);
-      return {};
+      return 0;
   }
   assert(false);
-  return {};
+  return 0;
 }
 
 uint32_t WebSocket::download_currencies() {
@@ -375,17 +375,18 @@ void WebSocket::subscribe_ticker(std::span<Symbol const> const &symbols) {
       fmt::join(symbols, separator),
       interval,
       request_type.as_raw_text());
-  // log::debug(R"(message="{}")"sv, message);
   subscribe_queue_.emplace_back(message);
 }
 
 void WebSocket::parse(std::string_view const &message) {
   profile_.parse([&]() {
+    auto log_message = [&]() { log::warn(R"(message="{}")"sv, message); };
     TraceInfo trace_info;
     try {
+      // XXX TODO shouldn't this return boolean if can't parse?
       core::jsonrpc::Parser::dispatch(*this, message, trace_info);
     } catch (...) {
-      log::warn(R"(message="{}")"sv, message);
+      log_message();
       core::tools::UnhandledException::terminate();
     }
   });
@@ -456,6 +457,7 @@ void WebSocket::operator()(Trace<core::jsonrpc::Notification> const &event, core
       log::fatal(R"(Unknown method="{}")"sv, notification.method);
       break;
     case SUBSCRIPTION:
+      // XXX TODO shouldn't this return boolean if can't parse?
       json::Parser::dispatch(*this, value, decode_buffer_, trace_info);
       break;
   }
@@ -507,7 +509,7 @@ void WebSocket::operator()(Trace<json::Instruments> const &event) {
     if (!std::empty(data))
       symbols.reserve(std::size(data));
     for (auto &item : data) {
-      log::info<2>("instrument={}"sv, item);
+      log::info<2>("item={}"sv, item);
       auto &symbol = item.instrument_name;
       assert(!std::empty(symbol));
       auto discard = shared_.discard_symbol(symbol);
@@ -621,13 +623,12 @@ void WebSocket::operator()(Trace<json::Trades2> const &) {
   log::fatal("Unexpected"sv);
 }
 
+// request
+
 void WebSocket::check_subscribe_queue(std::chrono::nanoseconds now) {
   subscribe_queue_.dispatch(
       [&](auto now) { return shared_.rate_limiter.can_request(now); },
-      [&](auto &message) {
-        // log::debug(R"(Subscribe: "{}")"sv, message);
-        (*connection_).send_text(message);
-      },
+      [&](auto &message) { (*connection_).send_text(message); },
       now);
 }
 

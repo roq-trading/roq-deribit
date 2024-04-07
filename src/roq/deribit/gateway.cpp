@@ -238,7 +238,7 @@ void Gateway::ensure_symbol_slices(size_t size) {
   while (std::size(market_data_) < size) {
     auto stream_id = ++stream_id_;
     auto index = std::size(market_data_);
-    log::debug("Create MarketData(stream_id={}, index={})"sv, stream_id, index);
+    log::info("Create MarketData(stream_id={}, index={})"sv, stream_id, index);
     auto market_data =
         std::make_unique<MarketData>(*this, context_, stream_id, *accounts_.at(master_account_), shared_, index, false);
     MessageInfo message_info;
@@ -250,7 +250,7 @@ void Gateway::ensure_symbol_slices(size_t size) {
   while (std::size(web_socket_) < size) {
     auto stream_id = ++stream_id_;
     auto index = std::size(web_socket_);
-    log::debug("Create WebSocket (stream_id={}, index={})"sv, stream_id, index);
+    log::info("Create WebSocket (stream_id={}, index={})"sv, stream_id, index);
     auto web_socket =
         std::make_unique<WebSocket>(*this, context_, stream_id, *accounts_.at(master_account_), shared_, index, false);
     MessageInfo message_info;

@@ -93,7 +93,7 @@ struct create_metrics final : public core::metrics::Factory {
 // === IMPLEMENTATION ===
 
 OrderEntry::OrderEntry(Handler &handler, io::Context &context, uint16_t stream_id, Account &account, Shared &shared)
-    : handler_{handler}, stream_id_{stream_id}, name_{create_name(stream_id_, account.get_name())},
+    : handler_{handler}, stream_id_{stream_id}, name_{create_name(stream_id_, account.name)},
       connection_factory_{create_connection_factory(shared.settings, context)},
       connection_manager_{create_connection_manager(*this, shared.settings, *connection_factory_)},
       decode_buffer_(shared.settings.misc.decode_buffer_size),
@@ -200,7 +200,7 @@ uint16_t OrderEntry::operator()(
     [[maybe_unused]] std::string_view const &previous_request_id) {
   if (!ready()) [[unlikely]]
     throw server::oms::NotReady{"not ready"sv};
-  auto const &modify_order = event.value;
+  auto &modify_order = event.value;
   auto side = roq::fix::map(order.side);
   auto ord_type = roq::fix::map(order.order_type);
   // note! using deribit_label might be slower, but using orig_cl_ord_id seems error-prone
@@ -251,7 +251,7 @@ uint16_t OrderEntry::operator()(Event<CancelAllOrders> const &event, std::string
   auto send_ack = [&]() {
     auto cancel_all_orders_ack = CancelAllOrdersAck{
         .stream_id = stream_id_,
-        .account = account_.get_name(),
+        .account = account_.name,
         .order_id = cancel_all_orders.order_id,
         .exchange = cancel_all_orders.exchange,
         .symbol = cancel_all_orders.symbol,
@@ -369,7 +369,7 @@ void OrderEntry::operator()(ConnectionStatus status) {
     TraceInfo trace_info;
     auto stream_status = StreamStatus{
         .stream_id = stream_id_,
-        .account = account_.get_name(),
+        .account = account_.name,
         .supports = SUPPORTS,
         .transport = Transport::TCP,
         .protocol = Protocol::FIX,
@@ -395,7 +395,7 @@ void OrderEntry::send_logon() {
       .heart_bt_int = static_cast<uint16_t>(ping_freq.count()),
       .raw_data_length = static_cast<uint32_t>(std::size(raw_data)),
       .raw_data = raw_data,
-      .username = account_.get_access_key(),
+      .username = account_.key,
       .password = password,
       .use_wordsafe_tags = false,
       .cancel_on_disconnect = shared_.settings.fix.cancel_on_disconnect,
@@ -450,10 +450,10 @@ uint32_t OrderEntry::download(OrderEntryState state) {
       (*this)(ConnectionStatus::READY);
       assert(!ready_);
       ready_ = true;
-      return {};
+      return 0;
   }
   assert(false);
-  return {};
+  return 0;
 }
 
 void OrderEntry::subscribe_positions() {
@@ -563,7 +563,7 @@ void OrderEntry::operator()(Trace<fix::Heartbeat> const &event, roq::fix::Header
     auto latency = (now - send_time) / 2;  // 1-way
     auto external_latency = ExternalLatency{
         .stream_id = stream_id_,
-        .account = account_.get_name(),
+        .account = account_.name,
         .latency = latency,
     };
     create_trace_and_dispatch(handler_, trace_info, external_latency);
@@ -613,7 +613,7 @@ void OrderEntry::operator()(Trace<fix::PositionReport> const &event, roq::fix::H
     auto short_quantity = std::max(0.0, position_qty.short_qty);
     auto position_update = PositionUpdate{
         .stream_id = stream_id_,
-        .account = account_.get_name(),
+        .account = account_.name,
         .exchange = shared_.settings.exchange,
         .symbol = position_qty.symbol,
         .margin_mode = {},
@@ -804,7 +804,7 @@ void OrderEntry::operator()(Trace<fix::ExecutionReport> const &event, roq::fix::
       .price = execution_report.price,
   };
   auto order_update = server::oms::OrderUpdate{
-      .account = account_.get_name(),
+      .account = account_.name,
       .exchange = shared_.settings.exchange,
       .symbol = execution_report.symbol,
       .side = side,
@@ -868,7 +868,7 @@ void OrderEntry::operator()(Trace<fix::ExecutionReport> const &event, roq::fix::
     assert(!std::empty(fills));
     auto trade_update = TradeUpdate{
         .stream_id = stream_id_,
-        .account = account_.get_name(),
+        .account = account_.name,
         .order_id = order_id,
         .exchange = shared_.settings.exchange,
         .symbol = execution_report.symbol,
@@ -1009,7 +1009,7 @@ void OrderEntry::operator()(Trace<fix::OrderMassCancelReport> const &event, roq:
   }();
   auto cancel_all_orders_ack = CancelAllOrdersAck{
       .stream_id = stream_id_,
-      .account = account_.get_name(),
+      .account = account_.name,
       .order_id = {},
       .exchange = {},
       .symbol = {},

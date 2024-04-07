@@ -48,11 +48,11 @@ auto create_name(auto stream_id) {
   return fmt::format("{}:{}"sv, stream_id, NAME);
 }
 
-auto publish_market_by_price(auto const &shared) {
+auto publish_market_by_price(auto &shared) {
   return !shared.has_multicast() || shared.settings.multicast.disable_market_by_price;
 }
 
-auto publish_trade_summary(auto const &shared) {
+auto publish_trade_summary(auto &shared) {
   return !shared.has_multicast() || shared.settings.multicast.disable_trade_summary;
 }
 
@@ -93,7 +93,7 @@ struct create_metrics final : public core::metrics::Factory {
 
 // following are used from several places
 
-void validate(auto const &value) {
+void validate(auto &value) {
   switch (value.md_update_action) {
     using enum roq::fix::MDUpdateAction;
     case UNDEFINED:
@@ -122,7 +122,7 @@ void validate(auto const &value) {
 }
 
 template <typename T>
-void emplace_back(T &result, auto const &value) {
+void emplace_back(T &result, auto &value) {
   using value_type = typename T::value_type;
   if constexpr (std::is_same<value_type, MBPUpdate>::value) {
     auto mbp_update = MBPUpdate{
@@ -303,7 +303,7 @@ void MarketData::send_logon() {
       .heart_bt_int = utils::safe_cast(heart_bt_int),
       .raw_data_length = utils::safe_cast(std::size(raw_data)),
       .raw_data = raw_data,
-      .username = account_.get_access_key(),
+      .username = account_.key,
       .password = password,
       .use_wordsafe_tags = false,
       .cancel_on_disconnect = cancel_on_disconnect,
@@ -353,13 +353,13 @@ uint32_t MarketData::download(MarketDataState state) {
         download_securities();
         return 1;
       } else {
-        return {};
+        return 0;
       }
     case SUBSCRIBE:
       assert(!ready_);
       ready_ = true;
       subscribe();
-      return {};
+      return 0;
     case DONE: {
       (*this)(ConnectionStatus::READY);
       // test
@@ -371,11 +371,11 @@ uint32_t MarketData::download(MarketDataState state) {
             std::chrono::duration_cast<std::chrono::seconds>(shared_.settings.fix.test_market_data_disconnect),
             stream_id_);
       }
-      return {};
+      return 0;
     }
   }
   assert(false);
-  return {};
+  return 0;
 }
 
 void MarketData::download_securities() {
@@ -413,11 +413,11 @@ void MarketData::subscribe(std::span<Symbol const> const &symbols) {
   auto market_depth = shared_.settings.fix.market_data_market_depth;
   auto md_update_type =
       market_depth ? roq::fix::MDUpdateType::INCREMENTAL_REFRESH : roq::fix::MDUpdateType::FULL_REFRESH;
-  fix::MDReq md_entry_types[] = {
+  std::array<fix::MDReq, 3> md_entry_types{{
       {.md_entry_type = roq::fix::MDEntryType::BID},
       {.md_entry_type = roq::fix::MDEntryType::OFFER},
       {.md_entry_type = roq::fix::MDEntryType::TRADE},
-  };
+  }};
   // deribit has acknowledged a limit on # of symbols per request
   auto max_size = shared_.settings.fix.market_data_request_max_size ? shared_.settings.fix.market_data_request_max_size
                                                                     : std::size(symbols);
@@ -449,11 +449,11 @@ void MarketData::subscribe(std::span<Symbol const> const &symbols) {
 void MarketData::unsubscribe(std::span<Symbol const> const &symbols) {
   log::info("Unsubscribe market data"sv);
   assert(!std::empty(symbols));
-  fix::MDReq md_entry_types[] = {
+  std::array<fix::MDReq, 3> md_entry_types{{
       {.md_entry_type = roq::fix::MDEntryType::BID},
       {.md_entry_type = roq::fix::MDEntryType::OFFER},
       {.md_entry_type = roq::fix::MDEntryType::TRADE},
-  };
+  }};
   // deribit has acknowledged a limit on # of symbols per request
   auto max_size = shared_.settings.fix.market_data_request_max_size ? shared_.settings.fix.market_data_request_max_size
                                                                     : std::size(symbols);
@@ -632,39 +632,38 @@ void MarketData::operator()(Trace<fix::SecurityList> const &event, roq::fix::Hea
     auto counter = size_t{0};
     std::vector<Symbol> symbols;
     symbols.reserve(std::size(security_list.no_related_sym));
-    for (auto &instrument : security_list.no_related_sym) {
-      log::info<2>("instrument={}"sv, instrument);
-      auto &symbol = instrument.symbol;
+    for (auto &item : security_list.no_related_sym) {
+      log::info<2>("item={}"sv, item);
+      auto &symbol = item.symbol;
       auto discard = shared_.discard_symbol(symbol);
-      auto security_type = fix::map_security_type(instrument.security_type);
-      auto multiplier = compute_contracts_multiplier(instrument.contract_multiplier);
-      auto option_type = roq::fix::map(instrument.put_or_call);
-      auto expiry_datetime = combine(
-          instrument.maturity_date,
-          core::charconv::time_from_string<std::chrono::milliseconds>(instrument.maturity_time));
+      auto security_type = fix::map_security_type(item.security_type);
+      auto multiplier = compute_contracts_multiplier(item.contract_multiplier);
+      auto option_type = roq::fix::map(item.put_or_call);
+      auto expiry_datetime =
+          combine(item.maturity_date, core::charconv::time_from_string<std::chrono::milliseconds>(item.maturity_time));
       auto expiry_datetime_utc = expiry_datetime;
       auto reference_data = ReferenceData{
           .stream_id = stream_id_,
           .exchange = exchange_,
           .symbol = symbol,
-          .description = instrument.security_desc,
+          .description = item.security_desc,
           .security_type = security_type,
-          .base_currency = instrument.settl_currency,
-          .quote_currency = instrument.currency,
+          .base_currency = item.settl_currency,
+          .quote_currency = item.currency,
           .margin_currency = {},
-          .commission_currency = instrument.comm_currency,
-          .tick_size = instrument.min_price_increment,
-          .multiplier = instrument.contract_multiplier,  // XXX which one is it ???
+          .commission_currency = item.comm_currency,
+          .tick_size = item.min_price_increment,
+          .multiplier = item.contract_multiplier,  // XXX which one is it ???
           .min_notional = NaN,
-          .min_trade_vol = instrument.min_trade_vol,
+          .min_trade_vol = item.min_trade_vol,
           .max_trade_vol = NaN,
-          .trade_vol_step_size = instrument.min_trade_vol,
+          .trade_vol_step_size = item.min_trade_vol,
           .option_type = option_type,
-          .strike_currency = instrument.strike_currency,
-          .strike_price = instrument.strike_price,
-          .underlying = instrument.underlying_symbol,
+          .strike_currency = item.strike_currency,
+          .strike_price = item.strike_price,
+          .underlying = item.underlying_symbol,
           .time_zone = {},
-          .issue_date = utils::safe_cast(instrument.issue_date),
+          .issue_date = utils::safe_cast(item.issue_date),
           .settlement_date = {},
           .expiry_datetime = utils::safe_cast(expiry_datetime),
           .expiry_datetime_utc = utils::safe_cast(expiry_datetime_utc),

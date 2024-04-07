@@ -30,7 +30,7 @@ auto create_crypto(auto &config, auto &name) {
 // === IMPLEMENTATION ===
 
 Account::Account(Config const &config, std::string_view const &name)
-    : name_{name}, key_{create_key(config, name)}, crypto_{create_crypto(config, name)} {
+    : name{name}, key{create_key(config, name)}, crypto_{create_crypto(config, name)} {
 }
 
 std::string Account::create_nonce() {

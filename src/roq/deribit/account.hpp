@@ -20,9 +20,6 @@ struct Account final {
   Account(Account &&) = delete;
   Account(Account const &) = delete;
 
-  std::string_view get_name() const { return name_; }
-  std::string_view get_access_key() const { return key_; }
-
   std::string create_nonce();
 
   std::pair<std::string, std::chrono::milliseconds> create_signature(
@@ -34,9 +31,10 @@ struct Account final {
 
   std::string create_password(std::string_view const &raw_data);
 
+  std::string const name;
+  std::string const key;
+
  private:
-  std::string const name_;
-  std::string const key_;
   tools::Crypto crypto_;
 };
 
