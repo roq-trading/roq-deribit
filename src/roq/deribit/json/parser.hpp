@@ -36,7 +36,7 @@ struct Parser final {
     virtual void operator()(Trace<Trades2> const &) = 0;
   };
 
-  static void dispatch(Handler &, core::json::Value &, std::span<std::byte> const &, TraceInfo const &);
+  static bool dispatch(Handler &, core::json::Value &, std::span<std::byte> const &, TraceInfo const &);
 };
 
 }  // namespace json

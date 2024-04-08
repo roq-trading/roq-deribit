@@ -369,11 +369,13 @@ void DropCopy::get_trades(std::span<std::string> const &currencies) {
 
 void DropCopy::parse(std::string_view const &message) {
   profile_.parse([&]() {
+    auto log_message = [&]() { log::warn(R"(message="{}")"sv, message); };
     try {
       TraceInfo trace_info;
-      core::jsonrpc::Parser::dispatch(*this, message, trace_info);
+      if (!core::jsonrpc::Parser::dispatch(*this, message, trace_info))
+        log_message();
     } catch (...) {
-      log::warn(R"(message="{}")"sv, message);
+      log_message();
       core::tools::UnhandledException::terminate();
     }
   });
@@ -388,7 +390,7 @@ void DropCopy::operator()(Trace<core::jsonrpc::Error> const &event, core::json::
     log::fatal(R"(error={}, id="{}")"sv, error_2, error.id);
 }
 
-void DropCopy::operator()(Trace<core::jsonrpc::Result> const &event, core::json::Value &value) {
+bool DropCopy::operator()(Trace<core::jsonrpc::Result> const &event, core::json::Value &value) {
   auto &[trace_info, result] = event;
   json::RequestType request_type{result.id};
   switch (request_type) {
@@ -396,13 +398,13 @@ void DropCopy::operator()(Trace<core::jsonrpc::Result> const &event, core::json:
     case UNDEFINED__:
       break;
     case UNKNOWN__:
-      log::fatal(R"(Unknown request_type="{}")"sv, result.id);
-      return;
+      log::warn(R"(Unknown request_type="{}")"sv, result.id);
+      break;
     case AUTH: {
-      json::Auth const auth{value};
+      json::Auth auth{value};
       Trace event{trace_info, auth};
       (*this)(event);
-      return;
+      return true;
     }
     case GET_CURRENCIES:
     case GET_INSTRUMENTS:
@@ -415,26 +417,25 @@ void DropCopy::operator()(Trace<core::jsonrpc::Result> const &event, core::json:
     case SUBSCRIBE_CHANGES:
     case SUBSCRIBE_ORDERS:
     case SUBSCRIBE_TRADES:
-      // note! no need to parse
-      return;
+      return true;  // note! no need to parse
     case GET_ACCOUNT_SUMMARY: {
-      auto portfolio = json::Portfolio{value};
+      json::Portfolio portfolio{value};
       create_trace_and_dispatch(*this, trace_info, portfolio);
-      return;
+      return true;
     }
     case GET_TRADES: {
       core::json::Buffer buffer{decode_buffer_};
-      auto trades = json::Trades{value, buffer};
+      json::Trades trades{value, buffer};
       create_trace_and_dispatch(*this, trace_info, trades);
-      return;
+      return true;
     }
     case GET_POSITIONS:
       break;  // unexpected
   }
-  log::fatal("Unexpected: request_type={}"sv, request_type);
+  return false;
 }
 
-void DropCopy::operator()(Trace<core::jsonrpc::Notification> const &event, core::json::Value &value) {
+bool DropCopy::operator()(Trace<core::jsonrpc::Notification> const &event, core::json::Value &value) {
   auto &[trace_info, notification] = event;
   json::Method method{notification.method};
   switch (method) {
@@ -442,12 +443,12 @@ void DropCopy::operator()(Trace<core::jsonrpc::Notification> const &event, core:
     case UNDEFINED__:
       break;
     case UNKNOWN__:
-      log::fatal(R"(Unknown method="{}")"sv, notification.method);
+      log::warn(R"(Unknown method="{}")"sv, notification.method);
       break;
     case SUBSCRIPTION:
-      json::Parser::dispatch(*this, value, decode_buffer_, trace_info);
-      break;
+      return json::Parser::dispatch(*this, value, decode_buffer_, trace_info);
   }
+  return false;
 }
 
 void DropCopy::operator()(Trace<json::Auth> const &event) {

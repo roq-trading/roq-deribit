@@ -57,7 +57,7 @@ auto parse_channel(auto const &name) -> Channel {
 
 // === IMPLEMENTATION ===
 
-void Parser::dispatch(
+bool Parser::dispatch(
     Parser::Handler &handler,
     core::json::Value &value,
     std::span<std::byte> const &buffer,
@@ -70,15 +70,15 @@ void Parser::dispatch(
     core::json::Parser parser{message};
     auto root = parser.root();
     for (auto [key, value_] : std::get<core::json::Object>(root)) {
-      auto field = Field(key);
+      Field field{key};
       switch (field) {
         using enum Field::type_t;
         case UNDEFINED__:
           log::fatal("Unexpected"sv);
           break;
         case UNKNOWN__:
-          log::fatal(R"(Unknown key="{}")"sv, key);
-          break;
+          log::warn(R"(Unknown key="{}")"sv, key);
+          return false;
         case CHANNEL: {
           auto name = std::get<std::string_view>(value_);
           channel = parse_channel(name);
@@ -94,55 +94,55 @@ void Parser::dispatch(
               case UNDEFINED__:
                 break;  // not ready
               case UNKNOWN__:
-                log::fatal("Unknown channel"sv);
-                break;
+                log::warn("Unknown channel"sv);
+                return false;
               // public
               case PLATFORM_STATE: {
                 dispatched = true;
-                auto platform_state = PlatformState{value_, buffer_2};
+                PlatformState platform_state{value_, buffer_2};
                 create_trace_and_dispatch(handler, trace_info, platform_state);
                 break;
               }
               case INSTRUMENT_STATE: {
                 dispatched = true;
-                auto instrument_state = InstrumentState{value_, buffer_2};
+                InstrumentState instrument_state{value_, buffer_2};
                 create_trace_and_dispatch(handler, trace_info, instrument_state);
                 break;
               }
               case QUOTE: {
                 dispatched = true;
-                auto quote = Quote{value_, buffer_2};
+                Quote quote{value_, buffer_2};
                 create_trace_and_dispatch(handler, trace_info, quote);
                 break;
               }
               case TICKER: {
                 dispatched = true;
-                auto ticker = Ticker{value_, buffer_2};
+                Ticker ticker{value_, buffer_2};
                 create_trace_and_dispatch(handler, trace_info, ticker);
                 break;
               }
               // private
               case PORTFOLIO: {
                 dispatched = true;
-                auto portfolio = Portfolio{value_, buffer_2};
+                Portfolio portfolio{value_, buffer_2};
                 create_trace_and_dispatch(handler, trace_info, portfolio);
                 break;
               }
               case CHANGES: {
                 dispatched = true;
-                auto changes = Changes{value_, buffer_2};
+                Changes changes{value_, buffer_2};
                 create_trace_and_dispatch(handler, trace_info, changes);
                 break;
               }
               case ORDERS: {
                 dispatched = true;
-                auto order = Order{value_, buffer_2};
+                Order order{value_, buffer_2};
                 create_trace_and_dispatch(handler, trace_info, order);
                 break;
               }
               case TRADES: {
                 dispatched = true;
-                auto trades = Trades2{value_, buffer_2};
+                Trades2 trades{value_, buffer_2};
                 create_trace_and_dispatch(handler, trace_info, trades);
                 break;
               }
@@ -152,10 +152,7 @@ void Parser::dispatch(
       }
     }
   }
-  if (dispatched)
-    return;
-  log::warn(R"(message="{}")"sv, message);
-  log::fatal("Unexpected"sv);
+  return dispatched;
 }
 
 }  // namespace json

@@ -383,8 +383,8 @@ void WebSocket::parse(std::string_view const &message) {
     auto log_message = [&]() { log::warn(R"(message="{}")"sv, message); };
     TraceInfo trace_info;
     try {
-      // XXX TODO shouldn't this return boolean if can't parse?
-      core::jsonrpc::Parser::dispatch(*this, message, trace_info);
+      if (!core::jsonrpc::Parser::dispatch(*this, message, trace_info))
+        log_message();
     } catch (...) {
       log_message();
       core::tools::UnhandledException::terminate();
@@ -398,7 +398,7 @@ void WebSocket::operator()(Trace<core::jsonrpc::Error> const &event, core::json:
   log::fatal(R"(error={}, id="{}")"sv, error_2, error.id);
 }
 
-void WebSocket::operator()(Trace<core::jsonrpc::Result> const &event, core::json::Value &value) {
+bool WebSocket::operator()(Trace<core::jsonrpc::Result> const &event, core::json::Value &value) {
   auto &[trace_info, result] = event;
   json::RequestType request_type{result.id};
   switch (request_type) {
@@ -406,34 +406,33 @@ void WebSocket::operator()(Trace<core::jsonrpc::Result> const &event, core::json
     case UNDEFINED__:
       break;
     case UNKNOWN__:
-      log::fatal(R"(Unknown request_type="{}")"sv, result.id);
-      return;
+      log::warn(R"(Unknown request_type="{}")"sv, result.id);
+      break;
     case AUTH: {
-      json::Auth const auth{value};
+      json::Auth auth{value};
       Trace event{trace_info, auth};
       (*this)(event);
-      return;
+      return true;
     }
     case GET_CURRENCIES: {
       core::json::Buffer buffer{decode_buffer_};
-      auto currencies = json::Currencies{value, buffer};
+      json::Currencies currencies{value, buffer};
       Trace event{trace_info, currencies};
       (*this)(event);
-      return;
+      return true;
     }
     case GET_INSTRUMENTS: {
       core::json::Buffer buffer{decode_buffer_};
-      auto instruments = json::Instruments{value, buffer};
+      json::Instruments instruments{value, buffer};
       Trace event{trace_info, instruments};
       (*this)(event);
-      return;
+      return true;
     }
     case SUBSCRIBE_PLATFORM_STATE:
     case SUBSCRIBE_INSTRUMENT_STATE:
     case SUBSCRIBE_QUOTE:
     case SUBSCRIBE_TICKER:
-      // note! no need to parse
-      return;
+      return true;  // note! no need to parse
     case SUBSCRIBE_PORTFOLIO:
     case SUBSCRIBE_CHANGES:
     case SUBSCRIBE_ORDERS:
@@ -443,10 +442,10 @@ void WebSocket::operator()(Trace<core::jsonrpc::Result> const &event, core::json
     case GET_POSITIONS:
       break;  // unexpected
   }
-  log::fatal("Unexpected: request_type={}"sv, request_type);
+  return false;
 }
 
-void WebSocket::operator()(Trace<core::jsonrpc::Notification> const &event, core::json::Value &value) {
+bool WebSocket::operator()(Trace<core::jsonrpc::Notification> const &event, core::json::Value &value) {
   auto &[trace_info, notification] = event;
   json::Method method{notification.method};
   switch (method) {
@@ -454,13 +453,12 @@ void WebSocket::operator()(Trace<core::jsonrpc::Notification> const &event, core
     case UNDEFINED__:
       break;
     case UNKNOWN__:
-      log::fatal(R"(Unknown method="{}")"sv, notification.method);
+      log::warn(R"(Unknown method="{}")"sv, notification.method);
       break;
     case SUBSCRIPTION:
-      // XXX TODO shouldn't this return boolean if can't parse?
-      json::Parser::dispatch(*this, value, decode_buffer_, trace_info);
-      break;
+      return json::Parser::dispatch(*this, value, decode_buffer_, trace_info);
   }
+  return false;
 }
 
 void WebSocket::operator()(Trace<json::Auth> const &event) {

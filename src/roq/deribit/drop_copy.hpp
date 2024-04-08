@@ -90,8 +90,8 @@ struct DropCopy final : public web::socket::Client::Handler,
   void parse(std::string_view const &message);
 
   void operator()(Trace<core::jsonrpc::Error> const &, core::json::Value &) override;
-  void operator()(Trace<core::jsonrpc::Result> const &, core::json::Value &) override;
-  void operator()(Trace<core::jsonrpc::Notification> const &, core::json::Value &) override;
+  bool operator()(Trace<core::jsonrpc::Result> const &, core::json::Value &) override;
+  bool operator()(Trace<core::jsonrpc::Notification> const &, core::json::Value &) override;
 
   void operator()(Trace<json::Auth> const &);
 
