@@ -5,22 +5,39 @@
 roq-deribit
 ===========
 
+.. tab:: Stable
 
-Links
------
+  .. code-block:: shell
 
-* `Website <https://www.deribit.com/>`__
-* `Test <https://test.deribit.com/>`__
-* `Status <https://deribit.statuspage.io/>`__
-* `Telegram <https://t.me/s/deribit_notifications>`__
-* `Support <mailto:support@deribit.com>`__
-* `Technical Support <mailto:dev@deribit.com>`__
-* `Documentation <https://docs.deribit.com/v2/>`__
-* `Deribit New London Infrastructure <https://www.deribit.com/pages/information/Londonsetup>`__
+     $ mamba install \
+           --channel https://roq-trading.com/conda/stable \
+           roq-deribit
+
+.. tab:: Unstable
+
+  .. code-block:: shell
+
+     $ mamba install \
+           --channel https://roq-trading.com/conda/unstable \
+           roq-deribit
+
+
+:code:`roq-deribit`
+-------------------
+
+.. code-block:: shell
+
+   $ roq-deribit [FLAGS]
+
+
+Description
+~~~~~~~~~~~
+
+:code:`roq-deribit` is a gateway
 
 
 Supports
---------
+~~~~~~~~
 
 .. grid::  2
   :gutter: 2
@@ -86,47 +103,10 @@ Supports
         - |checkmark|
 
 
-Installing
-----------
-
-* :ref:`Using Conda <tutorial-conda>`
-
-.. tab:: Stable
-
-  .. code-block:: shell
-
-     $ mamba install \
-           --channel https://roq-trading.com/conda/stable \
-           roq-deribit
-
-.. tab:: Unstable
-
-  .. code-block:: shell
-
-     $ mamba install \
-           --channel https://roq-trading.com/conda/unstable \
-           roq-deribit
-
-
-Using
------
-
-.. code-block:: shell
-
-   $ roq-deribit \
-         --name "deribit" \
-         --config_file $CONFIG_FILE_PATH \
-         --client_listen_address $UNIX_SOCKET_PATH \
-         --flagfile $ENVIRONMENT_FLAGFILE
-
-
 .. _roq-deribit-flags:
 
 Flags
------
-
-* :ref:`Using Flags <abseil-cpp>`
-* :ref:`Gateway Flags <gateway-flags>`
+~~~~~
 
 .. code-block:: shell
 
@@ -166,7 +146,7 @@ Flags
 
 
 Environments
-------------
+~~~~~~~~~~~~
 
 .. tab:: Prod
 
@@ -188,9 +168,7 @@ Environments
 
 
 Configuration
--------------
-
-* :ref:`Gateway Config <gateway-config>`
+~~~~~~~~~~~~~
 
 .. code-block:: shell
 
@@ -206,7 +184,7 @@ Configuration
 
 
 Market Data
------------
+~~~~~~~~~~~
 
 .. tab:: Live
 
@@ -302,7 +280,7 @@ Market Data
 
 
 Statistics
-~~~~~~~~~~
+^^^^^^^^^^
 
 .. list-table::
   :header-rows: 1
@@ -329,7 +307,7 @@ Statistics
 
 
 Order Management
-----------------
+~~~~~~~~~~~~~~~~
 
 .. tab:: Live
 
@@ -420,8 +398,9 @@ Order Management
       - ExecutionReport (8), OrderCancelReject (9), Reject (3)
       -
 
+
 Order Types
-~~~~~~~~~~~
+^^^^^^^^^^^
 
 .. list-table::
   :header-rows: 1
@@ -438,7 +417,7 @@ Order Types
 
 
 Time in Force
-~~~~~~~~~~~~~
+^^^^^^^^^^^^^
 
 .. list-table::
   :header-rows: 1
@@ -457,9 +436,8 @@ Time in Force
     - Mapped to :code:`'4'` (FIX)
 
 
-
 Position Effect
-~~~~~~~~~~~~~~~
+^^^^^^^^^^^^^^^
 
 .. note::
 
@@ -467,7 +445,7 @@ Position Effect
 
 
 Execution Instructions
-~~~~~~~~~~~~~~~~~~~~~~
+^^^^^^^^^^^^^^^^^^^^^^
 
 .. list-table::
   :header-rows: 1
@@ -484,7 +462,7 @@ Execution Instructions
 
 
 Account Management
-------------------
+~~~~~~~~~~~~~~~~~~
 
 .. tab:: Live
 
@@ -530,7 +508,7 @@ Account Management
 
 
 Streams
--------
+~~~~~~~
 
 .. tab:: OrderEntry
 
@@ -628,9 +606,8 @@ Streams
         * live market data (level 2 + top of book + market status)
 
 
-
 Constraints
------------
+~~~~~~~~~~~
 
 * The gateway requires a master account definition to be functional.
   This is needed by the FIX protocol, even for the market data connection.
@@ -647,10 +624,35 @@ Constraints
   .. note::
      There are currently **no** work-arounds implemented to deal with this.
 
+
 Comments
---------
+~~~~~~~~
 
 * The gateway must be restarted at least daily if you use the multicast feed.
   The reason is the snapshot vs events inconsistency mentioned under the
   constraints.
   The book effectively becomes more and more *wrong* for big market moves.
+
+
+References
+----------
+
+Common
+~~~~~~
+
+* :ref:`Using Conda <tutorial-conda>`
+* :ref:`Using Flags <abseil-cpp>`
+* :ref:`Gateway Flags <gateway-flags>`
+* :ref:`Gateway Config <gateway-config>`
+
+Deribit
+~~~~~~~
+
+* `Website <https://www.deribit.com/>`__
+* `Test <https://test.deribit.com/>`__
+* `Status <https://deribit.statuspage.io/>`__
+* `Telegram <https://t.me/s/deribit_notifications>`__
+* `Support <mailto:support@deribit.com>`__
+* `Technical Support <mailto:dev@deribit.com>`__
+* `Documentation <https://docs.deribit.com/v2/>`__
+* `Deribit New London Infrastructure <https://www.deribit.com/pages/information/Londonsetup>`__
