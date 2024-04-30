@@ -547,6 +547,9 @@ void DropCopy::operator()(Trace<json::Trade> const &event, bool is_download, boo
       .quantity = quantity,
       .price = trade.price,
       .liquidity = liquidity,
+      .quote_quantity = NaN,
+      .commission_quantity = NaN,
+      .commission_currency = {},
   };
   // note! this is consistent with FIX (there is also a trade_id field, but it's not consistent)
   fmt::format_to(std::back_inserter(fill.external_trade_id), "{}#{}"sv, trade.instrument_name, trade.trade_seq);
