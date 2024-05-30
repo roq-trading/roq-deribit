@@ -4,88 +4,88 @@
   "values": [
     {
       "name": "ask_iv",
-      "type": "double"
+      "type": "std/double"
     },
     {
       "name": "asks"
     },
     {
       "name": "best_ask_amount",
-      "type": "double"
+      "type": "std/double"
     },
     {
       "name": "best_ask_price",
-      "type": "double"
+      "type": "std/double"
     },
     {
       "name": "best_bid_amount",
-      "type": "double"
+      "type": "std/double"
     },
     {
       "name": "best_bid_price",
-      "type": "double"
+      "type": "std/double"
     },
     {
       "name": "bid_iv",
-      "type": "double"
+      "type": "std/double"
     },
     {
       "name": "bids"
     },
     {
       "name": "current_funding",
-      "type": "double"
+      "type": "std/double"
     },
     {
       "name": "delivery_price",
-      "type": "double"
+      "type": "std/double"
     },
     {
       "name": "funding_8h",
-      "type": "double"
+      "type": "std/double"
     },
     {
       "name": "greeks"
     },
     {
       "name": "index_price",
-      "type": "double"
+      "type": "std/double"
     },
     {
       "name": "instrument_name",
-      "type": "std::string_view"
+      "type": "std/string_view"
     },
     {
       "name": "interest_rate",
-      "type": "double"
+      "type": "std/double"
     },
     {
       "name": "last_price",
-      "type": "double"
+      "type": "std/double"
     },
     {
       "name": "mark_iv",
-      "type": "double"
+      "type": "std/double"
     },
     {
       "name": "mark_price",
-      "type": "double"
+      "type": "std/double"
     },
     {
       "name": "max_price",
-      "type": "double"
+      "type": "std/double"
     },
     {
       "name": "min_price",
-      "type": "double"
+      "type": "std/double"
     },
     {
       "name": "open_interest",
-      "type": "double"
+      "type": "std/double"
     },
     {
       "name": "settlement_price",
-      "type": "double"
+      "type": "std/double"
     },
     {
       "name": "state",
@@ -96,15 +96,15 @@
     },
     {
       "name": "timestamp",
-      "type": "std::chrono::milliseconds"
+      "type": "std/milliseconds"
     },
     {
       "name": "underlying_index",
-      "type": "double"
+      "type": "std/double"
     },
     {
       "name": "underlying_price",
-      "type": "double"
+      "type": "std/double"
     }
   ]
 }

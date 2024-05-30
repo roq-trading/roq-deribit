@@ -5,7 +5,7 @@
     {
       "tag": 36,
       "name": "NewSeqNo",
-      "type": "uint64_t",
+      "type": "std/uint64",
       "required": true
     }
   ]

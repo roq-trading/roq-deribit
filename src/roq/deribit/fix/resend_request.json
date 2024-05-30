@@ -5,13 +5,13 @@
     {
       "tag": 7,
       "name": "BeginSeqNo",
-      "type": "uint64_t",
+      "type": "std/uint64",
       "required": true
     },
     {
       "tag": 16,
       "name": "EndSeqNo",
-      "type": "uint64_t",
+      "type": "std/uint64",
       "required": true
     }
   ]

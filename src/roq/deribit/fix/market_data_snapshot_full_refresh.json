@@ -5,30 +5,30 @@
     {
       "tag": 55,
       "name": "Symbol",
-      "type": "std::string_view",
+      "type": "std/string_view",
       "required": true
     },
     {
       "tag": 262,
       "name": "MDReqID",
-      "type": "std::string_view"
+      "type": "std/string_view"
     },
     {
       "tag": 311,
       "name": "UnderlyingSymbol",
-      "type": "std::string_view",
+      "type": "std/string_view",
       "custom": true
     },
     {
       "tag": 810,
       "name": "UnderlyingPx",
-      "type": "double",
+      "type": "std/double",
       "custom": true
     },
     {
       "tag": 231,
       "name": "ContractMultiplier",
-      "type": "double"
+      "type": "std/double"
     },
     {
       "tag": 201,
@@ -38,37 +38,38 @@
     {
       "tag": 100087,
       "name": "TradeVolume24h",
-      "type": "double",
+      "type": "std/double",
       "custom": true
     },
     {
       "tag": 100090,
       "name": "MarkPrice",
-      "type": "double",
+      "type": "std/double",
       "custom": true
     },
     {
       "tag": 746,
       "name": "OpenInterest",
-      "type": "double",
+      "type": "std/double",
       "custom": true
     },
     {
       "tag": 100092,
       "name": "CurrentFunding",
-      "type": "double",
+      "type": "std/double",
       "custom": true
     },
     {
       "tag": 100093,
       "name": "Funding8h",
-      "type": "double",
+      "type": "std/double",
       "custom": true
     },
     {
       "tag": 268,
       "name": "NoMdEntries",
-      "type": "std::span<MDFull const>",
+      "type": "MDFull",
+      "array": "std/span",
       "required": true
     }
   ]

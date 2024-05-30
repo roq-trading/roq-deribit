@@ -17,22 +17,22 @@
     {
       "tag": 270,
       "name": "MDEntryPx",
-      "type": "double"
+      "type": "std/double"
     },
     {
       "tag": 271,
       "name": "MDEntrySize",
-      "type": "double"
+      "type": "std/double"
     },
     {
       "tag": 272,
       "name": "MDEntryDate",
-      "type": "std::chrono::milliseconds"
+      "type": "std/milliseconds"
     },
     {
       "tag": 100009,
       "name": "DeribitTradeId",
-      "type": "std::string_view",
+      "type": "std/string_view",
       "custom": true
     },
     {
@@ -44,23 +44,23 @@
     {
       "tag": 44,
       "name": "IndexPrice",
-      "type": "double",
+      "type": "std/double",
       "custom": true
     },
     {
       "tag": 58,
       "name": "Text",
-      "type": "std::string_view"
+      "type": "std/string_view"
     },
     {
       "tag": 37,
       "name": "OrderId",
-      "type": "std::string_view"
+      "type": "std/string_view"
     },
     {
       "tag": 198,
       "name": "SecondaryOrderId",
-      "type": "std::string_view"
+      "type": "std/string_view"
     },
     {
       "tag": 39,
@@ -71,13 +71,13 @@
     {
       "tag": 100010,
       "name": "DeribitLabel",
-      "type": "std::string_view",
+      "type": "std/string_view",
       "custom": true
     },
     {
       "tag": 100091,
       "name": "DeribitLiquidation",
-      "type": "std::string_view",
+      "type": "std/string_view",
       "custom": true
     }
   ]

@@ -4,11 +4,12 @@
   "values": [
     {
       "name": "trades",
-      "type": "std::span<Trade const>"
+      "type": "Trade",
+      "array": "std/span"
     },
     {
       "name": "has_more",
-      "type": "bool"
+      "type": "std/bool"
     }
   ]
 }

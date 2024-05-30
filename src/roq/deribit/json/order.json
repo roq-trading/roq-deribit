@@ -4,7 +4,7 @@
   "values": [
     {
       "name": "web",
-      "type": "bool"
+      "type": "std/bool"
     },
     {
       "name": "time_in_force",
@@ -12,23 +12,23 @@
     },
     {
       "name": "replaced",
-      "type": "bool"
+      "type": "std/bool"
     },
     {
       "name": "reduce_only",
-      "type": "bool"
+      "type": "std/bool"
     },
     {
       "name": "profit_loss",
-      "type": "double"
+      "type": "std/double"
     },
     {
       "name": "price",
-      "type": "double"
+      "type": "std/double"
     },
     {
       "name": "post_only",
-      "type": "bool"
+      "type": "std/bool"
     },
     {
       "name": "order_type",
@@ -40,31 +40,31 @@
     },
     {
       "name": "order_id",
-      "type": "std::string_view"
+      "type": "std/string_view"
     },
     {
       "name": "max_show",
-      "type": "double"
+      "type": "std/double"
     },
     {
       "name": "last_update_timestamp",
-      "type": "std::chrono::milliseconds"
+      "type": "std/milliseconds"
     },
     {
       "name": "label",
-      "type": "std::string_view"
+      "type": "std/string_view"
     },
     {
       "name": "is_liquidation",
-      "type": "bool"
+      "type": "std/bool"
     },
     {
       "name": "instrument_name",
-      "type": "std::string_view"
+      "type": "std/string_view"
     },
     {
       "name": "filled_amount",
-      "type": "double"
+      "type": "std/double"
     },
     {
       "name": "direction",
@@ -72,39 +72,39 @@
     },
     {
       "name": "creation_timestamp",
-      "type": "std::chrono::milliseconds"
+      "type": "std/milliseconds"
     },
     {
       "name": "commission",
-      "type": "double"
+      "type": "std/double"
     },
     {
       "name": "average_price",
-      "type": "double"
+      "type": "std/double"
     },
     {
       "name": "api",
-      "type": "bool"
+      "type": "std/bool"
     },
     {
       "name": "amount",
-      "type": "double"
+      "type": "std/double"
     },
     {
       "name": "risk_reducing",
-      "type": "bool"
+      "type": "std/bool"
     },
     {
       "name": "mmp",
-      "type": "bool"
+      "type": "std/bool"
     },
     {
       "name": "cancel_reason",
-      "type": "std::string_view"
+      "type": "std/string_view"
     },
     {
       "name": "contracts",
-      "type": "uint32_t"
+      "type": "std/uint32"
     }
   ]
 }

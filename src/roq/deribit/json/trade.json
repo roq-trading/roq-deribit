@@ -4,11 +4,11 @@
   "values": [
     {
       "name": "amount",
-      "type": "double"
+      "type": "std/double"
     },
     {
       "name": "block_trade_id",
-      "type": "std::string_view"
+      "type": "std/string_view"
     },
     {
       "name": "direction",
@@ -16,31 +16,31 @@
     },
     {
       "name": "fee",
-      "type": "double"
+      "type": "std/double"
     },
     {
       "name": "fee_currency",
-      "type": "std::string_view"
+      "type": "std/string_view"
     },
     {
       "name": "index_price",
-      "type": "double"
+      "type": "std/double"
     },
     {
       "name": "instrument_name",
-      "type": "std::string_view"
+      "type": "std/string_view"
     },
     {
       "name": "iv",
-      "type": "double"
+      "type": "std/double"
     },
     {
       "name": "label",
-      "type": "std::string_view"
+      "type": "std/string_view"
     },
     {
       "name": "liquidation",
-      "type": "std::string_view"
+      "type": "std/string_view"
     },
     {
       "name": "liquidity",
@@ -48,14 +48,14 @@
     },
     {
       "name": "mark_price",
-      "type": "double"
+      "type": "std/double"
     },
     {
       "name": "matching_id"
     },
     {
       "name": "order_id",
-      "type": "std::string_view"
+      "type": "std/string_view"
     },
     {
       "name": "order_type",
@@ -63,23 +63,23 @@
     },
     {
       "name": "post_only",
-      "type": "bool"
+      "type": "std/bool"
     },
     {
       "name": "price",
-      "type": "double"
+      "type": "std/double"
     },
     {
       "name": "profit_loss",
-      "type": "double"
+      "type": "std/double"
     },
     {
       "name": "reduce_only",
-      "type": "bool"
+      "type": "std/bool"
     },
     {
       "name": "self_trade",
-      "type": "bool"
+      "type": "std/bool"
     },
     {
       "name": "state",
@@ -87,39 +87,39 @@
     },
     {
       "name": "tick_direction",
-      "type": "uint32_t"
+      "type": "std/uint32"
     },
     {
       "name": "timestamp",
-      "type": "std::chrono::milliseconds"
+      "type": "std/milliseconds"
     },
     {
       "name": "trade_id",
-      "type": "std::string_view"
+      "type": "std/string_view"
     },
     {
       "name": "trade_seq",
-      "type": "int64_t"
+      "type": "std/int64"
     },
     {
       "name": "underlying_price",
-      "type": "double"
+      "type": "std/double"
     },
     {
       "name": "risk_reducing",
-      "type": "bool"
+      "type": "std/bool"
     },
     {
       "name": "mmp",
-      "type": "bool"
+      "type": "std/bool"
     },
     {
       "name": "api",
-      "type": "bool"
+      "type": "std/bool"
     },
     {
       "name": "contracts",
-      "type": "double"
+      "type": "std/double"
     }
   ]
 }

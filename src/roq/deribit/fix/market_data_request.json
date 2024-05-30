@@ -5,7 +5,7 @@
     {
       "tag": 262,
       "name": "MdReqId",
-      "type": "std::string_view",
+      "type": "std/string_view",
       "required": true
     },
     {
@@ -17,7 +17,7 @@
     {
       "tag": 264,
       "name": "MarketDepth",
-      "type": "uint32_t"
+      "type": "std/uint32"
     },
     {
       "tag": 265,
@@ -27,25 +27,27 @@
     {
       "tag": 100007,
       "name": "DeribitTradeAmount",
-      "type": "uint32_t",
+      "type": "std/uint32",
       "custom": true
     },
     {
       "tag": 100008,
       "name": "DeribitSinceTimestamp",
-      "type": "std::chrono::milliseconds",
+      "type": "std/milliseconds",
       "custom": true
     },
     {
       "tag": 267,
       "name": "NoMdEntryTypes",
-      "type": "std::span<MDReq const>",
+      "type": "MDReq",
+      "array": "std/span",
       "required": true
     },
     {
       "tag": 146,
       "name": "NoRelatedSym",
-      "type": "std::span<InstrmtMDReq const>"
+      "type": "InstrmtMDReq",
+      "array": "std/span"
     }
   ]
 }

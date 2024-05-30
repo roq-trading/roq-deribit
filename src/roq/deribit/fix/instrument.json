@@ -5,18 +5,18 @@
     {
       "tag": 55,
       "name": "Symbol",
-      "type": "std::string_view",
+      "type": "std/string_view",
       "required": true
     },
     {
       "tag": 107,
       "name": "SecurityDesc",
-      "type": "std::string_view"
+      "type": "std/string_view"
     },
     {
       "tag": 167,
       "name": "SecurityType",
-      "type": "std::string_view"
+      "type": "std/string_view"
     },
     {
       "tag": 201,
@@ -26,55 +26,55 @@
     {
       "tag": 202,
       "name": "StrikePrice",
-      "type": "double"
+      "type": "std/double"
     },
     {
       "tag": 947,
       "name": "StrikeCurrency",
-      "type": "std::string_view"
+      "type": "std/string_view"
     },
     {
       "tag": 15,
       "name": "Currency",
-      "type": "std::string_view",
+      "type": "std/string_view",
       "custom": true
     },
     {
       "tag": 2576,
       "name": "InstrumentPricePrecision",
-      "type": "uint16_t",
+      "type": "std/uint16",
       "custom": true
     },
     {
       "tag": 969,
       "name": "MinPriceIncrement",
-      "type": "double"
+      "type": "std/double"
     },
     {
       "tag": 311,
       "name": "UnderlyingSymbol",
-      "type": "std::string_view",
+      "type": "std/string_view",
       "custom": true
     },
     {
       "tag": 225,
       "name": "IssueDate",
-      "type": "std::chrono::milliseconds"
+      "type": "std/milliseconds"
     },
     {
       "tag": 541,
       "name": "MaturityDate",
-      "type": "std::chrono::milliseconds"
+      "type": "std/milliseconds"
     },
     {
       "tag": 1079,
       "name": "MaturityTime",
-      "type": "std::string_view"
+      "type": "std/string_view"
     },
     {
       "tag": 562,
       "name": "MinTradeVol",
-      "type": "double",
+      "type": "std/double",
       "custom": true
     },
     {
@@ -86,29 +86,29 @@
     {
       "tag": 120,
       "name": "SettlCurrency",
-      "type": "std::string_view",
+      "type": "std/string_view",
       "custom": true
     },
     {
       "tag": 479,
       "name": "CommCurrency",
-      "type": "std::string_view",
+      "type": "std/string_view",
       "custom": true
     },
     {
       "tag": 231,
       "name": "ContractMultiplier",
-      "type": "double"
+      "type": "std/double"
     },
     {
       "tag": 965,
       "name": "SecurityStatus",
-      "type": "std::string_view"
+      "type": "std/string_view"
     },
     {
       "tag": 1524,
       "name": "PriceQuoteCurrency",
-      "type": "std::string_view",
+      "type": "std/string_view",
       "custom": true
     }
   ]

@@ -4,27 +4,27 @@
   "values": [
     {
       "name": "best_ask_amount",
-      "type": "double"
+      "type": "std/double"
     },
     {
       "name": "best_ask_price",
-      "type": "double"
+      "type": "std/double"
     },
     {
       "name": "best_bid_amount",
-      "type": "double"
+      "type": "std/double"
     },
     {
       "name": "best_bid_price",
-      "type": "double"
+      "type": "std/double"
     },
     {
       "name": "instrument_name",
-      "type": "std::string_view"
+      "type": "std/string_view"
     },
     {
       "name": "timestamp",
-      "type": "std::chrono::milliseconds"
+      "type": "std/milliseconds"
     }
   ]
 }

@@ -5,12 +5,12 @@
     {
       "tag": 11,
       "name": "ClOrdID",
-      "type": "std::string_view"
+      "type": "std/string_view"
     },
     {
       "tag": 41,
       "name": "OrigClOrdID",
-      "type": "std::string_view"
+      "type": "std/string_view"
     },
     {
       "tag": 39,
@@ -27,30 +27,30 @@
     {
       "tag": 60,
       "name": "TransactTime",
-      "type": "std::chrono::milliseconds",
+      "type": "std/milliseconds",
       "required": true
     },
     {
       "tag": 12,
       "name": "Commission",
-      "type": "double"
+      "type": "std/double"
     },
     {
       "tag": 151,
       "name": "LeavesQty",
-      "type": "double",
+      "type": "std/double",
       "required": true
     },
     {
       "tag": 14,
       "name": "CumQty",
-      "type": "double",
+      "type": "std/double",
       "required": true
     },
     {
       "tag": 38,
       "name": "OrderQty",
-      "type": "double",
+      "type": "std/double",
       "required": true
     },
     {
@@ -62,17 +62,17 @@
     {
       "tag": 44,
       "name": "Price",
-      "type": "double"
+      "type": "std/double"
     },
     {
       "tag": 18,
       "name": "ExecInst",
-      "type": "std::string_view"
+      "type": "std/string_view"
     },
     {
       "tag": 99,
       "name": "StopPx",
-      "type": "double"
+      "type": "std/double"
     },
     {
       "tag": 103,
@@ -83,17 +83,17 @@
     {
       "tag": 58,
       "name": "Text",
-      "type": "std::string_view"
+      "type": "std/string_view"
     },
     {
       "tag": 207,
       "name": "SecurityExchange",
-      "type": "std::string_view"
+      "type": "std/string_view"
     },
     {
       "tag": 55,
       "name": "Symbol",
-      "type": "std::string_view",
+      "type": "std/string_view",
       "required": true
     },
     {
@@ -104,53 +104,54 @@
     {
       "tag": 231,
       "name": "ContractMultiplier",
-      "type": "double"
+      "type": "std/double"
     },
     {
       "tag": 6,
       "name": "AvgPx",
-      "type": "double"
+      "type": "std/double"
     },
     {
       "tag": 210,
       "name": "MaxShow",
-      "type": "double"
+      "type": "std/double"
     },
     {
       "tag": 100012,
       "name": "DeribitAdvOrderType",
-      "type": "std::string_view",
+      "type": "std/string_view",
       "custom": true
     },
     {
       "tag": 1188,
       "name": "Volatility",
-      "type": "double"
+      "type": "std/double"
     },
     {
       "tag": 839,
       "name": "PeggedPrice",
-      "type": "double"
+      "type": "std/double"
     },
     {
       "tag": 31,
       "name": "LastPx",
-      "type": "double"
+      "type": "std/double"
     },
     {
       "tag": 32,
       "name": "LastQty",
-      "type": "double"
+      "type": "std/double"
     },
     {
       "tag": 1362,
       "name": "NoFills",
-      "type": "std::span<Fill const>"
+      "type": "Fill",
+      "array": "std/span"
     },
     {
       "tag": 584,
       "name": "MassStatusReqID",
-      "type": "std::string_view"
+      "type": "std/string_view"
     },
     {
       "tag": 585,
@@ -161,12 +162,12 @@
     {
       "tag": 911,
       "name": "TotNumReports",
-      "type": "uint32_t"
+      "type": "std/uint32"
     },
     {
       "tag": 100010,
       "name": "DeribitLabel",
-      "type": "std::string_view",
+      "type": "std/string_view",
       "custom": true
     },
     {
@@ -177,18 +178,18 @@
     {
       "tag": 37,
       "name": "OrderID",
-      "type": "std::string_view"
+      "type": "std/string_view"
     },
     {
       "tag": 5127,
       "name": "ConditionTriggerMethod",
-      "type": "std::string_view",
+      "type": "std/string_view",
       "custom": true
     },
     {
       "tag": 527,
       "name": "SecondaryExecID",
-      "type": "std::string_view"
+      "type": "std/string_view"
     }
   ]
 }

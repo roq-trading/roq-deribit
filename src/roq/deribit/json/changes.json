@@ -4,19 +4,22 @@
   "values": [
     {
       "name": "instrument_name",
-      "type": "std::string_view"
+      "type": "std/string_view"
     },
     {
       "name": "trades",
-      "type": "std::span<Trade const>"
+      "type": "Trade",
+      "array": "std/span"
     },
     {
       "name": "positions",
-      "type": "std::span<Position const>"
+      "type": "Position",
+      "array": "std/span"
     },
     {
       "name": "orders",
-      "type": "std::span<Order const>"
+      "type": "Order",
+      "array": "std/span"
     }
   ]
 }

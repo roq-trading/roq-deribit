@@ -5,13 +5,13 @@
     {
       "tag": 324,
       "name": "SecurityStatusReqId",
-      "type": "std::string_view",
+      "type": "std/string_view",
       "required": true
     },
     {
       "tag": 55,
       "name": "Symbol",
-      "type": "std::string_view",
+      "type": "std/string_view",
       "required": true
     },
     {

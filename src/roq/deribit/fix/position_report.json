@@ -5,13 +5,13 @@
     {
       "tag": 721,
       "name": "PosMaintRptID",
-      "type": "std::string_view",
+      "type": "std/string_view",
       "required": true
     },
     {
       "tag": 710,
       "name": "PosReqID",
-      "type": "std::string_view"
+      "type": "std/string_view"
     },
     {
       "tag": 724,
@@ -26,7 +26,8 @@
     {
       "tag": 702,
       "name": "NoPositions",
-      "type": "std::span<PositionQty const>"
+      "type": "PositionQty",
+      "array": "std/span"
     }
   ]
 }

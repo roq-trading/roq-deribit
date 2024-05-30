@@ -4,27 +4,27 @@
   "values": [
     {
       "name": "base_currency",
-      "type": "std::string_view"
+      "type": "std/string_view"
     },
     {
       "name": "contract_size",
-      "type": "double"
+      "type": "std/double"
     },
     {
       "name": "creation_timestamp",
-      "type": "std::chrono::milliseconds"
+      "type": "std/milliseconds"
     },
     {
       "name": "expiration_timestamp",
-      "type": "std::chrono::milliseconds"
+      "type": "std/milliseconds"
     },
     {
       "name": "instrument_name",
-      "type": "std::string_view"
+      "type": "std/string_view"
     },
     {
       "name": "is_active",
-      "type": "bool"
+      "type": "std/bool"
     },
     {
       "name": "kind",
@@ -32,15 +32,15 @@
     },
     {
       "name": "leverage",
-      "type": "double"
+      "type": "std/double"
     },
     {
       "name": "maker_commission",
-      "type": "double"
+      "type": "std/double"
     },
     {
       "name": "min_trade_amount",
-      "type": "double"
+      "type": "std/double"
     },
     {
       "name": "option_type",
@@ -48,67 +48,67 @@
     },
     {
       "name": "quote_currency",
-      "type": "std::string_view"
+      "type": "std/string_view"
     },
     {
       "name": "settlement_period",
-      "type": "std::string_view"
+      "type": "std/string_view"
     },
     {
       "name": "strike",
-      "type": "double"
+      "type": "std/double"
     },
     {
       "name": "taker_commission",
-      "type": "double"
+      "type": "std/double"
     },
     {
       "name": "tick_size",
-      "type": "double"
+      "type": "std/double"
     },
     {
       "name": "max_liquidation_commission",
-      "type": "double"
+      "type": "std/double"
     },
     {
       "name": "max_leverage",
-      "type": "double"
+      "type": "std/double"
     },
     {
       "name": "block_trade_commission",
-      "type": "double"
+      "type": "std/double"
     },
     {
       "name": "rfq",
-      "type": "bool"
+      "type": "std/bool"
     },
     {
       "name": "settlement_currency",
-      "type": "std::string_view"
+      "type": "std/string_view"
     },
     {
       "name": "counter_currency",
-      "type": "std::string_view"
+      "type": "std/string_view"
     },
     {
       "name": "future_type",
-      "type": "std::string_view"
+      "type": "std/string_view"
     },
     {
       "name": "instrument_id",
-      "type": "int32_t"
+      "type": "std/int32"
     },
     {
       "name": "price_index",
-      "type": "std::string_view"
+      "type": "std/string_view"
     },
     {
       "name": "block_trade_tick_size",
-      "type": "double"
+      "type": "std/double"
     },
     {
       "name": "block_trade_min_trade_amount",
-      "type": "double"
+      "type": "std/double"
     },
     {
       "name": "instrument_type",

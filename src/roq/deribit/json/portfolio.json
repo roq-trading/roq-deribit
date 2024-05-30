@@ -4,157 +4,157 @@
   "values": [
     {
       "name": "available_funds",
-      "type": "double"
+      "type": "std/double"
     },
     {
       "name": "available_withdrawal_funds",
-      "type": "double"
+      "type": "std/double"
     },
     {
       "name": "balance",
-      "type": "double"
+      "type": "std/double"
     },
     {
       "name": "creation_timestamp",
-      "type": "std::chrono::milliseconds"
+      "type": "std/milliseconds"
     },
     {
       "name": "currency",
-      "type": "std::string_view"
+      "type": "std/string_view"
     },
     {
       "name": "delta_total",
-      "type": "double"
+      "type": "std/double"
     },
     {
       "name": "deposit_address",
-      "type": "std::string_view"
+      "type": "std/string_view"
     },
     {
       "name": "email",
-      "type": "std::string_view"
+      "type": "std/string_view"
     },
     {
       "name": "equity",
-      "type": "double"
+      "type": "std/double"
     },
     {
       "name": "estimated_liquidation_ratio",
-      "type": "double"
+      "type": "std/double"
     },
     {
       "name": "futures_pl",
-      "type": "double"
+      "type": "std/double"
     },
     {
       "name": "futures_session_rpl",
-      "type": "double"
+      "type": "std/double"
     },
     {
       "name": "futures_session_upl",
-      "type": "double"
+      "type": "std/double"
     },
     {
       "name": "id",
-      "type": "int64_t"
+      "type": "std/int64"
     },
     {
       "name": "initial_margin",
-      "type": "double"
+      "type": "std/double"
     },
     {
       "name": "interuser_transfers_enabled",
-      "type": "bool"
+      "type": "std/bool"
     },
     {
       "name": "limits"
     },
     {
       "name": "maintenance_margin",
-      "type": "double"
+      "type": "std/double"
     },
     {
       "name": "margin_balance",
-      "type": "double"
+      "type": "std/double"
     },
     {
       "name": "options_delta",
-      "type": "double"
+      "type": "std/double"
     },
     {
       "name": "options_gamma",
-      "type": "double"
+      "type": "std/double"
     },
     {
       "name": "options_pl",
-      "type": "double"
+      "type": "std/double"
     },
     {
       "name": "options_session_rpl",
-      "type": "double"
+      "type": "std/double"
     },
     {
       "name": "options_session_upl",
-      "type": "double"
+      "type": "std/double"
     },
     {
       "name": "options_theta",
-      "type": "double"
+      "type": "std/double"
     },
     {
       "name": "options_value",
-      "type": "double"
+      "type": "std/double"
     },
     {
       "name": "options_vega",
-      "type": "double"
+      "type": "std/double"
     },
     {
       "name": "portfolio_margining_enabled",
-      "type": "bool"
+      "type": "std/bool"
     },
     {
       "name": "projected_delta_total",
-      "type": "double"
+      "type": "std/double"
     },
     {
       "name": "projected_initial_margin",
-      "type": "double"
+      "type": "std/double"
     },
     {
       "name": "projected_maintenance_margin",
-      "type": "double"
+      "type": "std/double"
     },
     {
       "name": "referrer_id"
     },
     {
       "name": "session_rpl",
-      "type": "double"
+      "type": "std/double"
     },
     {
       "name": "session_upl",
-      "type": "double"
+      "type": "std/double"
     },
     {
       "name": "system_name",
-      "type": "std::string_view"
+      "type": "std/string_view"
     },
     {
       "name": "tfa_enabled",
-      "type": "bool"
+      "type": "std/bool"
     },
     {
       "name": "total_pl",
-      "type": "double"
+      "type": "std/double"
     },
     {
       "name": "type",
-      "type": "std::string_view"
+      "type": "std/string_view"
     },
     {
       "name": "username",
-      "type": "std::string_view"
+      "type": "std/string_view"
     },
     {
       "name": "estimated_liquidation_ratio_list",
@@ -170,35 +170,35 @@
     },
     {
       "name": "fee_balance",
-      "type": "double",
+      "type": "std/double",
       "comment": "undoc"
     },
     {
       "name": "security_keys_enabled",
-      "type": "bool",
+      "type": "std/bool",
       "comment": "undoc"
     },
     {
       "name": "login_enabled",
-      "type": "bool",
+      "type": "std/bool",
       "comment": "undoc"
     },
     {
       "name": "spot_reserve",
-      "type": "double",
+      "type": "std/double",
       "comment": "undoc"
     },
     {
       "name": "self_trading_reject_mode",
-      "type": "std::string_view"
+      "type": "std/string_view"
     },
     {
       "name": "self_trading_extended_to_subaccounts",
-      "type": "bool"
+      "type": "std/bool"
     },
     {
       "name": "cross_collateral_enabled",
-      "type": "bool"
+      "type": "std/bool"
     },
     {
       "name": "options_vega_map"
@@ -211,7 +211,7 @@
     },
     {
       "name": "mmp_enabled",
-      "type": "bool"
+      "type": "std/bool"
     },
     {
       "name": "fees"
@@ -221,7 +221,7 @@
     },
     {
       "name": "additional_reserve",
-      "type": "double"
+      "type": "std/double"
     },
     {
       "name": "change_margin_model_api_limit"

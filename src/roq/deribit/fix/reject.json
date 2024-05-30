@@ -5,13 +5,13 @@
     {
       "tag": 45,
       "name": "RefSeqNum",
-      "type": "uint64_t",
+      "type": "std/uint64",
       "required": true
     },
     {
       "tag": 371,
       "name": "RefTagID",
-      "type": "uint32_t"
+      "type": "std/uint32"
     },
     {
       "tag": 372,
@@ -21,12 +21,12 @@
     {
       "tag": 373,
       "name": "SessionRejectReason",
-      "type": "std::string_view"
+      "type": "std/string_view"
     },
     {
       "tag": 58,
       "name": "Text",
-      "type": "std::string_view"
+      "type": "std/string_view"
     }
   ]
 }

@@ -4,16 +4,16 @@
   "values": [
     {
       "name": "currency",
-      "type": "std::string_view",
+      "type": "std/string_view",
       "comment": "DEPRECATED 2022-04-27"
     },
     {
       "name": "price_index",
-      "type": "std::string_view"
+      "type": "std/string_view"
     },
     {
       "name": "locked",
-      "type": "bool"
+      "type": "std/bool"
     },
     {
       "name": "type",
@@ -25,7 +25,7 @@
     },
     {
       "name": "maintenance",
-      "type": "bool",
+      "type": "std/bool",
       "comment": "undoc"
     }
   ]

@@ -13,45 +13,45 @@
     },
     {
       "name": "host",
-      "type": "std::string",
+      "type": "std/string",
       "description": "Host (when URI is an IP address)"
     },
     {
       "name": "ping_freq",
-      "type": "std::chrono::nanoseconds",
+      "type": "std/nanoseconds",
       "validator": "roq::flags::validators::TimePeriod",
       "default": "5s",
       "description": "Ping frequency"
     },
     {
       "name": "request_timeout",
-      "type": "std::chrono::nanoseconds",
+      "type": "std/nanoseconds",
       "validator": "roq::flags::validators::TimePeriod",
       "default": "15s",
       "description": "Request timeout"
     },
     {
       "name": "market_data_max_subscriptions_per_stream",
-      "type": "uint32_t",
+      "type": "std/uint32",
       "required": true,
       "default": 256,
       "description": "Maximum number of symbols per connection"
     },
     {
       "name": "ticker_interval",
-      "type": "std::string",
+      "type": "std/string",
       "default": "100ms",
       "required": true,
       "description": "Ticker interval"
     },
     {
       "name": "allow_errors",
-      "type": "bool",
+      "type": "std/bool",
       "description": "(TEST) Allow errors"
     },
     {
       "name": "disable_quote",
-      "type": "bool",
+      "type": "std/bool",
       "description": "Disable quote subscription"
     }
   ]

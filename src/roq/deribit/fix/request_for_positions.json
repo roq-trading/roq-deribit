@@ -5,7 +5,7 @@
     {
       "tag": 710,
       "name": "PosReqID",
-      "type": "std::string_view",
+      "type": "std/string_view",
       "required": true
     },
     {
@@ -22,7 +22,7 @@
     {
       "tag": 15,
       "name": "Currency",
-      "type": "std::string_view"
+      "type": "std/string_view"
     }
   ]
 }

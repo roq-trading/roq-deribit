@@ -5,17 +5,17 @@
     {
       "tag": 1363,
       "name": "FillExecID",
-      "type": "std::string_view"
+      "type": "std/string_view"
     },
     {
       "tag": 1364,
       "name": "FillPx",
-      "type": "double"
+      "type": "std/double"
     },
     {
       "tag": 1365,
       "name": "FillQty",
-      "type": "double"
+      "type": "std/double"
     },
     {
       "tag": 1443,
