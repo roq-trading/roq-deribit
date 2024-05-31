@@ -1,5 +1,5 @@
 {
-  "name": "RequestType",
+  "name": "roq/deribit/json/RequestType",
   "type": "enum",
   "values": [
     {

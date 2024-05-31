@@ -1,10 +1,10 @@
 {
-  "name": "Trades2",
+  "name": "roq/deribit/json/Trades2",
   "type": "array",
   "values": [
     {
       "name": "data",
-      "type": "Trade",
+      "type": "roq/deribit/json/Trade",
       "array": "std/span"
     }
   ]

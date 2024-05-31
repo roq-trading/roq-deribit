@@ -1,5 +1,5 @@
 {
-  "name": "MarketDataIncrementalRefresh",
+  "name": "roq/deribit/fix/MarketDataIncrementalRefresh",
   "type": "comp",
   "values": [
     {
@@ -21,7 +21,7 @@
     {
       "tag": 201,
       "name": "PutOrCall",
-      "type": "roq::fix::PutOrCall"
+      "type": "roq/fix/PutOrCall"
     },
     {
       "tag": 100090,
@@ -38,7 +38,7 @@
     {
       "tag": 268,
       "name": "NoMdEntries",
-      "type": "MDInc",
+      "type": "roq/deribit/fix/MDInc",
       "array": "std/span",
       "required": true
     },

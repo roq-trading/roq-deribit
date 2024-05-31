@@ -1,11 +1,11 @@
 {
-  "name": "FIX",
+  "name": "roq/deribit/flags/FIX",
   "type": "flags",
   "prefix": "fix_",
   "values": [
     {
       "name": "uri",
-      "type": "roq::io::web::URI",
+      "type": "roq/io/web/URI",
       "validator": "roq::core::flags::URI",
       "default": "tcp://test.deribit.com:9881",
       "description": "Exchange end-point"

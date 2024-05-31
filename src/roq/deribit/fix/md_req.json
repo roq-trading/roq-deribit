@@ -1,11 +1,11 @@
 {
-  "name": "MDReq",
+  "name": "roq/deribit/fix/MDReq",
   "type": "item",
   "values": [
     {
       "tag": 269,
       "name": "MDEntryType",
-      "type": "roq::fix::MDEntryType",
+      "type": "roq/fix/MDEntryType",
       "required": true
     }
   ]

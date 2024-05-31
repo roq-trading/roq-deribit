@@ -1,5 +1,5 @@
 {
-  "name": "Instrument",
+  "name": "roq/deribit/fix/Instrument",
   "type": "item",
   "values": [
     {
@@ -21,7 +21,7 @@
     {
       "tag": 201,
       "name": "PutOrCall",
-      "type": "roq::fix::PutOrCall"
+      "type": "roq/fix/PutOrCall"
     },
     {
       "tag": 202,
@@ -80,7 +80,7 @@
     {
       "tag": 63,
       "name": "SettlType",
-      "type": "roq::fix::SettlType",
+      "type": "roq/fix/SettlType",
       "custom": true
     },
     {

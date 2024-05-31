@@ -1,5 +1,5 @@
 {
-  "name": "OrderCancelReject",
+  "name": "roq/deribit/fix/OrderCancelReject",
   "type": "simple",
   "values": [
     {
@@ -24,7 +24,7 @@
     {
       "tag": 39,
       "name": "OrdStatus",
-      "type": "roq::fix::OrdStatus"
+      "type": "roq/fix/OrdStatus"
     },
     {
       "tag": 58,

@@ -1,5 +1,5 @@
 {
-  "name": "Multicast",
+  "name": "roq/deribit/flags/Multicast",
   "type": "flags",
   "prefix": "multicast_",
   "values": [

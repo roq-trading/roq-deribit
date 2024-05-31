@@ -1,5 +1,5 @@
 {
-  "name": "ExecutionReport",
+  "name": "roq/deribit/fix/ExecutionReport",
   "type": "comp",
   "values": [
     {
@@ -15,13 +15,13 @@
     {
       "tag": 39,
       "name": "OrdStatus",
-      "type": "roq::fix::OrdStatus",
+      "type": "roq/fix/OrdStatus",
       "required": true
     },
     {
       "tag": 54,
       "name": "Side",
-      "type": "roq::fix::Side",
+      "type": "roq/fix/Side",
       "required": true
     },
     {
@@ -56,7 +56,7 @@
     {
       "tag": 40,
       "name": "OrdType",
-      "type": "roq::fix::OrdType",
+      "type": "roq/fix/OrdType",
       "required": true
     },
     {
@@ -77,7 +77,7 @@
     {
       "tag": 103,
       "name": "OrdRejReason",
-      "type": "roq::fix::OrdRejReason",
+      "type": "roq/fix/OrdRejReason",
       "required": true
     },
     {
@@ -99,7 +99,7 @@
     {
       "tag": 854,
       "name": "QtyType",
-      "type": "roq::fix::QtyType"
+      "type": "roq/fix/QtyType"
     },
     {
       "tag": 231,
@@ -145,7 +145,7 @@
     {
       "tag": 1362,
       "name": "NoFills",
-      "type": "Fill",
+      "type": "roq/deribit/fix/Fill",
       "array": "std/span"
     },
     {
@@ -156,7 +156,7 @@
     {
       "tag": 585,
       "name": "MassStatusReqType",
-      "type": "roq::fix::MassStatusReqType",
+      "type": "roq/fix/MassStatusReqType",
       "custom": true
     },
     {
@@ -173,7 +173,7 @@
     {
       "tag": 150,
       "name": "ExecType",
-      "type": "roq::fix::ExecType"
+      "type": "roq/fix/ExecType"
     },
     {
       "tag": 37,

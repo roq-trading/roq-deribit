@@ -1,5 +1,5 @@
 {
-  "name": "MarketDataRequest",
+  "name": "roq/deribit/fix/MarketDataRequest",
   "type": "comp",
   "values": [
     {
@@ -11,7 +11,7 @@
     {
       "tag": 263,
       "name": "SubscriptionRequestType",
-      "type": "roq::fix::SubscriptionRequestType",
+      "type": "roq/fix/SubscriptionRequestType",
       "required": true
     },
     {
@@ -22,7 +22,7 @@
     {
       "tag": 265,
       "name": "MDUpdateType",
-      "type": "roq::fix::MDUpdateType"
+      "type": "roq/fix/MDUpdateType"
     },
     {
       "tag": 100007,
@@ -39,14 +39,14 @@
     {
       "tag": 267,
       "name": "NoMdEntryTypes",
-      "type": "MDReq",
+      "type": "roq/deribit/fix/MDReq",
       "array": "std/span",
       "required": true
     },
     {
       "tag": 146,
       "name": "NoRelatedSym",
-      "type": "InstrmtMDReq",
+      "type": "roq/deribit/fix/InstrmtMDReq",
       "array": "std/span"
     }
   ]

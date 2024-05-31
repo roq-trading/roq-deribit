@@ -1,5 +1,5 @@
 {
-  "name": "Reject",
+  "name": "roq/deribit/fix/Reject",
   "type": "simple",
   "values": [
     {
@@ -16,7 +16,7 @@
     {
       "tag": 372,
       "name": "RefMsgType",
-      "type": "roq::fix::MsgType"
+      "type": "roq/fix/MsgType"
     },
     {
       "tag": 373,

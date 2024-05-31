@@ -1,5 +1,5 @@
 {
-  "name": "Position",
+  "name": "roq/deribit/json/Position",
   "type": "item",
   "values": [
     {
@@ -16,7 +16,7 @@
     },
     {
       "name": "direction",
-      "type": "Direction"
+      "type": "roq/deribit/json/Direction"
     },
     {
       "name": "estimated_liquidation_price",
@@ -44,7 +44,7 @@
     },
     {
       "name": "kind",
-      "type": "Kind"
+      "type": "roq/deribit/json/Kind"
     },
     {
       "name": "leverage",

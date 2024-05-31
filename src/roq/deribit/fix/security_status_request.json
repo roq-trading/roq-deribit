@@ -1,5 +1,5 @@
 {
-  "name": "SecurityStatusRequest",
+  "name": "roq/deribit/fix/SecurityStatusRequest",
   "type": "comp",
   "values": [
     {
@@ -17,7 +17,7 @@
     {
       "tag": 263,
       "name": "SubscriptionRequestType",
-      "type": "roq::fix::SubscriptionRequestType",
+      "type": "roq/fix/SubscriptionRequestType",
       "required": true
     }
   ]

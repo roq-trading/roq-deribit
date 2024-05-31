@@ -1,10 +1,10 @@
 {
-  "name": "Instruments",
+  "name": "roq/deribit/json/Instruments",
   "type": "array",
   "values": [
     {
       "name": "data",
-      "type": "Instrument",
+      "type": "roq/deribit/json/Instrument",
       "array": "std/span"
     }
   ]

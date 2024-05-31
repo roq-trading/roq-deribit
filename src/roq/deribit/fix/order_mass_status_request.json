@@ -1,5 +1,5 @@
 {
-  "name": "OrderMassStatusRequest",
+  "name": "roq/deribit/fix/OrderMassStatusRequest",
   "type": "comp",
   "values": [
     {
@@ -11,7 +11,7 @@
     {
       "tag": 585,
       "name": "MassStatusReqType",
-      "type": "roq::fix::MassStatusReqType",
+      "type": "roq/fix/MassStatusReqType",
       "required": true
     }
   ]

@@ -1,5 +1,5 @@
 {
-  "name": "OrderBook",
+  "name": "roq/deribit/json/OrderBook",
   "type": "item",
   "values": [
     {
@@ -89,7 +89,7 @@
     },
     {
       "name": "state",
-      "type": "State"
+      "type": "roq/deribit/json/State"
     },
     {
       "name": "stats"

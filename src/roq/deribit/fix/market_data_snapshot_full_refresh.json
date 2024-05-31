@@ -1,5 +1,5 @@
 {
-  "name": "MarketDataSnapshotFullRefresh",
+  "name": "roq/deribit/fix/MarketDataSnapshotFullRefresh",
   "type": "comp",
   "values": [
     {
@@ -33,7 +33,7 @@
     {
       "tag": 201,
       "name": "PutOrCall",
-      "type": "roq::fix::PutOrCall"
+      "type": "roq/fix/PutOrCall"
     },
     {
       "tag": 100087,
@@ -68,7 +68,7 @@
     {
       "tag": 268,
       "name": "NoMdEntries",
-      "type": "MDFull",
+      "type": "roq/deribit/fix/MDFull",
       "array": "std/span",
       "required": true
     }

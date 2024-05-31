@@ -1,5 +1,5 @@
 {
-  "name": "OrderMassCancelRequest",
+  "name": "roq/deribit/fix/OrderMassCancelRequest",
   "type": "comp",
   "values": [
     {
@@ -11,7 +11,7 @@
     {
       "tag": 530,
       "name": "MassCancelRequestType",
-      "type": "roq::fix::MassCancelRequestType",
+      "type": "roq/fix/MassCancelRequestType",
       "required": true
     },
     {

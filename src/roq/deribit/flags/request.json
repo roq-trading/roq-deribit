@@ -1,5 +1,5 @@
 {
-  "name": "Request",
+  "name": "roq/deribit/flags/Request",
   "type": "flags",
   "prefix": "request_",
   "values": [

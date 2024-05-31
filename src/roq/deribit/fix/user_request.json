@@ -1,5 +1,5 @@
 {
-  "name": "UserRequest",
+  "name": "roq/deribit/fix/UserRequest",
   "type": "comp",
   "values": [
     {
@@ -11,7 +11,7 @@
     {
       "tag": 924,
       "name": "UserRequestType",
-      "type": "roq::fix::UserRequestType",
+      "type": "roq/fix/UserRequestType",
       "required": true
     },
     {

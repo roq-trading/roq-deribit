@@ -1,10 +1,10 @@
 {
-  "name": "Positions",
+  "name": "roq/deribit/json/Positions",
   "type": "array",
   "values": [
     {
       "name": "data",
-      "type": "Position",
+      "type": "roq/deribit/json/Position",
       "array": "std/span"
     }
   ]

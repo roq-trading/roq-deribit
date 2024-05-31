@@ -1,5 +1,5 @@
 {
-  "name": "InstrumentState",
+  "name": "roq/deribit/json/InstrumentState",
   "type": "item",
   "values": [
     {
@@ -8,7 +8,7 @@
     },
     {
       "name": "state",
-      "type": "State"
+      "type": "roq/deribit/json/State"
     },
     {
       "name": "timestamp",

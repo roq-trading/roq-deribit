@@ -1,5 +1,5 @@
 {
-  "name": "SecurityStatus",
+  "name": "roq/deribit/fix/SecurityStatus",
   "type": "comp",
   "values": [
     {
@@ -16,7 +16,7 @@
     {
       "tag": 326,
       "name": "SecurityTradingStatus",
-      "type": "roq::fix::SecurityTradingStatus"
+      "type": "roq/fix/SecurityTradingStatus"
     },
     {
       "tag": 330,

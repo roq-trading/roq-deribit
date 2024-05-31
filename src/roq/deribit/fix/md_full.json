@@ -1,17 +1,17 @@
 {
-  "name": "MDFull",
+  "name": "roq/deribit/fix/MDFull",
   "type": "item",
   "values": [
     {
       "tag": 269,
       "name": "MDEntryType",
-      "type": "roq::fix::MDEntryType",
+      "type": "roq/fix/MDEntryType",
       "required": true
     },
     {
       "tag": 279,
       "name": "MDUpdateAction",
-      "type": "roq::fix::MDUpdateAction",
+      "type": "roq/fix/MDUpdateAction",
       "custom": true
     },
     {
@@ -38,7 +38,7 @@
     {
       "tag": 54,
       "name": "Side",
-      "type": "roq::fix::Side",
+      "type": "roq/fix/Side",
       "custom": true
     },
     {
@@ -65,7 +65,7 @@
     {
       "tag": 39,
       "name": "OrdStatus",
-      "type": "roq::fix::OrdStatus",
+      "type": "roq/fix/OrdStatus",
       "custom": true
     },
     {

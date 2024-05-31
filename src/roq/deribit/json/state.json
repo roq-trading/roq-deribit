@@ -1,5 +1,5 @@
 {
-  "name": "State",
+  "name": "roq/deribit/json/State",
   "type": "enum",
   "values": [
     {

@@ -1,5 +1,5 @@
 {
-  "name": "OrderEntryState",
+  "name": "roq/deribit/OrderEntryState",
   "type": "enum",
   "values": [
     {

@@ -1,5 +1,5 @@
 {
-  "name": "ResendRequest",
+  "name": "roq/deribit/fix/ResendRequest",
   "type": "simple",
   "values": [
     {

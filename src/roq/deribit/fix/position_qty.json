@@ -1,11 +1,11 @@
 {
-  "name": "PositionQty",
+  "name": "roq/deribit/fix/PositionQty",
   "type": "item",
   "values": [
     {
       "tag": 703,
       "name": "PosType",
-      "type": "roq::fix::PosType",
+      "type": "roq/fix/PosType",
       "required": true
     },
     {
@@ -27,7 +27,7 @@
     {
       "tag": 854,
       "name": "QtyType",
-      "type": "roq::fix::QtyType",
+      "type": "roq/fix/QtyType",
       "custom": true
     },
     {
@@ -45,7 +45,7 @@
     {
       "tag": 54,
       "name": "Side",
-      "type": "roq::fix::Side",
+      "type": "roq/fix/Side",
       "custom": true
     },
     {

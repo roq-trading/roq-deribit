@@ -1,5 +1,5 @@
 {
-  "name": "Changes",
+  "name": "roq/deribit/json/Changes",
   "type": "comp",
   "values": [
     {
@@ -8,17 +8,17 @@
     },
     {
       "name": "trades",
-      "type": "Trade",
+      "type": "roq/deribit/json/Trade",
       "array": "std/span"
     },
     {
       "name": "positions",
-      "type": "Position",
+      "type": "roq/deribit/json/Position",
       "array": "std/span"
     },
     {
       "name": "orders",
-      "type": "Order",
+      "type": "roq/deribit/json/Order",
       "array": "std/span"
     }
   ]

@@ -1,5 +1,5 @@
 {
-  "name": "SecurityList",
+  "name": "roq/deribit/fix/SecurityList",
   "type": "comp",
   "values": [
     {
@@ -17,13 +17,13 @@
     {
       "tag": 560,
       "name": "SecurityRequestResult",
-      "type": "roq::fix::SecurityRequestResult",
+      "type": "roq/fix/SecurityRequestResult",
       "required": true
     },
     {
       "tag": 146,
       "name": "NoRelatedSym",
-      "type": "Instrument",
+      "type": "roq/deribit/fix/Instrument",
       "array": "std/span"
     }
   ]

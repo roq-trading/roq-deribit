@@ -1,5 +1,5 @@
 {
-  "name": "ComboState",
+  "name": "roq/deribit/json/ComboState",
   "type": "enum",
   "values": [
     {

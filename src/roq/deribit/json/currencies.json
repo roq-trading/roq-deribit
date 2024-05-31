@@ -1,10 +1,10 @@
 {
-  "name": "Currencies",
+  "name": "roq/deribit/json/Currencies",
   "type": "array",
   "values": [
     {
       "name": "data",
-      "type": "Currency",
+      "type": "roq/deribit/json/Currency",
       "array": "std/span"
     }
   ]

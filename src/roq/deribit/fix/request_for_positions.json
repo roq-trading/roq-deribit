@@ -1,5 +1,5 @@
 {
-  "name": "RequestForPositions",
+  "name": "roq/deribit/fix/RequestForPositions",
   "type": "comp",
   "values": [
     {
@@ -11,13 +11,13 @@
     {
       "tag": 724,
       "name": "PosReqType",
-      "type": "roq::fix::PosReqType",
+      "type": "roq/fix/PosReqType",
       "required": true
     },
     {
       "tag": 263,
       "name": "SubscriptionRequestType",
-      "type": "roq::fix::SubscriptionRequestType"
+      "type": "roq/fix/SubscriptionRequestType"
     },
     {
       "tag": 15,

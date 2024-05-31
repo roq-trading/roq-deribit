@@ -1,5 +1,5 @@
 {
-  "name": "MarketDataRequestReject",
+  "name": "roq/deribit/fix/MarketDataRequestReject",
   "type": "simple",
   "values": [
     {
@@ -16,7 +16,7 @@
     {
       "tag": 281,
       "name": "MDReqRejReason",
-      "type": "roq::fix::MDReqRejReason",
+      "type": "roq/fix/MDReqRejReason",
       "required": true
     }
   ]

@@ -1,5 +1,5 @@
 {
-  "name": "OrderType",
+  "name": "roq/deribit/json/OrderType",
   "type": "enum",
   "values": [
     {

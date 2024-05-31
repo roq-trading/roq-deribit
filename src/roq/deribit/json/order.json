@@ -1,5 +1,5 @@
 {
-  "name": "Order",
+  "name": "roq/deribit/json/Order",
   "type": "item",
   "values": [
     {
@@ -8,7 +8,7 @@
     },
     {
       "name": "time_in_force",
-      "type": "TimeInForce"
+      "type": "roq/deribit/json/TimeInForce"
     },
     {
       "name": "replaced",
@@ -32,11 +32,11 @@
     },
     {
       "name": "order_type",
-      "type": "OrderType"
+      "type": "roq/deribit/json/OrderType"
     },
     {
       "name": "order_state",
-      "type": "OrderState"
+      "type": "roq/deribit/json/OrderState"
     },
     {
       "name": "order_id",
@@ -68,7 +68,7 @@
     },
     {
       "name": "direction",
-      "type": "Direction"
+      "type": "roq/deribit/json/Direction"
     },
     {
       "name": "creation_timestamp",

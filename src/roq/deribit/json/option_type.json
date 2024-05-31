@@ -1,5 +1,5 @@
 {
-  "name": "OptionType",
+  "name": "roq/deribit/json/OptionType",
   "type": "enum",
   "values": [
     {

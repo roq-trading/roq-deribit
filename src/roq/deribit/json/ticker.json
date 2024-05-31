@@ -1,5 +1,5 @@
 {
-  "name": "Ticker",
+  "name": "roq/deribit/json/Ticker",
   "type": "item",
   "values": [
     {
@@ -79,7 +79,7 @@
     },
     {
       "name": "state",
-      "type": "State"
+      "type": "roq/deribit/json/State"
     },
     {
       "name": "stats"
@@ -118,7 +118,7 @@
     },
     {
       "name": "combo_state",
-      "type": "ComboState"
+      "type": "roq/deribit/json/ComboState"
     },
     {
       "name": "interest_value",

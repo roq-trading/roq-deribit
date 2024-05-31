@@ -1,5 +1,5 @@
 {
-  "name": "OrderCancelReplaceRequest",
+  "name": "roq/deribit/fix/OrderCancelReplaceRequest",
   "type": "comp",
   "values": [
     {
@@ -32,24 +32,24 @@
     {
       "tag": 54,
       "name": "Side",
-      "type": "roq::fix::Side",
+      "type": "roq/fix/Side",
       "required": true
     },
     {
       "tag": 38,
       "name": "OrderQty",
-      "type": "Decimal"
+      "type": "roq/Decimal"
     },
     {
       "tag": 40,
       "name": "OrdType",
-      "type": "roq::fix::OrdType",
+      "type": "roq/fix/OrdType",
       "required": true
     },
     {
       "tag": 44,
       "name": "Price",
-      "type": "Decimal"
+      "type": "roq/Decimal"
     },
     {
       "tag": 18,

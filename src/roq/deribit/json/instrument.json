@@ -1,5 +1,5 @@
 {
-  "name": "Instrument",
+  "name": "roq/deribit/json/Instrument",
   "type": "item",
   "values": [
     {
@@ -28,7 +28,7 @@
     },
     {
       "name": "kind",
-      "type": "Kind"
+      "type": "roq/deribit/json/Kind"
     },
     {
       "name": "leverage",
@@ -44,7 +44,7 @@
     },
     {
       "name": "option_type",
-      "type": "OptionType"
+      "type": "roq/deribit/json/OptionType"
     },
     {
       "name": "quote_currency",
@@ -112,7 +112,7 @@
     },
     {
       "name": "instrument_type",
-      "type": "InstrumentType"
+      "type": "roq/deribit/json/InstrumentType"
     },
     {
       "name": "tick_size_steps"

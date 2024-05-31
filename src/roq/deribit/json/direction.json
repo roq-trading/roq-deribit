@@ -1,5 +1,5 @@
 {
-  "name": "Direction",
+  "name": "roq/deribit/json/Direction",
   "type": "enum",
   "values": [
     {

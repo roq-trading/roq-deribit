@@ -1,5 +1,5 @@
 {
-  "name": "InstrumentType",
+  "name": "roq/deribit/json/InstrumentType",
   "type": "enum",
   "values": [
     {

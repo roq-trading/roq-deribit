@@ -1,5 +1,5 @@
 {
-  "name": "Fill",
+  "name": "roq/deribit/fix/Fill",
   "type": "item",
   "values": [
     {
@@ -20,7 +20,7 @@
     {
       "tag": 1443,
       "name": "FillLiquidityInd",
-      "type": "roq::fix::FillLiquidityInd"
+      "type": "roq/fix/FillLiquidityInd"
     }
   ]
 }

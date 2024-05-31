@@ -1,5 +1,5 @@
 {
-  "name": "MarketDataState",
+  "name": "roq/deribit/MarketDataState",
   "type": "enum",
   "values": [
     {
