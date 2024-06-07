@@ -43,8 +43,7 @@ struct OrderEntry final : public io::net::ConnectionManager::Handler {
   struct Handler {
     virtual void operator()(Trace<StreamStatus> const &) = 0;
     virtual void operator()(Trace<ExternalLatency> const &) = 0;
-    virtual void operator()(
-        Trace<TradeUpdate> const &, bool is_last, uint8_t user_id, std::string_view const &request_id) = 0;
+    virtual void operator()(Trace<TradeUpdate> const &, bool is_last, uint8_t user_id, std::string_view const &request_id) = 0;
     virtual void operator()(Trace<PositionUpdate> const &, bool is_last) = 0;
   };
 
@@ -60,16 +59,8 @@ struct OrderEntry final : public io::net::ConnectionManager::Handler {
   void operator()(Event<Timer> const &);
 
   uint16_t operator()(Event<CreateOrder> const &, server::oms::Order const &, std::string_view const &request_id);
-  uint16_t operator()(
-      Event<ModifyOrder> const &,
-      server::oms::Order const &,
-      std::string_view const &request_id,
-      std::string_view const &previous_request_id);
-  uint16_t operator()(
-      Event<CancelOrder> const &,
-      server::oms::Order const &,
-      std::string_view const &request_id,
-      std::string_view const &previous_request_id);
+  uint16_t operator()(Event<ModifyOrder> const &, server::oms::Order const &, std::string_view const &request_id, std::string_view const &previous_request_id);
+  uint16_t operator()(Event<CancelOrder> const &, server::oms::Order const &, std::string_view const &request_id, std::string_view const &previous_request_id);
 
   uint16_t operator()(Event<CancelAllOrders> const &, std::string_view const &request_id);
 
@@ -135,8 +126,7 @@ struct OrderEntry final : public io::net::ConnectionManager::Handler {
     utils::metrics::Counter disconnect;
   } counter_;
   struct {
-    utils::metrics::Profile parse, position_report, execution_report, order_cancel_reject, reject,
-        order_mass_cancel_report;
+    utils::metrics::Profile parse, position_report, execution_report, order_cancel_reject, reject, order_mass_cancel_report;
   } profile_;
   struct {
     utils::metrics::Latency ping;

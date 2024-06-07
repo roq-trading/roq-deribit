@@ -88,16 +88,12 @@ auto create_udp_events(auto &gateway, auto &context, auto &stream_id, auto &shar
 // === IMPLEMENTATION ===
 
 Gateway::Gateway(server::Dispatcher &dispatcher, Settings const &settings, Config const &config, io::Context &context)
-    : dispatcher_{dispatcher}, master_account_{create_master_account(config)},
-      accounts_{create_accounts<decltype(accounts_)>(config)}, context_{context}, shared_{dispatcher_, settings},
-      order_entry_{create_order_entry<decltype(order_entry_)>(*this, context_, stream_id_, accounts_, shared_)},
+    : dispatcher_{dispatcher}, master_account_{create_master_account(config)}, accounts_{create_accounts<decltype(accounts_)>(config)}, context_{context},
+      shared_{dispatcher_, settings}, order_entry_{create_order_entry<decltype(order_entry_)>(*this, context_, stream_id_, accounts_, shared_)},
       drop_copy_{create_drop_copy<decltype(drop_copy_)>(*this, context_, stream_id_, accounts_, shared_)},
-      web_socket_{
-          create_web_socket<decltype(web_socket_)>(*this, context_, stream_id_, get_account(master_account_), shared_)},
-      market_data_{create_market_data<decltype(market_data_)>(
-          *this, context_, ++stream_id_, get_account(master_account_), shared_)},
-      udp_snapshot_{create_udp_snapshot(*this, context_, ++stream_id_, shared_)},
-      udp_events_{create_udp_events(*this, context_, ++stream_id_, shared_)} {
+      web_socket_{create_web_socket<decltype(web_socket_)>(*this, context_, stream_id_, get_account(master_account_), shared_)},
+      market_data_{create_market_data<decltype(market_data_)>(*this, context_, ++stream_id_, get_account(master_account_), shared_)},
+      udp_snapshot_{create_udp_snapshot(*this, context_, ++stream_id_, shared_)}, udp_events_{create_udp_events(*this, context_, ++stream_id_, shared_)} {
   if (std::empty(master_account_) && !settings.misc.disable_master_account_check)
     log::fatal("A master account is always required (due to FIX logon)"sv);
   if (!settings.fix.cancel_on_disconnect)
@@ -127,27 +123,20 @@ void Gateway::operator()(Event<Connected> const &) {
 void Gateway::operator()(Event<Disconnected> const &) {
 }
 
-uint16_t Gateway::operator()(
-    Event<CreateOrder> const &event, server::oms::Order const &order, std::string_view const &request_id) {
+uint16_t Gateway::operator()(Event<CreateOrder> const &event, server::oms::Order const &order, std::string_view const &request_id) {
   assert(!std::empty(event.value.account));
   return get_order_entry(event.value.account)(event, order, request_id);
 }
 
 uint16_t Gateway::operator()(
-    Event<ModifyOrder> const &event,
-    server::oms::Order const &order,
-    std::string_view const &request_id,
-    std::string_view const &previous_request_id) {
+    Event<ModifyOrder> const &event, server::oms::Order const &order, std::string_view const &request_id, std::string_view const &previous_request_id) {
   assert(!std::empty(event.value.account));
   assert(event.value.account == order.account);
   return get_order_entry(event.value.account)(event, order, request_id, previous_request_id);
 }
 
 uint16_t Gateway::operator()(
-    Event<CancelOrder> const &event,
-    server::oms::Order const &order,
-    std::string_view const &request_id,
-    std::string_view const &previous_request_id) {
+    Event<CancelOrder> const &event, server::oms::Order const &order, std::string_view const &request_id, std::string_view const &previous_request_id) {
   assert(!std::empty(event.value.account));
   assert(event.value.account == order.account);
   return get_order_entry(event.value.account)(event, order, request_id, previous_request_id);
@@ -195,8 +184,7 @@ void Gateway::operator()(Trace<StatisticsUpdate> const &event, bool is_last) {
   dispatcher_(event, is_last);
 }
 
-void Gateway::operator()(
-    Trace<TradeUpdate> const &event, bool is_last, uint8_t user_id, std::string_view const &request_id) {
+void Gateway::operator()(Trace<TradeUpdate> const &event, bool is_last, uint8_t user_id, std::string_view const &request_id) {
   dispatcher_(event, is_last, user_id, request_id);
 }
 
@@ -243,8 +231,7 @@ void Gateway::ensure_symbol_slices(size_t size) {
     auto stream_id = ++stream_id_;
     auto index = std::size(market_data_);
     log::info("Create MarketData(stream_id={}, index={})"sv, stream_id, index);
-    auto market_data =
-        std::make_unique<MarketData>(*this, context_, stream_id, get_account(master_account_), shared_, index, false);
+    auto market_data = std::make_unique<MarketData>(*this, context_, stream_id, get_account(master_account_), shared_, index, false);
     MessageInfo message_info;
     Start start;
     create_event_and_dispatch(*market_data, message_info, start);
@@ -255,8 +242,7 @@ void Gateway::ensure_symbol_slices(size_t size) {
     auto stream_id = ++stream_id_;
     auto index = std::size(web_socket_);
     log::info("Create WebSocket (stream_id={}, index={})"sv, stream_id, index);
-    auto web_socket =
-        std::make_unique<WebSocket>(*this, context_, stream_id, get_account(master_account_), shared_, index, false);
+    auto web_socket = std::make_unique<WebSocket>(*this, context_, stream_id, get_account(master_account_), shared_, index, false);
     MessageInfo message_info;
     Start start;
     create_event_and_dispatch(*web_socket, message_info, start);

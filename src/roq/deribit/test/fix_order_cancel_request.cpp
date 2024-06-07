@@ -39,8 +39,7 @@ TEST_CASE("fix_order_cancel_request_create_message", "[fix_order_cancel_request]
   };
   auto message = order_cancel_request.encode(header, buffer);
   auto tmp = fmt::format("{}"sv, utils::debug::fix::Message{message});
-  auto expected =
-      "8=FIX.4.4|9=0000109|35=F|49=ROQ_TRADING|56=DERIBITSERVER|34=1|52=20190917-06:46:50.000|11=123|41=123|100010=123|55=BTC-PERPETUAL|10=215|"sv;
+  auto expected = "8=FIX.4.4|9=0000109|35=F|49=ROQ_TRADING|56=DERIBITSERVER|34=1|52=20190917-06:46:50.000|11=123|41=123|100010=123|55=BTC-PERPETUAL|10=215|"sv;
   REQUIRE(std::size(message) == std::size(expected));
   CHECK(tmp == expected);
 }

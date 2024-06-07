@@ -30,8 +30,7 @@ constexpr auto const RANDOM_BYTES = size_t{32};
 static_assert(std::size(CHARSET_DATA) == 36);
 
 std::random_device GENERATOR;
-std::uniform_int_distribution<int> CHARSET_DISTRIBUTION(
-    0, std::size(CHARSET_DATA) - 1);  // note! max value is inclusive
+std::uniform_int_distribution<int> CHARSET_DISTRIBUTION(0, std::size(CHARSET_DATA) - 1);  // note! max value is inclusive
 std::uniform_int_distribution<uint32_t> DISTRIBUTION;
 }  // namespace
 
@@ -50,8 +49,7 @@ std::string Crypto::create_nonce() {
   return result;
 }
 
-std::pair<std::string, std::chrono::milliseconds> Crypto::create_signature(
-    std::chrono::milliseconds timestamp, std::string_view const &nonce) {
+std::pair<std::string, std::chrono::milliseconds> Crypto::create_signature(std::chrono::milliseconds timestamp, std::string_view const &nonce) {
   auto sequence = get_sequence(timestamp);
   auto message = fmt::format("{}\n{}\n"sv, sequence, nonce);
   mac_.clear();

@@ -70,8 +70,7 @@ auto create_connection(auto &handler, auto &settings, auto &context) {
 }
 
 struct create_metrics final : public core::metrics::Factory {
-  explicit create_metrics(auto &settings, auto const &group, auto const &function)
-      : core::metrics::Factory(settings.app.name, group, function) {}
+  explicit create_metrics(auto &settings, auto const &group, auto const &function) : core::metrics::Factory(settings.app.name, group, function) {}
 };
 
 auto get_download_trades_lookback(auto const &settings, auto download_trades_is_first) {
@@ -86,8 +85,7 @@ auto get_download_trades_lookback(auto const &settings, auto download_trades_is_
 // === IMPLEMENTATION ===
 
 DropCopy::DropCopy(Handler &handler, io::Context &context, uint16_t stream_id, Account &account, Shared &shared)
-    : handler_{handler}, stream_id_{stream_id}, name_{create_name(stream_id_, account.name)},
-      connection_{create_connection(*this, shared.settings, context)},
+    : handler_{handler}, stream_id_{stream_id}, name_{create_name(stream_id_, account.name)}, connection_{create_connection(*this, shared.settings, context)},
       decode_buffer_(shared.settings.misc.decode_buffer_size),
       counter_{
           .disconnect = create_metrics(shared.settings, name_, "disconnect"sv),
@@ -100,8 +98,7 @@ DropCopy::DropCopy(Handler &handler, io::Context &context, uint16_t stream_id, A
           .ping = create_metrics(shared.settings, name_, "ping"sv),
           .heartbeat = create_metrics(shared.settings, name_, "heartbeat"sv),
       },
-      account_{account}, shared_{shared},
-      download_{shared.settings.ws.request_timeout, [this](auto state) { return download(state); }} {
+      account_{account}, shared_{shared}, download_{shared.settings.ws.request_timeout, [this](auto state) { return download(state); }} {
 }
 
 void DropCopy::operator()(Event<Start> const &) {

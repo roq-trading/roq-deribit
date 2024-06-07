@@ -173,8 +173,7 @@ auto const MESSAGE =
     "0000\001272=20190907-17:49:56.053\00110=037\001"sv;
 }  // namespace
 
-void BM_fix_market_data_snapshot_full_refresh_parse_message(
-    benchmark::State &state) {  // cppcheck-suppress constParameterCallback
+void BM_fix_market_data_snapshot_full_refresh_parse_message(benchmark::State &state) {  // cppcheck-suppress constParameterCallback
   std::vector<std::byte> buffer(1024 * 1024);
   uint64_t processed = 0;
   auto parser = [&](auto &message_2) {

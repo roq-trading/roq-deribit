@@ -27,8 +27,7 @@ struct Aggregator final {
     using namespace std::literals;
     auto result = true;
     if (sequence_number != previous_sequence_number_) {  // note! packed messages are allowed
-      if (sequence_number != previous_sequence_number_ && sequence_number != (previous_sequence_number_ + 1))
-          [[unlikely]] {
+      if (sequence_number != previous_sequence_number_ && sequence_number != (previous_sequence_number_ + 1)) [[unlikely]] {
         if (sequence_number < previous_sequence_number_) [[unlikely]] {
           // not overflow?
           if (sequence_number != 0 || previous_sequence_number_ != std::numeric_limits<uint32_t>::max())
@@ -40,10 +39,7 @@ struct Aggregator final {
         }
       }
       if (!result) [[unlikely]] {
-        log::info<1>(
-            "*** OUT OF SEQUENCE *** sequence_number={}, previous_sequence_number={}"sv,
-            sequence_number,
-            previous_sequence_number_);
+        log::info<1>("*** OUT OF SEQUENCE *** sequence_number={}, previous_sequence_number={}"sv, sequence_number, previous_sequence_number_);
       }
       previous_sequence_number_ = sequence_number;
     }
@@ -52,8 +48,7 @@ struct Aggregator final {
 
   // book or snapshot
   template <typename Callback>
-  void operator()(
-      uint32_t sequence_number, uint32_t instrument_id, uint64_t change_id, bool is_last, Callback callback) {
+  void operator()(uint32_t sequence_number, uint32_t instrument_id, uint64_t change_id, bool is_last, Callback callback) {
     using namespace std::literals;
     if ((*this)(sequence_number)) {
       // in sequence
@@ -70,11 +65,7 @@ struct Aggregator final {
             }
           } else {
             log::info<1>(
-                "DEBUG: INCONSISTENT instrument_id={}(/{}), change_id={}(/{})"sv,
-                instrument_id,
-                previous_instrument_id_,
-                change_id,
-                previous_change_id_);
+                "DEBUG: INCONSISTENT instrument_id={}(/{}), change_id={}(/{})"sv, instrument_id, previous_instrument_id_, change_id, previous_change_id_);
           }
         } else {
           // no prior updates
@@ -87,11 +78,7 @@ struct Aggregator final {
         if (previous_instrument_id_) {
           if (!skip_instrument_id_ && (instrument_id != previous_instrument_id_ || change_id != previous_change_id_)) {
             log::info<1>(
-                "DEBUG: INCONSISTENT instrument_id={}(/{}), change_id={}(/{})"sv,
-                instrument_id,
-                previous_instrument_id_,
-                change_id,
-                previous_change_id_);
+                "DEBUG: INCONSISTENT instrument_id={}(/{}), change_id={}(/{})"sv, instrument_id, previous_instrument_id_, change_id, previous_change_id_);
             skip_instrument_id_ = instrument_id;
             skip_change_id_ = change_id;
           }

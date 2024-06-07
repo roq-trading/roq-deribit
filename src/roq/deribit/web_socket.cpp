@@ -80,25 +80,16 @@ auto create_connection(auto &handler, auto &settings, auto &context) {
 }
 
 struct create_metrics final : public core::metrics::Factory {
-  explicit create_metrics(auto &settings, auto const &group, auto const &function)
-      : core::metrics::Factory(settings.app.name, group, function) {}
+  explicit create_metrics(auto &settings, auto const &group, auto const &function) : core::metrics::Factory(settings.app.name, group, function) {}
 };
 }  // namespace
 
 // === IMPLEMENTATION ===
 
-WebSocket::WebSocket(
-    Handler &handler,
-    io::Context &context,
-    uint16_t stream_id,
-    Account &account,
-    Shared &shared,
-    size_t index,
-    bool master)
+WebSocket::WebSocket(Handler &handler, io::Context &context, uint16_t stream_id, Account &account, Shared &shared, size_t index, bool master)
     : handler_{handler}, stream_id_{stream_id}, name_{create_name(stream_id_)}, index_{index}, master_{master},
       publish_top_of_book_{publish_top_of_book(shared)}, supports_{get_supports(master_, publish_top_of_book_)},
-      connection_{create_connection(*this, shared.settings, context)},
-      decode_buffer_(shared.settings.misc.decode_buffer_size),
+      connection_{create_connection(*this, shared.settings, context)}, decode_buffer_(shared.settings.misc.decode_buffer_size),
       counter_{
           .disconnect = create_metrics(shared.settings, name_, "disconnect"sv),
       },
@@ -114,8 +105,7 @@ WebSocket::WebSocket(
           .ping = create_metrics(shared.settings, name_, "ping"sv),
           .heartbeat = create_metrics(shared.settings, name_, "heartbeat"sv),
       },
-      account_{account}, shared_{shared},
-      download_{shared.settings.ws.request_timeout, [this](auto state) { return download(state); }} {
+      account_{account}, shared_{shared}, download_{shared.settings.ws.request_timeout, [this](auto state) { return download(state); }} {
 }
 
 void WebSocket::operator()(Event<Start> const &) {
@@ -513,8 +503,7 @@ void WebSocket::operator()(Trace<json::Instruments> const &event) {
       auto discard = shared_.discard_symbol(symbol);
       // needed by multicast
       auto multiplier = compute_contracts_multiplier(item.contract_size);
-      shared_.instruments.try_emplace(
-          item.instrument_id, Instrument{item.instrument_name, item.contract_size, multiplier}, discard);
+      shared_.instruments.try_emplace(item.instrument_id, Instrument{item.instrument_name, item.contract_size, multiplier}, discard);
       if (discard)
         continue;
       if (shared_.all_symbols.emplace(symbol).second)
@@ -624,10 +613,7 @@ void WebSocket::operator()(Trace<json::Trades2> const &) {
 // request
 
 void WebSocket::check_subscribe_queue(std::chrono::nanoseconds now) {
-  subscribe_queue_.dispatch(
-      [&](auto now) { return shared_.rate_limiter.can_request(now); },
-      [&](auto &message) { (*connection_).send_text(message); },
-      now);
+  subscribe_queue_.dispatch([&](auto now) { return shared_.rate_limiter.can_request(now); }, [&](auto &message) { (*connection_).send_text(message); }, now);
 }
 
 }  // namespace deribit

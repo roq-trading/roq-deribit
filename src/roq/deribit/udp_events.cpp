@@ -79,8 +79,7 @@ auto create_receiver(auto &handler, auto &settings, auto &context, auto port) {
 }
 
 struct create_metrics final : public core::metrics::Factory {
-  explicit create_metrics(auto &settings, auto const &group, auto const &function)
-      : core::metrics::Factory(settings.app.name, group, function) {}
+  explicit create_metrics(auto &settings, auto const &group, auto const &function) : core::metrics::Factory(settings.app.name, group, function) {}
 };
 
 // following is used from several places
@@ -111,10 +110,8 @@ bool test_sequence(auto &cache, auto instrument_id, auto sequence_number) {
 // === IMPLEMENTATION ===
 
 UDPEvents::UDPEvents(Handler &handler, io::Context &context, uint16_t stream_id, Shared &shared)
-    : handler_{handler}, stream_id_{stream_id}, name_{create_name(stream_id_)},
-      publish_top_of_book_{publish_top_of_book(shared.settings)},
-      publish_market_by_price_{publish_market_by_price(shared.settings)},
-      publish_trade_summary_{publish_trade_summary(shared.settings)},
+    : handler_{handler}, stream_id_{stream_id}, name_{create_name(stream_id_)}, publish_top_of_book_{publish_top_of_book(shared.settings)},
+      publish_market_by_price_{publish_market_by_price(shared.settings)}, publish_trade_summary_{publish_trade_summary(shared.settings)},
       supports_{get_supports(publish_top_of_book_, publish_market_by_price_, publish_trade_summary_)},
       receiver_{create_receiver(*this, shared.settings, context, shared.settings.multicast.port_events)},
       counter_{
@@ -204,8 +201,7 @@ void UDPEvents::operator()(Trace<deribit_multicast::Book> const &event, sbe::Fra
           book.changesList().forEach([&](auto &item) { emplace_back(item, instrument.multiplier, bids, asks); });
           auto &sequencer = shared_.get_mbp_sequencer(instrument.symbol);
           try {
-            auto create_update =
-                [&](auto &bids, auto &asks, auto update_type, auto exchange_sequence) -> MarketByPriceUpdate {
+            auto create_update = [&](auto &bids, auto &asks, auto update_type, auto exchange_sequence) -> MarketByPriceUpdate {
               return {
                   .stream_id = stream_id_,
                   .exchange = shared_.settings.exchange,
@@ -223,36 +219,30 @@ void UDPEvents::operator()(Trace<deribit_multicast::Book> const &event, sbe::Fra
             };
             auto publish_update = [&](auto &bids, auto &asks) {
               // log::debug(R"(PUBLISH UPDATE symbol="{}")"sv, instrument.symbol);
-              log::info<5>(
-                  R"(DEBUG: PUBLISH UPDATE symbol="{}", change_id={}, prev_change_id={})"sv,
-                  instrument.symbol,
-                  change_id,
-                  prev_change_id);
+              log::info<5>(R"(DEBUG: PUBLISH UPDATE symbol="{}", change_id={}, prev_change_id={})"sv, instrument.symbol, change_id, prev_change_id);
               auto market_by_price_update = create_update(bids, asks, UpdateType::INCREMENTAL, change_id);
               create_trace_and_dispatch(handler_, trace_info, market_by_price_update, true);
             };
-            auto publish_snapshot =
-                [&](auto &bids, auto &asks, auto sequence, [[maybe_unused]] auto retries, [[maybe_unused]] auto delay) {
-                  // log::debug(R"(PUBLISH SNAPSHOT symbol="{}", sequence={})"sv, instrument.symbol, sequence);
-                  log::info<5>(
-                      R"(DEBUG: PUBLISH SNAPSHOT symbol="{}", sequence={}, change_id={}, prev_change_id={})"sv,
-                      instrument.symbol,
-                      sequence,
-                      change_id,
-                      prev_change_id);
-                  auto market_by_price_update = create_update(bids, asks, UpdateType::SNAPSHOT, sequence);
-                  auto apply_updates = [&](auto &market_by_price) { sequencer.apply(market_by_price, sequence, true); };
-                  Trace event{trace_info, market_by_price_update};
-                  shared_(event, true, apply_updates);
-                };
+            auto publish_snapshot = [&](auto &bids, auto &asks, auto sequence, [[maybe_unused]] auto retries, [[maybe_unused]] auto delay) {
+              // log::debug(R"(PUBLISH SNAPSHOT symbol="{}", sequence={})"sv, instrument.symbol, sequence);
+              log::info<5>(
+                  R"(DEBUG: PUBLISH SNAPSHOT symbol="{}", sequence={}, change_id={}, prev_change_id={})"sv,
+                  instrument.symbol,
+                  sequence,
+                  change_id,
+                  prev_change_id);
+              auto market_by_price_update = create_update(bids, asks, UpdateType::SNAPSHOT, sequence);
+              auto apply_updates = [&](auto &market_by_price) { sequencer.apply(market_by_price, sequence, true); };
+              Trace event{trace_info, market_by_price_update};
+              shared_(event, true, apply_updates);
+            };
             auto request_snapshot = [&](auto retries) {
               log::info<1>(R"(Waiting for snapshot: symbol="{}")"sv, instrument.symbol);
               // log::debug(R"(REQUEST symbol="{}" (retries={}))"sv, instrument.symbol, retries);
               log::info<5>(R"(DEBUG: REQUEST symbol="{}" (retries={}))"sv, instrument.symbol, retries);
               // note! don't have to do anything -- just wait for snapshot
             };
-            sequencer(
-                bids, asks, change_id, change_id, prev_change_id, publish_update, publish_snapshot, request_snapshot);
+            sequencer(bids, asks, change_id, change_id, prev_change_id, publish_update, publish_snapshot, request_snapshot);
           } catch (BadState &) {
             log::fatal("BAD STATE"sv);
             /*

@@ -23,8 +23,7 @@ struct Crypto final {
 
   std::string create_nonce();
 
-  std::pair<std::string, std::chrono::milliseconds> create_signature(
-      std::chrono::milliseconds timestamp, std::string_view const &nonce);
+  std::pair<std::string, std::chrono::milliseconds> create_signature(std::chrono::milliseconds timestamp, std::string_view const &nonce);
 
   std::string create_raw_data(std::chrono::milliseconds timestamp);
   std::string create_raw_data(std::chrono::milliseconds timestamp, std::string_view const &nonce);

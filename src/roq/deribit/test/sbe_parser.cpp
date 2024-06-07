@@ -79,8 +79,7 @@ TEST_CASE("sbe_instrument", "[sbe_parser]") {  // 1000 (note! bundled)
   std::span buffer{reinterpret_cast<std::byte const *>(std::data(message)), std::size(message)};
   {
     auto message_2 = buffer.subspan(8);
-    Instrument instrument{
-        reinterpret_cast<char *>(const_cast<std::byte *>(std::data(message_2))), std::size(message_2)};
+    Instrument instrument{reinterpret_cast<char *>(const_cast<std::byte *>(std::data(message_2))), std::size(message_2)};
     REQUIRE(sbe::compute_length(instrument) == 171);
     static_assert((8 + 171) == 179);
   }
@@ -427,9 +426,7 @@ TEST_CASE("sbe_snapshot", "[sbe_parser]") {  // 1004 (note! bundled)
   struct MyHandler : public sbe::Parser::Handler {
     bool found_snapshot = false;
     bool found_instrument = false, found_ticker = false;  // secondary
-    void operator()(Trace<deribit_multicast::Instrument> const &, sbe::Frame const &) override {
-      found_instrument = true;
-    }
+    void operator()(Trace<deribit_multicast::Instrument> const &, sbe::Frame const &) override { found_instrument = true; }
     void operator()(Trace<deribit_multicast::Book> const &, sbe::Frame const &) override { FAIL(); }
     void operator()(Trace<deribit_multicast::Ticker> const &, sbe::Frame const &) override { found_ticker = true; }
     void operator()(Trace<deribit_multicast::Trades> const &, sbe::Frame const &) override { FAIL(); }

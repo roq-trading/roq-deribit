@@ -151,8 +151,8 @@ struct MarketData final : public io::net::ConnectionManager::Handler {
     utils::metrics::Counter disconnect;
   } counter_;
   struct {
-    utils::metrics::Profile parse, security_list, security_status, market_data_incremental_refresh,
-        market_data_request_reject, market_data_snapshot_full_refresh, market_data_request;
+    utils::metrics::Profile parse, security_list, security_status, market_data_incremental_refresh, market_data_request_reject,
+        market_data_snapshot_full_refresh, market_data_request;
   } profile_;
   struct {
     utils::metrics::Latency ping;

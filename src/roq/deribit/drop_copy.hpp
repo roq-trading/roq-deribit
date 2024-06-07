@@ -36,14 +36,11 @@
 namespace roq {
 namespace deribit {
 
-struct DropCopy final : public web::socket::Client::Handler,
-                        public core::jsonrpc::Parser::Handler,
-                        public json::Parser::Handler {
+struct DropCopy final : public web::socket::Client::Handler, public core::jsonrpc::Parser::Handler, public json::Parser::Handler {
   struct Handler {
     virtual void operator()(Trace<StreamStatus> const &) = 0;
     virtual void operator()(Trace<ExternalLatency> const &) = 0;
-    virtual void operator()(
-        Trace<TradeUpdate> const &, bool is_last, uint8_t user_id, std::string_view const &request_id) = 0;
+    virtual void operator()(Trace<TradeUpdate> const &, bool is_last, uint8_t user_id, std::string_view const &request_id) = 0;
     virtual void operator()(Trace<FundsUpdate> const &, bool is_last) = 0;
     virtual void operator()(Trace<PositionUpdate> const &, bool is_last) = 0;
   };

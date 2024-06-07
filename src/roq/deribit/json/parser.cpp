@@ -57,11 +57,7 @@ auto parse_channel(auto const &name) -> Channel {
 
 // === IMPLEMENTATION ===
 
-bool Parser::dispatch(
-    Parser::Handler &handler,
-    core::json::Value &value,
-    std::span<std::byte> const &buffer,
-    TraceInfo const &trace_info) {
+bool Parser::dispatch(Parser::Handler &handler, core::json::Value &value, std::span<std::byte> const &buffer, TraceInfo const &trace_info) {
   // note! message is nested / channel name is at level 2
   auto message = core::json::get<std::string_view>(value);
   auto channel = Channel::UNDEFINED__;

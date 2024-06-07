@@ -87,8 +87,7 @@ auto create_connection_manager(auto &handler, auto &settings, auto &connection_f
 }
 
 struct create_metrics final : public core::metrics::Factory {
-  explicit create_metrics(auto &settings, auto const &group, auto const &function)
-      : core::metrics::Factory(settings.app.name, group, function) {}
+  explicit create_metrics(auto &settings, auto const &group, auto const &function) : core::metrics::Factory(settings.app.name, group, function) {}
 };
 
 // following are used from several places
@@ -150,22 +149,14 @@ void emplace_back(T &result, auto &value) {
 
 // === IMPLEMENTATION ===
 
-MarketData::MarketData(
-    Handler &handler,
-    io::Context &context,
-    uint16_t stream_id,
-    Account &account,
-    Shared &shared,
-    size_t index,
-    bool master)
+MarketData::MarketData(Handler &handler, io::Context &context, uint16_t stream_id, Account &account, Shared &shared, size_t index, bool master)
     : handler_{handler}, stream_id_{stream_id}, name_{create_name(stream_id_)}, index_{index}, master_{master},
       publish_market_by_price_{publish_market_by_price(shared)}, publish_trade_summary_{publish_trade_summary(shared)},
-      supports_{get_supports(master_, publish_market_by_price_, publish_trade_summary_)},
-      exchange_{shared.settings.exchange}, fix_debug_{shared.settings.fix.debug},
-      fix_request_timeout_{shared.settings.fix.request_timeout}, fix_ping_freq_{shared.settings.fix.ping_freq},
+      supports_{get_supports(master_, publish_market_by_price_, publish_trade_summary_)}, exchange_{shared.settings.exchange},
+      fix_debug_{shared.settings.fix.debug}, fix_request_timeout_{shared.settings.fix.request_timeout}, fix_ping_freq_{shared.settings.fix.ping_freq},
       connection_factory_{create_connection_factory(shared.settings, context)},
-      connection_manager_{create_connection_manager(*this, shared.settings, *connection_factory_)},
-      encode_buffer_(shared.settings.misc.encode_buffer_size), decode_buffer_(shared.settings.misc.decode_buffer_size),
+      connection_manager_{create_connection_manager(*this, shared.settings, *connection_factory_)}, encode_buffer_(shared.settings.misc.encode_buffer_size),
+      decode_buffer_(shared.settings.misc.decode_buffer_size),
       counter_{
           .disconnect = create_metrics(shared.settings, name_, "disconnect"sv),
       },
@@ -173,18 +164,15 @@ MarketData::MarketData(
           .parse = create_metrics(shared.settings, name_, "parse"sv),
           .security_list = create_metrics(shared.settings, name_, "security_list"sv),
           .security_status = create_metrics(shared.settings, name_, "security_status"sv),
-          .market_data_incremental_refresh =
-              create_metrics(shared.settings, name_, "market_data_incremental_refresh"sv),
+          .market_data_incremental_refresh = create_metrics(shared.settings, name_, "market_data_incremental_refresh"sv),
           .market_data_request_reject = create_metrics(shared.settings, name_, "market_data_request_reject"sv),
-          .market_data_snapshot_full_refresh =
-              create_metrics(shared.settings, name_, "market_data_snapshot_full_refresh"sv),
+          .market_data_snapshot_full_refresh = create_metrics(shared.settings, name_, "market_data_snapshot_full_refresh"sv),
           .market_data_request = create_metrics(shared.settings, name_, "market_data_request"sv),
       },
       latency_{
           .ping = create_metrics(shared.settings, name_, "ping"sv),
       },
-      account_{account}, shared_{shared},
-      download_{fix_request_timeout_, [this](auto state) { return download(state); }} {
+      account_{account}, shared_{shared}, download_{fix_request_timeout_, [this](auto state) { return download(state); }} {
 }
 
 void MarketData::operator()(Event<Start> const &) {
@@ -198,8 +186,7 @@ void MarketData::operator()(Event<Stop> const &) {
 void MarketData::operator()(Event<Timer> const &event) {
   if (!(*connection_manager_).refresh(event.value.now))
     return;
-  if (last_logon_or_heartbeat_.count() && fix_request_timeout_.count() &&
-      (event.value.now - last_logon_or_heartbeat_) > fix_request_timeout_) {
+  if (last_logon_or_heartbeat_.count() && fix_request_timeout_.count() && (event.value.now - last_logon_or_heartbeat_) > fix_request_timeout_) {
     log::warn("*** DETECTED TIMEOUT ***"sv);
     log::info("closing connection"sv);
     (*connection_manager_).close();
@@ -411,16 +398,14 @@ void MarketData::subscribe(std::span<Symbol const> const &symbols) {
     return;
   log::info("Subscribe symbols=[{}]"sv, fmt::join(symbols, ","sv));
   auto market_depth = shared_.settings.fix.market_data_market_depth;
-  auto md_update_type =
-      market_depth ? roq::fix::MDUpdateType::INCREMENTAL_REFRESH : roq::fix::MDUpdateType::FULL_REFRESH;
+  auto md_update_type = market_depth ? roq::fix::MDUpdateType::INCREMENTAL_REFRESH : roq::fix::MDUpdateType::FULL_REFRESH;
   std::array<fix::MDReq, 3> md_entry_types{{
       {.md_entry_type = roq::fix::MDEntryType::BID},
       {.md_entry_type = roq::fix::MDEntryType::OFFER},
       {.md_entry_type = roq::fix::MDEntryType::TRADE},
   }};
   // deribit has acknowledged a limit on # of symbols per request
-  auto max_size = shared_.settings.fix.market_data_request_max_size ? shared_.settings.fix.market_data_request_max_size
-                                                                    : std::size(symbols);
+  auto max_size = shared_.settings.fix.market_data_request_max_size ? shared_.settings.fix.market_data_request_max_size : std::size(symbols);
   std::vector<fix::InstrmtMDReq> related_sym(max_size);
   for (size_t offset = 0;; offset += max_size) {
     if (std::size(symbols) <= offset)
@@ -455,8 +440,7 @@ void MarketData::unsubscribe(std::span<Symbol const> const &symbols) {
       {.md_entry_type = roq::fix::MDEntryType::TRADE},
   }};
   // deribit has acknowledged a limit on # of symbols per request
-  auto max_size = shared_.settings.fix.market_data_request_max_size ? shared_.settings.fix.market_data_request_max_size
-                                                                    : std::size(symbols);
+  auto max_size = shared_.settings.fix.market_data_request_max_size ? shared_.settings.fix.market_data_request_max_size : std::size(symbols);
   std::vector<fix::InstrmtMDReq> related_sym(max_size);
   for (size_t offset = 0;; offset += max_size) {
     if (std::size(symbols) <= offset)
@@ -625,9 +609,7 @@ void MarketData::operator()(Trace<fix::SecurityList> const &event, roq::fix::Hea
   auto &[trace_info, security_list] = event;
   log::info<2>("event={{header={}, security_list={}}}"sv, header, security_list);
   (*connection_manager_).touch(trace_info.source_receive_time);
-  auto combine = []<typename T>(T date_part, T time_part) {
-    return date_part < T::max() ? date_part + time_part : T::max();
-  };
+  auto combine = []<typename T>(T date_part, T time_part) { return date_part < T::max() ? date_part + time_part : T::max(); };
   if (std::size(security_list.no_related_sym) > 0) {
     auto counter = size_t{0};
     std::vector<Symbol> symbols;
@@ -639,8 +621,7 @@ void MarketData::operator()(Trace<fix::SecurityList> const &event, roq::fix::Hea
       auto security_type = fix::map_security_type(item.security_type);
       auto multiplier = compute_contracts_multiplier(item.contract_multiplier);
       auto option_type = roq::fix::map(item.put_or_call);
-      auto expiry_datetime =
-          combine(item.maturity_date, core::charconv::time_from_string<std::chrono::milliseconds>(item.maturity_time));
+      auto expiry_datetime = combine(item.maturity_date, core::charconv::time_from_string<std::chrono::milliseconds>(item.maturity_time));
       auto expiry_datetime_utc = expiry_datetime;
       auto reference_data = ReferenceData{
           .stream_id = stream_id_,
@@ -829,8 +810,7 @@ void MarketData::operator()(Trace<fix::MarketDataRequestReject> const &event, ro
 
 void MarketData::operator()(Trace<fix::MarketDataSnapshotFullRefresh> const &event, roq::fix::Header const &header) {
   auto &[trace_info, market_data_snapshot_full_refresh] = event;
-  log::info<3>(
-      "event={{header={}, market_data_snapshot_full_refresh={}}}"sv, header, market_data_snapshot_full_refresh);
+  log::info<3>("event={{header={}, market_data_snapshot_full_refresh={}}}"sv, header, market_data_snapshot_full_refresh);
   (*connection_manager_).touch(trace_info.source_receive_time);
   auto symbol = market_data_snapshot_full_refresh.symbol;
   auto iter = latch_.find(symbol);

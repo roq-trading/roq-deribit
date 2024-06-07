@@ -39,8 +39,7 @@ auto const message_2 =
     "58=2889358\00110=087\001"sv;
 }  // namespace
 
-void BM_fix_market_data_increment_refresh_parse_message_1(
-    benchmark::State &state) {  // cppcheck-suppress constParameterCallback
+void BM_fix_market_data_increment_refresh_parse_message_1(benchmark::State &state) {  // cppcheck-suppress constParameterCallback
   std::vector<std::byte> buffer(8192);
   uint64_t processed = 0;
   auto parser = [&](auto &message_2) {
@@ -55,8 +54,7 @@ void BM_fix_market_data_increment_refresh_parse_message_1(
 
 BENCHMARK(BM_fix_market_data_increment_refresh_parse_message_1);
 
-void BM_fix_market_data_increment_refresh_parse_message_2(
-    benchmark::State &state) {  // cppcheck-suppress constParameterCallback
+void BM_fix_market_data_increment_refresh_parse_message_2(benchmark::State &state) {  // cppcheck-suppress constParameterCallback
   std::vector<std::byte> buffer(8192);
   uint64_t processed = 0;
   auto parser = [&](auto &message_2) {

@@ -85,8 +85,7 @@ auto create_connection_manager(auto &handler, auto &settings, auto &connection_f
 }
 
 struct create_metrics final : public core::metrics::Factory {
-  explicit create_metrics(auto &settings, auto const &group, auto const &function)
-      : core::metrics::Factory(settings.app.name, group, function) {}
+  explicit create_metrics(auto &settings, auto const &group, auto const &function) : core::metrics::Factory(settings.app.name, group, function) {}
 };
 }  // namespace
 
@@ -95,8 +94,7 @@ struct create_metrics final : public core::metrics::Factory {
 OrderEntry::OrderEntry(Handler &handler, io::Context &context, uint16_t stream_id, Account &account, Shared &shared)
     : handler_{handler}, stream_id_{stream_id}, name_{create_name(stream_id_, account.name)},
       connection_factory_{create_connection_factory(shared.settings, context)},
-      connection_manager_{create_connection_manager(*this, shared.settings, *connection_factory_)},
-      decode_buffer_(shared.settings.misc.decode_buffer_size),
+      connection_manager_{create_connection_manager(*this, shared.settings, *connection_factory_)}, decode_buffer_(shared.settings.misc.decode_buffer_size),
       counter_{
           .disconnect = create_metrics(shared.settings, name_, "disconnect"sv),
       },
@@ -111,8 +109,7 @@ OrderEntry::OrderEntry(Handler &handler, io::Context &context, uint16_t stream_i
       latency_{
           .ping = create_metrics(shared.settings, name_, "ping"sv),
       },
-      account_{account}, shared_{shared},
-      download_{shared.settings.fix.request_timeout, [this](auto state) { return download(state); }} {
+      account_{account}, shared_{shared}, download_{shared.settings.fix.request_timeout, [this](auto state) { return download(state); }} {
 }
 
 void OrderEntry::operator()(Event<Start> const &) {
@@ -159,8 +156,7 @@ void OrderEntry::operator()(Event<Timer> const &event) {
   }
 }
 
-uint16_t OrderEntry::operator()(
-    Event<CreateOrder> const &event, server::oms::Order const &order, std::string_view const &request_id) {
+uint16_t OrderEntry::operator()(Event<CreateOrder> const &event, server::oms::Order const &order, std::string_view const &request_id) {
   if (!ready()) [[unlikely]]
     throw server::oms::NotReady{"not ready"sv};
   auto &[message_info, create_order] = event;
@@ -717,8 +713,7 @@ auto find_liquidity_ind(auto const &fills) {
 //   last traded is expected (downstream) to be the sum of all fills for this update
 //   Deribit reports only the *last* fill, but includes all fills as well
 //   we will therefore replace these values, when possible
-std::pair<double, double> compute_last_traded(
-    auto const last_traded_quantity, auto const last_traded_price, auto const &fills) {
+std::pair<double, double> compute_last_traded(auto const last_traded_quantity, auto const last_traded_price, auto const &fills) {
   if (std::empty(fills))
     return {last_traded_quantity, last_traded_price};
   double sum_quantity = 0.0, sum_quantity_price = 0.0;
@@ -749,16 +744,13 @@ void OrderEntry::operator()(Trace<fix::ExecutionReport> const &event, roq::fix::
       break;
     case ORDERS: {
       auto count = execution_report.tot_num_reports;
-      log::info<1>(
-          R"(Downloading {} execution reports (request_id="{}")"sv, count, execution_report.mass_status_req_id);
+      log::info<1>(R"(Downloading {} execution reports (request_id="{}")"sv, count, execution_report.mass_status_req_id);
       download_.update(OrderEntryState::ORDERS, count);
       return;  // this is not an ordinary execution report
     }
     default:
       log::fatal(
-          R"(Unexpected: mass_status_req_type={}, mass_status_req_id="{}")"sv,
-          execution_report.mass_status_req_type,
-          execution_report.mass_status_req_id);
+          R"(Unexpected: mass_status_req_type={}, mass_status_req_id="{}")"sv, execution_report.mass_status_req_type, execution_report.mass_status_req_id);
       break;
   }
   // convenience
@@ -785,8 +777,7 @@ void OrderEntry::operator()(Trace<fix::ExecutionReport> const &event, roq::fix::
   auto request_type = compute_request_type(exec_type, ord_status);
   auto request_status = compute_request_status(exec_type, ord_status);
   auto error = fix::map_error(execution_report.text);
-  auto [last_traded_quantity, last_traded_price] =
-      compute_last_traded(execution_report.last_qty, execution_report.last_px, execution_report.no_fills);
+  auto [last_traded_quantity, last_traded_price] = compute_last_traded(execution_report.last_qty, execution_report.last_px, execution_report.no_fills);
   auto update_type = compute_update_type(download_);
   // note!
   // we have very little information to match requests as we can't rewrite ClOrdID
@@ -975,8 +966,7 @@ void OrderEntry::operator()(Trace<fix::Reject> const &event, roq::fix::Header co
   } else if (reject.session_reject_reason == "99"sv && reject.text == "connection_too_slow"sv) {
     log::warn(R"(closing connection (reason: "{}"))"sv, reject.text);
     (*connection_manager_).close();
-  } else if (
-      reject.ref_msg_type == roq::fix::MsgType::ORDER_MASS_CANCEL_REQUEST && reject.text == "rate_limit_exceeded"sv) {
+  } else if (reject.ref_msg_type == roq::fix::MsgType::ORDER_MASS_CANCEL_REQUEST && reject.text == "rate_limit_exceeded"sv) {
     // ???
     log::warn(R"(closing connection (reason: "{}"))"sv, reject.text);
     (*connection_manager_).close();
@@ -993,13 +983,10 @@ void OrderEntry::operator()(Trace<fix::OrderMassCancelReport> const &event, roq:
   switch (order_mass_cancel_report.mass_cancel_response) {
     using enum roq::fix::MassCancelResponse;
     case CANCEL_REQUEST_REJECTED:
-      log::warn(
-          R"(*** CANCEL ALL ORDERS FAILED, REASON="{}" ***)"sv, order_mass_cancel_report.mass_cancel_reject_reason);
+      log::warn(R"(*** CANCEL ALL ORDERS FAILED, REASON="{}" ***)"sv, order_mass_cancel_report.mass_cancel_reject_reason);
       break;
     default:
-      log::info(
-          "*** CANCEL ALL ORDERS SUCCEEDED, TOTAL_AFFECTED_ORDERS={} ***"sv,
-          order_mass_cancel_report.total_affected_orders);
+      log::info("*** CANCEL ALL ORDERS SUCCEEDED, TOTAL_AFFECTED_ORDERS={} ***"sv, order_mass_cancel_report.total_affected_orders);
   }
   auto status = [&]() {
     switch (order_mass_cancel_report.mass_cancel_response) {
