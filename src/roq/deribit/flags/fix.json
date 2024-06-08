@@ -71,21 +71,18 @@
       "name": "test_order_disconnect",
       "type": "std/nanoseconds",
       "validator": "roq::flags::validators::TimePeriod",
-      "default": "{}",
       "description": "(TEST) Disconnect order stream if silent for this period"
     },
     {
       "name": "test_order_logon",
       "type": "std/nanoseconds",
       "validator": "roq::flags::validators::TimePeriod",
-      "default": "{}",
       "description": "(TEST) Logon order stream after this period"
     },
     {
       "name": "test_market_data_disconnect",
       "type": "std/nanoseconds",
       "validator": "roq::flags::validators::TimePeriod",
-      "default": "{}",
       "description": "(TEST) Disconnect market data stream after this period"
     }
   ]

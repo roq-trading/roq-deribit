@@ -33,17 +33,17 @@ include(RoqAutogen)
 
 set(AUTOGEN_SCHEMAS market_data_state.json order_entry_state.json web_socket_state.json drop_copy_state.json)
 
-roq_autogen(
+roq_autogen_hpp(
   OUTPUT
   AUTOGEN_HEADERS
-  NAMESPACE
-  "roq/deribit"
-  OUTPUT_TYPE
-  "state"
-  FILE_TYPE
-  "hpp"
   SOURCES
-  ${AUTOGEN_SCHEMAS})
+  ${AUTOGEN_SCHEMAS}
+  SCHEMA_DIR
+  ${SCHEMA_DIR}
+  TEMPLATE_DIR
+  ${TEMPLATE_DIR}
+  TEMPLATE_TYPE
+  "state")
 
 add_custom_target(autogen-headers ALL DEPENDS ${AUTOGEN_HEADERS})
 

@@ -749,6 +749,7 @@ void OrderEntry::operator()(Trace<fix::ExecutionReport> const &event, roq::fix::
       return;  // this is not an ordinary execution report
     }
     default:
+      log::warn("execution_report={}"sv, execution_report);
       log::fatal(
           R"(Unexpected: mass_status_req_type={}, mass_status_req_id="{}")"sv, execution_report.mass_status_req_type, execution_report.mass_status_req_id);
       break;
