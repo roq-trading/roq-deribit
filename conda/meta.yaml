@@ -25,6 +25,8 @@ requirements:
     - jinja2
     - make
     - pkg-config
+    - roq-autogen
+    - roq-schema
   host:
     - catch2
     - fmt

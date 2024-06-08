@@ -41,31 +41,31 @@ set(AUTOGEN_SCHEMAS
     user_request.json
     user_response.json)
 
-roq_autogen(
+roq_autogen_hpp(
   OUTPUT
   AUTOGEN_HEADERS
-  NAMESPACE
-  "roq/deribit/fix"
-  OUTPUT_TYPE
-  "fix"
-  FILE_TYPE
-  "hpp"
   SOURCES
-  ${AUTOGEN_SCHEMAS})
+  ${AUTOGEN_SCHEMAS}
+  SCHEMA_DIR
+  ${SCHEMA_DIR}
+  TEMPLATE_DIR
+  ${TEMPLATE_DIR}
+  TEMPLATE_TYPE
+  "fix")
 
 add_custom_target(autogen-fix-headers ALL DEPENDS ${AUTOGEN_HEADERS})
 
-roq_autogen(
+roq_autogen_cpp(
   OUTPUT
   AUTOGEN_SOURCES
-  NAMESPACE
-  "roq/deribit/fix"
-  OUTPUT_TYPE
-  "fix"
-  FILE_TYPE
-  "cpp"
   SOURCES
-  ${AUTOGEN_SCHEMAS})
+  ${AUTOGEN_SCHEMAS}
+  SCHEMA_DIR
+  ${SCHEMA_DIR}
+  TEMPLATE_DIR
+  ${TEMPLATE_DIR}
+  TEMPLATE_TYPE
+  "fix")
 
 roq_gitignore(OUTPUT .gitignore SOURCES ${TARGET_NAME} ${AUTOGEN_HEADERS} ${AUTOGEN_SOURCES})
 
