@@ -7,7 +7,10 @@
       "name": "address",
       "type": "std/string",
       "array": "std/vector",
-      "default": "239.111.111.1,239.111.111.3",
+      "default": [
+        "239.111.111.1",
+        "239.111.111.3"
+      ],
       "description": "List of multicast addresses (comma-separated)"
     },
     {
