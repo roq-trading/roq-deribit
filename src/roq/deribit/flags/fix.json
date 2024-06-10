@@ -6,21 +6,21 @@
     {
       "name": "uri",
       "type": "roq/io/web/URI",
-      "validator": "roq::core::flags::URI",
+      "validator": "roq/core/flags/URI",
       "default": "tcp://test.deribit.com:9881",
       "description": "Exchange end-point"
     },
     {
       "name": "ping_freq",
       "type": "std/nanoseconds",
-      "validator": "roq::flags::validators::TimePeriod",
+      "validator": "roq/flags/validators/TimePeriod",
       "default": "5s",
       "description": "Ping frequency"
     },
     {
       "name": "request_timeout",
       "type": "std/nanoseconds",
-      "validator": "roq::flags::validators::TimePeriod",
+      "validator": "roq/flags/validators/TimePeriod",
       "default": "15s",
       "description": "Request timeout"
     },
@@ -70,19 +70,19 @@
     {
       "name": "test_order_disconnect",
       "type": "std/nanoseconds",
-      "validator": "roq::flags::validators::TimePeriod",
+      "validator": "roq/flags/validators/TimePeriod",
       "description": "(TEST) Disconnect order stream if silent for this period"
     },
     {
       "name": "test_order_logon",
       "type": "std/nanoseconds",
-      "validator": "roq::flags::validators::TimePeriod",
+      "validator": "roq/flags/validators/TimePeriod",
       "description": "(TEST) Logon order stream after this period"
     },
     {
       "name": "test_market_data_disconnect",
       "type": "std/nanoseconds",
-      "validator": "roq::flags::validators::TimePeriod",
+      "validator": "roq/flags/validators/TimePeriod",
       "description": "(TEST) Disconnect market data stream after this period"
     }
   ]
