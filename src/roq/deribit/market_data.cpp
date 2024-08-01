@@ -611,7 +611,7 @@ void MarketData::operator()(Trace<fix::SecurityList> const &event, roq::fix::Hea
   (*connection_manager_).touch(trace_info.source_receive_time);
   auto combine = []<typename T>(T date_part, T time_part) { return date_part < T::max() ? date_part + time_part : T::max(); };
   if (std::size(security_list.no_related_sym) > 0) {
-    auto counter = size_t{0};
+    size_t counter = 0;
     std::vector<Symbol> symbols;
     symbols.reserve(std::size(security_list.no_related_sym));
     for (auto &item : security_list.no_related_sym) {

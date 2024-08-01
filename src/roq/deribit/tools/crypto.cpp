@@ -25,7 +25,7 @@ namespace tools {
 
 namespace {
 constexpr auto const CHARSET_DATA = "abcdefghijklmnopqrstuvwxyz0123456789"sv;
-constexpr auto const RANDOM_BYTES = size_t{32};
+constexpr size_t const RANDOM_BYTES = 32;
 
 static_assert(std::size(CHARSET_DATA) == 36);
 
