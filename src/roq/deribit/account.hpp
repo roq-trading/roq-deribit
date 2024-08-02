@@ -17,7 +17,7 @@ namespace deribit {
 struct Account final {
   Account(Config const &, std::string_view const &name);
 
-  Account(Account &&) = delete;
+  Account(Account &&) = default;
   Account(Account const &) = delete;
 
   std::string create_nonce();

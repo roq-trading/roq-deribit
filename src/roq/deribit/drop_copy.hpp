@@ -47,7 +47,7 @@ struct DropCopy final : public web::socket::Client::Handler, public core::jsonrp
 
   DropCopy(Handler &, io::Context &, uint16_t stream_id, Account &, Shared &);
 
-  DropCopy(DropCopy &&) = delete;
+  DropCopy(DropCopy &&) = default;
   DropCopy(DropCopy const &) = delete;
 
   void operator()(Event<Start> const &);

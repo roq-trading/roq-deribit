@@ -63,8 +63,8 @@ struct MarketData final : public io::net::ConnectionManager::Handler {
 
   MarketData(Handler &, io::Context &, uint16_t stream_id, Account &, Shared &, size_t index, bool master);
 
+  MarketData(MarketData &&) = default;
   MarketData(MarketData const &) = delete;
-  MarketData(MarketData &&) = delete;
 
   bool ready() const { return ready_; }
 

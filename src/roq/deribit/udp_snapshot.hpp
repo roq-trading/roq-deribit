@@ -29,8 +29,8 @@ struct UDPSnapshot final : public io::net::udp::Receiver::Handler, public sbe::P
 
   UDPSnapshot(Handler &, io::Context &, uint16_t stream_id, Shared &);
 
+  UDPSnapshot(UDPSnapshot &&) = default;
   UDPSnapshot(UDPSnapshot const &) = delete;
-  UDPSnapshot(UDPSnapshot &&) = delete;
 
   void operator()(Event<Start> const &);
   void operator()(Event<Stop> const &);

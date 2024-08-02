@@ -13,6 +13,9 @@ namespace deribit {
 struct Aggregator final {
   Aggregator() {}
 
+  Aggregator(Aggregator &&) = default;
+  Aggregator(Aggregator const &) = delete;
+
   void reset() {
     previous_instrument_id_ = {};
     previous_change_id_ = {};
