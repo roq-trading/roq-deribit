@@ -61,7 +61,6 @@ struct WebSocket final : public web::socket::Client::Handler, public core::jsonr
 
   WebSocket(Handler &, io::Context &, uint16_t stream_id, Account &, Shared &, size_t index, bool master);
 
-  WebSocket(WebSocket &&) = default;
   WebSocket(WebSocket const &) = delete;
 
   bool ready() const { return ready_; }

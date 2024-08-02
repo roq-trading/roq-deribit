@@ -26,7 +26,6 @@ namespace deribit {
 struct Shared final {
   Shared(server::Dispatcher &, Settings const &);
 
-  Shared(Shared &&) = default;
   Shared(Shared const &) = delete;
 
   bool has_multicast() const { return multicast_; }

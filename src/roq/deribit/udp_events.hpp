@@ -31,7 +31,6 @@ struct UDPEvents final : public io::net::udp::Receiver::Handler, public sbe::Par
 
   UDPEvents(Handler &, io::Context &, uint16_t stream_id, Shared &);
 
-  UDPEvents(UDPEvents &&) = default;
   UDPEvents(UDPEvents const &) = delete;
 
   void operator()(Event<Start> const &);
