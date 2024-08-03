@@ -2,8 +2,6 @@
 
 #include "roq/deribit/drop_copy.hpp"
 
-#include <cppitertools/enumerate.hpp>
-
 #include "roq/mask.hpp"
 
 #include "roq/utils/compare.hpp"
@@ -496,7 +494,8 @@ void DropCopy::operator()(Trace<json::Portfolio> const &event) {
 void DropCopy::operator()(Trace<json::Changes> const &event) {
   auto &[trace_info, changes] = event;
   auto &trades = changes.trades;
-  for (auto &&[i, trade] : iter::enumerate(trades)) {
+  for (size_t i = 0; i < std::size(trades); ++i) {
+    auto &trade = trades[i];
     auto is_last = i == (std::size(trades) - 1);
     create_trace_and_dispatch(*this, event.trace_info, std::as_const(trade), false, is_last);
   }
@@ -505,7 +504,8 @@ void DropCopy::operator()(Trace<json::Changes> const &event) {
 void DropCopy::operator()(Trace<json::Trades> const &event) {
   auto &[trace_info, trades] = event;
   auto &trades_2 = trades.trades;
-  for (auto &&[i, trade] : iter::enumerate(trades_2)) {
+  for (size_t i = 0; i < std::size(trades_2); ++i) {
+    auto &trade = trades_2[i];
     auto is_last = i == (std::size(trades_2) - 1);
     create_trace_and_dispatch(*this, event.trace_info, std::as_const(trade), true, is_last);
   }
