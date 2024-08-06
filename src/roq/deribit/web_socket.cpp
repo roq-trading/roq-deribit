@@ -18,6 +18,7 @@
 #include "roq/deribit/utils.hpp"
 
 #include "roq/deribit/json/error.hpp"
+#include "roq/deribit/json/map.hpp"
 #include "roq/deribit/json/method.hpp"
 #include "roq/deribit/json/request_type.hpp"
 #include "roq/deribit/json/utils.hpp"
@@ -580,7 +581,7 @@ void WebSocket::operator()(Trace<json::Ticker> const &event) {
     auto &[trace_info, ticker] = event;
     log::info<3>("ticker={}"sv, ticker);
     (*connection_).touch(trace_info.source_receive_time);
-    auto trading_status = json::map(ticker.state);
+    auto trading_status = json::map<TradingStatus>(ticker.state);
     auto &item = trading_status_[ticker.instrument_name];
     if (trading_status != TradingStatus{} && utils::update(item, trading_status)) {
       auto market_status = MarketStatus{

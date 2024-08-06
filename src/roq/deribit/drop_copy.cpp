@@ -15,6 +15,7 @@
 #include "roq/core/metrics/factory.hpp"
 
 #include "roq/deribit/json/error.hpp"
+#include "roq/deribit/json/map.hpp"
 #include "roq/deribit/json/method.hpp"
 #include "roq/deribit/json/request_type.hpp"
 #include "roq/deribit/json/utils.hpp"
@@ -531,19 +532,17 @@ void DropCopy::operator()(Trace<json::Trade> const &event, bool is_download, boo
   auto &trace_info = event.trace_info;
   auto &trade = event.value;
   log::info<1>("trade={}"sv, trade);
-  auto side = json::map(trade.direction);
   auto iter = shared_.multiplier.find(trade.instrument_name);
   if (iter == std::end(shared_.multiplier))
     log::warn(R"(*** NO MULTIPLIER FOR SYMBOL="{}" ***)"sv, trade.instrument_name);
   auto multiplier = iter == std::end(shared_.multiplier) ? 1.0 : (*iter).second;  // XXX not good
   auto quantity = trade.amount * multiplier;
-  auto liquidity = json::map(trade.liquidity);
   auto fill = Fill{
       .exchange_time_utc = trade.timestamp,
       .external_trade_id = {},
       .quantity = quantity,
       .price = trade.price,
-      .liquidity = liquidity,
+      .liquidity = json::Map{trade.liquidity},
       .quote_quantity = NaN,
       .commission_quantity = NaN,
       .commission_currency = {},
@@ -557,7 +556,7 @@ void DropCopy::operator()(Trace<json::Trade> const &event, bool is_download, boo
       .order_id = {},
       .exchange = shared_.settings.exchange,
       .symbol = trade.instrument_name,
-      .side = side,
+      .side = json::Map{trade.direction},
       .position_effect = {},
       .margin_mode = {},
       .create_time_utc = trade.timestamp,
