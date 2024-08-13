@@ -68,7 +68,7 @@ auto create_name(auto stream_id, auto const &account) {
 auto create_connection_factory(auto &settings, auto &context) {
   auto uri = settings.fix.uri;
   auto config = io::net::ConnectionFactory::Config{
-      .interface = {},
+      .interface = settings.misc.test_local_interface,
       .uris = {&uri, 1},
       .validate_certificate = settings.net.tls_validate_certificate,
   };

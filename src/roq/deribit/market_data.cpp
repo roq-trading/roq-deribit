@@ -70,7 +70,7 @@ auto get_supports(auto master, auto publish_market_by_price, auto publish_trade_
 auto create_connection_factory(auto &settings, auto &context) {
   auto uri = settings.fix.uri;
   auto config = io::net::ConnectionFactory::Config{
-      .interface = {},
+      .interface = settings.misc.test_local_interface,
       .uris = {&uri, 1},
       .validate_certificate = settings.net.tls_validate_certificate,
   };

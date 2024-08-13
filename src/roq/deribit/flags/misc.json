@@ -33,6 +33,11 @@
       "type": "std/string",
       "description": "Multicast local interface",
       "comment": "ONLY HERE BECAUSE OF multicast_ PREFIX"
+    },
+    {
+      "name": "test_local_interface",
+      "type": "std/string",
+      "description": "Local interface"
     }
   ]
 }
