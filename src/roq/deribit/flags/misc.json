@@ -38,6 +38,11 @@
       "name": "test_local_interface",
       "type": "std/string",
       "description": "Local interface"
+    },
+    {
+      "name": "test_io_completion",
+      "type": "std/bool",
+      "description": "Test IO completion"
     }
   ]
 }

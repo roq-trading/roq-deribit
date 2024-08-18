@@ -119,6 +119,7 @@ struct OrderEntry final : public io::net::ConnectionManager::Handler {
   std::unique_ptr<io::net::ConnectionManager> const connection_manager_;
   // buffers
   std::vector<std::byte> decode_buffer_;
+  std::vector<std::byte> encode_buffer_2_;
   std::string encode_buffer_;
   // metrics
   struct {

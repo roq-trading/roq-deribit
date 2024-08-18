@@ -80,6 +80,8 @@ auto create_connection_manager(auto &handler, auto &settings, auto &connection_f
       .connection_timeout = settings.net.connection_timeout,
       .disconnect_on_idle_timeout = {},
       .always_reconnect = true,
+      .encode_buffer_size = settings.misc.encode_buffer_size,
+      .max_buffers = {},
   };
   return io::net::ConnectionManager::create(handler, connection_factory, config);
 }
@@ -95,6 +97,7 @@ OrderEntry::OrderEntry(Handler &handler, io::Context &context, uint16_t stream_i
     : handler_{handler}, stream_id_{stream_id}, name_{create_name(stream_id_, account.name)},
       connection_factory_{create_connection_factory(shared.settings, context)},
       connection_manager_{create_connection_manager(*this, shared.settings, *connection_factory_)}, decode_buffer_(shared.settings.misc.decode_buffer_size),
+      encode_buffer_2_(shared.settings.misc.encode_buffer_size),
       counter_{
           .disconnect = create_metrics(shared.settings, name_, "disconnect"sv),
       },
@@ -1028,21 +1031,28 @@ uint64_t OrderEntry::send(T const &event) {
 
 template <typename T>
 uint64_t OrderEntry::send(T const &event, std::chrono::nanoseconds sending_time) {
-  (*connection_manager_).send_with_completion([&](auto &buffer) {
-    buffer.resize(4096);
-    auto header = roq::fix::Header{
-        .version = FIX_VERSION,
-        .msg_type = T::MSG_TYPE,
-        .sender_comp_id = SENDER_COMP_ID,
-        .target_comp_id = TARGET_COMP_ID,
-        .msg_seq_num = ++outbound_.msg_seq_num,  // note!
-        .sending_time = sending_time,
-    };
-    auto message = event.encode(header, buffer);
+  auto helper = [&](auto &message) { log::info("{}"sv, utils::debug::fix::Message{message}); };
+  auto header = roq::fix::Header{
+      .version = FIX_VERSION,
+      .msg_type = T::MSG_TYPE,
+      .sender_comp_id = SENDER_COMP_ID,
+      .target_comp_id = TARGET_COMP_ID,
+      .msg_seq_num = ++outbound_.msg_seq_num,  // note!
+      .sending_time = sending_time,
+  };
+  if (shared_.settings.misc.test_io_completion) {
+    (*connection_manager_).send_with_completion([&](auto &buffer) {
+      auto message = event.encode(header, buffer);
+      if (shared_.settings.fix.debug) [[unlikely]]
+        helper(message);
+      return std::size(message);
+    });
+  } else {
+    auto message = event.encode(header, encode_buffer_2_);
     if (shared_.settings.fix.debug) [[unlikely]]
-      log::info("{}"sv, utils::debug::fix::Message{message});
-    return std::size(message);
-  });
+      helper(message);
+    (*connection_manager_).send(message);
+  }
   return outbound_.msg_seq_num;
 }
 
