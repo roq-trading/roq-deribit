@@ -80,8 +80,6 @@ auto create_connection_manager(auto &handler, auto &settings, auto &connection_f
       .connection_timeout = settings.net.connection_timeout,
       .disconnect_on_idle_timeout = {},
       .always_reconnect = true,
-      .encode_buffer_size = settings.misc.encode_buffer_size,
-      .max_buffers = {},
   };
   return io::net::ConnectionManager::create(handler, connection_factory, config);
 }
@@ -361,6 +359,9 @@ void OrderEntry::operator()(io::net::ConnectionManager::Read const &) {
     buffer = buffer.subspan(bytes);
   }
   (*connection_manager_).drain(total_bytes);
+}
+
+void OrderEntry::operator()(io::net::ConnectionManager::Write const &) {
 }
 
 void OrderEntry::operator()(ConnectionStatus status) {
@@ -1040,19 +1041,12 @@ uint64_t OrderEntry::send(T const &event, std::chrono::nanoseconds sending_time)
       .msg_seq_num = ++outbound_.msg_seq_num,  // note!
       .sending_time = sending_time,
   };
-  if (shared_.settings.misc.test_io_completion) {
-    (*connection_manager_).send_with_completion([&](auto &buffer) {
-      auto message = event.encode(header, buffer);
-      if (shared_.settings.fix.debug) [[unlikely]]
-        helper(message);
-      return std::size(message);
-    });
-  } else {
-    auto message = event.encode(header, encode_buffer_2_);
+  (*connection_manager_).send_with_completion([&](auto &buffer) {
+    auto message = event.encode(header, buffer);
     if (shared_.settings.fix.debug) [[unlikely]]
       helper(message);
-    (*connection_manager_).send(message);
-  }
+    return std::size(message);
+  });
   return outbound_.msg_seq_num;
 }
 
