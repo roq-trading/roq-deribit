@@ -924,7 +924,7 @@ void MarketData::send(T const &event, std::chrono::nanoseconds sending_time) {
       .msg_seq_num = ++outbound_.msg_seq_num,  // note!
       .sending_time = sending_time,
   };
-  (*connection_manager_).send_with_completion([&](auto &buffer) {
+  (*connection_manager_).send([&](auto &buffer) {
     auto message = event.encode(header, buffer);
     if (fix_debug_) [[unlikely]]
       helper(message);
