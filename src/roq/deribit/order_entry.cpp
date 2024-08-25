@@ -1041,12 +1041,15 @@ uint64_t OrderEntry::send(T const &event, std::chrono::nanoseconds sending_time)
       .msg_seq_num = ++outbound_.msg_seq_num,  // note!
       .sending_time = sending_time,
   };
-  (*connection_manager_).send([&](auto &buffer) {
-    auto message = event.encode(header, buffer);
-    if (shared_.settings.fix.debug) [[unlikely]]
-      helper(message);
-    return std::size(message);
-  });
+  if ((*connection_manager_).send([&](auto &buffer) {
+        auto message = event.encode(header, buffer);
+        if (shared_.settings.fix.debug) [[unlikely]]
+          helper(message);
+        return std::size(message);
+      })) {
+  } else {
+    log::warn("HERE"sv);
+  }
   return outbound_.msg_seq_num;
 }
 
