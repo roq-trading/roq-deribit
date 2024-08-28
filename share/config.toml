@@ -11,9 +11,9 @@ symbols = [
 
   [accounts.A1]
   master = true
+  symbols = [ ".*" ]
   login = "YOUR_DERIBIT_LOGIN_GOES_HERE"
   secret = "YOUR_DERIBIT_SECRET_GOES_HERE"
-  symbols = [ ".*" ]
 
 [users]
 
