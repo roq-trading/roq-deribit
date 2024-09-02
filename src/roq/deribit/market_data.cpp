@@ -17,8 +17,6 @@
 #include "roq/utils/debug/fix/message.hpp"
 #include "roq/utils/debug/hex/message.hpp"
 
-#include "roq/core/charconv/datetime.hpp"
-
 #include "roq/core/metrics/factory.hpp"
 
 #include "roq/fix/reader.hpp"
@@ -625,7 +623,8 @@ void MarketData::operator()(Trace<fix::SecurityList> const &event, roq::fix::Hea
       auto security_type = fix::map_security_type(item.security_type);
       auto multiplier = compute_contracts_multiplier(item.contract_multiplier);
       auto option_type = roq::fix::map(item.put_or_call);
-      auto expiry_datetime = combine(item.maturity_date, core::charconv::time_from_string<std::chrono::milliseconds>(item.maturity_time));
+      auto expiry_time = utils::charconv::from_chars<std::chrono::milliseconds>(item.maturity_time, utils::charconv::Format::TIME);
+      auto expiry_datetime = combine(item.maturity_date, expiry_time);
       auto expiry_datetime_utc = expiry_datetime;
       auto reference_data = ReferenceData{
           .stream_id = stream_id_,
