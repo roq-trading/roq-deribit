@@ -8,7 +8,7 @@
 
 #include "roq/utils/update.hpp"
 
-#include "roq/core/charconv/number.hpp"
+#include "roq/utils/charconv/to_string.hpp"
 
 #include "roq/utils/debug/hex/message.hpp"
 
@@ -327,7 +327,7 @@ void UDPEvents::operator()(Trace<deribit_multicast::Trades> const &event, sbe::F
                   .taker_order_id = {},
                   .maker_order_id = {},
               };
-              core::charconv::to_string(std::back_inserter(trade.trade_id), value.tradeId());
+              utils::charconv::to_string(std::back_inserter(trade.trade_id), value.tradeId());
               result.emplace_back(std::move(trade));
             };
             trades.sbeRewind();

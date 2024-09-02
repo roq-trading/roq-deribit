@@ -13,10 +13,11 @@
 #include "roq/utils/safe_cast.hpp"
 #include "roq/utils/update.hpp"
 
+#include "roq/utils/charconv/from_chars.hpp"
+#include "roq/utils/charconv/to_string.hpp"
+
 #include "roq/utils/debug/fix/message.hpp"
 #include "roq/utils/debug/hex/message.hpp"
-
-#include "roq/core/charconv.hpp"
 
 #include "roq/core/metrics/factory.hpp"
 
@@ -425,7 +426,7 @@ void OrderEntry::send_heartbeat(std::string_view const &test_req_id) {
 void OrderEntry::send_test_request(std::chrono::nanoseconds now) {
   // request_id is current time
   encode_buffer_.clear();
-  core::charconv::to_string(std::back_inserter(encode_buffer_), now.count());
+  utils::charconv::to_string(std::back_inserter(encode_buffer_), now.count());
   auto test_request = fix::TestRequest{
       .test_req_id = encode_buffer_,
   };
@@ -559,7 +560,7 @@ void OrderEntry::operator()(Trace<fix::Heartbeat> const &event, roq::fix::Header
   log::info<3>("event={{header={}, heartbeat={}}}"sv, header, heartbeat);
   last_logon_or_heartbeat_ = {};
   if (!std::empty(heartbeat.test_req_id)) {
-    auto send_time = std::chrono::nanoseconds{core::from_chars<uint64_t>(heartbeat.test_req_id)};
+    auto send_time = std::chrono::nanoseconds{utils::charconv::from_chars<uint64_t>(heartbeat.test_req_id)};
     auto latency = (now - send_time) / 2;  // 1-way
     auto external_latency = ExternalLatency{
         .stream_id = stream_id_,
