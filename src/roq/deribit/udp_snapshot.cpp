@@ -6,9 +6,9 @@
 
 #include "roq/utils/debug/hex/message.hpp"
 
-#include "roq/io/network_address.hpp"
+#include "roq/utils/metrics/factory.hpp"
 
-#include "roq/core/metrics/factory.hpp"
+#include "roq/io/network_address.hpp"
 
 #include "roq/deribit/utils.hpp"
 
@@ -60,8 +60,8 @@ auto create_receiver(auto &handler, auto &settings, auto &context, auto port) {
   return receiver;
 }
 
-struct create_metrics final : public core::metrics::Factory {
-  explicit create_metrics(auto &settings, auto const &group, auto const &function) : core::metrics::Factory(settings.app.name, group, function) {}
+struct create_metrics final : public utils::metrics::Factory {
+  create_metrics(auto &settings, auto &group, auto const &function) : utils::metrics::Factory(settings.app.name, group, function) {}
 };
 }  // namespace
 

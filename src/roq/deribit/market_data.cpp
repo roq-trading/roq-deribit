@@ -14,10 +14,10 @@
 #include "roq/utils/charconv/from_chars.hpp"
 #include "roq/utils/charconv/to_string.hpp"
 
+#include "roq/utils/metrics/factory.hpp"
+
 #include "roq/utils/debug/fix/message.hpp"
 #include "roq/utils/debug/hex/message.hpp"
-
-#include "roq/core/metrics/factory.hpp"
 
 #include "roq/fix/reader.hpp"
 #include "roq/fix/utils.hpp"
@@ -85,8 +85,8 @@ auto create_connection_manager(auto &handler, auto &settings, auto &connection_f
   return io::net::ConnectionManager::create(handler, connection_factory, config);
 }
 
-struct create_metrics final : public core::metrics::Factory {
-  explicit create_metrics(auto &settings, auto const &group, auto const &function) : core::metrics::Factory(settings.app.name, group, function) {}
+struct create_metrics final : public utils::metrics::Factory {
+  create_metrics(auto &settings, auto &group, auto const &function) : utils::metrics::Factory(settings.app.name, group, function) {}
 };
 
 // following are used from several places
