@@ -31,8 +31,7 @@ target_link_libraries(
           roq-core::roq-core
           roq-logging::roq-logging
           fmt::fmt
-          benchmark::benchmark
-          ${RT_LIBRARIES})
+          benchmark::benchmark)
 
 if(ROQ_BUILD_TYPE STREQUAL "Release")
   set_target_properties(${TARGET_NAME} PROPERTIES LINK_FLAGS_RELEASE -s)
