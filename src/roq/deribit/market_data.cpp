@@ -607,6 +607,25 @@ void MarketData::operator()(Trace<fix::TestRequest> const &event, roq::fix::Head
   send_heartbeat(test_request.test_req_id);
 }
 
+// Roq: (seems wrong, sometimes)
+//   base_currency <= settl_currency
+//   quote_currency <= currency
+//
+// Deribit: (FIX)
+//   symbol                ETH_BTC  BTC_USDT  BTC-PERPETUAL  BTC-27DEC24  BTC-27DEC24-62000-P  BTC_USDC-PERPETUAL
+//   security_type         FXSPOT   FXSPOT    FUT            FUT          OPT                  FUT
+//   strike_currency                                                      USD
+//   currency              ETH      BTC       USD (???)      USD (???)    BTC                  USDC
+//   settl_currency        BTC      USDT      USD            USD          USD                  USDC
+//   comm_currency         ETH_BTC  BTC_USDT  BTC            BTC          BTC                  USDC
+//   price_quote_currency  BTC      USDT
+//
+//                                            inverse        inverse                           linear (??? no BTC ???)
+//
+//   base                  +ETH     +BTC      -BTC           -BTC         +BTC                 -BTC
+//   quote                 +BTC     +USDT     ?USD           ?USD         ?USD                 ?USDC
+//   settle                +BTC     +USDT     -BTC           -BTC         -BTC                 +USDC
+
 void MarketData::operator()(Trace<fix::SecurityList> const &event, roq::fix::Header const &header) {
   auto &[trace_info, security_list] = event;
   log::info<2>("event={{header={}, security_list={}}}"sv, header, security_list);
@@ -634,6 +653,7 @@ void MarketData::operator()(Trace<fix::SecurityList> const &event, roq::fix::Hea
           .security_type = security_type,
           .base_currency = item.settl_currency,
           .quote_currency = item.currency,
+          .settlement_currency = item.settl_currency,
           .margin_currency = {},
           .commission_currency = item.comm_currency,
           .tick_size = item.min_price_increment,
