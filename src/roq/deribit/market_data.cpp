@@ -625,6 +625,17 @@ void MarketData::operator()(Trace<fix::TestRequest> const &event, roq::fix::Head
 //   base                  +ETH     +BTC      -BTC           -BTC         +BTC                 -BTC
 //   quote                 +BTC     +USDT     ?USD           ?USD         ?USD                 ?USDC
 //   settle                +BTC     +USDT     -BTC           -BTC         -BTC                 +USDC
+//
+//
+//
+//                        JSON:                                                                  FIX:
+//                        base_currency  quote_currency  settlement_currency  counter_currency   currency  price_quote_currency  settl_currency  comm_currency
+//                                                                                               <15>      <1524>                <120>           <479>
+//
+// BTC_USDT               BTC            USDT                                 USDT               BTC       USDT                  USDT(?)         BTC_USDT(?)
+// BTC_USDC-PERPETUAL     BTC            USDC            USDC                 USDC               USDC(?)   (?)                   USDC            USDC
+// BTC-PERPETUAL          BTC            USD             BTC                  USD                USD(?)    (?)                   USD             BTC
+// BTC-27DEC24-62000-P    BTC            BTC             BTC                  USD                BTC       (?)                   USD             BTC
 
 void MarketData::operator()(Trace<fix::SecurityList> const &event, roq::fix::Header const &header) {
   auto &[trace_info, security_list] = event;
