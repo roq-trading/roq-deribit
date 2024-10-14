@@ -662,6 +662,7 @@ void MarketData::operator()(Trace<fix::SecurityList> const &event, roq::fix::Hea
           .symbol = symbol,
           .description = item.security_desc,
           .security_type = security_type,
+          .cfi_code = {},
           .base_currency = item.settl_currency,
           .quote_currency = item.currency,
           .settlement_currency = item.settl_currency,
