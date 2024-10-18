@@ -16,13 +16,15 @@ struct Frame final {
   uint16_t channel_id = {};
   uint32_t sequence_number = {};
 
-  static size_t size() { return 8; }
+  static constexpr size_t size() { return 8; }
 
   template <typename Callback>
-  static bool parse(std::span<std::byte const> const &buffer, Callback &&callback) {
+  static bool parse(std::span<std::byte const> const &buffer, Callback callback) {
     auto [result, frame] = parse_helper(buffer);
-    if (result)
-      callback(frame);
+    if (result) {
+      auto packet = buffer.subspan(sizeof(Frame));
+      callback(frame, packet);
+    }
     return result;
   }
 

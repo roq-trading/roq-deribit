@@ -9,9 +9,11 @@ add_subdirectory(sbe)
 set(SOURCES
     account.cpp
     application.cpp
+    channel.cpp
     config.cpp
     drop_copy.cpp
     gateway.cpp
+    instrument.cpp
     market_data.cpp
     order_entry.cpp
     settings.cpp

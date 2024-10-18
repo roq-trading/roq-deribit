@@ -504,7 +504,22 @@ void WebSocket::operator()(Trace<json::Instruments> const &event) {
       auto discard = shared_.discard_symbol(symbol);
       // needed by multicast
       auto multiplier = compute_contracts_multiplier(item.contract_size);
-      shared_.instruments.try_emplace(item.instrument_id, Instrument{item.instrument_name, item.contract_size, multiplier}, discard);
+      auto callback = [&]() -> Instrument {
+        if (!discard)
+          log::debug(
+              R"(CREATE instrument_id={}, instrument_name="{}", contract_size={}, multiplier={})"sv,
+              item.instrument_id,
+              item.instrument_name,
+              item.contract_size,
+              multiplier);
+        return {
+            item.instrument_name,
+            item.contract_size,
+            multiplier,
+            discard,
+        };
+      };
+      shared_.maybe_create_instrument(item.instrument_id, callback);
       if (discard)
         continue;
       if (shared_.all_symbols.emplace(symbol).second)

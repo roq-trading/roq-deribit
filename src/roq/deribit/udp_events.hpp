@@ -7,13 +7,13 @@
 #include "roq/utils/metrics/counter.hpp"
 #include "roq/utils/metrics/profile.hpp"
 
-#include "roq/io/buffer.hpp"
 #include "roq/io/context.hpp"
+
 #include "roq/io/net/udp/receiver.hpp"
 
 #include "roq/server.hpp"
 
-#include "roq/deribit/aggregator.hpp"
+#include "roq/deribit/channel.hpp"
 #include "roq/deribit/shared.hpp"
 
 #include "roq/deribit/sbe/parser.hpp"
@@ -45,21 +45,26 @@ struct UDPEvents final : public io::net::udp::Receiver::Handler, public sbe::Par
   void operator()(io::net::udp::Receiver::Error const &) override;
 
  protected:
-  // events
+  // sbe::Parser::Handler
+  bool operator()(sbe::Frame const &) override;
   void operator()(Trace<deribit_multicast::Instrument> const &, sbe::Frame const &) override;
   void operator()(Trace<deribit_multicast::Book> const &, sbe::Frame const &) override;
-  void operator()(Trace<deribit_multicast::Ticker> const &, sbe::Frame const &) override;
   void operator()(Trace<deribit_multicast::Trades> const &, sbe::Frame const &) override;
-  // snapshot
+  void operator()(Trace<deribit_multicast::Ticker> const &, sbe::Frame const &) override;
   void operator()(Trace<deribit_multicast::Snapshot> const &, sbe::Frame const &) override;
+  void operator()(Trace<deribit_multicast::SnapshotStart> const &, sbe::Frame const &) override;
+  void operator()(Trace<deribit_multicast::SnapshotEnd> const &, sbe::Frame const &) override;
+  void operator()(Trace<deribit_multicast::ComboLegs> const &, sbe::Frame const &) override;
+  void operator()(Trace<deribit_multicast::PriceIndex> const &, sbe::Frame const &) override;
+  void operator()(Trace<deribit_multicast::Rfq> const &, sbe::Frame const &) override;
+  void operator()(Trace<deribit_multicast::InstrumentV2> const &, sbe::Frame const &) override;
+
+  // utils
 
   void publish_stream_status(TraceInfo const &, ConnectionStatus connection_status);
 
-  // utils
-  template <typename T, typename U>
-  static void emplace_back(T const &item, double multiplier, U &bids, U &asks);
-
-  Aggregator &get_aggregator(uint16_t channel_id);
+  template <typename Callback>
+  void get_channel(sbe::Frame const &, Callback);
 
  private:
   Handler &handler_;
@@ -72,8 +77,6 @@ struct UDPEvents final : public io::net::udp::Receiver::Handler, public sbe::Par
   Mask<SupportType> const supports_;
   // receiver
   std::unique_ptr<io::net::udp::Receiver> const receiver_;
-  // buffers
-  io::Buffer receive_buffer_;
   // metrics
   struct {
     utils::metrics::Counter disconnect;
@@ -86,7 +89,7 @@ struct UDPEvents final : public io::net::udp::Receiver::Handler, public sbe::Par
   ConnectionStatus connection_status_ = {};
   utils::unordered_map<uint32_t, uint32_t> last_ticker_;
   utils::unordered_map<uint32_t, uint32_t> last_trades_;
-  utils::unordered_map<uint16_t, Aggregator> aggregator_;
+  utils::unordered_map<uint16_t, Channel> channel_;
   // state
   std::chrono::nanoseconds last_update_time_ = {};
 };

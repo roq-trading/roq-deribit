@@ -9,118 +9,102 @@
 #include "roq/deribit/sbe/frame.hpp"
 #include "roq/deribit/sbe/utils.hpp"
 
-#include <iostream>
-
 using namespace std::literals;
 
 namespace roq {
 namespace deribit {
 namespace sbe {
 
+// === HELPERS ===
+
 namespace {
-auto dispatch_1000_instrument(auto &handler, auto &trace_info, auto &message, auto &frame) {
-  deribit_multicast::Instrument instrument{std::data(message), std::size(message)};
-  auto length = compute_length(instrument);
-  instrument.sbeRewind();  // note! important
-  create_trace_and_dispatch(handler, trace_info, instrument, frame);
-  return message.subspan(length);
+auto sbe_buffer(auto &buffer) {
+  return std::span{const_cast<char *>(reinterpret_cast<char const *>(std::data(buffer))), std::size(buffer)};
 }
 
-auto dispatch_1001_book(auto &handler, auto &trace_info, auto &message, auto &frame) {
-  deribit_multicast::Book book{std::data(message), std::size(message)};
-  auto length = compute_length(book);
-  book.sbeRewind();  // note! important
-  create_trace_and_dispatch(handler, trace_info, book, frame);
-  return message.subspan(length);
-}
-
-auto dispatch_1002_trades(auto &handler, auto &trace_info, auto &message, auto &frame) {
-  deribit_multicast::Trades trades{std::data(message), std::size(message)};
-  auto length = compute_length(trades);
-  trades.sbeRewind();  // note! important
-  create_trace_and_dispatch(handler, trace_info, trades, frame);
-  return message.subspan(length);
-}
-
-auto dispatch_1003_ticker(auto &handler, auto &trace_info, auto &message, auto &frame) {
-  deribit_multicast::Ticker ticker{std::data(message), std::size(message)};
-  auto length = compute_length(ticker);
-  ticker.sbeRewind();  // note! important
-  create_trace_and_dispatch(handler, trace_info, ticker, frame);
-  return message.subspan(length);
-}
-
-auto dispatch_1004_snapshot(auto &handler, auto &trace_info, auto &message, auto &frame) {
-  deribit_multicast::Snapshot snapshot{std::data(message), std::size(message)};
-  auto length = compute_length(snapshot);
-  snapshot.sbeRewind();  // note! important
-  create_trace_and_dispatch(handler, trace_info, snapshot, frame);
-  return message.subspan(length);
-}
-
-bool dispatch_helper(auto &handler, auto &trace_info, auto &message, auto &frame) {
-  while (true) {
-    deribit_multicast::MessageHeader header{std::data(message), std::size(message)};
-    auto template_id = header.templateId();
-    switch (header.templateId()) {
-      case 1000:
-        message = dispatch_1000_instrument(handler, trace_info, message, frame);
-        break;
-      case 1001:
-        message = dispatch_1001_book(handler, trace_info, message, frame);
-        break;
-      case 1002:
-        message = dispatch_1002_trades(handler, trace_info, message, frame);
-        break;
-      case 1003:
-        message = dispatch_1003_ticker(handler, trace_info, message, frame);
-        break;
-      case 1004:
-        message = dispatch_1004_snapshot(handler, trace_info, message, frame);
-        break;
-      default: {
-        log::warn("Unexpected: template_id={}"sv, template_id);
-        return true;
-      }
-    }
-    if (std::empty(message))
-      return false;
-    // XXX something wrong with Snapshot...
-    if (std::size(message) < 12) {  // size of header
-      log::warn("remaining data: length={}"sv, std::size(message));
-      return true;
-    }
-  }
+template <typename T>
+auto dispatch_helper(auto &handler, auto &trace_info, auto &message, auto &frame) {
+  auto tmp = sbe_buffer(message);
+  T value{std::data(tmp), std::size(tmp)};
+  auto bytes = compute_length(value);
+  // log::debug("{}"sv, value);
+  value.sbeRewind();  // note! important
+  create_trace_and_dispatch(handler, trace_info, value, frame);
+  return bytes;
 }
 }  // namespace
 
-size_t Parser::dispatch(Handler &handler, std::span<std::byte const> const &buffer, TraceInfo const &trace_info) {
-  size_t total_bytes = 0;
-  auto failed = false;
-  while (!failed) {
-    auto tmp = buffer.subspan(total_bytes);
-    if (std::empty(tmp))
-      break;
-    if (Frame::parse(tmp, [&](auto &frame) {
-          auto length = std::size(frame) + frame.packet_length;
-          if (std::size(tmp) < (std::size(frame) + frame.packet_length)) {
-            log::warn("+++ INCOMPLETE DATAGRAM +++"sv);
-            failed = true;
-          } else {
-            total_bytes += length;
-            auto tmp_2 = tmp.subspan(Frame::size(), frame.packet_length);
-            // note! sbe headers are not const-safe
-            std::span message{reinterpret_cast<char *>(const_cast<std::byte *>(std::data(tmp_2))), std::size(tmp_2)};
-            failed = dispatch_helper(handler, trace_info, message, frame);
-          }
-        })) {
-    } else {
-      break;  // unable to decode a frame header
+// === IMPLEMENTATION ===
+
+bool Parser::dispatch(Handler &handler, std::span<std::byte const> const &buffer, TraceInfo const &trace_info) {
+  auto result = true;
+  auto callback = [&](auto &frame, auto &packet) {
+    // log::debug("frame={}"sv, frame);
+    if (!handler(frame)) {
+      result = false;
+      return;
     }
+    while (!std::empty(packet)) {
+      // log::debug("len(packet)={}"sv, std::size(packet));
+      // log::debug("packet={}"sv, utils::debug::hex::Message{packet});
+      auto length_message_header = deribit_multicast::MessageHeader::encodedLength();
+      assert(std::size(packet) >= length_message_header);
+      auto tmp = sbe_buffer(packet);
+      deribit_multicast::MessageHeader message_header{std::data(tmp), std::size(tmp)};
+      auto message = packet.subspan(length_message_header);
+      auto template_id = message_header.templateId();
+      // log::debug("template_id={}"sv, template_id);
+      auto bytes = length_message_header;
+      switch (template_id) {
+        case deribit_multicast::Instrument::SBE_TEMPLATE_ID:  // 1000
+          bytes += dispatch_helper<deribit_multicast::Instrument>(handler, trace_info, message, frame);
+          break;
+        case deribit_multicast::Book::SBE_TEMPLATE_ID:  // 1001
+          bytes += dispatch_helper<deribit_multicast::Book>(handler, trace_info, message, frame);
+          break;
+        case deribit_multicast::Trades::SBE_TEMPLATE_ID:  // 1002
+          bytes += dispatch_helper<deribit_multicast::Trades>(handler, trace_info, message, frame);
+          break;
+        case deribit_multicast::Ticker::SBE_TEMPLATE_ID:  // 1003
+          bytes += dispatch_helper<deribit_multicast::Ticker>(handler, trace_info, message, frame);
+          break;
+        case deribit_multicast::Snapshot::SBE_TEMPLATE_ID:  // 1004
+          bytes += dispatch_helper<deribit_multicast::Snapshot>(handler, trace_info, message, frame);
+          break;
+        case deribit_multicast::SnapshotStart::SBE_TEMPLATE_ID:  // 1005
+          bytes += dispatch_helper<deribit_multicast::SnapshotStart>(handler, trace_info, message, frame);
+          break;
+        case deribit_multicast::SnapshotEnd::SBE_TEMPLATE_ID:  // 1006
+          bytes += dispatch_helper<deribit_multicast::SnapshotEnd>(handler, trace_info, message, frame);
+          break;
+        case deribit_multicast::ComboLegs::SBE_TEMPLATE_ID:  // 1007
+          bytes += dispatch_helper<deribit_multicast::ComboLegs>(handler, trace_info, message, frame);
+          break;
+        case deribit_multicast::PriceIndex::SBE_TEMPLATE_ID:  // 1008
+          bytes += dispatch_helper<deribit_multicast::PriceIndex>(handler, trace_info, message, frame);
+          break;
+        case deribit_multicast::Rfq::SBE_TEMPLATE_ID:  // 1009
+          bytes += dispatch_helper<deribit_multicast::Rfq>(handler, trace_info, message, frame);
+          break;
+        case deribit_multicast::InstrumentV2::SBE_TEMPLATE_ID:  // 1010
+          bytes += dispatch_helper<deribit_multicast::InstrumentV2>(handler, trace_info, message, frame);
+          break;
+        default:
+          log::warn("payload={}"sv, utils::debug::hex::Message{buffer});
+          log::fatal("Unexpected: template_id={}"sv, template_id);
+      }
+      // log::debug("bytes={}"sv, bytes);
+      assert(bytes <= std::size(packet));
+      packet = packet.subspan(bytes);
+    }
+    result &= std::empty(packet);
+  };
+  result &= Frame::parse(buffer, callback);
+  if (!result) [[unlikely]] {
+    log::warn("payload={}"sv, utils::debug::hex::Message{buffer});
+    log::fatal("Unexpected"sv);
   }
-  if (failed) [[unlikely]]
-    log::fatal("{}"sv, utils::debug::hex::Message{buffer});
-  return total_bytes;
+  return result;
 }
 
 }  // namespace sbe

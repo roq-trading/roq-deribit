@@ -2,6 +2,8 @@
 
 #include "roq/deribit/udp_snapshot.hpp"
 
+#include "roq/logging.hpp"
+
 #include "roq/utils/update.hpp"
 
 #include "roq/utils/debug/hex/message.hpp"
@@ -44,16 +46,16 @@ auto get_supports(auto publish_market_by_price) {
 }
 
 auto create_receiver(auto &handler, auto &settings, auto &context, auto port) {
-  log::info<1>("Create multicast socket port={}"sv, port);
+  log::info("Create multicast socket port={}"sv, port);
   auto network_address = io::NetworkAddress{port};
   auto socket_options = Mask{
       io::SocketOption::REUSE_ADDRESS,
   };
   auto receiver = context.create_udp_receiver(handler, network_address, socket_options);
-  log::info<1>(R"(Local interface is "{}")"sv, settings.misc.local_interface);
+  log::info(R"(Local interface is "{}")"sv, settings.misc.local_interface);
   auto local_interface = io::NetworkAddress::create_blocking(settings.misc.local_interface);
   for (auto &multicast_address : settings.multicast.address) {
-    log::info<1>(R"(Add membership "{}")"sv, multicast_address);
+    log::info(R"(Add membership "{}")"sv, multicast_address);
     auto multicast_address_2 = io::NetworkAddress::create_blocking(multicast_address);
     (*receiver).add_membership(multicast_address_2, local_interface);
   }
@@ -77,7 +79,7 @@ UDPSnapshot::UDPSnapshot(Handler &handler, io::Context &context, uint16_t stream
           .parse = create_metrics(shared.settings, name_, "parse"sv),
       },
       shared_{shared} {
-  log::info("DEBUG: publish_market_by_price={}"sv, publish_market_by_price_);
+  log::info("publish_market_by_price={}"sv, publish_market_by_price_);
 }
 
 void UDPSnapshot::operator()(Event<Start> const &) {
@@ -100,15 +102,17 @@ void UDPSnapshot::operator()(io::net::udp::Receiver::Read const &) {
   TraceInfo trace_info;
   last_update_time_ = trace_info.source_receive_time;
   publish_stream_status(trace_info, ConnectionStatus::READY);  // first message will publish
-  while (receive_buffer_.append(*receiver_)) {
-    auto message = receive_buffer_.data();
-    log::info<5>("received {} byte(s)"sv, std::size(message));
-    auto bytes = sbe::Parser::dispatch(*this, message, trace_info);
-    if (!bytes || bytes != std::size(message)) {
-      log::warn("{}"sv, utils::debug::hex::Message{message});
-      log::fatal("Failed to parse message"sv);
+  while (true) {
+    auto bytes = (*receiver_).recv(shared_.buffer);
+    log::info<5>("Received {} byte(s)"sv, bytes);
+    if (!bytes)
+      return;
+    std::span payload{std::data(shared_.buffer), bytes};
+    log::info<5>("{}"sv, utils::debug::hex::Message{payload});
+    if (!sbe::Parser::dispatch(*this, payload, trace_info)) {
+      // XXX FIXME TODO reorder buffer
+      log::warn("Unexpected"sv);
     }
-    receive_buffer_.drain(bytes);  // XXX clear()?
   }
 }
 
@@ -116,110 +120,186 @@ void UDPSnapshot::operator()(io::net::udp::Receiver::Error const &error) {
   log::fatal("Error: what={}"sv, error.what);
 }
 
-void UDPSnapshot::operator()(Trace<deribit_multicast::Instrument> const &event, sbe::Frame const &frame) {
-  using value_type = std::remove_cvref<decltype(event)>::type::value_type;
-  auto &instrument = const_cast<value_type &>(event.value);  // note! not const-safe
-  log::info<2>("instrument={}, frame={}"sv, instrument, frame);
-  auto &aggregator = get_aggregator(frame.channel_id);
-  if (aggregator(frame.sequence_number)) {
-    // note! always include
-    auto const instrument_id = instrument.instrumentId();
-    shared_.find_instrument_name_with_create(instrument_id, [&]() -> Instrument {
-      auto contract_size = instrument.contractSize();
-      auto multiplier = compute_contracts_multiplier(contract_size);
-      return {
-          sbe::get_instrument_name(instrument),  // note! alloc
-          contract_size,
-          multiplier,
-      };
-    });
-  }
+bool UDPSnapshot::operator()(sbe::Frame const &frame) {
+  auto result = false;
+  auto callback = [&](auto &channel) {
+    result = channel(frame);
+    if (!result) {
+      channel.reset(frame);  // XXX FIXME TODO reorder buffer (postpone until full)
+      log::warn("DROP"sv);
+    }
+  };
+  get_channel(frame, callback);
+  return result;
 }
 
-void UDPSnapshot::operator()(Trace<deribit_multicast::Book> const &event, sbe::Frame const &frame) {
+void UDPSnapshot::operator()(Trace<deribit_multicast::Instrument> const &event, sbe::Frame const &frame) {
   using value_type = std::remove_cvref<decltype(event)>::type::value_type;
-  auto &book = const_cast<value_type &>(event.value);  // note! not const-safe
-  log::warn("book={}, frame={}"sv, book, frame);
+  auto &instrument = const_cast<value_type &>(event.value);
+  log::info<2>("instrument={}, frame={}"sv, instrument, frame);
+  auto instrument_id = instrument.instrumentId();
+  auto callback = [&]() -> Instrument {
+    auto symbol = sbe::get_instrument_name(instrument);
+    auto contract_size = instrument.contractSize();
+    auto multiplier = compute_contracts_multiplier(contract_size);
+    auto discard = shared_.discard_symbol(symbol);
+    if (!discard)
+      log::debug(R"(CREATE instrument_id={}, instrument_name="{}", contract_size={}, multiplier={})"sv, instrument_id, symbol, contract_size, multiplier);
+    return {
+        symbol,
+        contract_size,
+        multiplier,
+        discard,
+    };
+  };
+  shared_.maybe_create_instrument(instrument_id, callback);
+}
+
+void UDPSnapshot::operator()(Trace<deribit_multicast::Book> const &, sbe::Frame const &) {
+  log::fatal("Unexpected"sv);
+}
+
+void UDPSnapshot::operator()(Trace<deribit_multicast::Trades> const &, sbe::Frame const &) {
   log::fatal("Unexpected"sv);
 }
 
 void UDPSnapshot::operator()(Trace<deribit_multicast::Ticker> const &event, sbe::Frame const &frame) {
   using value_type = std::remove_cvref<decltype(event)>::type::value_type;
-  auto &ticker = const_cast<value_type &>(event.value);  // note! not const-safe
+  auto &ticker = const_cast<value_type &>(event.value);
   log::info<4>("ticker={}, frame={}"sv, ticker, frame);
-}
-
-void UDPSnapshot::operator()(Trace<deribit_multicast::Trades> const &event, sbe::Frame const &frame) {
-  using value_type = std::remove_cvref<decltype(event)>::type::value_type;
-  auto &trades = const_cast<value_type &>(event.value);  // note! not const-safe
-  log::warn("trades={}, frame={}"sv, trades, frame);
-  log::fatal("Unexpected"sv);
 }
 
 void UDPSnapshot::operator()(Trace<deribit_multicast::Snapshot> const &event, sbe::Frame const &frame) {
   auto &trace_info = event.trace_info;
   using value_type = std::remove_cvref<decltype(event)>::type::value_type;
-  auto &snapshot = const_cast<value_type &>(event.value);  // note! not const-safe
+  auto &snapshot = const_cast<value_type &>(event.value);
   log::info<4>("snapshot={}, frame={}"sv, snapshot, frame);
-  auto const instrument_id = snapshot.instrumentId();
-  auto const change_id = snapshot.changeId();
-  auto const is_last = snapshot.isLastInBook();
-  auto &aggregator = get_aggregator(frame.channel_id);
-  aggregator(frame.sequence_number, instrument_id, change_id, is_last, [&](auto &bids, auto &asks) {
-    if (!publish_market_by_price_)
-      return;
-    if (shared_.find_instrument(instrument_id, [&](auto &instrument) {
-          snapshot.sbeRewind();
-          snapshot.levelsList().forEach([&](auto const &item) { emplace_back(item, instrument.multiplier, bids, asks); });
-          log::info<5>(
-              "DEBUG: sequence_number={}, instrument_id={}, change_id={}, is_last={}, bids=[{}], asks=[{}]"sv,
-              frame.sequence_number,
+  if (!publish_market_by_price_)
+    return;
+  auto instrument_id = snapshot.instrumentId();
+  auto change_id = snapshot.changeId();
+  auto is_last = snapshot.isLastInBook();
+  auto callback = [&](auto &channel) {
+    auto callback_2 = [&](auto &instrument) {
+      // XXX FIXME there is a race if udp_events resets in the middle of receiving snapshot
+      if (channel.ready() && !instrument.mbp_sequencer.ready()) {
+        auto append_level = [&](auto &item) {
+          auto price = item.price();
+          auto quantity = item.amount() * instrument.multiplier;
+          auto mbp_update = MBPUpdate{
+              .price = price,
+              .quantity = quantity,
+              .implied_quantity = NaN,
+              .number_of_orders = {},
+              .update_action = {},
+              .price_level = {},
+          };
+          auto side = sbe::map_book_side(deribit_multicast::BookSide::get(item.side()));
+          switch (side) {
+            case Side::UNDEFINED:
+              assert(false);
+              break;
+            case Side::BUY:
+              channel.bids.emplace_back(std::move(mbp_update));
+              break;
+            case Side::SELL:
+              channel.asks.emplace_back(std::move(mbp_update));
+              break;
+          }
+        };
+        snapshot.sbeRewind();
+        snapshot.levelsList().forEach(append_level);
+      }
+      if (!is_last) {
+        if (!channel.instrument_id) {
+          channel.instrument_id = instrument_id;
+        } else {
+          assert(channel.instrument_id == instrument_id);
+        }
+        return;
+      }
+      if (channel.ready() && !(std::empty(channel.bids) && std::empty(channel.asks))) {
+        auto publish_snapshot = [&](auto &bids, auto &asks, auto exchange_sequence, auto retries, auto delay) {
+          log::info(
+              R"(PUBLISH MBP SNAPSHOT exchange="{}", symbol="{}", instrument_id={}, exchange_sequence={}, retries={}, delay={})"sv,
+              shared_.settings.exchange,
+              instrument.symbol,
+              instrument_id,
+              exchange_sequence,
+              retries,
+              std::chrono::duration_cast<std::chrono::milliseconds>(delay));
+          std::chrono::milliseconds timestamp{snapshot.timestampMs()};
+          auto market_by_price_update = MarketByPriceUpdate{
+              .stream_id = stream_id_,
+              .exchange = shared_.settings.exchange,
+              .symbol = instrument.symbol,
+              .bids = bids,
+              .asks = asks,
+              .update_type = UpdateType::SNAPSHOT,
+              .exchange_time_utc = timestamp,
+              .exchange_sequence = exchange_sequence,
+              .sending_time_utc = {},
+              .price_precision = {},
+              .quantity_precision = {},
+              .checksum = {},
+          };
+          auto apply_updates = [&](auto &market_by_price) {
+            auto include = true;
+            instrument.mbp_sequencer.apply(market_by_price, exchange_sequence, include);
+          };
+          Trace event{trace_info, market_by_price_update};
+          shared_(event, true, apply_updates);
+        };
+        auto request_snapshot = [&](auto retries) {
+          log::info(
+              R"(REQUEST MBP SNAPSHOT exchange="{}", symbol="{}", instrument_id={}, change_id={}, retries={})"sv,
+              shared_.settings.exchange,
+              instrument.symbol,
               instrument_id,
               change_id,
-              is_last,
-              fmt::join(bids, ","sv),
-              fmt::join(asks, ","sv));
-          // XXX allow empty? (after all, we need to record the sequence number...)
-          if (is_last && !(std::empty(bids) && std::empty(asks))) {
-            std::chrono::milliseconds const timestamp{snapshot.timestampMs()};
-            auto &sequencer = shared_.get_mbp_sequencer(instrument.symbol);
-            auto publish_snapshot = [&](auto &bids, auto &asks, auto sequence, [[maybe_unused]] auto retries, [[maybe_unused]] auto delay) {
-              log::info<1>(R"(Received snapshot: symbol="{}")"sv, instrument.symbol);
-              // log::debug(R"(PUBLISH SNAPSHOT symbol="{}", sequence={})"sv, symbol, sequence);
-              log::info<5>(
-                  R"(DEBUG: PUBLISH SNAPSHOT symbol="{}", sequence={}, change_id={}, timestamp={})"sv, instrument.symbol, sequence, change_id, timestamp);
-              auto market_by_price_update = MarketByPriceUpdate{
-                  .stream_id = stream_id_,
-                  .exchange = shared_.settings.exchange,
-                  .symbol = instrument.symbol,
-                  .bids = bids,
-                  .asks = asks,
-                  .update_type = UpdateType::SNAPSHOT,
-                  .exchange_time_utc = timestamp,
-                  .exchange_sequence = sequence,
-                  .sending_time_utc = {},
-                  .price_precision = {},
-                  .quantity_precision = {},
-                  .checksum = {},
-              };
-              auto apply_updates = [&](auto &market_by_price) { sequencer.apply(market_by_price, sequence, true); };
-              Trace event{trace_info, market_by_price_update};
-              shared_(event, true, apply_updates);
-            };
-            auto request_snapshot = [&](auto retries) {
-              log::info<1>(R"(Waiting for snapshot: symbol="{}")"sv, instrument.symbol);
-              // log::debug(R"(REQUEST symbol="{}" (retries={}))"sv, instrument.symbol, retries);
-              log::info<5>(R"(DEBUG: REQUEST symbol="{}" (retries={}))"sv, instrument.symbol, retries);
-              // note! don't have to do anything -- just wait for snapshot
-            };
-            sequencer(bids, asks, change_id, false, publish_snapshot, request_snapshot);
-          }
-        })) {
+              retries);
+          // note! just wait for next snapshot
+        };
+        auto force = false;
+        instrument.mbp_sequencer(channel.bids, channel.asks, change_id, force, publish_snapshot, request_snapshot);
+      }
+      channel.instrument_id = {};
+      channel.bids.clear();
+      channel.asks.clear();
+    };
+    if (shared_.find_instrument(instrument_id, callback_2)) {
     } else {
-      // unknown instrument_id
-      log::info<5>("DEBUG: unknown instrument_id={}"sv, instrument_id);
+      // log::debug("Unexpected: unknown instrument_id={}"sv, instrument_id);
+      log::info<5>("Unexpected: unknown instrument_id={}"sv, instrument_id);
     }
-  });
+  };
+  get_channel(frame, callback);
+}
+
+void UDPSnapshot::operator()(Trace<deribit_multicast::SnapshotStart> const &, sbe::Frame const &frame) {
+  auto callback = [&](auto &channel) { channel.snapshot_start(frame); };
+  get_channel(frame, callback);
+}
+
+void UDPSnapshot::operator()(Trace<deribit_multicast::SnapshotEnd> const &, sbe::Frame const &frame) {
+  auto callback = [&](auto &channel) { channel.snapshot_end(frame); };
+  get_channel(frame, callback);
+}
+
+void UDPSnapshot::operator()(Trace<deribit_multicast::ComboLegs> const &, sbe::Frame const &) {
+  log::fatal("Unexpected"sv);
+}
+
+void UDPSnapshot::operator()(Trace<deribit_multicast::PriceIndex> const &, sbe::Frame const &) {
+  log::fatal("Unexpected"sv);
+}
+
+void UDPSnapshot::operator()(Trace<deribit_multicast::Rfq> const &, sbe::Frame const &) {
+  log::fatal("Unexpected"sv);
+}
+
+void UDPSnapshot::operator()(Trace<deribit_multicast::InstrumentV2> const &, sbe::Frame const &) {
+  // XXX FIXME can't make get_instrument_name() to work...
 }
 
 void UDPSnapshot::operator()(metrics::Writer &writer) {
@@ -249,35 +329,12 @@ void UDPSnapshot::publish_stream_status(TraceInfo const &trace_info, ConnectionS
   create_trace_and_dispatch(handler_, trace_info, stream_status);
 }
 
-template <typename T, typename U>
-void UDPSnapshot::emplace_back(T const &item, double multiplier, U &bids, U &asks) {
-  auto mbp_update = MBPUpdate{
-      .price = item.price(),
-      .quantity = item.amount() * multiplier,
-      .implied_quantity = NaN,
-      .number_of_orders = {},
-      .update_action = {},
-      .price_level = {},
-  };
-  auto side = sbe::map_book_side(deribit_multicast::BookSide::get(item.side()));
-  switch (side) {
-    case Side::UNDEFINED:
-      assert(false);
-      break;
-    case Side::BUY:
-      bids.emplace_back(std::move(mbp_update));
-      break;
-    case Side::SELL:
-      asks.emplace_back(std::move(mbp_update));
-      break;
-  }
-}
-
-Aggregator &UDPSnapshot::get_aggregator(uint16_t channel_id) {
-  auto iter = aggregator_.find(channel_id);
-  if (iter == std::end(aggregator_))
-    iter = aggregator_.try_emplace(channel_id).first;
-  return (*iter).second;
+template <typename Callback>
+void UDPSnapshot::get_channel(sbe::Frame const &frame, Callback callback) {
+  auto iter = channel_.find(frame.channel_id);
+  if (iter == std::end(channel_))
+    iter = channel_.try_emplace(frame.channel_id).first;
+  callback((*iter).second);
 }
 
 }  // namespace deribit

@@ -11,8 +11,6 @@
 
 #include "roq/utils/container.hpp"
 
-#include "roq/market/mbp/sequencer.hpp"
-
 #include "roq/core/symbols.hpp"
 
 #include "roq/core/limit/rate_limiter.hpp"
@@ -48,25 +46,22 @@ struct Shared final {
   bool find_instrument(uint32_t instrument_id, Callback callback) {
     auto iter = instruments.find(instrument_id);
     if (iter != std::end(instruments)) {
-      auto &[symbol, discard] = (*iter).second;
-      if (!discard)
-        callback((*iter).second.first);
+      auto &instrument = (*iter).second;
+      if (!instrument.discard)
+        callback(instrument);
       return true;
     }
     return false;
   }
 
   template <typename Callback>
-  std::pair<Instrument const &, bool> find_instrument_name_with_create(uint32_t instrument_id, Callback callback) {
+  void maybe_create_instrument(uint32_t instrument_id, Callback callback) {
     auto iter = instruments.find(instrument_id);
-    if (iter == std::end(instruments)) {
-      auto instrument = callback();
-      auto discard = discard_symbol(instrument.symbol);
-      auto res = instruments.try_emplace(instrument_id, instrument, discard);
-      assert(res.second);
-      iter = res.first;
-    }
-    return {(*iter).second.first, (*iter).second.second};
+    if (iter != std::end(instruments))
+      return;
+    auto instrument = callback();
+    auto res = instruments.try_emplace(instrument_id, std::move(instrument));
+    assert(res.second);
   }
 
   template <typename... Args>
@@ -108,17 +103,6 @@ struct Shared final {
 
   utils::unordered_map<std::string, double> multiplier;
 
-  auto &get_mbp_sequencer(std::string_view const &symbol) {
-    auto iter = mbp_sequencer.find(symbol);
-    if (iter != std::end(mbp_sequencer)) {
-      market::mbp::Sequencer sequencer;
-      auto res = mbp_sequencer.try_emplace(symbol, std::move(sequencer));
-      assert(res.second);
-      iter = res.first;
-    }
-    return (*iter).second;
-  }
-
  public:
   server::Dispatcher &dispatcher;
   Settings const &settings;
@@ -133,8 +117,9 @@ struct Shared final {
   utils::unordered_set<std::string> all_currencies;
   utils::unordered_set<std::string> all_symbols;
   core::Symbols symbols;
-  utils::unordered_map<uint32_t, std::pair<Instrument, bool>> instruments;
-  utils::unordered_map<std::string, market::mbp::Sequencer> mbp_sequencer;
+  utils::unordered_map<uint32_t, Instrument> instruments;
+
+  std::vector<std::byte> buffer;
 };
 
 }  // namespace deribit

@@ -12,6 +12,14 @@ namespace roq {
 namespace deribit {
 namespace sbe {
 
+// === HELPERS ===
+
+namespace {
+static_assert(sizeof(Frame) == Frame::size());
+}
+
+// === IMPLEMENTATION ===
+
 std::pair<bool, Frame> Frame::parse_helper(std::span<std::byte const> const &buffer) {
   if (std::size(buffer) < size()) {
     log::warn("Invalid message, size={}"sv, std::size(buffer));

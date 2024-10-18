@@ -4,15 +4,19 @@
 
 #include <string>
 
-#include "roq/api.hpp"
+#include "roq/market/mbp/sequencer.hpp"
 
 namespace roq {
 namespace deribit {
 
 struct Instrument final {
-  Symbol symbol;
+  Instrument(std::string_view const &symbol, double contract_size, double multiplier, bool discard);
+
+  std::string symbol;
   double contract_size = NaN;
-  double multiplier = 1.0;
+  double multiplier = NaN;
+  bool discard = {};
+  market::mbp::Sequencer mbp_sequencer;
 };
 
 }  // namespace deribit
