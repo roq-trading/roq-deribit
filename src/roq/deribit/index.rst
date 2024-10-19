@@ -634,6 +634,52 @@ Comments
   The book effectively becomes more and more *wrong* for big market moves.
 
 
+:code:`roq-deribit-filter`
+--------------------------
+
+.. code-block:: shell
+
+   $ roq-deribit-filter [FLAGS]
+
+
+Description
+~~~~~~~~~~~
+
+:code:`roq-deribit-filter` is a tool to generate the PCAP filter required to capture specific channels.
+
+
+Flags
+~~~~~
+
+.. code-block:: shell
+
+   $ roq-deribit-filter --help
+
+.. tab:: Flags
+
+   .. include:: filter/flags/flags.rstinc
+
+.. tab:: Multicast
+
+   .. include:: filter/flags/multicast.rstinc
+
+
+Example
+~~~~~~~
+
+.. code-block:: shell
+
+   $ roq-deribit-filter \
+       --type "tcpdump" \
+       --multicast_channel_ids 1,2 \
+       --multicast_config_file "$CONDA_PREFIX/share/roq-deribit/prod/channels.json"
+
+   (port 6100 or port 6101) and (host 239.111.111.1 or host 239.111.111.2)
+
+
+This will output a :code:`tcpdump` filter for :code:`channel_ids`.
+
+
 References
 ----------
 
