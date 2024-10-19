@@ -15,6 +15,8 @@
 
 #include "roq/core/limit/rate_limiter.hpp"
 
+#include "roq/deribit/sbe/config.hpp"
+
 #include "roq/deribit/instrument.hpp"
 #include "roq/deribit/settings.hpp"
 
@@ -120,6 +122,8 @@ struct Shared final {
   utils::unordered_map<uint32_t, Instrument> instruments;
 
   std::vector<std::byte> buffer;
+
+  sbe::Config const sbe_config;
 };
 
 }  // namespace deribit

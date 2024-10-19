@@ -60,8 +60,7 @@ $PREFIX "./roq-deribit" \
   --cache_all_reference_data=true \
   --download_trades_lookback=5m \
   --download_trades_lookback_on_restart=24h \
-  --local_interface "$LOCAL_INTERFACE" \
-  --multicast_address 239.111.111.1 \
-  --multicast_port_events 6100 \
-  --multicast_port_snapshot 6101 \
+  --multicast_config_file "$HOME/dev/roq-dev/roq-deribit/share/prod/channels.json" \
+  --multicast_channel_ids 1,2 \
+  --multicast_local_interface "$LOCAL_INTERFACE" \
   $@

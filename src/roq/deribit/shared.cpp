@@ -20,10 +20,20 @@ auto const BUFFER_SIZE = 4096uz;
 namespace {
 auto get_multicast(auto &settings) {
   // XXX maybe check more flags?
-  if (std::empty(settings.misc.local_interface))
+  if (std::empty(settings.multicast.local_interface))
     return false;
+  if (std::empty(settings.multicast.channel_ids))
+    log::fatal("Unexpected: --channel_ids is empty"sv);
+  if (std::empty(settings.multicast.config_file))
+    log::fatal("Unexpected: --config_file is empty"sv);
   log::info("Using multicast"sv);
   return true;
+}
+
+template <typename R>
+auto create_sbe_config(auto &settings) {
+  using result_type = std::remove_cvref<R>::type;
+  return result_type{settings.multicast.config_file, settings.multicast.channel_ids};
 }
 }  // namespace
 
@@ -31,7 +41,7 @@ auto get_multicast(auto &settings) {
 
 Shared::Shared(server::Dispatcher &dispatcher, Settings const &settings)
     : dispatcher{dispatcher}, settings{settings}, multicast_{get_multicast(settings)}, rate_limiter{settings.request.limit, settings.request.limit_interval},
-      symbols{settings.fix.market_data_max_subscriptions_per_stream}, buffer(BUFFER_SIZE) {
+      symbols{settings.fix.market_data_max_subscriptions_per_stream}, buffer(BUFFER_SIZE), sbe_config{create_sbe_config<decltype(sbe_config)>(settings)} {
 }
 
 std::string_view Shared::next_request_id() {

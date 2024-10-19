@@ -1,0 +1,21 @@
+{
+  "name": "roq/deribit/filter/flags/multicast",
+  "type": "flags",
+  "prefix": "multicast_",
+  "values": [
+    {
+      "name": "config_file",
+      "type": "std/string",
+      "validator": "roq/flags/validators/Path",
+      "required": true,
+      "description": "Multicast channel config file."
+    },
+    {
+      "name": "channel_ids",
+      "type": "std/string",
+      "array": "std/vector",
+      "required": true,
+      "description": "Comma-separated list of multicast channels to include."
+    }
+  ]
+}

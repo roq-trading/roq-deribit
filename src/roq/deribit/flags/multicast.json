@@ -4,26 +4,21 @@
   "prefix": "multicast_",
   "values": [
     {
-      "name": "address",
+      "name": "config_file",
+      "type": "std/string",
+      "validator": "roq/flags/validators/Path",
+      "description": "Config file (path)"
+    },
+    {
+      "name": "channel_ids",
       "type": "std/string",
       "array": "std/vector",
-      "default": [
-        "239.111.111.1",
-        "239.111.111.3"
-      ],
-      "description": "List of multicast addresses (comma-separated)"
+      "description": "Comma-separated list of multicast channels, e.g. 1)"
     },
     {
-      "name": "port_events",
-      "type": "std/uint16",
-      "default": "6100",
-      "description": "Multicast port used for events"
-    },
-    {
-      "name": "port_snapshot",
-      "type": "std/uint16",
-      "default": "6101",
-      "description": "Multicast port for snapshot"
+      "name": "local_interface",
+      "type": "std/string",
+      "description": "Multicast local interface"
     },
     {
       "name": "disable_top_of_book",

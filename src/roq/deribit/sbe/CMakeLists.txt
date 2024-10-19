@@ -1,6 +1,6 @@
 set(TARGET_NAME ${PROJECT_NAME}-sbe)
 
-set(SOURCES frame.cpp parser.cpp)
+set(SOURCES config.cpp frame.cpp parser.cpp)
 
 add_library(${TARGET_NAME} OBJECT ${SOURCES})
 

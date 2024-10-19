@@ -27,6 +27,7 @@ requirements:
   host:
     - catch2
     - fmt
+    - nlohmann_json
     - roq-api
     - roq-core
     - roq-deribit-multicast
@@ -36,6 +37,7 @@ requirements:
     - roq-logging
     - roq-market
     - roq-oss-benchmark
+    - roq-oss-libpcap
     - roq-oss-magic_enum
     - roq-oss-tomlplusplus
     - roq-oss-unordered_dense

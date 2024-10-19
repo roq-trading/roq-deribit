@@ -45,20 +45,22 @@ auto get_supports(auto publish_market_by_price) {
   return result;
 }
 
-auto create_receiver(auto &handler, auto &settings, auto &context, auto port) {
+auto create_receiver(auto &handler, auto &settings, auto &context, auto &shared) {
+  auto port = shared.sbe_config.snapshot_port();
   log::info("Create multicast socket port={}"sv, port);
   auto network_address = io::NetworkAddress{port};
   auto socket_options = Mask{
       io::SocketOption::REUSE_ADDRESS,
   };
   auto receiver = context.create_udp_receiver(handler, network_address, socket_options);
-  log::info(R"(Local interface is "{}")"sv, settings.misc.local_interface);
-  auto local_interface = io::NetworkAddress::create_blocking(settings.misc.local_interface);
-  for (auto &multicast_address : settings.multicast.address) {
-    log::info(R"(Add membership "{}")"sv, multicast_address);
-    auto multicast_address_2 = io::NetworkAddress::create_blocking(multicast_address);
+  log::info(R"(Local interface is "{}")"sv, settings.multicast.local_interface);
+  auto local_interface = io::NetworkAddress::create_blocking(settings.multicast.local_interface);
+  auto callback = [&](auto &connection) {
+    log::info(R"(Add membership "{}")"sv, connection.address);
+    auto multicast_address_2 = io::NetworkAddress::create_blocking(connection.address);
     (*receiver).add_membership(multicast_address_2, local_interface);
-  }
+  };
+  shared.sbe_config.get_connections(callback);
   return receiver;
 }
 
@@ -71,7 +73,7 @@ struct create_metrics final : public utils::metrics::Factory {
 
 UDPSnapshot::UDPSnapshot(Handler &handler, io::Context &context, uint16_t stream_id, Shared &shared)
     : handler_{handler}, stream_id_{stream_id}, name_{create_name(stream_id_)}, publish_market_by_price_{publish_market_by_price(shared.settings)},
-      supports_{get_supports(publish_market_by_price_)}, receiver_{create_receiver(*this, shared.settings, context, shared.settings.multicast.port_snapshot)},
+      supports_{get_supports(publish_market_by_price_)}, receiver_{create_receiver(*this, shared.settings, context, shared)},
       counter_{
           .disconnect = create_metrics(shared.settings, name_, "disconnect"sv),
       },

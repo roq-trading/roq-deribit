@@ -1,0 +1,112 @@
+{
+  "ports": {
+    "events": 6200,
+    "snapshot": 6201
+  },
+  "channels": {
+    "1": {
+      "currency_product": "BTC-Perpetual",
+      "address": "239.222.222.1"
+    },
+    "2": {
+      "currency_product": "BTC-Options",
+      "address": "239.222.222.2"
+    },
+    "3": {
+      "currency_product": "BTC-Futures",
+      "address": "239.222.222.3"
+    },
+    "4": {
+      "currency_product": "ETH-Perpetual",
+      "address": "239.222.222.4"
+    },
+    "5": {
+      "currency_product": "ETH-Options",
+      "address": "239.222.222.5"
+    },
+    "6": {
+      "currency_product": "ETH-Futures",
+      "address": "239.222.222.6"
+    },
+    "7": {
+      "currency_product": "SOL-Perpetual",
+      "address": "239.222.222.7"
+    },
+    "8": {
+      "currency_product": "SOL-Options",
+      "address": "239.222.222.8"
+    },
+    "9": {
+      "currency_product": "SOL-Futures",
+      "address": "239.222.222.9"
+    },
+    "10": {
+      "currency_product": "USDC-Perpetual",
+      "address": "239.222.222.10"
+    },
+    "11": {
+      "currency_product": "USDC-Options",
+      "address": "239.222.222.11"
+    },
+    "12": {
+      "currency_product": "USDC-Futures",
+      "address": "239.222.222.12"
+    },
+    "13": {
+      "currency_product": "BTC-Option-Combos",
+      "address": "239.222.222.13"
+    },
+    "14": {
+      "currency_product": "BTC-Future-Combos",
+      "address": "239.222.222.14"
+    },
+    "15": {
+      "currency_product": "ETH-Option-Combos",
+      "address": "239.222.222.15"
+    },
+    "16": {
+      "currency_product": "ETH-Future-Combos",
+      "address": "239.222.222.16"
+    },
+    "17": {
+      "currency_product": "SOL-Option-Combos",
+      "address": "239.222.222.17"
+    },
+    "18": {
+      "currency_product": "SOL-Future-Combos",
+      "address": "239.222.222.18"
+    },
+    "19": {
+      "currency_product": "USDC-Option-Combos",
+      "address": "239.222.222.19"
+    },
+    "20": {
+      "currency_product": "USDC-Future-Combos",
+      "address": "239.222.222.20"
+    },
+    "21": {
+      "currency_product": "Spot",
+      "address": "239.222.222.21"
+    },
+    "22": {
+      "currency_product": "USDT-Perpetual",
+      "address": "239.222.222.22"
+    },
+    "23": {
+      "currency_product": "USDT-Options",
+      "address": "239.222.222.23"
+    },
+    "24": {
+      "currency_product": "USDT-Futures",
+      "address": "239.222.222.24"
+    },
+    "25": {
+      "currency_product": "USDT-Option-Combos",
+      "address": "239.222.222.25"
+    },
+    "26": {
+      "currency_product": "USDT-Future-Combos",
+      "address": "239.222.222.26"
+    }
+  }
+}
