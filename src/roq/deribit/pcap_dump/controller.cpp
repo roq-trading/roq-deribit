@@ -55,17 +55,24 @@ struct Bridge final : public sbe::Parser::Handler {
 
   void print(auto &event, auto &frame) {
     auto timestamp = convert((*header_).ts);
-    // note! assuming ether
-    auto ether_header = reinterpret_cast<struct ether_header const *>(packet_);
+    size_t offset = 0;
+    auto ether_header = reinterpret_cast<struct ether_header const *>(packet_ + offset);
     auto ether_type = ntohs((*ether_header).ether_type);
+    if (ether_type == ETHERTYPE_VLAN) {
+      offset += 4;  // XXX FIXME find somee struct or length in system header files... (VLAN tag)
+      ether_header = reinterpret_cast<struct ether_header const *>(packet_ + offset);
+      ether_type = ntohs((*ether_header).ether_type);
+    }
     if (ether_type == ETHERTYPE_IP) {
-      auto ip_header = reinterpret_cast<struct ip const *>(packet_ + sizeof(struct ether_header));
+      offset += sizeof(struct ether_header);
+      auto ip_header = reinterpret_cast<struct ip const *>(packet_ + offset);
       char src[INET_ADDRSTRLEN];
       inet_ntop(AF_INET, &((*ip_header).ip_src), src, INET_ADDRSTRLEN);
       char dst[INET_ADDRSTRLEN];
       inet_ntop(AF_INET, &((*ip_header).ip_dst), dst, INET_ADDRSTRLEN);
       if ((*ip_header).ip_p == IPPROTO_UDP) {
-        auto udp_header = reinterpret_cast<struct udphdr const *>(packet_ + sizeof(struct ether_header) + sizeof(struct ip));
+        offset += sizeof(struct ip);
+        auto udp_header = reinterpret_cast<struct udphdr const *>(packet_ + offset);
 #if __APPLE__
         // auto src_port = ntohs((*udp_header).uh_sport);
         auto dst_port = ntohs((*udp_header).uh_dport);
@@ -85,6 +92,8 @@ struct Bridge final : public sbe::Parser::Handler {
             get_name<value_type>(),
             value);
       }
+    } else {
+      log::fatal("Unexpected: ether_type=0x{:x}"sv, ether_type);
     }
   }
 
@@ -102,18 +111,27 @@ Controller::Controller(Settings const &settings, std::string_view const &pcap_pa
 void Controller::dispatch() {
   auto callback = [&](struct pcap_pkthdr const *header, u_char const *packet) -> bool {
     auto timestamp = convert((*header).ts);
-    // note! assuming ether
-    auto ether_header = reinterpret_cast<struct ether_header const *>(packet);
+    size_t offset = 0;
+    auto ether_header = reinterpret_cast<struct ether_header const *>(packet + offset);
     auto ether_type = ntohs((*ether_header).ether_type);
+    // XXX FIXME there is also VLAG double-tagging... how to identify?
+    if (ether_type == ETHERTYPE_VLAN) {
+      offset += 4;  // XXX FIXME find somee struct or length in system header files... (VLAN tag)
+      ether_header = reinterpret_cast<struct ether_header const *>(packet + offset);
+      ether_type = ntohs((*ether_header).ether_type);
+    }
     if (ether_type == ETHERTYPE_IP) {
-      auto ip_header = reinterpret_cast<struct ip const *>(packet + sizeof(struct ether_header));
+      offset += sizeof(struct ether_header);
+      auto ip_header = reinterpret_cast<struct ip const *>(packet + offset);
       if ((*ip_header).ip_p == IPPROTO_UDP) {
-        auto offset = sizeof(struct ether_header) + sizeof(struct ip) + sizeof(struct udphdr);
+        offset += sizeof(struct ip) + sizeof(struct udphdr);
         std::span payload{reinterpret_cast<std::byte const *>(packet + offset), (*header).len - offset};
         Bridge bridge{header, packet};
         TraceInfo trace_info;
         sbe::Parser::dispatch(bridge, payload, trace_info);
       }
+    } else {
+      log::fatal("Unexpected: ether_type=0x{:x}"sv, ether_type);
     }
     return false;
   };
