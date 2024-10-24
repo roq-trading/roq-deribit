@@ -262,7 +262,7 @@ TEST_CASE("sbe_snapshot_1", "[sbe_parser]") {
       "\x0d"                                                  // instrument name length (13)
       "\x42\x54\x43\x2d\x50\x45\x52\x50\x45\x54\x55\x41\x4c"  // instrument name (BTC-PERPETUAL)
       // --- message header
-      "\x8c\x00"  // block length
+      "\x8c\x00"  // block length (140)
       "\xe8\x03"  // template id (1000)
       "\x01\x00"  // schema id (1)
       "\x02\x00"  // version (2)
@@ -293,7 +293,7 @@ TEST_CASE("sbe_snapshot_1", "[sbe_parser]") {
       "\xfc\xa9\xf1\xd2\x4d\x62\x30\x3f"                      // block trade commission
       "\xb8\x1e\x85\xeb\x51\xb8\x7e\x3f"                      // max liquidation commission
       "\x00\x00\x00\x00\x00\x00\x49\x40"                      // max leverage
-      "\x0d"                                                  // insrument name length (13)
+      "\x0d"                                                  // instrument name length (13)
       "\x42\x54\x43\x2d\x50\x45\x52\x50\x45\x54\x55\x41\x4c"  // instrument name (BTC-PERPETUAL)
       // --- message header
       "\x85\x00"  // block length
@@ -514,6 +514,7 @@ TEST_CASE("sbe_snapshot_1", "[sbe_parser]") {
       CHECK(frame.sequence_number == 160178);
       auto &[trace_info, instrument] = event;
       using value_type = std::remove_cvref<decltype(instrument)>::type;
+      // REQUIRE(sbe::compute_length(const_cast<value_type &>(instrument)) == 161);
       CHECK(instrument.instrumentId() == 210838);
       CHECK(instrument.instrumentState() == deribit_multicast::InstrumentState::open);
       CHECK(instrument.kind() == deribit_multicast::InstrumentKind::future);
@@ -540,9 +541,8 @@ TEST_CASE("sbe_snapshot_1", "[sbe_parser]") {
       size_t count = 0;
       const_cast<value_type &>(instrument).tickStepsList().forEach([&count]([[maybe_unused]] auto &item) { ++count; });
       CHECK(count == 0);
-      // XXX FIXME doesn't seem to work... also check the sbe auto-generated stream function
-      // CHECK(instrument.instrumentNameLength() == 13);
-      // CHECK(sbe::get_instrument_name(const_cast<value_type &>(instrument)) == "BTC-PERPETUAL"sv);
+      CHECK(instrument.instrumentNameLength() == 13);
+      CHECK(sbe::get_instrument_name(const_cast<value_type &>(instrument)) == "BTC-PERPETUAL"sv);
     }
 
    private:
@@ -554,6 +554,287 @@ TEST_CASE("sbe_snapshot_1", "[sbe_parser]") {
   } handler;
 
   REQUIRE(std::size(message) == 1452);
+  std::span buffer{reinterpret_cast<std::byte const *>(std::data(message)), std::size(message)};
+
+  TraceInfo trace_info;
+  auto result = sbe::Parser::dispatch(handler, buffer, trace_info);
+  CHECK(result == true);
+  handler.finished();
+}
+
+TEST_CASE("sbe_snapshot_2", "[sbe_parser]") {
+  auto message =
+      "\x9f\x05"          // packet length (1439)
+      "\x66\x00"          // channel id (102)
+      "\x32\x5a\x8e\x00"  // sequence number
+      // --- message header
+      "\x8b\x00"  // block length (139)
+      "\xf2\x03"  // template id (1010)
+      "\x01\x00"  // schema id (1)
+      "\x03\x00"  // version (3)
+      "\x01\x00"  // num groups (1)
+      "\x01\x00"  // num var data fields (1)
+      // --- instrument v2
+      "\xbd\x6f\x05\x00"                  // instrument id
+      "\x01"                              // instrument state
+      "\x01"                              // kind
+      "\x01"                              // instrument type
+      "\x02"                              // option type
+      "\x05"                              // settlement period
+      "\x01\x00"                          // settlement period count
+      "\x42\x54\x43\x00\x00\x00\x00\x00"  // base currency
+      "\x42\x54\x43\x00\x00\x00\x00\x00"  // quote currency
+      "\x55\x53\x44\x00\x00\x00\x00\x00"  // counter currency
+      "\x42\x54\x43\x00\x00\x00\x00\x00"  // settlement currency
+      "\x42\x54\x43\x00\x00\x00\x00\x00"  // size currency
+      "\xf8\xaf\x49\x21\x91\x01\x00\x00"  // creation timestamp ms
+      "\x00\x80\xb0\xc2\x92\x01\x00\x00"  // expiration timestamp ms
+      "\x00\x00\x00\x00\x00\xf3\xe6\x40"  // strike price
+      "\x00\x00\x00\x00\x00\x00\xf0\x3f"  // contract size
+      "\x9a\x99\x99\x99\x99\x99\xb9\x3f"  // min trade amount
+      "\x2d\x43\x1c\xeb\xe2\x36\x1a\x3f"  // tick size
+      "\x61\x32\x55\x30\x2a\xa9\x33\x3f"  // maker commission
+      "\x61\x32\x55\x30\x2a\xa9\x33\x3f"  // taker commission
+      "\x61\x32\x55\x30\x2a\xa9\x33\x3f"  // block trade commission
+      "\xff\xff\xff\xff\xff\xff\xff\xff"  // max liquidation commission
+      "\xff\xff\xff\xff\xff\xff\xff\xff"  // max leverage
+      // --- tick steps
+      "\x10\x00"  // block length
+      "\x01\x00"  // num in group (1)
+      "\x00\x00"  // num groups (0)
+      "\x00\x00"  // num var data fields (0)
+      // --- tick steps[0]
+      "\x7b\x14\xae\x47\xe1\x7a\x74\x3f"  // above price
+      "\xfc\xa9\xf1\xd2\x4d\x62\x40\x3f"  // tick size
+      // --- instrument name
+      "\x13"  // instrument name length (19)
+      "\x42\x54\x43\x2d\x32\x35\x4f\x43\x54\x32\x34\x2d\x34\x37\x30\x30"
+      "\x30\x2d\x50"  // instrument name (BTC-25OCT24-47000-P)
+      // --- message header
+      "\x8c\x00"  // block length (104)
+      "\xe8\x03"  // template id (1000)
+      "\x01\x00"  // schema id (1)
+      "\x02\x00"  // version (2)
+      "\x00\x00"  // num groups (1)
+      "\x01\x00"  // num var data fields (1)
+      // --- instrument
+      "\xbd\x6f\x05\x00"                  // instrument id
+      "\x01"                              // instrument state
+      "\x01"                              // kind
+      "\x01"                              // instrument type
+      "\x02"                              // option type
+      "\x00"                              // rfq
+      "\x05"                              // settlement period
+      "\x01\x00"                          // settlement period count
+      "\x42\x54\x43\x00\x00\x00\x00\x00"  // base currency
+      "\x42\x54\x43\x00\x00\x00\x00\x00"  // quote currency
+      "\x55\x53\x44\x00\x00\x00\x00\x00"  // counter currency
+      "\x42\x54\x43\x00\x00\x00\x00\x00"  // settlement currency
+      "\x42\x54\x43\x00\x00\x00\x00\x00"  // size currency
+      "\xf8\xaf\x49\x21\x91\x01\x00\x00"  // creation timestamp ms
+      "\x00\x80\xb0\xc2\x92\x01\x00\x00"  // expiration timestamp ms
+      "\x00\x00\x00\x00\x00\xf3\xe6\x40"  // strike price
+      "\x00\x00\x00\x00\x00\x00\xf0\x3f"  // contract size
+      "\x9a\x99\x99\x99\x99\x99\xb9\x3f"  // min trade amount
+      "\x2d\x43\x1c\xeb\xe2\x36\x1a\x3f"  // tick size
+      "\x61\x32\x55\x30\x2a\xa9\x33\x3f"  // maker commission
+      "\x61\x32\x55\x30\x2a\xa9\x33\x3f"  // taker commission
+      "\x61\x32\x55\x30\x2a\xa9\x33\x3f"  // block trade commission
+      "\xff\xff\xff\xff\xff\xff\xff\xff"  // max liquidation commission
+      "\xff\xff\xff\xff\xff\xff\xff\xff"  // max leverage
+      "\x13"                              // instrument length (19)
+      "\x42\x54\x43\x2d\x32\x35\x4f\x43\x54\x32\x34\x2d\x34\x37\x30\x30"
+      "\x30\x2d\x50"  // instrument name (BTC-25OCT24-47000-P)
+      // ---
+      "\x85\x00"  // block length
+      "\xeb\x03"  // template id (1003)
+      "\x01\x00\x02\x00\x00\x00\x00\x00\xbd\x6f\x05\x00\x01\x1c\x51\x66\xb8\x92\x01\x00\x00\x66\x66\x66\x66\x66\x56\x82\x40\x2d\x43\x1c\xeb\xe2\x36\x1a\x3f\xb8\x1e\x85\xeb\x51\xb8\x8e\x3f\x2d\x43\x1c\xeb\xe2\x36\x1a\x3f\x52\xb8\x1e\x85\x47\x4e\xf0\x40\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x2d\x43\x1c\xeb\xe2\x36\x1a\x3f\x00\x00\x00\x00\x00\x00\x14\x40\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\x52\xb8\x1e\x85\x47\x4e\xf0\x40\xff\xff\xff\xff\xff\xff\xff\xff\x3a\x8c\x30\xe2\x8e\x79\x95\x3e\x16\x00\xec\x03\x01\x00\x02\x00\x01\x00\x00\x00\xbd\x6f\x05\x00\x1c\x51\x66\xb8\x92\x01\x00\x00\x0b\x4a\xd3\x7f\x12\x00\x00\x00\x01\x01\x11\x00\x06\x00\x00\x00\x00\x00\x00\x2d\x43\x1c\xeb\xe2\x36\x1a\x3f\x00\x00\x00\x00\x00\x00\x14\x40\x00\x61\x32\x55\x30\x2a\xa9\x33\x3f\x33\x33\x33\x33\x33\xb3\x33\x40\x00\x2d\x43\x1c\xeb\xe2\x36\x3a\x3f\x00\x00\x00\x00\x00\x00\xf0\x3f\x00\x79\xe9\x26\x31\x08\xac\x6c\x3f\x9a\x99\x99\x99\x99\x99\xb9\x3f\x00\x15\x8c\x4a\xea\x04\x34\x71\x3f\x00\x00\x00\x00\x00\x00\x35\x40\x00\x7b\x14\xae\x47\xe1\x7a\x84\x3f\x33\x33\x33\x33\x33\x33\xd3\x3f\x8b\x00\xf2\x03\x01\x00\x03\x00\x01\x00\x01\x00\x48\x59\x04\x00\x01\x01\x01\x01\x05\x03\x00\x42\x54\x43\x00\x00\x00\x00\x00\x42\x54\x43\x00\x00\x00\x00\x00\x55\x53\x44\x00\x00\x00\x00\x00\x42\x54\x43\x00\x00\x00\x00\x00\x42\x54\x43\x00\x00\x00\x00\x00\x28\x1b\x70\xaf\x8c\x01\x00\x00\x00\x24\x21\x07\x94\x01\x00\x00\x00\x00\x00\x00\x00\x4c\xcd\x40\x00\x00\x00\x00\x00\x00\xf0\x3f\x9a\x99\x99\x99\x99\x99\xb9\x3f\x2d\x43\x1c\xeb\xe2\x36\x1a\x3f\x61\x32\x55\x30\x2a\xa9\x33\x3f\x61\x32\x55\x30\x2a\xa9\x33\x3f\x61\x32\x55\x30\x2a\xa9\x33\x3f\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\x10\x00\x01\x00\x00\x00\x00\x00\x7b\x14\xae\x47\xe1\x7a\x74\x3f\xfc\xa9\xf1\xd2\x4d\x62\x40\x3f\x13\x42\x54\x43\x2d\x32\x37\x44\x45\x43\x32\x34\x2d\x31\x35\x30\x30\x30\x2d\x43\x8c\x00\xe8\x03\x01\x00\x02\x00\x00\x00\x01\x00\x48\x59\x04\x00\x01\x01\x01\x01\x00\x05\x03\x00\x42\x54\x43\x00\x00\x00\x00\x00\x42\x54\x43\x00\x00\x00\x00\x00\x55\x53\x44\x00\x00\x00\x00\x00\x42\x54\x43\x00\x00\x00\x00\x00\x42\x54\x43\x00\x00\x00\x00\x00\x28\x1b\x70\xaf\x8c\x01\x00\x00\x00\x24\x21\x07\x94\x01\x00\x00\x00\x00\x00\x00\x00\x4c\xcd\x40\x00\x00\x00\x00\x00\x00\xf0\x3f\x9a\x99\x99\x99\x99\x99\xb9\x3f\x2d\x43\x1c\xeb\xe2\x36\x1a\x3f\x61\x32\x55\x30\x2a\xa9\x33\x3f\x61\x32\x55\x30\x2a\xa9\x33\x3f\x61\x32\x55\x30\x2a\xa9\x33\x3f\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\x13\x42\x54\x43\x2d\x32\x37\x44\x45\x43\x32\x34\x2d\x31\x35\x30\x30\x30\x2d\x43\x85\x00\xeb\x03\x01\x00\x02\x00\x00\x00\x00\x00\x48\x59\x04\x00\x01\x75\x4d\x66\xb8\x92\x01\x00\x00\x66\x66\x66\x66\x66\x66\x20\x40\x7b\x14\xae\x47\xe1\x7a\xe8\x3f\x06\x81\x95\x43\x8b\x6c\xe9\x3f\xa6\x9b\xc4\x20\xb0\x72\xe8\x3f\xf6\x28\x5c\x8f\x4e\x4e\xf0\x40\x6d\xc5\xfe\xb2\x7b\xf2\xe8\x3f\x4c\x37\x89\x41\x60\xe5\xe8\x3f\xcd\xcc\xcc\xcc\xcc\xcc\x3e\x40\x35\x5e\xba\x49\x0c\x02\xe9\x3f\xcd\xcc\xcc\xcc\xcc\xcc\x3e\x40\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xf6\x28\x5c\x8f\x4e\x4e\xf0\x40\xff\xff\xff\xff\xff\xff\xff\xff\x84\xe1\x33\x44\xdb\xf2\xe8\x3f\x16\x00\xec\x03\x01\x00\x02\x00\x01\x00\x00\x00\x48\x59\x04\x00\x75\x4d\x66\xb8\x92\x01\x00\x00\x45\x2c\xd4\x7f\x12\x00\x00\x00\x01\x01\x11\x00\x02\x00\x00\x00\x00\x00\x00\x35\x5e\xba\x49\x0c\x02\xe9\x3f\xcd\xcc\xcc\xcc\xcc\xcc\x3e\x40\x01\x4c\x37\x89\x41\x60\xe5\xe8\x3f\xcd\xcc\xcc\xcc\xcc\xcc\x3e\x40\x8b\x00\xf2\x03\x01\x00\x03\x00\x01\x00\x01\x00\x61\x68\x05\x00\x01\x01\x01\x01\x05\x01\x00\x42\x54\x43\x00\x00\x00\x00\x00\x42\x54\x43\x00\x00\x00\x00\x00\x55\x53\x44\x00\x00\x00\x00\x00\x42\x54\x43\x00\x00\x00\x00\x00\x42\x54\x43\x00\x00\x00\x00\x00\x00\x83\x62\x0f\x91\x01\x00\x00\x00\x80\xb0\xc2\x92\x01\x00\x00\x00\x00\x00\x00\x00\xd5\xeb\x40\x00\x00\x00\x00\x00\x00\xf0\x3f\x9a\x99\x99\x99\x99\x99\xb9\x3f\x2d\x43\x1c\xeb\xe2\x36\x1a\x3f\x61\x32\x55\x30\x2a\xa9\x33\x3f\x61\x32\x55\x30\x2a\xa9\x33\x3f\x61\x32\x55\x30\x2a\xa9\x33\x3f\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\x10\x00\x01\x00\x00\x00\x00\x00\x7b\x14\xae\x47\xe1\x7a\x74\x3f\xfc\xa9\xf1\xd2\x4d\x62\x40\x3f\x13\x42\x54\x43\x2d\x32\x35\x4f\x43\x54\x32\x34\x2d\x35\x37\x30\x30\x30\x2d\x43"sv;
+
+  struct MyHandler : public sbe::Parser::Handler {
+    void finished() const {
+      CHECK(frame_count_ == 1);
+      CHECK(instrument_count_ == 2);
+      CHECK(ticker_count_ == 2);
+      CHECK(snapshot_count_ == 2);
+      CHECK(instrument_v2_count_ == 3);
+    }
+
+   protected:
+    bool operator()(sbe::Frame const &frame) override {
+      ++frame_count_;
+      CHECK(frame.channel_id == 102);
+      CHECK(frame.sequence_number == 9329202);
+      return true;
+    }
+    void operator()(Trace<deribit_multicast::Instrument> const &event, sbe::Frame const &frame) override {
+      switch (++instrument_count_) {
+        case 1: {
+          CHECK(frame.channel_id == 102);
+          CHECK(frame.sequence_number == 9329202);
+          auto &[trace_info, instrument] = event;
+          using value_type = std::remove_cvref<decltype(instrument)>::type;
+          // REQUIRE(sbe::compute_length(const_cast<value_type &>(instrument)) == 160);
+          CHECK(instrument.instrumentId() == 356285);
+          CHECK(instrument.instrumentState() == deribit_multicast::InstrumentState::open);
+          CHECK(instrument.kind() == deribit_multicast::InstrumentKind::option);
+          CHECK(instrument.instrumentType() == deribit_multicast::InstrumentType::reversed);
+          CHECK(instrument.optionType() == deribit_multicast::OptionType::put);
+          CHECK(instrument.settlementPeriod() == deribit_multicast::Period::month);
+          CHECK(instrument.settlementPeriodCount() == 1);
+          CHECK(instrument.getBaseCurrencyAsStringView() == "BTC"sv);
+          CHECK(instrument.getQuoteCurrencyAsStringView() == "BTC"sv);
+          CHECK(instrument.getCounterCurrencyAsStringView() == "USD"sv);
+          CHECK(instrument.getSettlementCurrencyAsStringView() == "BTC"sv);
+          CHECK(instrument.getSizeCurrencyAsStringView() == "BTC"sv);
+          CHECK(instrument.creationTimestampMs() == 1722840363000);
+          CHECK(instrument.expirationTimestampMs() == 1729843200000);
+          CHECK(instrument.strikePrice() == Catch::Approx{47000.0});
+          CHECK(instrument.contractSize() == Catch::Approx{1.0});
+          CHECK(instrument.minTradeAmount() == Catch::Approx{0.1});
+          CHECK(instrument.tickSize() == Catch::Approx{0.0001});
+          CHECK(instrument.makerCommission() == Catch::Approx{0.0003});
+          CHECK(instrument.takerCommission() == Catch::Approx{0.0003});
+          CHECK(instrument.blockTradeCommission() == Catch::Approx{0.0003});
+          CHECK(std::isnan(instrument.maxLiquidationCommission()));
+          CHECK(std::isnan(instrument.maxLeverage()));
+          CHECK(instrument.instrumentNameLength() == 19);
+          CHECK(sbe::get_instrument_name(const_cast<value_type &>(instrument)) == "BTC-25OCT24-47000-P"sv);
+          break;
+        }
+        case 2:
+          break;
+        default:
+          FAIL();
+      }
+    }
+    void operator()(Trace<deribit_multicast::Book> const &, sbe::Frame const &) override { FAIL(); }
+    void operator()(Trace<deribit_multicast::Trades> const &, sbe::Frame const &) override { FAIL(); }
+    void operator()(Trace<deribit_multicast::Ticker> const &event, sbe::Frame const &frame) override {
+      ++ticker_count_;
+      /*
+      CHECK(frame.channel_id == 102);
+      CHECK(frame.sequence_number == 9329202);
+      auto &[trace_info, ticker] = event;
+      CHECK(ticker.instrumentId() == 210838);
+      CHECK(ticker.instrumentState() == deribit_multicast::InstrumentState::open);
+      CHECK(ticker.timestampMs() == 1728660226128);
+      CHECK(ticker.openInterest() == Catch::Approx{566342820.0});
+      CHECK(ticker.minSellPrice() == Catch::Approx{60219.5});
+      CHECK(ticker.maxBuyPrice() == Catch::Approx{63945.0});
+      CHECK(ticker.lastPrice() == Catch::Approx{62081.5});
+      CHECK(ticker.indexPrice() == Catch::Approx{62068.98999999999796273});
+      CHECK(ticker.markPrice() == Catch::Approx{62082.19000000000232831});
+      CHECK(ticker.bestBidPrice() == Catch::Approx{62081.0});
+      CHECK(ticker.bestBidAmount() == Catch::Approx{20470.0});
+      CHECK(ticker.bestAskPrice() == Catch::Approx{62081.5});
+      CHECK(ticker.bestAskAmount() == Catch::Approx{90260.0});
+      CHECK(ticker.currentFunding() == Catch::Approx{0.0});
+      CHECK(ticker.funding8h() == Catch::Approx{0.00004725});
+      CHECK(ticker.estimatedDeliveryPrice() == Catch::Approx{62068.98999999999796273});
+      CHECK(std::isnan(ticker.deliveryPrice()));
+      CHECK(ticker.settlementPrice() == Catch::Approx{60618.83000000000174623});
+      */
+    }
+    void operator()(Trace<deribit_multicast::Snapshot> const &event, sbe::Frame const &frame) override {
+      ++snapshot_count_;
+      /*
+      CHECK(frame.channel_id == 102);
+      CHECK(frame.sequence_number == 9329202);
+      auto &[trace_info, snapshot] = event;
+      using value_type = std::remove_cvref<decltype(snapshot)>::type;
+      CHECK(snapshot.instrumentId() == 210838);
+      size_t count = 0;
+      const_cast<value_type &>(snapshot).levelsList().forEach([&count](auto &item) {
+        switch (++count) {
+          case 1:
+            CHECK(item.side() == deribit_multicast::BookSide::ask);
+            CHECK(item.price() == Catch::Approx{62081.5});
+            CHECK(item.amount() == Catch::Approx{90260.0});
+            break;
+          case 2:
+            CHECK(item.side() == deribit_multicast::BookSide::bid);
+            CHECK(item.price() == Catch::Approx{62081.0});
+            CHECK(item.amount() == Catch::Approx{20470.0});
+            break;
+          case 54:
+            CHECK(item.side() == deribit_multicast::BookSide::bid);
+            CHECK(item.price() == Catch::Approx{62049.0});
+            CHECK(item.amount() == Catch::Approx{15510.0});
+            break;
+        }
+      });
+      CHECK(count == 54);
+      */
+    }
+    void operator()(Trace<deribit_multicast::SnapshotStart> const &, sbe::Frame const &) override { FAIL(); }
+    void operator()(Trace<deribit_multicast::SnapshotEnd> const &, sbe::Frame const &) override { FAIL(); }
+    void operator()(Trace<deribit_multicast::ComboLegs> const &, sbe::Frame const &) override { FAIL(); }
+    void operator()(Trace<deribit_multicast::PriceIndex> const &, sbe::Frame const &) override { FAIL(); }
+    void operator()(Trace<deribit_multicast::Rfq> const &, sbe::Frame const &) override { FAIL(); }
+    void operator()(Trace<deribit_multicast::InstrumentV2> const &event, sbe::Frame const &frame) override {
+      switch (++instrument_v2_count_) {
+        case 1: {
+          CHECK(frame.channel_id == 102);
+          CHECK(frame.sequence_number == 9329202);
+          auto &[trace_info, instrument] = event;
+          using value_type = std::remove_cvref<decltype(instrument)>::type;
+          // REQUIRE(sbe::compute_length(const_cast<value_type &>(instrument)) == 183);
+          // const_cast<value_type &>(instrument).sbeRewind();
+          CHECK(instrument.instrumentId() == 356285);
+          CHECK(instrument.instrumentState() == deribit_multicast::InstrumentState::open);
+          CHECK(instrument.kind() == deribit_multicast::InstrumentKind::option);
+          CHECK(instrument.instrumentType() == deribit_multicast::InstrumentType::reversed);
+          CHECK(instrument.optionType() == deribit_multicast::OptionType::put);
+          CHECK(instrument.settlementPeriod() == deribit_multicast::Period::month);
+          CHECK(instrument.settlementPeriodCount() == 1);
+          CHECK(instrument.getBaseCurrencyAsStringView() == "BTC"sv);
+          CHECK(instrument.getQuoteCurrencyAsStringView() == "BTC"sv);
+          CHECK(instrument.getCounterCurrencyAsStringView() == "USD"sv);
+          CHECK(instrument.getSettlementCurrencyAsStringView() == "BTC"sv);
+          CHECK(instrument.getSizeCurrencyAsStringView() == "BTC"sv);
+          CHECK(instrument.creationTimestampMs() == 1722840363000);
+          CHECK(instrument.expirationTimestampMs() == 1729843200000);
+          CHECK(instrument.strikePrice() == Catch::Approx{47000.0});
+          CHECK(instrument.contractSize() == Catch::Approx{1.0});
+          CHECK(instrument.minTradeAmount() == Catch::Approx{0.1});
+          CHECK(instrument.tickSize() == Catch::Approx{0.0001});
+          CHECK(instrument.makerCommission() == Catch::Approx{0.0003});
+          CHECK(instrument.takerCommission() == Catch::Approx{0.0003});
+          CHECK(instrument.blockTradeCommission() == Catch::Approx{0.0003});
+          CHECK(std::isnan(instrument.maxLiquidationCommission()));
+          CHECK(std::isnan(instrument.maxLeverage()));
+          size_t count = 0;
+          const_cast<value_type &>(instrument).tickStepsList().forEach([&count](auto &item) {
+            switch (++count) {
+              case 1:
+                CHECK(item.abovePrice() == Catch::Approx{0.005});
+                CHECK(item.tickSize() == Catch::Approx{0.0005});
+                break;
+            }
+          });
+          CHECK(count == 1);
+          CHECK(instrument.instrumentNameLength() == 19);
+          CHECK(sbe::get_instrument_name(const_cast<value_type &>(instrument)) == "BTC-25OCT24-47000-P"sv);
+          break;
+        }
+        case 2:
+          break;
+        case 3:
+          break;
+        default:
+          FAIL();
+      }
+    }
+
+   private:
+    size_t frame_count_ = {};
+    size_t instrument_count_ = {};
+    size_t ticker_count_ = {};
+    size_t snapshot_count_ = {};
+    size_t instrument_v2_count_ = {};
+  } handler;
+
+  REQUIRE(std::size(message) == 1447);
   std::span buffer{reinterpret_cast<std::byte const *>(std::data(message)), std::size(message)};
 
   TraceInfo trace_info;

@@ -134,7 +134,9 @@ inline size_t compute_length(deribit_multicast::Instrument &value) {
 
 template <>
 inline size_t compute_length(deribit_multicast::InstrumentV2 &value) {
-  auto tick_steps_list_length = value.tickStepsList().count();
+  value.sbeRewind();
+  size_t tick_steps_list_length = 0;
+  value.tickStepsList().forEach([&]([[maybe_unused]] auto &item) { ++tick_steps_list_length; });  // note!
   auto instrument_name_length = value.instrumentNameLength();
   return value.computeLength(tick_steps_list_length, instrument_name_length);
 }
@@ -192,8 +194,9 @@ inline std::string get_instrument_name(deribit_multicast::Instrument &value) {
 
 template <>
 inline std::string get_instrument_name(deribit_multicast::InstrumentV2 &value) {
-  value.sbeRewind();                           // note!
-  auto length = value.instrumentNameLength();  // must fetch before getting name
+  value.sbeRewind();                                                   // note!
+  value.tickStepsList().forEach([&]([[maybe_unused]] auto &item) {});  // note!
+  auto length = value.instrumentNameLength();                          // must fetch before getting name
   return {value.instrumentName(), length};
 }
 

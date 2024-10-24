@@ -28,7 +28,7 @@ auto dispatch_helper(auto &handler, auto &trace_info, auto &message, auto &frame
   T value{std::data(tmp), std::size(tmp)};
   auto bytes = compute_length(value);
   // log::debug("{}"sv, value);
-  value.sbeRewind();  // note! important
+  value.sbeRewind();  // note!
   create_trace_and_dispatch(handler, trace_info, value, frame);
   return bytes;
 }
