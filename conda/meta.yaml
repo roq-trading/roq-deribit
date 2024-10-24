@@ -27,6 +27,8 @@ requirements:
   host:
     - catch2
     - fmt
+    - libabseil
+    - libmagic
     - nlohmann_json
     - roq-api
     - roq-core
