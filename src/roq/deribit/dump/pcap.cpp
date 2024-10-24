@@ -1,6 +1,6 @@
 /* Copyright (c) 2017-2024, Hans Erik Thrane */
 
-#include "roq/deribit/pcap_dump/pcap.hpp"
+#include "roq/deribit/dump/pcap.hpp"
 
 #include "roq/exceptions.hpp"
 
@@ -8,7 +8,7 @@ using namespace std::literals;
 
 namespace roq {
 namespace deribit {
-namespace pcap_dump {
+namespace dump {
 
 // === HELPERS ===
 
@@ -47,6 +47,6 @@ void PCAP::dispatch(callback_type const &callback) {
     throw RuntimeError{"pcap_dispatch: {}"sv, pcap_geterr(handle_.get())};
 }
 
-}  // namespace pcap_dump
+}  // namespace dump
 }  // namespace deribit
 }  // namespace roq

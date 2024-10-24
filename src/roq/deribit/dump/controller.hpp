@@ -2,11 +2,11 @@
 
 #pragma once
 
-#include "roq/deribit/pcap_dump/settings.hpp"
+#include "roq/deribit/dump/settings.hpp"
 
 namespace roq {
 namespace deribit {
-namespace pcap_dump {
+namespace dump {
 
 struct Controller final {
   Controller(Settings const &, std::string_view const &pcap_path);
@@ -21,6 +21,6 @@ struct Controller final {
   std::string const pcap_path_;
 };
 
-}  // namespace pcap_dump
+}  // namespace dump
 }  // namespace deribit
 }  // namespace roq

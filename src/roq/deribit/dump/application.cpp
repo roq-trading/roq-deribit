@@ -1,17 +1,17 @@
 /* Copyright (c) 2017-2024, Hans Erik Thrane */
 
-#include "roq/deribit/pcap_dump/application.hpp"
+#include "roq/deribit/dump/application.hpp"
 
 #include "roq/logging.hpp"
 
-#include "roq/deribit/pcap_dump/controller.hpp"
-#include "roq/deribit/pcap_dump/settings.hpp"
+#include "roq/deribit/dump/controller.hpp"
+#include "roq/deribit/dump/settings.hpp"
 
 using namespace std::literals;
 
 namespace roq {
 namespace deribit {
-namespace pcap_dump {
+namespace dump {
 
 // === IMPLEMENTATION ===
 
@@ -24,6 +24,6 @@ int Application::main(args::Parser const &args) {
   return EXIT_SUCCESS;
 }
 
-}  // namespace pcap_dump
+}  // namespace dump
 }  // namespace deribit
 }  // namespace roq

@@ -5,8 +5,9 @@ add_subdirectory(json)
 add_subdirectory(flags)
 add_subdirectory(tools)
 add_subdirectory(sbe)
+
+add_subdirectory(dump)
 add_subdirectory(filter)
-add_subdirectory(pcap_dump)
 
 set(SOURCES
     account.cpp

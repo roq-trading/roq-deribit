@@ -4,16 +4,16 @@
 
 #include "roq/flags/args.hpp"
 
-#include "roq/deribit/pcap_dump/flags/flags.hpp"
+#include "roq/deribit/dump/flags/flags.hpp"
 
 namespace roq {
 namespace deribit {
-namespace pcap_dump {
+namespace dump {
 
 struct Settings final : public flags::Flags {
   explicit Settings(args::Parser const &);
 };
 
-}  // namespace pcap_dump
+}  // namespace dump
 }  // namespace deribit
 }  // namespace roq
