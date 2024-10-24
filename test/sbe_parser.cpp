@@ -514,7 +514,6 @@ TEST_CASE("sbe_snapshot_1", "[sbe_parser]") {
       CHECK(frame.sequence_number == 160178);
       auto &[trace_info, instrument] = event;
       using value_type = std::remove_cvref<decltype(instrument)>::type;
-      // REQUIRE(sbe::compute_length(const_cast<value_type &>(instrument)) == 161);
       CHECK(instrument.instrumentId() == 210838);
       CHECK(instrument.instrumentState() == deribit_multicast::InstrumentState::open);
       CHECK(instrument.kind() == deribit_multicast::InstrumentKind::future);
@@ -645,10 +644,80 @@ TEST_CASE("sbe_snapshot_2", "[sbe_parser]") {
       "\x13"                              // instrument length (19)
       "\x42\x54\x43\x2d\x32\x35\x4f\x43\x54\x32\x34\x2d\x34\x37\x30\x30"
       "\x30\x2d\x50"  // instrument name (BTC-25OCT24-47000-P)
-      // ---
+      // --- message header
       "\x85\x00"  // block length
       "\xeb\x03"  // template id (1003)
-      "\x01\x00\x02\x00\x00\x00\x00\x00\xbd\x6f\x05\x00\x01\x1c\x51\x66\xb8\x92\x01\x00\x00\x66\x66\x66\x66\x66\x56\x82\x40\x2d\x43\x1c\xeb\xe2\x36\x1a\x3f\xb8\x1e\x85\xeb\x51\xb8\x8e\x3f\x2d\x43\x1c\xeb\xe2\x36\x1a\x3f\x52\xb8\x1e\x85\x47\x4e\xf0\x40\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x2d\x43\x1c\xeb\xe2\x36\x1a\x3f\x00\x00\x00\x00\x00\x00\x14\x40\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\x52\xb8\x1e\x85\x47\x4e\xf0\x40\xff\xff\xff\xff\xff\xff\xff\xff\x3a\x8c\x30\xe2\x8e\x79\x95\x3e\x16\x00\xec\x03\x01\x00\x02\x00\x01\x00\x00\x00\xbd\x6f\x05\x00\x1c\x51\x66\xb8\x92\x01\x00\x00\x0b\x4a\xd3\x7f\x12\x00\x00\x00\x01\x01\x11\x00\x06\x00\x00\x00\x00\x00\x00\x2d\x43\x1c\xeb\xe2\x36\x1a\x3f\x00\x00\x00\x00\x00\x00\x14\x40\x00\x61\x32\x55\x30\x2a\xa9\x33\x3f\x33\x33\x33\x33\x33\xb3\x33\x40\x00\x2d\x43\x1c\xeb\xe2\x36\x3a\x3f\x00\x00\x00\x00\x00\x00\xf0\x3f\x00\x79\xe9\x26\x31\x08\xac\x6c\x3f\x9a\x99\x99\x99\x99\x99\xb9\x3f\x00\x15\x8c\x4a\xea\x04\x34\x71\x3f\x00\x00\x00\x00\x00\x00\x35\x40\x00\x7b\x14\xae\x47\xe1\x7a\x84\x3f\x33\x33\x33\x33\x33\x33\xd3\x3f\x8b\x00\xf2\x03\x01\x00\x03\x00\x01\x00\x01\x00\x48\x59\x04\x00\x01\x01\x01\x01\x05\x03\x00\x42\x54\x43\x00\x00\x00\x00\x00\x42\x54\x43\x00\x00\x00\x00\x00\x55\x53\x44\x00\x00\x00\x00\x00\x42\x54\x43\x00\x00\x00\x00\x00\x42\x54\x43\x00\x00\x00\x00\x00\x28\x1b\x70\xaf\x8c\x01\x00\x00\x00\x24\x21\x07\x94\x01\x00\x00\x00\x00\x00\x00\x00\x4c\xcd\x40\x00\x00\x00\x00\x00\x00\xf0\x3f\x9a\x99\x99\x99\x99\x99\xb9\x3f\x2d\x43\x1c\xeb\xe2\x36\x1a\x3f\x61\x32\x55\x30\x2a\xa9\x33\x3f\x61\x32\x55\x30\x2a\xa9\x33\x3f\x61\x32\x55\x30\x2a\xa9\x33\x3f\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\x10\x00\x01\x00\x00\x00\x00\x00\x7b\x14\xae\x47\xe1\x7a\x74\x3f\xfc\xa9\xf1\xd2\x4d\x62\x40\x3f\x13\x42\x54\x43\x2d\x32\x37\x44\x45\x43\x32\x34\x2d\x31\x35\x30\x30\x30\x2d\x43\x8c\x00\xe8\x03\x01\x00\x02\x00\x00\x00\x01\x00\x48\x59\x04\x00\x01\x01\x01\x01\x00\x05\x03\x00\x42\x54\x43\x00\x00\x00\x00\x00\x42\x54\x43\x00\x00\x00\x00\x00\x55\x53\x44\x00\x00\x00\x00\x00\x42\x54\x43\x00\x00\x00\x00\x00\x42\x54\x43\x00\x00\x00\x00\x00\x28\x1b\x70\xaf\x8c\x01\x00\x00\x00\x24\x21\x07\x94\x01\x00\x00\x00\x00\x00\x00\x00\x4c\xcd\x40\x00\x00\x00\x00\x00\x00\xf0\x3f\x9a\x99\x99\x99\x99\x99\xb9\x3f\x2d\x43\x1c\xeb\xe2\x36\x1a\x3f\x61\x32\x55\x30\x2a\xa9\x33\x3f\x61\x32\x55\x30\x2a\xa9\x33\x3f\x61\x32\x55\x30\x2a\xa9\x33\x3f\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\x13\x42\x54\x43\x2d\x32\x37\x44\x45\x43\x32\x34\x2d\x31\x35\x30\x30\x30\x2d\x43\x85\x00\xeb\x03\x01\x00\x02\x00\x00\x00\x00\x00\x48\x59\x04\x00\x01\x75\x4d\x66\xb8\x92\x01\x00\x00\x66\x66\x66\x66\x66\x66\x20\x40\x7b\x14\xae\x47\xe1\x7a\xe8\x3f\x06\x81\x95\x43\x8b\x6c\xe9\x3f\xa6\x9b\xc4\x20\xb0\x72\xe8\x3f\xf6\x28\x5c\x8f\x4e\x4e\xf0\x40\x6d\xc5\xfe\xb2\x7b\xf2\xe8\x3f\x4c\x37\x89\x41\x60\xe5\xe8\x3f\xcd\xcc\xcc\xcc\xcc\xcc\x3e\x40\x35\x5e\xba\x49\x0c\x02\xe9\x3f\xcd\xcc\xcc\xcc\xcc\xcc\x3e\x40\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xf6\x28\x5c\x8f\x4e\x4e\xf0\x40\xff\xff\xff\xff\xff\xff\xff\xff\x84\xe1\x33\x44\xdb\xf2\xe8\x3f\x16\x00\xec\x03\x01\x00\x02\x00\x01\x00\x00\x00\x48\x59\x04\x00\x75\x4d\x66\xb8\x92\x01\x00\x00\x45\x2c\xd4\x7f\x12\x00\x00\x00\x01\x01\x11\x00\x02\x00\x00\x00\x00\x00\x00\x35\x5e\xba\x49\x0c\x02\xe9\x3f\xcd\xcc\xcc\xcc\xcc\xcc\x3e\x40\x01\x4c\x37\x89\x41\x60\xe5\xe8\x3f\xcd\xcc\xcc\xcc\xcc\xcc\x3e\x40\x8b\x00\xf2\x03\x01\x00\x03\x00\x01\x00\x01\x00\x61\x68\x05\x00\x01\x01\x01\x01\x05\x01\x00\x42\x54\x43\x00\x00\x00\x00\x00\x42\x54\x43\x00\x00\x00\x00\x00\x55\x53\x44\x00\x00\x00\x00\x00\x42\x54\x43\x00\x00\x00\x00\x00\x42\x54\x43\x00\x00\x00\x00\x00\x00\x83\x62\x0f\x91\x01\x00\x00\x00\x80\xb0\xc2\x92\x01\x00\x00\x00\x00\x00\x00\x00\xd5\xeb\x40\x00\x00\x00\x00\x00\x00\xf0\x3f\x9a\x99\x99\x99\x99\x99\xb9\x3f\x2d\x43\x1c\xeb\xe2\x36\x1a\x3f\x61\x32\x55\x30\x2a\xa9\x33\x3f\x61\x32\x55\x30\x2a\xa9\x33\x3f\x61\x32\x55\x30\x2a\xa9\x33\x3f\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\x10\x00\x01\x00\x00\x00\x00\x00\x7b\x14\xae\x47\xe1\x7a\x74\x3f\xfc\xa9\xf1\xd2\x4d\x62\x40\x3f\x13\x42\x54\x43\x2d\x32\x35\x4f\x43\x54\x32\x34\x2d\x35\x37\x30\x30\x30\x2d\x43"sv;
+      "\x01\x00"
+      "\x02\x00"
+      "\x00\x00"
+      "\x00\x00"
+      "\xbd\x6f\x05\x00\x01\x1c\x51\x66\xb8\x92\x01\x00\x00\x66\x66\x66\x66\x66\x56\x82\x40\x2d\x43\x1c\xeb\xe2\x36\x1a\x3f\xb8\x1e\x85\xeb\x51\xb8\x8e\x3f\x2d"
+      "\x43\x1c\xeb\xe2\x36\x1a\x3f\x52\xb8\x1e\x85\x47\x4e\xf0\x40\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00"
+      "\x00\x2d\x43\x1c\xeb\xe2\x36\x1a\x3f\x00\x00\x00\x00\x00\x00\x14\x40\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\x52\xb8\x1e\x85\x47"
+      "\x4e\xf0\x40\xff\xff\xff\xff\xff\xff\xff\xff\x3a\x8c\x30\xe2\x8e\x79\x95\x3e"
+      // --- message header
+      "\x16\x00"  // block length
+      "\xec\x03"  // template id (1004)
+      "\x01\x00"
+      "\x02\x00"
+      "\x01\x00"
+      "\x00\x00"
+      "\xbd\x6f\x05\x00\x1c\x51\x66\xb8\x92\x01\x00\x00\x0b\x4a\xd3\x7f\x12\x00\x00\x00\x01\x01\x11\x00\x06\x00\x00\x00\x00\x00\x00\x2d\x43\x1c\xeb\xe2\x36\x1a"
+      "\x3f\x00\x00\x00\x00\x00\x00\x14\x40\x00\x61\x32\x55\x30\x2a\xa9\x33\x3f\x33\x33\x33\x33\x33\xb3\x33\x40\x00\x2d\x43\x1c\xeb\xe2\x36\x3a\x3f\x00\x00\x00"
+      "\x00\x00\x00\xf0\x3f\x00\x79\xe9\x26\x31\x08\xac\x6c\x3f\x9a\x99\x99\x99\x99\x99\xb9\x3f\x00\x15\x8c\x4a\xea\x04\x34\x71\x3f\x00\x00\x00\x00\x00\x00\x35"
+      "\x40\x00\x7b\x14\xae\x47\xe1\x7a\x84\x3f\x33\x33\x33\x33\x33\x33\xd3\x3f"
+      // --- message header
+      "\x8b\x00"  // block length
+      "\xf2\x03"  // template id (1010)
+      "\x01\x00"
+      "\x03\x00"
+      "\x01\x00"
+      "\x01\x00"
+      "\x48\x59\x04\x00\x01\x01\x01\x01\x05\x03\x00\x42\x54\x43\x00\x00\x00\x00\x00\x42\x54\x43\x00\x00\x00\x00\x00\x55\x53\x44\x00\x00\x00\x00\x00\x42\x54\x43"
+      "\x00\x00\x00\x00\x00\x42\x54\x43\x00\x00\x00\x00\x00\x28\x1b\x70\xaf\x8c\x01\x00\x00\x00\x24\x21\x07\x94\x01\x00\x00\x00\x00\x00\x00\x00\x4c\xcd\x40\x00"
+      "\x00\x00\x00\x00\x00\xf0\x3f\x9a\x99\x99\x99\x99\x99\xb9\x3f\x2d\x43\x1c\xeb\xe2\x36\x1a\x3f\x61\x32\x55\x30\x2a\xa9\x33\x3f\x61\x32\x55\x30\x2a\xa9\x33"
+      "\x3f\x61\x32\x55\x30\x2a\xa9\x33\x3f\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\x10\x00\x01\x00\x00\x00\x00\x00\x7b\x14\xae\x47\xe1"
+      "\x7a\x74\x3f\xfc\xa9\xf1\xd2\x4d\x62\x40\x3f\x13\x42\x54\x43\x2d\x32\x37\x44\x45\x43\x32\x34\x2d\x31\x35\x30\x30\x30\x2d\x43"
+      // --- message header
+      "\x8c\x00"  // block length
+      "\xe8\x03"  // template id (1000)
+      "\x01\x00"
+      "\x02\x00"
+      "\x00\x00"
+      "\x01\x00"
+      "\x48\x59\x04\x00\x01\x01\x01\x01\x00\x05\x03\x00\x42\x54\x43\x00\x00\x00\x00\x00\x42\x54\x43\x00\x00\x00\x00\x00\x55\x53\x44\x00\x00\x00\x00\x00\x42\x54"
+      "\x43\x00\x00\x00\x00\x00\x42\x54\x43\x00\x00\x00\x00\x00\x28\x1b\x70\xaf\x8c\x01\x00\x00\x00\x24\x21\x07\x94\x01\x00\x00\x00\x00\x00\x00\x00\x4c\xcd\x40"
+      "\x00\x00\x00\x00\x00\x00\xf0\x3f\x9a\x99\x99\x99\x99\x99\xb9\x3f\x2d\x43\x1c\xeb\xe2\x36\x1a\x3f\x61\x32\x55\x30\x2a\xa9\x33\x3f\x61\x32\x55\x30\x2a\xa9"
+      "\x33\x3f\x61\x32\x55\x30\x2a\xa9\x33\x3f\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\x13\x42\x54\x43\x2d\x32\x37\x44\x45\x43\x32\x34"
+      "\x2d\x31\x35\x30\x30\x30\x2d\x43"
+      // --- message header
+      "\x85\x00"  // block length
+      "\xeb\x03"  // template id (1003)
+      "\x01\x00"
+      "\x02\x00"
+      "\x00\x00"
+      "\x00\x00"
+      "\x48\x59\x04\x00\x01\x75\x4d\x66\xb8\x92\x01\x00\x00\x66\x66\x66\x66\x66\x66\x20\x40\x7b\x14\xae\x47\xe1\x7a\xe8\x3f\x06\x81\x95\x43\x8b\x6c\xe9\x3f\xa6"
+      "\x9b\xc4\x20\xb0\x72\xe8\x3f\xf6\x28\x5c\x8f\x4e\x4e\xf0\x40\x6d\xc5\xfe\xb2\x7b\xf2\xe8\x3f\x4c\x37\x89\x41\x60\xe5\xe8\x3f\xcd\xcc\xcc\xcc\xcc\xcc\x3e"
+      "\x40\x35\x5e\xba\x49\x0c\x02\xe9\x3f\xcd\xcc\xcc\xcc\xcc\xcc\x3e\x40\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xf6\x28\x5c\x8f\x4e"
+      "\x4e\xf0\x40\xff\xff\xff\xff\xff\xff\xff\xff\x84\xe1\x33\x44\xdb\xf2\xe8\x3f"
+      // --- message header
+      "\x16\x00"  // block length
+      "\xec\x03"  // template id (1004)
+      "\x01\x00"
+      "\x02\x00"
+      "\x01\x00"
+      "\x00\x00"
+      "\x48\x59\x04\x00\x75\x4d\x66\xb8\x92\x01\x00\x00\x45\x2c\xd4\x7f\x12\x00\x00\x00\x01\x01\x11\x00\x02\x00\x00\x00\x00\x00\x00\x35\x5e\xba\x49\x0c\x02\xe9"
+      "\x3f\xcd\xcc\xcc\xcc\xcc\xcc\x3e\x40\x01\x4c\x37\x89\x41\x60\xe5\xe8\x3f\xcd\xcc\xcc\xcc\xcc\xcc\x3e\x40"
+      // --- message header
+      "\x8b\x00"  // block length
+      "\xf2\x03"  // template id (1010)
+      "\x01\x00"
+      "\x03\x00"
+      "\x01\x00"
+      "\x01\x00"
+      "\x61\x68\x05\x00\x01\x01\x01\x01\x05\x01\x00\x42\x54\x43\x00\x00\x00\x00\x00\x42\x54\x43\x00\x00\x00\x00\x00\x55\x53\x44\x00\x00\x00\x00\x00\x42\x54\x43\x00\x00\x00\x00\x00\x42\x54\x43\x00\x00\x00\x00\x00\x00\x83\x62\x0f\x91\x01\x00\x00\x00\x80\xb0\xc2\x92\x01\x00\x00\x00\x00\x00\x00\x00\xd5\xeb\x40\x00\x00\x00\x00\x00\x00\xf0\x3f\x9a\x99\x99\x99\x99\x99\xb9\x3f\x2d\x43\x1c\xeb\xe2\x36\x1a\x3f\x61\x32\x55\x30\x2a\xa9\x33\x3f\x61\x32\x55\x30\x2a\xa9\x33\x3f\x61\x32\x55\x30\x2a\xa9\x33\x3f\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\x10\x00\x01\x00\x00\x00\x00\x00\x7b\x14\xae\x47\xe1\x7a\x74\x3f\xfc\xa9\xf1\xd2\x4d\x62\x40\x3f\x13\x42\x54\x43\x2d\x32\x35\x4f\x43\x54\x32\x34\x2d\x35\x37\x30\x30\x30\x2d\x43"sv;
 
   struct MyHandler : public sbe::Parser::Handler {
     void finished() const {
@@ -667,13 +736,12 @@ TEST_CASE("sbe_snapshot_2", "[sbe_parser]") {
       return true;
     }
     void operator()(Trace<deribit_multicast::Instrument> const &event, sbe::Frame const &frame) override {
+      CHECK(frame.channel_id == 102);
+      CHECK(frame.sequence_number == 9329202);
+      auto &[trace_info, instrument] = event;
+      using value_type = std::remove_cvref<decltype(instrument)>::type;
       switch (++instrument_count_) {
         case 1: {
-          CHECK(frame.channel_id == 102);
-          CHECK(frame.sequence_number == 9329202);
-          auto &[trace_info, instrument] = event;
-          using value_type = std::remove_cvref<decltype(instrument)>::type;
-          // REQUIRE(sbe::compute_length(const_cast<value_type &>(instrument)) == 160);
           CHECK(instrument.instrumentId() == 356285);
           CHECK(instrument.instrumentState() == deribit_multicast::InstrumentState::open);
           CHECK(instrument.kind() == deribit_multicast::InstrumentKind::option);
@@ -701,8 +769,34 @@ TEST_CASE("sbe_snapshot_2", "[sbe_parser]") {
           CHECK(sbe::get_instrument_name(const_cast<value_type &>(instrument)) == "BTC-25OCT24-47000-P"sv);
           break;
         }
-        case 2:
+        case 2: {
+          CHECK(instrument.instrumentId() == 285000);
+          CHECK(instrument.instrumentState() == deribit_multicast::InstrumentState::open);
+          CHECK(instrument.kind() == deribit_multicast::InstrumentKind::option);
+          CHECK(instrument.instrumentType() == deribit_multicast::InstrumentType::reversed);
+          CHECK(instrument.optionType() == deribit_multicast::OptionType::call);
+          CHECK(instrument.settlementPeriod() == deribit_multicast::Period::month);
+          CHECK(instrument.settlementPeriodCount() == 3);
+          CHECK(instrument.getBaseCurrencyAsStringView() == "BTC"sv);
+          CHECK(instrument.getQuoteCurrencyAsStringView() == "BTC"sv);
+          CHECK(instrument.getCounterCurrencyAsStringView() == "USD"sv);
+          CHECK(instrument.getSettlementCurrencyAsStringView() == "BTC"sv);
+          CHECK(instrument.getSizeCurrencyAsStringView() == "BTC"sv);
+          CHECK(instrument.creationTimestampMs() == 1703750409000);
+          CHECK(instrument.expirationTimestampMs() == 1735286400000);
+          CHECK(instrument.strikePrice() == Catch::Approx{15000.0});
+          CHECK(instrument.contractSize() == Catch::Approx{1.0});
+          CHECK(instrument.minTradeAmount() == Catch::Approx{0.1});
+          CHECK(instrument.tickSize() == Catch::Approx{0.0001});
+          CHECK(instrument.makerCommission() == Catch::Approx{0.0003});
+          CHECK(instrument.takerCommission() == Catch::Approx{0.0003});
+          CHECK(instrument.blockTradeCommission() == Catch::Approx{0.0003});
+          CHECK(std::isnan(instrument.maxLiquidationCommission()));
+          CHECK(std::isnan(instrument.maxLeverage()));
+          CHECK(instrument.instrumentNameLength() == 19);
+          CHECK(sbe::get_instrument_name(const_cast<value_type &>(instrument)) == "BTC-27DEC24-15000-C"sv);
           break;
+        }
         default:
           FAIL();
       }
@@ -710,61 +804,110 @@ TEST_CASE("sbe_snapshot_2", "[sbe_parser]") {
     void operator()(Trace<deribit_multicast::Book> const &, sbe::Frame const &) override { FAIL(); }
     void operator()(Trace<deribit_multicast::Trades> const &, sbe::Frame const &) override { FAIL(); }
     void operator()(Trace<deribit_multicast::Ticker> const &event, sbe::Frame const &frame) override {
-      ++ticker_count_;
-      /*
       CHECK(frame.channel_id == 102);
       CHECK(frame.sequence_number == 9329202);
       auto &[trace_info, ticker] = event;
-      CHECK(ticker.instrumentId() == 210838);
-      CHECK(ticker.instrumentState() == deribit_multicast::InstrumentState::open);
-      CHECK(ticker.timestampMs() == 1728660226128);
-      CHECK(ticker.openInterest() == Catch::Approx{566342820.0});
-      CHECK(ticker.minSellPrice() == Catch::Approx{60219.5});
-      CHECK(ticker.maxBuyPrice() == Catch::Approx{63945.0});
-      CHECK(ticker.lastPrice() == Catch::Approx{62081.5});
-      CHECK(ticker.indexPrice() == Catch::Approx{62068.98999999999796273});
-      CHECK(ticker.markPrice() == Catch::Approx{62082.19000000000232831});
-      CHECK(ticker.bestBidPrice() == Catch::Approx{62081.0});
-      CHECK(ticker.bestBidAmount() == Catch::Approx{20470.0});
-      CHECK(ticker.bestAskPrice() == Catch::Approx{62081.5});
-      CHECK(ticker.bestAskAmount() == Catch::Approx{90260.0});
-      CHECK(ticker.currentFunding() == Catch::Approx{0.0});
-      CHECK(ticker.funding8h() == Catch::Approx{0.00004725});
-      CHECK(ticker.estimatedDeliveryPrice() == Catch::Approx{62068.98999999999796273});
-      CHECK(std::isnan(ticker.deliveryPrice()));
-      CHECK(ticker.settlementPrice() == Catch::Approx{60618.83000000000174623});
-      */
+      switch (++ticker_count_) {
+        case 1: {
+          CHECK(ticker.instrumentId() == 356285);
+          CHECK(ticker.instrumentState() == deribit_multicast::InstrumentState::open);
+          CHECK(ticker.timestampMs() == 1729670566172);
+          CHECK(ticker.openInterest() == Catch::Approx{586.79999999999995453});
+          CHECK(ticker.minSellPrice() == Catch::Approx{0.0001});
+          CHECK(ticker.maxBuyPrice() == Catch::Approx{0.015});
+          CHECK(ticker.lastPrice() == Catch::Approx{0.0001});
+          CHECK(ticker.indexPrice() == Catch::Approx{66788.47000000000116415});
+          CHECK(ticker.markPrice() == Catch::Approx{0.0});
+          CHECK(ticker.bestBidPrice() == Catch::Approx{0.0});
+          CHECK(ticker.bestBidAmount() == Catch::Approx{0.0});
+          CHECK(ticker.bestAskPrice() == Catch::Approx{0.0001});
+          CHECK(ticker.bestAskAmount() == Catch::Approx{5.0});
+          CHECK(std::isnan(ticker.currentFunding()));
+          CHECK(std::isnan(ticker.funding8h()));
+          CHECK(ticker.estimatedDeliveryPrice() == Catch::Approx{66788.47000000000116415});
+          CHECK(std::isnan(ticker.deliveryPrice()));
+          CHECK(ticker.settlementPrice() == Catch::Approx{0.00000032});
+          break;
+        }
+        case 2: {
+          CHECK(ticker.instrumentId() == 285000);
+          CHECK(ticker.instrumentState() == deribit_multicast::InstrumentState::open);
+          CHECK(ticker.timestampMs() == 1729670565237);
+          CHECK(ticker.openInterest() == Catch::Approx{8.19999999999999929});
+          CHECK(ticker.minSellPrice() == Catch::Approx{0.76500000000000001});
+          CHECK(ticker.maxBuyPrice() == Catch::Approx{0.79449999999999998});
+          CHECK(ticker.lastPrice() == Catch::Approx{0.76400000000000001});
+          CHECK(ticker.indexPrice() == Catch::Approx{66788.91000000000349246});
+          CHECK(ticker.markPrice() == Catch::Approx{0.77959999999999996});
+          CHECK(ticker.bestBidPrice() == Catch::Approx{0.77800000000000002});
+          CHECK(ticker.bestBidAmount() == Catch::Approx{30.80000000000000071});
+          CHECK(ticker.bestAskPrice() == Catch::Approx{0.78149999999999997});
+          CHECK(ticker.bestAskAmount() == Catch::Approx{30.80000000000000071});
+          CHECK(std::isnan(ticker.currentFunding()));
+          CHECK(std::isnan(ticker.funding8h()));
+          CHECK(ticker.estimatedDeliveryPrice() == Catch::Approx{66788.47000000000116415});
+          CHECK(std::isnan(ticker.deliveryPrice()));
+          CHECK(ticker.settlementPrice() == Catch::Approx{0.77964557000000001});
+          break;
+        }
+        default:
+          FAIL();
+      }
     }
     void operator()(Trace<deribit_multicast::Snapshot> const &event, sbe::Frame const &frame) override {
-      ++snapshot_count_;
-      /*
       CHECK(frame.channel_id == 102);
       CHECK(frame.sequence_number == 9329202);
       auto &[trace_info, snapshot] = event;
       using value_type = std::remove_cvref<decltype(snapshot)>::type;
-      CHECK(snapshot.instrumentId() == 210838);
-      size_t count = 0;
-      const_cast<value_type &>(snapshot).levelsList().forEach([&count](auto &item) {
-        switch (++count) {
-          case 1:
-            CHECK(item.side() == deribit_multicast::BookSide::ask);
-            CHECK(item.price() == Catch::Approx{62081.5});
-            CHECK(item.amount() == Catch::Approx{90260.0});
-            break;
-          case 2:
-            CHECK(item.side() == deribit_multicast::BookSide::bid);
-            CHECK(item.price() == Catch::Approx{62081.0});
-            CHECK(item.amount() == Catch::Approx{20470.0});
-            break;
-          case 54:
-            CHECK(item.side() == deribit_multicast::BookSide::bid);
-            CHECK(item.price() == Catch::Approx{62049.0});
-            CHECK(item.amount() == Catch::Approx{15510.0});
-            break;
+      switch (++snapshot_count_) {
+        case 1: {
+          CHECK(snapshot.instrumentId() == 356285);
+          size_t count = 0;
+          const_cast<value_type &>(snapshot).levelsList().forEach([&count](auto &item) {
+            switch (++count) {
+              case 1:
+                CHECK(item.side() == deribit_multicast::BookSide::ask);
+                CHECK(item.price() == Catch::Approx{0.0001});
+                CHECK(item.amount() == Catch::Approx{5.0});
+                break;
+              case 2:
+                CHECK(item.side() == deribit_multicast::BookSide::ask);
+                CHECK(item.price() == Catch::Approx{0.0003});
+                CHECK(item.amount() == Catch::Approx{19.69999999999999929});
+                break;
+              case 6:
+                CHECK(item.side() == deribit_multicast::BookSide::ask);
+                CHECK(item.price() == Catch::Approx{0.01});
+                CHECK(item.amount() == Catch::Approx{0.29999999999999999});
+                break;
+            }
+          });
+          CHECK(count == 6);
+          break;
         }
-      });
-      CHECK(count == 54);
-      */
+        case 2: {
+          CHECK(snapshot.instrumentId() == 285000);
+          size_t count = 0;
+          const_cast<value_type &>(snapshot).levelsList().forEach([&count](auto &item) {
+            switch (++count) {
+              case 1:
+                CHECK(item.side() == deribit_multicast::BookSide::ask);
+                CHECK(item.price() == Catch::Approx{0.78149999999999997});
+                CHECK(item.amount() == Catch::Approx{30.80000000000000071});
+                break;
+              case 2:
+                CHECK(item.side() == deribit_multicast::BookSide::bid);
+                CHECK(item.price() == Catch::Approx{0.77800000000000002});
+                CHECK(item.amount() == Catch::Approx{30.80000000000000071});
+                break;
+            }
+          });
+          CHECK(count == 2);
+          break;
+        }
+        default:
+          FAIL();
+      }
     }
     void operator()(Trace<deribit_multicast::SnapshotStart> const &, sbe::Frame const &) override { FAIL(); }
     void operator()(Trace<deribit_multicast::SnapshotEnd> const &, sbe::Frame const &) override { FAIL(); }
@@ -772,14 +915,12 @@ TEST_CASE("sbe_snapshot_2", "[sbe_parser]") {
     void operator()(Trace<deribit_multicast::PriceIndex> const &, sbe::Frame const &) override { FAIL(); }
     void operator()(Trace<deribit_multicast::Rfq> const &, sbe::Frame const &) override { FAIL(); }
     void operator()(Trace<deribit_multicast::InstrumentV2> const &event, sbe::Frame const &frame) override {
+      CHECK(frame.channel_id == 102);
+      CHECK(frame.sequence_number == 9329202);
+      auto &[trace_info, instrument] = event;
+      using value_type = std::remove_cvref<decltype(instrument)>::type;
       switch (++instrument_v2_count_) {
         case 1: {
-          CHECK(frame.channel_id == 102);
-          CHECK(frame.sequence_number == 9329202);
-          auto &[trace_info, instrument] = event;
-          using value_type = std::remove_cvref<decltype(instrument)>::type;
-          // REQUIRE(sbe::compute_length(const_cast<value_type &>(instrument)) == 183);
-          // const_cast<value_type &>(instrument).sbeRewind();
           CHECK(instrument.instrumentId() == 356285);
           CHECK(instrument.instrumentState() == deribit_multicast::InstrumentState::open);
           CHECK(instrument.kind() == deribit_multicast::InstrumentKind::option);
@@ -817,10 +958,82 @@ TEST_CASE("sbe_snapshot_2", "[sbe_parser]") {
           CHECK(sbe::get_instrument_name(const_cast<value_type &>(instrument)) == "BTC-25OCT24-47000-P"sv);
           break;
         }
-        case 2:
+        case 2: {
+          CHECK(instrument.instrumentId() == 285000);
+          CHECK(instrument.instrumentState() == deribit_multicast::InstrumentState::open);
+          CHECK(instrument.kind() == deribit_multicast::InstrumentKind::option);
+          CHECK(instrument.instrumentType() == deribit_multicast::InstrumentType::reversed);
+          CHECK(instrument.optionType() == deribit_multicast::OptionType::call);
+          CHECK(instrument.settlementPeriod() == deribit_multicast::Period::month);
+          CHECK(instrument.settlementPeriodCount() == 3);
+          CHECK(instrument.getBaseCurrencyAsStringView() == "BTC"sv);
+          CHECK(instrument.getQuoteCurrencyAsStringView() == "BTC"sv);
+          CHECK(instrument.getCounterCurrencyAsStringView() == "USD"sv);
+          CHECK(instrument.getSettlementCurrencyAsStringView() == "BTC"sv);
+          CHECK(instrument.getSizeCurrencyAsStringView() == "BTC"sv);
+          CHECK(instrument.creationTimestampMs() == 1703750409000);
+          CHECK(instrument.expirationTimestampMs() == 1735286400000);
+          CHECK(instrument.strikePrice() == Catch::Approx{15000.0});
+          CHECK(instrument.contractSize() == Catch::Approx{1.0});
+          CHECK(instrument.minTradeAmount() == Catch::Approx{0.1});
+          CHECK(instrument.tickSize() == Catch::Approx{0.0001});
+          CHECK(instrument.makerCommission() == Catch::Approx{0.0003});
+          CHECK(instrument.takerCommission() == Catch::Approx{0.0003});
+          CHECK(instrument.blockTradeCommission() == Catch::Approx{0.0003});
+          CHECK(std::isnan(instrument.maxLiquidationCommission()));
+          CHECK(std::isnan(instrument.maxLeverage()));
+          size_t count = 0;
+          const_cast<value_type &>(instrument).tickStepsList().forEach([&count](auto &item) {
+            switch (++count) {
+              case 1:
+                CHECK(item.abovePrice() == Catch::Approx{0.005});
+                CHECK(item.tickSize() == Catch::Approx{0.0005});
+                break;
+            }
+          });
+          CHECK(count == 1);
+          CHECK(instrument.instrumentNameLength() == 19);
+          CHECK(sbe::get_instrument_name(const_cast<value_type &>(instrument)) == "BTC-27DEC24-15000-C"sv);
           break;
-        case 3:
+        }
+        case 3: {
+          CHECK(instrument.instrumentId() == 354401);
+          CHECK(instrument.instrumentState() == deribit_multicast::InstrumentState::open);
+          CHECK(instrument.kind() == deribit_multicast::InstrumentKind::option);
+          CHECK(instrument.instrumentType() == deribit_multicast::InstrumentType::reversed);
+          CHECK(instrument.optionType() == deribit_multicast::OptionType::call);
+          CHECK(instrument.settlementPeriod() == deribit_multicast::Period::month);
+          CHECK(instrument.settlementPeriodCount() == 1);
+          CHECK(instrument.getBaseCurrencyAsStringView() == "BTC"sv);
+          CHECK(instrument.getQuoteCurrencyAsStringView() == "BTC"sv);
+          CHECK(instrument.getCounterCurrencyAsStringView() == "USD"sv);
+          CHECK(instrument.getSettlementCurrencyAsStringView() == "BTC"sv);
+          CHECK(instrument.getSizeCurrencyAsStringView() == "BTC"sv);
+          CHECK(instrument.creationTimestampMs() == 1722540000000);
+          CHECK(instrument.expirationTimestampMs() == 1729843200000);
+          CHECK(instrument.strikePrice() == Catch::Approx{57000.0});
+          CHECK(instrument.contractSize() == Catch::Approx{1.0});
+          CHECK(instrument.minTradeAmount() == Catch::Approx{0.1});
+          CHECK(instrument.tickSize() == Catch::Approx{0.0001});
+          CHECK(instrument.makerCommission() == Catch::Approx{0.0003});
+          CHECK(instrument.takerCommission() == Catch::Approx{0.0003});
+          CHECK(instrument.blockTradeCommission() == Catch::Approx{0.0003});
+          CHECK(std::isnan(instrument.maxLiquidationCommission()));
+          CHECK(std::isnan(instrument.maxLeverage()));
+          size_t count = 0;
+          const_cast<value_type &>(instrument).tickStepsList().forEach([&count](auto &item) {
+            switch (++count) {
+              case 1:
+                CHECK(item.abovePrice() == Catch::Approx{0.005});
+                CHECK(item.tickSize() == Catch::Approx{0.0005});
+                break;
+            }
+          });
+          CHECK(count == 1);
+          CHECK(instrument.instrumentNameLength() == 19);
+          CHECK(sbe::get_instrument_name(const_cast<value_type &>(instrument)) == "BTC-25OCT24-57000-C"sv);
           break;
+        }
         default:
           FAIL();
       }
