@@ -20,16 +20,13 @@ struct Frame final {
 
   template <typename Callback>
   static bool parse(std::span<std::byte const> const &buffer, Callback callback) {
-    auto [result, frame] = parse_helper(buffer);
-    if (result) {
-      auto packet = buffer.subspan(sizeof(Frame));
-      callback(frame, packet);
-    }
-    return result;
+    auto frame = parse_helper(buffer);
+    auto packet = buffer.subspan(sizeof(Frame));
+    return callback(frame, packet);
   }
 
  private:
-  static std::pair<bool, Frame> parse_helper(std::span<std::byte const> const &buffer);
+  static Frame parse_helper(std::span<std::byte const> const &buffer);
 };
 
 }  // namespace sbe

@@ -20,24 +20,22 @@ static_assert(sizeof(Frame) == Frame::size());
 
 // === IMPLEMENTATION ===
 
-std::pair<bool, Frame> Frame::parse_helper(std::span<std::byte const> const &buffer) {
-  if (std::size(buffer) < size()) {
-    log::warn("Invalid message, size={}"sv, std::size(buffer));
-    return {false, {}};
-  }
+Frame Frame::parse_helper(std::span<std::byte const> const &buffer) {
+  if (std::size(buffer) < size())
+    log::fatal("Invalid message, size={}"sv, std::size(buffer));
   uint16_t packet_length;
   std::memcpy(&packet_length, &buffer[0], sizeof(packet_length));
+  packet_length = utils::little_endian_to_host(packet_length);
   uint16_t channel_id;
   std::memcpy(&channel_id, &buffer[2], sizeof(channel_id));
+  channel_id = utils::little_endian_to_host(channel_id);
   uint32_t sequence_number;
   std::memcpy(&sequence_number, &buffer[4], sizeof(sequence_number));
+  sequence_number = utils::little_endian_to_host(sequence_number);
   return {
-      true,
-      {
-          .packet_length = utils::little_endian_to_host(packet_length),
-          .channel_id = utils::little_endian_to_host(channel_id),
-          .sequence_number = utils::little_endian_to_host(sequence_number),
-      },
+      .packet_length = packet_length,
+      .channel_id = channel_id,
+      .sequence_number = sequence_number,
   };
 }
 

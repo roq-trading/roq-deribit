@@ -17,6 +17,8 @@ struct Channel final {
   Channel(Channel &&) = default;
   Channel(Channel const &) = delete;
 
+  uint32_t previous_sequence_number() const { return previous_sequence_number_; }
+
   bool operator()(sbe::Frame const &);
 
   void reset(sbe::Frame const &);

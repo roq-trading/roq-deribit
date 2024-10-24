@@ -21,8 +21,11 @@ bool Channel::operator()(sbe::Frame const &frame) {
       result = false;
     } else {
       if (initialized_) {
-        log::debug("*** OUT OF SEQUENCE *** sequence_number={}, previous_sequence_number={}"sv, frame.sequence_number, previous_sequence_number_);
-        log::warn<1>("*** OUT OF SEQUENCE *** sequence_number={}, previous_sequence_number={}"sv, frame.sequence_number, previous_sequence_number_);
+        log::warn(
+            "*** DETECTED PACKET DROP *** (channel_id={}, sequence_number={}, previous_sequence_number={})"sv,
+            frame.channel_id,
+            frame.sequence_number,
+            previous_sequence_number_);
         result = false;
         ready_ = false;  // note!
       } else {

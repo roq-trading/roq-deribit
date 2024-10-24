@@ -148,14 +148,14 @@ void UDPEvents::operator()(io::net::udp::Receiver::Read const &) {
   publish_stream_status(trace_info, ConnectionStatus::READY);  // first message will publish
   while (true) {
     auto bytes = (*receiver_).recv(shared_.buffer);
-    log::info<5>("Received {} byte(s)"sv, bytes);
     if (!bytes)
-      return;
+      break;
+    log::info<5>("Received {} byte(s)"sv, bytes);
     std::span payload{std::data(shared_.buffer), bytes};
     log::info<5>("{}"sv, utils::debug::hex::Message{payload});
-    if (!sbe::Parser::dispatch(*this, payload, trace_info))
-      // XXX FIXME TODO reorder buffer
-      log::warn("Unexpected"sv);
+    if (!sbe::Parser::dispatch(*this, payload, trace_info)) {
+      // note! here is an option to use the re-order buffer -- but it's not A+B, so why bother?
+    }
   }
 }
 
@@ -167,10 +167,8 @@ bool UDPEvents::operator()(sbe::Frame const &frame) {
   auto result = false;
   auto callback = [&](auto &channel) {
     result = channel(frame);
-    if (!result) {
-      channel.reset(frame);  // XXX FIXME TODO reorder buffer (postpone until full)
-      log::warn("DROP"sv);
-    }
+    if (!result)
+      channel.reset(frame);
   };
   get_channel(frame, callback);
   return result;

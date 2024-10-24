@@ -61,6 +61,6 @@ $PREFIX "./roq-deribit" \
   --download_trades_lookback=5m \
   --download_trades_lookback_on_restart=24h \
   --multicast_config_file "$HOME/dev/roq-dev/roq-deribit/share/prod/channels.json" \
-  --multicast_channel_ids 1,4 \
+  --multicast_channel_ids 1,3,4,6,21 \
   --multicast_local_interface "$LOCAL_INTERFACE" \
   $@
