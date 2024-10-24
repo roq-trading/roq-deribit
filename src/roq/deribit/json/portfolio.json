@@ -225,6 +225,10 @@
     },
     {
       "name": "change_margin_model_api_limit"
+    },
+    {
+      "name": "locked_balance",
+      "type": "std/double"
     }
   ]
 }

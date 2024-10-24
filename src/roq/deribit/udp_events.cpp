@@ -182,9 +182,9 @@ void UDPEvents::operator()(Trace<deribit_multicast::Instrument> const &event, sb
   log::info<2>("instrument={}, frame={}"sv, instrument, frame);
   auto instrument_id = instrument.instrumentId();
   auto callback = [&]() -> Instrument {
-    auto symbol = sbe::get_instrument_name(instrument);
     auto contract_size = instrument.contractSize();
     auto multiplier = compute_contracts_multiplier(contract_size);
+    auto symbol = sbe::get_instrument_name(instrument);  // note! must be **LAST***
     auto discard = shared_.discard_symbol(symbol);
     if (!discard)
       log::debug(R"(CREATE instrument_id={}, instrument_name="{}", contract_size={}, multiplier={})"sv, instrument_id, symbol, contract_size, multiplier);

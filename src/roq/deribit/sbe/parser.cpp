@@ -27,7 +27,6 @@ auto dispatch_helper(auto &handler, auto &trace_info, auto &message, auto &frame
   auto tmp = sbe_buffer(message);
   T value{std::data(tmp), std::size(tmp)};
   auto bytes = compute_length(value);
-  // log::debug("{}"sv, value);
   value.sbeRewind();  // note!
   create_trace_and_dispatch(handler, trace_info, value, frame);
   return bytes;
@@ -39,21 +38,21 @@ auto dispatch_helper(auto &handler, auto &trace_info, auto &message, auto &frame
 bool Parser::dispatch(Handler &handler, std::span<std::byte const> const &buffer, TraceInfo const &trace_info) {
   auto result = true;
   auto callback = [&](auto &frame, auto &packet) {
-    // log::debug("frame={}"sv, frame);
+    log::debug("frame={}"sv, frame);
     if (!handler(frame)) {
       result = false;
       return;
     }
     while (!std::empty(packet)) {
-      // log::debug("len(packet)={}"sv, std::size(packet));
-      // log::debug("packet={}"sv, utils::debug::hex::Message{packet});
+      log::debug("len(packet)={}"sv, std::size(packet));
+      log::debug("packet={}"sv, utils::debug::hex::Message{packet});
       auto length_message_header = deribit_multicast::MessageHeader::encodedLength();
       assert(std::size(packet) >= length_message_header);
       auto tmp = sbe_buffer(packet);
       deribit_multicast::MessageHeader message_header{std::data(tmp), std::size(tmp)};
       auto message = packet.subspan(length_message_header);
       auto template_id = message_header.templateId();
-      // log::debug("template_id={}"sv, template_id);
+      log::debug("template_id={}"sv, template_id);
       auto bytes = length_message_header;
       switch (template_id) {
         case deribit_multicast::Instrument::SBE_TEMPLATE_ID:  // 1000
@@ -93,7 +92,7 @@ bool Parser::dispatch(Handler &handler, std::span<std::byte const> const &buffer
           log::warn("payload={}"sv, utils::debug::hex::Message{buffer});
           log::fatal("Unexpected: template_id={}"sv, template_id);
       }
-      // log::debug("bytes={}"sv, bytes);
+      log::debug("bytes={}"sv, bytes);
       assert(bytes <= std::size(packet));
       packet = packet.subspan(bytes);
     }
