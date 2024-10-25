@@ -28,7 +28,6 @@ requirements:
     - catch2
     - fmt
     - libabseil
-    - libmagic
     - nlohmann_json
     - roq-api
     - roq-core
@@ -39,7 +38,6 @@ requirements:
     - roq-logging
     - roq-market
     - roq-oss-benchmark
-    - roq-oss-libpcap
     - roq-oss-magic_enum
     - roq-oss-tomlplusplus
     - roq-oss-unordered_dense
