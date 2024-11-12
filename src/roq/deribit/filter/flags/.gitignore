@@ -1,7 +1,5 @@
 !!! THIS FILE HAS BEEN AUTO-GENERATED !!!
 roq-deribit-filter-flags
-flags.rstinc
-multicast.rstinc
 flags.hpp
 multicast.hpp
 flags.cpp
