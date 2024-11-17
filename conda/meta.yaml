@@ -24,6 +24,8 @@ requirements:
     - libabseil
     - nlohmann_json
     - roq-api
+    - roq-cache
+    - roq-codec
     - roq-core
     - roq-deribit-multicast
     - roq-fix

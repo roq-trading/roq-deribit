@@ -10,12 +10,12 @@ target_link_libraries(
   ${TARGET_NAME}
   PRIVATE ${PROJECT_NAME}-dump-flags
           ${PROJECT_NAME}-sbe
+          roq-api::roq-api
           roq-core::roq-core
-          roq-utils::roq-utils
+          roq-flags::roq-flags
           roq-logging::roq-logging
           roq-logging::roq-logging-flags
-          roq-flags::roq-flags
-          roq-api::roq-api
+          roq-utils::roq-utils
           fmt::fmt)
 
 if(ROQ_BUILD_TYPE STREQUAL "Release")

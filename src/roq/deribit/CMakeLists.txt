@@ -55,18 +55,18 @@ target_link_libraries(
           ${PROJECT_NAME}-flags
           ${PROJECT_NAME}-tools
           ${PROJECT_NAME}-sbe
-          roq-server::roq-server
-          roq-server::roq-server-flags
-          roq-fix::roq-fix
-          roq-web::roq-web
+          roq-api::roq-api
           roq-core::roq-core
+          roq-fix::roq-fix
+          roq-flags::roq-flags
           roq-io::roq-io
-          roq-market::roq-market
-          roq-utils::roq-utils
           roq-logging::roq-logging
           roq-logging::roq-logging-flags
-          roq-flags::roq-flags
-          roq-api::roq-api
+          roq-market::roq-market
+          roq-server::roq-server
+          roq-server::roq-server-flags
+          roq-utils::roq-utils
+          roq-web::roq-web
           unordered_dense::unordered_dense)
 
 if(ROQ_BUILD_TYPE STREQUAL "Release")

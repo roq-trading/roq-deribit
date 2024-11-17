@@ -69,4 +69,4 @@ add_library(${TARGET_NAME} OBJECT ${SOURCES} ${AUTOGEN_SOURCES})
 
 add_dependencies(${TARGET_NAME} autogen-fix-headers)
 
-target_link_libraries(${TARGET_NAME} roq-core::roq-core roq-logging::roq-logging fmt::fmt)
+target_link_libraries(${TARGET_NAME} PRIVATE roq-core::roq-core roq-logging::roq-logging fmt::fmt)
