@@ -636,7 +636,7 @@ void WebSocket::operator()(Trace<json::Instruments> const &event) {
             .trade_vol_step_size = NaN,
             .option_type = option_type,
             .strike_currency = {},
-            .strike_price = NaN,
+            .strike_price = item.strike,
             .underlying = {},
             .time_zone = {},
             .issue_date = utils::safe_cast{item.creation_timestamp},
