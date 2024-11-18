@@ -588,9 +588,9 @@ void WebSocket::operator()(Trace<json::Instruments> const &event) {
             .max_trade_vol = NaN,
             .trade_vol_step_size = trade_vol_step_size,
             .option_type = option_type,
-            .strike_currency = {},
+            .strike_currency = {},  // XXX FIXME TODO we had this from FIX
             .strike_price = item.strike,
-            .underlying = {},
+            .underlying = item.price_index,  // XXX FIXME TODO we had this from FIX
             .time_zone = {},
             .issue_date = utils::safe_cast{item.creation_timestamp},
             .settlement_date = {},
