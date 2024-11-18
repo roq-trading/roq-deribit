@@ -565,53 +565,6 @@ void WebSocket::operator()(Trace<json::Instruments> const &event) {
       };
       shared_.maybe_create_instrument(item.instrument_id, callback);
       if (shared_.settings.misc.test_ws_reference_data) {
-        /* FIX
-         security_type=FUTURES,
-         base_currency="USD",
-         quote_currency="USD",
-         settlement_currency="USD",
-         margin_currency="",
-         commission_currency="BTC",
-         trade_vol_step_size=1,
-        */
-        /* JSON
-         security_type=FUTURES,
-         base_currency="BTC",
-         quote_currency="USD",
-         settlement_currency="BTC",
-         margin_currency="",
-         commission_currency="",
-        */
-        /*
-        {base_currency="BTC",
-         contract_size=10,
-         creation_timestamp=1534242287000ms,
-         expiration_timestamp=32503708800000ms,
-         instrument_name="BTC-PERPETUAL",
-         is_active=true,
-         kind=FUTURE,
-         leverage=nan,
-         maker_commission=0,
-         min_trade_amount=10,
-         option_type=<UNDEFINED>,
-         quote_currency="USD",
-         settlement_period="perpetual",
-         strike=nan,
-         taker_commission=0.0005000000000000001,
-         tick_size=0.5,
-         max_liquidation_commission=0.007500000000000002,
-         max_leverage=50,
-         block_trade_commission=0.00025000000000000006,
-         rfq=false,
-         settlement_currency="BTC",
-         counter_currency="USD",
-         future_type="reversed",
-         instrument_id=210838,
-         price_index="btc_usd",
-         block_trade_tick_size=0.010000000000000002,
-         block_trade_min_trade_amount=200000,
-         instrument_type=REVERSED}
-        */
         auto security_type = to_security_type(item.kind, item.instrument_type);
         auto min_trade_vol = item.min_trade_amount / item.contract_size;
         auto trade_vol_step_size = item.min_trade_amount / item.contract_size;
@@ -633,7 +586,7 @@ void WebSocket::operator()(Trace<json::Instruments> const &event) {
             .min_notional = NaN,
             .min_trade_vol = min_trade_vol,
             .max_trade_vol = NaN,
-            .trade_vol_step_size = NaN,
+            .trade_vol_step_size = trade_vol_step_size,
             .option_type = option_type,
             .strike_currency = {},
             .strike_price = item.strike,
