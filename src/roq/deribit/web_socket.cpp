@@ -649,7 +649,6 @@ void WebSocket::operator()(Trace<json::Instruments> const &event) {
             .discard = discard,
         };
         create_trace_and_dispatch(handler_, trace_info, reference_data, true);
-        log::warn("reference_data={}"sv, reference_data);
       }
       if (discard)
         continue;
