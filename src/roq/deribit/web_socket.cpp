@@ -7,6 +7,7 @@
 #include "roq/mask.hpp"
 
 #include "roq/utils/compare.hpp"
+#include "roq/utils/safe_cast.hpp"
 #include "roq/utils/update.hpp"
 
 #include "roq/utils/metrics/factory.hpp"
@@ -83,6 +84,49 @@ auto create_connection(auto &handler, auto &settings, auto &context) {
 struct create_metrics final : public utils::metrics::Factory {
   create_metrics(auto &settings, auto &group, auto const &function) : utils::metrics::Factory(settings.app.name, group, function) {}
 };
+
+auto to_security_type(auto kind, auto instrument_type) -> SecurityType {
+  switch (kind) {
+    using enum json::Kind::type_t;
+    case UNDEFINED__:
+    case UNKNOWN__:
+      return {};
+    case FUTURE:
+      switch (instrument_type) {
+        using enum json::InstrumentType::type_t;
+        case UNDEFINED__:
+        case UNKNOWN__:
+          return SecurityType::FUTURES;
+        case LINEAR:
+        case REVERSED:
+          return SecurityType::SWAP;
+      }
+      break;
+    case OPTION:
+      return SecurityType::OPTION;
+    case FUTURE_COMBO:
+      return SecurityType::FUTURES;  // ???
+    case OPTION_COMBO:
+      return SecurityType::OPTION;  // ???
+    case SPOT:
+      return SecurityType::SPOT;
+  }
+  log::fatal("Unexpected"sv);
+}
+
+auto to_option_type(auto option_type) -> OptionType {
+  switch (option_type) {
+    using enum json::OptionType::type_t;
+    case UNDEFINED__:
+    case UNKNOWN__:
+      return {};
+    case CALL:
+      return OptionType::CALL;
+    case PUT:
+      return OptionType::PUT;
+  }
+  log::fatal("Unexpected"sv);
+}
 }  // namespace
 
 // === IMPLEMENTATION ===
@@ -520,10 +564,98 @@ void WebSocket::operator()(Trace<json::Instruments> const &event) {
         };
       };
       shared_.maybe_create_instrument(item.instrument_id, callback);
+      if (shared_.settings.misc.test_ws_reference_data) {
+        /* FIX
+         security_type=FUTURES,
+         base_currency="USD",
+         quote_currency="USD",
+         settlement_currency="USD",
+         margin_currency="",
+         commission_currency="BTC",
+         trade_vol_step_size=1,
+        */
+        /* JSON
+         security_type=FUTURES,
+         base_currency="BTC",
+         quote_currency="USD",
+         settlement_currency="BTC",
+         margin_currency="",
+         commission_currency="",
+        */
+        /*
+        {base_currency="BTC",
+         contract_size=10,
+         creation_timestamp=1534242287000ms,
+         expiration_timestamp=32503708800000ms,
+         instrument_name="BTC-PERPETUAL",
+         is_active=true,
+         kind=FUTURE,
+         leverage=nan,
+         maker_commission=0,
+         min_trade_amount=10,
+         option_type=<UNDEFINED>,
+         quote_currency="USD",
+         settlement_period="perpetual",
+         strike=nan,
+         taker_commission=0.0005000000000000001,
+         tick_size=0.5,
+         max_liquidation_commission=0.007500000000000002,
+         max_leverage=50,
+         block_trade_commission=0.00025000000000000006,
+         rfq=false,
+         settlement_currency="BTC",
+         counter_currency="USD",
+         future_type="reversed",
+         instrument_id=210838,
+         price_index="btc_usd",
+         block_trade_tick_size=0.010000000000000002,
+         block_trade_min_trade_amount=200000,
+         instrument_type=REVERSED}
+        */
+        auto security_type = to_security_type(item.kind, item.instrument_type);
+        auto min_trade_vol = item.min_trade_amount / item.contract_size;
+        auto trade_vol_step_size = item.min_trade_amount / item.contract_size;
+        auto option_type = to_option_type(item.option_type);
+        auto reference_data = ReferenceData{
+            .stream_id = stream_id_,
+            .exchange = shared_.settings.exchange,
+            .symbol = symbol,
+            .description = {},
+            .security_type = security_type,
+            .cfi_code = {},
+            .base_currency = item.base_currency,
+            .quote_currency = item.quote_currency,
+            .settlement_currency = item.settlement_currency,
+            .margin_currency = {},
+            .commission_currency = {},
+            .tick_size = item.tick_size,
+            .multiplier = item.contract_size,
+            .min_notional = NaN,
+            .min_trade_vol = min_trade_vol,
+            .max_trade_vol = NaN,
+            .trade_vol_step_size = NaN,
+            .option_type = option_type,
+            .strike_currency = {},
+            .strike_price = NaN,
+            .underlying = {},
+            .time_zone = {},
+            .issue_date = utils::safe_cast{item.creation_timestamp},
+            .settlement_date = {},
+            .expiry_datetime = {},
+            .expiry_datetime_utc = utils::safe_cast{item.expiration_timestamp},
+            .exchange_time_utc = {},
+            .exchange_sequence = {},
+            .sending_time_utc = {},
+            .discard = discard,
+        };
+        create_trace_and_dispatch(handler_, trace_info, reference_data, true);
+        log::warn("reference_data={}"sv, reference_data);
+      }
       if (discard)
         continue;
-      if (shared_.all_symbols.emplace(symbol).second)
+      if (shared_.all_symbols.emplace(symbol).second) {
         symbols.emplace_back(symbol);
+      }
       // cache multiplier so Quote (amount) can be converted to TopOfBook (lots)
       // note! the multiplier is only cached on startup!
       shared_.multiplier[symbol] = multiplier;

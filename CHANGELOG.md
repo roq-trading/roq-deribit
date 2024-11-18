@@ -4,6 +4,10 @@ All notable changes will be documented in this file.
 
 ## Head
 
+### Changed
+
+* Incorrect reference data from FIX connection (#476)
+
 ## 1.0.2 &ndash; 2024-07-14
 
 ## 1.0.1 &ndash; 2024-04-14

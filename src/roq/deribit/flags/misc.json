@@ -32,6 +32,11 @@
       "name": "test_local_interface",
       "type": "std/string",
       "description": "Local interface"
+    },
+    {
+      "name": "test_ws_reference_data",
+      "type": "std/bool",
+      "description": "(TEST) Use WS to get ReferenceData?"
     }
   ]
 }

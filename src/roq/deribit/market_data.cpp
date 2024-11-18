@@ -650,45 +650,48 @@ void MarketData::operator()(Trace<fix::SecurityList> const &event, roq::fix::Hea
       log::info<2>("item={}"sv, item);
       auto &symbol = item.symbol;
       auto discard = shared_.discard_symbol(symbol);
-      auto security_type = fix::map_security_type(item.security_type);
       auto multiplier = compute_contracts_multiplier(item.contract_multiplier);
-      auto option_type = roq::fix::map(item.put_or_call);
-      auto expiry_time = utils::charconv::from_chars<std::chrono::milliseconds>(item.maturity_time, utils::charconv::Format::TIME);
-      auto expiry_datetime = combine(item.maturity_date, expiry_time);
-      auto expiry_datetime_utc = expiry_datetime;
-      auto reference_data = ReferenceData{
-          .stream_id = stream_id_,
-          .exchange = exchange_,
-          .symbol = symbol,
-          .description = item.security_desc,
-          .security_type = security_type,
-          .cfi_code = {},
-          .base_currency = item.settl_currency,
-          .quote_currency = item.currency,
-          .settlement_currency = item.settl_currency,
-          .margin_currency = {},
-          .commission_currency = item.comm_currency,
-          .tick_size = item.min_price_increment,
-          .multiplier = item.contract_multiplier,  // XXX which one is it ???
-          .min_notional = NaN,
-          .min_trade_vol = item.min_trade_vol,
-          .max_trade_vol = NaN,
-          .trade_vol_step_size = item.min_trade_vol,
-          .option_type = option_type,
-          .strike_currency = item.strike_currency,
-          .strike_price = item.strike_price,
-          .underlying = item.underlying_symbol,
-          .time_zone = {},
-          .issue_date = utils::safe_cast(item.issue_date),
-          .settlement_date = {},
-          .expiry_datetime = utils::safe_cast(expiry_datetime),
-          .expiry_datetime_utc = utils::safe_cast(expiry_datetime_utc),
-          .exchange_time_utc = {},
-          .exchange_sequence = {},
-          .sending_time_utc = {},
-          .discard = discard,
-      };
-      create_trace_and_dispatch(handler_, trace_info, reference_data, true);
+      if (!shared_.settings.misc.test_ws_reference_data) {
+        auto security_type = fix::map_security_type(item.security_type);
+        auto option_type = roq::fix::map(item.put_or_call);
+        auto expiry_time = utils::charconv::from_chars<std::chrono::milliseconds>(item.maturity_time, utils::charconv::Format::TIME);
+        auto expiry_datetime = combine(item.maturity_date, expiry_time);
+        auto expiry_datetime_utc = expiry_datetime;
+        auto reference_data = ReferenceData{
+            .stream_id = stream_id_,
+            .exchange = exchange_,
+            .symbol = symbol,
+            .description = item.security_desc,
+            .security_type = security_type,
+            .cfi_code = {},
+            .base_currency = item.settl_currency,
+            .quote_currency = item.currency,
+            .settlement_currency = item.settl_currency,
+            .margin_currency = {},
+            .commission_currency = item.comm_currency,
+            .tick_size = item.min_price_increment,
+            .multiplier = item.contract_multiplier,  // XXX which one is it ???
+            .min_notional = NaN,
+            .min_trade_vol = item.min_trade_vol,
+            .max_trade_vol = NaN,
+            .trade_vol_step_size = item.min_trade_vol,
+            .option_type = option_type,
+            .strike_currency = item.strike_currency,
+            .strike_price = item.strike_price,
+            .underlying = item.underlying_symbol,
+            .time_zone = {},
+            .issue_date = utils::safe_cast(item.issue_date),
+            .settlement_date = {},
+            .expiry_datetime = utils::safe_cast(expiry_datetime),
+            .expiry_datetime_utc = utils::safe_cast(expiry_datetime_utc),
+            .exchange_time_utc = {},
+            .exchange_sequence = {},
+            .sending_time_utc = {},
+            .discard = discard,
+        };
+        create_trace_and_dispatch(handler_, trace_info, reference_data, true);
+        log::warn("reference_data={}"sv, reference_data);
+      }
       if (discard)
         continue;
       shared_.multiplier[symbol] = multiplier;
