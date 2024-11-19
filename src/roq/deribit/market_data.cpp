@@ -670,6 +670,7 @@ void MarketData::operator()(Trace<fix::SecurityList> const &event, roq::fix::Hea
             .margin_currency = {},
             .commission_currency = item.comm_currency,
             .tick_size = item.min_price_increment,
+            .tick_size_steps = {},
             .multiplier = item.contract_multiplier,  // XXX which one is it ???
             .min_notional = NaN,
             .min_trade_vol = item.min_trade_vol,

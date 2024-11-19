@@ -582,6 +582,7 @@ void WebSocket::operator()(Trace<json::Instruments> const &event) {
             .margin_currency = {},
             .commission_currency = {},
             .tick_size = item.tick_size,
+            .tick_size_steps = {},
             .multiplier = item.contract_size,
             .min_notional = NaN,
             .min_trade_vol = min_trade_vol,
@@ -590,7 +591,7 @@ void WebSocket::operator()(Trace<json::Instruments> const &event) {
             .option_type = option_type,
             .strike_currency = {},  // XXX FIXME TODO we had this from FIX
             .strike_price = item.strike,
-            .underlying = item.price_index,  // XXX FIXME TODO we had this from FIX
+            .underlying = item.price_index,
             .time_zone = {},
             .issue_date = utils::safe_cast{item.creation_timestamp},
             .settlement_date = {},
