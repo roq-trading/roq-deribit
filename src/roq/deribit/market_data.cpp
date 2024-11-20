@@ -651,7 +651,7 @@ void MarketData::operator()(Trace<fix::SecurityList> const &event, roq::fix::Hea
       auto &symbol = item.symbol;
       auto discard = shared_.discard_symbol(symbol);
       auto multiplier = compute_contracts_multiplier(item.contract_multiplier);
-      if (!shared_.settings.misc.test_ws_reference_data) {
+      if (shared_.settings.misc.use_fix_reference_data) {
         auto security_type = fix::map_security_type(item.security_type);
         auto option_type = roq::fix::map(item.put_or_call);
         auto expiry_time = utils::charconv::from_chars<std::chrono::milliseconds>(item.maturity_time, utils::charconv::Format::TIME);

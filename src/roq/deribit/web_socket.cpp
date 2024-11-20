@@ -564,7 +564,7 @@ void WebSocket::operator()(Trace<json::Instruments> const &event) {
         };
       };
       shared_.maybe_create_instrument(item.instrument_id, callback);
-      if (shared_.settings.misc.test_ws_reference_data) {
+      if (!shared_.settings.misc.use_fix_reference_data) {
         auto security_type = to_security_type(item.kind, item.instrument_type);
         auto min_trade_vol = item.min_trade_amount / item.contract_size;
         auto trade_vol_step_size = item.min_trade_amount / item.contract_size;
