@@ -62,7 +62,7 @@ struct Shared final {
     if (iter != std::end(instruments))
       return;
     auto instrument = callback();
-    auto res = instruments.try_emplace(instrument_id, std::move(instrument));
+    [[maybe_unused]] auto res = instruments.try_emplace(instrument_id, std::move(instrument));
     assert(res.second);
   }
 
