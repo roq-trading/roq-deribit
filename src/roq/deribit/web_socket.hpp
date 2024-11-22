@@ -31,7 +31,7 @@
 
 #include "roq/deribit/json/auth.hpp"
 #include "roq/deribit/json/currencies.hpp"
-#include "roq/deribit/json/instruments.hpp"
+#include "roq/deribit/json/instrument.hpp"
 #include "roq/deribit/json/parser.hpp"
 #include "roq/deribit/json/positions.hpp"
 #include "roq/deribit/json/ticker.hpp"
@@ -113,7 +113,7 @@ struct WebSocket final : public web::socket::Client::Handler, public core::jsonr
   void operator()(Trace<json::Auth> const &);
 
   void operator()(Trace<json::Currencies> const &);
-  void operator()(Trace<json::Instruments> const &);
+  bool operator()(Trace<json::Instrument> const &);
   void operator()(Trace<json::Positions> const &);
 
   // public:

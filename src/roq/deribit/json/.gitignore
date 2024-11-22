@@ -10,7 +10,6 @@ direction.hpp
 error.hpp
 field.hpp
 instrument.hpp
-instruments.hpp
 instrument_state.hpp
 instrument_type.hpp
 kind.hpp
@@ -30,6 +29,7 @@ quote.hpp
 request_type.hpp
 state.hpp
 ticker.hpp
+tick_size_step.hpp
 time_in_force.hpp
 trade.hpp
 trades_2.hpp
@@ -44,7 +44,6 @@ direction.cpp
 error.cpp
 field.cpp
 instrument.cpp
-instruments.cpp
 instrument_state.cpp
 instrument_type.cpp
 kind.cpp
@@ -64,6 +63,7 @@ quote.cpp
 request_type.cpp
 state.cpp
 ticker.cpp
+tick_size_step.cpp
 time_in_force.cpp
 trade.cpp
 trades_2.cpp

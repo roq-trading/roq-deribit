@@ -15,7 +15,6 @@ set(AUTOGEN_SCHEMAS
     error.json
     field.json
     instrument.json
-    instruments.json
     instrument_state.json
     instrument_type.json
     kind.json
@@ -35,6 +34,7 @@ set(AUTOGEN_SCHEMAS
     request_type.json
     state.json
     ticker.json
+    tick_size_step.json
     time_in_force.json
     trade.json
     trades_2.json

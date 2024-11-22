@@ -1,6 +1,6 @@
 {
   "name": "roq/deribit/json/Instrument",
-  "type": "item",
+  "type": "comp",
   "values": [
     {
       "name": "base_currency",
@@ -115,7 +115,9 @@
       "type": "roq/deribit/json/InstrumentType"
     },
     {
-      "name": "tick_size_steps"
+      "name": "tick_size_steps",
+      "type": "roq/deribit/json/TickSizeStep",
+      "array": "std/span"
     }
   ]
 }
