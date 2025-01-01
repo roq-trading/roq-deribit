@@ -3,7 +3,9 @@
 #pragma once
 
 #include <fmt/chrono.h>
-#include <fmt/format.h>
+#include <fmt/core.h>
+
+#include <magic_enum/magic_enum_format.hpp>
 
 #include <deribit_multicast/BookChange.h>
 #include <deribit_multicast/BookSide.h>
@@ -269,17 +271,6 @@ inline constexpr std::string_view get_name<deribit_multicast::Trades>() {
   return "trades"sv;
 }
 }  // namespace roq
-
-// enums
-
-template <>
-struct fmt::formatter<deribit_multicast::YesNo::Value> {
-  constexpr auto parse(format_parse_context &context) { return std::begin(context); }
-  auto format(deribit_multicast::YesNo::Value const &value, format_context &context) const {
-    using namespace std::literals;
-    return fmt::format_to(context.out(), "{}"sv, magic_enum::enum_name(value));
-  }
-};
 
 // helper
 
