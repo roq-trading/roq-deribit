@@ -39,10 +39,10 @@ struct Gateway final : public server::Handler,
 
  protected:
   // server::Handler
-
   void operator()(Event<Start> const &) override;
   void operator()(Event<Stop> const &) override;
   void operator()(Event<Timer> const &) override;
+  void operator()(Event<Control> const &) override;
   void operator()(Event<server::Refresh> const &) override;
   void operator()(Event<Connected> const &) override;
   void operator()(Event<Disconnected> const &) override;

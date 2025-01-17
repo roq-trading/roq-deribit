@@ -119,6 +119,11 @@ void Gateway::operator()(Event<Timer> const &event) {
 void Gateway::operator()(Event<server::Refresh> const &) {
 }
 
+void Gateway::operator()(Event<Control> const &event) {
+  log::warn("DEBUG event={}"sv, event);
+  dispatcher_(State::ENABLED);
+}
+
 void Gateway::operator()(Event<Connected> const &) {
 }
 
