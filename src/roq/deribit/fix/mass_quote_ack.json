@@ -1,0 +1,28 @@
+{
+  "name": "roq/deribit/fix/MassQuoteAck",
+  "type": "comp",
+  "values": [
+    {
+      "tag": 117,
+      "name": "QuoteID",
+      "type": "std/string_view"
+    },
+    {
+      "tag": 297,
+      "name": "QuoteStatus",
+      "type": "roq/fix/QuoteStatus",
+      "required": true
+    },
+    {
+      "tag": 300,
+      "name": "QuoteRejectReason",
+      "type": "roq/fix/QuoteRejectReason"
+    },
+    {
+      "tag": 295,
+      "name": "NoQuoteEntries",
+      "type": "roq/deribit/fix/QuoteEntry",
+      "array": "std/span"
+    }
+  ]
+}

@@ -12,6 +12,8 @@ market_data_incremental_refresh.hpp
 market_data_request.hpp
 market_data_request_reject.hpp
 market_data_snapshot_full_refresh.hpp
+mass_quote.hpp
+mass_quote_ack.hpp
 md_full.hpp
 md_inc.hpp
 md_req.hpp
@@ -24,6 +26,9 @@ order_mass_cancel_request.hpp
 order_mass_status_request.hpp
 position_qty.hpp
 position_report.hpp
+quote_cancel.hpp
+quote_entry.hpp
+quote_set.hpp
 reject.hpp
 request_for_positions.hpp
 resend_request.hpp
@@ -47,6 +52,8 @@ market_data_incremental_refresh.cpp
 market_data_request.cpp
 market_data_request_reject.cpp
 market_data_snapshot_full_refresh.cpp
+mass_quote.cpp
+mass_quote_ack.cpp
 md_full.cpp
 md_inc.cpp
 md_req.cpp
@@ -59,6 +66,9 @@ order_mass_cancel_request.cpp
 order_mass_status_request.cpp
 position_qty.cpp
 position_report.cpp
+quote_cancel.cpp
+quote_entry.cpp
+quote_set.cpp
 reject.cpp
 request_for_positions.cpp
 resend_request.cpp

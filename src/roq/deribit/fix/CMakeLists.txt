@@ -17,6 +17,8 @@ set(AUTOGEN_SCHEMAS
     market_data_request.json
     market_data_request_reject.json
     market_data_snapshot_full_refresh.json
+    mass_quote.json
+    mass_quote_ack.json
     md_full.json
     md_inc.json
     md_req.json
@@ -29,6 +31,9 @@ set(AUTOGEN_SCHEMAS
     order_mass_status_request.json
     position_qty.json
     position_report.json
+    quote_cancel.json
+    quote_entry.json
+    quote_set.json
     reject.json
     request_for_positions.json
     resend_request.json
