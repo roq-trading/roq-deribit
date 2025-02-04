@@ -233,8 +233,15 @@ void MarketData::operator()(io::net::ConnectionManager::Read const &) {
     parse(event);
   };
   auto log_message = [this](auto &message) {
-    if (fix_debug_) [[unlikely]]
-      log::info("{}"sv, utils::debug::fix::Message{message});
+    if (fix_debug_) [[unlikely]] {
+      std::string_view tmp{reinterpret_cast<char const *>(std::data(message)), std::size(message)};
+      auto market_data = tmp.find("\00135=X\001"sv) != tmp.npos || tmp.find("\00135=W\001"sv) != tmp.npos;
+      if (market_data) {
+        log::info<2>("{}"sv, utils::debug::fix::Message{message});
+      } else {
+        log::info("{}"sv, utils::debug::fix::Message{message});
+      }
+    }
   };
   auto buffer = (*connection_manager_).buffer();
   try {
