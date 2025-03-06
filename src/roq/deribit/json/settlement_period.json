@@ -1,0 +1,18 @@
+{
+  "name": "roq/deribit/json/SettlementPeriod",
+  "type": "enum",
+  "values": [
+    {
+      "name": "perpetual"
+    },
+    {
+      "name": "day"
+    },
+    {
+      "name": "week"
+    },
+    {
+      "name": "month"
+    }
+  ]
+}

@@ -32,6 +32,7 @@ set(AUTOGEN_SCHEMAS
     positions.json
     quote.json
     request_type.json
+    settlement_period.json
     state.json
     ticker.json
     tick_size_step.json

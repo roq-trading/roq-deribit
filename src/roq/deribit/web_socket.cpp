@@ -85,13 +85,14 @@ struct create_metrics final : public utils::metrics::Factory {
   create_metrics(auto &settings, auto &group, auto const &function) : utils::metrics::Factory(settings.app.name, group, function) {}
 };
 
-auto to_security_type(auto kind, auto instrument_type) -> SecurityType {
+auto to_security_type(auto kind, [[maybe_unused]] auto instrument_type, auto settlement_period) -> SecurityType {
   switch (kind) {
     using enum json::Kind::type_t;
     case UNDEFINED__:
     case UNKNOWN__:
       return {};
     case FUTURE:
+      /*
       switch (instrument_type) {
         using enum json::InstrumentType::type_t;
         case UNDEFINED__:
@@ -100,6 +101,19 @@ auto to_security_type(auto kind, auto instrument_type) -> SecurityType {
         case LINEAR:
         case REVERSED:
           return SecurityType::SWAP;
+      }
+      */
+      switch (settlement_period) {
+        using enum json::SettlementPeriod::type_t;
+        case UNDEFINED__:
+        case UNKNOWN__:
+          return SecurityType::FUTURES;
+        case PERPETUAL:
+          return SecurityType::SWAP;
+        case DAY:
+        case WEEK:
+        case MONTH:
+          return SecurityType::FUTURES;
       }
       break;
     case OPTION:
@@ -574,7 +588,7 @@ bool WebSocket::operator()(Trace<json::Instrument> const &event) {
   };
   shared_.maybe_create_instrument(instrument.instrument_id, callback);
   if (!shared_.settings.misc.use_fix_reference_data) {
-    auto security_type = to_security_type(instrument.kind, instrument.instrument_type);
+    auto security_type = to_security_type(instrument.kind, instrument.instrument_type, instrument.settlement_period);
     auto min_trade_vol = instrument.min_trade_amount / instrument.contract_size;
     auto trade_vol_step_size = instrument.min_trade_amount / instrument.contract_size;
     auto option_type = to_option_type(instrument.option_type);

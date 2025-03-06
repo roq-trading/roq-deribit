@@ -233,6 +233,10 @@
     {
       "name": "mandatory_tfa",
       "type": "std/bool"
+    },
+    {
+      "name": "block_rfq_self_match_prevention",
+      "type": "std/bool"
     }
   ]
 }

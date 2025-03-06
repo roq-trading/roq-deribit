@@ -27,6 +27,7 @@ position.hpp
 positions.hpp
 quote.hpp
 request_type.hpp
+settlement_period.hpp
 state.hpp
 ticker.hpp
 tick_size_step.hpp
@@ -61,6 +62,7 @@ position.cpp
 positions.cpp
 quote.cpp
 request_type.cpp
+settlement_period.cpp
 state.cpp
 ticker.cpp
 tick_size_step.cpp

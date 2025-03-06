@@ -52,7 +52,7 @@
     },
     {
       "name": "settlement_period",
-      "type": "std/string_view"
+      "type": "roq/deribit/json/SettlementPeriod"
     },
     {
       "name": "strike",
