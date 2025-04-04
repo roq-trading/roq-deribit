@@ -21,8 +21,8 @@
 #include "roq/utils/debug/fix/message.hpp"
 #include "roq/utils/debug/hex/message.hpp"
 
+#include "roq/fix/map.hpp"
 #include "roq/fix/reader.hpp"
-#include "roq/fix/utils.hpp"
 
 #include "roq/deribit/common.hpp"
 
@@ -166,10 +166,10 @@ uint16_t OrderEntry::operator()(Event<CreateOrder> const &event, server::oms::Or
     throw RuntimeError{"stop_price not supported"sv};
   if (std::isfinite(create_order.max_show_quantity)) [[unlikely]]
     throw RuntimeError{"max_show_quantity not supported"sv};
-  auto side = roq::fix::map(create_order.side);
+  auto side = map(create_order.side);
   auto exec_inst = fix::map(create_order.execution_instructions);
-  auto ord_type = roq::fix::map(create_order.order_type);
-  auto time_in_force = roq::fix::map(create_order.time_in_force);
+  auto ord_type = map(create_order.order_type);
+  auto time_in_force = map(create_order.time_in_force);
   auto new_order_single = fix::NewOrderSingle{
       .cl_ord_id = request_id,
       .side = side,
@@ -199,8 +199,8 @@ uint16_t OrderEntry::operator()(
   if (!ready()) [[unlikely]]
     throw server::oms::NotReady{"not ready"sv};
   auto &modify_order = event.value;
-  auto side = roq::fix::map(order.side);
-  auto ord_type = roq::fix::map(order.order_type);
+  auto side = map(order.side);
+  auto ord_type = map(order.order_type);
   // note! using deribit_label might be slower, but using orig_cl_ord_id seems error-prone
   auto order_cancel_replace_request = fix::OrderCancelReplaceRequest{
       .cl_ord_id = {},
@@ -775,11 +775,11 @@ void OrderEntry::operator()(Trace<fix::ExecutionReport> const &event, roq::fix::
       return execution_report.order_id;
     return execution_report.orig_cl_ord_id;
   }();
-  auto side = roq::fix::map(execution_report.side);
-  auto order_status = roq::fix::map(execution_report.ord_status);
-  auto order_type = roq::fix::map(execution_report.ord_type);
+  auto side = map(execution_report.side);
+  auto order_status = map(execution_report.ord_status);
+  auto order_type = map(execution_report.ord_type);
   auto liquidity_ind = find_liquidity_ind(execution_report.no_fills);
-  auto last_liquidity = roq::fix::map(liquidity_ind);
+  auto last_liquidity = map(liquidity_ind);
   auto request_type = compute_request_type(exec_type, ord_status);
   auto request_status = compute_request_status(exec_type, ord_status);
   auto error = fix::map_error(execution_report.text);
@@ -852,7 +852,7 @@ void OrderEntry::operator()(Trace<fix::ExecutionReport> const &event, roq::fix::
   if (!std::empty(execution_report.no_fills)) {
     auto &fills = shared_.get_fills();
     for (auto &item : execution_report.no_fills) {
-      auto liquidity = roq::fix::map(item.fill_liquidity_ind);
+      auto liquidity = map(item.fill_liquidity_ind);
       auto fill = Fill{
           .exchange_time_utc = execution_report.transact_time,
           .external_trade_id = item.fill_exec_id,
@@ -915,7 +915,7 @@ void OrderEntry::operator()(Trace<fix::OrderCancelReject> const &event, roq::fix
     return order_cancel_reject.orig_cl_ord_id;
   }();
   if (shared_.update_order(request_or_exchange_id, stream_id_, trace_info, response, [&](auto &order) {
-        auto status = roq::fix::map(order_cancel_reject.ord_status);
+        OrderStatus status = map(order_cancel_reject.ord_status);
         if (status != order.order_status) {
           log::warn("Unexpected: order status received={}, expected={}"sv, status, order.order_status);
         }

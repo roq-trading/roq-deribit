@@ -19,8 +19,8 @@
 #include "roq/utils/debug/fix/message.hpp"
 #include "roq/utils/debug/hex/message.hpp"
 
+#include "roq/fix/map.hpp"
 #include "roq/fix/reader.hpp"
-#include "roq/fix/utils.hpp"
 
 #include "roq/deribit/common.hpp"
 #include "roq/deribit/utils.hpp"
@@ -134,7 +134,7 @@ void emplace_back(T &result, auto &value) {
     result.emplace_back(std::move(mbp_update));
   } else if constexpr (std::is_same<value_type, Trade>::value) {
     auto trade = Trade{
-        .side = roq::fix::map(value.side),
+        .side = map(value.side),
         .price = value.md_entry_px,
         .quantity = value.md_entry_size,
         .trade_id = value.deribit_trade_id,
@@ -660,7 +660,7 @@ void MarketData::operator()(Trace<fix::SecurityList> const &event, roq::fix::Hea
       auto multiplier = compute_contracts_multiplier(item.contract_multiplier);
       if (shared_.settings.misc.use_fix_reference_data) {
         auto security_type = fix::map_security_type(item.security_type);
-        auto option_type = roq::fix::map(item.put_or_call);
+        auto option_type = map(item.put_or_call);
         auto expiry_time = utils::charconv::from_chars<std::chrono::milliseconds>(item.maturity_time, utils::charconv::Format::TIME);
         auto expiry_datetime = combine(item.maturity_date, expiry_time);
         auto expiry_datetime_utc = expiry_datetime;
