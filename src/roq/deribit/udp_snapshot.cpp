@@ -14,6 +14,7 @@
 
 #include "roq/deribit/utils.hpp"
 
+#include "roq/deribit/sbe/map.hpp"
 #include "roq/deribit/sbe/utils.hpp"
 
 using namespace std::literals;
@@ -193,7 +194,7 @@ void UDPSnapshot::operator()(Trace<deribit_multicast::Snapshot> const &event, sb
               .update_action = {},
               .price_level = {},
           };
-          auto side = sbe::map_book_side(deribit_multicast::BookSide::get(item.side()));
+          auto side = map(deribit_multicast::BookSide::get(item.side())).template get<Side>();
           switch (side) {
             case Side::UNDEFINED:
               assert(false);

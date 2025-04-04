@@ -30,88 +30,11 @@
 
 #include "roq/core/sbe/iterator.hpp"
 
+#include "roq/deribit/sbe/map.hpp"
+
 namespace roq {
 namespace deribit {
 namespace sbe {
-
-inline Side map_book_side(deribit_multicast::BookSide::Value value) {
-  switch (value) {
-    using enum deribit_multicast::BookSide::Value;
-    case ask:
-      return Side::SELL;
-    case bid:
-      return Side::BUY;
-    case NULL_VALUE:
-      return Side::UNDEFINED;
-  }
-  return Side::UNDEFINED;
-}
-
-inline Side map_direction(deribit_multicast::Direction::Value value) {
-  switch (value) {
-    using enum deribit_multicast::Direction::Value;
-    case buy:
-      return Side::BUY;
-    case sell:
-      return Side::SELL;
-    case NULL_VALUE:
-      return Side::UNDEFINED;
-  }
-  return Side::UNDEFINED;
-}
-
-inline TradingStatus map_instrument_state(deribit_multicast::InstrumentState::Value value) {
-  switch (value) {
-    using enum deribit_multicast::InstrumentState::Value;
-    case created:
-      return TradingStatus::OPEN;  // ???
-    case open:
-      return TradingStatus::OPEN;
-    case closed:
-      return TradingStatus::CLOSE;
-    case settled:
-      break;  // ???
-    case inactive:
-      break;  // ???
-    case started:
-      break;  // ???
-    case deactivated:
-      break;  // ???
-    case NULL_VALUE:
-      return TradingStatus::UNDEFINED;
-  }
-  return TradingStatus::UNDEFINED;
-}
-
-inline Liquidity map_liquidation(deribit_multicast::Liquidation::Value value) {
-  switch (value) {
-    using enum deribit_multicast::Liquidation::Value;
-    case none:
-      return Liquidity::UNDEFINED;
-    case maker:
-      return Liquidity::MAKER;
-    case taker:
-      return Liquidity::TAKER;
-    case both:
-      return Liquidity::UNDEFINED;  // ???
-    case NULL_VALUE:
-      return Liquidity::UNDEFINED;
-  }
-  return Liquidity::UNDEFINED;
-}
-
-inline bool map_yes_no(deribit_multicast::YesNo::Value value) {
-  switch (value) {
-    using enum deribit_multicast::YesNo::Value;
-    case no:
-      return false;
-    case yes:
-      return true;
-    case NULL_VALUE:
-      return false;
-  }
-  return false;
-}
 
 template <typename T>
 size_t compute_length(T &);
@@ -406,7 +329,7 @@ struct fmt::formatter<deribit_multicast::Book> {
         std::chrono::milliseconds{value.timestampMs()},
         value.prevChangeId(),
         value.changeId(),
-        roq::deribit::sbe::map_yes_no(value.isLast()),
+        static_cast<bool>(roq::map(value.isLast())),
         fmt::join(roq::core::sbe::iterator{value.changesList()}, roq::core::sbe::sentinel{}, ", "sv));
   }
 };
@@ -469,7 +392,7 @@ struct fmt::formatter<deribit_multicast::Instrument> {
         deribit_multicast::InstrumentKind::c_str(value.kind()),
         deribit_multicast::InstrumentType::c_str(value.instrumentType()),
         deribit_multicast::OptionType::c_str(value.optionType()),
-        roq::deribit::sbe::map_yes_no(value.rfq()),
+        static_cast<bool>(roq::map(value.rfq())),
         deribit_multicast::Period::c_str(value.settlementPeriod()),
         value.settlementPeriodCount(),
         value.baseCurrency(),
@@ -639,7 +562,7 @@ struct fmt::formatter<deribit_multicast::Rfq> {
         R"(timestampMs={})"
         R"(}})"sv,
         value.instrumentId(),
-        roq::deribit::sbe::map_yes_no(value.state()),
+        static_cast<bool>(roq::map(value.state())),
         deribit_multicast::RfqDirection::c_str(value.side()),
         value.amount(),
         std::chrono::milliseconds{value.timestampMs()});
@@ -665,8 +588,8 @@ struct fmt::formatter<deribit_multicast::Snapshot> {
         value.instrumentId(),
         std::chrono::milliseconds{value.timestampMs()},
         value.changeId(),
-        roq::deribit::sbe::map_yes_no(value.isBookComplete()),
-        roq::deribit::sbe::map_yes_no(value.isLastInBook()),
+        static_cast<bool>(roq::map(value.isBookComplete())),
+        static_cast<bool>(roq::map(value.isLastInBook())),
         fmt::join(roq::core::sbe::iterator{value.levelsList()}, roq::core::sbe::sentinel{}, ", "sv));
   }
 };

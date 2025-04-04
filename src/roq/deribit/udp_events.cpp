@@ -16,6 +16,7 @@
 
 #include "roq/deribit/utils.hpp"
 
+#include "roq/deribit/sbe/map.hpp"
 #include "roq/deribit/sbe/utils.hpp"
 
 using namespace std::literals;
@@ -222,7 +223,7 @@ void UDPEvents::operator()(Trace<deribit_multicast::Book> const &event, sbe::Fra
             .update_action = {},
             .price_level = {},
         };
-        auto side = sbe::map_book_side(deribit_multicast::BookSide::get(item.side()));
+        auto side = map(deribit_multicast::BookSide::get(item.side())).template get<Side>();
         switch (side) {
           case Side::UNDEFINED:
             assert(false);
@@ -334,11 +335,10 @@ void UDPEvents::operator()(Trace<deribit_multicast::Trades> const &event, sbe::F
     auto append_trade = [&](auto &item) {
       std::chrono::milliseconds timestamp{item.timestampMs()};
       exchange_time_utc = std::max(exchange_time_utc, timestamp);
-      auto side = sbe::map_direction(item.direction());
       auto price = item.price();
       auto quantity = item.amount() * instrument.multiplier;
       auto trade = Trade{
-          .side = side,
+          .side = map(item.direction()),
           .price = price,
           .quantity = quantity,
           .trade_id = {},
