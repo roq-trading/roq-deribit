@@ -2,17 +2,17 @@
 
 #pragma once
 
-#include "roq/map.hpp"
-
-#include "roq/liquidity.hpp"
-#include "roq/side.hpp"
-#include "roq/trading_status.hpp"
-
 #include <deribit_multicast/BookSide.h>
 #include <deribit_multicast/Direction.h>
 #include <deribit_multicast/InstrumentState.h>
 #include <deribit_multicast/Liquidation.h>
 #include <deribit_multicast/YesNo.h>
+
+#include "roq/liquidity.hpp"
+#include "roq/side.hpp"
+#include "roq/trading_status.hpp"
+
+#include "roq/map.hpp"
 
 namespace roq {
 

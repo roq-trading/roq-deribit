@@ -2,37 +2,28 @@
 
 #pragma once
 
-#include <tuple>
-
-#include "roq/api.hpp"
-
 #include "roq/deribit/json/direction.hpp"
 #include "roq/deribit/json/liquidity.hpp"
 #include "roq/deribit/json/state.hpp"
 
+#include "roq/liquidity.hpp"
+#include "roq/side.hpp"
+#include "roq/trading_status.hpp"
+
+#include "roq/map.hpp"
+
 namespace roq {
-namespace deribit {
-namespace json {
 
-template <typename... Args>
-struct Map final {
-  explicit Map(Args &&...args) : args_{std::forward<Args>(args)...} {}
-  explicit Map(Args const &...args) : args_{args...} {}
+template <>
+template <>
+std::optional<Side> Map<deribit::json::Direction>::helper() const;
 
-  Map(Map const &) = delete;
+template <>
+template <>
+std::optional<Liquidity> Map<deribit::json::Liquidity>::helper() const;
 
-  template <typename R>
-  operator R();
+template <>
+template <>
+std::optional<TradingStatus> Map<deribit::json::State>::helper() const;
 
- private:
-  std::tuple<Args...> const args_;
-};
-
-template <typename R, typename... Args>
-inline R map(Args &&...args) {
-  return static_cast<R>(Map{std::forward<Args>(args)...});
-}
-
-}  // namespace json
-}  // namespace deribit
 }  // namespace roq

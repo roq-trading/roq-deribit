@@ -2,148 +2,123 @@
 
 #include "roq/deribit/json/map.hpp"
 
-#include "roq/logging.hpp"
-
 using namespace std::literals;
 
 namespace roq {
-namespace deribit {
-namespace json {
-
-// === HELPERS ===
 
 namespace {
-// note! constexpr helper for static testing
 template <typename... Args>
-struct Helper final {
-  explicit constexpr Helper(std::tuple<Args...> const &args) : args_{args} {}
-  explicit constexpr Helper(Args &&...args_) : args_{std::forward<Args>(args_)...} {}
+using Helper = detail::MapHelper<Args...>;
+}
 
-  template <typename R>
-  constexpr operator R();
+// deribit => roq
 
- private:
-  std::tuple<Args...> const args_;
-};
-
-// ==> roq
-
-// Direction ==> roq::Side
+// deribit::json::Direction ==> roq::Side
 
 template <>
 template <>
-constexpr Helper<Direction>::operator roq::Side() {
+constexpr Helper<deribit::json::Direction>::operator std::optional<roq::Side>() const {
   switch (std::get<0>(args_)) {
-    using enum Direction::type_t;
+    using enum deribit::json::Direction::type_t;
     case UNDEFINED__:
-      return {};
+      return roq::Side::UNDEFINED;
     case UNKNOWN__:
-      break;
+      return roq::Side::UNDEFINED;
     case BUY:
       return Side::BUY;
     case SELL:
       return Side::SELL;
     case ZERO:
-      return {};
+      return roq::Side::UNDEFINED;
   }
-  roq::log::fatal("Unexpected"sv);
+  return {};
 }
 
-static_assert(static_cast<roq::Side>(Helper{Direction{Direction::UNDEFINED__}}) == roq::Side::UNDEFINED);
-static_assert(static_cast<roq::Side>(Helper{Direction{Direction::BUY}}) == roq::Side::BUY);
-static_assert(static_cast<roq::Side>(Helper{Direction{Direction::SELL}}) == roq::Side::SELL);
-static_assert(static_cast<roq::Side>(Helper{Direction{Direction::ZERO}}) == roq::Side::UNDEFINED);
-
-// Liquidity ==> roq::Liquidity
+static_assert(Helper{deribit::json::Direction{deribit::json::Direction::UNDEFINED__}} == roq::Side::UNDEFINED);
+static_assert(Helper{deribit::json::Direction{deribit::json::Direction::BUY}} == roq::Side::BUY);
+static_assert(Helper{deribit::json::Direction{deribit::json::Direction::SELL}} == roq::Side::SELL);
+static_assert(Helper{deribit::json::Direction{deribit::json::Direction::ZERO}} == roq::Side::UNDEFINED);
 
 template <>
 template <>
-constexpr Helper<Liquidity>::operator roq::Liquidity() {
+std::optional<roq::Side> Map<deribit::json::Direction>::helper() const {
+  return Helper{args_};
+}
+
+// deribit::json::Liquidity ==> roq::Liquidity
+
+template <>
+template <>
+constexpr Helper<deribit::json::Liquidity>::operator std::optional<roq::Liquidity>() const {
   switch (std::get<0>(args_)) {
-    using enum Liquidity::type_t;
+    using enum deribit::json::Liquidity::type_t;
     case UNDEFINED__:
-      return {};
+      return roq::Liquidity::UNDEFINED;
     case UNKNOWN__:
-      break;
+      return roq::Liquidity::UNDEFINED;
     case MAKER:
       return roq::Liquidity::MAKER;
     case TAKER:
       return roq::Liquidity::TAKER;
   }
-  roq::log::fatal("Unexpected"sv);
+  return {};
 }
 
-static_assert(static_cast<roq::Liquidity>(Helper{Liquidity{Liquidity::UNDEFINED__}}) == roq::Liquidity::UNDEFINED);
-static_assert(static_cast<roq::Liquidity>(Helper{Liquidity{Liquidity::MAKER}}) == roq::Liquidity::MAKER);
-static_assert(static_cast<roq::Liquidity>(Helper{Liquidity{Liquidity::TAKER}}) == roq::Liquidity::TAKER);
-
-// State ==> roq::TradingStatus
+static_assert(Helper{deribit::json::Liquidity{deribit::json::Liquidity::UNDEFINED__}} == roq::Liquidity::UNDEFINED);
+static_assert(Helper{deribit::json::Liquidity{deribit::json::Liquidity::MAKER}} == roq::Liquidity::MAKER);
+static_assert(Helper{deribit::json::Liquidity{deribit::json::Liquidity::TAKER}} == roq::Liquidity::TAKER);
 
 template <>
 template <>
-constexpr Helper<State>::operator roq::TradingStatus() {
+std::optional<roq::Liquidity> Map<deribit::json::Liquidity>::helper() const {
+  return Helper{args_};
+}
+
+// deribit::json::State ==> roq::TradingStatus
+
+template <>
+template <>
+constexpr Helper<deribit::json::State>::operator std::optional<roq::TradingStatus>() const {
   switch (std::get<0>(args_)) {
-    using enum State::type_t;
+    using enum deribit::json::State::type_t;
     case UNDEFINED__:
-      return {};
+      return TradingStatus::UNDEFINED;
     case UNKNOWN__:
-      break;
+      return TradingStatus::UNDEFINED;
     case CLOSED:
       return TradingStatus::CLOSE;
     case OPEN:
       return TradingStatus::OPEN;
     case CREATED:
-      return {};  // note!
+      return TradingStatus::UNDEFINED;
     case SETTLED:
-      return {};  // note!
+      return TradingStatus::UNDEFINED;
     case TERMINATED:
-      return {};  // note!
+      return TradingStatus::UNDEFINED;
     case INACTIVE:
-      return {};  // note!
+      return TradingStatus::UNDEFINED;
     case DEACTIVATED:
-      return {};  // note!
+      return TradingStatus::UNDEFINED;
     case STARTED:
-      return {};  // note!
+      return TradingStatus::UNDEFINED;
   }
-  roq::log::fatal("Unexpected"sv);
+  return {};
 }
 
-static_assert(static_cast<roq::TradingStatus>(Helper{State{State::UNDEFINED__}}) == roq::TradingStatus::UNDEFINED);
-static_assert(static_cast<roq::TradingStatus>(Helper{State{State::CLOSED}}) == roq::TradingStatus::CLOSE);
-static_assert(static_cast<roq::TradingStatus>(Helper{State{State::OPEN}}) == roq::TradingStatus::OPEN);
-static_assert(static_cast<roq::TradingStatus>(Helper{State{State::CREATED}}) == roq::TradingStatus::UNDEFINED);
-static_assert(static_cast<roq::TradingStatus>(Helper{State{State::SETTLED}}) == roq::TradingStatus::UNDEFINED);
-static_assert(static_cast<roq::TradingStatus>(Helper{State{State::TERMINATED}}) == roq::TradingStatus::UNDEFINED);
-static_assert(static_cast<roq::TradingStatus>(Helper{State{State::INACTIVE}}) == roq::TradingStatus::UNDEFINED);
-static_assert(static_cast<roq::TradingStatus>(Helper{State{State::DEACTIVATED}}) == roq::TradingStatus::UNDEFINED);
-static_assert(static_cast<roq::TradingStatus>(Helper{State{State::STARTED}}) == roq::TradingStatus::UNDEFINED);
-
-// roq ==>
-
-}  // namespace
-
-// === IMPLEMENTATION ===
-
-// ==> roq
+static_assert(Helper{deribit::json::State{deribit::json::State::UNDEFINED__}} == roq::TradingStatus::UNDEFINED);
+static_assert(Helper{deribit::json::State{deribit::json::State::CLOSED}} == roq::TradingStatus::CLOSE);
+static_assert(Helper{deribit::json::State{deribit::json::State::OPEN}} == roq::TradingStatus::OPEN);
+static_assert(Helper{deribit::json::State{deribit::json::State::CREATED}} == roq::TradingStatus::UNDEFINED);
+static_assert(Helper{deribit::json::State{deribit::json::State::SETTLED}} == roq::TradingStatus::UNDEFINED);
+static_assert(Helper{deribit::json::State{deribit::json::State::TERMINATED}} == roq::TradingStatus::UNDEFINED);
+static_assert(Helper{deribit::json::State{deribit::json::State::INACTIVE}} == roq::TradingStatus::UNDEFINED);
+static_assert(Helper{deribit::json::State{deribit::json::State::DEACTIVATED}} == roq::TradingStatus::UNDEFINED);
+static_assert(Helper{deribit::json::State{deribit::json::State::STARTED}} == roq::TradingStatus::UNDEFINED);
 
 template <>
 template <>
-Map<Direction>::operator roq::Side() {
+std::optional<roq::TradingStatus> Map<deribit::json::State>::helper() const {
   return Helper{args_};
 }
 
-template <>
-template <>
-Map<Liquidity>::operator roq::Liquidity() {
-  return Helper{args_};
-}
-
-template <>
-template <>
-Map<State>::operator roq::TradingStatus() {
-  return Helper{args_};
-}
-
-}  // namespace json
-}  // namespace deribit
 }  // namespace roq
