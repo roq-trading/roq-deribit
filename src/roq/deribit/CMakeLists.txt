@@ -57,6 +57,7 @@ target_link_libraries(
           ${PROJECT_NAME}-sbe
           roq-api::roq-api
           roq-core::roq-core
+          roq-codec::roq-codec
           roq-fix::roq-fix
           roq-flags::roq-flags
           roq-io::roq-io
