@@ -80,7 +80,7 @@ auto create_receiver(auto &handler, auto &settings, auto &context, auto &shared)
 }
 
 struct create_metrics final : public utils::metrics::Factory {
-  create_metrics(auto &settings, auto &group, auto const &function) : utils::metrics::Factory(settings.app.name, group, function) {}
+  create_metrics(auto &settings, auto &group, auto const &function) : utils::metrics::Factory{settings.app.name, group, function} {}
 };
 
 // following is used from several places
