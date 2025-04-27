@@ -14,7 +14,7 @@
 
 #include "roq/web/socket/client.hpp"
 
-#include "roq/core/tools/exception.hpp"
+#include "roq/utils/exceptions/unhandled.hpp"
 
 #include "roq/deribit/utils.hpp"
 
@@ -436,7 +436,7 @@ void WebSocket::parse(std::string_view const &message) {
         log_message();
     } catch (...) {
       log_message();
-      core::tools::UnhandledException::terminate();
+      utils::exceptions::Unhandled::terminate();
     }
   });
 }
