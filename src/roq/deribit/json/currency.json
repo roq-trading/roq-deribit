@@ -40,6 +40,10 @@
     {
       "name": "in_cross_collateral_pool",
       "type": "std/bool"
+    },
+    {
+      "name": "apr",
+      "type": "std/double"
     }
   ]
 }
