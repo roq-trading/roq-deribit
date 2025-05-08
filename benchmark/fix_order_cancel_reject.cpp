@@ -25,8 +25,9 @@ void BM_fix_order_cancel_reject_parse_message(benchmark::State &state) {
   uint64_t processed = 0;
   auto parser = [&](auto &message_2) {
     auto result = OrderCancelReject::create(message_2);
-    if (!std::empty(result.text))
+    if (!std::empty(result.text)) {
       ++processed;
+    }
   };
   for (auto _ : state) {
     roq::fix::Reader<roq::fix::Version::FIX_44>::dispatch(MESSAGE, parser);

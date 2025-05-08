@@ -25,8 +25,9 @@ void BM_fix_reject_parse_message(benchmark::State &state) {
   uint64_t processed = 0;
   auto parser = [&](auto &message_2) {
     auto reject = Reject::create(message_2);
-    if (!std::empty(reject.text))
+    if (!std::empty(reject.text)) {
       ++processed;
+    }
   };
   for (auto _ : state) {
     roq::fix::Reader<roq::fix::Version::FIX_44>::dispatch(MESSAGE, parser);

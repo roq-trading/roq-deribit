@@ -21,8 +21,9 @@ std::string_view EnumNameAdvOrderType(AdvOrderType const &value) {
 }
 
 AdvOrderType parse_adv_order_type(std::string_view const &value) {
-  if (std::empty(value))
+  if (std::empty(value)) {
     return AdvOrderType::UNKNOWN;
+  }
   switch (std::data(value)[0]) {
     case '0':
       return AdvOrderType::IMPLIED_VOLATILITY_ORDER;

@@ -1235,8 +1235,9 @@ void BM_fix_security_list_parse_message(benchmark::State &state) {
   uint64_t processed = 0;
   auto parser = [&](auto &message_2) {
     auto security_list = SecurityList::create(message_2, buffer);
-    if (std::size(security_list.no_related_sym) > 0)
+    if (std::size(security_list.no_related_sym) > 0) {
       ++processed;
+    }
   };
   for (auto _ : state) {
     roq::fix::Reader<roq::fix::Version::FIX_44>::dispatch(MESSAGE, parser);

@@ -123,8 +123,9 @@ void OrderEntry::operator()(Event<Stop> const &) {
 }
 
 void OrderEntry::operator()(Event<Timer> const &event) {
-  if (!(*connection_manager_).refresh(event.value.now))
+  if (!(*connection_manager_).refresh(event.value.now)) {
     return;
+  }
   if (last_logon_or_heartbeat_.count() && shared_.settings.fix.request_timeout.count() &&
       (event.value.now - last_logon_or_heartbeat_) > shared_.settings.fix.request_timeout) {
     log::warn("*** DETECTED TIMEOUT ***"sv);
@@ -148,8 +149,9 @@ void OrderEntry::operator()(Event<Timer> const &event) {
       }
     } else {
       if (test_logon_time_.count() && test_logon_time_ < event.value.now) {
-        if (shared_.settings.fix.test_order_logon.count())
+        if (shared_.settings.fix.test_order_logon.count()) {
           log::warn("*** TEST: LOGON ***"sv);
+        }
         test_logon_time_ = {};
         send_logon();
         (*this)(ConnectionStatus::LOGIN_SENT);
@@ -159,13 +161,16 @@ void OrderEntry::operator()(Event<Timer> const &event) {
 }
 
 uint16_t OrderEntry::operator()(Event<CreateOrder> const &event, server::oms::Order const &order, std::string_view const &request_id) {
-  if (!ready()) [[unlikely]]
+  if (!ready()) [[unlikely]] {
     throw server::oms::NotReady{"not ready"sv};
+  }
   auto &[message_info, create_order] = event;
-  if (std::isfinite(create_order.stop_price)) [[unlikely]]
+  if (std::isfinite(create_order.stop_price)) [[unlikely]] {
     throw RuntimeError{"stop_price not supported"sv};
-  if (std::isfinite(create_order.max_show_quantity)) [[unlikely]]
+  }
+  if (std::isfinite(create_order.max_show_quantity)) [[unlikely]] {
     throw RuntimeError{"max_show_quantity not supported"sv};
+  }
   auto side = map(create_order.side);
   auto exec_inst = fix::map(create_order.execution_instructions);
   auto ord_type = map(create_order.order_type);
@@ -196,8 +201,9 @@ uint16_t OrderEntry::operator()(
     server::oms::Order const &order,
     std::string_view const &request_id,
     [[maybe_unused]] std::string_view const &previous_request_id) {
-  if (!ready()) [[unlikely]]
+  if (!ready()) [[unlikely]] {
     throw server::oms::NotReady{"not ready"sv};
+  }
   auto &modify_order = event.value;
   auto side = map(order.side);
   auto ord_type = map(order.order_type);
@@ -226,8 +232,9 @@ uint16_t OrderEntry::operator()(
     server::oms::Order const &order,
     std::string_view const &request_id,
     [[maybe_unused]] std::string_view const &previous_request_id) {
-  if (!ready()) [[unlikely]]
+  if (!ready()) [[unlikely]] {
     throw server::oms::NotReady{"not ready"sv};
+  }
   // note! using deribit_label might be slower, but using orig_cl_ord_id seems error-prone
   auto order_cancel_request = fix::OrderCancelRequest{
       .cl_ord_id = {},
@@ -243,8 +250,9 @@ uint16_t OrderEntry::operator()(
 }
 
 uint16_t OrderEntry::operator()(Event<CancelAllOrders> const &event, std::string_view const &request_id) {
-  if (!ready()) [[unlikely]]
+  if (!ready()) [[unlikely]] {
     throw server::oms::NotReady{"not ready"sv};
+  }
   auto &[message_info, cancel_all_orders] = event;
   auto send_ack = [&]() {
     auto cancel_all_orders_ack = CancelAllOrdersAck{
@@ -271,11 +279,13 @@ uint16_t OrderEntry::operator()(Event<CancelAllOrders> const &event, std::string
   };
   auto filter = utils::create_filter(cancel_all_orders) & ~Mask{Filter::ACCOUNT};
   auto mass_cancel_request_type = [&]() {
-    if (std::empty(filter))
+    if (std::empty(filter)) {
       return roq::fix::MassCancelRequestType::CANCEL_ALL_ORDERS;
+    }
     // note! no need to validate exchange
-    if (!std::empty(filter & Mask{Filter::SYMBOL}) && std::empty(filter & ~Mask{Filter::EXCHANGE, Filter::SYMBOL}))
+    if (!std::empty(filter & Mask{Filter::SYMBOL}) && std::empty(filter & ~Mask{Filter::EXCHANGE, Filter::SYMBOL})) {
       return roq::fix::MassCancelRequestType::CANCEL_ORDERS_FOR_SECURITY;
+    }
     log::warn("DEBUG: filter={}"sv, filter);
     throw server::oms::Rejected{Origin::GATEWAY, Error::INVALID_FILTER, "filter"sv};
   }();
@@ -307,8 +317,9 @@ void OrderEntry::operator()(io::net::ConnectionManager::Connected const &) {
   assert(test_logon_time_.count() == 0);
   auto now = clock::get_system();
   test_logon_time_ = now + shared_.settings.fix.test_order_logon;
-  if (shared_.settings.fix.test_order_disconnect.count())
+  if (shared_.settings.fix.test_order_disconnect.count()) {
     test_disconnect_time_ = now + shared_.settings.fix.test_order_disconnect;
+  }
 }
 
 void OrderEntry::operator()(io::net::ConnectionManager::Disconnected const &) {
@@ -353,8 +364,9 @@ void OrderEntry::operator()(io::net::ConnectionManager::Read const &) {
           if (shared_.settings.fix.debug)
             log::info("{}"sv, utils::debug::fix::Message{message});
         });
-    if (bytes == 0)
+    if (bytes == 0) {
       break;
+    }
     assert(bytes <= std::size(buffer));
     total_bytes += bytes;
     buffer = buffer.subspan(bytes);
@@ -431,8 +443,9 @@ void OrderEntry::send_test_request(std::chrono::nanoseconds now) {
       .test_req_id = encode_buffer_,
   };
   send(test_request);
-  if (!last_logon_or_heartbeat_.count())
+  if (!last_logon_or_heartbeat_.count()) {
     last_logon_or_heartbeat_ = now;
+  }
 }
 
 uint32_t OrderEntry::download(OrderEntryState state) {
@@ -719,8 +732,9 @@ auto find_liquidity_ind(auto const &fills) {
 //   Deribit reports only the *last* fill, but includes all fills as well
 //   we will therefore replace these values, when possible
 std::pair<double, double> compute_last_traded(auto const last_traded_quantity, auto const last_traded_price, auto const &fills) {
-  if (std::empty(fills))
+  if (std::empty(fills)) {
     return {last_traded_quantity, last_traded_price};
+  }
   double sum_quantity = 0.0, sum_quantity_price = 0.0;
   for (auto &item : fills) {
     sum_quantity += item.fill_qty;
@@ -731,8 +745,9 @@ std::pair<double, double> compute_last_traded(auto const last_traded_quantity, a
 }
 
 UpdateType compute_update_type(auto const &download) {
-  if (download.state() != OrderEntryState::ORDERS)
+  if (download.state() != OrderEntryState::ORDERS) {
     return UpdateType::INCREMENTAL;
+  }
   return UpdateType::SNAPSHOT;
 }
 }  // namespace
@@ -771,8 +786,9 @@ void OrderEntry::operator()(Trace<fix::ExecutionReport> const &event, roq::fix::
   }
   auto request_or_exchange_id = [&]() {
     // note! rejects does not send orig_cl_ord_id
-    if (std::empty(execution_report.orig_cl_ord_id))
+    if (std::empty(execution_report.orig_cl_ord_id)) {
       return execution_report.order_id;
+    }
     return execution_report.orig_cl_ord_id;
   }();
   auto side = map(execution_report.side);
@@ -843,10 +859,11 @@ void OrderEntry::operator()(Trace<fix::ExecutionReport> const &event, roq::fix::
       })) {
   } else {
     auto external = std::empty(execution_report.deribit_label);
-    if (external)
+    if (external) {
       log::warn("*** EXTERNAL ORDER ***"sv);
-    else
+    } else {
       log::warn("*** UNKNOWN INTERNAL ORDER ***"sv);
+    }
     log::warn("execution_report={}"sv, execution_report);
   }
   if (!std::empty(execution_report.no_fills)) {
@@ -910,8 +927,9 @@ void OrderEntry::operator()(Trace<fix::OrderCancelReject> const &event, roq::fix
       .price = NaN,
   };
   auto request_or_exchange_id = [&]() {
-    if (!std::empty(order_cancel_reject.deribit_label))
+    if (!std::empty(order_cancel_reject.deribit_label)) {
       return order_cancel_reject.deribit_label;
+    }
     return order_cancel_reject.orig_cl_ord_id;
   }();
   if (shared_.update_order(request_or_exchange_id, stream_id_, trace_info, response, [&](auto &order) {
@@ -1044,8 +1062,9 @@ uint64_t OrderEntry::send(T const &event, std::chrono::nanoseconds sending_time)
   };
   if ((*connection_manager_).send([&](auto &buffer) {
         auto message = event.encode(header, buffer);
-        if (shared_.settings.fix.debug) [[unlikely]]
+        if (shared_.settings.fix.debug) [[unlikely]] {
           helper(message);
+        }
         return std::size(message);
       })) {
   } else {

@@ -32,8 +32,9 @@ constexpr auto get_token(auto const &name) -> std::string_view {
     auto delim_2 = name.find_first_of('.', delim);
     auto length = delim_2 == name.npos ? name.npos : (delim_2 - delim);
     auto name_2 = name.substr(delim, length);
-    if (name_2.compare("state"sv) == 0)
+    if (name_2.compare("state"sv) == 0) {
       return "instrument_state"sv;
+    }
   } else {
     return part;
   }
@@ -49,8 +50,9 @@ static_assert(get_token("instrument.state.123"sv) == "instrument_state"sv);
 
 auto parse_channel(auto const &name) -> Channel {
   auto token = get_token(name);
-  if (std::empty(token)) [[unlikely]]
+  if (std::empty(token)) [[unlikely]] {
     return Channel::UNKNOWN__;
+  }
   return Channel{token};
 }
 }  // namespace
@@ -78,8 +80,9 @@ bool Parser::dispatch(Parser::Handler &handler, core::json::Value &value, std::s
         case CHANNEL: {
           auto name = std::get<std::string_view>(value_);
           channel = parse_channel(name);
-          if (channel == Channel::UNKNOWN__) [[unlikely]]
+          if (channel == Channel::UNKNOWN__) [[unlikely]] {
             log::warn(R"(Can't parse channel="{}")"sv, name);
+          }
           break;
         }
         case DATA:

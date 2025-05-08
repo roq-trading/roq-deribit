@@ -20,8 +20,9 @@ namespace {
 template <typename R>
 auto create_ports(auto &path) {
   using result_type = std::remove_cvref<R>::type;
-  if (std::empty(path))
+  if (std::empty(path)) {
     return result_type{};
+  }
   std::ifstream stream{std::string{path}};
   if (!stream.is_open()) {
     auto what = fmt::format(R"(Unable to open path="{}")"sv, path);
@@ -38,8 +39,9 @@ template <typename R>
 auto create_connections(auto &path, auto &channel_ids) {
   using result_type = std::remove_cvref<R>::type;
   result_type result;
-  if (std::empty(path))
+  if (std::empty(path)) {
     return result;
+  }
   std::ifstream stream{std::string{path}};
   if (!stream.is_open()) {
     auto what = fmt::format(R"(Unable to open path="{}")"sv, path);
@@ -49,8 +51,9 @@ auto create_connections(auto &path, auto &channel_ids) {
   auto channels = doc["channels"sv];
   for (auto &[channel_id, item] : channels.items()) {
     auto iter = std::ranges::find(channel_ids, channel_id);
-    if (iter == std::end(channel_ids))
+    if (iter == std::end(channel_ids)) {
       continue;
+    }
     auto currency_product = item["currency_product"sv].template get<std::string>();
     auto address = item["address"sv].template get<std::string>();
     auto connection = Config::Connection{

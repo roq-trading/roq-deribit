@@ -72,6 +72,7 @@ TEST_CASE("fix_logon_create_message", "[fix_logon]") {
       "553=5MP40u9h\001554=j/tVe9IsQuc+RjegscnHcJ6czMVNM1+ib7vjbY3UV0"
       "M=\0019001=Y\00110=032\001"sv;
   REQUIRE(std::size(message) == std::size(expected));
-  for (size_t i = 0; i < std::size(message); ++i)
+  for (size_t i = 0; i < std::size(message); ++i) {
     CHECK(static_cast<char>(std::data(message)[i]) == expected[i]);
+  }
 }

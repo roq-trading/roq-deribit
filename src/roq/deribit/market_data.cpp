@@ -57,12 +57,15 @@ auto publish_trade_summary(auto &shared) {
 
 auto get_supports(auto master, auto publish_market_by_price, auto publish_trade_summary) {
   Mask<SupportType> result;
-  if (master)
+  if (master) {
     result |= SupportType::REFERENCE_DATA;
-  if (publish_market_by_price)
+  }
+  if (publish_market_by_price) {
     result |= SupportType::MARKET_BY_PRICE;
-  if (publish_trade_summary)
+  }
+  if (publish_trade_summary) {
     result |= SupportType::TRADE_SUMMARY;
+  }
   return result;
 }
 
@@ -183,8 +186,9 @@ void MarketData::operator()(Event<Stop> const &) {
 }
 
 void MarketData::operator()(Event<Timer> const &event) {
-  if (!(*connection_manager_).refresh(event.value.now))
+  if (!(*connection_manager_).refresh(event.value.now)) {
     return;
+  }
   if (last_logon_or_heartbeat_.count() && fix_request_timeout_.count() && (event.value.now - last_logon_or_heartbeat_) > fix_request_timeout_) {
     log::warn("*** DETECTED TIMEOUT ***"sv);
     log::info("closing connection"sv);
@@ -248,8 +252,9 @@ void MarketData::operator()(io::net::ConnectionManager::Read const &) {
     size_t total_bytes = 0;
     while (!std::empty(buffer)) {
       auto bytes = roq::fix::Reader<FIX_VERSION>::dispatch(buffer, parse_message, log_message);
-      if (bytes == 0)
+      if (bytes == 0) {
         break;
+      }
       assert(bytes <= std::size(buffer));
       total_bytes += bytes;
       buffer = buffer.subspan(bytes);
@@ -334,8 +339,9 @@ void MarketData::send_test_request(std::chrono::nanoseconds now) {
       .test_req_id = request_id_,
   };
   send(test_request);
-  if (!last_logon_or_heartbeat_.count())
+  if (!last_logon_or_heartbeat_.count()) {
     last_logon_or_heartbeat_ = now;
+  }
 }
 
 uint32_t MarketData::download(MarketDataState state) {
@@ -398,13 +404,15 @@ void MarketData::operator()(metrics::Writer &writer) {
 }
 
 void MarketData::subscribe(size_t start_from) {
-  if (ready())
+  if (ready()) {
     subscribe(shared_.symbols.get_slice(index_, start_from));
+  }
 }
 
 void MarketData::subscribe(std::span<Symbol const> const &symbols) {
-  if (std::empty(symbols))
+  if (std::empty(symbols)) {
     return;
+  }
   log::info("Subscribe symbols=[{}]"sv, fmt::join(symbols, ","sv));
   auto market_depth = shared_.settings.fix.market_data_market_depth;
   auto md_update_type = market_depth ? roq::fix::MDUpdateType::INCREMENTAL_REFRESH : roq::fix::MDUpdateType::FULL_REFRESH;
@@ -417,14 +425,16 @@ void MarketData::subscribe(std::span<Symbol const> const &symbols) {
   auto max_size = shared_.settings.fix.market_data_request_max_size ? shared_.settings.fix.market_data_request_max_size : std::size(symbols);
   std::vector<fix::InstrmtMDReq> related_sym(max_size);
   for (size_t offset = 0;; offset += max_size) {
-    if (std::size(symbols) <= offset)
+    if (std::size(symbols) <= offset) {
       break;
+    }
     auto length = std::min<size_t>(std::size(symbols) - offset, max_size);
     assert(length > 0);
-    for (size_t i = 0; i < length; ++i)
+    for (size_t i = 0; i < length; ++i) {
       new (&related_sym[i]) fix::InstrmtMDReq{
           .symbol = symbols[offset + i],
       };
+    }
     auto request_id = shared_.next_request_id();
     auto market_data_request = fix::MarketDataRequest{
         .md_req_id = request_id,
@@ -452,14 +462,16 @@ void MarketData::unsubscribe(std::span<Symbol const> const &symbols) {
   auto max_size = shared_.settings.fix.market_data_request_max_size ? shared_.settings.fix.market_data_request_max_size : std::size(symbols);
   std::vector<fix::InstrmtMDReq> related_sym(max_size);
   for (size_t offset = 0;; offset += max_size) {
-    if (std::size(symbols) <= offset)
+    if (std::size(symbols) <= offset) {
       break;
+    }
     auto length = std::min<size_t>(std::size(symbols) - offset, max_size);
     assert(length > 0);
-    for (size_t i = 0; i < length; ++i)
+    for (size_t i = 0; i < length; ++i) {
       new (&related_sym[i]) fix::InstrmtMDReq{
           .symbol = symbols[offset + i],
       };
+    }
     auto request_id = shared_.next_request_id();
     auto market_data_request = fix::MarketDataRequest{
         .md_req_id = request_id,
@@ -478,8 +490,9 @@ void MarketData::unsubscribe(std::span<Symbol const> const &symbols) {
 void MarketData::resubscribe(std::string_view const &symbol) {
   log::debug(R"(*** RESUBSCRIBE *** (symbol="{}"))"sv, symbol);
   log::warn<1>(R"(*** RESUBSCRIBE *** (symbol="{}"))"sv, symbol);
-  if (latch_.find(symbol) != std::end(latch_))
+  if (latch_.find(symbol) != std::end(latch_)) {
     return;
+  }
   log::info<1>(R"(Latch symbol="{}")"sv, symbol);
   latch_.emplace(symbol);
   Symbol tmp{symbol};  // copy
@@ -699,11 +712,13 @@ void MarketData::operator()(Trace<fix::SecurityList> const &event, roq::fix::Hea
         };
         create_trace_and_dispatch(handler_, trace_info, reference_data, true);
       }
-      if (discard)
+      if (discard) {
         continue;
+      }
       shared_.multiplier[symbol] = multiplier;
-      if (shared_.all_symbols.emplace(symbol).second)  // only include new
+      if (shared_.all_symbols.emplace(symbol).second) {  // only include new
         symbols.emplace_back(symbol);
+      }
       ++counter;
     }
     log::info<2>("- securities: {} (/{})"sv, counter, std::size(security_list.no_related_sym));
@@ -754,8 +769,9 @@ void MarketData::operator()(Trace<fix::MarketDataIncrementalRefresh> const &even
   }
   std::chrono::nanoseconds exchange_time_utc = {};
   for (auto &item : market_data_incremental_refresh.no_md_entries) {
-    if (exchange_time_utc < item.md_entry_date)
+    if (exchange_time_utc < item.md_entry_date) {
       exchange_time_utc = item.md_entry_date;
+    }
     switch (item.md_entry_type) {
       using enum roq::fix::MDEntryType;
       case BID:
@@ -849,8 +865,9 @@ void MarketData::operator()(Trace<fix::MarketDataIncrementalRefresh> const &even
 void MarketData::operator()(Trace<fix::MarketDataRequestReject> const &event, roq::fix::Header const &header) {
   auto &[trace_info, market_data_request_reject] = event;
   log::warn<1>("event={{header={}, market_data_request_reject={}}}"sv, header, market_data_request_reject);
-  if (shared_.settings.fix.terminate_on_market_data_request_reject)
+  if (shared_.settings.fix.terminate_on_market_data_request_reject) {
     log::fatal("Unexpected"sv);
+  }
 }
 
 void MarketData::operator()(Trace<fix::MarketDataSnapshotFullRefresh> const &event, roq::fix::Header const &header) {
@@ -867,8 +884,9 @@ void MarketData::operator()(Trace<fix::MarketDataSnapshotFullRefresh> const &eve
   auto &statistics = shared_.get_statistics();
   std::chrono::nanoseconds exchange_time_utc = {};
   for (auto &item : market_data_snapshot_full_refresh.no_md_entries) {
-    if (exchange_time_utc < item.md_entry_date)
+    if (exchange_time_utc < item.md_entry_date) {
       exchange_time_utc = item.md_entry_date;
+    }
     switch (item.md_entry_type) {
       using enum roq::fix::MDEntryType;
       case BID:
@@ -968,8 +986,9 @@ void MarketData::send(T const &event, std::chrono::nanoseconds sending_time) {
   };
   if ((*connection_manager_).send([&](auto &buffer) {
         auto message = event.encode(header, buffer);
-        if (fix_debug_) [[unlikely]]
+        if (fix_debug_) [[unlikely]] {
           helper(message);
+        }
         return std::size(message);
       })) {
   } else {

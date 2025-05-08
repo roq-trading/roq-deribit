@@ -38,8 +38,9 @@ auto dispatch_helper(auto &handler, auto &trace_info, auto &message, auto &frame
 bool Parser::dispatch(Handler &handler, std::span<std::byte const> const &buffer, TraceInfo const &trace_info) {
   auto callback = [&](auto &frame, auto &packet) -> bool {
     // log::debug("frame={}"sv, frame);
-    if (!handler(frame))
+    if (!handler(frame)) {
       return false;
+    }
     while (!std::empty(packet)) {
       // log::debug("len(packet)={}"sv, std::size(packet));
       // log::debug("packet={}"sv, utils::debug::hex::Message{packet});

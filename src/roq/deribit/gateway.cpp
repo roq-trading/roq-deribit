@@ -16,8 +16,9 @@ namespace deribit {
 namespace {
 auto create_master_account(auto &config) {
   std::string_view result = config.get_master_account();
-  if (std::empty(result))
+  if (std::empty(result)) {
     log::fatal("Market data requires a master account"sv);
+  }
   return result;
 }
 
@@ -75,14 +76,16 @@ R create_market_data(auto &gateway, auto &context, auto &stream_id, auto &accoun
 }
 
 auto create_udp_snapshot(auto &gateway, auto &context, auto &stream_id, auto &shared) {
-  if (shared.has_multicast())
+  if (shared.has_multicast()) {
     return std::make_unique<UDPSnapshot>(gateway, context, stream_id, shared);
+  }
   return std::unique_ptr<UDPSnapshot>{};
 }
 
 auto create_udp_events(auto &gateway, auto &context, auto &stream_id, auto &shared) {
-  if (shared.has_multicast())
+  if (shared.has_multicast()) {
     return std::make_unique<UDPEvents>(gateway, context, stream_id, shared);
+  }
   return std::unique_ptr<UDPEvents>{};
 }
 }  // namespace
@@ -96,10 +99,12 @@ Gateway::Gateway(server::Dispatcher &dispatcher, Settings const &settings, Confi
       web_socket_{create_web_socket<decltype(web_socket_)>(*this, context_, stream_id_, get_account(master_account_), shared_)},
       market_data_{create_market_data<decltype(market_data_)>(*this, context_, ++stream_id_, get_account(master_account_), shared_)},
       udp_snapshot_{create_udp_snapshot(*this, context_, ++stream_id_, shared_)}, udp_events_{create_udp_events(*this, context_, ++stream_id_, shared_)} {
-  if (std::empty(master_account_) && !settings.misc.disable_master_account_check)
+  if (std::empty(master_account_) && !settings.misc.disable_master_account_check) {
     log::fatal("A master account is always required (due to FIX logon)"sv);
-  if (!settings.fix.cancel_on_disconnect)
+  }
+  if (!settings.fix.cancel_on_disconnect) {
     log::warn("Orders will *NOT* be cancelled on disconnect"sv);
+  }
 }
 
 void Gateway::operator()(Event<Start> const &event) {
@@ -224,31 +229,37 @@ void Gateway::operator()(Trace<FundsUpdate> const &event, bool is_last) {
 
 void Gateway::operator()(WebSocket::CurrenciesUpdate &currencies_update) {
   auto &currencies = currencies_update.currencies;
-  for (auto &[_, iter] : drop_copy_)
+  for (auto &[_, iter] : drop_copy_) {
     (*iter).update_subscriptions(currencies);
+  }
 }
 
 void Gateway::operator()(WebSocket::SymbolsUpdate &symbols_update) {
   auto [size, start_from] = shared_.symbols(symbols_update.symbols);
   ensure_symbol_slices(size);
-  for (auto &item : market_data_)
+  for (auto &item : market_data_) {
     (*item).subscribe(start_from);
-  for (auto &item : web_socket_)
+  }
+  for (auto &item : web_socket_) {
     (*item).subscribe(start_from);
+  }
 }
 
 void Gateway::operator()(WebSocket::Latch const &) {
-  for (auto &[_, item] : drop_copy_)
+  for (auto &[_, item] : drop_copy_) {
     (*item).download();
+  }
 }
 
 void Gateway::operator()(MarketData::SymbolsUpdate &symbols_update) {
   auto [size, start_from] = shared_.symbols(symbols_update.symbols);
   ensure_symbol_slices(size);
-  for (auto &item : market_data_)
+  for (auto &item : market_data_) {
     (*item).subscribe(start_from);
-  for (auto &item : web_socket_)
+  }
+  for (auto &item : web_socket_) {
     (*item).subscribe(start_from);
+  }
 }
 
 void Gateway::ensure_symbol_slices(size_t size) {
@@ -279,31 +290,39 @@ void Gateway::ensure_symbol_slices(size_t size) {
 template <typename... Args>
 void Gateway::dispatch(Args &&...args) {
   auto helper = [&](auto &target) { target(std::forward<Args>(args)...); };
-  for (auto &[_, item] : order_entry_)
+  for (auto &[_, item] : order_entry_) {
     helper(*item);
-  for (auto &[_, item] : drop_copy_)
+  }
+  for (auto &[_, item] : drop_copy_) {
     helper(*item);
-  for (auto &item : web_socket_)
+  }
+  for (auto &item : web_socket_) {
     helper(*item);
-  for (auto &item : market_data_)
+  }
+  for (auto &item : market_data_) {
     helper(*item);
-  if (udp_snapshot_)
+  }
+  if (udp_snapshot_) {
     helper(*udp_snapshot_);
-  if (udp_events_)
+  }
+  if (udp_events_) {
     helper(*udp_events_);
+  }
 }
 
 Account &Gateway::get_account(std::string_view const &account) {
   auto iter = accounts_.find(account);
-  if (iter == std::end(accounts_)) [[unlikely]]
+  if (iter == std::end(accounts_)) [[unlikely]] {
     throw RuntimeError{R"(Unknown account="{}")"sv, account};
+  }
   return *(*iter).second;
 }
 
 OrderEntry &Gateway::get_order_entry(std::string_view const &account) {
   auto iter = order_entry_.find(account);
-  if (iter == std::end(order_entry_)) [[unlikely]]
+  if (iter == std::end(order_entry_)) [[unlikely]] {
     throw RuntimeError{R"(Unknown account="{}")"sv, account};
+  }
   return *(*iter).second;
 }
 

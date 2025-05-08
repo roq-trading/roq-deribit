@@ -44,8 +44,9 @@ void BM_fix_market_data_increment_refresh_parse_message_1(benchmark::State &stat
   uint64_t processed = 0;
   auto parser = [&](auto &message_2) {
     auto result = MarketDataIncrementalRefresh::create(message_2, buffer);
-    if (!std::empty(result.md_req_id))
+    if (!std::empty(result.md_req_id)) {
       ++processed;
+    }
   };
   for (auto _ : state) {
     roq::fix::Reader<roq::fix::Version::FIX_44>::dispatch(message_1, parser);
@@ -59,8 +60,9 @@ void BM_fix_market_data_increment_refresh_parse_message_2(benchmark::State &stat
   uint64_t processed = 0;
   auto parser = [&](auto &message_2) {
     auto result = MarketDataIncrementalRefresh::create(message_2, buffer);
-    if (!std::empty(result.md_req_id))
+    if (!std::empty(result.md_req_id)) {
       ++processed;
+    }
   };
   for (auto _ : state) {
     roq::fix::Reader<roq::fix::Version::FIX_44>::dispatch(message_2, parser);

@@ -25,8 +25,9 @@ void BM_fix_logout_parse_message(benchmark::State &state) {
   uint64_t processed = 0;
   auto parser = [&](auto &message_2) {
     auto logout = Logout::create(message_2);
-    if (!std::empty(logout.text))
+    if (!std::empty(logout.text)) {
       ++processed;
+    }
   };
   for (auto _ : state) {
     roq::fix::Reader<roq::fix::Version::FIX_44>::dispatch(MESSAGE, parser);

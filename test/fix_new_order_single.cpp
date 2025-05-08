@@ -68,6 +68,7 @@ TEST_CASE("fix_new_order_single_create_message", "[fix_new_order_single]") {
   fmt::print("{}\n"sv, utils::debug::fix::Message{message});
   fmt::print("{}\n"sv, utils::debug::fix::Message{expected});
   REQUIRE(std::size(message) == std::size(expected));
-  for (size_t i = 0; i < std::size(message); ++i)
+  for (size_t i = 0; i < std::size(message); ++i) {
     CHECK(static_cast<char>(std::data(message)[i]) == expected[i]);
+  }
 }

@@ -12,17 +12,20 @@ SecurityType map_security_type(std::string_view const &value) {
   if (std::size(value) == 3) {
     switch (std::data(value)[0]) {
       case 'F':
-        if (value.compare("FUT"sv) == 0)
+        if (value.compare("FUT"sv) == 0) {
           return SecurityType::FUTURES;
+        }
         break;
       case 'O':
-        if (value.compare("OPT"sv) == 0)
+        if (value.compare("OPT"sv) == 0) {
           return SecurityType::OPTION;
+        }
         break;
     }
   }
-  if (value.compare("FXSPOT"sv) == 0)
+  if (value.compare("FXSPOT"sv) == 0) {
     return SecurityType::SPOT;
+  }
   return SecurityType::UNDEFINED;
 }
 
@@ -30,20 +33,24 @@ Error map_error(std::string_view const &value) {
   if (std::size(value) > 0) {
     switch (std::data(value)[0]) {
       case 'a':
-        if (value.compare("already_cancelled"sv) == 0)
+        if (value.compare("already_cancelled"sv) == 0) {
           return Error::TOO_LATE_TO_MODIFY_OR_CANCEL;
+        }
         break;
       case 'c':
-        if (value.compare("canceled"sv) == 0)
+        if (value.compare("canceled"sv) == 0) {
           return Error::UNDEFINED;
+        }
         break;
       case 's':
-        if (value.compare("success"sv) == 0)
+        if (value.compare("success"sv) == 0) {
           return Error::UNDEFINED;
+        }
         break;
       case 'r':
-        if (value.compare("rejected: order is closed"sv) == 0)
+        if (value.compare("rejected: order is closed"sv) == 0) {
           return Error::TOO_LATE_TO_MODIFY_OR_CANCEL;
+        }
         break;
     }
   }
@@ -51,18 +58,22 @@ Error map_error(std::string_view const &value) {
 }
 
 std::string_view map(Mask<ExecutionInstruction> execution_instructions) {
-  if (std::empty(execution_instructions))
+  if (std::empty(execution_instructions)) {
     return {};
-  if (execution_instructions.has(ExecutionInstruction::PARTICIPATE_DO_NOT_INITIATE))
+  }
+  if (execution_instructions.has(ExecutionInstruction::PARTICIPATE_DO_NOT_INITIATE)) {
     return "6"sv;
-  if (execution_instructions.has(ExecutionInstruction::DO_NOT_INCREASE))
+  }
+  if (execution_instructions.has(ExecutionInstruction::DO_NOT_INCREASE)) {
     return "E"sv;
+  }
   throw RuntimeError{"Not a supported execution instruction"sv};
 }
 
 Error reject_to_error(std::string_view const &reason, std::string_view const &text) {
-  if (std::empty(reason) && text.compare("rate_limit_exceeded"sv) == 0)
+  if (std::empty(reason) && text.compare("rate_limit_exceeded"sv) == 0) {
     return Error::REQUEST_RATE_LIMIT_REACHED;
+  }
   return {};
 }
 

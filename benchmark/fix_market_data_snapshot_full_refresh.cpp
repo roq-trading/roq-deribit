@@ -178,8 +178,9 @@ void BM_fix_market_data_snapshot_full_refresh_parse_message(benchmark::State &st
   uint64_t processed = 0;
   auto parser = [&](auto &message_2) {
     auto market_data = MarketDataSnapshotFullRefresh::create(message_2, buffer);
-    if (std::size(market_data.no_md_entries) > 0)
+    if (std::size(market_data.no_md_entries) > 0) {
       ++processed;
+    }
   };
   for (auto _ : state) {
     roq::fix::Reader<roq::fix::Version::FIX_44>::dispatch(MESSAGE, parser);

@@ -74,8 +74,9 @@ struct create_metrics final : public utils::metrics::Factory {
 
 auto get_download_trades_lookback(auto const &settings, auto download_trades_is_first) {
   if (download_trades_is_first) {
-    if (settings.download.trades_lookback_on_restart.count())
+    if (settings.download.trades_lookback_on_restart.count()) {
       return settings.download.trades_lookback_on_restart;
+    }
   }
   return settings.download.trades_lookback;
 }
@@ -122,8 +123,9 @@ void DropCopy::operator()(metrics::Writer &writer) {
 }
 
 void DropCopy::update_subscriptions(std::span<std::string> const &currencies) {
-  for (auto &currency : currencies)
+  for (auto &currency : currencies) {
     currencies_.emplace_back(currency);
+  }
   if (ready_ && can_download_) {
     subscribe_portfolios(currencies);
     get_account_summary(currencies);
@@ -132,8 +134,9 @@ void DropCopy::update_subscriptions(std::span<std::string> const &currencies) {
 }
 
 void DropCopy::download() {
-  if (can_download_)
+  if (can_download_) {
     return;
+  }
   can_download_ = true;
   if (ready_) {
     subscribe_portfolios(currencies_);
@@ -234,8 +237,9 @@ uint32_t DropCopy::download(DropCopyState state) {
     case UNDEFINED:
       break;
     case SUBSCRIBE_PORTFOLIOS:
-      if (can_download_)
+      if (can_download_) {
         subscribe_portfolios(currencies_);
+      }
       return 0;
     case SUBSCRIBE_CHANGES:
       subscribe_changes();
@@ -247,12 +251,14 @@ uint32_t DropCopy::download(DropCopyState state) {
       subscribe_trades();
       return 0;
     case GET_ACCOUNT_SUMMARY:
-      if (can_download_)
+      if (can_download_) {
         get_account_summary(currencies_);
+      }
       return 0;
     case GET_TRADES:
-      if (can_download_)
+      if (can_download_) {
         get_trades(currencies_);
+      }
       return 0;
     case DONE:
       (*this)(ConnectionStatus::READY);
@@ -368,8 +374,9 @@ void DropCopy::parse(std::string_view const &message) {
     auto log_message = [&]() { log::warn(R"(message="{}")"sv, message); };
     try {
       TraceInfo trace_info;
-      if (!core::jsonrpc::Parser::dispatch(*this, message, trace_info))
+      if (!core::jsonrpc::Parser::dispatch(*this, message, trace_info)) {
         log_message();
+      }
     } catch (...) {
       log_message();
       utils::exceptions::Unhandled::terminate();
@@ -380,10 +387,11 @@ void DropCopy::parse(std::string_view const &message) {
 void DropCopy::operator()(Trace<core::jsonrpc::Error> const &event, core::json::Value &value) {
   auto &[trace_info, error] = event;
   json::Error error_2{value};
-  if (shared_.settings.ws.allow_errors)
+  if (shared_.settings.ws.allow_errors) {
     log::warn(R"(error={}, id="{}")"sv, error_2, error.id);
-  else
+  } else {
     log::fatal(R"(error={}, id="{}")"sv, error_2, error.id);
+  }
 }
 
 bool DropCopy::operator()(Trace<core::jsonrpc::Result> const &event, core::json::Value &value) {
@@ -533,8 +541,9 @@ void DropCopy::operator()(Trace<json::Trade> const &event, bool is_download, boo
   auto &trade = event.value;
   log::info<1>("trade={}"sv, trade);
   auto iter = shared_.multiplier.find(trade.instrument_name);
-  if (iter == std::end(shared_.multiplier))
+  if (iter == std::end(shared_.multiplier)) {
     log::warn(R"(*** NO MULTIPLIER FOR SYMBOL="{}" ***)"sv, trade.instrument_name);
+  }
   auto multiplier = iter == std::end(shared_.multiplier) ? 1.0 : (*iter).second;  // XXX not good
   auto quantity = trade.amount * multiplier;
   auto fill = Fill{

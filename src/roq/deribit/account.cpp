@@ -14,15 +14,17 @@ namespace deribit {
 namespace {
 auto create_key(auto &config, auto &name) {
   auto key = config.get_access_key(name);
-  if (std::empty(key))
+  if (std::empty(key)) {
     log::fatal(R"(Unexpected: missing key for name="{}")"sv, name);
+  }
   return key;
 }
 
 auto create_crypto(auto &config, auto &name) {
   auto secret = config.get_access_secret(name);
-  if (std::empty(secret))
+  if (std::empty(secret)) {
     log::fatal(R"(Unexpected: missing secret for name="{}")"sv, name);
+  }
   return tools::Crypto{secret};
 }
 }  // namespace

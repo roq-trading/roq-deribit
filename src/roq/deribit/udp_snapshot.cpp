@@ -41,8 +41,9 @@ auto publish_market_by_price(auto &settings) {
 
 auto get_supports(auto publish_market_by_price) {
   Mask<SupportType> result;
-  if (publish_market_by_price)
+  if (publish_market_by_price) {
     result |= SupportType::MARKET_BY_PRICE;
+  }
   return result;
 }
 
@@ -107,8 +108,9 @@ void UDPSnapshot::operator()(io::net::udp::Receiver::Read const &) {
   publish_stream_status(trace_info, ConnectionStatus::READY);  // first message will publish
   while (true) {
     auto bytes = (*receiver_).recv(shared_.buffer);
-    if (!bytes)
+    if (!bytes) {
       return;
+    }
     log::info<5>("Received {} byte(s)"sv, bytes);
     std::span payload{std::data(shared_.buffer), bytes};
     log::info<5>("{}"sv, utils::debug::hex::Message{payload});
@@ -126,8 +128,9 @@ bool UDPSnapshot::operator()(sbe::Frame const &frame) {
   auto result = false;
   auto callback = [&](auto &channel) {
     result = channel(frame);
-    if (!result)
+    if (!result) {
       channel.reset(frame);
+    }
   };
   get_channel(frame, callback);
   return result;
@@ -143,8 +146,9 @@ void UDPSnapshot::operator()(Trace<deribit_multicast::Instrument> const &event, 
     auto multiplier = compute_contracts_multiplier(contract_size);
     auto symbol = sbe::get_instrument_name(instrument);  // note! must be **LAST***
     auto discard = shared_.discard_symbol(symbol);
-    if (!discard)
+    if (!discard) {
       log::debug(R"(CREATE instrument_id={}, instrument_name="{}", contract_size={}, multiplier={})"sv, instrument_id, symbol, contract_size, multiplier);
+    }
     return {
         symbol,
         contract_size,
@@ -174,8 +178,9 @@ void UDPSnapshot::operator()(Trace<deribit_multicast::Snapshot> const &event, sb
   using value_type = std::remove_cvref<decltype(event)>::type::value_type;
   auto &snapshot = const_cast<value_type &>(event.value);
   log::info<4>("snapshot={}, frame={}"sv, snapshot, frame);
-  if (!publish_market_by_price_)
+  if (!publish_market_by_price_) {
     return;
+  }
   auto instrument_id = snapshot.instrumentId();
   auto change_id = snapshot.changeId();
   auto is_last = snapshot.isLastInBook();
@@ -309,8 +314,9 @@ void UDPSnapshot::operator()(metrics::Writer &writer) {
 }
 
 void UDPSnapshot::publish_stream_status(TraceInfo const &trace_info, ConnectionStatus connection_status) {
-  if (!utils::update(connection_status_, connection_status))
+  if (!utils::update(connection_status_, connection_status)) {
     return;
+  }
   auto stream_status = StreamStatus{
       .stream_id = stream_id_,
       .account = {},
@@ -332,8 +338,9 @@ void UDPSnapshot::publish_stream_status(TraceInfo const &trace_info, ConnectionS
 template <typename Callback>
 void UDPSnapshot::get_channel(sbe::Frame const &frame, Callback callback) {
   auto iter = channel_.find(frame.channel_id);
-  if (iter == std::end(channel_))
+  if (iter == std::end(channel_)) {
     iter = channel_.try_emplace(frame.channel_id).first;
+  }
   callback((*iter).second);
 }
 

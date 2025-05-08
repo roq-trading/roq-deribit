@@ -29,8 +29,9 @@ void BM_fix_position_report_parse_message(benchmark::State &state) {
   uint64_t processed = 0;
   auto parser = [&](auto &message_2) {
     auto position_report = PositionReport::create(message_2, buffer);
-    if (!std::empty(position_report.pos_req_id))
+    if (!std::empty(position_report.pos_req_id)) {
       ++processed;
+    }
   };
   for (auto _ : state) {
     roq::fix::Reader<roq::fix::Version::FIX_44>::dispatch(MESSAGE, parser);

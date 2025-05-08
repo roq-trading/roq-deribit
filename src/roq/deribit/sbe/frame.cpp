@@ -21,8 +21,9 @@ static_assert(sizeof(Frame) == Frame::size());
 // === IMPLEMENTATION ===
 
 Frame Frame::parse_helper(std::span<std::byte const> const &buffer) {
-  if (std::size(buffer) < size())
+  if (std::size(buffer) < size()) {
     log::fatal("Invalid message, size={}"sv, std::size(buffer));
+  }
   uint16_t packet_length;
   std::memcpy(&packet_length, &buffer[0], sizeof(packet_length));
   packet_length = utils::little_endian_to_host(packet_length);

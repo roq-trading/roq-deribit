@@ -17,8 +17,9 @@ namespace filter {
 // === IMPLEMENTATION ===
 
 Controller::Controller(Settings const &settings) : settings_{settings} {
-  if (settings_.type != "tcpdump"sv)
+  if (settings_.type != "tcpdump"sv) {
     log::fatal(R"(Unexpected: type="{}")"sv, settings_.type);
+  }
 }
 
 void Controller::dispatch() {
@@ -31,8 +32,9 @@ void Controller::dispatch() {
   for (size_t i = 0; i < n; ++i) {
     auto &item = filter[i];
     fmt::print(stdout, "host {}"sv, item);
-    if (i != (n - 1))
+    if (i != (n - 1)) {
       fmt::print(stdout, " or "sv);
+    }
   }
   fmt::print(stdout, ")"sv);
 }

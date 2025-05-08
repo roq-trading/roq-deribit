@@ -49,8 +49,9 @@ struct Shared final {
     auto iter = instruments.find(instrument_id);
     if (iter != std::end(instruments)) {
       auto &instrument = (*iter).second;
-      if (!instrument.discard)
+      if (!instrument.discard) {
         callback(instrument);
+      }
       return true;
     }
     return false;
@@ -59,8 +60,9 @@ struct Shared final {
   template <typename Callback>
   void maybe_create_instrument(uint32_t instrument_id, Callback callback) {
     auto iter = instruments.find(instrument_id);
-    if (iter != std::end(instruments))
+    if (iter != std::end(instruments)) {
       return;
+    }
     auto instrument = callback();
     [[maybe_unused]] auto res = instruments.try_emplace(instrument_id, std::move(instrument));
     assert(res.second);

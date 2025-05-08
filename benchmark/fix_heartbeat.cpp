@@ -25,8 +25,9 @@ void BM_fix_heartbeat_parse_message(benchmark::State &state) {
   uint64_t processed = 0;
   auto parser = [&](auto &message_2) {
     auto heartbeat = Heartbeat::create(message_2);
-    if (std::empty(heartbeat.test_req_id))
+    if (std::empty(heartbeat.test_req_id)) {
       ++processed;
+    }
   };
   for (auto _ : state) {
     roq::fix::Reader<roq::fix::Version::FIX_44>::dispatch(MESSAGE, parser);

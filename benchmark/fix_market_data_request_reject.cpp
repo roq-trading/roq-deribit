@@ -25,8 +25,9 @@ void BM_fix_market_data_request_reject_parse_message(benchmark::State &state) {
   uint64_t processed = 0;
   auto parser = [&](auto &message_2) {
     auto market_data_request_reject = MarketDataRequestReject::create(message_2);
-    if (!std::empty(market_data_request_reject.text))
+    if (!std::empty(market_data_request_reject.text)) {
       ++processed;
+    }
   };
   for (auto _ : state) {
     roq::fix::Reader<roq::fix::Version::FIX_44>::dispatch(MESSAGE, parser);

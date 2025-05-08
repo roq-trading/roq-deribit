@@ -37,8 +37,9 @@ std::uniform_int_distribution<uint32_t> DISTRIBUTION;
 // === IMPLEMENTATION ===
 
 Crypto::Crypto(std::string_view const &access_secret) : secret_{access_secret}, mac_{secret_} {
-  if (std::empty(secret_))
+  if (std::empty(secret_)) {
     log::fatal("The API secret key is required"sv);
+  }
 }
 
 std::string Crypto::create_nonce() {
@@ -64,8 +65,9 @@ std::string Crypto::create_raw_data(std::chrono::milliseconds timestamp) {
   using value_type = decltype(DISTRIBUTION)::result_type;
   constexpr auto n = RANDOM_BYTES / sizeof(value_type);
   std::array<value_type, n> buffer;
-  for (size_t i = 0; i < n; ++i)
+  for (size_t i = 0; i < n; ++i) {
     buffer[i] = DISTRIBUTION(GENERATOR);
+  }
   std::span tmp{reinterpret_cast<std::byte *>(std::data(buffer)), std::size(buffer) * sizeof(value_type)};
   std::string nonce;
   utils::codec::Base64::encode(nonce, tmp, false, false);

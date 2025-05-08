@@ -132,8 +132,9 @@ struct WebSocket final : public web::socket::Client::Handler, public core::jsonr
     auto iter = top_of_book_.find(symbol);
     if (iter == std::end(top_of_book_)) {
       auto iter_2 = shared_.multiplier.find(symbol);
-      if (iter_2 == std::end(shared_.multiplier))
+      if (iter_2 == std::end(shared_.multiplier)) {
         return false;
+      }
       iter = top_of_book_.emplace(symbol, std::make_pair(roq::Layer{}, (*iter_2).second)).first;
     }
     callback((*iter).second.first, (*iter).second.second);

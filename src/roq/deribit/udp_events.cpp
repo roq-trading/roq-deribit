@@ -51,12 +51,15 @@ auto publish_trade_summary(auto &settings) {
 
 auto get_supports(auto publish_top_of_book, auto publish_market_by_price, auto publish_trade_summary) {
   Mask<SupportType> result;
-  if (publish_top_of_book)
+  if (publish_top_of_book) {
     result |= SupportType::TOP_OF_BOOK;
-  if (publish_market_by_price)
+  }
+  if (publish_market_by_price) {
     result |= SupportType::MARKET_BY_PRICE;
-  if (publish_trade_summary)
+  }
+  if (publish_trade_summary) {
     result |= SupportType::TRADE_SUMMARY;
+  }
   return result;
 }
 
@@ -102,8 +105,9 @@ bool test_sequence(auto &cache, auto instrument_id, auto sequence_number) {
     iter = cache.emplace(instrument_id, sequence_number).first;
     result = true;
   }
-  if (result)
+  if (result) {
     (*iter).second = sequence_number;
+  }
   return result;
 }
 }  // namespace
@@ -149,8 +153,9 @@ void UDPEvents::operator()(io::net::udp::Receiver::Read const &) {
   publish_stream_status(trace_info, ConnectionStatus::READY);  // first message will publish
   while (true) {
     auto bytes = (*receiver_).recv(shared_.buffer);
-    if (!bytes)
+    if (!bytes) {
       break;
+    }
     log::info<5>("Received {} byte(s)"sv, bytes);
     std::span payload{std::data(shared_.buffer), bytes};
     log::info<5>("{}"sv, utils::debug::hex::Message{payload});
@@ -168,8 +173,9 @@ bool UDPEvents::operator()(sbe::Frame const &frame) {
   auto result = false;
   auto callback = [&](auto &channel) {
     result = channel(frame);
-    if (!result)
+    if (!result) {
       channel.reset(frame);
+    }
   };
   get_channel(frame, callback);
   return result;
@@ -185,8 +191,9 @@ void UDPEvents::operator()(Trace<deribit_multicast::Instrument> const &event, sb
     auto multiplier = compute_contracts_multiplier(contract_size);
     auto symbol = sbe::get_instrument_name(instrument);  // note! must be **LAST***
     auto discard = shared_.discard_symbol(symbol);
-    if (!discard)
+    if (!discard) {
       log::debug(R"(CREATE instrument_id={}, instrument_name="{}", contract_size={}, multiplier={})"sv, instrument_id, symbol, contract_size, multiplier);
+    }
     return {
         symbol,
         contract_size,
@@ -203,8 +210,9 @@ void UDPEvents::operator()(Trace<deribit_multicast::Book> const &event, sbe::Fra
   using value_type = std::remove_cvref<decltype(event)>::type::value_type;
   auto &book = const_cast<value_type &>(event.value);
   log::info<4>("book={}, frame={}"sv, book, frame);
-  if (!publish_market_by_price_)
+  if (!publish_market_by_price_) {
     return;
+  }
   auto instrument_id = book.instrumentId();
   auto prev_change_id = book.prevChangeId();
   auto change_id = book.changeId();
@@ -264,8 +272,9 @@ void UDPEvents::operator()(Trace<deribit_multicast::Book> const &event, sbe::Fra
           };
         };
         auto publish_update = [&](auto &bids, auto &asks) {
-          if (std::empty(bids) && std::empty(asks))  // note! empty updates are common
+          if (std::empty(bids) && std::empty(asks)) {  // note! empty updates are common
             return;
+          }
           auto market_by_price_update = create_update(bids, asks, UpdateType::INCREMENTAL, change_id);
           auto is_last = true;
           create_trace_and_dispatch(handler_, trace_info, market_by_price_update, is_last);
@@ -326,8 +335,9 @@ void UDPEvents::operator()(Trace<deribit_multicast::Trades> const &event, sbe::F
   using value_type = std::remove_cvref<decltype(event)>::type::value_type;
   auto &trades = const_cast<value_type &>(event.value);
   log::info<4>("trades={}, frame={}"sv, trades, frame);
-  if (!publish_trade_summary_)
+  if (!publish_trade_summary_) {
     return;
+  }
   auto instrument_id = trades.instrumentId();
   auto callback = [&](auto &instrument) {
     std::chrono::milliseconds exchange_time_utc = {};
@@ -376,8 +386,9 @@ void UDPEvents::operator()(Trace<deribit_multicast::Ticker> const &event, sbe::F
   using value_type = std::remove_cvref<decltype(event)>::type::value_type;
   auto &ticker = const_cast<value_type &>(event.value);
   log::info<4>("ticker={}, frame={}"sv, ticker, frame);
-  if (!publish_top_of_book_)
+  if (!publish_top_of_book_) {
     return;
+  }
   auto instrument_id = ticker.instrumentId();
   auto callback = [&](auto &instrument) {
     auto bid_price = ticker.bestBidPrice();
@@ -447,8 +458,9 @@ void UDPEvents::operator()(metrics::Writer &writer) {
 }
 
 void UDPEvents::publish_stream_status(TraceInfo const &trace_info, ConnectionStatus connection_status) {
-  if (!utils::update(connection_status_, connection_status))
+  if (!utils::update(connection_status_, connection_status)) {
     return;
+  }
   auto stream_status = StreamStatus{
       .stream_id = stream_id_,
       .account = {},
@@ -470,8 +482,9 @@ void UDPEvents::publish_stream_status(TraceInfo const &trace_info, ConnectionSta
 template <typename Callback>
 void UDPEvents::get_channel(sbe::Frame const &frame, Callback callback) {
   auto iter = channel_.find(frame.channel_id);
-  if (iter == std::end(channel_))
+  if (iter == std::end(channel_)) {
     iter = channel_.try_emplace(frame.channel_id).first;
+  }
   callback((*iter).second);
 }
 

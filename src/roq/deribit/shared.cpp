@@ -20,12 +20,15 @@ auto const BUFFER_SIZE = 4096uz;
 namespace {
 auto get_multicast(auto &settings) {
   // XXX maybe check more flags?
-  if (std::empty(settings.multicast.local_interface))
+  if (std::empty(settings.multicast.local_interface)) {
     return false;
-  if (std::empty(settings.multicast.channel_ids))
+  }
+  if (std::empty(settings.multicast.channel_ids)) {
     log::fatal("Unexpected: --channel_ids is empty"sv);
-  if (std::empty(settings.multicast.config_file))
+  }
+  if (std::empty(settings.multicast.config_file)) {
     log::fatal("Unexpected: --config_file is empty"sv);
+  }
   log::info("Using multicast"sv);
   return true;
 }

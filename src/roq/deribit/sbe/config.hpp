@@ -27,8 +27,9 @@ struct Config final {
 
   template <typename Callback>
   void get_connections(Callback callback) const {
-    for (auto &[_, connection] : connections_)
+    for (auto &[_, connection] : connections_) {
       callback(connection);
+    }
   }
 
  private:

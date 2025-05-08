@@ -48,10 +48,12 @@ auto publish_top_of_book(auto &shared) {
 
 auto get_supports(auto master, auto publish_top_of_book) {
   Mask<SupportType> result;
-  if (master)
+  if (master) {
     result |= SupportType::MARKET_STATUS;
-  if (publish_top_of_book)
+  }
+  if (publish_top_of_book) {
     result |= SupportType::TOP_OF_BOOK;
+  }
   return result;
 }
 
@@ -178,8 +180,9 @@ void WebSocket::operator()(Event<Stop> const &) {
 void WebSocket::operator()(Event<Timer> const &event) {
   auto now = event.value.now;
   (*connection_).refresh(now);
-  if ((*connection_).ready())
+  if ((*connection_).ready()) {
     check_subscribe_queue(now);
+  }
 }
 
 void WebSocket::operator()(metrics::Writer &writer) {
@@ -196,8 +199,9 @@ void WebSocket::operator()(metrics::Writer &writer) {
 }
 
 void WebSocket::subscribe(size_t start_from) {
-  if (ready())
+  if (ready()) {
     subscribe(shared_.symbols.get_slice(index_, start_from));
+  }
 }
 
 void WebSocket::operator()(web::socket::Client::Connected const &) {
@@ -293,12 +297,14 @@ uint32_t WebSocket::download(WebSocketState state) {
     case UNDEFINED:
       break;
     case CURRENCIES:
-      if (!master_)
+      if (!master_) {
         return 0;
+      }
       return download_currencies();
     case INSTRUMENTS:
-      if (!master_)
+      if (!master_) {
         return 0;
+      }
       return download_instruments();
     case SUBSCRIBE:
       assert(!ready_);
@@ -324,8 +330,9 @@ uint32_t WebSocket::download_currencies() {
 }
 
 uint32_t WebSocket::download_instruments() {
-  for (auto &currency : shared_.all_currencies)
+  for (auto &currency : shared_.all_currencies) {
     get_instruments(currency);
+  }
   return std::size(shared_.all_currencies);
 }
 
@@ -385,10 +392,12 @@ void WebSocket::subscribe_instrument_state() {
 }
 
 void WebSocket::subscribe(std::span<Symbol const> const &symbols) {
-  if (std::empty(symbols))
+  if (std::empty(symbols)) {
     return;
-  if (!shared_.settings.ws.disable_quote)
+  }
+  if (!shared_.settings.ws.disable_quote) {
     subscribe_quote(symbols);
+  }
   subscribe_ticker(symbols);
 }
 
@@ -432,8 +441,9 @@ void WebSocket::parse(std::string_view const &message) {
     auto log_message = [&]() { log::warn(R"(message="{}")"sv, message); };
     TraceInfo trace_info;
     try {
-      if (!core::jsonrpc::Parser::dispatch(*this, message, trace_info))
+      if (!core::jsonrpc::Parser::dispatch(*this, message, trace_info)) {
         log_message();
+      }
     } catch (...) {
       log_message();
       utils::exceptions::Unhandled::terminate();
@@ -536,19 +546,22 @@ void WebSocket::operator()(Trace<json::Auth> const &event) {
 
 void WebSocket::operator()(Trace<json::Currencies> const &event) {
   profile_.currencies([&]() {
-    if (!master_)
+    if (!master_) {
       log::fatal("Unexpected"sv);
+    }
     auto &[trace_info, currencies] = event;
     log::info<2>("currencies={}"sv, currencies);
     (*connection_).touch(trace_info.source_receive_time);
     auto &data = currencies.data;
     std::vector<std::string> tmp;
-    if (!std::empty(data))
+    if (!std::empty(data)) {
       tmp.reserve(std::size(data));
+    }
     for (auto &item : data) {
       auto &currency = item.currency;
-      if (shared_.all_currencies.emplace(currency).second)
+      if (shared_.all_currencies.emplace(currency).second) {
         tmp.emplace_back(currency);
+      }
     }
     download_.check(WebSocketState::CURRENCIES);
     if (!std::empty(tmp)) {
@@ -561,8 +574,9 @@ void WebSocket::operator()(Trace<json::Currencies> const &event) {
 }
 
 bool WebSocket::operator()(Trace<json::Instrument> const &event) {
-  if (!master_)
+  if (!master_) {
     log::fatal("Unexpected"sv);
+  }
   auto &[trace_info, instrument] = event;
   (*connection_).touch(trace_info.source_receive_time);
   log::info<2>("instrument={}"sv, instrument);
@@ -572,13 +586,14 @@ bool WebSocket::operator()(Trace<json::Instrument> const &event) {
   // needed by multicast
   auto multiplier = compute_contracts_multiplier(instrument.contract_size);
   auto callback = [&]() -> Instrument {
-    if (!discard)
+    if (!discard) {
       log::debug(
           R"(CREATE instrument_id={}, instrument_name="{}", contract_size={}, multiplier={})"sv,
           instrument.instrument_id,
           instrument.instrument_name,
           instrument.contract_size,
           multiplier);
+    }
     return {
         instrument.instrument_name,
         instrument.contract_size,
@@ -648,13 +663,15 @@ void WebSocket::operator()(Trace<json::Positions> const &) {
 }
 
 void WebSocket::operator()(Trace<json::PlatformState> const &) {
-  if (!master_)
+  if (!master_) {
     log::fatal("Unexpected"sv);
+  }
 }
 
 void WebSocket::operator()(Trace<json::InstrumentState> const &) {
-  if (!master_)
+  if (!master_) {
     log::fatal("Unexpected"sv);
+  }
   // seldom updated -- also done by Ticker
 }
 
