@@ -24,7 +24,7 @@ auto create_master_account(auto &config) {
 
 template <typename R>
 R create_accounts(auto &config) {
-  using result_type = std::remove_cvref<R>::type;
+  using result_type = std::remove_cvref_t<R>;
   result_type result;
   for (auto &[_, account] : config.accounts) {
     auto obj = std::make_unique<Account>(config, account.name);
@@ -35,7 +35,7 @@ R create_accounts(auto &config) {
 
 template <typename R>
 R create_order_entry(auto &gateway, auto &context, auto &stream_id, auto &accounts, auto &shared) {
-  using result_type = std::remove_cvref<R>::type;
+  using result_type = std::remove_cvref_t<R>;
   result_type result;
   for (auto &[_, item] : accounts) {
     auto &account = *item;
@@ -47,7 +47,7 @@ R create_order_entry(auto &gateway, auto &context, auto &stream_id, auto &accoun
 
 template <typename R>
 R create_drop_copy(auto &gateway, auto &context, auto &stream_id, auto &accounts, auto &shared) {
-  using result_type = std::remove_cvref<R>::type;
+  using result_type = std::remove_cvref_t<R>;
   result_type result;
   for (auto &[_, item] : accounts) {
     auto &account = *item;
@@ -59,7 +59,7 @@ R create_drop_copy(auto &gateway, auto &context, auto &stream_id, auto &accounts
 
 template <typename R>
 R create_web_socket(auto &gateway, auto &context, auto &stream_id, auto &account, auto &shared) {
-  using result_type = std::remove_cvref<R>::type;
+  using result_type = std::remove_cvref_t<R>;
   result_type result;
   auto obj = std::make_unique<WebSocket>(gateway, context, ++stream_id, account, shared, std::size(result), true);
   result.emplace_back(std::move(obj));
@@ -68,7 +68,7 @@ R create_web_socket(auto &gateway, auto &context, auto &stream_id, auto &account
 
 template <typename R>
 R create_market_data(auto &gateway, auto &context, auto &stream_id, auto &account, auto &shared) {
-  using result_type = std::remove_cvref<R>::type;
+  using result_type = std::remove_cvref_t<R>;
   result_type result;
   auto obj = std::make_unique<MarketData>(gateway, context, stream_id, account, shared, std::size(result), true);
   result.emplace_back(std::move(obj));
