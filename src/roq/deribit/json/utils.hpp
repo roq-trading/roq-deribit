@@ -30,7 +30,8 @@ inline void update(double &result, core::json::Value const &value) {
 
 template <>
 inline void update(std::chrono::milliseconds &result, core::json::Value const &value) {
-  result = std::chrono::milliseconds{core::json::get<uint64_t>(value)};
+  using result_type = std::remove_cvref_t<decltype(result)>;
+  result = result_type{core::json::get<uint64_t>(value)};
 }
 
 }  // namespace json

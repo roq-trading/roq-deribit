@@ -62,7 +62,7 @@ struct Bridge final : public utils::pcap::Reader::Handler, public sbe::Parser::H
   void operator()(Trace<deribit_multicast::InstrumentV2> const &event, sbe::Frame const &frame) override { print(event, frame); }
 
   void print(auto &event, auto &frame) {
-    using value_type = std::remove_cvref<decltype(event)>::type::value_type;
+    using value_type = std::remove_cvref_t<decltype(event)>::value_type;
     auto &value = const_cast<value_type &>(event.value);  // note! not const-safe
     fmt::print(", channel_id={}, sequence_number={}, {}={}"sv, frame.channel_id, frame.sequence_number, get_name<value_type>(), value);
   }

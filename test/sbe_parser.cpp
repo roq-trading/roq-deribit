@@ -125,7 +125,7 @@ TEST_CASE("sbe_event_1", "[sbe_parser]") {
       CHECK(book.prevChangeId() == 78920668948);
       CHECK(book.changeId() == 78920668949);
       CHECK(book.isLast() == true);
-      using value_type = std::remove_cvref<decltype(book)>::type;
+      using value_type = std::remove_cvref_t<decltype(book)>;
       const_cast<value_type &>(book).sbeRewind();  // note!
       size_t count = 0;
       const_cast<value_type &>(book).changesList().forEach([&count](auto &item) {
@@ -146,7 +146,7 @@ TEST_CASE("sbe_event_1", "[sbe_parser]") {
       CHECK(frame.sequence_number == 50728558);
       auto &[trace_info, trades] = event;
       CHECK(trades.instrumentId() == 210838);
-      using value_type = std::remove_cvref<decltype(trades)>::type;
+      using value_type = std::remove_cvref_t<decltype(trades)>;
       const_cast<value_type &>(trades).sbeRewind();  // note!
       size_t count = 0;
       const_cast<value_type &>(trades).tradesList().forEach([&count](auto &item) {
@@ -421,7 +421,7 @@ TEST_CASE("sbe_snapshot_1", "[sbe_parser]") {
       CHECK(frame.channel_id == 101);
       CHECK(frame.sequence_number == 160178);
       auto &[trace_info, instrument] = event;
-      using value_type = std::remove_cvref<decltype(instrument)>::type;
+      using value_type = std::remove_cvref_t<decltype(instrument)>;
       CHECK(instrument.instrumentId() == 210838);
       CHECK(instrument.instrumentState() == deribit_multicast::InstrumentState::open);
       CHECK(instrument.kind() == deribit_multicast::InstrumentKind::future);
@@ -479,7 +479,7 @@ TEST_CASE("sbe_snapshot_1", "[sbe_parser]") {
       CHECK(frame.channel_id == 101);
       CHECK(frame.sequence_number == 160178);
       auto &[trace_info, snapshot] = event;
-      using value_type = std::remove_cvref<decltype(snapshot)>::type;
+      using value_type = std::remove_cvref_t<decltype(snapshot)>;
       CHECK(snapshot.instrumentId() == 210838);
       size_t count = 0;
       const_cast<value_type &>(snapshot).levelsList().forEach([&count](auto &item) {
@@ -513,7 +513,7 @@ TEST_CASE("sbe_snapshot_1", "[sbe_parser]") {
       CHECK(frame.channel_id == 101);
       CHECK(frame.sequence_number == 160178);
       auto &[trace_info, instrument] = event;
-      using value_type = std::remove_cvref<decltype(instrument)>::type;
+      using value_type = std::remove_cvref_t<decltype(instrument)>;
       CHECK(instrument.instrumentId() == 210838);
       CHECK(instrument.instrumentState() == deribit_multicast::InstrumentState::open);
       CHECK(instrument.kind() == deribit_multicast::InstrumentKind::future);
@@ -739,7 +739,7 @@ TEST_CASE("sbe_snapshot_2", "[sbe_parser]") {
       CHECK(frame.channel_id == 102);
       CHECK(frame.sequence_number == 9329202);
       auto &[trace_info, instrument] = event;
-      using value_type = std::remove_cvref<decltype(instrument)>::type;
+      using value_type = std::remove_cvref_t<decltype(instrument)>;
       switch (++instrument_count_) {
         case 1: {
           CHECK(instrument.instrumentId() == 356285);
@@ -858,7 +858,7 @@ TEST_CASE("sbe_snapshot_2", "[sbe_parser]") {
       CHECK(frame.channel_id == 102);
       CHECK(frame.sequence_number == 9329202);
       auto &[trace_info, snapshot] = event;
-      using value_type = std::remove_cvref<decltype(snapshot)>::type;
+      using value_type = std::remove_cvref_t<decltype(snapshot)>;
       switch (++snapshot_count_) {
         case 1: {
           CHECK(snapshot.instrumentId() == 356285);
@@ -918,7 +918,7 @@ TEST_CASE("sbe_snapshot_2", "[sbe_parser]") {
       CHECK(frame.channel_id == 102);
       CHECK(frame.sequence_number == 9329202);
       auto &[trace_info, instrument] = event;
-      using value_type = std::remove_cvref<decltype(instrument)>::type;
+      using value_type = std::remove_cvref_t<decltype(instrument)>;
       switch (++instrument_v2_count_) {
         case 1: {
           CHECK(instrument.instrumentId() == 356285);

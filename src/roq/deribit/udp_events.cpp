@@ -182,7 +182,7 @@ bool UDPEvents::operator()(sbe::Frame const &frame) {
 }
 
 void UDPEvents::operator()(Trace<deribit_multicast::Instrument> const &event, sbe::Frame const &frame) {
-  using value_type = std::remove_cvref<decltype(event)>::type::value_type;
+  using value_type = std::remove_cvref_t<decltype(event)>::value_type;
   auto &instrument = const_cast<value_type &>(event.value);
   log::info<2>("instrument={}, frame={}"sv, instrument, frame);
   auto instrument_id = instrument.instrumentId();
@@ -207,7 +207,7 @@ void UDPEvents::operator()(Trace<deribit_multicast::Instrument> const &event, sb
 // note! it may take a while before the instrument gets created (depends on the snapshot channel)
 void UDPEvents::operator()(Trace<deribit_multicast::Book> const &event, sbe::Frame const &frame) {
   auto &trace_info = event.trace_info;
-  using value_type = std::remove_cvref<decltype(event)>::type::value_type;
+  using value_type = std::remove_cvref_t<decltype(event)>::value_type;
   auto &book = const_cast<value_type &>(event.value);
   log::info<4>("book={}, frame={}"sv, book, frame);
   if (!publish_market_by_price_) {
@@ -332,7 +332,7 @@ void UDPEvents::operator()(Trace<deribit_multicast::Book> const &event, sbe::Fra
 
 void UDPEvents::operator()(Trace<deribit_multicast::Trades> const &event, sbe::Frame const &frame) {
   auto &trace_info = event.trace_info;
-  using value_type = std::remove_cvref<decltype(event)>::type::value_type;
+  using value_type = std::remove_cvref_t<decltype(event)>::value_type;
   auto &trades = const_cast<value_type &>(event.value);
   log::info<4>("trades={}, frame={}"sv, trades, frame);
   if (!publish_trade_summary_) {
@@ -383,7 +383,7 @@ void UDPEvents::operator()(Trace<deribit_multicast::Trades> const &event, sbe::F
 
 void UDPEvents::operator()(Trace<deribit_multicast::Ticker> const &event, sbe::Frame const &frame) {
   auto &trace_info = event.trace_info;
-  using value_type = std::remove_cvref<decltype(event)>::type::value_type;
+  using value_type = std::remove_cvref_t<decltype(event)>::value_type;
   auto &ticker = const_cast<value_type &>(event.value);
   log::info<4>("ticker={}, frame={}"sv, ticker, frame);
   if (!publish_top_of_book_) {

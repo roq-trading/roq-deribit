@@ -137,7 +137,7 @@ bool UDPSnapshot::operator()(sbe::Frame const &frame) {
 }
 
 void UDPSnapshot::operator()(Trace<deribit_multicast::Instrument> const &event, sbe::Frame const &frame) {
-  using value_type = std::remove_cvref<decltype(event)>::type::value_type;
+  using value_type = std::remove_cvref_t<decltype(event)>::value_type;
   auto &instrument = const_cast<value_type &>(event.value);
   log::info<2>("instrument={}, frame={}"sv, instrument, frame);
   auto instrument_id = instrument.instrumentId();
@@ -168,14 +168,14 @@ void UDPSnapshot::operator()(Trace<deribit_multicast::Trades> const &, sbe::Fram
 }
 
 void UDPSnapshot::operator()(Trace<deribit_multicast::Ticker> const &event, sbe::Frame const &frame) {
-  using value_type = std::remove_cvref<decltype(event)>::type::value_type;
+  using value_type = std::remove_cvref_t<decltype(event)>::value_type;
   auto &ticker = const_cast<value_type &>(event.value);
   log::info<4>("ticker={}, frame={}"sv, ticker, frame);
 }
 
 void UDPSnapshot::operator()(Trace<deribit_multicast::Snapshot> const &event, sbe::Frame const &frame) {
   auto &trace_info = event.trace_info;
-  using value_type = std::remove_cvref<decltype(event)>::type::value_type;
+  using value_type = std::remove_cvref_t<decltype(event)>::value_type;
   auto &snapshot = const_cast<value_type &>(event.value);
   log::info<4>("snapshot={}, frame={}"sv, snapshot, frame);
   if (!publish_market_by_price_) {

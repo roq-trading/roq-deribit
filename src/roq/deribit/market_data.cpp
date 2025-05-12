@@ -125,7 +125,7 @@ void validate(auto &value) {
 template <typename T>
 void emplace_back(T &result, auto &value) {
   using value_type = typename T::value_type;
-  if constexpr (std::is_same<value_type, MBPUpdate>::value) {
+  if constexpr (std::is_same_v<value_type, MBPUpdate>) {
     auto mbp_update = MBPUpdate{
         .price = value.md_entry_px,
         .quantity = value.md_entry_size,
@@ -135,7 +135,7 @@ void emplace_back(T &result, auto &value) {
         .price_level = {},
     };
     result.emplace_back(std::move(mbp_update));
-  } else if constexpr (std::is_same<value_type, Trade>::value) {
+  } else if constexpr (std::is_same_v<value_type, Trade>) {
     auto trade = Trade{
         .side = map(value.side),
         .price = value.md_entry_px,

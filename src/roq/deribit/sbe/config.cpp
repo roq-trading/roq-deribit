@@ -19,7 +19,7 @@ namespace sbe {
 namespace {
 template <typename R>
 auto create_ports(auto &path) {
-  using result_type = std::remove_cvref<R>::type;
+  using result_type = std::remove_cvref_t<R>;
   if (std::empty(path)) {
     return result_type{};
   }
@@ -37,7 +37,7 @@ auto create_ports(auto &path) {
 
 template <typename R>
 auto create_connections(auto &path, auto &channel_ids) {
-  using result_type = std::remove_cvref<R>::type;
+  using result_type = std::remove_cvref_t<R>;
   result_type result;
   if (std::empty(path)) {
     return result;
