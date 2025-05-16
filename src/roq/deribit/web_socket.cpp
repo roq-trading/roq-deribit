@@ -90,15 +90,15 @@ struct create_metrics final : public utils::metrics::Factory {
 auto to_security_type(auto kind, [[maybe_unused]] auto instrument_type, auto settlement_period) -> SecurityType {
   switch (kind) {
     using enum json::Kind::type_t;
-    case UNDEFINED__:
-    case UNKNOWN__:
+    case _UNDEFINED:
+    case _UNKNOWN:
       return {};
     case FUTURE:
       /*
       switch (instrument_type) {
         using enum json::InstrumentType::type_t;
-        case UNDEFINED__:
-        case UNKNOWN__:
+        case _UNDEFINED:
+        case _UNKNOWN:
           return SecurityType::FUTURES;
         case LINEAR:
         case REVERSED:
@@ -107,8 +107,8 @@ auto to_security_type(auto kind, [[maybe_unused]] auto instrument_type, auto set
       */
       switch (settlement_period) {
         using enum json::SettlementPeriod::type_t;
-        case UNDEFINED__:
-        case UNKNOWN__:
+        case _UNDEFINED:
+        case _UNKNOWN:
           return SecurityType::FUTURES;
         case PERPETUAL:
           return SecurityType::SWAP;
@@ -133,8 +133,8 @@ auto to_security_type(auto kind, [[maybe_unused]] auto instrument_type, auto set
 auto to_option_type(auto option_type) -> OptionType {
   switch (option_type) {
     using enum json::OptionType::type_t;
-    case UNDEFINED__:
-    case UNKNOWN__:
+    case _UNDEFINED:
+    case _UNKNOWN:
       return {};
     case CALL:
       return OptionType::CALL;
@@ -462,9 +462,9 @@ bool WebSocket::operator()(Trace<core::jsonrpc::Result> const &event, core::json
   json::RequestType request_type{result.id};
   switch (request_type) {
     using enum json::RequestType::type_t;
-    case UNDEFINED__:
+    case _UNDEFINED:
       break;
-    case UNKNOWN__:
+    case _UNKNOWN:
       log::warn(R"(Unknown request_type="{}")"sv, result.id);
       break;
     case AUTH: {
@@ -524,9 +524,9 @@ bool WebSocket::operator()(Trace<core::jsonrpc::Notification> const &event, core
   json::Method method{notification.method};
   switch (method) {
     using enum json::Method::type_t;
-    case UNDEFINED__:
+    case _UNDEFINED:
       break;
-    case UNKNOWN__:
+    case _UNKNOWN:
       log::warn(R"(Unknown method="{}")"sv, notification.method);
       break;
     case SUBSCRIPTION:

@@ -20,9 +20,9 @@ template <>
 constexpr Helper<deribit::json::Direction>::operator std::optional<roq::Side>() const {
   switch (std::get<0>(args_)) {
     using enum deribit::json::Direction::type_t;
-    case UNDEFINED__:
+    case _UNDEFINED:
       return roq::Side::UNDEFINED;
-    case UNKNOWN__:
+    case _UNKNOWN:
       return roq::Side::UNDEFINED;
     case BUY:
       return Side::BUY;
@@ -34,7 +34,7 @@ constexpr Helper<deribit::json::Direction>::operator std::optional<roq::Side>() 
   return {};
 }
 
-static_assert(Helper{deribit::json::Direction{deribit::json::Direction::UNDEFINED__}} == roq::Side::UNDEFINED);
+static_assert(Helper{deribit::json::Direction{deribit::json::Direction::_UNDEFINED}} == roq::Side::UNDEFINED);
 static_assert(Helper{deribit::json::Direction{deribit::json::Direction::BUY}} == roq::Side::BUY);
 static_assert(Helper{deribit::json::Direction{deribit::json::Direction::SELL}} == roq::Side::SELL);
 static_assert(Helper{deribit::json::Direction{deribit::json::Direction::ZERO}} == roq::Side::UNDEFINED);
@@ -52,9 +52,9 @@ template <>
 constexpr Helper<deribit::json::Liquidity>::operator std::optional<roq::Liquidity>() const {
   switch (std::get<0>(args_)) {
     using enum deribit::json::Liquidity::type_t;
-    case UNDEFINED__:
+    case _UNDEFINED:
       return roq::Liquidity::UNDEFINED;
-    case UNKNOWN__:
+    case _UNKNOWN:
       return roq::Liquidity::UNDEFINED;
     case MAKER:
       return roq::Liquidity::MAKER;
@@ -64,7 +64,7 @@ constexpr Helper<deribit::json::Liquidity>::operator std::optional<roq::Liquidit
   return {};
 }
 
-static_assert(Helper{deribit::json::Liquidity{deribit::json::Liquidity::UNDEFINED__}} == roq::Liquidity::UNDEFINED);
+static_assert(Helper{deribit::json::Liquidity{deribit::json::Liquidity::_UNDEFINED}} == roq::Liquidity::UNDEFINED);
 static_assert(Helper{deribit::json::Liquidity{deribit::json::Liquidity::MAKER}} == roq::Liquidity::MAKER);
 static_assert(Helper{deribit::json::Liquidity{deribit::json::Liquidity::TAKER}} == roq::Liquidity::TAKER);
 
@@ -81,9 +81,9 @@ template <>
 constexpr Helper<deribit::json::State>::operator std::optional<roq::TradingStatus>() const {
   switch (std::get<0>(args_)) {
     using enum deribit::json::State::type_t;
-    case UNDEFINED__:
+    case _UNDEFINED:
       return TradingStatus::UNDEFINED;
-    case UNKNOWN__:
+    case _UNKNOWN:
       return TradingStatus::UNDEFINED;
     case CLOSED:
       return TradingStatus::CLOSE;
@@ -105,7 +105,7 @@ constexpr Helper<deribit::json::State>::operator std::optional<roq::TradingStatu
   return {};
 }
 
-static_assert(Helper{deribit::json::State{deribit::json::State::UNDEFINED__}} == roq::TradingStatus::UNDEFINED);
+static_assert(Helper{deribit::json::State{deribit::json::State::_UNDEFINED}} == roq::TradingStatus::UNDEFINED);
 static_assert(Helper{deribit::json::State{deribit::json::State::CLOSED}} == roq::TradingStatus::CLOSE);
 static_assert(Helper{deribit::json::State{deribit::json::State::OPEN}} == roq::TradingStatus::OPEN);
 static_assert(Helper{deribit::json::State{deribit::json::State::CREATED}} == roq::TradingStatus::UNDEFINED);

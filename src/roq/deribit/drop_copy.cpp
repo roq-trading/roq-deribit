@@ -399,9 +399,9 @@ bool DropCopy::operator()(Trace<core::jsonrpc::Result> const &event, core::json:
   json::RequestType request_type{result.id};
   switch (request_type) {
     using enum json::RequestType::type_t;
-    case UNDEFINED__:
+    case _UNDEFINED:
       break;
-    case UNKNOWN__:
+    case _UNKNOWN:
       log::warn(R"(Unknown request_type="{}")"sv, result.id);
       break;
     case AUTH: {
@@ -444,9 +444,9 @@ bool DropCopy::operator()(Trace<core::jsonrpc::Notification> const &event, core:
   json::Method method{notification.method};
   switch (method) {
     using enum json::Method::type_t;
-    case UNDEFINED__:
+    case _UNDEFINED:
       break;
-    case UNKNOWN__:
+    case _UNKNOWN:
       log::warn(R"(Unknown method="{}")"sv, notification.method);
       break;
     case SUBSCRIPTION:
