@@ -51,7 +51,7 @@ static_assert(get_token("instrument.state.123"sv) == "instrument_state"sv);
 auto parse_channel(auto const &name) -> Channel {
   auto token = get_token(name);
   if (std::empty(token)) [[unlikely]] {
-    return Channel::_UNKNOWN;
+    return Channel::UNKNOWN_INTERNAL;
   }
   return Channel{token};
 }
@@ -62,7 +62,7 @@ auto parse_channel(auto const &name) -> Channel {
 bool Parser::dispatch(Parser::Handler &handler, core::json::Value &value, std::span<std::byte> const &buffer, TraceInfo const &trace_info) {
   // note! message is nested / channel name is at level 2
   auto message = core::json::get<std::string_view>(value);
-  auto channel = Channel::_UNDEFINED;
+  auto channel = Channel::UNDEFINED_INTERNAL;
   bool dispatched = false;
   for (int i = 0; i < 2 && !dispatched; ++i) {
     core::json::Parser parser{message};
@@ -71,28 +71,28 @@ bool Parser::dispatch(Parser::Handler &handler, core::json::Value &value, std::s
       Field field{key};
       switch (field) {
         using enum Field::type_t;
-        case _UNDEFINED:
+        case UNDEFINED_INTERNAL:
           log::fatal("Unexpected"sv);
           break;
-        case _UNKNOWN:
+        case UNKNOWN_INTERNAL:
           log::warn(R"(Unknown key="{}")"sv, key);
           return false;
         case CHANNEL: {
           auto name = std::get<std::string_view>(value_);
           channel = parse_channel(name);
-          if (channel == Channel::_UNKNOWN) [[unlikely]] {
+          if (channel == Channel::UNKNOWN_INTERNAL) [[unlikely]] {
             log::warn(R"(Can't parse channel="{}")"sv, name);
           }
           break;
         }
         case DATA:
-          if (channel != Channel::_UNDEFINED) {
+          if (channel != Channel::UNDEFINED_INTERNAL) {
             core::json::Buffer buffer_2{buffer};
             switch (channel) {
               using enum Channel::type_t;
-              case _UNDEFINED:
+              case UNDEFINED_INTERNAL:
                 break;  // not ready
-              case _UNKNOWN:
+              case UNKNOWN_INTERNAL:
                 log::warn("Unknown channel"sv);
                 return false;
               // public
