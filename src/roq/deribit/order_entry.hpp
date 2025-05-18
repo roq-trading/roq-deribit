@@ -110,7 +110,6 @@ struct OrderEntry final : public io::net::ConnectionManager::Handler {
 
   void check(roq::fix::Header const &);
 
- private:
   Handler &handler_;
   // config
   uint16_t const stream_id_;

@@ -107,7 +107,6 @@ struct Shared final {
 
   utils::unordered_map<std::string, double> multiplier;
 
- public:
   server::Dispatcher &dispatcher;
   Settings const &settings;
 

@@ -12,7 +12,7 @@ namespace roq {
 namespace deribit {
 
 struct Channel final {
-  Channel() {}
+  Channel() = default;
 
   Channel(Channel &&) = default;
   Channel(Channel const &) = delete;

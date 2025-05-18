@@ -126,7 +126,7 @@ void OrderEntry::operator()(Event<Timer> const &event) {
   if (!(*connection_manager_).refresh(event.value.now)) {
     return;
   }
-  if (last_logon_or_heartbeat_.count() && shared_.settings.fix.request_timeout.count() &&
+  if (last_logon_or_heartbeat_.count() != 0 && shared_.settings.fix.request_timeout.count() != 0 &&
       (event.value.now - last_logon_or_heartbeat_) > shared_.settings.fix.request_timeout) {
     log::warn("*** DETECTED TIMEOUT ***"sv);
     log::info("DEBUG: now={}, last_logon_or_heartbeat={}"sv, event.value.now, last_logon_or_heartbeat_);
@@ -134,8 +134,8 @@ void OrderEntry::operator()(Event<Timer> const &event) {
     (*connection_manager_).close();
   } else {
     if (ready_) {
-      if (test_disconnect_time_.count() && test_disconnect_time_ < event.value.now) [[unlikely]] {
-        if (shared_.settings.fix.test_order_disconnect.count()) {
+      if (test_disconnect_time_.count() != 0 && test_disconnect_time_ < event.value.now) [[unlikely]] {
+        if (shared_.settings.fix.test_order_disconnect.count() != 0) {
           log::warn("*** TEST: DISCONNECT ***"sv);
           log::info("closing connection"sv);
           (*connection_manager_).close();
@@ -148,8 +148,8 @@ void OrderEntry::operator()(Event<Timer> const &event) {
         }
       }
     } else {
-      if (test_logon_time_.count() && test_logon_time_ < event.value.now) {
-        if (shared_.settings.fix.test_order_logon.count()) {
+      if (test_logon_time_.count() != 0 && test_logon_time_ < event.value.now) {
+        if (shared_.settings.fix.test_order_logon.count() != 0) {
           log::warn("*** TEST: LOGON ***"sv);
         }
         test_logon_time_ = {};
@@ -317,7 +317,7 @@ void OrderEntry::operator()(io::net::ConnectionManager::Connected const &) {
   assert(test_logon_time_.count() == 0);
   auto now = clock::get_system();
   test_logon_time_ = now + shared_.settings.fix.test_order_logon;
-  if (shared_.settings.fix.test_order_disconnect.count()) {
+  if (shared_.settings.fix.test_order_disconnect.count() != 0) {
     test_disconnect_time_ = now + shared_.settings.fix.test_order_disconnect;
   }
 }
@@ -361,8 +361,9 @@ void OrderEntry::operator()(io::net::ConnectionManager::Read const &) {
           }
         },
         [this](auto &message) {
-          if (shared_.settings.fix.debug)
+          if (shared_.settings.fix.debug) {
             log::info("{}"sv, utils::debug::fix::Message{message});
+          }
         });
     if (bytes == 0) {
       break;
@@ -443,7 +444,7 @@ void OrderEntry::send_test_request(std::chrono::nanoseconds now) {
       .test_req_id = encode_buffer_,
   };
   send(test_request);
-  if (!last_logon_or_heartbeat_.count()) {
+  if (last_logon_or_heartbeat_.count() == 0) {
     last_logon_or_heartbeat_ = now;
   }
 }
@@ -735,7 +736,8 @@ std::pair<double, double> compute_last_traded(auto const last_traded_quantity, a
   if (std::empty(fills)) {
     return {last_traded_quantity, last_traded_price};
   }
-  double sum_quantity = 0.0, sum_quantity_price = 0.0;
+  double sum_quantity = 0.0;
+  double sum_quantity_price = 0.0;
   for (auto &item : fills) {
     sum_quantity += item.fill_qty;
     sum_quantity_price += item.fill_qty * item.fill_px;
@@ -880,7 +882,7 @@ void OrderEntry::operator()(Trace<fix::ExecutionReport> const &event, roq::fix::
           .commission_quantity = NaN,  // note! we only have it per TRADE
           .commission_currency = {},
       };
-      fills.emplace_back(std::move(fill));
+      fills.emplace_back(fill);  // XXX FIXME std::move
     }
     assert(!std::empty(fills));
     auto trade_update = TradeUpdate{

@@ -20,6 +20,8 @@ static_assert(sizeof(Frame) == Frame::size());
 
 // === IMPLEMENTATION ===
 
+// NOLINTBEGIN(readability-container-data-pointer)
+
 Frame Frame::parse_helper(std::span<std::byte const> const &buffer) {
   if (std::size(buffer) < size()) {
     log::fatal("Invalid message, size={}"sv, std::size(buffer));
@@ -39,6 +41,8 @@ Frame Frame::parse_helper(std::span<std::byte const> const &buffer) {
       .sequence_number = sequence_number,
   };
 }
+
+// NOLINTEND(readability-container-data-pointer)
 
 }  // namespace sbe
 }  // namespace deribit

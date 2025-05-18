@@ -141,7 +141,7 @@ void UDPEvents::operator()(Event<Stop> const &) {
 }
 
 void UDPEvents::operator()(Event<Timer> const &event) {
-  if (last_update_time_.count() && (last_update_time_ + shared_.settings.multicast.timeout) < event.value.now) {
+  if (last_update_time_.count() != 0 && (last_update_time_ + shared_.settings.multicast.timeout) < event.value.now) {
     log::warn("*** DETECTED TIMEOUT ***"sv);
     last_update_time_ = {};
   }
@@ -153,7 +153,7 @@ void UDPEvents::operator()(io::net::udp::Receiver::Read const &) {
   publish_stream_status(trace_info, ConnectionStatus::READY);  // first message will publish
   while (true) {
     auto bytes = (*receiver_).recv(shared_.buffer);
-    if (!bytes) {
+    if (bytes == 0) {
       break;
     }
     log::info<5>("Received {} byte(s)"sv, bytes);
@@ -356,7 +356,7 @@ void UDPEvents::operator()(Trace<deribit_multicast::Trades> const &event, sbe::F
           .maker_order_id = {},
       };
       utils::charconv::to_string(std::back_inserter(trade.trade_id), item.tradeId());
-      trades_2.emplace_back(std::move(trade));
+      trades_2.emplace_back(trade);  // XXX FIXME std::move
     };
     trades.sbeRewind();
     trades.tradesList().forEach(append_trade);

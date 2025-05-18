@@ -19,8 +19,9 @@ inline void update(T &result, core::json::Value const &value) {
 
 template <>
 inline void update(double &result, core::json::Value const &value) {
+  using namespace std::literals;
   if (std::holds_alternative<std::string_view>(value)) {
-    if (std::get<std::string_view>(value).compare("undefined") == 0) {
+    if (std::get<std::string_view>(value) == "undefined"sv) {
       result = NaN;
       return;
     }

@@ -129,67 +129,67 @@ inline std::string get_instrument_name(deribit_multicast::InstrumentV2 &value) {
 }  // namespace deribit
 
 template <>
-inline constexpr std::string_view get_name<deribit_multicast::Book>() {
+constexpr std::string_view get_name<deribit_multicast::Book>() {
   using namespace std::literals;
   return "book"sv;
 }
 
 template <>
-inline constexpr std::string_view get_name<deribit_multicast::ComboLegs>() {
+constexpr std::string_view get_name<deribit_multicast::ComboLegs>() {
   using namespace std::literals;
   return "combo_legs"sv;
 }
 
 template <>
-inline constexpr std::string_view get_name<deribit_multicast::Instrument>() {
+constexpr std::string_view get_name<deribit_multicast::Instrument>() {
   using namespace std::literals;
   return "instrument"sv;
 }
 
 template <>
-inline constexpr std::string_view get_name<deribit_multicast::InstrumentV2>() {
+constexpr std::string_view get_name<deribit_multicast::InstrumentV2>() {
   using namespace std::literals;
   return "instrument_v2"sv;
 }
 
 template <>
-inline constexpr std::string_view get_name<deribit_multicast::PriceIndex>() {
+constexpr std::string_view get_name<deribit_multicast::PriceIndex>() {
   using namespace std::literals;
   return "price_index"sv;
 }
 
 template <>
-inline constexpr std::string_view get_name<deribit_multicast::Rfq>() {
+constexpr std::string_view get_name<deribit_multicast::Rfq>() {
   using namespace std::literals;
   return "rfq"sv;
 }
 
 template <>
-inline constexpr std::string_view get_name<deribit_multicast::Snapshot>() {
+constexpr std::string_view get_name<deribit_multicast::Snapshot>() {
   using namespace std::literals;
   return "snapshot"sv;
 }
 
 template <>
-inline constexpr std::string_view get_name<deribit_multicast::SnapshotEnd>() {
+constexpr std::string_view get_name<deribit_multicast::SnapshotEnd>() {
   using namespace std::literals;
   return "snapshot_end"sv;
 }
 
 template <>
-inline constexpr std::string_view get_name<deribit_multicast::SnapshotStart>() {
+constexpr std::string_view get_name<deribit_multicast::SnapshotStart>() {
   using namespace std::literals;
   return "snapshot_start"sv;
 }
 
 template <>
-inline constexpr std::string_view get_name<deribit_multicast::Ticker>() {
+constexpr std::string_view get_name<deribit_multicast::Ticker>() {
   using namespace std::literals;
   return "ticker"sv;
 }
 
 template <>
-inline constexpr std::string_view get_name<deribit_multicast::Trades>() {
+constexpr std::string_view get_name<deribit_multicast::Trades>() {
   using namespace std::literals;
   return "trades"sv;
 }

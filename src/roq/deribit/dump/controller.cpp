@@ -46,7 +46,6 @@ struct Bridge final : public utils::pcap::Reader::Handler, public sbe::Parser::H
     return false;
   }
 
- protected:
   bool operator()(sbe::Frame const &) override { return true; }
 
   void operator()(Trace<deribit_multicast::Instrument> const &event, sbe::Frame const &frame) override { print(event, frame); }

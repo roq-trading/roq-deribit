@@ -143,7 +143,6 @@ struct WebSocket final : public web::socket::Client::Handler, public core::jsonr
 
   void check_subscribe_queue(std::chrono::nanoseconds now);
 
- private:
   Handler &handler_;
   // config
   uint16_t const stream_id_;

@@ -613,7 +613,7 @@ bool WebSocket::operator()(Trace<json::Instrument> const &event) {
           .min_price = item.above_price,
           .tick_size = item.tick_size,
       };
-      shared_.tick_size_steps.emplace_back(std::move(tick_size_step));
+      shared_.tick_size_steps.emplace_back(tick_size_step);  // XXX FIXME std::move
     }
     auto reference_data = ReferenceData{
         .stream_id = stream_id_,

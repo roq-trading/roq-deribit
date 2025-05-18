@@ -12,7 +12,7 @@ namespace deribit {
 // === CONSTANTS ===
 
 namespace {
-auto const BUFFER_SIZE = 4096uz;
+auto const BUFFER_SIZE = 4096UZ;
 }
 
 // === HELPERS ===

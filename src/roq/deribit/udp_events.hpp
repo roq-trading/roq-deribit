@@ -44,7 +44,6 @@ struct UDPEvents final : public io::net::udp::Receiver::Handler, public sbe::Par
   void operator()(io::net::udp::Receiver::Read const &) override;
   void operator()(io::net::udp::Receiver::Error const &) override;
 
- protected:
   // sbe::Parser::Handler
   bool operator()(sbe::Frame const &) override;
   void operator()(Trace<deribit_multicast::Instrument> const &, sbe::Frame const &) override;

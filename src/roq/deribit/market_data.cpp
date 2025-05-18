@@ -189,14 +189,14 @@ void MarketData::operator()(Event<Timer> const &event) {
   if (!(*connection_manager_).refresh(event.value.now)) {
     return;
   }
-  if (last_logon_or_heartbeat_.count() && fix_request_timeout_.count() && (event.value.now - last_logon_or_heartbeat_) > fix_request_timeout_) {
+  if (last_logon_or_heartbeat_.count() != 0 && fix_request_timeout_.count() != 0 && (event.value.now - last_logon_or_heartbeat_) > fix_request_timeout_) {
     log::warn("*** DETECTED TIMEOUT ***"sv);
     log::info("closing connection"sv);
     (*connection_manager_).close();
   } else {
     if (status_ == ConnectionStatus::READY) {
-      if (test_disconnect_time_.count() && test_disconnect_time_ < event.value.now) [[unlikely]] {
-        if (shared_.settings.fix.test_market_data_disconnect.count()) {
+      if (test_disconnect_time_.count() != 0 && test_disconnect_time_ < event.value.now) [[unlikely]] {
+        if (shared_.settings.fix.test_market_data_disconnect.count() != 0) {
           log::warn("*** TEST: DISCONNECT (stream_id={}) ***"sv, stream_id_);
           log::info("closing connection"sv);
           (*connection_manager_).close();
@@ -239,7 +239,7 @@ void MarketData::operator()(io::net::ConnectionManager::Read const &) {
   auto log_message = [this](auto &message) {
     if (fix_debug_) [[unlikely]] {
       std::string_view tmp{reinterpret_cast<char const *>(std::data(message)), std::size(message)};
-      auto market_data = tmp.find("\00135=X\001"sv) != tmp.npos || tmp.find("\00135=W\001"sv) != tmp.npos;
+      auto market_data = tmp.find("\00135=X\001"sv) != std::string_view::npos || tmp.find("\00135=W\001"sv) != std::string_view::npos;
       if (market_data) {
         log::info<2>("{}"sv, utils::debug::fix::Message{message});
       } else {
@@ -339,7 +339,7 @@ void MarketData::send_test_request(std::chrono::nanoseconds now) {
       .test_req_id = request_id_,
   };
   send(test_request);
-  if (!last_logon_or_heartbeat_.count()) {
+  if (!last_logon_or_heartbeat_.count() != 0) {
     last_logon_or_heartbeat_ = now;
   }
 }
@@ -366,7 +366,7 @@ uint32_t MarketData::download(MarketDataState state) {
       (*this)(ConnectionStatus::READY);
       // test
       auto now = clock::get_system();
-      if (shared_.settings.fix.test_market_data_disconnect.count()) {
+      if (shared_.settings.fix.test_market_data_disconnect.count() != 0) {
         test_disconnect_time_ = now + shared_.settings.fix.test_market_data_disconnect;
         log::warn(
             "*** TEST: DISCONNECT IN {} (stream_id={}) ***"sv,
@@ -415,14 +415,14 @@ void MarketData::subscribe(std::span<Symbol const> const &symbols) {
   }
   log::info("Subscribe symbols=[{}]"sv, fmt::join(symbols, ","sv));
   auto market_depth = shared_.settings.fix.market_data_market_depth;
-  auto md_update_type = market_depth ? roq::fix::MDUpdateType::INCREMENTAL_REFRESH : roq::fix::MDUpdateType::FULL_REFRESH;
+  auto md_update_type = market_depth != 0 ? roq::fix::MDUpdateType::INCREMENTAL_REFRESH : roq::fix::MDUpdateType::FULL_REFRESH;
   std::array<fix::MDReq, 3> md_entry_types{{
       {.md_entry_type = roq::fix::MDEntryType::BID},
       {.md_entry_type = roq::fix::MDEntryType::OFFER},
       {.md_entry_type = roq::fix::MDEntryType::TRADE},
   }};
   // deribit has acknowledged a limit on # of symbols per request
-  auto max_size = shared_.settings.fix.market_data_request_max_size ? shared_.settings.fix.market_data_request_max_size : std::size(symbols);
+  auto max_size = shared_.settings.fix.market_data_request_max_size != 0 ? shared_.settings.fix.market_data_request_max_size : std::size(symbols);
   std::vector<fix::InstrmtMDReq> related_sym(max_size);
   for (size_t offset = 0;; offset += max_size) {
     if (std::size(symbols) <= offset) {
@@ -459,7 +459,7 @@ void MarketData::unsubscribe(std::span<Symbol const> const &symbols) {
       {.md_entry_type = roq::fix::MDEntryType::TRADE},
   }};
   // deribit has acknowledged a limit on # of symbols per request
-  auto max_size = shared_.settings.fix.market_data_request_max_size ? shared_.settings.fix.market_data_request_max_size : std::size(symbols);
+  auto max_size = shared_.settings.fix.market_data_request_max_size != 0 ? shared_.settings.fix.market_data_request_max_size : std::size(symbols);
   std::vector<fix::InstrmtMDReq> related_sym(max_size);
   for (size_t offset = 0;; offset += max_size) {
     if (std::size(symbols) <= offset) {
@@ -755,7 +755,7 @@ void MarketData::operator()(Trace<fix::MarketDataIncrementalRefresh> const &even
         .begin_time_utc = {},
         .end_time_utc = {},
     };
-    statistics.emplace_back(std::move(statistics_2));
+    statistics.emplace_back(statistics_2);  // XXX FIXME std::move
   }
   // mark price
   {
@@ -765,7 +765,7 @@ void MarketData::operator()(Trace<fix::MarketDataIncrementalRefresh> const &even
         .begin_time_utc = {},
         .end_time_utc = {},
     };
-    statistics.emplace_back(std::move(statistics_2));
+    statistics.emplace_back(statistics_2);  // XXX FIXME std::move
   }
   std::chrono::nanoseconds exchange_time_utc = {};
   for (auto &item : market_data_incremental_refresh.no_md_entries) {
@@ -792,7 +792,7 @@ void MarketData::operator()(Trace<fix::MarketDataIncrementalRefresh> const &even
             .begin_time_utc = {},
             .end_time_utc = {},
         };
-        statistics.emplace_back(std::move(statistics_2));
+        statistics.emplace_back(statistics_2);  // XXX FIXME std::move
         break;
       }
       case SETTLEMENT_PRICE: {
@@ -802,7 +802,7 @@ void MarketData::operator()(Trace<fix::MarketDataIncrementalRefresh> const &even
             .begin_time_utc = {},
             .end_time_utc = {},
         };
-        statistics.emplace_back(std::move(statistics_2));
+        statistics.emplace_back(statistics_2);  // XXX FIXME std::move
         break;
       }
       default:
@@ -906,7 +906,7 @@ void MarketData::operator()(Trace<fix::MarketDataSnapshotFullRefresh> const &eve
             .begin_time_utc = {},
             .end_time_utc = {},
         };
-        statistics.emplace_back(std::move(statistics_2));
+        statistics.emplace_back(statistics_2);  // XXX FIXME std::move
         break;
       }
       case SETTLEMENT_PRICE: {
@@ -916,7 +916,7 @@ void MarketData::operator()(Trace<fix::MarketDataSnapshotFullRefresh> const &eve
             .begin_time_utc = {},
             .end_time_utc = {},
         };
-        statistics.emplace_back(std::move(statistics_2));
+        statistics.emplace_back(statistics_2);  // XXX FIXME std::move
         break;
       }
       default:

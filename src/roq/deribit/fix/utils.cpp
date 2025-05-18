@@ -12,18 +12,18 @@ SecurityType map_security_type(std::string_view const &value) {
   if (std::size(value) == 3) {
     switch (std::data(value)[0]) {
       case 'F':
-        if (value.compare("FUT"sv) == 0) {
+        if (value == "FUT"sv) {
           return SecurityType::FUTURES;
         }
         break;
       case 'O':
-        if (value.compare("OPT"sv) == 0) {
+        if (value == "OPT"sv) {
           return SecurityType::OPTION;
         }
         break;
     }
   }
-  if (value.compare("FXSPOT"sv) == 0) {
+  if (value == "FXSPOT"sv) {
     return SecurityType::SPOT;
   }
   return SecurityType::UNDEFINED;
@@ -33,17 +33,17 @@ Error map_error(std::string_view const &value) {
   if (std::size(value) > 0) {
     switch (std::data(value)[0]) {
       case 'a':
-        if (value.compare("already_cancelled"sv) == 0) {
+        if (value == "already_cancelled"sv) {
           return Error::TOO_LATE_TO_MODIFY_OR_CANCEL;
         }
         break;
       case 'c':
-        if (value.compare("canceled"sv) == 0) {
+        if (value == "canceled"sv) {
           return Error::UNDEFINED;
         }
         break;
       case 's':
-        if (value.compare("success"sv) == 0) {
+        if (value == "success"sv) {
           return Error::UNDEFINED;
         }
         break;

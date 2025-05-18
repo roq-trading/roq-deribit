@@ -22,17 +22,17 @@ namespace {
 constexpr auto get_token(auto const &name) -> std::string_view {
   auto delim = name.find_first_of('.');
   auto part = name.substr(0, delim);
-  if (part.compare("user"sv) == 0 && delim != name.npos) [[unlikely]] {
+  if (part == "user"sv && delim != std::string_view::npos) [[unlikely]] {
     ++delim;
     auto delim_2 = name.find_first_of('.', delim);
-    auto length = delim_2 == name.npos ? name.npos : (delim_2 - delim);
+    auto length = delim_2 == std::string_view::npos ? std::string_view::npos : (delim_2 - delim);
     return name.substr(delim, length);
-  } else if (part.compare("instrument"sv) == 0 && delim != name.npos) [[unlikely]] {
+  } else if (part == "instrument"sv && delim != std::string_view::npos) [[unlikely]] {
     ++delim;
     auto delim_2 = name.find_first_of('.', delim);
-    auto length = delim_2 == name.npos ? name.npos : (delim_2 - delim);
+    auto length = delim_2 == std::string_view::npos ? std::string_view::npos : (delim_2 - delim);
     auto name_2 = name.substr(delim, length);
-    if (name_2.compare("state"sv) == 0) {
+    if (name_2 == "state"sv) {
       return "instrument_state"sv;
     }
   } else {
