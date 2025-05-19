@@ -339,7 +339,7 @@ void MarketData::send_test_request(std::chrono::nanoseconds now) {
       .test_req_id = request_id_,
   };
   send(test_request);
-  if (!last_logon_or_heartbeat_.count() != 0) {
+  if (last_logon_or_heartbeat_.count() == 0) {
     last_logon_or_heartbeat_ = now;
   }
 }

@@ -28,11 +28,11 @@ void Controller::dispatch() {
   auto callback = [&](auto &connection) { filter.emplace_back(connection.address); };
   config.get_connections(callback);
   fmt::print(stdout, "(port {} or port {}) and ("sv, config.events_port(), config.snapshot_port());
-  auto n = std::size(filter);
-  for (size_t i = 0; i < n; ++i) {
+  auto length = std::size(filter);
+  for (size_t i = 0; i < length; ++i) {
     auto &item = filter[i];
     fmt::print(stdout, "host {}"sv, item);
-    if (i != (n - 1)) {
+    if (i != (length - 1)) {
       fmt::print(stdout, " or "sv);
     }
   }

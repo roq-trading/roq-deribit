@@ -48,7 +48,7 @@ Error map_error(std::string_view const &value) {
         }
         break;
       case 'r':
-        if (value.compare("rejected: order is closed"sv) == 0) {
+        if (value == "rejected: order is closed"sv) {
           return Error::TOO_LATE_TO_MODIFY_OR_CANCEL;
         }
         break;
@@ -71,7 +71,7 @@ std::string_view map(Mask<ExecutionInstruction> execution_instructions) {
 }
 
 Error reject_to_error(std::string_view const &reason, std::string_view const &text) {
-  if (std::empty(reason) && text.compare("rate_limit_exceeded"sv) == 0) {
+  if (std::empty(reason) && text == "rate_limit_exceeded"sv) {
     return Error::REQUEST_RATE_LIMIT_REACHED;
   }
   return {};

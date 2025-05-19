@@ -63,9 +63,9 @@ std::pair<std::string, std::chrono::milliseconds> Crypto::create_signature(std::
 
 std::string Crypto::create_raw_data(std::chrono::milliseconds timestamp) {
   using value_type = decltype(DISTRIBUTION)::result_type;
-  constexpr auto n = RANDOM_BYTES / sizeof(value_type);
-  std::array<value_type, n> buffer;
-  for (size_t i = 0; i < n; ++i) {
+  constexpr auto length = RANDOM_BYTES / sizeof(value_type);
+  std::array<value_type, length> buffer;
+  for (size_t i = 0; i < length; ++i) {
     buffer[i] = DISTRIBUTION(GENERATOR);
   }
   std::span tmp{reinterpret_cast<std::byte *>(std::data(buffer)), std::size(buffer) * sizeof(value_type)};
