@@ -48,13 +48,15 @@ inline size_t compute_length(deribit_multicast::Book &value) {
 template <>
 inline size_t compute_length(deribit_multicast::ComboLegs &value) {
   auto legs_list_length = value.legsList().count();
-  return value.computeLength(legs_list_length);
+  using value_type = std::remove_cvref_t<decltype(value)>;
+  return value_type::computeLength(legs_list_length);
 }
 
 template <>
 inline size_t compute_length(deribit_multicast::Instrument &value) {
   auto instrument_name_length = value.instrumentNameLength();
-  return value.computeLength(instrument_name_length);
+  using value_type = std::remove_cvref_t<decltype(value)>;
+  return value_type::computeLength(instrument_name_length);
 }
 
 template <>
@@ -63,17 +65,20 @@ inline size_t compute_length(deribit_multicast::InstrumentV2 &value) {
   size_t tick_steps_list_length = 0;
   value.tickStepsList().forEach([&]([[maybe_unused]] auto &item) { ++tick_steps_list_length; });  // note!
   auto instrument_name_length = value.instrumentNameLength();
-  return value.computeLength(tick_steps_list_length, instrument_name_length);
+  using value_type = std::remove_cvref_t<decltype(value)>;
+  return value_type::computeLength(tick_steps_list_length, instrument_name_length);
 }
 
 template <>
 inline size_t compute_length(deribit_multicast::PriceIndex &value) {
-  return value.computeLength();
+  using value_type = std::remove_cvref_t<decltype(value)>;
+  return value_type::computeLength();
 }
 
 template <>
 inline size_t compute_length(deribit_multicast::Rfq &value) {
-  return value.computeLength();
+  using value_type = std::remove_cvref_t<decltype(value)>;
+  return value_type::computeLength();
 }
 
 template <>
@@ -81,28 +86,33 @@ inline size_t compute_length(deribit_multicast::Snapshot &value) {
   auto levels_list_length = value.levelsList().count();
   value.sbeRewind();  // note!
   value.levelsList().forEach([](auto &e) { e.skip(); });
-  return value.computeLength(levels_list_length);
+  using value_type = std::remove_cvref_t<decltype(value)>;
+  return value_type::computeLength(levels_list_length);
 }
 
 template <>
 inline size_t compute_length(deribit_multicast::SnapshotStart &value) {
-  return value.computeLength();
+  using value_type = std::remove_cvref_t<decltype(value)>;
+  return value_type::computeLength();
 }
 
 template <>
 inline size_t compute_length(deribit_multicast::SnapshotEnd &value) {
-  return value.computeLength();
+  using value_type = std::remove_cvref_t<decltype(value)>;
+  return value_type::computeLength();
 }
 
 template <>
 inline size_t compute_length(deribit_multicast::Ticker &value) {
-  return value.computeLength();
+  using value_type = std::remove_cvref_t<decltype(value)>;
+  return value_type::computeLength();
 }
 
 template <>
 inline size_t compute_length(deribit_multicast::Trades &value) {
   auto trades_list_length = value.tradesList().count();
-  return value.computeLength(trades_list_length);
+  using value_type = std::remove_cvref_t<decltype(value)>;
+  return value_type::computeLength(trades_list_length);
 }
 
 // sbe weirdness ...

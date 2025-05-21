@@ -24,10 +24,11 @@ namespace tools {
 // === CONSTANTS ===
 
 namespace {
-constexpr auto const CHARSET_DATA = "abcdefghijklmnopqrstuvwxyz0123456789"sv;
 constexpr size_t const RANDOM_BYTES = 32;
 
-static_assert(std::size(CHARSET_DATA) == 36);
+constexpr auto const CHARSET_DATA = "abcdefghijklmnopqrstuvwxyz0123456789"sv;
+constexpr size_t const LENGTH_CHARSET_DATA = 36;
+static_assert(std::size(CHARSET_DATA) == LENGTH_CHARSET_DATA);
 
 std::random_device GENERATOR;
 std::uniform_int_distribution<int> CHARSET_DISTRIBUTION(0, std::size(CHARSET_DATA) - 1);  // note! max value is inclusive
