@@ -178,8 +178,25 @@ uint16_t Gateway::operator()(Event<CancelQuotes> const &) {
   throw server::oms::NotSupported{"not supported"sv};
 }
 
-void Gateway::operator()(metrics::Writer &writer) {
-  dispatch(writer);
+void Gateway::operator()(metrics::Writer &writer) const {
+  for (auto &[_, item] : order_entry_) {
+    (*item)(writer);
+  }
+  for (auto &[_, item] : drop_copy_) {
+    (*item)(writer);
+  }
+  for (auto &item : web_socket_) {
+    (*item)(writer);
+  }
+  for (auto &item : market_data_) {
+    (*item)(writer);
+  }
+  if (udp_snapshot_) {
+    (*udp_snapshot_)(writer);
+  }
+  if (udp_events_) {
+    (*udp_events_)(writer);
+  }
 }
 
 void Gateway::operator()(Trace<StreamStatus> const &event) {

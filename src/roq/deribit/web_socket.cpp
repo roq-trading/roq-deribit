@@ -185,7 +185,7 @@ void WebSocket::operator()(Event<Timer> const &event) {
   }
 }
 
-void WebSocket::operator()(metrics::Writer &writer) {
+void WebSocket::operator()(metrics::Writer &writer) const {
   writer  //
       .write(counter_.disconnect, metrics::Type::COUNTER)
       .write(profile_.parse, metrics::Type::PROFILE)

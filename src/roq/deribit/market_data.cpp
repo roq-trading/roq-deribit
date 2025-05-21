@@ -390,7 +390,7 @@ void MarketData::download_securities() {
   send(security_list_request);
 }
 
-void MarketData::operator()(metrics::Writer &writer) {
+void MarketData::operator()(metrics::Writer &writer) const {
   writer  //
       .write(counter_.disconnect, metrics::Type::COUNTER)
       .write(profile_.parse, metrics::Type::PROFILE)

@@ -63,7 +63,7 @@ struct OrderEntry final : public io::net::ConnectionManager::Handler {
 
   uint16_t operator()(Event<CancelAllOrders> const &, std::string_view const &request_id);
 
-  void operator()(metrics::Writer &);
+  void operator()(metrics::Writer &) const;
 
   void operator()(Trace<fix::Heartbeat> const &, roq::fix::Header const &);
   void operator()(Trace<fix::Logon> const &, roq::fix::Header const &);
