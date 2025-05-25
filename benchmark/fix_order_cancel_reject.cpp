@@ -20,7 +20,6 @@ auto const MESSAGE =
     "9=8\00158=not_found\00110=000\001"sv;
 }  // namespace
 
-// cppcheck-suppress constParameterCallback
 void BM_fix_order_cancel_reject_parse_message(benchmark::State &state) {
   uint64_t processed = 0;
   auto parser = [&](auto &message_2) {

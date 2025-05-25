@@ -20,7 +20,6 @@ auto const MESSAGE =
     "\00110=084\001"sv;
 }  // namespace
 
-// cppcheck-suppress constParameterCallback
 void BM_fix_heartbeat_parse_message(benchmark::State &state) {
   uint64_t processed = 0;
   auto parser = [&](auto &message_2) {

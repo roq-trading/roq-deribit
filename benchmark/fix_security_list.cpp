@@ -1229,7 +1229,6 @@ auto const MESSAGE =
     "15=USD\0012576=2\001969=0.0100\00110=083\001"sv;
 }  // namespace
 
-// cppcheck-suppress constParameterCallback
 void BM_fix_security_list_parse_message(benchmark::State &state) {
   std::vector<std::byte> buffer(1024 * 1024);
   uint64_t processed = 0;

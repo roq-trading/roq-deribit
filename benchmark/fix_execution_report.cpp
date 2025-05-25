@@ -24,7 +24,6 @@ auto const MESSAGE =
     "10=195\001"sv;
 }  // namespace
 
-// cppcheck-suppress constParameterCallback
 void BM_fix_execution_report_parse_message(benchmark::State &state) {
   std::vector<std::byte> buffer(8192);
   uint64_t processed = 0;

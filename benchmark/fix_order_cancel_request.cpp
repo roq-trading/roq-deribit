@@ -12,7 +12,6 @@ using namespace std::chrono_literals;
 
 using OrderCancelRequest = deribit::fix::OrderCancelRequest;
 
-// cppcheck-suppress constParameterCallback
 void BM_fix_order_cancel_request_create_message(benchmark::State &state) {
   std::vector<std::byte> buffer(4096);
   uint64_t msg_seq_num = 0;

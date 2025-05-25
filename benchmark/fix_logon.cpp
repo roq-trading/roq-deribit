@@ -23,7 +23,6 @@ auto const MESSAGE =
     "M=\0019001=Y\00110=115\001"sv;
 }  // namespace
 
-// cppcheck-suppress constParameterCallback
 void BM_fix_logon_parse_message(benchmark::State &state) {
   auto parser = [&](auto &message_2) { Logon::create(message_2); };
   for (auto _ : state) {
@@ -33,7 +32,6 @@ void BM_fix_logon_parse_message(benchmark::State &state) {
 
 BENCHMARK(BM_fix_logon_parse_message);
 
-// cppcheck-suppress constParameterCallback
 void BM_fix_logon_create_message(benchmark::State &state) {
   std::vector<std::byte> buffer(4096);
   uint64_t msg_seq_num = 0;

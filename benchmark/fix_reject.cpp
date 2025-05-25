@@ -20,7 +20,6 @@ auto const MESSAGE =
     "not_implemented\00110=092\001"sv;
 }  // namespace
 
-// cppcheck-suppress constParameterCallback
 void BM_fix_reject_parse_message(benchmark::State &state) {
   uint64_t processed = 0;
   auto parser = [&](auto &message_2) {
