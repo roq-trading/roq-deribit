@@ -179,24 +179,7 @@ uint16_t Gateway::operator()(Event<CancelQuotes> const &) {
 }
 
 void Gateway::operator()(metrics::Writer &writer) const {
-  for (auto &[_, item] : order_entry_) {
-    (*item)(writer);
-  }
-  for (auto &[_, item] : drop_copy_) {
-    (*item)(writer);
-  }
-  for (auto &item : web_socket_) {
-    (*item)(writer);
-  }
-  for (auto &item : market_data_) {
-    (*item)(writer);
-  }
-  if (udp_snapshot_) {
-    (*udp_snapshot_)(writer);
-  }
-  if (udp_events_) {
-    (*udp_events_)(writer);
-  }
+  dispatch_helper(*this, writer);
 }
 
 void Gateway::operator()(Trace<StreamStatus> const &event) {
@@ -306,24 +289,29 @@ void Gateway::ensure_symbol_slices(size_t size) {
 
 template <typename... Args>
 void Gateway::dispatch(Args &&...args) {
+  dispatch_helper(*this, std::forward<Args>(args)...);
+}
+
+template <typename... Args>
+void Gateway::dispatch_helper(auto &self, Args &&...args) {
   auto helper = [&](auto &target) { target(std::forward<Args>(args)...); };
-  for (auto &[_, item] : order_entry_) {
+  for (auto &[_, item] : self.order_entry_) {
     helper(*item);
   }
-  for (auto &[_, item] : drop_copy_) {
+  for (auto &[_, item] : self.drop_copy_) {
     helper(*item);
   }
-  for (auto &item : web_socket_) {
+  for (auto &item : self.web_socket_) {
     helper(*item);
   }
-  for (auto &item : market_data_) {
+  for (auto &item : self.market_data_) {
     helper(*item);
   }
-  if (udp_snapshot_) {
-    helper(*udp_snapshot_);
+  if (self.udp_snapshot_) {
+    helper(*self.udp_snapshot_);
   }
-  if (udp_events_) {
-    helper(*udp_events_);
+  if (self.udp_events_) {
+    helper(*self.udp_events_);
   }
 }
 
