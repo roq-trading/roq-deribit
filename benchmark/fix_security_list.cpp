@@ -1230,7 +1230,7 @@ auto const MESSAGE =
 }  // namespace
 
 void BM_fix_security_list_parse_message(benchmark::State &state) {
-  std::vector<std::byte> buffer(1024 * 1024);
+  std::vector<std::byte> buffer(1'048'576);
   uint64_t processed = 0;
   auto parser = [&](auto &message_2) {
     auto security_list = SecurityList::create(message_2, buffer);

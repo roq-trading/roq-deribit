@@ -42,7 +42,8 @@ size_t compute_length(T &);
 template <>
 inline size_t compute_length(deribit_multicast::Book &value) {
   auto changes_list_length = value.changesList().count();
-  return value.computeLength(changes_list_length);
+  using value_type = std::remove_cvref_t<decltype(value)>;
+  return value_type::computeLength(changes_list_length);
 }
 
 template <>
@@ -85,7 +86,7 @@ template <>
 inline size_t compute_length(deribit_multicast::Snapshot &value) {
   auto levels_list_length = value.levelsList().count();
   value.sbeRewind();  // note!
-  value.levelsList().forEach([](auto &e) { e.skip(); });
+  value.levelsList().forEach([](auto &item) { item.skip(); });
   using value_type = std::remove_cvref_t<decltype(value)>;
   return value_type::computeLength(levels_list_length);
 }

@@ -23,7 +23,7 @@ TEST_CASE("fix_position_report_parse_message", "[fix_position_report]") {
       "05=0\00155=BTC-27SEP19\001854=1\001231=10.0000\001883=10184.50"
       "00\001730=0.0000\00195=11\00196=0.0;0.0;0.0\001100088=0.0000\001"
       "100089=0.00000000\00110=026\001"sv;
-  std::vector<std::byte> buffer(1024 * 1024);
+  std::vector<std::byte> buffer(1'048'576);
   int results = 0;
   auto parser = [&](auto &message_2) {
     ++results;

@@ -45,7 +45,7 @@ TEST_CASE("json_currency_parse_message", "[json_currency]") {
   core::json::Parser parser(message);
   auto root = parser.root();
   for (auto [key, value] : std::get<core::json::Object>(root)) {
-    if (key.compare("result"sv) == 0) {
+    if (key == "result"sv) {
       ++results;
       for (auto iter : std::get<core::json::Array>(value)) {
         ++currencies;

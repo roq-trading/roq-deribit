@@ -174,7 +174,7 @@ auto const MESSAGE =
 }  // namespace
 
 void BM_fix_market_data_snapshot_full_refresh_parse_message(benchmark::State &state) {
-  std::vector<std::byte> buffer(1024 * 1024);
+  std::vector<std::byte> buffer(1'048'576);
   uint64_t processed = 0;
   auto parser = [&](auto &message_2) {
     auto market_data = MarketDataSnapshotFullRefresh::create(message_2, buffer);

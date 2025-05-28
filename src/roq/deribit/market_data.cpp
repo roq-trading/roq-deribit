@@ -862,7 +862,8 @@ void MarketData::operator()(Trace<fix::MarketDataIncrementalRefresh> const &even
   }
 }
 
-void MarketData::operator()(Trace<fix::MarketDataRequestReject> const &event, roq::fix::Header const &header) {
+void MarketData::operator()(
+    Trace<fix::MarketDataRequestReject> const &event, roq::fix::Header const &header) {  // NOLINT(readability-make-member-function-const)
   auto &[trace_info, market_data_request_reject] = event;
   log::warn<1>("event={{header={}, market_data_request_reject={}}}"sv, header, market_data_request_reject);
   if (shared_.settings.fix.terminate_on_market_data_request_reject) {

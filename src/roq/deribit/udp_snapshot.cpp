@@ -307,7 +307,7 @@ void UDPSnapshot::operator()(Trace<deribit_multicast::InstrumentV2> const &, sbe
   // XXX FIXME can't make get_instrument_name() to work...
 }
 
-void UDPSnapshot::operator()(metrics::Writer &writer) {
+void UDPSnapshot::operator()(metrics::Writer &writer) const {
   writer  //
       .write(counter_.disconnect, metrics::Type::COUNTER)
       .write(profile_.parse, metrics::Type::PROFILE);

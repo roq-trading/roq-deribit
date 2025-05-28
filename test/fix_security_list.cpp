@@ -1232,7 +1232,7 @@ auto const message =
 }  // namespace
 
 TEST_CASE("fix_security_list_parse_message", "[fix_security_list]") {
-  std::vector<std::byte> buffer(1024 * 1024);
+  std::vector<std::byte> buffer(1'048'576);
   int results = 0;
   auto parser = [&](auto &message_2) {
     ++results;

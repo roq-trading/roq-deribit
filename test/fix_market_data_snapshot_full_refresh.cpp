@@ -173,7 +173,7 @@ TEST_CASE("fix_market_data_snapshot_full_refresh_parse_message", "fix_market_dat
       "7:49:56.053\001269=1\001270=30000.0000\001271=112.0000\001272="
       "20190907-17:49:56.053\001269=1\001270=100000.0000\001271=9364."
       "0000\001272=20190907-17:49:56.053\00110=037\001"sv;
-  std::vector<std::byte> buffer(1024 * 1024);
+  std::vector<std::byte> buffer(1'048'576);
   int results = 0;
   auto parser = [&](auto &message_2) {
     ++results;
