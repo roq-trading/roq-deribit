@@ -491,6 +491,7 @@ void DropCopy::operator()(Trace<json::Portfolio> const &event) {
       .margin_mode = margin_mode,
       .balance = portfolio.balance,
       .hold = NaN,
+      .borrowed = NaN,
       .external_account = {},
       .update_type = UpdateType::INCREMENTAL,
       .exchange_time_utc = portfolio.creation_timestamp,
