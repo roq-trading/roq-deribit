@@ -17,6 +17,7 @@
 #include "roq/deribit/drop_copy.hpp"
 #include "roq/deribit/market_data.hpp"
 #include "roq/deribit/order_entry.hpp"
+#include "roq/deribit/rest.hpp"
 #include "roq/deribit/settings.hpp"
 #include "roq/deribit/shared.hpp"
 #include "roq/deribit/udp_events.hpp"
@@ -27,6 +28,7 @@ namespace roq {
 namespace deribit {
 
 struct Gateway final : public server::Handler,
+                       public Rest::Handler,
                        public OrderEntry::Handler,
                        public DropCopy::Handler,
                        public WebSocket::Handler,
@@ -108,6 +110,7 @@ struct Gateway final : public server::Handler,
   // seed
   uint16_t stream_id_ = {};
   // streams
+  Rest rest_;
   utils::unordered_map<std::string, std::unique_ptr<OrderEntry>> order_entry_;
   utils::unordered_map<std::string, std::unique_ptr<DropCopy>> drop_copy_;
   std::vector<std::unique_ptr<WebSocket>> web_socket_;

@@ -120,6 +120,10 @@ Flags
 
    .. include:: flags/fix.rstinc
 
+.. tab:: REST
+
+   .. include:: flags/rest.rstinc
+
 .. tab:: WS
 
    .. include:: flags/ws.rstinc

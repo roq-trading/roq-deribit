@@ -94,7 +94,8 @@ auto create_udp_events(auto &gateway, auto &context, auto &stream_id, auto &shar
 
 Gateway::Gateway(server::Dispatcher &dispatcher, Settings const &settings, Config const &config, io::Context &context)
     : dispatcher_{dispatcher}, master_account_{create_master_account(config)}, accounts_{create_accounts<decltype(accounts_)>(config)}, context_{context},
-      shared_{dispatcher_, settings}, order_entry_{create_order_entry<decltype(order_entry_)>(*this, context_, stream_id_, accounts_, shared_)},
+      shared_{dispatcher_, settings}, rest_{*this, context_, ++stream_id_, shared_},
+      order_entry_{create_order_entry<decltype(order_entry_)>(*this, context_, stream_id_, accounts_, shared_)},
       drop_copy_{create_drop_copy<decltype(drop_copy_)>(*this, context_, stream_id_, accounts_, shared_)},
       web_socket_{create_web_socket<decltype(web_socket_)>(*this, context_, stream_id_, get_account(master_account_), shared_)},
       market_data_{create_market_data<decltype(market_data_)>(*this, context_, ++stream_id_, get_account(master_account_), shared_)},
@@ -295,6 +296,7 @@ void Gateway::dispatch(Args &&...args) {
 template <typename... Args>
 void Gateway::dispatch_helper(auto &self, Args &&...args) {
   auto helper = [&](auto &target) { target(std::forward<Args>(args)...); };
+  helper(self.rest_);
   for (auto &[_, item] : self.order_entry_) {
     helper(*item);
   }

@@ -12,6 +12,7 @@ set(AUTOGEN_SCHEMAS
     misc.json
     multicast.json
     request.json
+    rest.json
     ws.json)
 
 if(BUILD_DOCS)

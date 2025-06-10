@@ -13,6 +13,7 @@
 #include "roq/deribit/flags/misc.hpp"
 #include "roq/deribit/flags/multicast.hpp"
 #include "roq/deribit/flags/request.hpp"
+#include "roq/deribit/flags/rest.hpp"
 #include "roq/deribit/flags/ws.hpp"
 
 namespace roq {
@@ -28,6 +29,7 @@ struct Settings final : public server::flags::Settings, public flags::Flags {
   flags::Download download;
   flags::MBP mbp;
   flags::Request request;
+  flags::REST rest;
 };
 
 }  // namespace deribit
@@ -48,6 +50,7 @@ struct fmt::formatter<roq::deribit::Settings> {
         R"(download={}, )"
         R"(mbp={}, )"
         R"(request={}, )"
+        R"(rest={}, )"
         R"(server={})"
         R"(}})"sv,
         value.misc,
@@ -57,6 +60,7 @@ struct fmt::formatter<roq::deribit::Settings> {
         value.download,
         value.mbp,
         value.request,
+        value.rest,
         static_cast<roq::server::Settings const &>(value));
   }
 };

@@ -349,6 +349,7 @@ void WebSocket::get_currencies() {
 }
 
 void WebSocket::get_instruments(std::string_view const &currency) {
+  log::warn(R"(DEBUG currency="{}")"sv, currency);
   json::RequestType const request_type = json::RequestType::GET_INSTRUMENTS;
   auto message = fmt::format(
       R"({{)"
@@ -559,6 +560,18 @@ void WebSocket::operator()(Trace<json::Currencies> const &event) {
     }
     for (auto &item : data) {
       auto &currency = item.currency;
+      if (!std::empty(shared_.settings.misc.test_filter_currencies)) {  // XXX FIXME TODO HANS work-around
+        auto found = false;
+        for (auto &item : shared_.settings.misc.test_filter_currencies) {
+          if (item == currency) {
+            found = true;
+          }
+        }
+        log::warn(R"(DEBUG check currency="{}", found={})"sv, currency, found);
+        if (!found) {
+          continue;
+        }
+      }
       if (shared_.all_currencies.emplace(currency).second) {
         tmp.emplace_back(currency);
       }
@@ -569,6 +582,9 @@ void WebSocket::operator()(Trace<json::Currencies> const &event) {
           .currencies = tmp,
       };
       handler_(currencies_update);
+    }
+    for (auto &item : shared_.all_currencies) {
+      log::warn(R"(DEBUG currency="{}")"sv, item);
     }
   });
 }
