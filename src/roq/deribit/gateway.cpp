@@ -58,10 +58,10 @@ R create_drop_copy(auto &gateway, auto &context, auto &stream_id, auto &accounts
 }
 
 template <typename R>
-R create_web_socket(auto &gateway, auto &context, auto &stream_id, auto &account, auto &shared) {
+R create_web_socket(auto &gateway, auto &context, auto &stream_id, auto &account, auto &shared, auto &request) {
   using result_type = std::remove_cvref_t<R>;
   result_type result;
-  auto obj = std::make_unique<WebSocket>(gateway, context, ++stream_id, account, shared, std::size(result), true);
+  auto obj = std::make_unique<WebSocket>(gateway, context, ++stream_id, account, shared, request, std::size(result), true);
   result.emplace_back(std::move(obj));
   return result;
 }
@@ -94,10 +94,10 @@ auto create_udp_events(auto &gateway, auto &context, auto &stream_id, auto &shar
 
 Gateway::Gateway(server::Dispatcher &dispatcher, Settings const &settings, Config const &config, io::Context &context)
     : dispatcher_{dispatcher}, master_account_{create_master_account(config)}, accounts_{create_accounts<decltype(accounts_)>(config)}, context_{context},
-      shared_{dispatcher_, settings}, rest_{*this, context_, ++stream_id_, shared_},
+      shared_{dispatcher_, settings}, rest_{*this, context_, ++stream_id_, shared_, request_},
       order_entry_{create_order_entry<decltype(order_entry_)>(*this, context_, stream_id_, accounts_, shared_)},
       drop_copy_{create_drop_copy<decltype(drop_copy_)>(*this, context_, stream_id_, accounts_, shared_)},
-      web_socket_{create_web_socket<decltype(web_socket_)>(*this, context_, stream_id_, get_account(master_account_), shared_)},
+      web_socket_{create_web_socket<decltype(web_socket_)>(*this, context_, stream_id_, get_account(master_account_), shared_, request_)},
       market_data_{create_market_data<decltype(market_data_)>(*this, context_, ++stream_id_, get_account(master_account_), shared_)},
       udp_snapshot_{create_udp_snapshot(*this, context_, ++stream_id_, shared_)}, udp_events_{create_udp_events(*this, context_, ++stream_id_, shared_)} {
   if (std::empty(master_account_) && !settings.misc.disable_master_account_check) {
@@ -228,14 +228,14 @@ void Gateway::operator()(Trace<FundsUpdate> const &event, bool is_last) {
   dispatcher_(event, is_last);
 }
 
-void Gateway::operator()(WebSocket::CurrenciesUpdate &currencies_update) {
+void Gateway::operator()(Rest::CurrenciesUpdate &currencies_update) {
   auto &currencies = currencies_update.currencies;
   for (auto &[_, iter] : drop_copy_) {
     (*iter).update_subscriptions(currencies);
   }
 }
 
-void Gateway::operator()(WebSocket::SymbolsUpdate &symbols_update) {
+void Gateway::operator()(Rest::SymbolsUpdate &symbols_update) {
   auto [size, start_from] = shared_.symbols(symbols_update.symbols);
   ensure_symbol_slices(size);
   for (auto &item : market_data_) {
@@ -280,7 +280,7 @@ void Gateway::ensure_symbol_slices(size_t size) {
     auto stream_id = ++stream_id_;
     auto index = std::size(web_socket_);
     log::info("Create WebSocket (stream_id={}, index={})"sv, stream_id, index);
-    auto web_socket = std::make_unique<WebSocket>(*this, context_, stream_id, get_account(master_account_), shared_, index, false);
+    auto web_socket = std::make_unique<WebSocket>(*this, context_, stream_id, get_account(master_account_), shared_, request_, index, false);
     MessageInfo message_info;
     Start start;
     create_event_and_dispatch(*web_socket, message_info, start);

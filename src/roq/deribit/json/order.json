@@ -105,6 +105,10 @@
     {
       "name": "contracts",
       "type": "std/uint32"
+    },
+    {
+      "name": "user_id",
+      "type": "std/uint32"
     }
   ]
 }

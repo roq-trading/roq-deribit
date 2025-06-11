@@ -8,6 +8,10 @@ namespace roq {
 namespace deribit {
 
 struct Request final {
+  // currencies
+  std::chrono::nanoseconds request_currencies = {};
+  std::chrono::nanoseconds respond_currencies = {};
+  // instruments
   std::chrono::nanoseconds request_instruments = {};
   std::chrono::nanoseconds respond_instruments = {};
 };

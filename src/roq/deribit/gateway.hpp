@@ -17,6 +17,7 @@
 #include "roq/deribit/drop_copy.hpp"
 #include "roq/deribit/market_data.hpp"
 #include "roq/deribit/order_entry.hpp"
+#include "roq/deribit/request.hpp"
 #include "roq/deribit/rest.hpp"
 #include "roq/deribit/settings.hpp"
 #include "roq/deribit/shared.hpp"
@@ -77,8 +78,9 @@ struct Gateway final : public server::Handler,
   void operator()(Trace<PositionUpdate> const &, bool is_last) override;
   void operator()(Trace<FundsUpdate> const &, bool is_last) override;
 
-  void operator()(WebSocket::CurrenciesUpdate &) override;
-  void operator()(WebSocket::SymbolsUpdate &) override;
+  void operator()(Rest::CurrenciesUpdate &) override;
+  void operator()(Rest::SymbolsUpdate &) override;
+
   void operator()(WebSocket::Latch const &) override;
 
   void operator()(MarketData::SymbolsUpdate &) override;
@@ -109,6 +111,8 @@ struct Gateway final : public server::Handler,
   Shared shared_;
   // seed
   uint16_t stream_id_ = {};
+  //
+  Request request_;
   // streams
   Rest rest_;
   utils::unordered_map<std::string, std::unique_ptr<OrderEntry>> order_entry_;

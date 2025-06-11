@@ -19,17 +19,31 @@
 #include "roq/deribit/request.hpp"
 #include "roq/deribit/shared.hpp"
 
+#include "roq/deribit/json/currency.hpp"
+#include "roq/deribit/json/instrument.hpp"
+
 namespace roq {
 namespace deribit {
 
 struct Rest final : public web::rest::Client::Handler {
+  struct CurrenciesUpdate final {
+    std::vector<std::string> &currencies;
+  };
+
+  struct SymbolsUpdate final {
+    std::vector<Symbol> &symbols;
+  };
+
   struct Handler {
     virtual void operator()(Trace<StreamStatus> const &) = 0;
     virtual void operator()(Trace<ExternalLatency> const &) = 0;
     virtual void operator()(Trace<ReferenceData> const &, bool is_last) = 0;
+    // cross-communication
+    virtual void operator()(CurrenciesUpdate &) = 0;
+    virtual void operator()(SymbolsUpdate &) = 0;
   };
 
-  Rest(Handler &, io::Context &context, uint16_t stream_id, Shared &);
+  Rest(Handler &, io::Context &context, uint16_t stream_id, Shared &, Request &);
 
   Rest(Rest const &) = delete;
 
@@ -45,6 +59,23 @@ struct Rest final : public web::rest::Client::Handler {
   void operator()(Trace<web::rest::Client::Latency> const &) override;
 
   void operator()(ConnectionStatus);
+
+  bool ready() const { return status_ == ConnectionStatus::READY; }
+
+  bool downloading() const { return downloading_currencies_ || downloading_instruments_; }
+
+  void check_download();
+
+  void get_currencies();
+  void get_currencies_ack(Trace<web::rest::Response> const &);
+  void operator()(Trace<json::Currency> const &);
+
+  void get_instruments();
+  void get_instruments_ack(Trace<web::rest::Response> const &);
+  bool operator()(Trace<json::Instrument> const &);
+
+  template <typename SuccessHandler, typename ErrorHandler>
+  void process_response(web::rest::Response const &, SuccessHandler, ErrorHandler);
 
  private:
   Handler &handler_;
@@ -70,6 +101,10 @@ struct Rest final : public web::rest::Client::Handler {
   utils::unordered_set<std::string> symbols_;
   // state
   ConnectionStatus status_ = {};
+  //
+  Request &request_;
+  bool downloading_currencies_ = {};
+  bool downloading_instruments_ = {};
 };
 
 }  // namespace deribit

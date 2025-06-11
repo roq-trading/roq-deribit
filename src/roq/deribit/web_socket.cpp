@@ -86,68 +86,11 @@ auto create_connection(auto &handler, auto &settings, auto &context) {
 struct create_metrics final : public utils::metrics::Factory {
   create_metrics(auto &settings, auto &group, auto const &function) : utils::metrics::Factory{settings.app.name, group, function} {}
 };
-
-auto to_security_type(auto kind, [[maybe_unused]] auto instrument_type, auto settlement_period) -> SecurityType {
-  switch (kind) {
-    using enum json::Kind::type_t;
-    case UNDEFINED_INTERNAL:
-    case UNKNOWN_INTERNAL:
-      return {};
-    case FUTURE:
-      /*
-      switch (instrument_type) {
-        using enum json::InstrumentType::type_t;
-        case UNDEFINED_INTERNAL:
-        case UNKNOWN_INTERNAL:
-          return SecurityType::FUTURES;
-        case LINEAR:
-        case REVERSED:
-          return SecurityType::SWAP;
-      }
-      */
-      switch (settlement_period) {
-        using enum json::SettlementPeriod::type_t;
-        case UNDEFINED_INTERNAL:
-        case UNKNOWN_INTERNAL:
-          return SecurityType::FUTURES;
-        case PERPETUAL:
-          return SecurityType::SWAP;
-        case DAY:
-        case WEEK:
-        case MONTH:
-          return SecurityType::FUTURES;
-      }
-      break;
-    case OPTION:
-      return SecurityType::OPTION;
-    case FUTURE_COMBO:
-      return SecurityType::FUTURES;  // ???
-    case OPTION_COMBO:
-      return SecurityType::OPTION;  // ???
-    case SPOT:
-      return SecurityType::SPOT;
-  }
-  log::fatal("Unexpected"sv);
-}
-
-auto to_option_type(auto option_type) -> OptionType {
-  switch (option_type) {
-    using enum json::OptionType::type_t;
-    case UNDEFINED_INTERNAL:
-    case UNKNOWN_INTERNAL:
-      return {};
-    case CALL:
-      return OptionType::CALL;
-    case PUT:
-      return OptionType::PUT;
-  }
-  log::fatal("Unexpected"sv);
-}
 }  // namespace
 
 // === IMPLEMENTATION ===
 
-WebSocket::WebSocket(Handler &handler, io::Context &context, uint16_t stream_id, Account &account, Shared &shared, size_t index, bool master)
+WebSocket::WebSocket(Handler &handler, io::Context &context, uint16_t stream_id, Account &account, Shared &shared, Request &request, size_t index, bool master)
     : handler_{handler}, stream_id_{stream_id}, name_{create_name(stream_id_)}, index_{index}, master_{master},
       publish_top_of_book_{publish_top_of_book(shared)}, supports_{get_supports(master_, publish_top_of_book_)},
       connection_{create_connection(*this, shared.settings, context)}, decode_buffer_(shared.settings.misc.decode_buffer_size),
@@ -166,7 +109,7 @@ WebSocket::WebSocket(Handler &handler, io::Context &context, uint16_t stream_id,
           .ping = create_metrics(shared.settings, name_, "ping"sv),
           .heartbeat = create_metrics(shared.settings, name_, "heartbeat"sv),
       },
-      account_{account}, shared_{shared}, download_{shared.settings.ws.request_timeout, [this](auto state) { return download(state); }} {
+      account_{account}, shared_{shared}, download_{shared.settings.ws.request_timeout, [this](auto state) { return download(state); }}, request_{request} {
 }
 
 void WebSocket::operator()(Event<Start> const &) {
@@ -183,6 +126,8 @@ void WebSocket::operator()(Event<Timer> const &event) {
   if ((*connection_).ready()) {
     check_subscribe_queue(now);
   }
+  check_currencies();
+  check_instruments();
 }
 
 void WebSocket::operator()(metrics::Writer &writer) const {
@@ -214,6 +159,7 @@ void WebSocket::operator()(web::socket::Client::Disconnected const &) {
   (*this)(ConnectionStatus::DISCONNECTED);
   download_.reset();
   subscribe_queue_.clear();
+  request_.request_instruments = {};
 }
 
 void WebSocket::operator()(web::socket::Client::Ready const &) {
@@ -300,12 +246,15 @@ uint32_t WebSocket::download(WebSocketState state) {
       if (!master_) {
         return 0;
       }
-      return download_currencies();
-    case INSTRUMENTS:
+      download_currencies();
+      return 1;
+    case INSTRUMENTS: {
       if (!master_) {
         return 0;
       }
-      return download_instruments();
+      download_instruments();
+      return 1;
+    }
     case SUBSCRIBE:
       assert(!ready_);
       ready_ = true;
@@ -324,44 +273,32 @@ uint32_t WebSocket::download(WebSocketState state) {
   return 0;
 }
 
-uint32_t WebSocket::download_currencies() {
-  get_currencies();
-  return 1;
+void WebSocket::download_currencies() {
+  request_.request_currencies = clock::get_system();
 }
 
-uint32_t WebSocket::download_instruments() {
-  for (auto &currency : shared_.all_currencies) {
-    get_instruments(currency);
+void WebSocket::check_currencies() {
+  if (download_.state() != WebSocketState::CURRENCIES) {
+    return;
   }
-  return std::size(shared_.all_currencies);
+  if (request_.request_currencies < request_.respond_currencies) {
+    log::info("Currencies download has completed!"sv);
+    download_.check(WebSocketState::CURRENCIES);
+  }
 }
 
-void WebSocket::get_currencies() {
-  json::RequestType const request_type = json::RequestType::GET_CURRENCIES;
-  auto message = fmt::format(
-      R"({{)"
-      R"("method":"public/get_currencies",)"
-      R"("params":{{}},)"
-      R"("id":"{}")"
-      R"(}})"sv,
-      request_type.as_raw_text());
-  subscribe_queue_.emplace_back(message);
+void WebSocket::download_instruments() {
+  request_.request_instruments = clock::get_system();
 }
 
-void WebSocket::get_instruments(std::string_view const &currency) {
-  log::warn(R"(DEBUG currency="{}")"sv, currency);
-  json::RequestType const request_type = json::RequestType::GET_INSTRUMENTS;
-  auto message = fmt::format(
-      R"({{)"
-      R"("method":"public/get_instruments",)"
-      R"("params":{{)"
-      R"("currency":"{}")"
-      R"(}},)"
-      R"("id":"{}")"
-      R"(}})"sv,
-      currency,
-      request_type.as_raw_text());
-  subscribe_queue_.emplace_back(message);
+void WebSocket::check_instruments() {
+  if (download_.state() != WebSocketState::INSTRUMENTS) {
+    return;
+  }
+  if (request_.request_instruments < request_.respond_instruments) {
+    log::info("Instruments download has completed!"sv);
+    download_.check(WebSocketState::INSTRUMENTS);
+  }
 }
 
 void WebSocket::subscribe_platform_state() {
@@ -474,35 +411,6 @@ bool WebSocket::operator()(Trace<core::jsonrpc::Result> const &event, core::json
       (*this)(event);
       return true;
     }
-    case GET_CURRENCIES: {
-      core::json::Buffer buffer{decode_buffer_};
-      json::Currencies currencies{value, buffer};
-      Trace event{trace_info, currencies};
-      (*this)(event);
-      return true;
-    }
-    case GET_INSTRUMENTS: {
-      profile_.instruments([&]() {
-        std::vector<Symbol> symbols;
-        for (auto item : std::get<core::json::Array>(value)) {
-          core::json::Buffer buffer{decode_buffer_};
-          json::Instrument instrument{item, buffer};
-          Trace event{trace_info, instrument};
-          auto discard = (*this)(event);
-          if (!discard && shared_.all_symbols.emplace(instrument.instrument_name).second) {
-            symbols.emplace_back(instrument.instrument_name);
-          }
-        }
-        download_.check(WebSocketState::INSTRUMENTS);
-        if (!std::empty(symbols)) {
-          auto symbols_update = SymbolsUpdate{
-              .symbols = symbols,
-          };
-          handler_(symbols_update);
-        }
-      });
-      return true;
-    }
     case SUBSCRIBE_PLATFORM_STATE:
     case SUBSCRIBE_INSTRUMENT_STATE:
     case SUBSCRIBE_QUOTE:
@@ -543,135 +451,6 @@ void WebSocket::operator()(Trace<json::Auth> const &event) {
     (*this)(ConnectionStatus::DOWNLOADING);
     download_.begin();
   });
-}
-
-void WebSocket::operator()(Trace<json::Currencies> const &event) {
-  profile_.currencies([&]() {
-    if (!master_) {
-      log::fatal("Unexpected"sv);
-    }
-    auto &[trace_info, currencies] = event;
-    log::info<2>("currencies={}"sv, currencies);
-    (*connection_).touch(trace_info.source_receive_time);
-    auto &data = currencies.data;
-    std::vector<std::string> tmp;
-    if (!std::empty(data)) {
-      tmp.reserve(std::size(data));
-    }
-    for (auto &item : data) {
-      auto &currency = item.currency;
-      if (!std::empty(shared_.settings.misc.test_filter_currencies)) {  // XXX FIXME TODO HANS work-around
-        auto found = false;
-        for (auto &item : shared_.settings.misc.test_filter_currencies) {
-          if (item == currency) {
-            found = true;
-          }
-        }
-        log::warn(R"(DEBUG check currency="{}", found={})"sv, currency, found);
-        if (!found) {
-          continue;
-        }
-      }
-      if (shared_.all_currencies.emplace(currency).second) {
-        tmp.emplace_back(currency);
-      }
-    }
-    download_.check(WebSocketState::CURRENCIES);
-    if (!std::empty(tmp)) {
-      auto currencies_update = CurrenciesUpdate{
-          .currencies = tmp,
-      };
-      handler_(currencies_update);
-    }
-    for (auto &item : shared_.all_currencies) {
-      log::warn(R"(DEBUG currency="{}")"sv, item);
-    }
-  });
-}
-
-bool WebSocket::operator()(Trace<json::Instrument> const &event) {
-  if (!master_) {
-    log::fatal("Unexpected"sv);
-  }
-  auto &[trace_info, instrument] = event;
-  (*connection_).touch(trace_info.source_receive_time);
-  log::info<2>("instrument={}"sv, instrument);
-  auto &symbol = instrument.instrument_name;
-  assert(!std::empty(symbol));
-  auto discard = shared_.discard_symbol(symbol);
-  // needed by multicast
-  auto multiplier = compute_contracts_multiplier(instrument.contract_size);
-  auto callback = [&]() -> Instrument {
-    if (!discard) {
-      log::debug(
-          R"(CREATE instrument_id={}, instrument_name="{}", contract_size={}, multiplier={})"sv,
-          instrument.instrument_id,
-          instrument.instrument_name,
-          instrument.contract_size,
-          multiplier);
-    }
-    return {
-        instrument.instrument_name,
-        instrument.contract_size,
-        multiplier,
-        discard,
-    };
-  };
-  shared_.maybe_create_instrument(instrument.instrument_id, callback);
-  if (!shared_.settings.misc.use_fix_reference_data) {
-    auto security_type = to_security_type(instrument.kind, instrument.instrument_type, instrument.settlement_period);
-    auto min_trade_vol = instrument.min_trade_amount / instrument.contract_size;
-    auto trade_vol_step_size = instrument.min_trade_amount / instrument.contract_size;
-    auto option_type = to_option_type(instrument.option_type);
-    shared_.tick_size_steps.clear();
-    for (auto &item : instrument.tick_size_steps) {
-      auto tick_size_step = TickSizeStep{
-          .min_price = item.above_price,
-          .tick_size = item.tick_size,
-      };
-      shared_.tick_size_steps.emplace_back(tick_size_step);  // XXX FIXME std::move
-    }
-    auto reference_data = ReferenceData{
-        .stream_id = stream_id_,
-        .exchange = shared_.settings.exchange,
-        .symbol = symbol,
-        .description = {},
-        .security_type = security_type,
-        .cfi_code = {},
-        .base_currency = instrument.base_currency,
-        .quote_currency = instrument.quote_currency,
-        .settlement_currency = instrument.settlement_currency,
-        .margin_currency = {},
-        .commission_currency = {},
-        .tick_size = instrument.tick_size,
-        .tick_size_steps = shared_.tick_size_steps,
-        .multiplier = instrument.contract_size,
-        .min_notional = NaN,
-        .min_trade_vol = min_trade_vol,
-        .max_trade_vol = NaN,
-        .trade_vol_step_size = trade_vol_step_size,
-        .option_type = option_type,
-        .strike_currency = {},  // XXX FIXME TODO we had this from FIX
-        .strike_price = instrument.strike,
-        .underlying = instrument.price_index,
-        .time_zone = {},
-        .issue_date = utils::safe_cast{instrument.creation_timestamp},
-        .settlement_date = {},
-        .expiry_datetime = {},
-        .expiry_datetime_utc = utils::safe_cast{instrument.expiration_timestamp},
-        .exchange_time_utc = {},
-        .exchange_sequence = {},
-        .sending_time_utc = {},
-        .discard = discard,
-    };
-    create_trace_and_dispatch(handler_, trace_info, reference_data, true);
-  }
-  if (!discard) {
-    // cache multiplier so Quote (amount) can be converted to TopOfBook (lots)
-    // note! the multiplier is only cached on startup!
-    shared_.multiplier[symbol] = multiplier;
-  }
-  return discard;
 }
 
 void WebSocket::operator()(Trace<json::Positions> const &) {

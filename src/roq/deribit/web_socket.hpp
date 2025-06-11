@@ -26,12 +26,11 @@
 #include "roq/server.hpp"
 
 #include "roq/deribit/account.hpp"
+#include "roq/deribit/request.hpp"
 #include "roq/deribit/shared.hpp"
 #include "roq/deribit/web_socket_state.hpp"
 
 #include "roq/deribit/json/auth.hpp"
-#include "roq/deribit/json/currencies.hpp"
-#include "roq/deribit/json/instrument.hpp"
 #include "roq/deribit/json/parser.hpp"
 #include "roq/deribit/json/positions.hpp"
 #include "roq/deribit/json/ticker.hpp"
@@ -40,12 +39,6 @@ namespace roq {
 namespace deribit {
 
 struct WebSocket final : public web::socket::Client::Handler, public core::jsonrpc::Parser::Handler, public json::Parser::Handler {
-  struct CurrenciesUpdate final {
-    std::vector<std::string> &currencies;
-  };
-  struct SymbolsUpdate final {
-    std::vector<Symbol> &symbols;
-  };
   struct Latch final {};
 
   struct Handler {
@@ -55,12 +48,10 @@ struct WebSocket final : public web::socket::Client::Handler, public core::jsonr
     virtual void operator()(Trace<TopOfBook> const &, bool is_last) = 0;
     virtual void operator()(Trace<MarketStatus> const &, bool is_last) = 0;
     // cross-communication
-    virtual void operator()(CurrenciesUpdate &) = 0;
-    virtual void operator()(SymbolsUpdate &) = 0;
     virtual void operator()(Latch const &) = 0;
   };
 
-  WebSocket(Handler &, io::Context &, uint16_t stream_id, Account &, Shared &, size_t index, bool master);
+  WebSocket(Handler &, io::Context &, uint16_t stream_id, Account &, Shared &, Request &, size_t index, bool master);
 
   WebSocket(WebSocket const &) = delete;
 
@@ -90,11 +81,11 @@ struct WebSocket final : public web::socket::Client::Handler, public core::jsonr
 
   uint32_t download(WebSocketState);
 
-  uint32_t download_currencies();
-  uint32_t download_instruments();
+  void download_currencies();
+  void check_currencies();
 
-  void get_currencies();
-  void get_instruments(std::string_view const &currency);
+  void download_instruments();
+  void check_instruments();
 
   void subscribe_platform_state();
   void subscribe_instrument_state();
@@ -112,8 +103,6 @@ struct WebSocket final : public web::socket::Client::Handler, public core::jsonr
 
   void operator()(Trace<json::Auth> const &);
 
-  void operator()(Trace<json::Currencies> const &);
-  bool operator()(Trace<json::Instrument> const &);
   void operator()(Trace<json::Positions> const &);
 
   // public:
@@ -177,6 +166,8 @@ struct WebSocket final : public web::socket::Client::Handler, public core::jsonr
   core::Download<WebSocketState> download_;
   // queue
   core::TimerQueue<std::string> subscribe_queue_;
+  //
+  Request &request_;
 };
 
 }  // namespace deribit

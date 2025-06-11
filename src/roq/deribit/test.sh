@@ -12,6 +12,7 @@ URI="test.deribit.com"
 
 FIX_URI="tcp://$URI:9881"
 WS_URI="wss://$URI/ws/api/v2"
+REST_URI="https://$URI"
 
 KERNEL="$(uname -a)"
 
@@ -58,6 +59,7 @@ $PREFIX "./roq-deribit" \
   --service_listen_address "unix://$HOME/run/metrics/$NAME.sock" \
   --fix_uri "$FIX_URI" \
   --ws_uri "$WS_URI" \
+  --rest_uri "$REST_URI" \
   --cache_all_reference_data=true \
   --download_trades_lookback=5m \
   --download_trades_lookback_on_restart=24h \

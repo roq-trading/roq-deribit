@@ -410,8 +410,6 @@ bool DropCopy::operator()(Trace<core::jsonrpc::Result> const &event, core::json:
       (*this)(event);
       return true;
     }
-    case GET_CURRENCIES:
-    case GET_INSTRUMENTS:
     case SUBSCRIBE_PLATFORM_STATE:
     case SUBSCRIBE_INSTRUMENT_STATE:
     case SUBSCRIBE_QUOTE:

@@ -10,6 +10,7 @@ URI="deribit.com"
 
 FIX_URI="tcp://www.$URI:9881"
 WS_URI="wss://www.$URI/ws/api/v2"
+REST_URI="https://www.$URI"
 
 # debug?
 
@@ -40,5 +41,6 @@ $PREFIX "./roq-deribit" \
   --service_listen_address "$HOME/run/metrics/${NAME}.sock" \
   --fix_uri "$FIX_URI" \
   --ws_uri "$WS_URI" \
+  --rest_uri "$REST_URI" \
   --cache_all_reference_data true \
   $@

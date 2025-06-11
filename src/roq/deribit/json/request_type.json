@@ -6,12 +6,6 @@
       "name": "auth"
     },
     {
-      "name": "get_currencies"
-    },
-    {
-      "name": "get_instruments"
-    },
-    {
       "name": "subscribe_platform_state"
     },
     {

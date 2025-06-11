@@ -37,12 +37,6 @@
       "name": "use_fix_reference_data",
       "type": "std/bool",
       "description": "Revert to using FIX to get ReferenceData?"
-    },
-    {
-      "name": "test_filter_currencies",
-      "type": "std/string",
-      "array": "std/vector",
-      "description": "Currency work-around"
     }
   ]
 }
