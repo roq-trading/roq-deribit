@@ -796,6 +796,12 @@ void OrderEntry::operator()(Trace<fix::ExecutionReport> const &event, roq::fix::
   auto side = map(execution_report.side);
   auto order_status = map(execution_report.ord_status);
   auto order_type = map(execution_report.ord_type);
+  auto average_traded_price = [&]() {
+    if (std::isnan(execution_report.cum_qty) || utils::is_zero(execution_report.cum_qty)) {
+      return NaN;
+    }
+    return execution_report.avg_px;
+  }();
   auto liquidity_ind = find_liquidity_ind(execution_report.no_fills);
   auto last_liquidity = map(liquidity_ind);
   auto request_type = compute_request_type(exec_type, ord_status);
@@ -827,7 +833,7 @@ void OrderEntry::operator()(Trace<fix::ExecutionReport> const &event, roq::fix::
       .margin_mode = {},
       .max_show_quantity = execution_report.max_show,
       .order_type = order_type,
-      .time_in_force = {},
+      .time_in_force = TimeInForce::GTC,  // note! can't download + Deribit's NewOrderSingle default is GTC
       .execution_instructions = {},
       .create_time_utc = {},
       .update_time_utc = execution_report.transact_time,
@@ -840,7 +846,7 @@ void OrderEntry::operator()(Trace<fix::ExecutionReport> const &event, roq::fix::
       .stop_price = execution_report.stop_px,
       .remaining_quantity = execution_report.leaves_qty,
       .traded_quantity = execution_report.cum_qty,
-      .average_traded_price = execution_report.avg_px,
+      .average_traded_price = average_traded_price,
       .last_traded_quantity = last_traded_quantity,
       .last_traded_price = last_traded_price,
       .last_liquidity = last_liquidity,
