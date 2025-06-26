@@ -13,6 +13,9 @@
     },
     {
       "name": "month"
+    },
+    {
+      "name": "hour"
     }
   ]
 }

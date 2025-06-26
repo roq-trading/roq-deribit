@@ -109,6 +109,7 @@ auto to_security_type(auto kind, [[maybe_unused]] auto instrument_type, auto set
         case DAY:
         case WEEK:
         case MONTH:
+        case HOUR:
           return SecurityType::FUTURES;
       }
       break;
