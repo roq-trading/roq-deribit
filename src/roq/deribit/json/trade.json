@@ -120,6 +120,10 @@
     {
       "name": "contracts",
       "type": "std/double"
+    },
+    {
+      "name": "user_id",
+      "type": "std/uint32"
     }
   ]
 }

@@ -884,9 +884,11 @@ void OrderEntry::operator()(Trace<fix::ExecutionReport> const &event, roq::fix::
           .quantity = item.fill_qty,
           .price = item.fill_px,
           .liquidity = liquidity,
-          .quote_quantity = NaN,
-          .commission_quantity = NaN,  // note! we only have it per TRADE
+          .base_amount = NaN,
+          .quote_amount = NaN,
+          .commission_amount = NaN,  // note! we only have it per TRADE
           .commission_currency = {},
+          .profit_loss_amount = NaN,
       };
       fills.emplace_back(fill);  // XXX FIXME std::move
     }
