@@ -878,6 +878,8 @@ void OrderEntry::operator()(Trace<fix::ExecutionReport> const &event, roq::fix::
     auto &fills = shared_.get_fills();
     for (auto &item : execution_report.no_fills) {
       auto liquidity = map(item.fill_liquidity_ind);
+      auto ref_data = shared_.get_ref_data(shared_.settings.exchange, execution_report.symbol);
+      auto profit_loss_cost_amount = utils::compute_profit_loss_cost_amount(side, item.fill_qty, item.fill_px, ref_data.multiplier);
       auto fill = Fill{
           .exchange_time_utc = execution_report.transact_time,
           .external_trade_id = item.fill_exec_id,
@@ -888,8 +890,9 @@ void OrderEntry::operator()(Trace<fix::ExecutionReport> const &event, roq::fix::
           .quote_amount = NaN,
           .commission_amount = NaN,  // note! we only have it per TRADE
           .commission_currency = {},
-          .profit_loss_cost_amount = NaN,
+          .profit_loss_cost_amount = profit_loss_cost_amount,
       };
+      log::debug("fill={}"sv, fill);
       fills.emplace_back(fill);  // XXX FIXME std::move
     }
     assert(!std::empty(fills));

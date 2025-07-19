@@ -4,6 +4,7 @@
 
 #include "roq/mask.hpp"
 
+#include "roq/utils/common.hpp"
 #include "roq/utils/compare.hpp"
 #include "roq/utils/safe_cast.hpp"
 #include "roq/utils/update.hpp"
@@ -543,8 +544,13 @@ void DropCopy::operator()(Trace<json::Trade> const &event, bool is_download, boo
   if (iter == std::end(shared_.multiplier)) {
     log::warn(R"(*** NO MULTIPLIER FOR SYMBOL="{}" ***)"sv, trade.instrument_name);
   }
+  // XXX warning ... cached multiplier is 1/x of ref_data
   auto multiplier = iter == std::end(shared_.multiplier) ? 1.0 : (*iter).second;  // XXX not good
   auto quantity = trade.amount * multiplier;
+  auto side = map(trade.direction).template get<Side>();
+  auto ref_data = shared_.get_ref_data(shared_.settings.exchange, trade.instrument_name);
+  log::debug("multiplier: cached={}, ref_data={}"sv, multiplier, ref_data.multiplier);
+  auto profit_loss_cost_amount = utils::compute_profit_loss_cost_amount(side, quantity, trade.price, ref_data.multiplier);
   auto fill = Fill{
       .exchange_time_utc = trade.timestamp,
       .external_trade_id = {},
@@ -555,8 +561,9 @@ void DropCopy::operator()(Trace<json::Trade> const &event, bool is_download, boo
       .quote_amount = NaN,  // XXX TODO spot?
       .commission_amount = trade.fee,
       .commission_currency = trade.fee_currency,
-      .profit_loss_cost_amount = NaN,
+      .profit_loss_cost_amount = profit_loss_cost_amount,
   };
+  log::debug("fill={}"sv, fill);
   // note! this is consistent with FIX (there is also a trade_id field, but it's not consistent)
   fmt::format_to(std::back_inserter(fill.external_trade_id), "{}#{}"sv, trade.instrument_name, trade.trade_seq);
   auto update_type = is_download ? UpdateType::SNAPSHOT : UpdateType::INCREMENTAL;
@@ -566,7 +573,7 @@ void DropCopy::operator()(Trace<json::Trade> const &event, bool is_download, boo
       .order_id = {},
       .exchange = shared_.settings.exchange,
       .symbol = trade.instrument_name,
-      .side = map(trade.direction),
+      .side = side,
       .position_effect = {},
       .margin_mode = {},
       .create_time_utc = trade.timestamp,
