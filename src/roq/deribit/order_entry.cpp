@@ -886,10 +886,10 @@ void OrderEntry::operator()(Trace<fix::ExecutionReport> const &event, roq::fix::
           .quantity = item.fill_qty,
           .price = item.fill_px,
           .liquidity = liquidity,
-          .base_amount = NaN,
-          .quote_amount = NaN,
           .commission_amount = NaN,  // note! we only have it per TRADE
           .commission_currency = {},
+          .base_amount = NaN,
+          .quote_amount = NaN,
           .profit_loss_amount = profit_loss_amount,
       };
       log::debug("fill={}"sv, fill);

@@ -556,10 +556,10 @@ void DropCopy::operator()(Trace<json::Trade> const &event, bool is_download, boo
       .quantity = quantity,
       .price = trade.price,
       .liquidity = map(trade.liquidity),
-      .base_amount = NaN,   // XXX TODO spot?
-      .quote_amount = NaN,  // XXX TODO spot?
       .commission_amount = trade.fee,
       .commission_currency = trade.fee_currency,
+      .base_amount = NaN,   // XXX TODO spot?
+      .quote_amount = NaN,  // XXX TODO spot?
       .profit_loss_amount = profit_loss_amount,
   };
   log::debug("fill={}"sv, fill);
