@@ -876,9 +876,9 @@ void OrderEntry::operator()(Trace<fix::ExecutionReport> const &event, roq::fix::
   }
   if (!std::empty(execution_report.no_fills)) {
     auto &fills = shared_.get_fills();
+    auto ref_data = shared_.get_ref_data(shared_.settings.exchange, execution_report.symbol);
     for (auto &item : execution_report.no_fills) {
       auto liquidity = map(item.fill_liquidity_ind);
-      auto ref_data = shared_.get_ref_data(shared_.settings.exchange, execution_report.symbol);
       auto profit_loss_cost_amount = utils::compute_profit_loss_cost_amount(side, item.fill_qty, item.fill_px, ref_data.multiplier);
       auto fill = Fill{
           .exchange_time_utc = execution_report.transact_time,

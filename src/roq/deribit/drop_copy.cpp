@@ -537,8 +537,7 @@ void DropCopy::operator()(Trace<json::Trades2> const &event) {
 // XXX maybe drop this an aggregate by order?
 // note! trade.label might be our ClOrdID
 void DropCopy::operator()(Trace<json::Trade> const &event, bool is_download, bool is_last) {
-  auto &trace_info = event.trace_info;
-  auto &trade = event.value;
+  auto &[trace_info, trade] = event;
   log::info<1>("trade={}"sv, trade);
   auto iter = shared_.multiplier.find(trade.instrument_name);
   if (iter == std::end(shared_.multiplier)) {
@@ -549,8 +548,8 @@ void DropCopy::operator()(Trace<json::Trade> const &event, bool is_download, boo
   auto quantity = trade.amount * multiplier;
   auto side = map(trade.direction).template get<Side>();
   auto ref_data = shared_.get_ref_data(shared_.settings.exchange, trade.instrument_name);
-  log::debug("multiplier: cached={}, ref_data={}"sv, multiplier, ref_data.multiplier);
   auto profit_loss_cost_amount = utils::compute_profit_loss_cost_amount(side, quantity, trade.price, ref_data.multiplier);
+  log::debug("multiplier: cached={}, ref_data={}"sv, multiplier, ref_data.multiplier);
   auto fill = Fill{
       .exchange_time_utc = trade.timestamp,
       .external_trade_id = {},
