@@ -548,7 +548,7 @@ void DropCopy::operator()(Trace<json::Trade> const &event, bool is_download, boo
   auto quantity = trade.amount * multiplier;
   auto side = map(trade.direction).template get<Side>();
   auto ref_data = shared_.get_ref_data(shared_.settings.exchange, trade.instrument_name);
-  auto profit_loss_cost_amount = utils::compute_profit_loss_cost_amount(side, quantity, trade.price, ref_data.multiplier);
+  auto profit_loss_amount = utils::compute_profit_loss_amount(side, quantity, trade.price, ref_data.multiplier);
   log::debug("multiplier: cached={}, ref_data={}"sv, multiplier, ref_data.multiplier);
   auto fill = Fill{
       .exchange_time_utc = trade.timestamp,
@@ -560,7 +560,7 @@ void DropCopy::operator()(Trace<json::Trade> const &event, bool is_download, boo
       .quote_amount = NaN,  // XXX TODO spot?
       .commission_amount = trade.fee,
       .commission_currency = trade.fee_currency,
-      .profit_loss_cost_amount = profit_loss_cost_amount,
+      .profit_loss_amount = profit_loss_amount,
   };
   log::debug("fill={}"sv, fill);
   // note! this is consistent with FIX (there is also a trade_id field, but it's not consistent)
