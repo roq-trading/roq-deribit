@@ -43,4 +43,6 @@ $PREFIX "./roq-deribit" \
   --ws_uri "$WS_URI" \
   --rest_uri "$REST_URI" \
   --cache_all_reference_data true \
+  --enable_time_series=true \
+  --time_series_lookback=168h \
   $@
