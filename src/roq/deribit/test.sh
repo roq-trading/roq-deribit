@@ -74,6 +74,5 @@ $PREFIX "./roq-deribit" \
   --cache_database_name "roq" \
   --fix_cancel_on_disconnect=false \
   --enable_portfolio=true \
-  --enable_time_series=true \
   --time_series_lookback=168h \
   $@
