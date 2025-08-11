@@ -104,6 +104,7 @@ WebSocket::WebSocket(Handler &handler, io::Context &context, uint16_t stream_id,
           .instruments = create_metrics(shared.settings, name_, "instruments"sv),
           .quote = create_metrics(shared.settings, name_, "quote"sv),
           .ticker = create_metrics(shared.settings, name_, "ticker"sv),
+          .chart_trades = create_metrics(shared.settings, name_, "chart_trades"sv),
       },
       latency_{
           .ping = create_metrics(shared.settings, name_, "ping"sv),
@@ -139,6 +140,7 @@ void WebSocket::operator()(metrics::Writer &writer) const {
       .write(profile_.instruments, metrics::Type::PROFILE)
       .write(profile_.quote, metrics::Type::PROFILE)
       .write(profile_.ticker, metrics::Type::PROFILE)
+      .write(profile_.chart_trades, metrics::Type::PROFILE)
       .write(latency_.ping, metrics::Type::LATENCY)
       .write(latency_.heartbeat, metrics::Type::LATENCY);
 }
@@ -337,6 +339,9 @@ void WebSocket::subscribe(std::span<Symbol const> const &symbols) {
     subscribe_quote(symbols);
   }
   subscribe_ticker(symbols);
+  if (shared_.settings.download.time_series_lookback.count()) {
+    subscribe_chart_trades(symbols);
+  }
 }
 
 void WebSocket::subscribe_quote(std::span<Symbol const> const &symbols) {
@@ -365,6 +370,25 @@ void WebSocket::subscribe_ticker(std::span<Symbol const> const &symbols) {
       R"("method":"public/subscribe",)"
       R"("params":{{)"
       R"("channels":["ticker.{}.{}"])"
+      R"(}},)"
+      R"("id":"{}")"
+      R"(}})"sv,
+      fmt::join(symbols, separator),
+      interval,
+      request_type.as_raw_text());
+  subscribe_queue_.emplace_back(message);
+}
+
+void WebSocket::subscribe_chart_trades(std::span<Symbol const> const &symbols) {
+  assert(!std::empty(symbols));
+  json::RequestType const request_type = json::RequestType::SUBSCRIBE_CHART_TRADES;
+  auto interval = 1;  // 1 min
+  auto separator = fmt::format(R"(.{}","chart.trades.)"sv, interval);
+  auto message = fmt::format(
+      R"({{)"
+      R"("method":"public/subscribe",)"
+      R"("params":{{)"
+      R"("channels":["chart.trades.{}.{}"])"
       R"(}},)"
       R"("id":"{}")"
       R"(}})"sv,
@@ -415,6 +439,7 @@ bool WebSocket::operator()(Trace<core::jsonrpc::Result> const &event, core::json
     case SUBSCRIBE_INSTRUMENT_STATE:
     case SUBSCRIBE_QUOTE:
     case SUBSCRIBE_TICKER:
+    case SUBSCRIBE_CHART_TRADES:
       return true;  // note! no need to parse
     case SUBSCRIBE_PORTFOLIO:
     case SUBSCRIBE_CHANGES:
@@ -525,6 +550,11 @@ void WebSocket::operator()(Trace<json::Ticker> const &event) {
       create_trace_and_dispatch(handler_, trace_info, market_status, true);
     }
   });
+}
+
+void WebSocket::operator()(Trace<json::ChartTrades> const &event, std::string_view const &symbol, uint32_t interval) {
+  auto &[trace_info, chart_trades] = event;
+  log::info(R"(chart_trades={}, symbol="{}", interval={})"sv, chart_trades, symbol, interval);
 }
 
 void WebSocket::operator()(Trace<json::Portfolio> const &) {

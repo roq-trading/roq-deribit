@@ -15,6 +15,19 @@
       "type": "std/nanoseconds",
       "validator": "roq/flags/validators/TimePeriod",
       "description": "Lookback period when downloading trades (initial download)"
+    },
+    {
+      "name": "time_series_lookback",
+      "type": "std/milliseconds",
+      "validator": "roq/flags/validators/TimePeriod",
+      "default": "0s",
+      "description": "Lookback period when downloading time-series"
+    },
+    {
+      "name": "time_series_limit",
+      "type": "std/uint32",
+      "default": 1000,
+      "description": "Maximum number of bars per response (exchange limit)"
     }
   ]
 }

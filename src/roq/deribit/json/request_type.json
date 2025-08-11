@@ -18,6 +18,9 @@
       "name": "subscribe_ticker"
     },
     {
+      "name": "subscribe_chart_trades"
+    },
+    {
       "name": "subscribe_portfolio"
     },
     {

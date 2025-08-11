@@ -94,6 +94,7 @@ struct WebSocket final : public web::socket::Client::Handler, public core::jsonr
 
   void subscribe_quote(std::span<Symbol const> const &symbols);
   void subscribe_ticker(std::span<Symbol const> const &symbols);
+  void subscribe_chart_trades(std::span<Symbol const> const &symbols);
 
   void parse(std::string_view const &message);
 
@@ -110,6 +111,7 @@ struct WebSocket final : public web::socket::Client::Handler, public core::jsonr
   void operator()(Trace<json::InstrumentState> const &) override;
   void operator()(Trace<json::Quote> const &) override;
   void operator()(Trace<json::Ticker> const &) override;
+  void operator()(Trace<json::ChartTrades> const &, std::string_view const &symbol, uint32_t interval) override;
   // private:
   void operator()(Trace<json::Portfolio> const &) override;
   void operator()(Trace<json::Changes> const &) override;
@@ -149,7 +151,7 @@ struct WebSocket final : public web::socket::Client::Handler, public core::jsonr
     utils::metrics::Counter disconnect;
   } counter_;
   struct {
-    utils::metrics::Profile parse, auth, currencies, instruments, quote, ticker;
+    utils::metrics::Profile parse, auth, currencies, instruments, quote, ticker, chart_trades;
   } profile_;
   struct {
     utils::metrics::Latency ping, heartbeat;

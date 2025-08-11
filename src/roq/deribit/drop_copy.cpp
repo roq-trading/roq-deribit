@@ -415,6 +415,7 @@ bool DropCopy::operator()(Trace<core::jsonrpc::Result> const &event, core::json:
     case SUBSCRIBE_INSTRUMENT_STATE:
     case SUBSCRIBE_QUOTE:
     case SUBSCRIBE_TICKER:
+    case SUBSCRIBE_CHART_TRADES:
       break;  // unexpected
     case SUBSCRIBE_PORTFOLIO:
     case SUBSCRIBE_CHANGES:
@@ -476,6 +477,10 @@ void DropCopy::operator()(Trace<json::Quote> const &) {
 }
 
 void DropCopy::operator()(Trace<json::Ticker> const &) {
+  log::fatal("Unexpected"sv);
+}
+
+void DropCopy::operator()(Trace<json::ChartTrades> const &, [[maybe_unused]] std::string_view const &symbol, [[maybe_unused]] uint32_t interval) {
   log::fatal("Unexpected"sv);
 }
 

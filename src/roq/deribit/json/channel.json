@@ -21,6 +21,9 @@
       "name": "ticker"
     },
     {
+      "name": "chart_trades"
+    },
+    {
       "name": "orders"
     },
     {

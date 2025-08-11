@@ -96,6 +96,7 @@ struct DropCopy final : public web::socket::Client::Handler, public core::jsonrp
   void operator()(Trace<json::InstrumentState> const &) override;
   void operator()(Trace<json::Quote> const &) override;
   void operator()(Trace<json::Ticker> const &) override;
+  void operator()(Trace<json::ChartTrades> const &, std::string_view const &symbol, uint32_t interval) override;
   void operator()(Trace<json::Portfolio> const &) override;
   void operator()(Trace<json::Changes> const &) override;
 

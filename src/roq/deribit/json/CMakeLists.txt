@@ -8,6 +8,7 @@ set(AUTOGEN_SCHEMAS
     auth.json
     changes.json
     channel.json
+    chart_trades.json
     combo_state.json
     currencies.json
     currency.json

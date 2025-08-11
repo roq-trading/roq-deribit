@@ -16,6 +16,7 @@ struct MyHandler : public json::Parser::Handler {
   void operator()(Trace<json::InstrumentState> const &) override {}
   void operator()(Trace<json::Quote> const &) override {}
   void operator()(Trace<json::Ticker> const &) override {}
+  void operator()(Trace<json::ChartTrades> const &, [[maybe_unused]] std::string_view const &symbol, [[maybe_unused]] uint32_t interval) override {}
   void operator()(Trace<json::Portfolio> const &) override {}
   void operator()(Trace<json::Changes> const &) override {}
   void operator()(Trace<json::Order> const &) override {}
