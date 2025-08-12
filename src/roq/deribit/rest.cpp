@@ -532,7 +532,7 @@ void Rest::operator()(Trace<json::ChartData> const &event, std::string_view cons
   for (size_t i = 0; i < length; ++i) {
     auto begin_time_utc = std::chrono::milliseconds{chart_data.ticks[i]};
     auto bar = Bar{
-        .begin_time_utc = begin_time_utc,
+        .begin_time_utc = utils::safe_cast(begin_time_utc),
         .confirmed = true,
         .open_price = chart_data.open[i],
         .high_price = chart_data.high[i],
