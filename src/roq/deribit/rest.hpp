@@ -19,6 +19,7 @@
 #include "roq/deribit/request.hpp"
 #include "roq/deribit/shared.hpp"
 
+#include "roq/deribit/json/chart_data.hpp"
 #include "roq/deribit/json/currency.hpp"
 #include "roq/deribit/json/instrument.hpp"
 
@@ -38,6 +39,7 @@ struct Rest final : public web::rest::Client::Handler {
     virtual void operator()(Trace<StreamStatus> const &) = 0;
     virtual void operator()(Trace<ExternalLatency> const &) = 0;
     virtual void operator()(Trace<ReferenceData> const &, bool is_last) = 0;
+    virtual void operator()(Trace<TimeSeriesUpdate> const &, bool is_last) = 0;
     // cross-communication
     virtual void operator()(CurrenciesUpdate &) = 0;
     virtual void operator()(SymbolsUpdate &) = 0;
@@ -74,6 +76,12 @@ struct Rest final : public web::rest::Client::Handler {
   void get_instruments_ack(Trace<web::rest::Response> const &);
   bool operator()(Trace<json::Instrument> const &);
 
+  void get_chart_data(std::string_view const &symbol);
+  void get_chart_data_ack(Trace<web::rest::Response> const &, std::string_view const &symbol);
+  void operator()(Trace<json::ChartData> const &, std::string_view const &symbol);
+
+  void check_request_queue(std::chrono::nanoseconds now);
+
   template <typename SuccessHandler, typename ErrorHandler>
   void process_response(web::rest::Response const &, SuccessHandler, ErrorHandler);
 
@@ -91,7 +99,7 @@ struct Rest final : public web::rest::Client::Handler {
     utils::metrics::Counter disconnect;
   } counter_;
   struct {
-    utils::metrics::Profile get_instruments, get_instruments_ack;
+    utils::metrics::Profile get_currencies, get_currencies_ack, get_instruments, get_instruments_ack, chart_data, chart_data_ack;
   } profile_;
   struct {
     utils::metrics::Latency ping;

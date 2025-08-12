@@ -19,6 +19,7 @@ set(SOURCES
     fix_reject.cpp
     fix_security_list.cpp
     fix_user_response.cpp
+    json_chart_data.cpp
     json_currencies.cpp
     json_instruments.cpp
     json_subscription.cpp

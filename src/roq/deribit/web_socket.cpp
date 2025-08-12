@@ -396,6 +396,9 @@ void WebSocket::subscribe_chart_trades(std::span<Symbol const> const &symbols) {
       interval,
       request_type.as_raw_text());
   subscribe_queue_.emplace_back(message);
+  for (auto &symbol : symbols) {
+    shared_.time_series_request_queue.emplace_back(symbol);
+  }
 }
 
 void WebSocket::parse(std::string_view const &message) {

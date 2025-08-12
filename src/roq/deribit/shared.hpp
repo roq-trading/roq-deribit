@@ -12,6 +12,7 @@
 #include "roq/utils/container.hpp"
 
 #include "roq/core/symbols.hpp"
+#include "roq/core/timer_queue.hpp"
 
 #include "roq/core/limit/rate_limiter.hpp"
 
@@ -132,6 +133,10 @@ struct Shared final {
   sbe::Config const sbe_config;
 
   std::vector<TickSizeStep> tick_size_steps;
+
+  core::TimerQueue<std::string> time_series_request_queue;
+
+  std::vector<Bar> bars;
 };
 
 }  // namespace deribit

@@ -149,8 +149,12 @@ Rest::Rest(Handler &handler, io::Context &context, uint16_t stream_id, Shared &s
           .disconnect = create_metrics(shared.settings, name_, "disconnect"sv),
       },
       profile_{
+          .get_currencies = create_metrics(shared.settings, name_, "get_currencies"sv),
+          .get_currencies_ack = create_metrics(shared.settings, name_, "get_currencies_ack"sv),
           .get_instruments = create_metrics(shared.settings, name_, "get_instruments"sv),
           .get_instruments_ack = create_metrics(shared.settings, name_, "get_instruments_ack"sv),
+          .chart_data = create_metrics(shared.settings, name_, "chart_data"sv),
+          .chart_data_ack = create_metrics(shared.settings, name_, "chart_data_ack"sv),
       },
       latency_{
           .ping = create_metrics(shared.settings, name_, "ping"sv),
@@ -167,9 +171,12 @@ void Rest::operator()(Event<Stop> const &) {
 }
 
 void Rest::operator()(Event<Timer> const &event) {
-  auto now = event.value.now;
-  (*connection_).refresh(now);
+  auto &[message_info, timer] = event;
+  (*connection_).refresh(timer.now);
   check_download();
+  if (ready()) {
+    check_request_queue(timer.now);
+  }
 }
 
 void Rest::operator()(metrics::Writer &writer) const {
@@ -177,8 +184,12 @@ void Rest::operator()(metrics::Writer &writer) const {
       // counter
       .write(counter_.disconnect, metrics::Type::COUNTER)
       // profile
+      .write(profile_.get_currencies, metrics::Type::PROFILE)
+      .write(profile_.get_currencies_ack, metrics::Type::PROFILE)
       .write(profile_.get_instruments, metrics::Type::PROFILE)
       .write(profile_.get_instruments_ack, metrics::Type::PROFILE)
+      .write(profile_.chart_data, metrics::Type::PROFILE)
+      .write(profile_.chart_data_ack, metrics::Type::PROFILE)
       // latency
       .write(latency_.ping, metrics::Type::LATENCY);
 }
@@ -453,6 +464,105 @@ bool Rest::operator()(Trace<json::Instrument> const &event) {
     shared_.multiplier[symbol] = multiplier;
   }
   return discard;
+}
+
+// chart data
+
+void Rest::get_chart_data(std::string_view const &symbol) {
+  auto end_time = clock::get_realtime<std::chrono::milliseconds>();
+  auto start_time = end_time - shared_.settings.download.time_series_lookback;
+  auto query = fmt::format(
+      "?instrument_name={}"
+      "&start_timestamp={}"
+      "&end_timestamp={}"
+      "&resolution=1"sv,
+      symbol,
+      start_time.count(),
+      end_time.count());
+  auto request = web::rest::Request{
+      .method = web::http::Method::GET,
+      .path = "/api/v2/public/get_tradingview_chart_data"sv,
+      .query = query,
+      .accept = web::http::Accept::APPLICATION_JSON,
+      .content_type = {},
+      .headers = {},
+      .body = {},
+      .quality_of_service = {},
+  };
+  auto callback = [this, symbol = std::string{symbol}]([[maybe_unused]] auto &request_id, auto &response) {
+    TraceInfo trace_info;
+    Trace event{trace_info, response};
+    get_chart_data_ack(event, symbol);
+  };
+  (*connection_)("get_chart_data"sv, request, callback);
+}
+
+void Rest::get_chart_data_ack(Trace<web::rest::Response> const &event, std::string_view const &symbol) {
+  auto &[trace_info, response] = event;
+  auto handle_success = [&](auto &body) {
+    core::json::Parser parser{body};
+    auto root = parser.root();
+    for (auto [key, value] : std::get<core::json::Object>(root)) {
+      if (key == "result"sv) {
+        core::json::Buffer buffer{decode_buffer_};
+        json::ChartData chart_data{value, buffer};
+        Trace event_2{trace_info, chart_data};
+        (*this)(event_2, symbol);
+      }
+      if (key == "error"sv) {
+        json::Error error{value};
+        log::error("error={}"sv, error);
+      }
+    }
+  };
+  auto handle_error = [&](auto text) {
+    log::error(R"(text="{}")"sv, text);
+    log::warn("Currencies download has FAILED"sv);
+  };
+  process_response(event, handle_success, handle_error);
+}
+
+void Rest::operator()(Trace<json::ChartData> const &event, std::string_view const &symbol) {
+  auto &[trace_info, chart_data] = event;
+  log::info<2>(R"(chart_data={}, symbol="{}")"sv, chart_data, symbol);
+  auto &bars = shared_.bars;
+  bars.clear();
+  auto length = std::size(chart_data.ticks);
+  // TODO check length of arras
+  for (size_t i = 0; i < length; ++i) {
+    auto begin_time_utc = std::chrono::milliseconds{chart_data.ticks[i]};
+    auto bar = Bar{
+        .begin_time_utc = begin_time_utc,
+        .open_price = chart_data.open[i],
+        .high_price = chart_data.high[i],
+        .low_price = chart_data.low[i],
+        .close_price = chart_data.close[i],
+        .quantity = chart_data.volume[i],
+        .base_amount = NaN,
+        .quote_amount = NaN,
+        .number_of_trades = {},
+        .vwap = NaN,
+    };
+    bars.emplace_back(std::move(bar));
+  }
+  auto time_series_update = TimeSeriesUpdate{
+      .stream_id = stream_id_,
+      .exchange = shared_.settings.exchange,
+      .symbol = symbol,
+      .data_source = DataSource::TRADE_SUMMARY,
+      .interval = Interval::_60,
+      .origin = Origin::EXCHANGE,
+      .bars = bars,
+      .update_type = UpdateType::SNAPSHOT,
+      .exchange_time_utc = {},
+  };
+  create_trace_and_dispatch(handler_, trace_info, time_series_update, true);
+}
+
+void Rest::check_request_queue(std::chrono::nanoseconds now) {
+  auto can_request = [&](auto now) { return shared_.rate_limiter.can_request(now); };
+  auto request = [&](auto &symbol) { get_chart_data(symbol); };
+  shared_.time_series_request_queue.dispatch(can_request, request, now);
 }
 
 template <typename SuccessHandler, typename ErrorHandler>
