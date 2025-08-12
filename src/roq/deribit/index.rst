@@ -635,9 +635,10 @@ Comments
 ~~~~~~~~
 
 * The gateway must be restarted at least daily if you use the multicast feed.
-  The reason is the snapshot vs events inconsistency mentioned under the
-  constraints.
+  The reason is the snapshot vs events inconsistency mentioned under the constraints.
   The book effectively becomes more and more *wrong* for big market moves.
+
+* The exchange doesn't notify us with the confirmed bar for time-series data.
 
 
 :code:`roq-deribit-filter`
