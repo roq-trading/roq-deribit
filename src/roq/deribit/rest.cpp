@@ -551,11 +551,11 @@ void Rest::operator()(Trace<json::ChartData> const &event, std::string_view cons
       .exchange = shared_.settings.exchange,
       .symbol = symbol,
       .data_source = DataSource::TRADE_SUMMARY,
-      .interval = Interval::_60,
+      .interval = shared_.settings_time_series_interval,
       .origin = Origin::EXCHANGE,
       .bars = bars,
       .update_type = UpdateType::SNAPSHOT,
-      .exchange_time_utc = {},
+      .exchange_time_utc = {},  // XXX FIXME
   };
   create_trace_and_dispatch(handler_, trace_info, time_series_update, true);
 }
