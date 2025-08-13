@@ -470,7 +470,7 @@ bool Rest::operator()(Trace<json::Instrument> const &event) {
 
 void Rest::get_chart_data(std::string_view const &symbol) {
   auto end_time = clock::get_realtime<std::chrono::milliseconds>();
-  auto start_time = end_time - shared_.settings.download.time_series_lookback;
+  auto start_time = end_time - shared_.settings.time_series.lookback;
   auto query = fmt::format(
       "?instrument_name={}"
       "&start_timestamp={}"
@@ -551,7 +551,7 @@ void Rest::operator()(Trace<json::ChartData> const &event, std::string_view cons
       .exchange = shared_.settings.exchange,
       .symbol = symbol,
       .data_source = DataSource::TRADE_SUMMARY,
-      .interval = shared_.settings_time_series_interval,
+      .interval = shared_.settings.time_series.interval,
       .origin = Origin::EXCHANGE,
       .bars = bars,
       .update_type = UpdateType::SNAPSHOT,

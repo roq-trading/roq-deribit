@@ -56,6 +56,8 @@ auto create_gateway_settings(auto &settings) -> GatewaySettings {
       .oms_download_has_routing_id = {},
       .oms_request_id_type = OMS_REQUEST_ID_TYPE,
       .oms_cancel_all_orders = OMS_CANCEL_ALL_ORDERS,
+      .ts_interval = {},
+      .ts_max_history = {},
   };
 }
 }  // namespace

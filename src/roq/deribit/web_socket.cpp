@@ -339,7 +339,7 @@ void WebSocket::subscribe(std::span<Symbol const> const &symbols) {
     subscribe_quote(symbols);
   }
   subscribe_ticker(symbols);
-  if (shared_.settings.download.time_series_lookback.count()) {
+  if (shared_.settings.download.time_series && shared_.settings.time_series.lookback.count()) {
     subscribe_chart_trades(symbols);
   }
 }
@@ -557,7 +557,7 @@ void WebSocket::operator()(Trace<json::Ticker> const &event) {
 
 void WebSocket::operator()(Trace<json::ChartTrades> const &event, std::string_view const &symbol, uint32_t interval) {
   auto &[trace_info, chart_trades] = event;
-  log::info(R"(chart_trades={}, symbol="{}", interval={})"sv, chart_trades, symbol, interval);
+  log::debug(R"(chart_trades={}, symbol="{}", interval={})"sv, chart_trades, symbol, interval);
 }
 
 void WebSocket::operator()(Trace<json::Portfolio> const &) {

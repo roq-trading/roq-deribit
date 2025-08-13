@@ -115,7 +115,6 @@ struct Shared final {
 
   server::Dispatcher &dispatcher;
   Settings const &settings;
-  Interval const settings_time_series_interval;
 
  private:
   uint32_t request_id_ = 0;
