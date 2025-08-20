@@ -109,6 +109,10 @@
     {
       "name": "user_id",
       "type": "std/uint32"
+    },
+    {
+      "name": "reject_post_only",
+      "type": "std/bool"
     }
   ]
 }
