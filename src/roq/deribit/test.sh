@@ -10,7 +10,7 @@ SECRETS_FILE="$ROQ_CONFIG_PATH/roq-deribit/$CONFIG-secrets.toml"
 
 URI="test.deribit.com"
 
-FIX_URI="tcp://$URI:9881"
+FIX_URI="tcp://fix-$URI:9881"
 WS_URI="wss://$URI/ws/api/v2"
 REST_URI="https://$URI"
 

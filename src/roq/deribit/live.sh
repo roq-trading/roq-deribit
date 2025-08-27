@@ -8,7 +8,7 @@ CONFIG_FILE="$ROQ_CONFIG_PATH/roq-deribit/$CONFIG.toml"
 
 URI="deribit.com"
 
-FIX_URI="tcp://www.$URI:9881"
+FIX_URI="tcp://fix.$URI:9881"
 WS_URI="wss://www.$URI/ws/api/v2"
 REST_URI="https://www.$URI"
 
