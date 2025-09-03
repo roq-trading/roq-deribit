@@ -34,6 +34,8 @@ auto const NAME = "ex"sv;
 auto const SUPPORTS = Mask{
     SupportType::FUNDS,
 };
+
+size_t const MAX_DECODE_BUFFER_DEPTH = 1;
 }  // namespace
 
 // === HELPERS ===
@@ -87,7 +89,7 @@ auto get_download_trades_lookback(auto const &settings, auto download_trades_is_
 
 DropCopy::DropCopy(Handler &handler, io::Context &context, uint16_t stream_id, Account &account, Shared &shared)
     : handler_{handler}, stream_id_{stream_id}, name_{create_name(stream_id_, account.name)}, connection_{create_connection(*this, shared.settings, context)},
-      decode_buffer_(shared.settings.misc.decode_buffer_size),
+      decode_buffer_{shared.settings.misc.decode_buffer_size, MAX_DECODE_BUFFER_DEPTH},
       counter_{
           .disconnect = create_metrics(shared.settings, name_, "disconnect"sv),
       },
@@ -428,8 +430,7 @@ bool DropCopy::operator()(Trace<core::jsonrpc::Result> const &event, core::json:
       return true;
     }
     case GET_TRADES: {
-      core::json::Buffer buffer{decode_buffer_};
-      json::Trades trades{value, buffer};
+      json::Trades trades{value, decode_buffer_};
       create_trace_and_dispatch(*this, trace_info, trades);
       return true;
     }

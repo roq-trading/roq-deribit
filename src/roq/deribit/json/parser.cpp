@@ -85,7 +85,7 @@ auto parse_channel(auto const &name, auto &symbol, auto &interval) -> Channel {
 
 // === IMPLEMENTATION ===
 
-bool Parser::dispatch(Parser::Handler &handler, core::json::Value &value, std::span<std::byte> const &buffer, TraceInfo const &trace_info) {
+bool Parser::dispatch(Parser::Handler &handler, core::json::Value &value, core::json::BufferStack &buffer_stack, TraceInfo const &trace_info) {
   // note! message is nested / channel name is at level 2
   auto message = core::json::get<std::string_view>(value);
   auto channel = Channel::UNDEFINED_INTERNAL;
@@ -115,7 +115,6 @@ bool Parser::dispatch(Parser::Handler &handler, core::json::Value &value, std::s
         }
         case DATA:
           if (channel != Channel::UNDEFINED_INTERNAL) {
-            core::json::Buffer buffer_2{buffer};
             switch (channel) {
               using enum Channel::type_t;
               case UNDEFINED_INTERNAL:
@@ -126,56 +125,56 @@ bool Parser::dispatch(Parser::Handler &handler, core::json::Value &value, std::s
               // public
               case PLATFORM_STATE: {
                 dispatched = true;
-                PlatformState platform_state{value_, buffer_2};
+                PlatformState platform_state{value_, buffer_stack};
                 create_trace_and_dispatch(handler, trace_info, platform_state);
                 break;
               }
               case INSTRUMENT_STATE: {
                 dispatched = true;
-                InstrumentState instrument_state{value_, buffer_2};
+                InstrumentState instrument_state{value_, buffer_stack};
                 create_trace_and_dispatch(handler, trace_info, instrument_state);
                 break;
               }
               case QUOTE: {
                 dispatched = true;
-                Quote quote{value_, buffer_2};
+                Quote quote{value_, buffer_stack};
                 create_trace_and_dispatch(handler, trace_info, quote);
                 break;
               }
               case TICKER: {
                 dispatched = true;
-                Ticker ticker{value_, buffer_2};
+                Ticker ticker{value_, buffer_stack};
                 create_trace_and_dispatch(handler, trace_info, ticker);
                 break;
               }
               case CHART_TRADES: {
                 dispatched = true;
-                ChartTrades chart_trades{value_, buffer_2};
+                ChartTrades chart_trades{value_, buffer_stack};
                 create_trace_and_dispatch(handler, trace_info, chart_trades, symbol, interval);
                 break;
               }
               // private
               case PORTFOLIO: {
                 dispatched = true;
-                Portfolio portfolio{value_, buffer_2};
+                Portfolio portfolio{value_, buffer_stack};
                 create_trace_and_dispatch(handler, trace_info, portfolio);
                 break;
               }
               case CHANGES: {
                 dispatched = true;
-                Changes changes{value_, buffer_2};
+                Changes changes{value_, buffer_stack};
                 create_trace_and_dispatch(handler, trace_info, changes);
                 break;
               }
               case ORDERS: {
                 dispatched = true;
-                Order order{value_, buffer_2};
+                Order order{value_, buffer_stack};
                 create_trace_and_dispatch(handler, trace_info, order);
                 break;
               }
               case TRADES: {
                 dispatched = true;
-                Trades2 trades{value_, buffer_2};
+                Trades2 trades{value_, buffer_stack};
                 create_trace_and_dispatch(handler, trace_info, trades);
                 break;
               }

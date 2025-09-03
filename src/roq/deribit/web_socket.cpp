@@ -33,7 +33,9 @@ namespace deribit {
 
 namespace {
 auto const NAME = "ws"sv;
-}
+
+size_t const MAX_DECODE_BUFFER_DEPTH = 1;
+}  // namespace
 
 // === HELPERS ===
 
@@ -93,7 +95,7 @@ struct create_metrics final : public utils::metrics::Factory {
 WebSocket::WebSocket(Handler &handler, io::Context &context, uint16_t stream_id, Account &account, Shared &shared, Request &request, size_t index, bool master)
     : handler_{handler}, stream_id_{stream_id}, name_{create_name(stream_id_)}, index_{index}, master_{master},
       publish_top_of_book_{publish_top_of_book(shared)}, supports_{get_supports(master_, publish_top_of_book_)},
-      connection_{create_connection(*this, shared.settings, context)}, decode_buffer_(shared.settings.misc.decode_buffer_size),
+      connection_{create_connection(*this, shared.settings, context)}, decode_buffer_{shared.settings.misc.decode_buffer_size, MAX_DECODE_BUFFER_DEPTH},
       counter_{
           .disconnect = create_metrics(shared.settings, name_, "disconnect"sv),
       },

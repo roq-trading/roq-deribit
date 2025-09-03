@@ -6,6 +6,8 @@
 
 #include "roq/trace_info.hpp"
 
+#include "roq/core/json/buffer_stack.hpp"
+
 // public
 #include "roq/deribit/json/ticker.hpp"
 
@@ -38,7 +40,7 @@ struct Parser final {
     virtual void operator()(Trace<Trades2> const &) = 0;
   };
 
-  static bool dispatch(Handler &, core::json::Value &, std::span<std::byte> const &, TraceInfo const &);
+  static bool dispatch(Handler &, core::json::Value &, core::json::BufferStack &, TraceInfo const &);
 };
 
 }  // namespace json

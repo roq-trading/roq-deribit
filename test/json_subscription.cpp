@@ -2,6 +2,8 @@
 
 #include <catch2/catch_all.hpp>
 
+#include "roq/core/json/buffer_stack.hpp"
+
 #include "roq/deribit/json/parser.hpp"
 
 using namespace roq;
@@ -111,7 +113,7 @@ TEST_CASE("json_subscription_parse_message", "[json_subscription]") {
                        R"("ask_iv":500.0)"
                        R"(})"
                        R"(})"sv;
-  std::vector<std::byte> buffer(8192);
+  core::json::BufferStack buffer{8192, 1};
   core::json::Parser parser{message};
   auto root = parser.root();
   MyHandler handler;
