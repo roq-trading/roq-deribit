@@ -2,6 +2,8 @@
 
 #include <catch2/catch_all.hpp>
 
+#include "roq/core/json/buffer_stack.hpp"
+
 #include "roq/deribit/json/trades_2.hpp"
 
 using namespace roq;
@@ -36,7 +38,7 @@ TEST_CASE("json_trades_2_parse_message", "[json_trades_2]") {
                        R"("direction":"buy",)"
                        R"("amount":10.0)"
                        R"(}])"sv;
-  std::vector<std::byte> buffer(8192);
+  core::json::BufferStack buffer{8192, 1};
   json::Trades2 trades{message, buffer};
   CHECK(std::size(trades.data) == 1);
   CHECK(trades.data[0].trade_seq == 52491427);

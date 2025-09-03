@@ -2,6 +2,8 @@
 
 #include <catch2/catch_all.hpp>
 
+#include "roq/core/json/buffer_stack.hpp"
+
 #include "roq/deribit/json/chart_data.hpp"
 
 using namespace roq;
@@ -31,13 +33,12 @@ TEST_CASE("json_chart_data", "[json_chart_data]") {
       R"("jsonrpc":"2.0")"
       R"(})"sv;
 
-  std::vector<std::byte> buffer(32768);
+  core::json::BufferStack buffer{32768, 1};
   core::json::Parser parser(message);
   auto root = parser.root();
   for (auto [key, value] : std::get<core::json::Object>(root)) {
     if (key == "result"sv) {
-      core::json::Buffer buffer_2{buffer};
-      json::ChartData chart_data{value, buffer_2};
+      json::ChartData chart_data{value, buffer};
       CHECK(chart_data.status == "ok"sv);
     }
   }

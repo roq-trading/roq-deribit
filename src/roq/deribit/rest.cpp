@@ -38,6 +38,8 @@ auto const NAME = "rest"sv;
 auto const SUPPORTS = Mask{
     SupportType::REFERENCE_DATA,
 };
+
+size_t const MAX_DECODE_BUFFER_DEPTH = 1;
 }  // namespace
 
 // === HELPERS ===
@@ -144,7 +146,7 @@ auto to_option_type(auto option_type) -> OptionType {
 
 Rest::Rest(Handler &handler, io::Context &context, uint16_t stream_id, Shared &shared, Request &request)
     : handler_{handler}, stream_id_{stream_id}, name_{create_name(stream_id_)}, connection_{create_connection(*this, shared.settings, context)},
-      decode_buffer_(shared.settings.misc.decode_buffer_size),
+      decode_buffer_{shared.settings.misc.decode_buffer_size, MAX_DECODE_BUFFER_DEPTH},
       counter_{
           .disconnect = create_metrics(shared.settings, name_, "disconnect"sv),
       },
@@ -285,8 +287,7 @@ void Rest::get_currencies_ack(Trace<web::rest::Response> const &event) {
     for (auto [key, value] : std::get<core::json::Object>(root)) {
       if (key == "result"sv) {
         for (auto value_2 : std::get<core::json::Array>(value)) {
-          core::json::Buffer buffer{decode_buffer_};
-          json::Currency currency{value_2, buffer};
+          json::Currency currency{value_2, decode_buffer_};
           Trace event_2{trace_info, currency};
           (*this)(event_2);
           // only new
@@ -353,8 +354,7 @@ void Rest::get_instruments_ack(Trace<web::rest::Response> const &event) {
     for (auto [key, value] : std::get<core::json::Object>(root)) {
       if (key == "result"sv) {
         for (auto value_2 : std::get<core::json::Array>(value)) {
-          core::json::Buffer buffer{decode_buffer_};
-          json::Instrument instrument{value_2, buffer};
+          json::Instrument instrument{value_2, decode_buffer_};
           Trace event_2{trace_info, instrument};
           // only new
           auto discard = (*this)(event_2);
@@ -504,8 +504,7 @@ void Rest::get_chart_data_ack(Trace<web::rest::Response> const &event, std::stri
     auto root = parser.root();
     for (auto [key, value] : std::get<core::json::Object>(root)) {
       if (key == "result"sv) {
-        core::json::Buffer buffer{decode_buffer_};
-        json::ChartData chart_data{value, buffer};
+        json::ChartData chart_data{value, decode_buffer_};
         Trace event_2{trace_info, chart_data};
         (*this)(event_2, symbol);
       }
