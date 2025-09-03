@@ -109,7 +109,6 @@ TEST_CASE("sbe_event_1", "[sbe_parser]") {
    protected:
     bool operator()(sbe::Frame const &frame) override {
       ++frame_count_;
-      ;
       CHECK(frame.channel_id == 1);
       CHECK(frame.sequence_number == 50728558);
       return true;
