@@ -1,6 +1,6 @@
 {
   "name": "roq/deribit/json/Position",
-  "type": "item",
+  "type": "dictionary",
   "values": [
     {
       "name": "average_price",

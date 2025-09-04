@@ -1,6 +1,6 @@
 {
   "name": "roq/deribit/json/Trade",
-  "type": "item",
+  "type": "dictionary",
   "values": [
     {
       "name": "amount",

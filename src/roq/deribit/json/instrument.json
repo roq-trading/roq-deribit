@@ -1,6 +1,6 @@
 {
   "name": "roq/deribit/json/Instrument",
-  "type": "comp",
+  "type": "dictionary",
   "values": [
     {
       "name": "base_currency",

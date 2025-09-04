@@ -1,6 +1,6 @@
 {
   "name": "roq/deribit/json/InstrumentState",
-  "type": "item",
+  "type": "dictionary",
   "values": [
     {
       "name": "instrument_name",

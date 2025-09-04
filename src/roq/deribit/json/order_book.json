@@ -1,6 +1,6 @@
 {
   "name": "roq/deribit/json/OrderBook",
-  "type": "item",
+  "type": "dictionary",
   "values": [
     {
       "name": "ask_iv",

@@ -1,6 +1,6 @@
 {
   "name": "roq/deribit/json/Currency",
-  "type": "item",
+  "type": "dictionary",
   "values": [
     {
       "name": "coin_type",
