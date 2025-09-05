@@ -81,6 +81,12 @@ auto parse_channel(auto const &name, auto &symbol, auto &interval) -> Channel {
   }
   return result;
 }
+
+template <typename T, typename... Args>
+void dispatch_helper(auto &handler, auto &value, auto &buffer_stack, auto &trace_info, Args &&...args) {
+  T obj{value, buffer_stack};
+  create_trace_and_dispatch(handler, trace_info, obj, std::forward<Args>(args)...);
+}
 }  // namespace
 
 // === IMPLEMENTATION ===
@@ -123,61 +129,43 @@ bool Parser::dispatch(Parser::Handler &handler, core::json::Value &value, core::
                 log::warn("Unknown channel"sv);
                 return false;
               // public
-              case PLATFORM_STATE: {
+              case PLATFORM_STATE:
                 dispatched = true;
-                PlatformState platform_state{value_, buffer_stack};
-                create_trace_and_dispatch(handler, trace_info, platform_state);
+                dispatch_helper<PlatformState>(handler, value_, buffer_stack, trace_info);
                 break;
-              }
-              case INSTRUMENT_STATE: {
+              case INSTRUMENT_STATE:
                 dispatched = true;
-                InstrumentState instrument_state{value_, buffer_stack};
-                create_trace_and_dispatch(handler, trace_info, instrument_state);
+                dispatch_helper<InstrumentState>(handler, value_, buffer_stack, trace_info);
                 break;
-              }
-              case QUOTE: {
+              case QUOTE:
                 dispatched = true;
-                Quote quote{value_, buffer_stack};
-                create_trace_and_dispatch(handler, trace_info, quote);
+                dispatch_helper<Quote>(handler, value_, buffer_stack, trace_info);
                 break;
-              }
-              case TICKER: {
+              case TICKER:
                 dispatched = true;
-                Ticker ticker{value_, buffer_stack};
-                create_trace_and_dispatch(handler, trace_info, ticker);
+                dispatch_helper<Ticker>(handler, value_, buffer_stack, trace_info);
                 break;
-              }
-              case CHART_TRADES: {
+              case CHART_TRADES:
                 dispatched = true;
-                ChartTrades chart_trades{value_, buffer_stack};
-                create_trace_and_dispatch(handler, trace_info, chart_trades, symbol, interval);
+                dispatch_helper<ChartTrades>(handler, value_, buffer_stack, trace_info, symbol, interval);
                 break;
-              }
               // private
-              case PORTFOLIO: {
+              case PORTFOLIO:
                 dispatched = true;
-                Portfolio portfolio{value_, buffer_stack};
-                create_trace_and_dispatch(handler, trace_info, portfolio);
+                dispatch_helper<Portfolio>(handler, value_, buffer_stack, trace_info);
                 break;
-              }
-              case CHANGES: {
+              case CHANGES:
                 dispatched = true;
-                Changes changes{value_, buffer_stack};
-                create_trace_and_dispatch(handler, trace_info, changes);
+                dispatch_helper<Changes>(handler, value_, buffer_stack, trace_info);
                 break;
-              }
-              case ORDERS: {
+              case ORDERS:
                 dispatched = true;
-                Order order{value_, buffer_stack};
-                create_trace_and_dispatch(handler, trace_info, order);
+                dispatch_helper<Order>(handler, value_, buffer_stack, trace_info);
                 break;
-              }
-              case TRADES: {
+              case TRADES:
                 dispatched = true;
-                Trades2 trades{value_, buffer_stack};
-                create_trace_and_dispatch(handler, trace_info, trades);
+                dispatch_helper<Trades2>(handler, value_, buffer_stack, trace_info);
                 break;
-              }
             }
           }
           break;
