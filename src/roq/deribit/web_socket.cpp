@@ -405,7 +405,7 @@ void WebSocket::subscribe_chart_trades(std::span<Symbol const> const &symbols) {
 
 void WebSocket::parse(std::string_view const &message) {
   profile_.parse([&]() {
-    auto log_message = [&]() { log::warn(R"(message="{}")"sv, message); };
+    auto log_message = [&]() { log::warn(R"(*** PLEASE REPORT *** message="{}")"sv, message); };
     TraceInfo trace_info;
     try {
       if (!core::jsonrpc::Parser::dispatch(*this, message, trace_info)) {
@@ -469,7 +469,7 @@ bool WebSocket::operator()(Trace<core::jsonrpc::Notification> const &event, core
       log::warn(R"(Unknown method="{}")"sv, notification.method);
       break;
     case SUBSCRIPTION:
-      return json::Parser::dispatch(*this, value, decode_buffer_, trace_info);
+      return json::Parser::dispatch(*this, value, decode_buffer_, trace_info, shared_.settings.experimental.allow_unknown_event_types);
   }
   return false;
 }
