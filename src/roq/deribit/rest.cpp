@@ -12,14 +12,10 @@
 #include "roq/core/json/array_parser.hpp"
 #include "roq/core/json/parser.hpp"
 
-#include "roq/server/oms/exceptions.hpp"
-
 #include "roq/utils/safe_cast.hpp"
 #include "roq/utils/update.hpp"
 
 #include "roq/utils/metrics/factory.hpp"
-
-#include "roq/web/rest/client.hpp"
 
 #include "roq/deribit/utils.hpp"
 
@@ -280,6 +276,10 @@ void Rest::get_currencies() {
 
 void Rest::get_currencies_ack(Trace<web::rest::Response> const &event) {
   auto &[trace_info, response] = event;
+  auto handle_error = [&](auto origin, auto status, auto error, auto const &text) {
+    log::warn(R"(origin={}, error={}, status={}, text="{}")"sv, origin, error, status, text);
+    log::warn("Currencies download has FAILED"sv);
+  };
   auto handle_success = [&](auto &body) {
     core::json::Parser parser{body};
     auto root = parser.root();
@@ -309,11 +309,7 @@ void Rest::get_currencies_ack(Trace<web::rest::Response> const &event) {
     }
     log::info("Currencies download has COMPLETED"sv);
   };
-  auto handle_error = [&](auto text) {
-    log::error(R"(text="{}")"sv, text);
-    log::warn("Currencies download has FAILED"sv);
-  };
-  process_response(event, handle_success, handle_error);
+  process_response(event, handle_error, handle_success);
   request_.respond_currencies = clock::get_system();
   downloading_currencies_ = false;
 }
@@ -347,6 +343,10 @@ void Rest::get_instruments() {
 
 void Rest::get_instruments_ack(Trace<web::rest::Response> const &event) {
   auto &[trace_info, response] = event;
+  auto handle_error = [&](auto origin, auto status, auto error, auto const &text) {
+    log::warn(R"(origin={}, error={}, status={}, text="{}")"sv, origin, error, status, text);
+    log::warn("Instruments download has FAILED"sv);
+  };
   auto handle_success = [&](auto &body) {
     core::json::Parser parser{body};
     auto root = parser.root();
@@ -376,11 +376,7 @@ void Rest::get_instruments_ack(Trace<web::rest::Response> const &event) {
     }
     log::info("Instruments download has COMPLETED"sv);
   };
-  auto handle_error = [&](auto text) {
-    log::error(R"(text="{}")"sv, text);
-    log::warn("Instruments download has FAILED"sv);
-  };
-  process_response(event, handle_success, handle_error);
+  process_response(event, handle_error, handle_success);
   request_.respond_instruments = clock::get_system();
   downloading_instruments_ = false;
 }
@@ -499,6 +495,10 @@ void Rest::get_chart_data(std::string_view const &symbol) {
 
 void Rest::get_chart_data_ack(Trace<web::rest::Response> const &event, std::string_view const &symbol) {
   auto &[trace_info, response] = event;
+  auto handle_error = [&](auto origin, auto status, auto error, auto const &text) {
+    log::warn(R"(origin={}, error={}, status={}, text="{}")"sv, origin, error, status, text);
+    log::warn("Currencies download has FAILED"sv);
+  };
   auto handle_success = [&](auto &body) {
     core::json::Parser parser{body};
     auto root = parser.root();
@@ -514,11 +514,7 @@ void Rest::get_chart_data_ack(Trace<web::rest::Response> const &event, std::stri
       }
     }
   };
-  auto handle_error = [&](auto text) {
-    log::error(R"(text="{}")"sv, text);
-    log::warn("Currencies download has FAILED"sv);
-  };
-  process_response(event, handle_success, handle_error);
+  process_response(event, handle_error, handle_success);
 }
 
 void Rest::operator()(Trace<json::ChartData> const &event, std::string_view const &symbol) {
@@ -565,33 +561,33 @@ void Rest::check_request_queue(std::chrono::nanoseconds now) {
   shared_.time_series_request_queue.dispatch(can_request, request, now);
 }
 
-template <typename SuccessHandler, typename ErrorHandler>
-void Rest::process_response(web::rest::Response const &response, SuccessHandler success_handler, ErrorHandler error_handler) {
+void Rest::process_response(web::rest::Response const &response, auto error_handler, auto success_handler) {
   try {
     auto [status, category, body] = response.result();
     switch (category) {
       using enum web::http::Category;
-      case SUCCESS:  // 2xx
+      case UNKNOWN:
+      case INFORMATIONAL_RESPONSE:
+        response.expect(web::http::Status::OK);  // throws
+        break;
+      case SUCCESS:
         success_handler(body);
         break;
-      case CLIENT_ERROR:    // 4xx
-      case SERVER_ERROR: {  // 5xx
-        auto text = fmt::format("{}"sv, status);
-        error_handler(text);
+      case REDIRECTION:
+        log::fatal("Unexpected: URL is being redirected"sv);
+      case CLIENT_ERROR:
+      case SERVER_ERROR: {
+        auto message = fmt::format("{}"sv, status);
+        error_handler(Origin::EXCHANGE, RequestStatus::REJECTED, Error::UNKNOWN, message);
         break;
       }
-      default:
-        response.expect(web::http::Status::OK);  // throws
     }
-  } catch (server::oms::Exception &e) {
-    log::warn(R"(Exception type={}, what="{}")"sv, typeid(e).name(), e.what());
-    error_handler(e.what());
   } catch (NetworkError &e) {
     log::warn(R"(Exception type={}, what="{}")"sv, typeid(e).name(), e.what());
-    error_handler(e.what());
+    error_handler(Origin::GATEWAY, e.request_status(), e.error(), e.what());
   } catch (std::exception &e) {
     log::warn(R"(Exception type={}, what="{}")"sv, typeid(e).name(), e.what());
-    error_handler(e.what());
+    error_handler(Origin::EXCHANGE, RequestStatus::ERROR, Error::UNKNOWN, e.what());
   }
 }
 
