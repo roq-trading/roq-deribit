@@ -8,7 +8,6 @@
 
 #include "roq/server/flags/settings.hpp"
 
-#include "roq/deribit/flags/download.hpp"
 #include "roq/deribit/flags/fix.hpp"
 #include "roq/deribit/flags/flags.hpp"
 #include "roq/deribit/flags/mbp.hpp"
@@ -28,7 +27,6 @@ struct Settings final : public server::flags::Settings, public flags::Flags {
   flags::FIX fix;
   flags::WS ws;
   flags::Multicast multicast;
-  flags::Download download;
   flags::MBP mbp;
   flags::Request request;
   flags::REST rest;
@@ -49,7 +47,6 @@ struct fmt::formatter<roq::deribit::Settings> {
         R"(fix={}, )"
         R"(ws={}, )"
         R"(multicast={}, )"
-        R"(download={}, )"
         R"(mbp={}, )"
         R"(request={}, )"
         R"(rest={}, )"
@@ -59,7 +56,6 @@ struct fmt::formatter<roq::deribit::Settings> {
         value.fix,
         value.ws,
         value.multicast,
-        value.download,
         value.mbp,
         value.request,
         value.rest,

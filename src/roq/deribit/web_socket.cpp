@@ -341,7 +341,7 @@ void WebSocket::subscribe(std::span<Symbol const> const &symbols) {
     subscribe_quote(symbols);
   }
   subscribe_ticker(symbols);
-  if (shared_.settings.download.time_series && shared_.settings.time_series.lookback.count()) {
+  if (shared_.settings.download.time_series_lookback.count()) {
     subscribe_chart_trades(symbols);
   }
 }

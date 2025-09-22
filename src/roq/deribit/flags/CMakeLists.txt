@@ -5,7 +5,6 @@ include(RoqAutogen)
 set(NAMESPACE "roq/deribit/flags")
 
 set(AUTOGEN_SCHEMAS
-    download.json
     fix.json
     flags.json
     mbp.json
