@@ -8,11 +8,7 @@ CONFIG_FILE="$ROQ_CONFIG_PATH/roq-deribit/$CONFIG.toml"
 
 SECRETS_FILE="$ROQ_CONFIG_PATH/roq-deribit/$CONFIG-secrets.toml"
 
-URI="test.deribit.com"
-
-FIX_URI="tcp://fix-$URI:9881"
-WS_URI="wss://$URI/ws/api/v2"
-REST_URI="https://$URI"
+FLAGFILE="../../../share/flags/test/flags.cfg"
 
 KERNEL="$(uname -a)"
 
@@ -52,14 +48,11 @@ $PREFIX "./roq-deribit" \
   --name "$NAME" \
   --config_file "$CONFIG_FILE" \
   --secrets_file "$SECRETS_FILE" \
+  --flagfile "$FLAGFILE" \
   --cache_dir "$HOME/var/lib/roq/cache" \
   --event_log_dir "$HOME/var/lib/roq/data" \
-  --event_log_symlink=true \
   --client_listen_address "unix://$HOME/run/$NAME.sock" \
   --service_listen_address "unix://$HOME/run/metrics/$NAME.sock" \
-  --fix_uri "$FIX_URI" \
-  --ws_uri "$WS_URI" \
-  --rest_uri "$REST_URI" \
   --cache_all_reference_data=true \
   --download_trades_lookback=5m \
   --download_trades_lookback_on_restart=24h \
@@ -75,7 +68,6 @@ $PREFIX "./roq-deribit" \
   --fix_cancel_on_disconnect=false \
   --enable_portfolio=true \
   --time_series_interval "60s" \
-  --time_series_lookback "2h" \
+  --time_series_lookback "0s" \
   --time_series_realtime=true \
-  --download_time_series=false \
   $@
