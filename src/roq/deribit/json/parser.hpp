@@ -40,7 +40,7 @@ struct Parser final {
     virtual void operator()(Trace<Trades2> const &) = 0;
   };
 
-  static bool dispatch(Handler &, core::json::Value &, core::json::BufferStack &, TraceInfo const &, bool allow_unknown_event_types = false);
+  static bool dispatch(Handler &, core::json::Value &, core::json::BufferStack &, TraceInfo const &, bool allow_unknown_event_types);
 };
 
 }  // namespace json

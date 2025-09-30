@@ -118,5 +118,5 @@ TEST_CASE("json_subscription_parse_message", "[json_subscription]") {
   auto root = parser.root();
   MyHandler handler;
   TraceInfo trace_info;
-  json::Parser::dispatch(handler, root, buffer, trace_info);
+  json::Parser::dispatch(handler, root, buffer, trace_info, false);
 }
