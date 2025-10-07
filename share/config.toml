@@ -1,3 +1,5 @@
+# config template for the roq-deribit gateway
+
 symbols = [
   "^BTC-[0-9]{1,2}[A-Z]{3}[0-9]{2}$",  # futures
   "^ETH-[0-9]{1,2}[A-Z]{3}[0-9]{2}$",  # futures
