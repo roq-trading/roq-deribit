@@ -44,6 +44,14 @@
     {
       "name": "apr",
       "type": "std/double"
+    },
+    {
+      "name": "network_fee",
+      "type": "std/double"
+    },
+    {
+      "name": "network_currency",
+      "type": "std/string_view"
     }
   ]
 }
