@@ -52,6 +52,10 @@
     {
       "name": "network_currency",
       "type": "std/string_view"
+    },
+    {
+      "name": "decimals",
+      "type": "std/int32"
     }
   ]
 }
