@@ -237,6 +237,10 @@
     {
       "name": "block_rfq_self_match_prevention",
       "type": "std/bool"
+    },
+    {
+      "name": "fee_group",
+      "type": "std/string_view"
     }
   ]
 }
