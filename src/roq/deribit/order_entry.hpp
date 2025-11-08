@@ -113,7 +113,7 @@ struct OrderEntry final : public io::net::ConnectionManager::Handler {
   Handler &handler_;
   // config
   uint16_t const stream_id_;
-  Source const name_;
+  std::string const name_;
   // connection
   std::unique_ptr<io::net::ConnectionFactory> const connection_factory_;
   std::unique_ptr<io::net::ConnectionManager> const connection_manager_;
