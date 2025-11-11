@@ -92,7 +92,7 @@ auto parse_channel(auto const &name, auto &symbol, auto &interval) -> Channel {
         auto d3 = name.find_first_of('.', d2 + 1);
         if (d3 != std::string_view::npos) {
           symbol = name.substr(d2 + 1, d3 - d2 - 1);
-          auto tmp = name.substr(d3 + 1);
+          [[maybe_unused]] auto tmp = name.substr(d3 + 1);
         }
       }
     }
