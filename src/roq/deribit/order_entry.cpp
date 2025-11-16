@@ -844,6 +844,7 @@ void OrderEntry::operator()(Trace<fix::ExecutionReport> const &event, roq::fix::
       .quantity = execution_report.order_qty,
       .price = execution_report.price,
       .stop_price = execution_report.stop_px,
+      .leverage = NaN,
       .remaining_quantity = execution_report.leaves_qty,
       .traded_quantity = execution_report.cum_qty,
       .average_traded_price = average_traded_price,
