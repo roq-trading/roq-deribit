@@ -568,9 +568,9 @@ void DropCopy::operator()(Trace<json::Trade> const &event, bool is_download, boo
       .quote_amount = NaN,  // XXX TODO spot?
       .profit_loss_amount = profit_loss_amount,
   };
-  log::debug("fill={}"sv, fill);
   // note! this is consistent with FIX (there is also a trade_id field, but it's not consistent)
   fmt::format_to(std::back_inserter(fill.external_trade_id), "{}#{}"sv, trade.instrument_name, trade.trade_seq);
+  log::debug("fill={}"sv, fill);
   auto update_type = is_download ? UpdateType::SNAPSHOT : UpdateType::INCREMENTAL;
   auto trade_update = TradeUpdate{
       .stream_id = stream_id_,
