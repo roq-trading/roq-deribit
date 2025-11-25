@@ -241,6 +241,10 @@
     {
       "name": "fee_group",
       "type": "std/string_view"
+    },
+    {
+      "name": "disable_kyc_verification",
+      "type": "std/bool"
     }
   ]
 }
