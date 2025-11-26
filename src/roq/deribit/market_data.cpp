@@ -712,10 +712,11 @@ void MarketData::operator()(Trace<fix::SecurityList> const &event, roq::fix::Hea
         };
         create_trace_and_dispatch(handler_, trace_info, reference_data, true);
       }
+      shared_.multiplier[symbol] = multiplier;
       if (discard) {
+        log::info<1>(R"(Drop symbol="{}")"sv, item.symbol);
         continue;
       }
-      shared_.multiplier[symbol] = multiplier;
       if (shared_.all_symbols.emplace(symbol).second) {  // only include new
         symbols.emplace_back(symbol);
       }

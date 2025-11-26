@@ -454,11 +454,9 @@ bool Rest::operator()(Trace<json::Instrument> const &event) {
     };
     create_trace_and_dispatch(handler_, trace_info, reference_data, true);
   }
-  if (!discard) {
-    // cache multiplier so Quote (amount) can be converted to TopOfBook (lots)
-    // note! the multiplier is only cached on startup!
-    shared_.multiplier[symbol] = multiplier;
-  }
+  // cache multiplier so Quote (amount) can be converted to TopOfBook (lots)
+  // note! the multiplier is only cached on startup!
+  shared_.multiplier[symbol] = multiplier;
   return discard;
 }
 
