@@ -194,7 +194,7 @@ Environments
 
    .. code-block:: shell
 
-      $ $CONDA_PREFIX/share/roq-deribit/flags/prod/flags.cfg
+      $ --flagfile $CONDA_PREFIX/share/roq-deribit/flags/prod/flags.cfg
 
    .. include:: flags/prod/flags.cfg
      :code: ini
@@ -203,7 +203,7 @@ Environments
 
    .. code-block:: shell
 
-      $ $CONDA_PREFIX/share/roq-deribit/flags/test/flags.cfg
+      $ --flagfile $CONDA_PREFIX/share/roq-deribit/flags/test/flags.cfg
 
    .. include:: flags/test/flags.cfg
      :code: ini
@@ -214,7 +214,7 @@ Configuration
 
 .. code-block:: shell
 
-   $ $CONDA_PREFIX/share/roq-deribit/config.toml
+   $ --flagfile $CONDA_PREFIX/share/roq-deribit/config.toml
 
 .. important::
 
@@ -608,7 +608,7 @@ Example
    $ roq-deribit-filter \
        --type "tcpdump" \
        --multicast_channel_ids 1,2 \
-       --multicast_config_file "$CONDA_PREFIX/share/roq-deribit/prod/channels.json"
+       --multicast_config_file "--flagfile $CONDA_PREFIX/share/roq-deribit/prod/channels.json"
 
    (port 6100 or port 6101) and (host 239.111.111.1 or host 239.111.111.2)
 
