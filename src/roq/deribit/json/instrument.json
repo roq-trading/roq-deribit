@@ -118,6 +118,10 @@
       "name": "tick_size_steps",
       "type": "roq/deribit/json/TickSizeStep",
       "array": "std/span"
+    },
+    {
+      "name": "max_non_default_leverage",
+      "type": "std/double"
     }
   ]
 }
