@@ -1,0 +1,2 @@
+json::Parser should work on messages, not json values
+=> then we can test

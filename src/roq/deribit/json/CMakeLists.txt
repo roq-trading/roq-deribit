@@ -8,15 +8,17 @@ set(AUTOGEN_SCHEMAS
     auth.json
     changes.json
     channel.json
+    chart_data_ack.json
     chart_data.json
     chart_trades.json
     combo_state.json
-    currencies.json
+    currencies_ack.json
     currency.json
     direction.json
     error.json
     field.json
     instrument.json
+    instruments_ack.json
     instrument_state.json
     instrument_type.json
     kind.json

@@ -245,6 +245,13 @@
     {
       "name": "disable_kyc_verification",
       "type": "std/bool"
+    },
+    {
+      "name": "receive_notifications",
+      "type": "std/bool"
+    },
+    {
+      "name": "trading_products_details"
     }
   ]
 }

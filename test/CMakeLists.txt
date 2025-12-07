@@ -19,9 +19,9 @@ set(SOURCES
     fix_reject.cpp
     fix_security_list.cpp
     fix_user_response.cpp
-    json_chart_data.cpp
-    json_currencies.cpp
-    json_instruments.cpp
+    json_chart_data_ack.cpp
+    json_currencies_ack.cpp
+    json_instruments_ack.cpp
     json_subscription.cpp
     json_ticker.cpp
     json_trades_2.cpp

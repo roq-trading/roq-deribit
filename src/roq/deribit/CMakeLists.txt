@@ -11,6 +11,7 @@ add_subdirectory(filter)
 
 set(SOURCES
     account.cpp
+    api.cpp
     application.cpp
     channel.cpp
     config.cpp

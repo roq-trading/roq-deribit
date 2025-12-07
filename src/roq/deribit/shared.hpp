@@ -18,6 +18,7 @@
 
 #include "roq/deribit/sbe/config.hpp"
 
+#include "roq/deribit/api.hpp"
 #include "roq/deribit/instrument.hpp"
 #include "roq/deribit/settings.hpp"
 
@@ -113,6 +114,7 @@ struct Shared final {
 
   utils::unordered_map<std::string, double> multiplier;
 
+  API const api;
   server::Dispatcher &dispatcher;
   Settings const &settings;
 

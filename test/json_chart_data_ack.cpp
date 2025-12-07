@@ -4,7 +4,7 @@
 
 #include "roq/core/json/buffer_stack.hpp"
 
-#include "roq/deribit/json/chart_data.hpp"
+#include "roq/deribit/json/chart_data_ack.hpp"
 
 using namespace roq;
 using namespace roq::deribit;
@@ -13,7 +13,9 @@ using namespace std::literals;
 
 using namespace Catch::literals;
 
-TEST_CASE("json_chart_data", "[json_chart_data]") {
+using value_type = json::ChartDataAck;
+
+TEST_CASE("simple", "[json_chart_data_ack]") {
   auto const message =
       R"({)"
       R"("usOut":1754965829157500,)"
@@ -32,14 +34,11 @@ TEST_CASE("json_chart_data", "[json_chart_data]") {
       R"(},)"
       R"("jsonrpc":"2.0")"
       R"(})"sv;
-
-  core::json::BufferStack buffer{32768, 1};
-  core::json::Parser parser(message);
-  auto root = parser.root();
-  for (auto [key, value] : std::get<core::json::Object>(root)) {
-    if (key == "result"sv) {
-      json::ChartData chart_data{value, buffer};
-      CHECK(chart_data.status == "ok"sv);
-    }
-  }
+  auto helper = [&](value_type &obj) {
+    CHECK(obj.testnet == false);
+    CHECK(obj.result.status == "ok"sv);
+  };
+  core::json::BufferStack buffers{32768, 2};
+  value_type obj{message, buffers};
+  helper(obj);
 }

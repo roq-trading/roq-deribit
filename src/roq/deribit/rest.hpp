@@ -21,9 +21,9 @@
 #include "roq/deribit/request.hpp"
 #include "roq/deribit/shared.hpp"
 
-#include "roq/deribit/json/chart_data.hpp"
-#include "roq/deribit/json/currency.hpp"
-#include "roq/deribit/json/instrument.hpp"
+#include "roq/deribit/json/chart_data_ack.hpp"
+#include "roq/deribit/json/currencies_ack.hpp"
+#include "roq/deribit/json/instruments_ack.hpp"
 
 namespace roq {
 namespace deribit {
@@ -58,6 +58,8 @@ struct Rest final : public web::rest::Client::Handler {
   void operator()(metrics::Writer &) const;
 
  protected:
+  // web::rest::Client::Handler
+
   void operator()(Trace<web::rest::Client::Connected> const &) override;
   void operator()(Trace<web::rest::Client::Disconnected> const &) override;
   void operator()(Trace<web::rest::Client::Latency> const &) override;
@@ -70,17 +72,25 @@ struct Rest final : public web::rest::Client::Handler {
 
   void check_download();
 
+  // currencies
+
   void get_currencies();
   void get_currencies_ack(Trace<web::rest::Response> const &);
-  void operator()(Trace<json::Currency> const &);
+  void operator()(Trace<json::CurrenciesAck> const &);
+
+  // instruments
 
   void get_instruments();
   void get_instruments_ack(Trace<web::rest::Response> const &);
-  bool operator()(Trace<json::Instrument> const &);
+  void operator()(Trace<json::InstrumentsAck> const &);
+
+  // chart-data
 
   void get_chart_data(std::string_view const &symbol);
   void get_chart_data_ack(Trace<web::rest::Response> const &, std::string_view const &symbol);
-  void operator()(Trace<json::ChartData> const &, std::string_view const &symbol);
+  void operator()(Trace<json::ChartDataAck> const &, std::string_view const &symbol);
+
+  // helpers
 
   void check_request_queue(std::chrono::nanoseconds now);
 
@@ -100,7 +110,11 @@ struct Rest final : public web::rest::Client::Handler {
     utils::metrics::Counter disconnect;
   } counter_;
   struct {
-    utils::metrics::Profile get_currencies, get_currencies_ack, get_instruments, get_instruments_ack, chart_data, chart_data_ack;
+    utils::metrics::Profile  //
+        currencies,
+        currencies_ack,                //
+        instruments, instruments_ack,  //
+        chart_data, chart_data_ack;
   } profile_;
   struct {
     utils::metrics::Latency ping;
