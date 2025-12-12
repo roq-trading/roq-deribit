@@ -667,7 +667,7 @@ RequestType compute_request_type(auto const exec_type, auto const ord_status) {
     case REJECTED:
       return {};  // any
     case CANCELED:
-      return RequestType::CANCEL_ORDER;
+      return {};  // could be IOC or FOK
     case ORDER_STATUS:
       switch (ord_status) {
         using enum roq::fix::OrdStatus;
@@ -675,7 +675,7 @@ RequestType compute_request_type(auto const exec_type, auto const ord_status) {
         case PARTIALLY_FILLED:
           return {};  // create or modify
         case CANCELED:
-          return RequestType::CANCEL_ORDER;
+          return {};
           break;
         default:
           break;
@@ -755,8 +755,7 @@ UpdateType compute_update_type(auto const &download) {
 }  // namespace
 
 void OrderEntry::operator()(Trace<fix::ExecutionReport> const &event, roq::fix::Header const &header) {
-  auto &trace_info = event.trace_info;
-  auto &execution_report = event.value;
+  auto &[trace_info, execution_report] = event;
   log::info<2>("event={{header={}, execution_report={}}}"sv, header, execution_report);
   // download begin?
   switch (execution_report.mass_status_req_type) {
@@ -925,8 +924,7 @@ void OrderEntry::operator()(Trace<fix::ExecutionReport> const &event, roq::fix::
 }
 
 void OrderEntry::operator()(Trace<fix::OrderCancelReject> const &event, roq::fix::Header const &header) {
-  auto &trace_info = event.trace_info;
-  auto &order_cancel_reject = event.value;
+  auto &[trace_info, order_cancel_reject] = event;
   log::warn<1>("event={{header={}, order_cancel_reject={}}}"sv, header, order_cancel_reject);
   auto error = fix::map_error(order_cancel_reject.text);
   auto response = server::oms::Response{
