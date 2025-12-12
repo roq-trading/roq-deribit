@@ -19,13 +19,20 @@ set(SOURCES
     fix_reject.cpp
     fix_security_list.cpp
     fix_user_response.cpp
+    json_auth.cpp
     json_chart_data_ack.cpp
     json_currencies_ack.cpp
+    json_get_account_summary_ack.cpp
+    json_get_user_trades_by_currency_ack.cpp
     json_instruments_ack.cpp
-    json_subscription.cpp
+    json_platform_state.cpp
+    json_quote.cpp
     json_ticker.cpp
-    json_trades_2.cpp
     json_types.cpp
+    json_user_changes.cpp
+    json_user_orders.cpp
+    json_user_portfolio.cpp
+    json_user_trades.cpp
     sbe_parser.cpp
     main.cpp)
 

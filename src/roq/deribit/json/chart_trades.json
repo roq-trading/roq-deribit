@@ -3,32 +3,16 @@
   "type": "dictionary",
   "values": [
     {
-      "name": "close",
-      "type": "std/double"
+      "name": "jsonrpc",
+      "type": "std/string_view"
     },
     {
-      "name": "high",
-      "type": "std/double"
+      "name": "method",
+      "type": "std/string_view"
     },
     {
-      "name": "low",
-      "type": "std/double"
-    },
-    {
-      "name": "open",
-      "type": "std/double"
-    },
-    {
-      "name": "tick",
-      "type": "std/uint64"
-    },
-    {
-      "name": "cost",
-      "type": "std/double"
-    },
-    {
-      "name": "volume",
-      "type": "std/double"
+      "name": "params",
+      "type": "roq/deribit/json/ChartTradesParams"
     }
   ]
 }

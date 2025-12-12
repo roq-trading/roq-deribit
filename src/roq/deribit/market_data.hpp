@@ -89,6 +89,8 @@ struct MarketData final : public io::net::ConnectionManager::Handler {
   void operator()(Trace<fix::MarketDataSnapshotFullRefresh> const &, roq::fix::Header const &);
 
  protected:
+  // io::net::ConnectionManager::Handler
+
   void operator()(io::net::ConnectionManager::Connected const &) override;
   void operator()(io::net::ConnectionManager::Disconnected const &) override;
   void operator()(io::net::ConnectionManager::Read const &) override;

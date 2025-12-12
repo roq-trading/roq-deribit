@@ -1,0 +1,128 @@
+{
+  "name": "roq/deribit/json/TickerParamsData",
+  "type": "dictionary",
+  "values": [
+    {
+      "name": "ask_iv",
+      "type": "std/double"
+    },
+    {
+      "name": "best_ask_amount",
+      "type": "std/double"
+    },
+    {
+      "name": "best_ask_price",
+      "type": "std/double"
+    },
+    {
+      "name": "best_bid_amount",
+      "type": "std/double"
+    },
+    {
+      "name": "best_bid_price",
+      "type": "std/double"
+    },
+    {
+      "name": "bid_iv",
+      "type": "std/double"
+    },
+    {
+      "name": "current_funding",
+      "type": "std/double"
+    },
+    {
+      "name": "funding_8h",
+      "type": "std/double"
+    },
+    {
+      "name": "greeks"
+    },
+    {
+      "name": "high",
+      "type": "std/double"
+    },
+    {
+      "name": "index_price",
+      "type": "std/double"
+    },
+    {
+      "name": "instrument_name",
+      "type": "std/string_view"
+    },
+    {
+      "name": "interest_rate",
+      "type": "std/double"
+    },
+    {
+      "name": "last_price",
+      "type": "std/double"
+    },
+    {
+      "name": "mark_price",
+      "type": "std/double"
+    },
+    {
+      "name": "max_price",
+      "type": "std/double"
+    },
+    {
+      "name": "min_price",
+      "type": "std/double"
+    },
+    {
+      "name": "open_interest",
+      "type": "std/double"
+    },
+    {
+      "name": "settlement_price",
+      "type": "std/double"
+    },
+    {
+      "name": "state",
+      "type": "roq/deribit/json/State"
+    },
+    {
+      "name": "stats"
+    },
+    {
+      "name": "timestamp",
+      "type": "std/milliseconds"
+    },
+    {
+      "name": "underlying_index",
+      "type": "std/string_view"
+    },
+    {
+      "name": "underlying_price",
+      "type": "std/double"
+    },
+    {
+      "name": "mark_iv",
+      "comment": "undocumented"
+    },
+    {
+      "name": "delivery_price",
+      "comment": "undocumented"
+    },
+    {
+      "name": "estimated_delivery_price",
+      "comment": "undocumented -- have seen expired (string) and price (number)"
+    },
+    {
+      "name": "implied_bid",
+      "type": "std/double"
+    },
+    {
+      "name": "implied_ask",
+      "type": "std/double"
+    },
+    {
+      "name": "combo_state",
+      "type": "roq/deribit/json/ComboState"
+    },
+    {
+      "name": "interest_value",
+      "type": "std/double"
+    }
+  ]
+}

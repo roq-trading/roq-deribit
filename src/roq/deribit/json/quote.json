@@ -3,28 +3,16 @@
   "type": "dictionary",
   "values": [
     {
-      "name": "best_ask_amount",
-      "type": "std/double"
-    },
-    {
-      "name": "best_ask_price",
-      "type": "std/double"
-    },
-    {
-      "name": "best_bid_amount",
-      "type": "std/double"
-    },
-    {
-      "name": "best_bid_price",
-      "type": "std/double"
-    },
-    {
-      "name": "instrument_name",
+      "name": "jsonrpc",
       "type": "std/string_view"
     },
     {
-      "name": "timestamp",
-      "type": "std/milliseconds"
+      "name": "method",
+      "type": "std/string_view"
+    },
+    {
+      "name": "params",
+      "type": "roq/deribit/json/QuoteParams"
     }
   ]
 }

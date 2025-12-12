@@ -1,5 +1,5 @@
 {
-  "name": "roq/deribit/json/PlatformState",
+  "name": "roq/deribit/json/UserChanges",
   "type": "dictionary",
   "values": [
     {
@@ -12,7 +12,7 @@
     },
     {
       "name": "params",
-      "type": "roq/deribit/json/PlatformStateParams"
+      "type": "roq/deribit/json/UserChangesParams"
     }
   ]
 }

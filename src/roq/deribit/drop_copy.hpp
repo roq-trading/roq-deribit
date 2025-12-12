@@ -17,8 +17,6 @@
 
 #include "roq/core/json/buffer_stack.hpp"
 
-#include "roq/core/jsonrpc/parser.hpp"
-
 #include "roq/core/download.hpp"
 
 #include "roq/server.hpp"
@@ -27,18 +25,14 @@
 #include "roq/deribit/drop_copy_state.hpp"
 #include "roq/deribit/shared.hpp"
 
-#include "roq/deribit/json/auth.hpp"
-#include "roq/deribit/json/changes.hpp"
-#include "roq/deribit/json/order.hpp"
 #include "roq/deribit/json/parser.hpp"
-#include "roq/deribit/json/portfolio.hpp"
+
 #include "roq/deribit/json/positions.hpp"
-#include "roq/deribit/json/trades.hpp"
 
 namespace roq {
 namespace deribit {
 
-struct DropCopy final : public web::socket::Client::Handler, public core::jsonrpc::Parser::Handler, public json::Parser::Handler {
+struct DropCopy final : public web::socket::Client::Handler, public json::Parser::Handler {
   struct Handler {
     virtual void operator()(Trace<StreamStatus> const &) = 0;
     virtual void operator()(Trace<ExternalLatency> const &) = 0;
@@ -62,6 +56,8 @@ struct DropCopy final : public web::socket::Client::Handler, public core::jsonrp
   void download();
 
  protected:
+  // web::socket::Client::Handler
+
   void operator()(web::socket::Client::Connected const &) override;
   void operator()(web::socket::Client::Disconnected const &) override;
   void operator()(web::socket::Client::Ready const &) override;
@@ -77,35 +73,37 @@ struct DropCopy final : public web::socket::Client::Handler, public core::jsonrp
 
   uint32_t download(DropCopyState);
 
-  void subscribe_portfolios(std::span<std::string> const &currencies);
-  void subscribe_changes();
-  void subscribe_orders();
-  void subscribe_trades();
+  void subscribe_user_portfolio(std::span<std::string> const &currencies);
+  void subscribe_user_changes();
+  void subscribe_user_orders();
+  void subscribe_user_trades();
 
   void get_account_summary(std::span<std::string> const &currencies);
-  void get_trades(std::span<std::string> const &currencies);
+  void get_user_trades_by_currency(std::span<std::string> const &currencies);
 
   void parse(std::string_view const &message);
 
-  void operator()(Trace<core::jsonrpc::Error> const &, core::json::Value &) override;
-  bool operator()(Trace<core::jsonrpc::Result> const &, core::json::Value &) override;
-  bool operator()(Trace<core::jsonrpc::Notification> const &, core::json::Value &) override;
-
-  void operator()(Trace<json::Auth> const &);
-
  public:
+  // json::Parser::Handler
+
+  void operator()(Trace<json::Auth> const &) override;
+  void operator()(Trace<json::Subscription> const &) override;
+
   void operator()(Trace<json::PlatformState> const &) override;
   void operator()(Trace<json::InstrumentState> const &) override;
   void operator()(Trace<json::Quote> const &) override;
   void operator()(Trace<json::Ticker> const &) override;
   void operator()(Trace<json::ChartTrades> const &, std::string_view const &symbol, uint32_t interval) override;
-  void operator()(Trace<json::Portfolio> const &) override;
-  void operator()(Trace<json::Changes> const &) override;
 
-  void operator()(Trace<json::Trades> const &);
+  void operator()(Trace<json::UserPortfolio> const &) override;
+  void operator()(Trace<json::UserChanges> const &) override;
+  void operator()(Trace<json::UserOrders> const &) override;
+  void operator()(Trace<json::UserTrades> const &) override;
+
+  void operator()(Trace<json::GetAccountSummaryAck> const &) override;
+  void operator()(Trace<json::GetUserTradesByCurrencyAck> const &) override;
+
   void operator()(Trace<json::Positions> const &);
-  void operator()(Trace<json::Order> const &) override;
-  void operator()(Trace<json::Trades2> const &) override;
 
   void operator()(Trace<json::Trade> const &, bool is_download, bool is_last);
 

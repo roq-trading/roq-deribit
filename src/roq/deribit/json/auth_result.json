@@ -1,0 +1,37 @@
+{
+  "name": "roq/deribit/json/AuthResult",
+  "type": "dictionary",
+  "values": [
+    {
+      "name": "access_token",
+      "type": "std/string_view"
+    },
+    {
+      "name": "expires_in",
+      "type": "std/uint32"
+    },
+    {
+      "name": "refresh_token",
+      "type": "std/string_view"
+    },
+    {
+      "name": "scope",
+      "type": "std/string_view"
+    },
+    {
+      "name": "state",
+      "type": "std/string_view"
+    },
+    {
+      "name": "token_type",
+      "type": "std/string_view"
+    },
+    {
+      "name": "enabled_features"
+    },
+    {
+      "name": "mandatory_tfa_status",
+      "type": "std/string_view"
+    }
+  ]
+}

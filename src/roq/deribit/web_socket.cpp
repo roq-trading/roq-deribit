@@ -153,6 +153,8 @@ void WebSocket::subscribe(size_t start_from) {
   }
 }
 
+// web::socket::Client::Handler
+
 void WebSocket::operator()(web::socket::Client::Connected const &) {
   // note! wait for upgrade
 }
@@ -405,10 +407,12 @@ void WebSocket::subscribe_chart_trades(std::span<Symbol const> const &symbols) {
 
 void WebSocket::parse(std::string_view const &message) {
   profile_.parse([&]() {
+    // log::debug("{}"sv, message);
     auto log_message = [&]() { log::warn(R"(*** PLEASE REPORT *** message="{}")"sv, message); };
     TraceInfo trace_info;
     try {
-      if (!core::jsonrpc::Parser::dispatch(*this, message, trace_info)) {
+      // if (!core::jsonrpc::Parser::dispatch(*this, message, trace_info)) {
+      if (!json::Parser::dispatch(*this, message, decode_buffer_, trace_info, shared_.settings.experimental.allow_unknown_event_types)) {
         log_message();
       }
     } catch (...) {
@@ -418,61 +422,7 @@ void WebSocket::parse(std::string_view const &message) {
   });
 }
 
-void WebSocket::operator()(Trace<core::jsonrpc::Error> const &event, core::json::Value &value) {
-  auto &[trace_info, error] = event;
-  json::Error error_2{value};
-  log::fatal(R"(error={}, id="{}")"sv, error_2, error.id);
-}
-
-bool WebSocket::operator()(Trace<core::jsonrpc::Result> const &event, core::json::Value &value) {
-  auto &[trace_info, result] = event;
-  json::RequestType request_type{result.id};
-  switch (request_type) {
-    using enum json::RequestType::type_t;
-    case UNDEFINED_INTERNAL:
-      break;
-    case UNKNOWN_INTERNAL:
-      log::warn(R"(Unknown request_type="{}")"sv, result.id);
-      break;
-    case AUTH: {
-      json::Auth auth{value};
-      Trace event{trace_info, auth};
-      (*this)(event);
-      return true;
-    }
-    case SUBSCRIBE_PLATFORM_STATE:
-    case SUBSCRIBE_INSTRUMENT_STATE:
-    case SUBSCRIBE_QUOTE:
-    case SUBSCRIBE_TICKER:
-    case SUBSCRIBE_CHART_TRADES:
-      return true;  // note! no need to parse
-    case SUBSCRIBE_PORTFOLIO:
-    case SUBSCRIBE_CHANGES:
-    case SUBSCRIBE_ORDERS:
-    case SUBSCRIBE_TRADES:
-    case GET_ACCOUNT_SUMMARY:
-    case GET_TRADES:
-    case GET_POSITIONS:
-      break;  // unexpected
-  }
-  return false;
-}
-
-bool WebSocket::operator()(Trace<core::jsonrpc::Notification> const &event, core::json::Value &value) {
-  auto &[trace_info, notification] = event;
-  json::Method method{notification.method};
-  switch (method) {
-    using enum json::Method::type_t;
-    case UNDEFINED_INTERNAL:
-      break;
-    case UNKNOWN_INTERNAL:
-      log::warn(R"(Unknown method="{}")"sv, notification.method);
-      break;
-    case SUBSCRIPTION:
-      return json::Parser::dispatch(*this, value, decode_buffer_, trace_info, shared_.settings.experimental.allow_unknown_event_types);
-  }
-  return false;
-}
+// json::Parser::Handler
 
 void WebSocket::operator()(Trace<json::Auth> const &event) {
   profile_.auth([&]() {
@@ -483,8 +433,7 @@ void WebSocket::operator()(Trace<json::Auth> const &event) {
   });
 }
 
-void WebSocket::operator()(Trace<json::Positions> const &) {
-  log::fatal("Unexpected"sv);
+void WebSocket::operator()(Trace<json::Subscription> const &) {
 }
 
 void WebSocket::operator()(Trace<json::PlatformState> const &) {
@@ -502,27 +451,27 @@ void WebSocket::operator()(Trace<json::InstrumentState> const &) {
 
 void WebSocket::operator()(Trace<json::Quote> const &event) {
   profile_.quote([&]() {
-    auto &trace_info = event.trace_info;
-    auto &quote = event.value;
+    auto &[trace_info, quote] = event;
     log::info<3>("quote={}"sv, quote);
     (*connection_).touch(trace_info.source_receive_time);
     if (publish_top_of_book_) {
-      if (get_top_of_book(quote.instrument_name, [&](auto &layer, auto multiplier) {
+      auto &data = quote.params.data;
+      if (get_top_of_book(data.instrument_name, [&](auto &layer, auto multiplier) {
             // note! as real amounts to match MbP
-            auto bid_quantity = multiplier * quote.best_bid_amount;
-            auto ask_quantity = multiplier * quote.best_ask_amount;
+            auto bid_quantity = multiplier * data.best_bid_amount;
+            auto ask_quantity = multiplier * data.best_ask_amount;
             auto top_of_book = TopOfBook{
                 .stream_id = stream_id_,
                 .exchange = shared_.settings.exchange,
-                .symbol = quote.instrument_name,
+                .symbol = data.instrument_name,
                 .layer{
-                    .bid_price = quote.best_bid_price,
+                    .bid_price = data.best_bid_price,
                     .bid_quantity = bid_quantity,
-                    .ask_price = quote.best_ask_price,
+                    .ask_price = data.best_ask_price,
                     .ask_quantity = ask_quantity,
                 },
                 .update_type = UpdateType::SNAPSHOT,
-                .exchange_time_utc = quote.timestamp,  // XXX not sure
+                .exchange_time_utc = data.timestamp,  // XXX not sure
                 .exchange_sequence = {},
                 .sending_time_utc = {},
             };
@@ -532,7 +481,7 @@ void WebSocket::operator()(Trace<json::Quote> const &event) {
             }
           })) {
       } else {
-        log::warn<3>(R"(Unexpected: can't find multiplier for symbol="{}")"sv, quote.instrument_name);
+        log::warn<3>(R"(Unexpected: can't find multiplier for symbol="{}")"sv, data.instrument_name);
       }
     }
   });
@@ -543,13 +492,14 @@ void WebSocket::operator()(Trace<json::Ticker> const &event) {
     auto &[trace_info, ticker] = event;
     log::info<3>("ticker={}"sv, ticker);
     (*connection_).touch(trace_info.source_receive_time);
-    auto trading_status = map(ticker.state).template get<TradingStatus>();
-    auto &item = trading_status_[ticker.instrument_name];
+    auto &data = ticker.params.data;
+    auto trading_status = map(data.state).template get<TradingStatus>();
+    auto &item = trading_status_[data.instrument_name];
     if (trading_status != TradingStatus{} && utils::update(item, trading_status)) {
       auto market_status = MarketStatus{
           .stream_id = stream_id_,
           .exchange = shared_.settings.exchange,
-          .symbol = ticker.instrument_name,
+          .symbol = data.instrument_name,
           .trading_status = trading_status,
       };
       create_trace_and_dispatch(handler_, trace_info, market_status, true);
@@ -562,19 +512,27 @@ void WebSocket::operator()(Trace<json::ChartTrades> const &event, std::string_vi
   log::debug(R"(chart_trades={}, symbol="{}", interval={})"sv, chart_trades, symbol, interval);
 }
 
-void WebSocket::operator()(Trace<json::Portfolio> const &) {
+void WebSocket::operator()(Trace<json::UserPortfolio> const &) {
   log::fatal("Unexpected"sv);
 }
 
-void WebSocket::operator()(Trace<json::Changes> const &) {
+void WebSocket::operator()(Trace<json::UserChanges> const &) {
   log::fatal("Unexpected"sv);
 }
 
-void WebSocket::operator()(Trace<json::Order> const &) {
+void WebSocket::operator()(Trace<json::UserOrders> const &) {
   log::fatal("Unexpected"sv);
 }
 
-void WebSocket::operator()(Trace<json::Trades2> const &) {
+void WebSocket::operator()(Trace<json::UserTrades> const &) {
+  log::fatal("Unexpected"sv);
+}
+
+void WebSocket::operator()(Trace<json::GetAccountSummaryAck> const &) {
+  log::fatal("Unexpected"sv);
+}
+
+void WebSocket::operator()(Trace<json::GetUserTradesByCurrencyAck> const &) {
   log::fatal("Unexpected"sv);
 }
 

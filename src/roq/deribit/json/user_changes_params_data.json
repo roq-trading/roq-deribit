@@ -1,5 +1,5 @@
 {
-  "name": "roq/deribit/json/Changes",
+  "name": "roq/deribit/json/UserChangesParamsData",
   "type": "dictionary",
   "values": [
     {
@@ -18,7 +18,7 @@
     },
     {
       "name": "orders",
-      "type": "roq/deribit/json/Order",
+      "type": "roq/deribit/json/UserOrdersParamsData",
       "array": "std/span"
     }
   ]

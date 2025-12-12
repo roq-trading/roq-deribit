@@ -3,16 +3,16 @@
   "type": "dictionary",
   "values": [
     {
-      "name": "instrument_name",
+      "name": "jsonrpc",
       "type": "std/string_view"
     },
     {
-      "name": "state",
-      "type": "roq/deribit/json/State"
+      "name": "method",
+      "type": "std/string_view"
     },
     {
-      "name": "timestamp",
-      "type": "std/milliseconds"
+      "name": "params",
+      "type": "roq/deribit/json/InstrumentStateParams"
     }
   ]
 }

@@ -1,0 +1,15 @@
+{
+  "name": "roq/deribit/json/UserTradesParams",
+  "type": "dictionary",
+  "values": [
+    {
+      "name": "channel",
+      "type": "std/string_view"
+    },
+    {
+      "name": "data",
+      "type": "roq/deribit/json/Trade",
+      "array": "std/span"
+    }
+  ]
+}

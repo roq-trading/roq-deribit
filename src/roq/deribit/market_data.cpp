@@ -212,6 +212,8 @@ void MarketData::operator()(Event<Timer> const &event) {
   }
 }
 
+// io::net::ConnectionManager::Handler
+
 void MarketData::operator()(io::net::ConnectionManager::Connected const &) {
   send_logon();
   (*this)(ConnectionStatus::LOGIN_SENT);

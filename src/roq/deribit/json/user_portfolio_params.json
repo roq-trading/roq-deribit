@@ -1,0 +1,14 @@
+{
+  "name": "roq/deribit/json/UserPortfolioParams",
+  "type": "dictionary",
+  "values": [
+    {
+      "name": "channel",
+      "type": "std/string_view"
+    },
+    {
+      "name": "data",
+      "type": "roq/deribit/json/UserPortfolioParamsData"
+    }
+  ]
+}

@@ -1,5 +1,5 @@
 {
-  "name": "roq/deribit/json/Portfolio",
+  "name": "roq/deribit/json/UserPortfolioParamsData",
   "type": "dictionary",
   "values": [
     {

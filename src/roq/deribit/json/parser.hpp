@@ -8,18 +8,22 @@
 
 #include "roq/core/json/buffer_stack.hpp"
 
-// public
-#include "roq/deribit/json/ticker.hpp"
+#include "roq/deribit/json/auth.hpp"
+#include "roq/deribit/json/subscription.hpp"
 
-// private
-#include "roq/deribit/json/changes.hpp"
 #include "roq/deribit/json/chart_trades.hpp"
 #include "roq/deribit/json/instrument_state.hpp"
-#include "roq/deribit/json/order.hpp"
 #include "roq/deribit/json/platform_state.hpp"
-#include "roq/deribit/json/portfolio.hpp"
 #include "roq/deribit/json/quote.hpp"
-#include "roq/deribit/json/trades_2.hpp"
+#include "roq/deribit/json/ticker.hpp"
+
+#include "roq/deribit/json/user_changes.hpp"
+#include "roq/deribit/json/user_orders.hpp"
+#include "roq/deribit/json/user_portfolio.hpp"
+#include "roq/deribit/json/user_trades.hpp"
+
+#include "roq/deribit/json/get_account_summary_ack.hpp"
+#include "roq/deribit/json/get_user_trades_by_currency_ack.hpp"
 
 namespace roq {
 namespace deribit {
@@ -27,6 +31,8 @@ namespace json {
 
 struct Parser final {
   struct Handler {
+    virtual void operator()(Trace<Auth> const &) = 0;
+    virtual void operator()(Trace<Subscription> const &) = 0;
     // public
     virtual void operator()(Trace<PlatformState> const &) = 0;
     virtual void operator()(Trace<InstrumentState> const &) = 0;
@@ -34,13 +40,16 @@ struct Parser final {
     virtual void operator()(Trace<Ticker> const &) = 0;
     virtual void operator()(Trace<ChartTrades> const &, std::string_view const &symbol, uint32_t interval) = 0;
     // private
-    virtual void operator()(Trace<Portfolio> const &) = 0;
-    virtual void operator()(Trace<Changes> const &) = 0;
-    virtual void operator()(Trace<Order> const &) = 0;
-    virtual void operator()(Trace<Trades2> const &) = 0;
+    virtual void operator()(Trace<UserPortfolio> const &) = 0;
+    virtual void operator()(Trace<UserChanges> const &) = 0;
+    virtual void operator()(Trace<UserOrders> const &) = 0;
+    virtual void operator()(Trace<UserTrades> const &) = 0;
+    //
+    virtual void operator()(Trace<GetAccountSummaryAck> const &) = 0;
+    virtual void operator()(Trace<GetUserTradesByCurrencyAck> const &) = 0;
   };
 
-  static bool dispatch(Handler &, core::json::Value &, core::json::BufferStack &, TraceInfo const &, bool allow_unknown_event_types);
+  static bool dispatch(Handler &, std::string_view const &message, core::json::BufferStack &, TraceInfo const &, bool allow_unknown_event_types);
 };
 
 }  // namespace json

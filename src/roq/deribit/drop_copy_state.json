@@ -3,22 +3,22 @@
   "type": "enum",
   "values": [
     {
-      "name": "subscribe_portfolios"
+      "name": "subscribe_user_portfolio"
     },
     {
-      "name": "subscribe_changes"
+      "name": "subscribe_user_changes"
     },
     {
-      "name": "subscribe_orders"
+      "name": "subscribe_user_orders"
     },
     {
-      "name": "subscribe_trades"
+      "name": "subscribe_user_trades"
     },
     {
       "name": "get_account_summary"
     },
     {
-      "name": "get_trades"
+      "name": "get_user_trades_by_currency"
     },
     {
       "name": "done"

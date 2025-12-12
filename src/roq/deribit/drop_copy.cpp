@@ -130,9 +130,9 @@ void DropCopy::update_subscriptions(std::span<std::string> const &currencies) {
     currencies_.emplace_back(currency);
   }
   if (ready_ && can_download_) {
-    subscribe_portfolios(currencies);
+    subscribe_user_portfolio(currencies);
     get_account_summary(currencies);
-    get_trades(currencies);
+    get_user_trades_by_currency(currencies);
   }
 }
 
@@ -142,11 +142,13 @@ void DropCopy::download() {
   }
   can_download_ = true;
   if (ready_) {
-    subscribe_portfolios(currencies_);
+    subscribe_user_portfolio(currencies_);
     get_account_summary(currencies_);
-    get_trades(currencies_);
+    get_user_trades_by_currency(currencies_);
   }
 }
+
+// web::socket::Client::Parser::Handler
 
 void DropCopy::operator()(web::socket::Client::Connected const &) {
   // note! wait for upgrade
@@ -239,28 +241,28 @@ uint32_t DropCopy::download(DropCopyState state) {
     using enum DropCopyState;
     case UNDEFINED:
       break;
-    case SUBSCRIBE_PORTFOLIOS:
+    case SUBSCRIBE_USER_PORTFOLIO:
       if (can_download_) {
-        subscribe_portfolios(currencies_);
+        subscribe_user_portfolio(currencies_);
       }
       return 0;
-    case SUBSCRIBE_CHANGES:
-      subscribe_changes();
+    case SUBSCRIBE_USER_CHANGES:
+      subscribe_user_changes();
       return 0;
-    case SUBSCRIBE_ORDERS:
-      subscribe_orders();
+    case SUBSCRIBE_USER_ORDERS:
+      subscribe_user_orders();
       return 0;
-    case SUBSCRIBE_TRADES:
-      subscribe_trades();
+    case SUBSCRIBE_USER_TRADES:
+      subscribe_user_trades();
       return 0;
     case GET_ACCOUNT_SUMMARY:
       if (can_download_) {
         get_account_summary(currencies_);
       }
       return 0;
-    case GET_TRADES:
+    case GET_USER_TRADES_BY_CURRENCY:
       if (can_download_) {
-        get_trades(currencies_);
+        get_user_trades_by_currency(currencies_);
       }
       return 0;
     case DONE:
@@ -273,8 +275,8 @@ uint32_t DropCopy::download(DropCopyState state) {
   return 0;
 }
 
-void DropCopy::subscribe_portfolios(std::span<std::string> const &currencies) {
-  constexpr json::RequestType request_type = json::RequestType::SUBSCRIBE_PORTFOLIO;
+void DropCopy::subscribe_user_portfolio(std::span<std::string> const &currencies) {
+  constexpr json::RequestType request_type = json::RequestType::SUBSCRIBE_USER_PORTFOLIO;
   auto message = fmt::format(
       R"({{)"
       R"("method":"private/subscribe",)"
@@ -288,8 +290,8 @@ void DropCopy::subscribe_portfolios(std::span<std::string> const &currencies) {
   (*connection_).send_text(message);
 }
 
-void DropCopy::subscribe_changes() {
-  constexpr json::RequestType request_type = json::RequestType::SUBSCRIBE_CHANGES;
+void DropCopy::subscribe_user_changes() {
+  constexpr json::RequestType request_type = json::RequestType::SUBSCRIBE_USER_CHANGES;
   auto message = fmt::format(
       R"({{)"
       R"("method":"private/subscribe",)"
@@ -302,8 +304,8 @@ void DropCopy::subscribe_changes() {
   (*connection_).send_text(message);
 }
 
-void DropCopy::subscribe_orders() {
-  constexpr json::RequestType request_type = json::RequestType::SUBSCRIBE_ORDERS;
+void DropCopy::subscribe_user_orders() {
+  constexpr json::RequestType request_type = json::RequestType::SUBSCRIBE_USER_ORDERS;
   auto message = fmt::format(
       R"({{)"
       R"("method":"private/subscribe",)"
@@ -316,8 +318,8 @@ void DropCopy::subscribe_orders() {
   (*connection_).send_text(message);
 }
 
-void DropCopy::subscribe_trades() {
-  constexpr json::RequestType request_type = json::RequestType::SUBSCRIBE_TRADES;
+void DropCopy::subscribe_user_trades() {
+  constexpr json::RequestType request_type = json::RequestType::SUBSCRIBE_USER_TRADES;
   auto message = fmt::format(
       R"({{)"
       R"("method":"private/subscribe",)"
@@ -349,8 +351,8 @@ void DropCopy::get_account_summary(std::span<std::string> const &currencies) {
 }
 
 // XXX TODO specify subaccount_id
-void DropCopy::get_trades(std::span<std::string> const &currencies) {
-  constexpr json::RequestType request_type = json::RequestType::GET_TRADES;
+void DropCopy::get_user_trades_by_currency(std::span<std::string> const &currencies) {
+  constexpr json::RequestType request_type = json::RequestType::GET_USER_TRADES_BY_CURRENCY;
   auto now = clock::get_realtime<std::chrono::milliseconds>();
   auto lookback = get_download_trades_lookback(shared_.settings, download_trades_is_first_);
   log::info<1>("Download trades: lookback={}"sv, lookback);
@@ -374,10 +376,11 @@ void DropCopy::get_trades(std::span<std::string> const &currencies) {
 
 void DropCopy::parse(std::string_view const &message) {
   profile_.parse([&]() {
+    // log::debug("{}"sv, message);
     auto log_message = [&]() { log::warn(R"(*** PLEASE REPORT *** message="{}")"sv, message); };
     try {
       TraceInfo trace_info;
-      if (!core::jsonrpc::Parser::dispatch(*this, message, trace_info)) {
+      if (!json::Parser::dispatch(*this, message, decode_buffer_, trace_info, shared_.settings.experimental.allow_unknown_event_types)) {
         log_message();
       }
     } catch (...) {
@@ -387,74 +390,7 @@ void DropCopy::parse(std::string_view const &message) {
   });
 }
 
-void DropCopy::operator()(Trace<core::jsonrpc::Error> const &event, core::json::Value &value) {
-  auto &[trace_info, error] = event;
-  json::Error error_2{value};
-  if (shared_.settings.ws.allow_errors) {
-    log::warn(R"(error={}, id="{}")"sv, error_2, error.id);
-  } else {
-    log::fatal(R"(error={}, id="{}")"sv, error_2, error.id);
-  }
-}
-
-bool DropCopy::operator()(Trace<core::jsonrpc::Result> const &event, core::json::Value &value) {
-  auto &[trace_info, result] = event;
-  json::RequestType request_type{result.id};
-  switch (request_type) {
-    using enum json::RequestType::type_t;
-    case UNDEFINED_INTERNAL:
-      break;
-    case UNKNOWN_INTERNAL:
-      log::warn(R"(Unknown request_type="{}")"sv, result.id);
-      break;
-    case AUTH: {
-      json::Auth auth{value};
-      Trace event{trace_info, auth};
-      (*this)(event);
-      return true;
-    }
-    case SUBSCRIBE_PLATFORM_STATE:
-    case SUBSCRIBE_INSTRUMENT_STATE:
-    case SUBSCRIBE_QUOTE:
-    case SUBSCRIBE_TICKER:
-    case SUBSCRIBE_CHART_TRADES:
-      break;  // unexpected
-    case SUBSCRIBE_PORTFOLIO:
-    case SUBSCRIBE_CHANGES:
-    case SUBSCRIBE_ORDERS:
-    case SUBSCRIBE_TRADES:
-      return true;  // note! no need to parse
-    case GET_ACCOUNT_SUMMARY: {
-      json::Portfolio portfolio{value};
-      create_trace_and_dispatch(*this, trace_info, portfolio);
-      return true;
-    }
-    case GET_TRADES: {
-      json::Trades trades{value, decode_buffer_};
-      create_trace_and_dispatch(*this, trace_info, trades);
-      return true;
-    }
-    case GET_POSITIONS:
-      break;  // unexpected
-  }
-  return false;
-}
-
-bool DropCopy::operator()(Trace<core::jsonrpc::Notification> const &event, core::json::Value &value) {
-  auto &[trace_info, notification] = event;
-  json::Method method{notification.method};
-  switch (method) {
-    using enum json::Method::type_t;
-    case UNDEFINED_INTERNAL:
-      break;
-    case UNKNOWN_INTERNAL:
-      log::warn(R"(Unknown method="{}")"sv, notification.method);
-      break;
-    case SUBSCRIPTION:
-      return json::Parser::dispatch(*this, value, decode_buffer_, trace_info, shared_.settings.experimental.allow_unknown_event_types);
-  }
-  return false;
-}
+// json::Parser::Handler
 
 void DropCopy::operator()(Trace<json::Auth> const &event) {
   profile_.auth([&]() {
@@ -463,6 +399,9 @@ void DropCopy::operator()(Trace<json::Auth> const &event) {
     (*this)(ConnectionStatus::DOWNLOADING);
     download_.begin();
   });
+}
+
+void DropCopy::operator()(Trace<json::Subscription> const &) {
 }
 
 void DropCopy::operator()(Trace<json::PlatformState> const &) {
@@ -485,30 +424,31 @@ void DropCopy::operator()(Trace<json::ChartTrades> const &, [[maybe_unused]] std
   log::fatal("Unexpected"sv);
 }
 
-void DropCopy::operator()(Trace<json::Portfolio> const &event) {
-  log::info<2>("portfolio={}"sv, event.value);
-  auto &[trace_info, portfolio] = event;
-  auto margin_mode = portfolio.cross_collateral_enabled ? MarginMode::CROSS : MarginMode::ISOLATED;
+void DropCopy::operator()(Trace<json::UserPortfolio> const &event) {
+  auto &[trace_info, user_portfolio] = event;
+  log::info<2>("user_portfolio={}"sv, user_portfolio);
+  auto &data = user_portfolio.params.data;
+  auto margin_mode = data.cross_collateral_enabled ? MarginMode::CROSS : MarginMode::ISOLATED;
   auto funds_update = FundsUpdate{
       .stream_id = stream_id_,
       .account = account_.name,
-      .currency = portfolio.currency,
+      .currency = data.currency,
       .margin_mode = margin_mode,
-      .balance = portfolio.balance,
+      .balance = data.balance,
       .hold = NaN,
       .borrowed = NaN,
       .external_account = {},
       .update_type = UpdateType::INCREMENTAL,
-      .exchange_time_utc = portfolio.creation_timestamp,
+      .exchange_time_utc = data.creation_timestamp,
       .sending_time_utc = {},
   };
   create_trace_and_dispatch(handler_, event.trace_info, funds_update, true);
 }
 
 // note! includes trades
-void DropCopy::operator()(Trace<json::Changes> const &event) {
-  auto &[trace_info, changes] = event;
-  auto &trades = changes.trades;
+void DropCopy::operator()(Trace<json::UserChanges> const &event) {
+  auto &[trace_info, user_changes] = event;
+  auto &trades = user_changes.params.data.trades;
   for (size_t i = 0; i < std::size(trades); ++i) {
     auto &trade = trades[i];
     auto is_last = i == (std::size(trades) - 1);
@@ -516,27 +456,35 @@ void DropCopy::operator()(Trace<json::Changes> const &event) {
   }
 }
 
-void DropCopy::operator()(Trace<json::Trades> const &event) {
-  auto &[trace_info, trades] = event;
-  auto &trades_2 = trades.trades;
-  for (size_t i = 0; i < std::size(trades_2); ++i) {
-    auto &trade = trades_2[i];
-    auto is_last = i == (std::size(trades_2) - 1);
+void DropCopy::operator()(Trace<json::UserTrades> const &event) {
+  auto &[trace_info, user_trades] = event;
+  log::info<1>("user_trades={}"sv, user_trades);
+  auto &trades = user_trades.params.data;
+  for (size_t i = 0; i < std::size(trades); ++i) {
+    auto &trade = trades[i];
+    auto is_last = i == (std::size(trades) - 1);
     create_trace_and_dispatch(*this, event.trace_info, std::as_const(trade), true, is_last);
   }
   download_trades_is_first_ = false;
 }
 
-void DropCopy::operator()(Trace<json::Order> const &event) {
-  auto &[trace_info, order] = event;
-  log::info<1>("order={}"sv, order);
+void DropCopy::operator()(Trace<json::UserOrders> const &event) {
+  auto &[trace_info, user_orders] = event;
+  log::info<1>("user_orders={}"sv, user_orders);
   // do nothing?
 }
 
-// note! managed by changes
-void DropCopy::operator()(Trace<json::Trades2> const &event) {
-  auto &[trace_info, trades2] = event;
-  log::info<1>("trades={}"sv, trades2);
+// note! not using -- already managed by user-changes
+void DropCopy::operator()(Trace<json::GetAccountSummaryAck> const &event) {
+  auto &[trace_info, get_account_summary_ack] = event;
+  log::info<1>("get_account_summary_ack={}"sv, get_account_summary_ack);
+  // do nothing?
+}
+
+// note! not using -- already managed by user-changes
+void DropCopy::operator()(Trace<json::GetUserTradesByCurrencyAck> const &event) {
+  auto &[trace_info, get_user_trades_by_currency_ack] = event;
+  log::info<1>("get_user_trades_by_currency_ack={}"sv, get_user_trades_by_currency_ack);
   // do nothing?
 }
 

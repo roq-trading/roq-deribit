@@ -1,5 +1,5 @@
 {
-  "name": "roq/deribit/json/Auth",
+  "name": "roq/deribit/json/GetAccountSummaryAck",
   "type": "dictionary",
   "values": [
     {
@@ -12,7 +12,7 @@
     },
     {
       "name": "result",
-      "type": "roq/deribit/json/AuthResult"
+      "type": "roq/deribit/json/GetAccountSummaryAckResult"
     },
     {
       "name": "usIn",

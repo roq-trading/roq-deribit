@@ -6,44 +6,65 @@ include(RoqAutogen)
 
 set(AUTOGEN_SCHEMAS
     auth.json
-    changes.json
+    auth_result.json
     channel.json
     chart_data_ack.json
     chart_data.json
     chart_trades.json
+    chart_trades_params_data.json
+    chart_trades_params.json
     combo_state.json
     currencies_ack.json
     currency.json
     direction.json
     error.json
     field.json
+    get_account_summary_ack.json
+    get_account_summary_ack_result.json
+    get_user_trades_by_currency_ack.json
+    get_user_trades_by_currency_ack_result.json
     instrument.json
     instruments_ack.json
     instrument_state.json
+    instrument_state_params_data.json
+    instrument_state_params.json
     instrument_type.json
     kind.json
     liquidity.json
     method.json
     option_type.json
     order_book.json
-    order.json
-    orders.json
     order_state.json
     order_type.json
     platform_state.json
-    portfolio.json
+    platform_state_params_data.json
+    platform_state_params.json
     position.json
     positions.json
     quote.json
+    quote_params_data.json
+    quote_params.json
     request_type.json
     settlement_period.json
     state.json
+    subscription.json
     ticker.json
+    ticker_params_data.json
+    ticker_params.json
     tick_size_step.json
     time_in_force.json
     trade.json
-    trades_2.json
-    trades.json)
+    user_changes.json
+    user_changes_params_data.json
+    user_changes_params.json
+    user_orders.json
+    user_orders_params_data.json
+    user_orders_params.json
+    user_portfolio.json
+    user_portfolio_params_data.json
+    user_portfolio_params.json
+    user_trades.json
+    user_trades_params.json)
 
 roq_autogen_hpp(
   OUTPUT

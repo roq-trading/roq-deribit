@@ -1,0 +1,32 @@
+{
+  "name": "roq/deribit/json/PlatformStateParamsData",
+  "type": "dictionary",
+  "values": [
+    {
+      "name": "currency",
+      "type": "std/string_view",
+      "comment": "DEPRECATED 2022-04-27"
+    },
+    {
+      "name": "price_index",
+      "type": "std/string_view"
+    },
+    {
+      "name": "locked",
+      "type": "std/bool"
+    },
+    {
+      "name": "type",
+      "comment": "undoc"
+    },
+    {
+      "name": "currency_pair",
+      "comment": "undoc"
+    },
+    {
+      "name": "maintenance",
+      "type": "std/bool",
+      "comment": "undoc"
+    }
+  ]
+}

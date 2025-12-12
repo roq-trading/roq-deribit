@@ -20,8 +20,6 @@
 
 #include "roq/core/json/buffer_stack.hpp"
 
-#include "roq/core/jsonrpc/parser.hpp"
-
 #include "roq/core/download.hpp"
 #include "roq/core/timer_queue.hpp"
 
@@ -32,15 +30,14 @@
 #include "roq/deribit/shared.hpp"
 #include "roq/deribit/web_socket_state.hpp"
 
-#include "roq/deribit/json/auth.hpp"
 #include "roq/deribit/json/parser.hpp"
+
 #include "roq/deribit/json/positions.hpp"
-#include "roq/deribit/json/ticker.hpp"
 
 namespace roq {
 namespace deribit {
 
-struct WebSocket final : public web::socket::Client::Handler, public core::jsonrpc::Parser::Handler, public json::Parser::Handler {
+struct WebSocket final : public web::socket::Client::Handler, public json::Parser::Handler {
   struct Latch final {};
 
   struct Handler {
@@ -68,6 +65,8 @@ struct WebSocket final : public web::socket::Client::Handler, public core::jsonr
   void subscribe(size_t start_from = 0);
 
  protected:
+  // web::socket::Client::Handler
+
   void operator()(web::socket::Client::Connected const &) override;
   void operator()(web::socket::Client::Disconnected const &) override;
   void operator()(web::socket::Client::Ready const &) override;
@@ -100,14 +99,10 @@ struct WebSocket final : public web::socket::Client::Handler, public core::jsonr
 
   void parse(std::string_view const &message);
 
-  void operator()(Trace<core::jsonrpc::Error> const &, core::json::Value &) override;
-  bool operator()(Trace<core::jsonrpc::Result> const &, core::json::Value &) override;
-  bool operator()(Trace<core::jsonrpc::Notification> const &, core::json::Value &) override;
+  // json::Parser::Handler
 
-  void operator()(Trace<json::Auth> const &);
-
-  void operator()(Trace<json::Positions> const &);
-
+  void operator()(Trace<json::Auth> const &) override;
+  void operator()(Trace<json::Subscription> const &) override;
   // public:
   void operator()(Trace<json::PlatformState> const &) override;
   void operator()(Trace<json::InstrumentState> const &) override;
@@ -115,10 +110,13 @@ struct WebSocket final : public web::socket::Client::Handler, public core::jsonr
   void operator()(Trace<json::Ticker> const &) override;
   void operator()(Trace<json::ChartTrades> const &, std::string_view const &symbol, uint32_t interval) override;
   // private:
-  void operator()(Trace<json::Portfolio> const &) override;
-  void operator()(Trace<json::Changes> const &) override;
-  void operator()(Trace<json::Order> const &) override;
-  void operator()(Trace<json::Trades2> const &) override;
+  void operator()(Trace<json::UserPortfolio> const &) override;
+  void operator()(Trace<json::UserChanges> const &) override;
+  void operator()(Trace<json::UserOrders> const &) override;
+  void operator()(Trace<json::UserTrades> const &) override;
+
+  void operator()(Trace<json::GetAccountSummaryAck> const &) override;
+  void operator()(Trace<json::GetUserTradesByCurrencyAck> const &) override;
 
   template <typename C>
   bool get_top_of_book(std::string_view const &symbol, C callback) {
