@@ -27,8 +27,6 @@
 
 #include "roq/deribit/json/parser.hpp"
 
-#include "roq/deribit/json/positions.hpp"
-
 namespace roq {
 namespace deribit {
 
