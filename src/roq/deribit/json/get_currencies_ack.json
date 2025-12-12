@@ -1,5 +1,5 @@
 {
-  "name": "roq/deribit/json/CurrenciesAck",
+  "name": "roq/deribit/json/GetCurrenciesAck",
   "type": "dictionary",
   "values": [
     {

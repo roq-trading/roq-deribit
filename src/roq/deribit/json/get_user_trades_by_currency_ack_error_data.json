@@ -1,0 +1,14 @@
+{
+  "name": "roq/deribit/json/GetUserTradesByCurrencyAckErrorData",
+  "type": "dictionary",
+  "values": [
+    {
+      "name": "reason",
+      "type": "std/string_view"
+    },
+    {
+      "name": "param",
+      "type": "std/string_view"
+    }
+  ]
+}

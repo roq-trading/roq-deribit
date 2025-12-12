@@ -4,7 +4,7 @@
 
 #include "roq/core/json/buffer_stack.hpp"
 
-#include "roq/deribit/json/currencies_ack.hpp"
+#include "roq/deribit/json/get_currencies_ack.hpp"
 
 using namespace roq;
 using namespace roq::deribit;
@@ -13,9 +13,9 @@ using namespace std::literals;
 
 using namespace Catch::literals;
 
-using value_type = json::CurrenciesAck;
+using value_type = json::GetCurrenciesAck;
 
-TEST_CASE("simple", "[json_currencies_ack]") {
+TEST_CASE("simple", "[json_get_currencies_ack]") {
   auto message = R"({)"
                  R"("jsonrpc":"2.0",)"
                  R"("result":[{)"

@@ -11,6 +11,10 @@
       "type": "std/string_view"
     },
     {
+      "name": "error",
+      "type": "roq/deribit/json/GetAccountSummaryAckError"
+    },
+    {
       "name": "result",
       "type": "roq/deribit/json/GetAccountSummaryAckResult"
     },

@@ -401,7 +401,11 @@ void DropCopy::operator()(Trace<json::Auth> const &event) {
   });
 }
 
-void DropCopy::operator()(Trace<json::Subscription> const &) {
+void DropCopy::operator()(Trace<json::SubscribeAck> const &event) {
+  auto &[trace_info, subscribe_ack] = event;
+  if (subscribe_ack.error.code != 0) {
+    log::error("subscribe_ack={}"sv, subscribe_ack);
+  }
 }
 
 void DropCopy::operator()(Trace<json::PlatformState> const &) {

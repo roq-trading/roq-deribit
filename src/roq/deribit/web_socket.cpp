@@ -432,7 +432,11 @@ void WebSocket::operator()(Trace<json::Auth> const &event) {
   });
 }
 
-void WebSocket::operator()(Trace<json::Subscription> const &) {
+void WebSocket::operator()(Trace<json::SubscribeAck> const &event) {
+  auto &[trace_info, subscribe_ack] = event;
+  if (subscribe_ack.error.code != 0) {
+    log::error("subscribe_ack={}"sv, subscribe_ack);
+  }
 }
 
 void WebSocket::operator()(Trace<json::PlatformState> const &) {

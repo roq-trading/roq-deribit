@@ -20,13 +20,14 @@ set(SOURCES
     fix_security_list.cpp
     fix_user_response.cpp
     json_auth.cpp
-    json_chart_data_ack.cpp
-    json_currencies_ack.cpp
     json_get_account_summary_ack.cpp
+    json_get_chart_data_ack.cpp
+    json_get_currencies_ack.cpp
+    json_get_instruments_ack.cpp
     json_get_user_trades_by_currency_ack.cpp
-    json_instruments_ack.cpp
     json_platform_state.cpp
     json_quote.cpp
+    json_subscribe_ack.cpp
     json_ticker.cpp
     json_types.cpp
     json_user_changes.cpp

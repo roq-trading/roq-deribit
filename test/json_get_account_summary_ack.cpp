@@ -13,7 +13,34 @@ using namespace Catch::literals;
 
 using value_type = json::GetAccountSummaryAck;
 
-TEST_CASE("simple", "[json_get_account_summary_ack]") {
+TEST_CASE("failure", "[json_get_account_summary_ack]") {
+  auto message = R"({)"
+                 R"("jsonrpc":"2.0",)"
+                 R"("id":"get_account_summary",)"
+                 R"("error":{)"
+                 R"("code":-32602,)"
+                 R"("data":{)"
+                 R"("reason":"value required",)"
+                 R"("param":"currency")"
+                 R"(},)"
+                 R"("message":"Invalid params")"
+                 R"(},)"
+                 R"("usIn":1765524680582419,)"
+                 R"("usOut":1765524680582487,)"
+                 R"("usDiff":68,)"
+                 R"("testnet":true)"
+                 R"(})"sv;
+  auto helper = [](value_type const &obj) {
+    CHECK(obj.id == "get_account_summary"sv);
+    CHECK(obj.error.code == -32602);
+    CHECK(obj.error.message == "Invalid params"sv);
+    CHECK(obj.error.data.reason == "value required"sv);
+    CHECK(obj.error.data.param == "currency"sv);
+  };
+  ParserTester<value_type>::dispatch(helper, message, 8192, 1);
+}
+
+TEST_CASE("success", "[json_get_account_summary_ack]") {
   auto message = R"({)"
                  R"("jsonrpc":"2.0",)"
                  R"("id":"get_account_summary",)"
@@ -131,6 +158,7 @@ TEST_CASE("simple", "[json_get_account_summary_ack]") {
                  R"(})"sv;
   auto helper = [](value_type const &obj) {
     CHECK(obj.id == "get_account_summary"sv);
+    CHECK(obj.error.code == 0);
     CHECK(obj.result.maintenance_margin == 0.0_a);
   };
   ParserTester<value_type>::dispatch(helper, message, 8192, 1);

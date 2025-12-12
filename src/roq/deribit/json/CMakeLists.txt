@@ -8,23 +8,27 @@ set(AUTOGEN_SCHEMAS
     auth.json
     auth_result.json
     channel.json
-    chart_data_ack.json
     chart_data.json
     chart_trades.json
     chart_trades_params_data.json
     chart_trades_params.json
     combo_state.json
-    currencies_ack.json
     currency.json
     direction.json
     error.json
     field.json
+    get_account_summary_ack_error_data.json
+    get_account_summary_ack_error.json
     get_account_summary_ack.json
     get_account_summary_ack_result.json
+    get_chart_data_ack.json
+    get_currencies_ack.json
+    get_instruments_ack.json
+    get_user_trades_by_currency_ack_error_data.json
+    get_user_trades_by_currency_ack_error.json
     get_user_trades_by_currency_ack.json
     get_user_trades_by_currency_ack_result.json
     instrument.json
-    instruments_ack.json
     instrument_state.json
     instrument_state_params_data.json
     instrument_state_params.json
@@ -47,7 +51,8 @@ set(AUTOGEN_SCHEMAS
     request_type.json
     settlement_period.json
     state.json
-    subscription.json
+    subscribe_ack_error.json
+    subscribe_ack.json
     ticker.json
     ticker_params_data.json
     ticker_params.json

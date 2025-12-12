@@ -4,7 +4,7 @@
 
 #include "roq/core/json/buffer_stack.hpp"
 
-#include "roq/deribit/json/instruments_ack.hpp"
+#include "roq/deribit/json/get_instruments_ack.hpp"
 
 using namespace roq;
 using namespace roq::deribit;
@@ -14,9 +14,9 @@ using namespace std::chrono_literals;
 
 using namespace Catch::literals;
 
-using value_type = json::InstrumentsAck;
+using value_type = json::GetInstrumentsAck;
 
-TEST_CASE("simple", "[json_instruments_ack]") {
+TEST_CASE("simple", "[json_get_instruments_ack]") {
   auto message = R"({)"
                  R"("jsonrpc":"2.0",)"
                  R"("result":[{)"

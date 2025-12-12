@@ -4,7 +4,7 @@
 
 #include "roq/core/json/buffer_stack.hpp"
 
-#include "roq/deribit/json/chart_data_ack.hpp"
+#include "roq/deribit/json/get_chart_data_ack.hpp"
 
 using namespace roq;
 using namespace roq::deribit;
@@ -13,9 +13,9 @@ using namespace std::literals;
 
 using namespace Catch::literals;
 
-using value_type = json::ChartDataAck;
+using value_type = json::GetChartDataAck;
 
-TEST_CASE("simple", "[json_chart_data_ack]") {
+TEST_CASE("simple", "[json_get_chart_data_ack]") {
   auto const message =
       R"({)"
       R"("usOut":1754965829157500,)"

@@ -30,7 +30,8 @@ struct ParserTester final : public json::Parser::Handler {
   explicit ParserTester(callback_type const &callback) : callback_{callback} {}
 
   void operator()(Trace<json::Auth> const &event) override { dispatch_helper(event); }
-  void operator()(Trace<json::Subscription> const &event) override { dispatch_helper(event); }
+
+  void operator()(Trace<json::SubscribeAck> const &event) override { dispatch_helper(event); }
 
   void operator()(Trace<json::PlatformState> const &event) override { dispatch_helper(event); }
   void operator()(Trace<json::InstrumentState> const &event) override { dispatch_helper(event); }

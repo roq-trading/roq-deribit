@@ -1,5 +1,5 @@
 {
-  "name": "roq/deribit/json/InstrumentsAck",
+  "name": "roq/deribit/json/GetInstrumentsAck",
   "type": "dictionary",
   "values": [
     {

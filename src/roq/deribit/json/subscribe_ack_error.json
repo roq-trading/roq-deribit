@@ -1,0 +1,17 @@
+{
+  "name": "roq/deribit/json/SubscribeAckError",
+  "type": "dictionary",
+  "values": [
+    {
+      "name": "code",
+      "type": "std/int32"
+    },
+    {
+      "name": "message",
+      "type": "std/string_view"
+    },
+    {
+      "name": "data"
+    }
+  ]
+}

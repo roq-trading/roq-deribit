@@ -191,13 +191,13 @@ bool Parser::dispatch(
           case SUBSCRIBE_QUOTE:
           case SUBSCRIBE_TICKER:
           case SUBSCRIBE_CHART_TRADES:
-            result = true;
-            return true;  // note! no need to parse
+            result = dispatch_helper<SubscribeAck>(handler, message, buffer_stack, trace_info);
+            return true;
           case SUBSCRIBE_USER_PORTFOLIO:
           case SUBSCRIBE_USER_CHANGES:
           case SUBSCRIBE_USER_ORDERS:
           case SUBSCRIBE_USER_TRADES:
-            result = true;
+            result = dispatch_helper<SubscribeAck>(handler, message, buffer_stack, trace_info);
             return true;
           case GET_ACCOUNT_SUMMARY:
             result = dispatch_helper<GetAccountSummaryAck>(handler, message, buffer_stack, trace_info);

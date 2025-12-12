@@ -102,7 +102,7 @@ struct WebSocket final : public web::socket::Client::Handler, public json::Parse
   // json::Parser::Handler
 
   void operator()(Trace<json::Auth> const &) override;
-  void operator()(Trace<json::Subscription> const &) override;
+  void operator()(Trace<json::SubscribeAck> const &) override;
   // public:
   void operator()(Trace<json::PlatformState> const &) override;
   void operator()(Trace<json::InstrumentState> const &) override;

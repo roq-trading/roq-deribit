@@ -9,7 +9,8 @@
 #include "roq/core/json/buffer_stack.hpp"
 
 #include "roq/deribit/json/auth.hpp"
-#include "roq/deribit/json/subscription.hpp"
+
+#include "roq/deribit/json/subscribe_ack.hpp"
 
 #include "roq/deribit/json/chart_trades.hpp"
 #include "roq/deribit/json/instrument_state.hpp"
@@ -32,7 +33,7 @@ namespace json {
 struct Parser final {
   struct Handler {
     virtual void operator()(Trace<Auth> const &) = 0;
-    virtual void operator()(Trace<Subscription> const &) = 0;
+    virtual void operator()(Trace<SubscribeAck> const &) = 0;
     // public
     virtual void operator()(Trace<PlatformState> const &) = 0;
     virtual void operator()(Trace<InstrumentState> const &) = 0;

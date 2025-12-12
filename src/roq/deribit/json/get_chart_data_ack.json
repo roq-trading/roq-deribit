@@ -1,5 +1,5 @@
 {
-  "name": "roq/deribit/json/ChartDataAck",
+  "name": "roq/deribit/json/GetChartDataAck",
   "type": "dictionary",
   "values": [
     {

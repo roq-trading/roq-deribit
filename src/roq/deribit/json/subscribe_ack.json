@@ -1,5 +1,5 @@
 {
-  "name": "roq/deribit/json/GetUserTradesByCurrencyAck",
+  "name": "roq/deribit/json/SubscribeAck",
   "type": "dictionary",
   "values": [
     {
@@ -12,11 +12,12 @@
     },
     {
       "name": "error",
-      "type": "roq/deribit/json/GetUserTradesByCurrencyAckError"
+      "type": "roq/deribit/json/SubscribeAckError"
     },
     {
       "name": "result",
-      "type": "roq/deribit/json/GetUserTradesByCurrencyAckResult"
+      "type": "std/string_view",
+      "array": "std/span"
     },
     {
       "name": "usIn",
