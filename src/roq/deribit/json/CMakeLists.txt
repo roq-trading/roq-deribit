@@ -44,7 +44,6 @@ set(AUTOGEN_SCHEMAS
     platform_state_params_data.json
     platform_state_params.json
     position.json
-    positions.json
     quote.json
     quote_params_data.json
     quote_params.json

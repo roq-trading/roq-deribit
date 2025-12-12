@@ -39,7 +39,6 @@ platform_state.hpp
 platform_state_params_data.hpp
 platform_state_params.hpp
 position.hpp
-positions.hpp
 quote.hpp
 quote_params_data.hpp
 quote_params.hpp
@@ -104,7 +103,6 @@ platform_state.cpp
 platform_state_params_data.cpp
 platform_state_params.cpp
 position.cpp
-positions.cpp
 quote.cpp
 quote_params_data.cpp
 quote_params.cpp

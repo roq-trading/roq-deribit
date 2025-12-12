@@ -103,8 +103,6 @@ struct DropCopy final : public web::socket::Client::Handler, public json::Parser
   void operator()(Trace<json::GetAccountSummaryAck> const &) override;
   void operator()(Trace<json::GetUserTradesByCurrencyAck> const &) override;
 
-  void operator()(Trace<json::Positions> const &);
-
   void operator()(Trace<json::Trade> const &, bool is_download, bool is_last);
 
  private:
