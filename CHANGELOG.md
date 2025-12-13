@@ -6,6 +6,9 @@ All notable changes will be documented in this file.
 
 ## 1.1.1 &ndash; 20251214
 
+### Fixed
+
+* `TimeInForce::GTC` was incorrectly applied to all order updates (#539)
 * Incorrect request-type mapping IOC or FOK orders (#538)
 
 ## 1.1.0 &ndash; 2025-11-22

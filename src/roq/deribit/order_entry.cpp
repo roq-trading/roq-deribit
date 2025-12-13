@@ -808,6 +808,20 @@ void OrderEntry::operator()(Trace<fix::ExecutionReport> const &event, roq::fix::
   auto error = fix::map_error(execution_report.text);
   auto [last_traded_quantity, last_traded_price] = compute_last_traded(execution_report.last_qty, execution_report.last_px, execution_report.no_fills);
   auto update_type = compute_update_type(download_);
+  auto time_in_force = [&]() -> TimeInForce {
+    switch (update_type) {
+      using enum UpdateType;
+      case UNDEFINED:
+        break;
+      case SNAPSHOT:
+        return TimeInForce::GTC;
+      case INCREMENTAL:
+        break;
+      case STALE:
+        break;
+    }
+    return {};
+  }();
   // note!
   // we have very little information to match requests as we can't rewrite ClOrdID
   // - create and modify both have exec_type=ORDER_STATUS and ord_status=NEW
@@ -832,7 +846,7 @@ void OrderEntry::operator()(Trace<fix::ExecutionReport> const &event, roq::fix::
       .margin_mode = {},
       .max_show_quantity = execution_report.max_show,
       .order_type = order_type,
-      .time_in_force = TimeInForce::GTC,  // note! can't download + Deribit's NewOrderSingle default is GTC
+      .time_in_force = time_in_force,
       .execution_instructions = {},
       .create_time_utc = {},
       .update_time_utc = execution_report.transact_time,
