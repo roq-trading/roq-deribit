@@ -214,7 +214,7 @@ Configuration
 
 .. code-block:: shell
 
-   $ --flagfile $CONDA_PREFIX/share/roq-deribit/config.toml
+   $ --config_file $CONDA_PREFIX/share/roq-deribit/config.toml
 
 .. important::
 
