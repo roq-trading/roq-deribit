@@ -9,7 +9,7 @@ namespace deribit {
 
 // === IMPLEMENTATION ===
 
-API API::create(Settings const &settings) {
+API API::create(Settings const &) {
   return {
       .market_data{
           .currencies = "/api/v2/public/get_currencies"sv,
