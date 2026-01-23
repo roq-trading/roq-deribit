@@ -122,6 +122,10 @@
     {
       "name": "max_non_default_leverage",
       "type": "std/double"
+    },
+    {
+      "name": "state",
+      "type": "roq/deribit/json/State"
     }
   ]
 }
