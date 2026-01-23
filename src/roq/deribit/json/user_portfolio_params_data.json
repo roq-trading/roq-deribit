@@ -252,6 +252,26 @@
     },
     {
       "name": "trading_products_details"
+    },
+    {
+      "name": "total_delta_total_usd",
+      "type": "std/double"
+    },
+    {
+      "name": "total_equity_usd",
+      "type": "std/double"
+    },
+    {
+      "name": "total_margin_balance_usd",
+      "type": "std/double"
+    },
+    {
+      "name": "total_maintenance_margin_usd",
+      "type": "std/double"
+    },
+    {
+      "name": "total_initial_margin_usd",
+      "type": "std/double"
     }
   ]
 }
