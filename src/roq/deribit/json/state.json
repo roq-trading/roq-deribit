@@ -25,6 +25,12 @@
     },
     {
       "name": "started"
+    },
+    {
+      "name": "settlement"
+    },
+    {
+      "name": "delivered"
     }
   ]
 }
