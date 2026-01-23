@@ -631,7 +631,7 @@ void OrderEntry::operator()(Trace<fix::PositionReport> const &event, roq::fix::H
         .account = account_.name,
         .exchange = shared_.settings.exchange,
         .symbol = position_qty.symbol,
-        .margin_mode = {},
+        .margin_mode = {},  // XXX FIXME TODO
         .external_account = {},
         .long_quantity = long_quantity,
         .short_quantity = short_quantity,
@@ -844,7 +844,7 @@ void OrderEntry::operator()(Trace<fix::ExecutionReport> const &event, roq::fix::
       .symbol = execution_report.symbol,
       .side = side,
       .position_effect = {},
-      .margin_mode = {},
+      .margin_mode = {},  // XXX FIXME TODO
       .max_show_quantity = execution_report.max_show,
       .order_type = order_type,
       .time_in_force = time_in_force,
@@ -919,7 +919,7 @@ void OrderEntry::operator()(Trace<fix::ExecutionReport> const &event, roq::fix::
         .symbol = execution_report.symbol,
         .side = side,
         .position_effect = {},
-        .margin_mode = {},
+        .margin_mode = {},  // XXX FIXME TODO
         .create_time_utc = execution_report.transact_time,
         .update_time_utc = execution_report.transact_time,
         .external_account = {},
