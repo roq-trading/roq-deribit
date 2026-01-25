@@ -249,6 +249,17 @@
     {
       "name": "total_initial_margin_usd",
       "type": "std/double"
+    },
+    {
+      "name": "login_enabled",
+      "type": "std/bool"
+    },
+    {
+      "name": "fees"
+    },
+    {
+      "name": "fee_group",
+      "type": "std/string_view"
     }
   ]
 }
