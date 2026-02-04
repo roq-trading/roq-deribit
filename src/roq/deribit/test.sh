@@ -53,7 +53,6 @@ $PREFIX "./roq-deribit" \
   --event_log_dir "$HOME/var/lib/roq/data" \
   --client_listen_address "unix://$HOME/run/$NAME.sock" \
   --service_listen_address "unix://$HOME/run/metrics/$NAME.sock" \
-  --cache_all_reference_data=true \
   --download_trades_lookback=5m \
   --download_trades_lookback_on_restart=24h \
   --oms_cache=true \
