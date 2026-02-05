@@ -855,6 +855,8 @@ void OrderEntry::operator()(Trace<fix::ExecutionReport> const &event, roq::fix::
       .external_order_id = execution_report.order_id,
       .client_order_id = execution_report.deribit_label,
       .order_status = order_status,
+      .error = {},
+      .text = {},
       .quantity = execution_report.order_qty,
       .price = execution_report.price,
       .stop_price = execution_report.stop_px,
