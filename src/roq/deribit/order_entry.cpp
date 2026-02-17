@@ -161,7 +161,7 @@ void OrderEntry::operator()(Event<Timer> const &event) {
 }
 
 uint16_t OrderEntry::operator()(
-    Event<CreateOrder> const &event, server::oms::Order const &order, server::oms::RefData const &, std::string_view const &request_id) {
+    Event<CreateOrder> const &event, server::oms::Order const &, server::oms::RefData const &ref_data, std::string_view const &request_id) {
   if (!ready()) [[unlikely]] {
     throw server::oms::NotReady{"not ready"sv};
   }
@@ -179,13 +179,13 @@ uint16_t OrderEntry::operator()(
   auto new_order_single = fix::NewOrderSingle{
       .cl_ord_id = request_id,
       .side = side,
-      .order_qty = {create_order.quantity, order.quantity_precision.precision},
-      .price = {create_order.price, order.price_precision.precision},
+      .order_qty = {create_order.quantity, ref_data.quantity.precision},
+      .price = {create_order.price, ref_data.price.precision},
       .symbol = create_order.symbol,
       .exec_inst = exec_inst,
       .ord_type = ord_type,
       .time_in_force = time_in_force,
-      .stop_px = {create_order.stop_price, order.price_precision.precision},
+      .stop_px = {create_order.stop_price, ref_data.price.precision},
       .deribit_label = request_id,
       .deribit_adv_order_type = '\0',
       .deribit_mm_protection = {},
@@ -200,7 +200,7 @@ uint16_t OrderEntry::operator()(
 uint16_t OrderEntry::operator()(
     Event<ModifyOrder> const &event,
     server::oms::Order const &order,
-    server::oms::RefData const &,
+    server::oms::RefData const &ref_data,
     std::string_view const &request_id,
     [[maybe_unused]] std::string_view const &previous_request_id) {
   if (!ready()) [[unlikely]] {
@@ -217,9 +217,9 @@ uint16_t OrderEntry::operator()(
       .symbol = order.symbol,
       .currency = {},
       .side = side,
-      .order_qty = {modify_order.quantity, order.quantity_precision.precision},
+      .order_qty = {modify_order.quantity, ref_data.quantity.precision},
       .ord_type = ord_type,
-      .price = {modify_order.price, order.price_precision.precision},
+      .price = {modify_order.price, ref_data.price.precision},
       .exec_inst = {},
       .deribit_mm_protection = {},
   };
