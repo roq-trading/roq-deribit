@@ -107,6 +107,8 @@ constexpr Helper<deribit::json::State>::operator std::optional<roq::TradingStatu
       return TradingStatus::UNDEFINED;
     case LOCKED:
       return TradingStatus::UNDEFINED;
+    case HALTED:
+      return TradingStatus::CLOSE;
   }
   return {};
 }
@@ -123,6 +125,7 @@ static_assert(Helper{deribit::json::State{deribit::json::State::STARTED}} == roq
 static_assert(Helper{deribit::json::State{deribit::json::State::SETTLEMENT}} == roq::TradingStatus::UNDEFINED);
 static_assert(Helper{deribit::json::State{deribit::json::State::DELIVERED}} == roq::TradingStatus::UNDEFINED);
 static_assert(Helper{deribit::json::State{deribit::json::State::LOCKED}} == roq::TradingStatus::UNDEFINED);
+static_assert(Helper{deribit::json::State{deribit::json::State::HALTED}} == roq::TradingStatus::CLOSE);
 
 template <>
 template <>
