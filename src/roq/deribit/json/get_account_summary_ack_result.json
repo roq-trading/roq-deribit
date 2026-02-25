@@ -263,6 +263,14 @@
     },
     {
       "name": "account_balance_review"
+    },
+    {
+      "name": "projected_close_out_margin",
+      "type": "std/double"
+    },
+    {
+      "name": "close_out_margin",
+      "type": "std/double"
     }
   ]
 }

@@ -58,7 +58,7 @@ struct UDPSnapshot final : public io::net::udp::Receiver::Handler, public sbe::P
 
   // utils
 
-  void publish_stream_status(TraceInfo const &, ConnectionStatus connection_status);
+  void publish_stream_status(TraceInfo const &, ConnectionStatus, std::string_view const &reason = {});
 
   template <typename Callback>
   void get_channel(sbe::Frame const &, Callback);

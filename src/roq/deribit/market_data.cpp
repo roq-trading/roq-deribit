@@ -194,7 +194,7 @@ void MarketData::operator()(Event<Timer> const &event) {
     log::info("closing connection"sv);
     (*connection_manager_).close();
   } else {
-    if (status_ == ConnectionStatus::READY) {
+    if (connection_status_ == ConnectionStatus::READY) {
       if (test_disconnect_time_.count() != 0 && test_disconnect_time_ < event.value.now) [[unlikely]] {
         if (shared_.settings.fix.test_market_data_disconnect.count() != 0) {
           log::warn("*** TEST: DISCONNECT (stream_id={}) ***"sv, stream_id_);
@@ -274,26 +274,26 @@ void MarketData::operator()(io::net::ConnectionManager::Read const &) {
 void MarketData::operator()(io::net::ConnectionManager::Write const &) {
 }
 
-void MarketData::operator()(ConnectionStatus status) {
-  if (utils::update(status_, status)) {
-    TraceInfo trace_info;
-    auto stream_status = StreamStatus{
-        .stream_id = stream_id_,
-        .account = {},
-        .supports = supports_,
-        .transport = Transport::TCP,
-        .protocol = Protocol::FIX,
-        .encoding = {Encoding::FIX},
-        .priority = Priority::PRIMARY,
-        .connection_status = status_,
-        .interface = (*connection_factory_).get_interface(),
-        .authority = (*connection_factory_).get_current_authority(),
-        .path = (*connection_factory_).get_current_path(),
-        .proxy = {},
-    };
-    log::info<1>("stream_status={}"sv, stream_status);
-    create_trace_and_dispatch(handler_, trace_info, stream_status);
-  }
+void MarketData::operator()(ConnectionStatus connection_status, std::string_view const &reason) {
+  connection_status_ = connection_status;
+  TraceInfo trace_info;
+  auto stream_status = StreamStatus{
+      .stream_id = stream_id_,
+      .account = {},
+      .supports = supports_,
+      .transport = Transport::TCP,
+      .protocol = Protocol::FIX,
+      .encoding = {Encoding::FIX},
+      .priority = Priority::PRIMARY,
+      .connection_status = connection_status_,
+      .reason = reason,
+      .interface = (*connection_factory_).get_interface(),
+      .authority = (*connection_factory_).get_current_authority(),
+      .path = (*connection_factory_).get_current_path(),
+      .proxy = {},
+  };
+  log::info<1>("stream_status={}"sv, stream_status);
+  create_trace_and_dispatch(handler_, trace_info, stream_status);
 }
 
 void MarketData::send_logon() {
@@ -354,6 +354,7 @@ uint32_t MarketData::download(MarketDataState state) {
       break;
     case SECURITIES:
       if (master_) {
+        (*this)(ConnectionStatus::DOWNLOADING, "securities"sv);
         download_securities();
         return 1;
       } else {
@@ -601,7 +602,6 @@ void MarketData::operator()(Trace<fix::Heartbeat> const &event, roq::fix::Header
 void MarketData::operator()(Trace<fix::Logon> const &event, roq::fix::Header const &header) {
   auto &[trace_info, logon] = event;
   log::info<2>("event={{header={}, logon={}}}"sv, header, logon);
-  (*this)(ConnectionStatus::DOWNLOADING);
   download_.begin();
 }
 

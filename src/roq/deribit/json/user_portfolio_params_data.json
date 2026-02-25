@@ -272,6 +272,14 @@
     {
       "name": "total_initial_margin_usd",
       "type": "std/double"
+    },
+    {
+      "name": "projected_close_out_margin",
+      "type": "std/double"
+    },
+    {
+      "name": "close_out_margin",
+      "type": "std/double"
     }
   ]
 }

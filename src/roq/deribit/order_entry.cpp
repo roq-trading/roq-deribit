@@ -381,26 +381,26 @@ void OrderEntry::operator()(io::net::ConnectionManager::Read const &) {
 void OrderEntry::operator()(io::net::ConnectionManager::Write const &) {
 }
 
-void OrderEntry::operator()(ConnectionStatus status) {
-  if (utils::update(status_, status)) {
-    TraceInfo trace_info;
-    auto stream_status = StreamStatus{
-        .stream_id = stream_id_,
-        .account = account_.name,
-        .supports = SUPPORTS,
-        .transport = Transport::TCP,
-        .protocol = Protocol::FIX,
-        .encoding = {Encoding::FIX},
-        .priority = Priority::PRIMARY,
-        .connection_status = status_,
-        .interface = (*connection_factory_).get_interface(),
-        .authority = (*connection_factory_).get_current_authority(),
-        .path = (*connection_factory_).get_current_path(),
-        .proxy = {},
-    };
-    log::info("stream_status={}"sv, stream_status);
-    create_trace_and_dispatch(handler_, trace_info, stream_status);
-  }
+void OrderEntry::operator()(ConnectionStatus connection_status, std::string_view const &reason) {
+  connection_status_ = connection_status;
+  TraceInfo trace_info;
+  auto stream_status = StreamStatus{
+      .stream_id = stream_id_,
+      .account = account_.name,
+      .supports = SUPPORTS,
+      .transport = Transport::TCP,
+      .protocol = Protocol::FIX,
+      .encoding = {Encoding::FIX},
+      .priority = Priority::PRIMARY,
+      .connection_status = connection_status_,
+      .reason = reason,
+      .interface = (*connection_factory_).get_interface(),
+      .authority = (*connection_factory_).get_current_authority(),
+      .path = (*connection_factory_).get_current_path(),
+      .proxy = {},
+  };
+  log::info("stream_status={}"sv, stream_status);
+  create_trace_and_dispatch(handler_, trace_info, stream_status);
 }
 
 void OrderEntry::send_logon() {
@@ -459,10 +459,12 @@ uint32_t OrderEntry::download(OrderEntryState state) {
       assert(false);
       break;
     case POSITIONS:
+      (*this)(ConnectionStatus::DOWNLOADING, "positions"sv);
       subscribe_positions();
       return 1;
     case ORDERS:
       download_orders();
+      (*this)(ConnectionStatus::DOWNLOADING, "orders"sv);
       return 1;  // note! first report includes the true number of reports
     case DONE:
       (*this)(ConnectionStatus::READY);
@@ -593,7 +595,6 @@ void OrderEntry::operator()(Trace<fix::Logon> const &event, roq::fix::Header con
   auto &[trace_info, logon] = event;
   log::info<2>("event={{header={}, logon={}}}"sv, header, logon);
   last_logon_or_heartbeat_ = {};
-  (*this)(ConnectionStatus::DOWNLOADING);
   download_.begin();
 }
 

@@ -187,26 +187,26 @@ void DropCopy::operator()(web::socket::Client::Binary const &) {
   log::fatal("Unexpected"sv);
 }
 
-void DropCopy::operator()(ConnectionStatus status) {
-  if (utils::update(status_, status)) {
-    TraceInfo trace_info;
-    auto stream_status = StreamStatus{
-        .stream_id = stream_id_,
-        .account = account_.name,
-        .supports = SUPPORTS,
-        .transport = Transport::TCP,
-        .protocol = Protocol::WS,
-        .encoding = {Encoding::JSON},
-        .priority = Priority::PRIMARY,
-        .connection_status = status_,
-        .interface = (*connection_).get_interface(),
-        .authority = (*connection_).get_current_authority(),
-        .path = (*connection_).get_current_path(),
-        .proxy = (*connection_).get_proxy(),
-    };
-    log::info("stream_status={}"sv, stream_status);
-    create_trace_and_dispatch(handler_, trace_info, stream_status);
-  }
+void DropCopy::operator()(ConnectionStatus connection_status, std::string_view const &reason) {
+  connection_status_ = connection_status;
+  TraceInfo trace_info;
+  auto stream_status = StreamStatus{
+      .stream_id = stream_id_,
+      .account = account_.name,
+      .supports = SUPPORTS,
+      .transport = Transport::TCP,
+      .protocol = Protocol::WS,
+      .encoding = {Encoding::JSON},
+      .priority = Priority::PRIMARY,
+      .connection_status = connection_status_,
+      .reason = reason,
+      .interface = (*connection_).get_interface(),
+      .authority = (*connection_).get_current_authority(),
+      .path = (*connection_).get_current_path(),
+      .proxy = (*connection_).get_proxy(),
+  };
+  log::info("stream_status={}"sv, stream_status);
+  create_trace_and_dispatch(handler_, trace_info, stream_status);
 }
 
 void DropCopy::login() {
@@ -242,25 +242,31 @@ uint32_t DropCopy::download(DropCopyState state) {
       break;
     case SUBSCRIBE_USER_PORTFOLIO:
       if (can_download_) {
+        (*this)(ConnectionStatus::DOWNLOADING, "subscribe-user-portfolio"sv);
         subscribe_user_portfolio(currencies_);
       }
       return 0;
     case SUBSCRIBE_USER_CHANGES:
+      (*this)(ConnectionStatus::DOWNLOADING, "subscribe-user-changes"sv);
       subscribe_user_changes();
       return 0;
     case SUBSCRIBE_USER_ORDERS:
+      (*this)(ConnectionStatus::DOWNLOADING, "subscribe-user-orders"sv);
       subscribe_user_orders();
       return 0;
     case SUBSCRIBE_USER_TRADES:
+      (*this)(ConnectionStatus::DOWNLOADING, "subscribe-user-trades"sv);
       subscribe_user_trades();
       return 0;
     case GET_ACCOUNT_SUMMARY:
       if (can_download_) {
+        (*this)(ConnectionStatus::DOWNLOADING, "account-summary"sv);
         get_account_summary(currencies_);
       }
       return 0;
     case GET_USER_TRADES_BY_CURRENCY:
       if (can_download_) {
+        (*this)(ConnectionStatus::DOWNLOADING, "user-trades-by-currency"sv);
         get_user_trades_by_currency(currencies_);
       }
       return 0;
@@ -395,7 +401,6 @@ void DropCopy::operator()(Trace<json::Auth> const &event) {
   profile_.auth([&]() {
     auto &[trace_info, auth] = event;
     log::info<2>("auth={}"sv, auth);
-    (*this)(ConnectionStatus::DOWNLOADING);
     download_.begin();
   });
 }

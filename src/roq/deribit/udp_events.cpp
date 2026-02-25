@@ -457,10 +457,8 @@ void UDPEvents::operator()(metrics::Writer &writer) const {
       .write(profile_.parse, metrics::Type::PROFILE);
 }
 
-void UDPEvents::publish_stream_status(TraceInfo const &trace_info, ConnectionStatus connection_status) {
-  if (!utils::update(connection_status_, connection_status)) {
-    return;
-  }
+void UDPEvents::publish_stream_status(TraceInfo const &trace_info, ConnectionStatus connection_status, std::string_view const &reason) {
+  connection_status_ = connection_status;
   auto stream_status = StreamStatus{
       .stream_id = stream_id_,
       .account = {},
@@ -470,6 +468,7 @@ void UDPEvents::publish_stream_status(TraceInfo const &trace_info, ConnectionSta
       .encoding = {Encoding::SBE},
       .priority = Priority::PRIMARY,
       .connection_status = connection_status_,
+      .reason = reason,
       .interface = {},
       .authority = {},
       .path = {},

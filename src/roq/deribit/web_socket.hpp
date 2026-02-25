@@ -74,7 +74,7 @@ struct WebSocket final : public web::socket::Client::Handler, public json::Parse
   void operator()(web::socket::Client::Binary const &) override;
 
  private:
-  void operator()(ConnectionStatus);
+  void operator()(ConnectionStatus, std::string_view const &reason = {});
 
   void login();
 
@@ -162,7 +162,7 @@ struct WebSocket final : public web::socket::Client::Handler, public json::Parse
   utils::unordered_map<std::string, TradingStatus> trading_status_;
   // state
   bool ready_ = false;
-  ConnectionStatus status_ = {};
+  ConnectionStatus connection_status_ = {};
   core::Download<WebSocketState> download_;
   // queue
   core::TimerQueue<std::string> subscribe_queue_;

@@ -194,26 +194,26 @@ void WebSocket::operator()(web::socket::Client::Binary const &) {
   log::fatal("Unexpected"sv);
 }
 
-void WebSocket::operator()(ConnectionStatus status) {
-  if (utils::update(status_, status)) {
-    TraceInfo trace_info;
-    auto stream_status = StreamStatus{
-        .stream_id = stream_id_,
-        .account = {},
-        .supports = supports_,
-        .transport = Transport::TCP,
-        .protocol = Protocol::WS,
-        .encoding = {Encoding::JSON},
-        .priority = Priority::PRIMARY,
-        .connection_status = status_,
-        .interface = (*connection_).get_interface(),
-        .authority = (*connection_).get_current_authority(),
-        .path = (*connection_).get_current_path(),
-        .proxy = (*connection_).get_proxy(),
-    };
-    log::info("stream_status={}"sv, stream_status);
-    create_trace_and_dispatch(handler_, trace_info, stream_status);
-  }
+void WebSocket::operator()(ConnectionStatus connection_status, std::string_view const &reason) {
+  connection_status_ = connection_status;
+  TraceInfo trace_info;
+  auto stream_status = StreamStatus{
+      .stream_id = stream_id_,
+      .account = {},
+      .supports = supports_,
+      .transport = Transport::TCP,
+      .protocol = Protocol::WS,
+      .encoding = {Encoding::JSON},
+      .priority = Priority::PRIMARY,
+      .connection_status = connection_status_,
+      .reason = reason,
+      .interface = (*connection_).get_interface(),
+      .authority = (*connection_).get_current_authority(),
+      .path = (*connection_).get_current_path(),
+      .proxy = (*connection_).get_proxy(),
+  };
+  log::info("stream_status={}"sv, stream_status);
+  create_trace_and_dispatch(handler_, trace_info, stream_status);
 }
 
 void WebSocket::login() {
@@ -251,18 +251,21 @@ uint32_t WebSocket::download(WebSocketState state) {
       if (!master_) {
         return 0;
       }
+      (*this)(ConnectionStatus::DOWNLOADING, "currencies"sv);
       download_currencies();
       return 1;
     case INSTRUMENTS: {
       if (!master_) {
         return 0;
       }
+      (*this)(ConnectionStatus::DOWNLOADING, "instruments"sv);
       download_instruments();
       return 1;
     }
     case SUBSCRIBE:
       assert(!ready_);
       ready_ = true;
+      (*this)(ConnectionStatus::DOWNLOADING, "subscribe"sv);
       if (master_) {
         subscribe_platform_state();
         subscribe_instrument_state();
@@ -426,7 +429,6 @@ void WebSocket::operator()(Trace<json::Auth> const &event) {
   profile_.auth([&]() {
     auto &[trace_info, auth] = event;
     log::info<2>("auth={}"sv, auth);
-    (*this)(ConnectionStatus::DOWNLOADING);
     download_.begin();
   });
 }

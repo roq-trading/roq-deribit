@@ -97,7 +97,7 @@ struct MarketData final : public io::net::ConnectionManager::Handler {
   void operator()(io::net::ConnectionManager::Write const &) override;
 
  private:
-  void operator()(ConnectionStatus);
+  void operator()(ConnectionStatus, std::string_view const &reason = {});
 
   void send_logon();
   void send_logout(std::string_view const &text);
@@ -172,7 +172,7 @@ struct MarketData final : public io::net::ConnectionManager::Handler {
   // state
   bool ready_ = false;
   std::chrono::nanoseconds next_heartbeat_ = {};
-  ConnectionStatus status_ = {};
+  ConnectionStatus connection_status_ = {};
   core::Download<MarketDataState> download_;
   std::chrono::nanoseconds last_logon_or_heartbeat_ = {};
   utils::unordered_set<std::string> latch_;

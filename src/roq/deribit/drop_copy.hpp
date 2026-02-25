@@ -65,7 +65,7 @@ struct DropCopy final : public web::socket::Client::Handler, public json::Parser
   void operator()(web::socket::Client::Binary const &) override;
 
  private:
-  void operator()(ConnectionStatus);
+  void operator()(ConnectionStatus, std::string_view const &reason = {});
 
   void login();
 
@@ -129,7 +129,7 @@ struct DropCopy final : public web::socket::Client::Handler, public json::Parser
   std::vector<std::string> currencies_;
   // state
   bool ready_ = false;
-  ConnectionStatus status_ = {};
+  ConnectionStatus connection_status_ = {};
   core::Download<DropCopyState> download_;
   bool can_download_ = false;
   bool download_trades_is_first_ = true;

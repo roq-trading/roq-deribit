@@ -51,7 +51,7 @@ struct OrderEntry final : public io::net::ConnectionManager::Handler {
 
   OrderEntry(OrderEntry const &) = delete;
 
-  bool ready() const { return status_ == ConnectionStatus::READY; }
+  bool ready() const { return connection_status_ == ConnectionStatus::READY; }
 
   void operator()(Event<Start> const &);
   void operator()(Event<Stop> const &);
@@ -95,7 +95,7 @@ struct OrderEntry final : public io::net::ConnectionManager::Handler {
   void operator()(io::net::ConnectionManager::Write const &) override;
 
  private:
-  void operator()(ConnectionStatus);
+  void operator()(ConnectionStatus, std::string_view const &reason = {});
 
   void send_logon();
   void send_logout(std::string_view const &text);
@@ -153,7 +153,7 @@ struct OrderEntry final : public io::net::ConnectionManager::Handler {
   // cache
   Shared &shared_;
   // state
-  ConnectionStatus status_ = {};
+  ConnectionStatus connection_status_ = {};
 
   // state
   bool ready_ = false;
