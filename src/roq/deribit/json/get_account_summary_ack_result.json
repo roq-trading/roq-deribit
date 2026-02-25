@@ -260,6 +260,9 @@
     {
       "name": "fee_group",
       "type": "std/string_view"
+    },
+    {
+      "name": "account_balance_review"
     }
   ]
 }
