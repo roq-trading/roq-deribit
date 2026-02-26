@@ -190,6 +190,11 @@
       "tag": 527,
       "name": "SecondaryExecID",
       "type": "std/string_view"
+    },
+    {
+      "tag": 152,
+      "name": "CashOrderQty",
+      "type": "std/double"
     }
   ]
 }
