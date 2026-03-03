@@ -445,6 +445,7 @@ void DropCopy::operator()(Trace<json::UserPortfolio> const &event) {
       .balance = data.balance,
       .hold = NaN,
       .borrowed = NaN,
+      .unrealized_pnl = NaN,
       .external_account = {},
       .update_type = UpdateType::INCREMENTAL,
       .exchange_time_utc = data.creation_timestamp,
