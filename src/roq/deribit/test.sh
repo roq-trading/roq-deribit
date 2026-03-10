@@ -55,18 +55,19 @@ $PREFIX "./roq-deribit" \
   --service_listen_address "unix://$HOME/run/metrics/$NAME.sock" \
   --download_trades_lookback=5m \
   --download_trades_lookback_on_restart=24h \
-  --oms_cache=true \
-  --oms_multicast_port 1234 \
-  --oms_multicast_address=224.1.1.1 \
-  --oms_local_interface="$LOCAL_INTERFACE" \
-  --oms_multicast_ttl 4 \
-  --oms_multicast_loop=true \
-  --oms_listen_port 9876 \
-  --cache_database_uri "$DATABASE_URI" \
-  --cache_database_name "roq" \
-  --fix_cancel_on_disconnect=false \
-  --enable_portfolio=true \
-  --time_series_interval "60s" \
-  --time_series_lookback "0s" \
-  --time_series_realtime=true \
   $@
+#  --oms_cache=true \
+#  --oms_multicast_port 1234 \
+#  --oms_multicast_address=224.1.1.1 \
+#  --oms_local_interface="$LOCAL_INTERFACE" \
+#  --oms_multicast_ttl 4 \
+#  --oms_multicast_loop=true \
+#  --oms_listen_port 9876 \
+#  --cache_database_uri "$DATABASE_URI" \
+#  --cache_database_name "roq" \
+#  --fix_cancel_on_disconnect=false \
+#  --enable_portfolio=true \
+#  --time_series_interval "60s" \
+#  --time_series_lookback "0s" \
+#  --time_series_realtime=true \
+#  $@
