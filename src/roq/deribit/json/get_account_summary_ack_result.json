@@ -271,6 +271,10 @@
     {
       "name": "close_out_margin",
       "type": "std/double"
+    },
+    {
+      "name": "direct_access_enabled",
+      "type": "std/bool"
     }
   ]
 }
