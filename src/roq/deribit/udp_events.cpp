@@ -181,7 +181,7 @@ bool UDPEvents::operator()(sbe::Frame const &frame) {
   return result;
 }
 
-void UDPEvents::operator()(Trace<deribit_multicast::Instrument> const &event, sbe::Frame const &frame) {
+void UDPEvents::operator()(Trace<::deribit::sbe::multicast::Instrument> const &event, sbe::Frame const &frame) {
   using value_type = std::remove_cvref_t<decltype(event)>::value_type;
   auto &instrument = const_cast<value_type &>(event.value);
   log::info<2>("instrument={}, frame={}"sv, instrument, frame);
@@ -205,7 +205,7 @@ void UDPEvents::operator()(Trace<deribit_multicast::Instrument> const &event, sb
 }
 
 // note! it may take a while before the instrument gets created (depends on the snapshot channel)
-void UDPEvents::operator()(Trace<deribit_multicast::Book> const &event, sbe::Frame const &frame) {
+void UDPEvents::operator()(Trace<::deribit::sbe::multicast::Book> const &event, sbe::Frame const &frame) {
   auto &trace_info = event.trace_info;
   using value_type = std::remove_cvref_t<decltype(event)>::value_type;
   auto &book = const_cast<value_type &>(event.value);
@@ -231,7 +231,7 @@ void UDPEvents::operator()(Trace<deribit_multicast::Book> const &event, sbe::Fra
             .update_action = {},
             .price_level = {},
         };
-        auto side = map(deribit_multicast::BookSide::get(item.side())).template get<Side>();
+        auto side = map(::deribit::sbe::multicast::BookSide::get(item.side())).template get<Side>();
         switch (side) {
           case Side::UNDEFINED:
             assert(false);
@@ -330,7 +330,7 @@ void UDPEvents::operator()(Trace<deribit_multicast::Book> const &event, sbe::Fra
   get_channel(frame, callback);
 }
 
-void UDPEvents::operator()(Trace<deribit_multicast::Trades> const &event, sbe::Frame const &frame) {
+void UDPEvents::operator()(Trace<::deribit::sbe::multicast::Trades> const &event, sbe::Frame const &frame) {
   auto &trace_info = event.trace_info;
   using value_type = std::remove_cvref_t<decltype(event)>::value_type;
   auto &trades = const_cast<value_type &>(event.value);
@@ -381,7 +381,7 @@ void UDPEvents::operator()(Trace<deribit_multicast::Trades> const &event, sbe::F
   }
 }
 
-void UDPEvents::operator()(Trace<deribit_multicast::Ticker> const &event, sbe::Frame const &frame) {
+void UDPEvents::operator()(Trace<::deribit::sbe::multicast::Ticker> const &event, sbe::Frame const &frame) {
   auto &trace_info = event.trace_info;
   using value_type = std::remove_cvref_t<decltype(event)>::value_type;
   auto &ticker = const_cast<value_type &>(event.value);
@@ -423,31 +423,31 @@ void UDPEvents::operator()(Trace<deribit_multicast::Ticker> const &event, sbe::F
   }
 }
 
-void UDPEvents::operator()(Trace<deribit_multicast::Snapshot> const &, sbe::Frame const &) {
+void UDPEvents::operator()(Trace<::deribit::sbe::multicast::Snapshot> const &, sbe::Frame const &) {
   log::fatal("Unexpected"sv);
 }
 
-void UDPEvents::operator()(Trace<deribit_multicast::SnapshotStart> const &, sbe::Frame const &) {
+void UDPEvents::operator()(Trace<::deribit::sbe::multicast::SnapshotStart> const &, sbe::Frame const &) {
   log::fatal("Unexpected"sv);
 }
 
-void UDPEvents::operator()(Trace<deribit_multicast::SnapshotEnd> const &, sbe::Frame const &) {
+void UDPEvents::operator()(Trace<::deribit::sbe::multicast::SnapshotEnd> const &, sbe::Frame const &) {
   log::fatal("Unexpected"sv);
 }
 
-void UDPEvents::operator()(Trace<deribit_multicast::ComboLegs> const &, sbe::Frame const &) {
+void UDPEvents::operator()(Trace<::deribit::sbe::multicast::ComboLegs> const &, sbe::Frame const &) {
   log::fatal("Unexpected"sv);
 }
 
-void UDPEvents::operator()(Trace<deribit_multicast::PriceIndex> const &, sbe::Frame const &) {
+void UDPEvents::operator()(Trace<::deribit::sbe::multicast::PriceIndex> const &, sbe::Frame const &) {
   // XXX FIXME TODO
 }
 
-void UDPEvents::operator()(Trace<deribit_multicast::Rfq> const &, sbe::Frame const &) {
+void UDPEvents::operator()(Trace<::deribit::sbe::multicast::Rfq> const &, sbe::Frame const &) {
   log::fatal("Unexpected"sv);
 }
 
-void UDPEvents::operator()(Trace<deribit_multicast::InstrumentV2> const &, sbe::Frame const &) {
+void UDPEvents::operator()(Trace<::deribit::sbe::multicast::InstrumentV2> const &, sbe::Frame const &) {
   // XXX FIXME can't make get_instrument_name() to work...
 }
 

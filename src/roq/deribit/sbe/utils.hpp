@@ -7,24 +7,24 @@
 
 #include <magic_enum/magic_enum_format.hpp>
 
-#include <deribit_multicast/BookChange.h>
-#include <deribit_multicast/BookSide.h>
-#include <deribit_multicast/Direction.h>
-#include <deribit_multicast/InstrumentState.h>
-#include <deribit_multicast/Liquidation.h>
-#include <deribit_multicast/YesNo.h>
+#include <deribit/sbe/multicast/BookChange.h>
+#include <deribit/sbe/multicast/BookSide.h>
+#include <deribit/sbe/multicast/Direction.h>
+#include <deribit/sbe/multicast/InstrumentState.h>
+#include <deribit/sbe/multicast/Liquidation.h>
+#include <deribit/sbe/multicast/YesNo.h>
 
-#include <deribit_multicast/Book.h>           // 1001
-#include <deribit_multicast/ComboLegs.h>      // 1007
-#include <deribit_multicast/Instrument.h>     // 1000
-#include <deribit_multicast/InstrumentV2.h>   // 1010
-#include <deribit_multicast/PriceIndex.h>     // 1008
-#include <deribit_multicast/Rfq.h>            // 1009
-#include <deribit_multicast/Snapshot.h>       // 1004
-#include <deribit_multicast/SnapshotEnd.h>    // 1006
-#include <deribit_multicast/SnapshotStart.h>  // 1005
-#include <deribit_multicast/Ticker.h>         // 1003
-#include <deribit_multicast/Trades.h>         // 1002
+#include <deribit/sbe/multicast/Book.h>           // 1001
+#include <deribit/sbe/multicast/ComboLegs.h>      // 1007
+#include <deribit/sbe/multicast/Instrument.h>     // 1000
+#include <deribit/sbe/multicast/InstrumentV2.h>   // 1010
+#include <deribit/sbe/multicast/PriceIndex.h>     // 1008
+#include <deribit/sbe/multicast/Rfq.h>            // 1009
+#include <deribit/sbe/multicast/Snapshot.h>       // 1004
+#include <deribit/sbe/multicast/SnapshotEnd.h>    // 1006
+#include <deribit/sbe/multicast/SnapshotStart.h>  // 1005
+#include <deribit/sbe/multicast/Ticker.h>         // 1003
+#include <deribit/sbe/multicast/Trades.h>         // 1002
 
 #include "roq/api.hpp"
 
@@ -40,28 +40,28 @@ template <typename T>
 size_t compute_length(T &);
 
 template <>
-inline size_t compute_length(deribit_multicast::Book &value) {
+inline size_t compute_length(::deribit::sbe::multicast::Book &value) {
   auto changes_list_length = value.changesList().count();
   using value_type = std::remove_cvref_t<decltype(value)>;
   return value_type::computeLength(changes_list_length);
 }
 
 template <>
-inline size_t compute_length(deribit_multicast::ComboLegs &value) {
+inline size_t compute_length(::deribit::sbe::multicast::ComboLegs &value) {
   auto legs_list_length = value.legsList().count();
   using value_type = std::remove_cvref_t<decltype(value)>;
   return value_type::computeLength(legs_list_length);
 }
 
 template <>
-inline size_t compute_length(deribit_multicast::Instrument &value) {
+inline size_t compute_length(::deribit::sbe::multicast::Instrument &value) {
   auto instrument_name_length = value.instrumentNameLength();
   using value_type = std::remove_cvref_t<decltype(value)>;
   return value_type::computeLength(instrument_name_length);
 }
 
 template <>
-inline size_t compute_length(deribit_multicast::InstrumentV2 &value) {
+inline size_t compute_length(::deribit::sbe::multicast::InstrumentV2 &value) {
   value.sbeRewind();
   size_t tick_steps_list_length = 0;
   value.tickStepsList().forEach([&]([[maybe_unused]] auto &item) { ++tick_steps_list_length; });  // note!
@@ -71,19 +71,19 @@ inline size_t compute_length(deribit_multicast::InstrumentV2 &value) {
 }
 
 template <>
-inline size_t compute_length(deribit_multicast::PriceIndex &value) {
+inline size_t compute_length(::deribit::sbe::multicast::PriceIndex &value) {
   using value_type = std::remove_cvref_t<decltype(value)>;
   return value_type::computeLength();
 }
 
 template <>
-inline size_t compute_length(deribit_multicast::Rfq &value) {
+inline size_t compute_length(::deribit::sbe::multicast::Rfq &value) {
   using value_type = std::remove_cvref_t<decltype(value)>;
   return value_type::computeLength();
 }
 
 template <>
-inline size_t compute_length(deribit_multicast::Snapshot &value) {
+inline size_t compute_length(::deribit::sbe::multicast::Snapshot &value) {
   auto levels_list_length = value.levelsList().count();
   value.sbeRewind();  // note!
   value.levelsList().forEach([](auto &item) { item.skip(); });
@@ -92,25 +92,25 @@ inline size_t compute_length(deribit_multicast::Snapshot &value) {
 }
 
 template <>
-inline size_t compute_length(deribit_multicast::SnapshotStart &value) {
+inline size_t compute_length(::deribit::sbe::multicast::SnapshotStart &value) {
   using value_type = std::remove_cvref_t<decltype(value)>;
   return value_type::computeLength();
 }
 
 template <>
-inline size_t compute_length(deribit_multicast::SnapshotEnd &value) {
+inline size_t compute_length(::deribit::sbe::multicast::SnapshotEnd &value) {
   using value_type = std::remove_cvref_t<decltype(value)>;
   return value_type::computeLength();
 }
 
 template <>
-inline size_t compute_length(deribit_multicast::Ticker &value) {
+inline size_t compute_length(::deribit::sbe::multicast::Ticker &value) {
   using value_type = std::remove_cvref_t<decltype(value)>;
   return value_type::computeLength();
 }
 
 template <>
-inline size_t compute_length(deribit_multicast::Trades &value) {
+inline size_t compute_length(::deribit::sbe::multicast::Trades &value) {
   auto trades_list_length = value.tradesList().count();
   using value_type = std::remove_cvref_t<decltype(value)>;
   return value_type::computeLength(trades_list_length);
@@ -122,14 +122,14 @@ template <typename T>
 std::string get_instrument_name(T &);
 
 template <>
-inline std::string get_instrument_name(deribit_multicast::Instrument &value) {
+inline std::string get_instrument_name(::deribit::sbe::multicast::Instrument &value) {
   value.sbeRewind();                           // note!
   auto length = value.instrumentNameLength();  // must fetch before getting name
   return {value.instrumentName(), length};
 }
 
 template <>
-inline std::string get_instrument_name(deribit_multicast::InstrumentV2 &value) {
+inline std::string get_instrument_name(::deribit::sbe::multicast::InstrumentV2 &value) {
   value.sbeRewind();                                                   // note!
   value.tickStepsList().forEach([&]([[maybe_unused]] auto &item) {});  // note!
   auto length = value.instrumentNameLength();                          // must fetch before getting name
@@ -140,67 +140,67 @@ inline std::string get_instrument_name(deribit_multicast::InstrumentV2 &value) {
 }  // namespace deribit
 
 template <>
-constexpr std::string_view get_name<deribit_multicast::Book>() {
+constexpr std::string_view get_name<::deribit::sbe::multicast::Book>() {
   using namespace std::literals;
   return "book"sv;
 }
 
 template <>
-constexpr std::string_view get_name<deribit_multicast::ComboLegs>() {
+constexpr std::string_view get_name<::deribit::sbe::multicast::ComboLegs>() {
   using namespace std::literals;
   return "combo_legs"sv;
 }
 
 template <>
-constexpr std::string_view get_name<deribit_multicast::Instrument>() {
+constexpr std::string_view get_name<::deribit::sbe::multicast::Instrument>() {
   using namespace std::literals;
   return "instrument"sv;
 }
 
 template <>
-constexpr std::string_view get_name<deribit_multicast::InstrumentV2>() {
+constexpr std::string_view get_name<::deribit::sbe::multicast::InstrumentV2>() {
   using namespace std::literals;
   return "instrument_v2"sv;
 }
 
 template <>
-constexpr std::string_view get_name<deribit_multicast::PriceIndex>() {
+constexpr std::string_view get_name<::deribit::sbe::multicast::PriceIndex>() {
   using namespace std::literals;
   return "price_index"sv;
 }
 
 template <>
-constexpr std::string_view get_name<deribit_multicast::Rfq>() {
+constexpr std::string_view get_name<::deribit::sbe::multicast::Rfq>() {
   using namespace std::literals;
   return "rfq"sv;
 }
 
 template <>
-constexpr std::string_view get_name<deribit_multicast::Snapshot>() {
+constexpr std::string_view get_name<::deribit::sbe::multicast::Snapshot>() {
   using namespace std::literals;
   return "snapshot"sv;
 }
 
 template <>
-constexpr std::string_view get_name<deribit_multicast::SnapshotEnd>() {
+constexpr std::string_view get_name<::deribit::sbe::multicast::SnapshotEnd>() {
   using namespace std::literals;
   return "snapshot_end"sv;
 }
 
 template <>
-constexpr std::string_view get_name<deribit_multicast::SnapshotStart>() {
+constexpr std::string_view get_name<::deribit::sbe::multicast::SnapshotStart>() {
   using namespace std::literals;
   return "snapshot_start"sv;
 }
 
 template <>
-constexpr std::string_view get_name<deribit_multicast::Ticker>() {
+constexpr std::string_view get_name<::deribit::sbe::multicast::Ticker>() {
   using namespace std::literals;
   return "ticker"sv;
 }
 
 template <>
-constexpr std::string_view get_name<deribit_multicast::Trades>() {
+constexpr std::string_view get_name<::deribit::sbe::multicast::Trades>() {
   using namespace std::literals;
   return "trades"sv;
 }
@@ -209,9 +209,9 @@ constexpr std::string_view get_name<deribit_multicast::Trades>() {
 // helper
 
 template <>
-struct fmt::formatter<deribit_multicast::Book::ChangesList> {
+struct fmt::formatter<::deribit::sbe::multicast::Book::ChangesList> {
   constexpr auto parse(format_parse_context &context) { return std::begin(context); }
-  auto format(deribit_multicast::Book::ChangesList const &value, format_context &context) const {
+  auto format(::deribit::sbe::multicast::Book::ChangesList const &value, format_context &context) const {
     using namespace std::literals;
     return fmt::format_to(
         context.out(),
@@ -221,17 +221,17 @@ struct fmt::formatter<deribit_multicast::Book::ChangesList> {
         R"(price={}, )"
         R"(amount={})"
         R"(}})"sv,
-        deribit_multicast::BookSide::c_str(value.side()),
-        deribit_multicast::BookChange::c_str(value.change()),
+        ::deribit::sbe::multicast::BookSide::c_str(value.side()),
+        ::deribit::sbe::multicast::BookChange::c_str(value.change()),
         value.price(),
         value.amount());
   }
 };
 
 template <>
-struct fmt::formatter<deribit_multicast::ComboLegs::LegsList> {
+struct fmt::formatter<::deribit::sbe::multicast::ComboLegs::LegsList> {
   constexpr auto parse(format_parse_context &context) { return std::begin(context); }
-  auto format(deribit_multicast::ComboLegs::LegsList const &value, format_context &context) const {
+  auto format(::deribit::sbe::multicast::ComboLegs::LegsList const &value, format_context &context) const {
     using namespace std::literals;
     return fmt::format_to(
         context.out(),
@@ -245,9 +245,9 @@ struct fmt::formatter<deribit_multicast::ComboLegs::LegsList> {
 };
 
 template <>
-struct fmt::formatter<deribit_multicast::InstrumentV2::TickStepsList> {
+struct fmt::formatter<::deribit::sbe::multicast::InstrumentV2::TickStepsList> {
   constexpr auto parse(format_parse_context &context) { return std::begin(context); }
-  auto format(deribit_multicast::InstrumentV2::TickStepsList const &value, format_context &context) const {
+  auto format(::deribit::sbe::multicast::InstrumentV2::TickStepsList const &value, format_context &context) const {
     using namespace std::literals;
     return fmt::format_to(
         context.out(),
@@ -261,9 +261,9 @@ struct fmt::formatter<deribit_multicast::InstrumentV2::TickStepsList> {
 };
 
 template <>
-struct fmt::formatter<deribit_multicast::Snapshot::LevelsList> {
+struct fmt::formatter<::deribit::sbe::multicast::Snapshot::LevelsList> {
   constexpr auto parse(format_parse_context &context) { return std::begin(context); }
-  auto format(deribit_multicast::Snapshot::LevelsList const &value, format_context &context) const {
+  auto format(::deribit::sbe::multicast::Snapshot::LevelsList const &value, format_context &context) const {
     using namespace std::literals;
     return fmt::format_to(
         context.out(),
@@ -272,16 +272,16 @@ struct fmt::formatter<deribit_multicast::Snapshot::LevelsList> {
         R"(price={}, )"
         R"(amount={})"
         R"(}})"sv,
-        deribit_multicast::BookSide::c_str(value.side()),
+        ::deribit::sbe::multicast::BookSide::c_str(value.side()),
         value.price(),
         value.amount());
   }
 };
 
 template <>
-struct fmt::formatter<deribit_multicast::Trades::TradesList> {
+struct fmt::formatter<::deribit::sbe::multicast::Trades::TradesList> {
   constexpr auto parse(format_parse_context &context) { return std::begin(context); }
-  auto format(deribit_multicast::Trades::TradesList const &value, format_context &context) const {
+  auto format(::deribit::sbe::multicast::Trades::TradesList const &value, format_context &context) const {
     using namespace std::literals;
     return fmt::format_to(
         context.out(),
@@ -300,7 +300,7 @@ struct fmt::formatter<deribit_multicast::Trades::TradesList> {
         R"(blockTradeId={}, )"
         R"(comboTradeId={})"
         R"(}})"sv,
-        deribit_multicast::Direction::c_str(value.direction()),
+        ::deribit::sbe::multicast::Direction::c_str(value.direction()),
         value.price(),
         value.amount(),
         std::chrono::milliseconds{value.timestampMs()},
@@ -308,8 +308,8 @@ struct fmt::formatter<deribit_multicast::Trades::TradesList> {
         value.indexPrice(),
         value.tradeSeq(),
         value.tradeId(),
-        deribit_multicast::TickDirection::c_str(value.tickDirection()),
-        deribit_multicast::Liquidation::c_str(value.liquidation()),
+        ::deribit::sbe::multicast::TickDirection::c_str(value.tickDirection()),
+        ::deribit::sbe::multicast::Liquidation::c_str(value.liquidation()),
         value.iv(),
         value.blockTradeId(),
         value.comboTradeId());
@@ -321,9 +321,9 @@ struct fmt::formatter<deribit_multicast::Trades::TradesList> {
 // note! some nested objects (lists) imply non-const due to positional information
 
 template <>
-struct fmt::formatter<deribit_multicast::Book> {
+struct fmt::formatter<::deribit::sbe::multicast::Book> {
   constexpr auto parse(format_parse_context &context) { return std::begin(context); }
-  auto format(deribit_multicast::Book &value, format_context &context) const {
+  auto format(::deribit::sbe::multicast::Book &value, format_context &context) const {
     using namespace std::literals;
     value.sbeRewind();  // note!
     return fmt::format_to(
@@ -346,9 +346,9 @@ struct fmt::formatter<deribit_multicast::Book> {
 };
 
 template <>
-struct fmt::formatter<deribit_multicast::ComboLegs> {
+struct fmt::formatter<::deribit::sbe::multicast::ComboLegs> {
   constexpr auto parse(format_parse_context &context) { return std::begin(context); }
-  auto format(deribit_multicast::ComboLegs &value, format_context &context) const {
+  auto format(::deribit::sbe::multicast::ComboLegs &value, format_context &context) const {
     using namespace std::literals;
     value.sbeRewind();  // note!
     return fmt::format_to(
@@ -363,9 +363,9 @@ struct fmt::formatter<deribit_multicast::ComboLegs> {
 };
 
 template <>
-struct fmt::formatter<deribit_multicast::Instrument> {
+struct fmt::formatter<::deribit::sbe::multicast::Instrument> {
   constexpr auto parse(format_parse_context &context) { return std::begin(context); }
-  auto format(deribit_multicast::Instrument &value, format_context &context) const {
+  auto format(::deribit::sbe::multicast::Instrument &value, format_context &context) const {
     using namespace std::literals;
     auto instrument_name = roq::deribit::sbe::get_instrument_name(value);
     value.sbeRewind();  // note!
@@ -399,12 +399,12 @@ struct fmt::formatter<deribit_multicast::Instrument> {
         R"(instrumentName="{}")"
         R"(}})"sv,
         value.instrumentId(),
-        deribit_multicast::InstrumentState::c_str(value.instrumentState()),
-        deribit_multicast::InstrumentKind::c_str(value.kind()),
-        deribit_multicast::InstrumentType::c_str(value.instrumentType()),
-        deribit_multicast::OptionType::c_str(value.optionType()),
+        ::deribit::sbe::multicast::InstrumentState::c_str(value.instrumentState()),
+        ::deribit::sbe::multicast::InstrumentKind::c_str(value.kind()),
+        ::deribit::sbe::multicast::InstrumentType::c_str(value.instrumentType()),
+        ::deribit::sbe::multicast::OptionType::c_str(value.optionType()),
         static_cast<bool>(roq::map(value.rfq())),
-        deribit_multicast::Period::c_str(value.settlementPeriod()),
+        ::deribit::sbe::multicast::Period::c_str(value.settlementPeriod()),
         value.settlementPeriodCount(),
         value.baseCurrency(),
         value.quoteCurrency(),
@@ -427,9 +427,9 @@ struct fmt::formatter<deribit_multicast::Instrument> {
 };
 
 template <>
-struct fmt::formatter<deribit_multicast::InstrumentV2> {
+struct fmt::formatter<::deribit::sbe::multicast::InstrumentV2> {
   constexpr auto parse(format_parse_context &context) { return std::begin(context); }
-  auto format(deribit_multicast::InstrumentV2 &value, format_context &context) const {
+  auto format(::deribit::sbe::multicast::InstrumentV2 &value, format_context &context) const {
     using namespace std::literals;
     auto instrument_name = roq::deribit::sbe::get_instrument_name(value);
     value.sbeRewind();  // note!
@@ -463,11 +463,11 @@ struct fmt::formatter<deribit_multicast::InstrumentV2> {
         R"(instrumentName="{}")"
         R"(}})"sv,
         value.instrumentId(),
-        deribit_multicast::InstrumentState::c_str(value.instrumentState()),
-        deribit_multicast::InstrumentKind::c_str(value.kind()),
-        deribit_multicast::InstrumentType::c_str(value.instrumentType()),
-        deribit_multicast::OptionType::c_str(value.optionType()),
-        deribit_multicast::Period::c_str(value.settlementPeriod()),
+        ::deribit::sbe::multicast::InstrumentState::c_str(value.instrumentState()),
+        ::deribit::sbe::multicast::InstrumentKind::c_str(value.kind()),
+        ::deribit::sbe::multicast::InstrumentType::c_str(value.instrumentType()),
+        ::deribit::sbe::multicast::OptionType::c_str(value.optionType()),
+        ::deribit::sbe::multicast::Period::c_str(value.settlementPeriod()),
         value.settlementPeriodCount(),
         value.baseCurrency(),
         value.quoteCurrency(),
@@ -491,9 +491,9 @@ struct fmt::formatter<deribit_multicast::InstrumentV2> {
 };
 
 template <>
-struct fmt::formatter<deribit_multicast::Ticker> {
+struct fmt::formatter<::deribit::sbe::multicast::Ticker> {
   constexpr auto parse(format_parse_context &context) { return std::begin(context); }
-  auto format(deribit_multicast::Ticker &value, format_context &context) const {
+  auto format(::deribit::sbe::multicast::Ticker &value, format_context &context) const {
     using namespace std::literals;
     return fmt::format_to(
         context.out(),
@@ -518,7 +518,7 @@ struct fmt::formatter<deribit_multicast::Ticker> {
         R"(settlementPrice={})"
         R"(}})"sv,
         value.instrumentId(),
-        deribit_multicast::InstrumentState::c_str(value.instrumentState()),
+        ::deribit::sbe::multicast::InstrumentState::c_str(value.instrumentState()),
         std::chrono::milliseconds{value.timestampMs()},
         value.openInterest(),
         value.minSellPrice(),
@@ -539,9 +539,9 @@ struct fmt::formatter<deribit_multicast::Ticker> {
 };
 
 template <>
-struct fmt::formatter<deribit_multicast::PriceIndex> {
+struct fmt::formatter<::deribit::sbe::multicast::PriceIndex> {
   constexpr auto parse(format_parse_context &context) { return std::begin(context); }
-  auto format(deribit_multicast::PriceIndex &value, format_context &context) const {
+  auto format(::deribit::sbe::multicast::PriceIndex &value, format_context &context) const {
     using namespace std::literals;
     value.sbeRewind();  // note!
     return fmt::format_to(
@@ -558,9 +558,9 @@ struct fmt::formatter<deribit_multicast::PriceIndex> {
 };
 
 template <>
-struct fmt::formatter<deribit_multicast::Rfq> {
+struct fmt::formatter<::deribit::sbe::multicast::Rfq> {
   constexpr auto parse(format_parse_context &context) { return std::begin(context); }
-  auto format(deribit_multicast::Rfq &value, format_context &context) const {
+  auto format(::deribit::sbe::multicast::Rfq &value, format_context &context) const {
     using namespace std::literals;
     value.sbeRewind();  // note!
     return fmt::format_to(
@@ -574,16 +574,16 @@ struct fmt::formatter<deribit_multicast::Rfq> {
         R"(}})"sv,
         value.instrumentId(),
         static_cast<bool>(roq::map(value.state())),
-        deribit_multicast::RfqDirection::c_str(value.side()),
+        ::deribit::sbe::multicast::RfqDirection::c_str(value.side()),
         value.amount(),
         std::chrono::milliseconds{value.timestampMs()});
   }
 };
 
 template <>
-struct fmt::formatter<deribit_multicast::Snapshot> {
+struct fmt::formatter<::deribit::sbe::multicast::Snapshot> {
   constexpr auto parse(format_parse_context &context) { return std::begin(context); }
-  auto format(deribit_multicast::Snapshot &value, format_context &context) const {
+  auto format(::deribit::sbe::multicast::Snapshot &value, format_context &context) const {
     using namespace std::literals;
     value.sbeRewind();  // note!
     return fmt::format_to(
@@ -606,9 +606,9 @@ struct fmt::formatter<deribit_multicast::Snapshot> {
 };
 
 template <>
-struct fmt::formatter<deribit_multicast::SnapshotStart> {
+struct fmt::formatter<::deribit::sbe::multicast::SnapshotStart> {
   constexpr auto parse(format_parse_context &context) { return std::begin(context); }
-  auto format(deribit_multicast::SnapshotStart &value, format_context &context) const {
+  auto format(::deribit::sbe::multicast::SnapshotStart &value, format_context &context) const {
     using namespace std::literals;
     value.sbeRewind();  // note!
     return fmt::format_to(
@@ -621,18 +621,18 @@ struct fmt::formatter<deribit_multicast::SnapshotStart> {
 };
 
 template <>
-struct fmt::formatter<deribit_multicast::SnapshotEnd> {
+struct fmt::formatter<::deribit::sbe::multicast::SnapshotEnd> {
   constexpr auto parse(format_parse_context &context) { return std::begin(context); }
-  auto format(deribit_multicast::SnapshotEnd &, format_context &context) const {
+  auto format(::deribit::sbe::multicast::SnapshotEnd &, format_context &context) const {
     using namespace std::literals;
     return fmt::format_to(context.out(), "{{}}"sv);
   }
 };
 
 template <>
-struct fmt::formatter<deribit_multicast::Trades> {
+struct fmt::formatter<::deribit::sbe::multicast::Trades> {
   constexpr auto parse(format_parse_context &context) { return std::begin(context); }
-  auto format(deribit_multicast::Trades &value, format_context &context) const {
+  auto format(::deribit::sbe::multicast::Trades &value, format_context &context) const {
     using namespace std::literals;
     return fmt::format_to(
         context.out(),

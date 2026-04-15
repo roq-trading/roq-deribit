@@ -31,7 +31,7 @@ requirements:
     - roq-cache
     - roq-codec
     - roq-core
-    - roq-deribit-multicast
+    - roq-deribit-sbe-multicast
     - roq-fix
     - roq-flags
     - roq-io

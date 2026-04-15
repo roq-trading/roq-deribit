@@ -44,58 +44,58 @@ bool Parser::dispatch(Handler &handler, std::span<std::byte const> const &buffer
     while (!std::empty(packet)) {
       // log::debug("len(packet)={}"sv, std::size(packet));
       // log::debug("packet={}"sv, utils::debug::hex::Message{packet});
-      auto length_message_header = deribit_multicast::MessageHeader::encodedLength();
+      auto length_message_header = ::deribit::sbe::multicast::MessageHeader::encodedLength();
       assert(std::size(packet) >= length_message_header);
       auto tmp = sbe_buffer(packet);
-      deribit_multicast::MessageHeader message_header{std::data(tmp), std::size(tmp)};
+      ::deribit::sbe::multicast::MessageHeader message_header{std::data(tmp), std::size(tmp)};
       auto message = packet.subspan(length_message_header);
       auto template_id = message_header.templateId();
       // log::debug("template_id={}"sv, template_id);
       auto bytes = length_message_header;
       switch (template_id) {
         // 1000
-        case deribit_multicast::Instrument::SBE_TEMPLATE_ID:
-          bytes += dispatch_helper<deribit_multicast::Instrument>(handler, trace_info, message, frame);
+        case ::deribit::sbe::multicast::Instrument::SBE_TEMPLATE_ID:
+          bytes += dispatch_helper<::deribit::sbe::multicast::Instrument>(handler, trace_info, message, frame);
           break;
         // 1001
-        case deribit_multicast::Book::SBE_TEMPLATE_ID:
-          bytes += dispatch_helper<deribit_multicast::Book>(handler, trace_info, message, frame);
+        case ::deribit::sbe::multicast::Book::SBE_TEMPLATE_ID:
+          bytes += dispatch_helper<::deribit::sbe::multicast::Book>(handler, trace_info, message, frame);
           break;
         // 1002
-        case deribit_multicast::Trades::SBE_TEMPLATE_ID:
-          bytes += dispatch_helper<deribit_multicast::Trades>(handler, trace_info, message, frame);
+        case ::deribit::sbe::multicast::Trades::SBE_TEMPLATE_ID:
+          bytes += dispatch_helper<::deribit::sbe::multicast::Trades>(handler, trace_info, message, frame);
           break;
         // 1003
-        case deribit_multicast::Ticker::SBE_TEMPLATE_ID:
-          bytes += dispatch_helper<deribit_multicast::Ticker>(handler, trace_info, message, frame);
+        case ::deribit::sbe::multicast::Ticker::SBE_TEMPLATE_ID:
+          bytes += dispatch_helper<::deribit::sbe::multicast::Ticker>(handler, trace_info, message, frame);
           break;
         // 1004
-        case deribit_multicast::Snapshot::SBE_TEMPLATE_ID:
-          bytes += dispatch_helper<deribit_multicast::Snapshot>(handler, trace_info, message, frame);
+        case ::deribit::sbe::multicast::Snapshot::SBE_TEMPLATE_ID:
+          bytes += dispatch_helper<::deribit::sbe::multicast::Snapshot>(handler, trace_info, message, frame);
           break;
         // 1005
-        case deribit_multicast::SnapshotStart::SBE_TEMPLATE_ID:
-          bytes += dispatch_helper<deribit_multicast::SnapshotStart>(handler, trace_info, message, frame);
+        case ::deribit::sbe::multicast::SnapshotStart::SBE_TEMPLATE_ID:
+          bytes += dispatch_helper<::deribit::sbe::multicast::SnapshotStart>(handler, trace_info, message, frame);
           break;
         // 1006
-        case deribit_multicast::SnapshotEnd::SBE_TEMPLATE_ID:
-          bytes += dispatch_helper<deribit_multicast::SnapshotEnd>(handler, trace_info, message, frame);
+        case ::deribit::sbe::multicast::SnapshotEnd::SBE_TEMPLATE_ID:
+          bytes += dispatch_helper<::deribit::sbe::multicast::SnapshotEnd>(handler, trace_info, message, frame);
           break;
         // 1007
-        case deribit_multicast::ComboLegs::SBE_TEMPLATE_ID:
-          bytes += dispatch_helper<deribit_multicast::ComboLegs>(handler, trace_info, message, frame);
+        case ::deribit::sbe::multicast::ComboLegs::SBE_TEMPLATE_ID:
+          bytes += dispatch_helper<::deribit::sbe::multicast::ComboLegs>(handler, trace_info, message, frame);
           break;
         // 1008
-        case deribit_multicast::PriceIndex::SBE_TEMPLATE_ID:
-          bytes += dispatch_helper<deribit_multicast::PriceIndex>(handler, trace_info, message, frame);
+        case ::deribit::sbe::multicast::PriceIndex::SBE_TEMPLATE_ID:
+          bytes += dispatch_helper<::deribit::sbe::multicast::PriceIndex>(handler, trace_info, message, frame);
           break;
         // 1009
-        case deribit_multicast::Rfq::SBE_TEMPLATE_ID:
-          bytes += dispatch_helper<deribit_multicast::Rfq>(handler, trace_info, message, frame);
+        case ::deribit::sbe::multicast::Rfq::SBE_TEMPLATE_ID:
+          bytes += dispatch_helper<::deribit::sbe::multicast::Rfq>(handler, trace_info, message, frame);
           break;
         // 1010
-        case deribit_multicast::InstrumentV2::SBE_TEMPLATE_ID:
-          bytes += dispatch_helper<deribit_multicast::InstrumentV2>(handler, trace_info, message, frame);
+        case ::deribit::sbe::multicast::InstrumentV2::SBE_TEMPLATE_ID:
+          bytes += dispatch_helper<::deribit::sbe::multicast::InstrumentV2>(handler, trace_info, message, frame);
           break;
         default:
           log::warn("payload={}"sv, utils::debug::hex::Message{buffer});

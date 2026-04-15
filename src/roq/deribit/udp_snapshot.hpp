@@ -44,17 +44,17 @@ struct UDPSnapshot final : public io::net::udp::Receiver::Handler, public sbe::P
 
   // sbe::Parser::Handler
   bool operator()(sbe::Frame const &) override;
-  void operator()(Trace<deribit_multicast::Instrument> const &, sbe::Frame const &) override;
-  void operator()(Trace<deribit_multicast::Book> const &, sbe::Frame const &) override;
-  void operator()(Trace<deribit_multicast::Trades> const &, sbe::Frame const &) override;
-  void operator()(Trace<deribit_multicast::Ticker> const &, sbe::Frame const &) override;
-  void operator()(Trace<deribit_multicast::Snapshot> const &, sbe::Frame const &) override;
-  void operator()(Trace<deribit_multicast::SnapshotStart> const &, sbe::Frame const &) override;
-  void operator()(Trace<deribit_multicast::SnapshotEnd> const &, sbe::Frame const &) override;
-  void operator()(Trace<deribit_multicast::ComboLegs> const &, sbe::Frame const &) override;
-  void operator()(Trace<deribit_multicast::PriceIndex> const &, sbe::Frame const &) override;
-  void operator()(Trace<deribit_multicast::Rfq> const &, sbe::Frame const &) override;
-  void operator()(Trace<deribit_multicast::InstrumentV2> const &, sbe::Frame const &) override;
+  void operator()(Trace<::deribit::sbe::multicast::Instrument> const &, sbe::Frame const &) override;
+  void operator()(Trace<::deribit::sbe::multicast::Book> const &, sbe::Frame const &) override;
+  void operator()(Trace<::deribit::sbe::multicast::Trades> const &, sbe::Frame const &) override;
+  void operator()(Trace<::deribit::sbe::multicast::Ticker> const &, sbe::Frame const &) override;
+  void operator()(Trace<::deribit::sbe::multicast::Snapshot> const &, sbe::Frame const &) override;
+  void operator()(Trace<::deribit::sbe::multicast::SnapshotStart> const &, sbe::Frame const &) override;
+  void operator()(Trace<::deribit::sbe::multicast::SnapshotEnd> const &, sbe::Frame const &) override;
+  void operator()(Trace<::deribit::sbe::multicast::ComboLegs> const &, sbe::Frame const &) override;
+  void operator()(Trace<::deribit::sbe::multicast::PriceIndex> const &, sbe::Frame const &) override;
+  void operator()(Trace<::deribit::sbe::multicast::Rfq> const &, sbe::Frame const &) override;
+  void operator()(Trace<::deribit::sbe::multicast::InstrumentV2> const &, sbe::Frame const &) override;
 
   // utils
 

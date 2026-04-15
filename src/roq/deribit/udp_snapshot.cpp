@@ -136,7 +136,7 @@ bool UDPSnapshot::operator()(sbe::Frame const &frame) {
   return result;
 }
 
-void UDPSnapshot::operator()(Trace<deribit_multicast::Instrument> const &event, sbe::Frame const &frame) {
+void UDPSnapshot::operator()(Trace<::deribit::sbe::multicast::Instrument> const &event, sbe::Frame const &frame) {
   using value_type = std::remove_cvref_t<decltype(event)>::value_type;
   auto &instrument = const_cast<value_type &>(event.value);
   log::info<2>("instrument={}, frame={}"sv, instrument, frame);
@@ -159,21 +159,21 @@ void UDPSnapshot::operator()(Trace<deribit_multicast::Instrument> const &event, 
   shared_.maybe_create_instrument(instrument_id, callback);
 }
 
-void UDPSnapshot::operator()(Trace<deribit_multicast::Book> const &, sbe::Frame const &) {
+void UDPSnapshot::operator()(Trace<::deribit::sbe::multicast::Book> const &, sbe::Frame const &) {
   log::fatal("Unexpected"sv);
 }
 
-void UDPSnapshot::operator()(Trace<deribit_multicast::Trades> const &, sbe::Frame const &) {
+void UDPSnapshot::operator()(Trace<::deribit::sbe::multicast::Trades> const &, sbe::Frame const &) {
   log::fatal("Unexpected"sv);
 }
 
-void UDPSnapshot::operator()(Trace<deribit_multicast::Ticker> const &event, sbe::Frame const &frame) {
+void UDPSnapshot::operator()(Trace<::deribit::sbe::multicast::Ticker> const &event, sbe::Frame const &frame) {
   using value_type = std::remove_cvref_t<decltype(event)>::value_type;
   auto &ticker = const_cast<value_type &>(event.value);
   log::info<4>("ticker={}, frame={}"sv, ticker, frame);
 }
 
-void UDPSnapshot::operator()(Trace<deribit_multicast::Snapshot> const &event, sbe::Frame const &frame) {
+void UDPSnapshot::operator()(Trace<::deribit::sbe::multicast::Snapshot> const &event, sbe::Frame const &frame) {
   auto &trace_info = event.trace_info;
   using value_type = std::remove_cvref_t<decltype(event)>::value_type;
   auto &snapshot = const_cast<value_type &>(event.value);
@@ -199,7 +199,7 @@ void UDPSnapshot::operator()(Trace<deribit_multicast::Snapshot> const &event, sb
               .update_action = {},
               .price_level = {},
           };
-          auto side = map(deribit_multicast::BookSide::get(item.side())).template get<Side>();
+          auto side = map(::deribit::sbe::multicast::BookSide::get(item.side())).template get<Side>();
           switch (side) {
             case Side::UNDEFINED:
               assert(false);
@@ -281,29 +281,29 @@ void UDPSnapshot::operator()(Trace<deribit_multicast::Snapshot> const &event, sb
   get_channel(frame, callback);
 }
 
-void UDPSnapshot::operator()(Trace<deribit_multicast::SnapshotStart> const &, sbe::Frame const &frame) {
+void UDPSnapshot::operator()(Trace<::deribit::sbe::multicast::SnapshotStart> const &, sbe::Frame const &frame) {
   auto callback = [&](auto &channel) { channel.snapshot_start(frame); };
   get_channel(frame, callback);
 }
 
-void UDPSnapshot::operator()(Trace<deribit_multicast::SnapshotEnd> const &, sbe::Frame const &frame) {
+void UDPSnapshot::operator()(Trace<::deribit::sbe::multicast::SnapshotEnd> const &, sbe::Frame const &frame) {
   auto callback = [&](auto &channel) { channel.snapshot_end(frame); };
   get_channel(frame, callback);
 }
 
-void UDPSnapshot::operator()(Trace<deribit_multicast::ComboLegs> const &, sbe::Frame const &) {
+void UDPSnapshot::operator()(Trace<::deribit::sbe::multicast::ComboLegs> const &, sbe::Frame const &) {
   log::fatal("Unexpected"sv);
 }
 
-void UDPSnapshot::operator()(Trace<deribit_multicast::PriceIndex> const &, sbe::Frame const &) {
+void UDPSnapshot::operator()(Trace<::deribit::sbe::multicast::PriceIndex> const &, sbe::Frame const &) {
   log::fatal("Unexpected"sv);
 }
 
-void UDPSnapshot::operator()(Trace<deribit_multicast::Rfq> const &, sbe::Frame const &) {
+void UDPSnapshot::operator()(Trace<::deribit::sbe::multicast::Rfq> const &, sbe::Frame const &) {
   log::fatal("Unexpected"sv);
 }
 
-void UDPSnapshot::operator()(Trace<deribit_multicast::InstrumentV2> const &, sbe::Frame const &) {
+void UDPSnapshot::operator()(Trace<::deribit::sbe::multicast::InstrumentV2> const &, sbe::Frame const &) {
   // XXX FIXME can't make get_instrument_name() to work...
 }
 

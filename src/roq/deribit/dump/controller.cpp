@@ -4,7 +4,7 @@
 
 #include <fmt/chrono.h>
 
-#include <deribit_multicast/MessageHeader.h>
+#include <deribit/sbe/multicast/MessageHeader.h>
 
 #include "roq/logging.hpp"
 
@@ -48,17 +48,17 @@ struct Bridge final : public utils::pcap::Reader::Handler, public sbe::Parser::H
 
   bool operator()(sbe::Frame const &) override { return true; }
 
-  void operator()(Trace<deribit_multicast::Instrument> const &event, sbe::Frame const &frame) override { print(event, frame); }
-  void operator()(Trace<deribit_multicast::Book> const &event, sbe::Frame const &frame) override { print(event, frame); }
-  void operator()(Trace<deribit_multicast::Trades> const &event, sbe::Frame const &frame) override { print(event, frame); }
-  void operator()(Trace<deribit_multicast::Ticker> const &event, sbe::Frame const &frame) override { print(event, frame); }
-  void operator()(Trace<deribit_multicast::Snapshot> const &event, sbe::Frame const &frame) override { print(event, frame); }
-  void operator()(Trace<deribit_multicast::SnapshotStart> const &event, sbe::Frame const &frame) override { print(event, frame); }
-  void operator()(Trace<deribit_multicast::SnapshotEnd> const &event, sbe::Frame const &frame) override { print(event, frame); }
-  void operator()(Trace<deribit_multicast::ComboLegs> const &event, sbe::Frame const &frame) override { print(event, frame); }
-  void operator()(Trace<deribit_multicast::PriceIndex> const &event, sbe::Frame const &frame) override { print(event, frame); }
-  void operator()(Trace<deribit_multicast::Rfq> const &event, sbe::Frame const &frame) override { print(event, frame); }
-  void operator()(Trace<deribit_multicast::InstrumentV2> const &event, sbe::Frame const &frame) override { print(event, frame); }
+  void operator()(Trace<::deribit::sbe::multicast::Instrument> const &event, sbe::Frame const &frame) override { print(event, frame); }
+  void operator()(Trace<::deribit::sbe::multicast::Book> const &event, sbe::Frame const &frame) override { print(event, frame); }
+  void operator()(Trace<::deribit::sbe::multicast::Trades> const &event, sbe::Frame const &frame) override { print(event, frame); }
+  void operator()(Trace<::deribit::sbe::multicast::Ticker> const &event, sbe::Frame const &frame) override { print(event, frame); }
+  void operator()(Trace<::deribit::sbe::multicast::Snapshot> const &event, sbe::Frame const &frame) override { print(event, frame); }
+  void operator()(Trace<::deribit::sbe::multicast::SnapshotStart> const &event, sbe::Frame const &frame) override { print(event, frame); }
+  void operator()(Trace<::deribit::sbe::multicast::SnapshotEnd> const &event, sbe::Frame const &frame) override { print(event, frame); }
+  void operator()(Trace<::deribit::sbe::multicast::ComboLegs> const &event, sbe::Frame const &frame) override { print(event, frame); }
+  void operator()(Trace<::deribit::sbe::multicast::PriceIndex> const &event, sbe::Frame const &frame) override { print(event, frame); }
+  void operator()(Trace<::deribit::sbe::multicast::Rfq> const &event, sbe::Frame const &frame) override { print(event, frame); }
+  void operator()(Trace<::deribit::sbe::multicast::InstrumentV2> const &event, sbe::Frame const &frame) override { print(event, frame); }
 
   void print(auto &event, auto &frame) {
     using value_type = std::remove_cvref_t<decltype(event)>::value_type;

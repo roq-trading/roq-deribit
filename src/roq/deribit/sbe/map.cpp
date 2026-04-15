@@ -13,13 +13,13 @@ using Helper = detail::MapHelper<Args...>;
 
 // deribit => roq
 
-// deribit_multicast::BookSide::Value => roq::Side
+// ::deribit::sbe::multicast::BookSide::Value => roq::Side
 
 template <>
 template <>
-constexpr Helper<deribit_multicast::BookSide::Value>::operator std::optional<Side>() const {
+constexpr Helper<::deribit::sbe::multicast::BookSide::Value>::operator std::optional<Side>() const {
   switch (std::get<0>(args_)) {
-    using enum deribit_multicast::BookSide::Value;
+    using enum ::deribit::sbe::multicast::BookSide::Value;
     case ask:
       return Side::SELL;
     case bid:
@@ -30,23 +30,23 @@ constexpr Helper<deribit_multicast::BookSide::Value>::operator std::optional<Sid
   return {};
 }
 
-static_assert(Helper{deribit_multicast::BookSide::Value{deribit_multicast::BookSide::ask}} == roq::Side::SELL);
-static_assert(Helper{deribit_multicast::BookSide::Value{deribit_multicast::BookSide::bid}} == roq::Side::BUY);
-static_assert(Helper{deribit_multicast::BookSide::Value{deribit_multicast::BookSide::NULL_VALUE}} == roq::Side::UNDEFINED);
+static_assert(Helper{::deribit::sbe::multicast::BookSide::Value{::deribit::sbe::multicast::BookSide::ask}} == roq::Side::SELL);
+static_assert(Helper{::deribit::sbe::multicast::BookSide::Value{::deribit::sbe::multicast::BookSide::bid}} == roq::Side::BUY);
+static_assert(Helper{::deribit::sbe::multicast::BookSide::Value{::deribit::sbe::multicast::BookSide::NULL_VALUE}} == roq::Side::UNDEFINED);
 
 template <>
 template <>
-std::optional<Side> Map<deribit_multicast::BookSide::Value>::helper() const {
+std::optional<Side> Map<::deribit::sbe::multicast::BookSide::Value>::helper() const {
   return Helper{args_};
 }
 
-// deribit_multicast::Direction::Value => roq::Side
+// ::deribit::sbe::multicast::Direction::Value => roq::Side
 
 template <>
 template <>
-constexpr Helper<deribit_multicast::Direction::Value>::operator std::optional<Side>() const {
+constexpr Helper<::deribit::sbe::multicast::Direction::Value>::operator std::optional<Side>() const {
   switch (std::get<0>(args_)) {
-    using enum deribit_multicast::Direction::Value;
+    using enum ::deribit::sbe::multicast::Direction::Value;
     case buy:
       return Side::BUY;
     case sell:
@@ -57,23 +57,23 @@ constexpr Helper<deribit_multicast::Direction::Value>::operator std::optional<Si
   return {};
 }
 
-static_assert(Helper{deribit_multicast::Direction::Value{deribit_multicast::Direction::buy}} == roq::Side::BUY);
-static_assert(Helper{deribit_multicast::Direction::Value{deribit_multicast::Direction::sell}} == roq::Side::SELL);
-static_assert(Helper{deribit_multicast::Direction::Value{deribit_multicast::Direction::NULL_VALUE}} == roq::Side::UNDEFINED);
+static_assert(Helper{::deribit::sbe::multicast::Direction::Value{::deribit::sbe::multicast::Direction::buy}} == roq::Side::BUY);
+static_assert(Helper{::deribit::sbe::multicast::Direction::Value{::deribit::sbe::multicast::Direction::sell}} == roq::Side::SELL);
+static_assert(Helper{::deribit::sbe::multicast::Direction::Value{::deribit::sbe::multicast::Direction::NULL_VALUE}} == roq::Side::UNDEFINED);
 
 template <>
 template <>
-std::optional<Side> Map<deribit_multicast::Direction::Value>::helper() const {
+std::optional<Side> Map<::deribit::sbe::multicast::Direction::Value>::helper() const {
   return Helper{args_};
 }
 
-// deribit_multicast::InstrumentState::Value => roq::TradingStatus
+// ::deribit::sbe::multicast::InstrumentState::Value => roq::TradingStatus
 
 template <>
 template <>
-constexpr Helper<deribit_multicast::InstrumentState::Value>::operator std::optional<TradingStatus>() const {
+constexpr Helper<::deribit::sbe::multicast::InstrumentState::Value>::operator std::optional<TradingStatus>() const {
   switch (std::get<0>(args_)) {
-    using enum deribit_multicast::InstrumentState::Value;
+    using enum ::deribit::sbe::multicast::InstrumentState::Value;
     case created:
       return TradingStatus::OPEN;  // ???
     case open:
@@ -94,28 +94,30 @@ constexpr Helper<deribit_multicast::InstrumentState::Value>::operator std::optio
   return {};
 }
 
-static_assert(Helper{deribit_multicast::InstrumentState::Value{deribit_multicast::InstrumentState::created}} == roq::TradingStatus::OPEN);
-static_assert(Helper{deribit_multicast::InstrumentState::Value{deribit_multicast::InstrumentState::open}} == roq::TradingStatus::OPEN);
-static_assert(Helper{deribit_multicast::InstrumentState::Value{deribit_multicast::InstrumentState::closed}} == roq::TradingStatus::CLOSE);
-static_assert(Helper{deribit_multicast::InstrumentState::Value{deribit_multicast::InstrumentState::settled}} == roq::TradingStatus::UNDEFINED);
-static_assert(Helper{deribit_multicast::InstrumentState::Value{deribit_multicast::InstrumentState::inactive}} == roq::TradingStatus::UNDEFINED);
-static_assert(Helper{deribit_multicast::InstrumentState::Value{deribit_multicast::InstrumentState::started}} == roq::TradingStatus::UNDEFINED);
-static_assert(Helper{deribit_multicast::InstrumentState::Value{deribit_multicast::InstrumentState::deactivated}} == roq::TradingStatus::UNDEFINED);
-static_assert(Helper{deribit_multicast::InstrumentState::Value{deribit_multicast::InstrumentState::NULL_VALUE}} == roq::TradingStatus::UNDEFINED);
+static_assert(Helper{::deribit::sbe::multicast::InstrumentState::Value{::deribit::sbe::multicast::InstrumentState::created}} == roq::TradingStatus::OPEN);
+static_assert(Helper{::deribit::sbe::multicast::InstrumentState::Value{::deribit::sbe::multicast::InstrumentState::open}} == roq::TradingStatus::OPEN);
+static_assert(Helper{::deribit::sbe::multicast::InstrumentState::Value{::deribit::sbe::multicast::InstrumentState::closed}} == roq::TradingStatus::CLOSE);
+static_assert(Helper{::deribit::sbe::multicast::InstrumentState::Value{::deribit::sbe::multicast::InstrumentState::settled}} == roq::TradingStatus::UNDEFINED);
+static_assert(Helper{::deribit::sbe::multicast::InstrumentState::Value{::deribit::sbe::multicast::InstrumentState::inactive}} == roq::TradingStatus::UNDEFINED);
+static_assert(Helper{::deribit::sbe::multicast::InstrumentState::Value{::deribit::sbe::multicast::InstrumentState::started}} == roq::TradingStatus::UNDEFINED);
+static_assert(
+    Helper{::deribit::sbe::multicast::InstrumentState::Value{::deribit::sbe::multicast::InstrumentState::deactivated}} == roq::TradingStatus::UNDEFINED);
+static_assert(
+    Helper{::deribit::sbe::multicast::InstrumentState::Value{::deribit::sbe::multicast::InstrumentState::NULL_VALUE}} == roq::TradingStatus::UNDEFINED);
 
 template <>
 template <>
-std::optional<TradingStatus> Map<deribit_multicast::InstrumentState::Value>::helper() const {
+std::optional<TradingStatus> Map<::deribit::sbe::multicast::InstrumentState::Value>::helper() const {
   return Helper{args_};
 }
 
-// deribit_multicast::Liquidation::Value => roq::Liquidity
+// ::deribit::sbe::multicast::Liquidation::Value => roq::Liquidity
 
 template <>
 template <>
-constexpr Helper<deribit_multicast::Liquidation::Value>::operator std::optional<Liquidity>() const {
+constexpr Helper<::deribit::sbe::multicast::Liquidation::Value>::operator std::optional<Liquidity>() const {
   switch (std::get<0>(args_)) {
-    using enum deribit_multicast::Liquidation::Value;
+    using enum ::deribit::sbe::multicast::Liquidation::Value;
     case none:
       return Liquidity::UNDEFINED;
     case maker:
@@ -130,25 +132,25 @@ constexpr Helper<deribit_multicast::Liquidation::Value>::operator std::optional<
   return {};
 }
 
-static_assert(Helper{deribit_multicast::Liquidation::Value{deribit_multicast::Liquidation::none}} == roq::Liquidity::UNDEFINED);
-static_assert(Helper{deribit_multicast::Liquidation::Value{deribit_multicast::Liquidation::maker}} == roq::Liquidity::MAKER);
-static_assert(Helper{deribit_multicast::Liquidation::Value{deribit_multicast::Liquidation::taker}} == roq::Liquidity::TAKER);
-static_assert(Helper{deribit_multicast::Liquidation::Value{deribit_multicast::Liquidation::both}} == roq::Liquidity::UNDEFINED);
-static_assert(Helper{deribit_multicast::Liquidation::Value{deribit_multicast::Liquidation::NULL_VALUE}} == roq::Liquidity::UNDEFINED);
+static_assert(Helper{::deribit::sbe::multicast::Liquidation::Value{::deribit::sbe::multicast::Liquidation::none}} == roq::Liquidity::UNDEFINED);
+static_assert(Helper{::deribit::sbe::multicast::Liquidation::Value{::deribit::sbe::multicast::Liquidation::maker}} == roq::Liquidity::MAKER);
+static_assert(Helper{::deribit::sbe::multicast::Liquidation::Value{::deribit::sbe::multicast::Liquidation::taker}} == roq::Liquidity::TAKER);
+static_assert(Helper{::deribit::sbe::multicast::Liquidation::Value{::deribit::sbe::multicast::Liquidation::both}} == roq::Liquidity::UNDEFINED);
+static_assert(Helper{::deribit::sbe::multicast::Liquidation::Value{::deribit::sbe::multicast::Liquidation::NULL_VALUE}} == roq::Liquidity::UNDEFINED);
 
 template <>
 template <>
-std::optional<Liquidity> Map<deribit_multicast::Liquidation::Value>::helper() const {
+std::optional<Liquidity> Map<::deribit::sbe::multicast::Liquidation::Value>::helper() const {
   return Helper{args_};
 }
 
-// deribit_multicast::YesNo::Value => std::bool
+// ::deribit::sbe::multicast::YesNo::Value => std::bool
 
 template <>
 template <>
-constexpr Helper<deribit_multicast::YesNo::Value>::operator std::optional<bool>() const {
+constexpr Helper<::deribit::sbe::multicast::YesNo::Value>::operator std::optional<bool>() const {
   switch (std::get<0>(args_)) {
-    using enum deribit_multicast::YesNo::Value;
+    using enum ::deribit::sbe::multicast::YesNo::Value;
     case no:
       return false;
     case yes:
@@ -159,13 +161,13 @@ constexpr Helper<deribit_multicast::YesNo::Value>::operator std::optional<bool>(
   return {};
 }
 
-static_assert(Helper{deribit_multicast::YesNo::Value{deribit_multicast::YesNo::no}} == false);
-static_assert(Helper{deribit_multicast::YesNo::Value{deribit_multicast::YesNo::yes}} == true);
-static_assert(Helper{deribit_multicast::YesNo::Value{deribit_multicast::YesNo::NULL_VALUE}} == false);
+static_assert(Helper{::deribit::sbe::multicast::YesNo::Value{::deribit::sbe::multicast::YesNo::no}} == false);
+static_assert(Helper{::deribit::sbe::multicast::YesNo::Value{::deribit::sbe::multicast::YesNo::yes}} == true);
+static_assert(Helper{::deribit::sbe::multicast::YesNo::Value{::deribit::sbe::multicast::YesNo::NULL_VALUE}} == false);
 
 template <>
 template <>
-std::optional<bool> Map<deribit_multicast::YesNo::Value>::helper() const {
+std::optional<bool> Map<::deribit::sbe::multicast::YesNo::Value>::helper() const {
   return Helper{args_};
 }
 

@@ -10,7 +10,7 @@ using namespace std::literals;
 
 using namespace Catch::literals;
 
-using namespace deribit_multicast;
+// using namespace deribit_multicast;
 
 using namespace roq;
 using namespace roq::deribit;
@@ -113,8 +113,8 @@ TEST_CASE("sbe_event_1", "[sbe_parser]") {
       CHECK(frame.sequence_number == 50728558);
       return true;
     }
-    void operator()(Trace<deribit_multicast::Instrument> const &, sbe::Frame const &) override { FAIL(); }
-    void operator()(Trace<deribit_multicast::Book> const &event, sbe::Frame const &frame) override {
+    void operator()(Trace<::deribit::sbe::multicast::Instrument> const &, sbe::Frame const &) override { FAIL(); }
+    void operator()(Trace<::deribit::sbe::multicast::Book> const &event, sbe::Frame const &frame) override {
       ++book_count_;
       CHECK(frame.channel_id == 1);
       CHECK(frame.sequence_number == 50728558);
@@ -130,8 +130,8 @@ TEST_CASE("sbe_event_1", "[sbe_parser]") {
       const_cast<value_type &>(book).changesList().forEach([&count](auto &item) {
         switch (++count) {
           case 1:
-            CHECK(item.side() == deribit_multicast::BookSide::bid);
-            CHECK(item.change() == deribit_multicast::BookChange::changed);
+            CHECK(item.side() == ::deribit::sbe::multicast::BookSide::bid);
+            CHECK(item.change() == ::deribit::sbe::multicast::BookChange::changed);
             CHECK(item.price() == Catch::Approx{62115.0});
             CHECK(item.amount() == Catch::Approx{890.0});
             break;
@@ -139,7 +139,7 @@ TEST_CASE("sbe_event_1", "[sbe_parser]") {
       });
       CHECK(count == 1);
     }
-    void operator()(Trace<deribit_multicast::Trades> const &event, sbe::Frame const &frame) override {
+    void operator()(Trace<::deribit::sbe::multicast::Trades> const &event, sbe::Frame const &frame) override {
       ++trades_count_;
       CHECK(frame.channel_id == 1);
       CHECK(frame.sequence_number == 50728558);
@@ -151,7 +151,7 @@ TEST_CASE("sbe_event_1", "[sbe_parser]") {
       const_cast<value_type &>(trades).tradesList().forEach([&count](auto &item) {
         switch (++count) {
           case 1:
-            CHECK(item.direction() == deribit_multicast::Direction::sell);
+            CHECK(item.direction() == ::deribit::sbe::multicast::Direction::sell);
             CHECK(item.price() == Catch::Approx{62115.0});
             CHECK(item.amount() == Catch::Approx{200.0});
             CHECK(item.timestampMs() == 1728660191073);
@@ -159,8 +159,8 @@ TEST_CASE("sbe_event_1", "[sbe_parser]") {
             CHECK(item.indexPrice() == Catch::Approx{62099.30000000000291038});
             CHECK(item.tradeSeq() == 219321165);
             CHECK(item.tradeId() == 320585949);
-            CHECK(item.tickDirection() == deribit_multicast::TickDirection::zerominus);
-            CHECK(item.liquidation() == deribit_multicast::Liquidation::none);
+            CHECK(item.tickDirection() == ::deribit::sbe::multicast::TickDirection::zerominus);
+            CHECK(item.liquidation() == ::deribit::sbe::multicast::Liquidation::none);
             CHECK(std::isnan(item.iv()));
             CHECK(item.blockTradeId() == 0);
             CHECK(item.comboTradeId() == 0);
@@ -169,13 +169,13 @@ TEST_CASE("sbe_event_1", "[sbe_parser]") {
       });
       CHECK(count == 1);
     }
-    void operator()(Trace<deribit_multicast::Ticker> const &event, sbe::Frame const &frame) override {
+    void operator()(Trace<::deribit::sbe::multicast::Ticker> const &event, sbe::Frame const &frame) override {
       ++ticker_count_;
       CHECK(frame.channel_id == 1);
       CHECK(frame.sequence_number == 50728558);
       auto &[trace_info, ticker] = event;
       CHECK(ticker.instrumentId() == 210838);
-      CHECK(ticker.instrumentState() == deribit_multicast::InstrumentState::open);
+      CHECK(ticker.instrumentState() == ::deribit::sbe::multicast::InstrumentState::open);
       CHECK(ticker.timestampMs() == 1728660191073);
       CHECK(ticker.openInterest() == Catch::Approx{566342820.0});
       CHECK(ticker.minSellPrice() == Catch::Approx{60249.0});
@@ -193,13 +193,13 @@ TEST_CASE("sbe_event_1", "[sbe_parser]") {
       CHECK(std::isnan(ticker.deliveryPrice()));
       CHECK(ticker.settlementPrice() == Catch::Approx{60618.83000000000174623});
     }
-    void operator()(Trace<deribit_multicast::Snapshot> const &, sbe::Frame const &) override { FAIL(); }
-    void operator()(Trace<deribit_multicast::SnapshotStart> const &, sbe::Frame const &) override { FAIL(); }
-    void operator()(Trace<deribit_multicast::SnapshotEnd> const &, sbe::Frame const &) override { FAIL(); }
-    void operator()(Trace<deribit_multicast::ComboLegs> const &, sbe::Frame const &) override { FAIL(); }
-    void operator()(Trace<deribit_multicast::PriceIndex> const &, sbe::Frame const &) override { FAIL(); }
-    void operator()(Trace<deribit_multicast::Rfq> const &, sbe::Frame const &) override { FAIL(); }
-    void operator()(Trace<deribit_multicast::InstrumentV2> const &, sbe::Frame const &) override { FAIL(); }
+    void operator()(Trace<::deribit::sbe::multicast::Snapshot> const &, sbe::Frame const &) override { FAIL(); }
+    void operator()(Trace<::deribit::sbe::multicast::SnapshotStart> const &, sbe::Frame const &) override { FAIL(); }
+    void operator()(Trace<::deribit::sbe::multicast::SnapshotEnd> const &, sbe::Frame const &) override { FAIL(); }
+    void operator()(Trace<::deribit::sbe::multicast::ComboLegs> const &, sbe::Frame const &) override { FAIL(); }
+    void operator()(Trace<::deribit::sbe::multicast::PriceIndex> const &, sbe::Frame const &) override { FAIL(); }
+    void operator()(Trace<::deribit::sbe::multicast::Rfq> const &, sbe::Frame const &) override { FAIL(); }
+    void operator()(Trace<::deribit::sbe::multicast::InstrumentV2> const &, sbe::Frame const &) override { FAIL(); }
 
    private:
     size_t frame_count_ = {};
@@ -415,19 +415,19 @@ TEST_CASE("sbe_snapshot_1", "[sbe_parser]") {
       CHECK(frame.sequence_number == 160178);
       return true;
     }
-    void operator()(Trace<deribit_multicast::Instrument> const &event, sbe::Frame const &frame) override {
+    void operator()(Trace<::deribit::sbe::multicast::Instrument> const &event, sbe::Frame const &frame) override {
       ++instrument_count_;
       CHECK(frame.channel_id == 101);
       CHECK(frame.sequence_number == 160178);
       auto &[trace_info, instrument] = event;
       using value_type = std::remove_cvref_t<decltype(instrument)>;
       CHECK(instrument.instrumentId() == 210838);
-      CHECK(instrument.instrumentState() == deribit_multicast::InstrumentState::open);
-      CHECK(instrument.kind() == deribit_multicast::InstrumentKind::future);
-      CHECK(instrument.instrumentType() == deribit_multicast::InstrumentType::reversed);
-      CHECK(instrument.optionType() == deribit_multicast::OptionType::not_applicable);
-      CHECK(instrument.rfq() == deribit_multicast::YesNo::no);
-      CHECK(instrument.settlementPeriod() == deribit_multicast::Period::perpetual);
+      CHECK(instrument.instrumentState() == ::deribit::sbe::multicast::InstrumentState::open);
+      CHECK(instrument.kind() == ::deribit::sbe::multicast::InstrumentKind::future);
+      CHECK(instrument.instrumentType() == ::deribit::sbe::multicast::InstrumentType::reversed);
+      CHECK(instrument.optionType() == ::deribit::sbe::multicast::OptionType::not_applicable);
+      CHECK(instrument.rfq() == ::deribit::sbe::multicast::YesNo::no);
+      CHECK(instrument.settlementPeriod() == ::deribit::sbe::multicast::Period::perpetual);
       CHECK(instrument.settlementPeriodCount() == 1);
       CHECK(instrument.getBaseCurrencyAsStringView() == "BTC"sv);
       CHECK(instrument.getQuoteCurrencyAsStringView() == "USD"sv);
@@ -447,15 +447,15 @@ TEST_CASE("sbe_snapshot_1", "[sbe_parser]") {
       CHECK(instrument.maxLeverage() == Catch::Approx{50.0});
       CHECK(sbe::get_instrument_name(const_cast<value_type &>(instrument)) == "BTC-PERPETUAL"sv);
     }
-    void operator()(Trace<deribit_multicast::Book> const &, sbe::Frame const &) override { FAIL(); }
-    void operator()(Trace<deribit_multicast::Trades> const &, sbe::Frame const &) override { FAIL(); }
-    void operator()(Trace<deribit_multicast::Ticker> const &event, sbe::Frame const &frame) override {
+    void operator()(Trace<::deribit::sbe::multicast::Book> const &, sbe::Frame const &) override { FAIL(); }
+    void operator()(Trace<::deribit::sbe::multicast::Trades> const &, sbe::Frame const &) override { FAIL(); }
+    void operator()(Trace<::deribit::sbe::multicast::Ticker> const &event, sbe::Frame const &frame) override {
       ++ticker_count_;
       CHECK(frame.channel_id == 101);
       CHECK(frame.sequence_number == 160178);
       auto &[trace_info, ticker] = event;
       CHECK(ticker.instrumentId() == 210838);
-      CHECK(ticker.instrumentState() == deribit_multicast::InstrumentState::open);
+      CHECK(ticker.instrumentState() == ::deribit::sbe::multicast::InstrumentState::open);
       CHECK(ticker.timestampMs() == 1728660226128);
       CHECK(ticker.openInterest() == Catch::Approx{566342820.0});
       CHECK(ticker.minSellPrice() == Catch::Approx{60219.5});
@@ -473,7 +473,7 @@ TEST_CASE("sbe_snapshot_1", "[sbe_parser]") {
       CHECK(std::isnan(ticker.deliveryPrice()));
       CHECK(ticker.settlementPrice() == Catch::Approx{60618.83000000000174623});
     }
-    void operator()(Trace<deribit_multicast::Snapshot> const &event, sbe::Frame const &frame) override {
+    void operator()(Trace<::deribit::sbe::multicast::Snapshot> const &event, sbe::Frame const &frame) override {
       ++snapshot_count_;
       CHECK(frame.channel_id == 101);
       CHECK(frame.sequence_number == 160178);
@@ -484,17 +484,17 @@ TEST_CASE("sbe_snapshot_1", "[sbe_parser]") {
       const_cast<value_type &>(snapshot).levelsList().forEach([&count](auto &item) {
         switch (++count) {
           case 1:
-            CHECK(item.side() == deribit_multicast::BookSide::ask);
+            CHECK(item.side() == ::deribit::sbe::multicast::BookSide::ask);
             CHECK(item.price() == Catch::Approx{62081.5});
             CHECK(item.amount() == Catch::Approx{90260.0});
             break;
           case 2:
-            CHECK(item.side() == deribit_multicast::BookSide::bid);
+            CHECK(item.side() == ::deribit::sbe::multicast::BookSide::bid);
             CHECK(item.price() == Catch::Approx{62081.0});
             CHECK(item.amount() == Catch::Approx{20470.0});
             break;
           case 54:
-            CHECK(item.side() == deribit_multicast::BookSide::bid);
+            CHECK(item.side() == ::deribit::sbe::multicast::BookSide::bid);
             CHECK(item.price() == Catch::Approx{62049.0});
             CHECK(item.amount() == Catch::Approx{15510.0});
             break;
@@ -502,23 +502,23 @@ TEST_CASE("sbe_snapshot_1", "[sbe_parser]") {
       });
       CHECK(count == 54);
     }
-    void operator()(Trace<deribit_multicast::SnapshotStart> const &, sbe::Frame const &) override { FAIL(); }
-    void operator()(Trace<deribit_multicast::SnapshotEnd> const &, sbe::Frame const &) override { FAIL(); }
-    void operator()(Trace<deribit_multicast::ComboLegs> const &, sbe::Frame const &) override { FAIL(); }
-    void operator()(Trace<deribit_multicast::PriceIndex> const &, sbe::Frame const &) override { FAIL(); }
-    void operator()(Trace<deribit_multicast::Rfq> const &, sbe::Frame const &) override { FAIL(); }
-    void operator()(Trace<deribit_multicast::InstrumentV2> const &event, sbe::Frame const &frame) override {
+    void operator()(Trace<::deribit::sbe::multicast::SnapshotStart> const &, sbe::Frame const &) override { FAIL(); }
+    void operator()(Trace<::deribit::sbe::multicast::SnapshotEnd> const &, sbe::Frame const &) override { FAIL(); }
+    void operator()(Trace<::deribit::sbe::multicast::ComboLegs> const &, sbe::Frame const &) override { FAIL(); }
+    void operator()(Trace<::deribit::sbe::multicast::PriceIndex> const &, sbe::Frame const &) override { FAIL(); }
+    void operator()(Trace<::deribit::sbe::multicast::Rfq> const &, sbe::Frame const &) override { FAIL(); }
+    void operator()(Trace<::deribit::sbe::multicast::InstrumentV2> const &event, sbe::Frame const &frame) override {
       ++instrument_v2_count_;
       CHECK(frame.channel_id == 101);
       CHECK(frame.sequence_number == 160178);
       auto &[trace_info, instrument] = event;
       using value_type = std::remove_cvref_t<decltype(instrument)>;
       CHECK(instrument.instrumentId() == 210838);
-      CHECK(instrument.instrumentState() == deribit_multicast::InstrumentState::open);
-      CHECK(instrument.kind() == deribit_multicast::InstrumentKind::future);
-      CHECK(instrument.instrumentType() == deribit_multicast::InstrumentType::reversed);
-      CHECK(instrument.optionType() == deribit_multicast::OptionType::not_applicable);
-      CHECK(instrument.settlementPeriod() == deribit_multicast::Period::perpetual);
+      CHECK(instrument.instrumentState() == ::deribit::sbe::multicast::InstrumentState::open);
+      CHECK(instrument.kind() == ::deribit::sbe::multicast::InstrumentKind::future);
+      CHECK(instrument.instrumentType() == ::deribit::sbe::multicast::InstrumentType::reversed);
+      CHECK(instrument.optionType() == ::deribit::sbe::multicast::OptionType::not_applicable);
+      CHECK(instrument.settlementPeriod() == ::deribit::sbe::multicast::Period::perpetual);
       CHECK(instrument.settlementPeriodCount() == 1);
       CHECK(instrument.getBaseCurrencyAsStringView() == "BTC"sv);
       CHECK(instrument.getQuoteCurrencyAsStringView() == "USD"sv);
@@ -734,7 +734,7 @@ TEST_CASE("sbe_snapshot_2", "[sbe_parser]") {
       CHECK(frame.sequence_number == 9329202);
       return true;
     }
-    void operator()(Trace<deribit_multicast::Instrument> const &event, sbe::Frame const &frame) override {
+    void operator()(Trace<::deribit::sbe::multicast::Instrument> const &event, sbe::Frame const &frame) override {
       CHECK(frame.channel_id == 102);
       CHECK(frame.sequence_number == 9329202);
       auto &[trace_info, instrument] = event;
@@ -742,11 +742,11 @@ TEST_CASE("sbe_snapshot_2", "[sbe_parser]") {
       switch (++instrument_count_) {
         case 1: {
           CHECK(instrument.instrumentId() == 356285);
-          CHECK(instrument.instrumentState() == deribit_multicast::InstrumentState::open);
-          CHECK(instrument.kind() == deribit_multicast::InstrumentKind::option);
-          CHECK(instrument.instrumentType() == deribit_multicast::InstrumentType::reversed);
-          CHECK(instrument.optionType() == deribit_multicast::OptionType::put);
-          CHECK(instrument.settlementPeriod() == deribit_multicast::Period::month);
+          CHECK(instrument.instrumentState() == ::deribit::sbe::multicast::InstrumentState::open);
+          CHECK(instrument.kind() == ::deribit::sbe::multicast::InstrumentKind::option);
+          CHECK(instrument.instrumentType() == ::deribit::sbe::multicast::InstrumentType::reversed);
+          CHECK(instrument.optionType() == ::deribit::sbe::multicast::OptionType::put);
+          CHECK(instrument.settlementPeriod() == ::deribit::sbe::multicast::Period::month);
           CHECK(instrument.settlementPeriodCount() == 1);
           CHECK(instrument.getBaseCurrencyAsStringView() == "BTC"sv);
           CHECK(instrument.getQuoteCurrencyAsStringView() == "BTC"sv);
@@ -770,11 +770,11 @@ TEST_CASE("sbe_snapshot_2", "[sbe_parser]") {
         }
         case 2: {
           CHECK(instrument.instrumentId() == 285000);
-          CHECK(instrument.instrumentState() == deribit_multicast::InstrumentState::open);
-          CHECK(instrument.kind() == deribit_multicast::InstrumentKind::option);
-          CHECK(instrument.instrumentType() == deribit_multicast::InstrumentType::reversed);
-          CHECK(instrument.optionType() == deribit_multicast::OptionType::call);
-          CHECK(instrument.settlementPeriod() == deribit_multicast::Period::month);
+          CHECK(instrument.instrumentState() == ::deribit::sbe::multicast::InstrumentState::open);
+          CHECK(instrument.kind() == ::deribit::sbe::multicast::InstrumentKind::option);
+          CHECK(instrument.instrumentType() == ::deribit::sbe::multicast::InstrumentType::reversed);
+          CHECK(instrument.optionType() == ::deribit::sbe::multicast::OptionType::call);
+          CHECK(instrument.settlementPeriod() == ::deribit::sbe::multicast::Period::month);
           CHECK(instrument.settlementPeriodCount() == 3);
           CHECK(instrument.getBaseCurrencyAsStringView() == "BTC"sv);
           CHECK(instrument.getQuoteCurrencyAsStringView() == "BTC"sv);
@@ -800,16 +800,16 @@ TEST_CASE("sbe_snapshot_2", "[sbe_parser]") {
           FAIL();
       }
     }
-    void operator()(Trace<deribit_multicast::Book> const &, sbe::Frame const &) override { FAIL(); }
-    void operator()(Trace<deribit_multicast::Trades> const &, sbe::Frame const &) override { FAIL(); }
-    void operator()(Trace<deribit_multicast::Ticker> const &event, sbe::Frame const &frame) override {
+    void operator()(Trace<::deribit::sbe::multicast::Book> const &, sbe::Frame const &) override { FAIL(); }
+    void operator()(Trace<::deribit::sbe::multicast::Trades> const &, sbe::Frame const &) override { FAIL(); }
+    void operator()(Trace<::deribit::sbe::multicast::Ticker> const &event, sbe::Frame const &frame) override {
       CHECK(frame.channel_id == 102);
       CHECK(frame.sequence_number == 9329202);
       auto &[trace_info, ticker] = event;
       switch (++ticker_count_) {
         case 1: {
           CHECK(ticker.instrumentId() == 356285);
-          CHECK(ticker.instrumentState() == deribit_multicast::InstrumentState::open);
+          CHECK(ticker.instrumentState() == ::deribit::sbe::multicast::InstrumentState::open);
           CHECK(ticker.timestampMs() == 1729670566172);
           CHECK(ticker.openInterest() == Catch::Approx{586.79999999999995453});
           CHECK(ticker.minSellPrice() == Catch::Approx{0.0001});
@@ -830,7 +830,7 @@ TEST_CASE("sbe_snapshot_2", "[sbe_parser]") {
         }
         case 2: {
           CHECK(ticker.instrumentId() == 285000);
-          CHECK(ticker.instrumentState() == deribit_multicast::InstrumentState::open);
+          CHECK(ticker.instrumentState() == ::deribit::sbe::multicast::InstrumentState::open);
           CHECK(ticker.timestampMs() == 1729670565237);
           CHECK(ticker.openInterest() == Catch::Approx{8.19999999999999929});
           CHECK(ticker.minSellPrice() == Catch::Approx{0.76500000000000001});
@@ -853,7 +853,7 @@ TEST_CASE("sbe_snapshot_2", "[sbe_parser]") {
           FAIL();
       }
     }
-    void operator()(Trace<deribit_multicast::Snapshot> const &event, sbe::Frame const &frame) override {
+    void operator()(Trace<::deribit::sbe::multicast::Snapshot> const &event, sbe::Frame const &frame) override {
       CHECK(frame.channel_id == 102);
       CHECK(frame.sequence_number == 9329202);
       auto &[trace_info, snapshot] = event;
@@ -865,17 +865,17 @@ TEST_CASE("sbe_snapshot_2", "[sbe_parser]") {
           const_cast<value_type &>(snapshot).levelsList().forEach([&count](auto &item) {
             switch (++count) {
               case 1:
-                CHECK(item.side() == deribit_multicast::BookSide::ask);
+                CHECK(item.side() == ::deribit::sbe::multicast::BookSide::ask);
                 CHECK(item.price() == Catch::Approx{0.0001});
                 CHECK(item.amount() == Catch::Approx{5.0});
                 break;
               case 2:
-                CHECK(item.side() == deribit_multicast::BookSide::ask);
+                CHECK(item.side() == ::deribit::sbe::multicast::BookSide::ask);
                 CHECK(item.price() == Catch::Approx{0.0003});
                 CHECK(item.amount() == Catch::Approx{19.69999999999999929});
                 break;
               case 6:
-                CHECK(item.side() == deribit_multicast::BookSide::ask);
+                CHECK(item.side() == ::deribit::sbe::multicast::BookSide::ask);
                 CHECK(item.price() == Catch::Approx{0.01});
                 CHECK(item.amount() == Catch::Approx{0.29999999999999999});
                 break;
@@ -890,12 +890,12 @@ TEST_CASE("sbe_snapshot_2", "[sbe_parser]") {
           const_cast<value_type &>(snapshot).levelsList().forEach([&count](auto &item) {
             switch (++count) {
               case 1:
-                CHECK(item.side() == deribit_multicast::BookSide::ask);
+                CHECK(item.side() == ::deribit::sbe::multicast::BookSide::ask);
                 CHECK(item.price() == Catch::Approx{0.78149999999999997});
                 CHECK(item.amount() == Catch::Approx{30.80000000000000071});
                 break;
               case 2:
-                CHECK(item.side() == deribit_multicast::BookSide::bid);
+                CHECK(item.side() == ::deribit::sbe::multicast::BookSide::bid);
                 CHECK(item.price() == Catch::Approx{0.77800000000000002});
                 CHECK(item.amount() == Catch::Approx{30.80000000000000071});
                 break;
@@ -908,12 +908,12 @@ TEST_CASE("sbe_snapshot_2", "[sbe_parser]") {
           FAIL();
       }
     }
-    void operator()(Trace<deribit_multicast::SnapshotStart> const &, sbe::Frame const &) override { FAIL(); }
-    void operator()(Trace<deribit_multicast::SnapshotEnd> const &, sbe::Frame const &) override { FAIL(); }
-    void operator()(Trace<deribit_multicast::ComboLegs> const &, sbe::Frame const &) override { FAIL(); }
-    void operator()(Trace<deribit_multicast::PriceIndex> const &, sbe::Frame const &) override { FAIL(); }
-    void operator()(Trace<deribit_multicast::Rfq> const &, sbe::Frame const &) override { FAIL(); }
-    void operator()(Trace<deribit_multicast::InstrumentV2> const &event, sbe::Frame const &frame) override {
+    void operator()(Trace<::deribit::sbe::multicast::SnapshotStart> const &, sbe::Frame const &) override { FAIL(); }
+    void operator()(Trace<::deribit::sbe::multicast::SnapshotEnd> const &, sbe::Frame const &) override { FAIL(); }
+    void operator()(Trace<::deribit::sbe::multicast::ComboLegs> const &, sbe::Frame const &) override { FAIL(); }
+    void operator()(Trace<::deribit::sbe::multicast::PriceIndex> const &, sbe::Frame const &) override { FAIL(); }
+    void operator()(Trace<::deribit::sbe::multicast::Rfq> const &, sbe::Frame const &) override { FAIL(); }
+    void operator()(Trace<::deribit::sbe::multicast::InstrumentV2> const &event, sbe::Frame const &frame) override {
       CHECK(frame.channel_id == 102);
       CHECK(frame.sequence_number == 9329202);
       auto &[trace_info, instrument] = event;
@@ -921,11 +921,11 @@ TEST_CASE("sbe_snapshot_2", "[sbe_parser]") {
       switch (++instrument_v2_count_) {
         case 1: {
           CHECK(instrument.instrumentId() == 356285);
-          CHECK(instrument.instrumentState() == deribit_multicast::InstrumentState::open);
-          CHECK(instrument.kind() == deribit_multicast::InstrumentKind::option);
-          CHECK(instrument.instrumentType() == deribit_multicast::InstrumentType::reversed);
-          CHECK(instrument.optionType() == deribit_multicast::OptionType::put);
-          CHECK(instrument.settlementPeriod() == deribit_multicast::Period::month);
+          CHECK(instrument.instrumentState() == ::deribit::sbe::multicast::InstrumentState::open);
+          CHECK(instrument.kind() == ::deribit::sbe::multicast::InstrumentKind::option);
+          CHECK(instrument.instrumentType() == ::deribit::sbe::multicast::InstrumentType::reversed);
+          CHECK(instrument.optionType() == ::deribit::sbe::multicast::OptionType::put);
+          CHECK(instrument.settlementPeriod() == ::deribit::sbe::multicast::Period::month);
           CHECK(instrument.settlementPeriodCount() == 1);
           CHECK(instrument.getBaseCurrencyAsStringView() == "BTC"sv);
           CHECK(instrument.getQuoteCurrencyAsStringView() == "BTC"sv);
@@ -959,11 +959,11 @@ TEST_CASE("sbe_snapshot_2", "[sbe_parser]") {
         }
         case 2: {
           CHECK(instrument.instrumentId() == 285000);
-          CHECK(instrument.instrumentState() == deribit_multicast::InstrumentState::open);
-          CHECK(instrument.kind() == deribit_multicast::InstrumentKind::option);
-          CHECK(instrument.instrumentType() == deribit_multicast::InstrumentType::reversed);
-          CHECK(instrument.optionType() == deribit_multicast::OptionType::call);
-          CHECK(instrument.settlementPeriod() == deribit_multicast::Period::month);
+          CHECK(instrument.instrumentState() == ::deribit::sbe::multicast::InstrumentState::open);
+          CHECK(instrument.kind() == ::deribit::sbe::multicast::InstrumentKind::option);
+          CHECK(instrument.instrumentType() == ::deribit::sbe::multicast::InstrumentType::reversed);
+          CHECK(instrument.optionType() == ::deribit::sbe::multicast::OptionType::call);
+          CHECK(instrument.settlementPeriod() == ::deribit::sbe::multicast::Period::month);
           CHECK(instrument.settlementPeriodCount() == 3);
           CHECK(instrument.getBaseCurrencyAsStringView() == "BTC"sv);
           CHECK(instrument.getQuoteCurrencyAsStringView() == "BTC"sv);
@@ -997,11 +997,11 @@ TEST_CASE("sbe_snapshot_2", "[sbe_parser]") {
         }
         case 3: {
           CHECK(instrument.instrumentId() == 354401);
-          CHECK(instrument.instrumentState() == deribit_multicast::InstrumentState::open);
-          CHECK(instrument.kind() == deribit_multicast::InstrumentKind::option);
-          CHECK(instrument.instrumentType() == deribit_multicast::InstrumentType::reversed);
-          CHECK(instrument.optionType() == deribit_multicast::OptionType::call);
-          CHECK(instrument.settlementPeriod() == deribit_multicast::Period::month);
+          CHECK(instrument.instrumentState() == ::deribit::sbe::multicast::InstrumentState::open);
+          CHECK(instrument.kind() == ::deribit::sbe::multicast::InstrumentKind::option);
+          CHECK(instrument.instrumentType() == ::deribit::sbe::multicast::InstrumentType::reversed);
+          CHECK(instrument.optionType() == ::deribit::sbe::multicast::OptionType::call);
+          CHECK(instrument.settlementPeriod() == ::deribit::sbe::multicast::Period::month);
           CHECK(instrument.settlementPeriodCount() == 1);
           CHECK(instrument.getBaseCurrencyAsStringView() == "BTC"sv);
           CHECK(instrument.getQuoteCurrencyAsStringView() == "BTC"sv);
