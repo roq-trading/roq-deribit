@@ -273,7 +273,7 @@
       "type": "std/double"
     },
     {
-      "name": "direct_access_enabled",
+      "name": "is_direct_access_allowed",
       "type": "std/bool"
     }
   ]
