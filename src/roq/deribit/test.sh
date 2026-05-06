@@ -55,6 +55,7 @@ $PREFIX "./roq-deribit" \
   --service_listen_address "unix://$HOME/run/metrics/$NAME.sock" \
   --download_trades_lookback=5m \
   --download_trades_lookback_on_restart=24h \
+  --enable_portfolio=true \
   $@
 #  --oms_cache=true \
 #  --oms_multicast_port 1234 \
