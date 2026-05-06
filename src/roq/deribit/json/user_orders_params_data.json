@@ -113,6 +113,10 @@
     {
       "name": "reject_post_only",
       "type": "std/bool"
+    },
+    {
+      "name": "original_order_type",
+      "type": "std/string_view"
     }
   ]
 }
