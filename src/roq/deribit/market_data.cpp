@@ -346,9 +346,9 @@ void MarketData::send_test_request(std::chrono::nanoseconds now) {
   }
 }
 
-uint32_t MarketData::download(MarketDataState state) {
+uint32_t MarketData::download(State state) {
   switch (state) {
-    using enum MarketDataState;
+    using enum State;
     case UNDEFINED:
       assert(false);
       break;
@@ -733,7 +733,7 @@ void MarketData::operator()(Trace<fix::SecurityList> const &event, roq::fix::Hea
       handler_(symbols_update);
     }
   }
-  download_.check_relaxed(MarketDataState::SECURITIES);
+  download_.check_relaxed(State::SECURITIES);
 }
 
 void MarketData::operator()(Trace<fix::SecurityStatus> const &event, roq::fix::Header const &header) {

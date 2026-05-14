@@ -452,9 +452,9 @@ void OrderEntry::send_test_request(std::chrono::nanoseconds now) {
   }
 }
 
-uint32_t OrderEntry::download(OrderEntryState state) {
+uint32_t OrderEntry::download(State state) {
   switch (state) {
-    using enum OrderEntryState;
+    using enum State;
     case UNDEFINED:
       assert(false);
       break;
@@ -645,7 +645,7 @@ void OrderEntry::operator()(Trace<fix::PositionReport> const &event, roq::fix::H
     };
     create_trace_and_dispatch(handler_, trace_info, position_update, is_last);
   }
-  download_.check_relaxed(OrderEntryState::POSITIONS);
+  download_.check_relaxed(State::POSITIONS);
 }
 
 namespace {
@@ -749,13 +749,6 @@ std::pair<double, double> compute_last_traded(auto const last_traded_quantity, a
   auto average_price = utils::is_zero(sum_quantity) ? NaN : sum_quantity_price / sum_quantity;
   return {sum_quantity, average_price};
 }
-
-UpdateType compute_update_type(auto const &download) {
-  if (download.state() != OrderEntryState::ORDERS) {
-    return UpdateType::INCREMENTAL;
-  }
-  return UpdateType::SNAPSHOT;
-}
 }  // namespace
 
 void OrderEntry::operator()(Trace<fix::ExecutionReport> const &event, roq::fix::Header const &header) {
@@ -770,7 +763,7 @@ void OrderEntry::operator()(Trace<fix::ExecutionReport> const &event, roq::fix::
     case ORDERS: {
       auto count = execution_report.tot_num_reports;
       log::info<1>(R"(Downloading {} execution reports (request_id="{}")"sv, count, execution_report.mass_status_req_id);
-      download_.update(OrderEntryState::ORDERS, count);
+      download_.update(State::ORDERS, count);
       return;  // this is not an ordinary execution report
     }
     default:
@@ -811,7 +804,12 @@ void OrderEntry::operator()(Trace<fix::ExecutionReport> const &event, roq::fix::
   auto request_status = compute_request_status(exec_type, ord_status);
   auto error = fix::map_error(execution_report.text);
   auto [last_traded_quantity, last_traded_price] = compute_last_traded(execution_report.last_qty, execution_report.last_px, execution_report.no_fills);
-  auto update_type = compute_update_type(download_);
+  auto update_type = [&]() {
+    if (download_.state() != State::ORDERS) {
+      return UpdateType::INCREMENTAL;
+    }
+    return UpdateType::SNAPSHOT;
+  }();
   auto time_in_force = [&]() -> TimeInForce {
     switch (update_type) {
       using enum UpdateType;
@@ -941,7 +939,7 @@ void OrderEntry::operator()(Trace<fix::ExecutionReport> const &event, roq::fix::
     create_trace_and_dispatch(handler_, trace_info, trade_update, true, user_id, execution_report.deribit_label);
   }
   // download end?
-  download_.check_relaxed(OrderEntryState::ORDERS);
+  download_.check_relaxed(State::ORDERS);
 }
 
 void OrderEntry::operator()(Trace<fix::OrderCancelReject> const &event, roq::fix::Header const &header) {
@@ -1032,7 +1030,7 @@ void OrderEntry::operator()(Trace<fix::Reject> const &event, roq::fix::Header co
   } else {
     log::fatal("Unexpected: reject={}"sv, reject);
     // log::warn("Unexpected: reject={}"sv, reject);
-    // download_.check_relaxed(OrderEntryState::ORDERS);
+    // download_.check_relaxed(State::ORDERS);
   }
 }
 

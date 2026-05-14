@@ -22,7 +22,6 @@
 #include "roq/server.hpp"
 
 #include "roq/deribit/account.hpp"
-#include "roq/deribit/drop_copy_state.hpp"
 #include "roq/deribit/shared.hpp"
 
 #include "roq/deribit/json/parser.hpp"
@@ -69,7 +68,18 @@ struct DropCopy final : public web::socket::Client::Handler, public json::Parser
 
   void login();
 
-  uint32_t download(DropCopyState);
+  enum class State {
+    UNDEFINED = 0,
+    SUBSCRIBE_USER_PORTFOLIO,
+    SUBSCRIBE_USER_CHANGES,
+    SUBSCRIBE_USER_ORDERS,
+    SUBSCRIBE_USER_TRADES,
+    GET_ACCOUNT_SUMMARY,
+    GET_USER_TRADES_BY_CURRENCY,
+    DONE,
+  };
+
+  uint32_t download(State);
 
   void subscribe_user_portfolio(std::span<std::string> const &currencies);
   void subscribe_user_changes();
@@ -130,7 +140,7 @@ struct DropCopy final : public web::socket::Client::Handler, public json::Parser
   // state
   bool ready_ = false;
   ConnectionStatus connection_status_ = {};
-  core::Download<DropCopyState> download_;
+  core::Download<State> download_;
   bool can_download_ = false;
   bool download_trades_is_first_ = true;
 };

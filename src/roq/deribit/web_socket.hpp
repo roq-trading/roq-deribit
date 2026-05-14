@@ -28,7 +28,6 @@
 #include "roq/deribit/account.hpp"
 #include "roq/deribit/request.hpp"
 #include "roq/deribit/shared.hpp"
-#include "roq/deribit/web_socket_state.hpp"
 
 #include "roq/deribit/json/parser.hpp"
 
@@ -78,7 +77,15 @@ struct WebSocket final : public web::socket::Client::Handler, public json::Parse
 
   void login();
 
-  uint32_t download(WebSocketState);
+  enum class State {
+    UNDEFINED = 0,
+    CURRENCIES,
+    INSTRUMENTS,
+    SUBSCRIBE,
+    DONE,
+  };
+
+  uint32_t download(State);
 
   void download_currencies();
   void check_currencies();
@@ -163,7 +170,7 @@ struct WebSocket final : public web::socket::Client::Handler, public json::Parse
   // state
   bool ready_ = false;
   ConnectionStatus connection_status_ = {};
-  core::Download<WebSocketState> download_;
+  core::Download<State> download_;
   // queue
   core::TimerQueue<std::string> subscribe_queue_;
   //

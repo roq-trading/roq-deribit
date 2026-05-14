@@ -20,7 +20,6 @@
 #include "roq/server.hpp"
 
 #include "roq/deribit/account.hpp"
-#include "roq/deribit/market_data_state.hpp"
 #include "roq/deribit/shared.hpp"
 
 // session
@@ -104,7 +103,14 @@ struct MarketData final : public io::net::ConnectionManager::Handler {
   void send_heartbeat(std::string_view const &test_req_id);
   void send_test_request(std::chrono::nanoseconds now);
 
-  uint32_t download(MarketDataState);
+  enum class State {
+    UNDEFINED = 0,
+    SECURITIES,
+    SUBSCRIBE,
+    DONE,
+  };
+
+  uint32_t download(State);
 
   void download_securities();
 
@@ -173,7 +179,7 @@ struct MarketData final : public io::net::ConnectionManager::Handler {
   bool ready_ = false;
   std::chrono::nanoseconds next_heartbeat_ = {};
   ConnectionStatus connection_status_ = {};
-  core::Download<MarketDataState> download_;
+  core::Download<State> download_;
   std::chrono::nanoseconds last_logon_or_heartbeat_ = {};
   utils::unordered_set<std::string> latch_;
   // EXPERIMENTAL

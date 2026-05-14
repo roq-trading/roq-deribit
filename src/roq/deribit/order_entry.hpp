@@ -19,7 +19,6 @@
 #include "roq/server.hpp"
 
 #include "roq/deribit/account.hpp"
-#include "roq/deribit/order_entry_state.hpp"
 #include "roq/deribit/shared.hpp"
 
 // session
@@ -102,7 +101,14 @@ struct OrderEntry final : public io::net::ConnectionManager::Handler {
   void send_heartbeat(std::string_view const &test_req_id);
   void send_test_request(std::chrono::nanoseconds now);
 
-  uint32_t download(OrderEntryState);
+  enum class State {
+    UNDEFINED = 0,
+    POSITIONS,
+    ORDERS,
+    DONE,
+  };
+
+  uint32_t download(State);
 
   void subscribe_positions();
   void download_orders();
@@ -158,7 +164,7 @@ struct OrderEntry final : public io::net::ConnectionManager::Handler {
   // state
   bool ready_ = false;
   std::chrono::nanoseconds next_heartbeat_ = {};
-  core::Download<OrderEntryState> download_;
+  core::Download<State> download_;
   std::chrono::nanoseconds last_logon_or_heartbeat_ = {};
   // EXPERIMENTAL
   utils::unordered_map<uint64_t, RequestId> msg_seq_num_to_request_id_;

@@ -242,9 +242,9 @@ void WebSocket::login() {
   (*connection_).send_text(message);
 }
 
-uint32_t WebSocket::download(WebSocketState state) {
+uint32_t WebSocket::download(State state) {
   switch (state) {
-    using enum WebSocketState;
+    using enum State;
     case UNDEFINED:
       break;
     case CURRENCIES:
@@ -286,12 +286,12 @@ void WebSocket::download_currencies() {
 }
 
 void WebSocket::check_currencies() {
-  if (download_.state() != WebSocketState::CURRENCIES) {
+  if (download_.state() != State::CURRENCIES) {
     return;
   }
   if (request_.request_currencies < request_.respond_currencies) {
     log::info("Currencies download has completed!"sv);
-    download_.check(WebSocketState::CURRENCIES);
+    download_.check(State::CURRENCIES);
   }
 }
 
@@ -300,12 +300,12 @@ void WebSocket::download_instruments() {
 }
 
 void WebSocket::check_instruments() {
-  if (download_.state() != WebSocketState::INSTRUMENTS) {
+  if (download_.state() != State::INSTRUMENTS) {
     return;
   }
   if (request_.request_instruments < request_.respond_instruments) {
     log::info("Instruments download has completed!"sv);
-    download_.check(WebSocketState::INSTRUMENTS);
+    download_.check(State::INSTRUMENTS);
   }
 }
 

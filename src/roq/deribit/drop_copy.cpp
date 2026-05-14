@@ -235,9 +235,9 @@ void DropCopy::login() {
   (*connection_).send_text(message);
 }
 
-uint32_t DropCopy::download(DropCopyState state) {
+uint32_t DropCopy::download(State state) {
   switch (state) {
-    using enum DropCopyState;
+    using enum State;
     case UNDEFINED:
       break;
     case SUBSCRIBE_USER_PORTFOLIO:
