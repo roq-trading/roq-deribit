@@ -42,6 +42,7 @@ struct Gateway final : public server::Handler,
 
  protected:
   // server::Handler
+
   void operator()(Event<Start> const &) override;
   void operator()(Event<Stop> const &) override;
   void operator()(Event<Timer> const &) override;
@@ -96,9 +97,9 @@ struct Gateway final : public server::Handler,
 
   void operator()(MarketData::SymbolsUpdate &) override;
 
-  void ensure_symbol_slices(size_t size);
-
   // utilities
+
+  void ensure_symbol_slices(size_t size);
 
   template <typename... Args>
   void dispatch(Args &&...);
