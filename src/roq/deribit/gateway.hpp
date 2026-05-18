@@ -14,13 +14,14 @@
 
 #include "roq/deribit/account.hpp"
 #include "roq/deribit/config.hpp"
+#include "roq/deribit/request.hpp"
+#include "roq/deribit/settings.hpp"
+#include "roq/deribit/shared.hpp"
+
 #include "roq/deribit/drop_copy.hpp"
 #include "roq/deribit/market_data.hpp"
 #include "roq/deribit/order_entry.hpp"
-#include "roq/deribit/request.hpp"
 #include "roq/deribit/rest.hpp"
-#include "roq/deribit/settings.hpp"
-#include "roq/deribit/shared.hpp"
 #include "roq/deribit/udp_events.hpp"
 #include "roq/deribit/udp_snapshot.hpp"
 #include "roq/deribit/web_socket.hpp"
@@ -75,7 +76,7 @@ struct Gateway final : public server::Handler,
 
   void operator()(metrics::Writer &) const override;
 
-  // many
+  // streams
 
   void operator()(Trace<StreamStatus> const &) override;
   void operator()(Trace<ExternalLatency> const &) override;
