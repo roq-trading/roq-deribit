@@ -21,7 +21,6 @@ set(SOURCES
     market_data.cpp
     order_entry.cpp
     rest.cpp
-    settings.cpp
     shared.cpp
     udp_events.cpp
     udp_snapshot.cpp
@@ -53,7 +52,6 @@ target_link_libraries(
           roq-logging::roq-logging-flags
           roq-market::roq-market
           roq-server::roq-server
-          roq-server::roq-server-flags
           roq-utils::roq-utils
           roq-web::roq-web
           unordered_dense::unordered_dense)

@@ -1,6 +1,6 @@
 /* Copyright (c) 2017-2026, Hans Erik Thrane */
 
-#include "roq/deribit/settings.hpp"
+#include "roq/deribit/flags/settings.hpp"
 
 #include "roq/logging.hpp"
 
@@ -8,6 +8,7 @@ using namespace std::literals;
 
 namespace roq {
 namespace deribit {
+namespace flags {
 
 Settings::Settings(args::Parser const &args)
     : server::flags::Settings{args, ROQ_PACKAGE_NAME, ROQ_BUILD_NUMBER}, flags::Flags{flags::Flags::create()}, misc{flags::Misc::create()},
@@ -16,5 +17,6 @@ Settings::Settings(args::Parser const &args)
   log::info("settings={}"sv, *this);
 }
 
+}  // namespace flags
 }  // namespace deribit
 }  // namespace roq
