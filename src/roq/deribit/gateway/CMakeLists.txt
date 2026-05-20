@@ -18,7 +18,7 @@ set(SOURCES
 
 add_library(${TARGET_NAME} SHARED ${SOURCES})
 
-add_dependencies(${TARGET_NAME} flags-autogen-headers autogen-json-headers)
+add_dependencies(${TARGET_NAME} flags-autogen-headers autogen-fix-headers autogen-json-headers)
 
 target_link_libraries(
   ${TARGET_NAME}
