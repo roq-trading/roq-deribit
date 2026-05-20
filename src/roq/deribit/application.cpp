@@ -2,9 +2,10 @@
 
 #include "roq/deribit/application.hpp"
 
-#include "roq/deribit/config.hpp"
-#include "roq/deribit/gateway.hpp"
-#include "roq/deribit/settings.hpp"
+#include "roq/deribit/flags/settings.hpp"
+
+#include "roq/deribit/gateway/config.hpp"
+#include "roq/deribit/gateway/controller.hpp"
 
 using namespace std::literals;
 
@@ -20,10 +21,10 @@ uint8_t const API_2 = {};
 // === IMPLEMENTATION ===
 
 int Application::main(args::Parser const &args) {
-  Settings settings{args};
-  Config config{settings};
+  flags::Settings settings{args};
+  gateway::Config config{settings};
   auto context = server::create_io_context(settings);
-  server::Trading<Gateway>{settings, config, *context, API_2}.dispatch();
+  server::Trading<gateway::Controller>{settings, config, *context, API_2}.dispatch();
   return EXIT_SUCCESS;
 }
 

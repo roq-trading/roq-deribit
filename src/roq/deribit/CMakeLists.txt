@@ -1,31 +1,16 @@
 set(TARGET_NAME ${PROJECT_NAME})
 
 add_subdirectory(fix)
-add_subdirectory(json)
 add_subdirectory(flags)
-add_subdirectory(tools)
+add_subdirectory(gateway)
+add_subdirectory(json)
 add_subdirectory(sbe)
+add_subdirectory(tools)
 
 add_subdirectory(dump)
 add_subdirectory(filter)
 
-set(SOURCES
-    account.cpp
-    api.cpp
-    application.cpp
-    channel.cpp
-    config.cpp
-    drop_copy.cpp
-    gateway.cpp
-    instrument.cpp
-    market_data.cpp
-    order_entry.cpp
-    rest.cpp
-    shared.cpp
-    udp_events.cpp
-    udp_snapshot.cpp
-    web_socket.cpp
-    main.cpp)
+set(SOURCES application.cpp main.cpp)
 
 include(RoqAutogen)
 
@@ -35,26 +20,8 @@ add_executable(${TARGET_NAME} ${SOURCES})
 
 add_dependencies(${TARGET_NAME} autogen-fix-headers autogen-json-headers)
 
-target_link_libraries(
-  ${TARGET_NAME}
-  PRIVATE ${PROJECT_NAME}-fix
-          ${PROJECT_NAME}-json
-          ${PROJECT_NAME}-flags
-          ${PROJECT_NAME}-tools
-          ${PROJECT_NAME}-sbe
-          roq-api::roq-api
-          roq-core::roq-core
-          roq-codec::roq-codec
-          roq-fix::roq-fix
-          roq-flags::roq-flags
-          roq-io::roq-io
-          roq-logging::roq-logging
-          roq-logging::roq-logging-flags
-          roq-market::roq-market
-          roq-server::roq-server
-          roq-utils::roq-utils
-          roq-web::roq-web
-          unordered_dense::unordered_dense)
+target_link_libraries(${TARGET_NAME} PRIVATE ${PROJECT_NAME}-flags ${PROJECT_NAME}-gateway roq-flags::roq-flags roq-logging::roq-logging
+                                             roq-logging::roq-logging-flags roq-server::roq-server)
 
 if(ROQ_BUILD_TYPE STREQUAL "Release")
   set_target_properties(${TARGET_NAME} PROPERTIES LINK_FLAGS_RELEASE -s)
