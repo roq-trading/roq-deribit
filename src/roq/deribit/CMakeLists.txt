@@ -9,6 +9,7 @@ add_subdirectory(tools)
 
 add_subdirectory(dump)
 add_subdirectory(filter)
+add_subdirectory(strategy)
 
 set(SOURCES application.cpp main.cpp)
 
