@@ -43,19 +43,18 @@ struct Controller final : public server::Strategy::Handler, public server::Strat
   void cancel_order();
 
   // server::Strategy::Handler
-  // XXX HANS => Event
-  void operator()(Trace<DownloadBegin> const &, uint64_t opaque, bool is_last) override;
-  void operator()(Trace<DownloadEnd> const &, uint64_t opaque, bool is_last) override;
-  void operator()(Trace<Ready> const &, uint64_t opaque, bool is_last) override;
-  void operator()(Trace<GatewaySettings> const &, uint64_t opaque, bool is_last) override;
-  void operator()(Trace<StreamStatus> const &, uint64_t opaque, bool is_last) override;
-  void operator()(Trace<GatewayStatus> const &, uint64_t opaque, bool is_last) override;
-  void operator()(Trace<ReferenceData> const &, uint64_t opaque, bool is_last) override;
-  void operator()(Trace<MarketStatus> const &, uint64_t opaque, bool is_last) override;
-  void operator()(Trace<TopOfBook> const &, uint64_t opaque, bool is_last) override;
-  void operator()(Trace<MarketByPriceUpdate> const &, uint64_t opaque, bool is_last) override;
-  void operator()(Trace<OrderAck> const &, uint64_t opaque, bool is_last) override;
-  void operator()(Trace<OrderUpdate> const &, uint64_t opaque, bool is_last) override;
+  void operator()(Event<DownloadBegin> const &) override;
+  void operator()(Event<DownloadEnd> const &) override;
+  void operator()(Event<Ready> const &) override;
+  void operator()(Event<GatewaySettings> const &) override;
+  void operator()(Event<StreamStatus> const &) override;
+  void operator()(Event<GatewayStatus> const &) override;
+  void operator()(Event<ReferenceData> const &) override;
+  void operator()(Event<MarketStatus> const &) override;
+  void operator()(Event<TopOfBook> const &) override;
+  void operator()(Event<MarketByPriceUpdate> const &) override;
+  void operator()(Event<OrderAck> const &) override;
+  void operator()(Event<OrderUpdate> const &) override;
 
   // io::sys::Signal::Handler
   void operator()(io::sys::Signal::Event const &) override;

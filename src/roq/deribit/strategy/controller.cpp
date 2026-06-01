@@ -145,21 +145,21 @@ void Controller::cancel_order() {
 
 // client::Poller::Handler
 /*
-void Controller::operator()(Trace<Connected> const &event,[[maybe_unused]]uint64_t opaque, [[maybe_unused]]bool is_last) {
+void Controller::operator()(Event<Connected> const &event) {
   log::debug("event={}"sv, event);
   assert(state_ == State::CONNECTING);
 }
 
-void Controller::operator()(Trace<Disconnected> const &event,[[maybe_unused]]uint64_t opaque, [[maybe_unused]]bool is_last) {
+void Controller::operator()(Event<Disconnected> const &event) {
   log::debug("event={}"sv, event);
   (*this)(State::CONNECTING);
 }
 */
-void Controller::operator()(Trace<DownloadBegin> const &event, [[maybe_unused]] uint64_t opaque, [[maybe_unused]] bool is_last) {
+void Controller::operator()(Event<DownloadBegin> const &event) {
   log::debug("event={}"sv, event);
 }
 
-void Controller::operator()(Trace<DownloadEnd> const &event, [[maybe_unused]] uint64_t opaque, [[maybe_unused]] bool is_last) {
+void Controller::operator()(Event<DownloadEnd> const &event) {
   log::debug("event={}"sv, event);
   auto &download_end = event.value;
   auto max_order_id = download_end.max_order_id;
@@ -169,36 +169,36 @@ void Controller::operator()(Trace<DownloadEnd> const &event, [[maybe_unused]] ui
   }
 }
 
-void Controller::operator()(Trace<Ready> const &event, [[maybe_unused]] uint64_t opaque, [[maybe_unused]] bool is_last) {
+void Controller::operator()(Event<Ready> const &event) {
   log::debug("event={}"sv, event);
   // assert(state_ == State::CONNECTING);
   (*this)(State::READY);
 }
 
-void Controller::operator()(Trace<GatewaySettings> const &, [[maybe_unused]] uint64_t opaque, [[maybe_unused]] bool is_last) {
+void Controller::operator()(Event<GatewaySettings> const &) {
 }
 
-void Controller::operator()(Trace<StreamStatus> const &, [[maybe_unused]] uint64_t opaque, [[maybe_unused]] bool is_last) {
+void Controller::operator()(Event<StreamStatus> const &) {
 }
 
-void Controller::operator()(Trace<GatewayStatus> const &, [[maybe_unused]] uint64_t opaque, [[maybe_unused]] bool is_last) {
+void Controller::operator()(Event<GatewayStatus> const &) {
 }
 
-void Controller::operator()(Trace<ReferenceData> const &, [[maybe_unused]] uint64_t opaque, [[maybe_unused]] bool is_last) {
+void Controller::operator()(Event<ReferenceData> const &) {
 }
 
-void Controller::operator()(Trace<MarketStatus> const &, [[maybe_unused]] uint64_t opaque, [[maybe_unused]] bool is_last) {
+void Controller::operator()(Event<MarketStatus> const &) {
 }
 
-void Controller::operator()(Trace<TopOfBook> const &event, [[maybe_unused]] uint64_t opaque, [[maybe_unused]] bool is_last) {
-  auto &[trace_info, top_of_book] = event;
+void Controller::operator()(Event<TopOfBook> const &event) {
+  auto &[message_info, top_of_book] = event;
   log::warn("top_of_book={}"sv, top_of_book);
 }
 
-void Controller::operator()(Trace<MarketByPriceUpdate> const &, [[maybe_unused]] uint64_t opaque, [[maybe_unused]] bool is_last) {
+void Controller::operator()(Event<MarketByPriceUpdate> const &) {
 }
 
-void Controller::operator()(Trace<OrderAck> const &event, [[maybe_unused]] uint64_t opaque, [[maybe_unused]] bool is_last) {
+void Controller::operator()(Event<OrderAck> const &event) {
   log::debug("event={}"sv, event);
   auto &order_ack = event.value;
   // waiting?
@@ -229,7 +229,7 @@ void Controller::operator()(Trace<OrderAck> const &event, [[maybe_unused]] uint6
   }
 }
 
-void Controller::operator()(Trace<OrderUpdate> const &event, [[maybe_unused]] uint64_t opaque, [[maybe_unused]] bool is_last) {
+void Controller::operator()(Event<OrderUpdate> const &event) {
   log::debug("event={}"sv, event);
 }
 
