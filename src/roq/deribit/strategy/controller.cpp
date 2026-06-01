@@ -143,25 +143,16 @@ void Controller::cancel_order() {
   */
 }
 
-// client::Poller::Handler
-/*
-void Controller::operator()(Event<Connected> const &event) {
-  log::debug("event={}"sv, event);
-  assert(state_ == State::CONNECTING);
-}
+// server::Strategy::Handler
 
-void Controller::operator()(Event<Disconnected> const &event) {
-  log::debug("event={}"sv, event);
-  (*this)(State::CONNECTING);
-}
-*/
 void Controller::operator()(Event<DownloadBegin> const &event) {
-  log::debug("event={}"sv, event);
+  auto &[message_info, download_begin] = event;
+  log::warn("download_begin={}"sv, download_begin);
 }
 
 void Controller::operator()(Event<DownloadEnd> const &event) {
-  log::debug("event={}"sv, event);
-  auto &download_end = event.value;
+  auto &[message_info, download_end] = event;
+  log::warn("download_end={}"sv, download_end);
   auto max_order_id = download_end.max_order_id;
   if (max_order_id_ < max_order_id) {
     max_order_id_ = max_order_id;
@@ -170,12 +161,15 @@ void Controller::operator()(Event<DownloadEnd> const &event) {
 }
 
 void Controller::operator()(Event<Ready> const &event) {
-  log::debug("event={}"sv, event);
+  auto &[message_info, ready] = event;
+  log::warn("ready={}"sv, ready);
   // assert(state_ == State::CONNECTING);
   (*this)(State::READY);
 }
 
-void Controller::operator()(Event<GatewaySettings> const &) {
+void Controller::operator()(Event<GatewaySettings> const &event) {
+  auto &[message_info, gateway_settings] = event;
+  log::warn("gateway_settings={}"sv, gateway_settings);
 }
 
 void Controller::operator()(Event<StreamStatus> const &) {
@@ -192,10 +186,12 @@ void Controller::operator()(Event<MarketStatus> const &) {
 
 void Controller::operator()(Event<TopOfBook> const &event) {
   auto &[message_info, top_of_book] = event;
-  log::warn("top_of_book={}"sv, top_of_book);
+  // log::warn("top_of_book={}"sv, top_of_book);
 }
 
-void Controller::operator()(Event<MarketByPriceUpdate> const &) {
+void Controller::operator()(Event<MarketByPriceUpdate> const &event) {
+  auto &[message_info, market_by_price_update] = event;
+  // log::warn("market_by_price_update={}"sv, market_by_price_update);
 }
 
 void Controller::operator()(Event<OrderAck> const &event) {

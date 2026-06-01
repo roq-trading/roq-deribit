@@ -24,6 +24,8 @@ namespace strategy {
 struct Controller final : public server::Strategy::Handler, public server::Strategy, public io::sys::Signal::Handler {
   Controller(gateway::Settings const &, gateway::Config const &, io::Context &context);
 
+  void refresh(std::chrono::nanoseconds now);
+
  protected:
   enum class State {
     READY,
@@ -36,8 +38,6 @@ struct Controller final : public server::Strategy::Handler, public server::Strat
   };
 
   void operator()(State);
-
-  void refresh(std::chrono::nanoseconds now);
 
   void create_order();
   void cancel_order();

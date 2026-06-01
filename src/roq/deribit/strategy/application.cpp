@@ -2,9 +2,11 @@
 
 #include "roq/deribit/strategy/application.hpp"
 
+#include <chrono>
+
 #include "roq/logging.hpp"
 
-#include "roq/io/engine/context_factory.hpp"
+#include "roq/io/sys/scheduler.hpp"
 
 #include "roq/deribit/gateway/config.hpp"
 
@@ -30,26 +32,21 @@ int Application::main(args::Parser const &args) {
   gateway::Config config{settings};
   auto context = server::create_io_context(settings);
   Controller controller{settings, config, *context};
-  while (controller.dispatch()) {
-  }
-  /*
-  log::info("Starting the dispatch loop..."sv);
-  (*dispatcher_).start();
+  controller.start();
   std::chrono::nanoseconds next_yield_ = {};
   auto ok = true;
   while (ok) {
     auto now = clock::get_system();
-    refresh(now);
+    controller.refresh(now);
     if (next_yield_ < now && YIELD_FREQUENCY.count() > 0) {
       next_yield_ = now + YIELD_FREQUENCY;
       io::sys::Scheduler::yield();
     }
     for (size_t i = 0; ok && i < DISPATCH_THIS_MANY_BEFORE_CHECKING_CLOCK; ++i) {
-      ok = (*dispatcher_).dispatch(*this);
+      ok = controller.dispatch();
     }
   }
-  log::info("The dispatch loop has stopped!"sv);
-  */
+  controller.stop();
   return EXIT_SUCCESS;
 }
 
