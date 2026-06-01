@@ -28,6 +28,13 @@ namespace strategy {
 
 namespace {
 auto const WAIT_THIS_LONG_BEFORE_NEXT_STATE_CHANGE = 10s;
+
+// XXX FIXME TODO from flags
+auto const ACCOUNT = "A1"sv;
+auto const EXCHANGE = "deribit"sv;
+auto const SYMBOL = "BTC-PERPETUAL"sv;
+auto const QUANTITY = 1.0;
+auto const PRICE = 1000.0;
 }  // namespace
 
 // === IMPLEMENTATION ===
@@ -86,14 +93,13 @@ void Controller::refresh(std::chrono::nanoseconds now) {
 }
 
 void Controller::create_order() {
-  /*
   assert(order_id_ == 0);
   order_id_ = ++max_order_id_;
   auto create_order = CreateOrder{
-      .account = settings_.account,
+      .account = ACCOUNT,  // settings_.account,
       .order_id = order_id_,
-      .exchange = settings_.exchange,
-      .symbol = settings_.symbol,
+      .exchange = EXCHANGE,  // settings_.exchange,
+      .symbol = SYMBOL,      // settings_.symbol,
       .side = Side::BUY,
       .position_effect = {},
       .margin_mode = {},
@@ -103,8 +109,8 @@ void Controller::create_order() {
       .time_in_force = TimeInForce::GTC,
       .execution_instructions = {},
       .request_template = {},
-      .quantity = settings_.quantity,
-      .price = settings_.price,
+      .quantity = QUANTITY,  // settings_.quantity,
+      .price = PRICE,        // settings_.price,
       .stop_price = NaN,
       .leverage = NaN,
       .routing_id = {},
@@ -112,13 +118,10 @@ void Controller::create_order() {
       .release_time_utc = {},
   };
   try {
-    (*dispatcher_).send(create_order, 0);
-  } catch (NotConnected const &e) {
-    log::fatal("{}"sv, e);
+    send(create_order);
   } catch (NotReady const &e) {
     log::fatal("{}"sv, e);
   }
-  */
 }
 
 void Controller::cancel_order() {
