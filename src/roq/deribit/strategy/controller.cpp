@@ -48,6 +48,7 @@ Controller::Controller(gateway::Settings const &settings, gateway::Config const 
           [](auto &dispatcher, auto &settings, auto &config, auto &context) { return gateway::Controller::create(dispatcher, settings, config, context); }},
       settings_{settings}, terminate_{context.create_signal(*this, io::sys::Signal::Type::TERMINATE)},
       interrupt_{context.create_signal(*this, io::sys::Signal::Type::INTERRUPT)} {
+  (*this)(State::READY);
 }
 
 void Controller::operator()(State state) {

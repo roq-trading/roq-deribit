@@ -28,6 +28,7 @@ struct Controller final : public server::Strategy::Handler, public server::Strat
 
  protected:
   enum class State {
+    UNDEFINED,
     READY,
     CREATE_ORDER,
     WAITING_CREATE,
