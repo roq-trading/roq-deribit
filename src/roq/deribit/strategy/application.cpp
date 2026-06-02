@@ -30,6 +30,7 @@ auto const YIELD_FREQUENCY = 1000ms;
 int Application::main(args::Parser const &args) {
   Settings settings{args};
   gateway::Config config{settings};
+  log::warn("config={}"sv, config);
   auto context = server::create_io_context(settings);
   Controller controller{settings, config, *context};
   controller.start();

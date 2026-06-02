@@ -27,9 +27,10 @@ namespace strategy {
 // === CONSTANTS ===
 
 namespace {
-auto const WAIT_THIS_LONG_BEFORE_NEXT_STATE_CHANGE = 10s;
+auto const WAIT_THIS_LONG_BEFORE_NEXT_STATE_CHANGE = 3s;
 
 // XXX FIXME TODO from flags
+auto const USER = "trader"sv;
 auto const ACCOUNT = "A1"sv;
 auto const EXCHANGE = "deribit"sv;
 auto const SYMBOL = "BTC-PERPETUAL"sv;
@@ -45,10 +46,10 @@ Controller::Controller(gateway::Settings const &settings, gateway::Config const 
           settings,
           config,
           context,
+          USER,
           [](auto &dispatcher, auto &settings, auto &config, auto &context) { return gateway::Controller::create(dispatcher, settings, config, context); }},
       settings_{settings}, terminate_{context.create_signal(*this, io::sys::Signal::Type::TERMINATE)},
       interrupt_{context.create_signal(*this, io::sys::Signal::Type::INTERRUPT)} {
-  (*this)(State::READY);
 }
 
 void Controller::operator()(State state) {
@@ -118,6 +119,7 @@ void Controller::create_order() {
       .strategy_id = {},
       .release_time_utc = {},
   };
+  log::warn("create_order={}"sv, create_order);
   try {
     send(create_order);
   } catch (NotReady const &e) {
@@ -199,8 +201,8 @@ void Controller::operator()(Event<MarketByPriceUpdate> const &event) {
 }
 
 void Controller::operator()(Event<OrderAck> const &event) {
-  log::debug("event={}"sv, event);
-  auto &order_ack = event.value;
+  auto &[message_info, order_ack] = event;
+  log::warn("order_ack={}"sv, order_ack);
   // waiting?
   if (!utils::has_request_maybe_completed(order_ack.request_status)) {
     return;
@@ -230,7 +232,8 @@ void Controller::operator()(Event<OrderAck> const &event) {
 }
 
 void Controller::operator()(Event<OrderUpdate> const &event) {
-  log::debug("event={}"sv, event);
+  auto &[message_info, order_update] = event;
+  log::warn("order_update={}"sv, order_update);
 }
 
 // io::sys::Signal::Handler
