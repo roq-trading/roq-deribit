@@ -38,7 +38,7 @@ auto const ACCOUNT = "A1"sv;
 auto const EXCHANGE = "deribit"sv;
 auto const SYMBOL = "BTC-PERPETUAL"sv;
 auto const QUANTITY = 1.0;
-auto const PRICE = 1000.0;
+auto const PRICE = 100000.0;
 }  // namespace
 
 // === IMPLEMENTATION ===
@@ -125,7 +125,7 @@ void Controller::create_order() {
       .order_id = order_id_,
       .exchange = EXCHANGE,  // settings_.exchange,
       .symbol = SYMBOL,      // settings_.symbol,
-      .side = Side::BUY,
+      .side = Side::SELL,
       .position_effect = {},
       .margin_mode = {},
       .quantity_type = {},
@@ -151,10 +151,9 @@ void Controller::create_order() {
 }
 
 void Controller::cancel_order() {
-  /*
   assert(order_id_ != 0);
   auto cancel_order = CancelOrder{
-      .account = settings_.account,
+      .account = ACCOUNT,  // settings_.account,
       .order_id = order_id_,
       .request_template = {},
       .routing_id = {},
@@ -163,13 +162,10 @@ void Controller::cancel_order() {
       .release_time_utc = {},
   };
   try {
-    (*dispatcher_).send(cancel_order, 0);
-  } catch (NotConnected const &e) {
-    log::fatal("{}"sv, e);
+    send(cancel_order);
   } catch (NotReady const &e) {
     log::fatal("{}"sv, e);
   }
-  */
 }
 
 // server::Strategy::Handler
@@ -263,7 +259,7 @@ void Controller::operator()(Event<OrderUpdate> const &event) {
 
 void Controller::operator()(io::sys::Signal::Event const &event) {
   log::warn("*** SIGNAL: {} ***"sv, event.type);
-  stop();
+  static_cast<Strategy &>(*this).stop();
 }
 
 }  // namespace strategy
