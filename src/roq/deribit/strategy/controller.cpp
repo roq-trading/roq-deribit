@@ -27,6 +27,9 @@ namespace strategy {
 // === CONSTANTS ===
 
 namespace {
+auto const YIELD_FREQUENCY = 100ms;
+size_t const DISPATCH_THIS_MANY_BEFORE_CHECKING_CLOCK = 1000;
+
 auto const WAIT_THIS_LONG_BEFORE_NEXT_STATE_CHANGE = 3s;
 
 // XXX FIXME TODO from flags
@@ -50,6 +53,23 @@ Controller::Controller(gateway::Settings const &settings, gateway::Config const 
           [](auto &dispatcher, auto &settings, auto &config, auto &context) { return gateway::Controller::create(dispatcher, settings, config, context); }},
       settings_{settings}, terminate_{context.create_signal(*this, io::sys::Signal::Type::TERMINATE)},
       interrupt_{context.create_signal(*this, io::sys::Signal::Type::INTERRUPT)} {
+}
+
+void Controller::dispatch() {
+  static_cast<Strategy &>(*this).start();
+  std::chrono::nanoseconds next_yield_ = {};
+  auto ok = true;
+  while (ok) {
+    auto now = clock::get_system();
+    refresh(now);
+    if (next_yield_ < now && YIELD_FREQUENCY.count() > 0) {
+      next_yield_ = now + YIELD_FREQUENCY;
+      io::sys::Scheduler::yield();
+    }
+    for (size_t i = 0; ok && i < DISPATCH_THIS_MANY_BEFORE_CHECKING_CLOCK; ++i) {
+      ok = static_cast<Strategy &>(*this).dispatch();
+    }
+  }
 }
 
 void Controller::operator()(State state) {
