@@ -110,6 +110,12 @@
       "name": "PriceQuoteCurrency",
       "type": "std/string_view",
       "custom": true
+    },
+    {
+      "tag": 58,
+      "name": "Text",
+      "type": "std/string_view",
+      "custom": true
     }
   ]
 }
