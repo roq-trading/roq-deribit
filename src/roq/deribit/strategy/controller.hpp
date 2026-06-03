@@ -21,7 +21,7 @@ namespace roq {
 namespace deribit {
 namespace strategy {
 
-struct Controller final : public server::Strategy::Handler, public server::Strategy, public io::sys::Signal::Handler {
+struct Controller final : public client::Handler, public server::Strategy, public io::sys::Signal::Handler {
   Controller(gateway::Settings const &, gateway::Config const &, io::Context &context);
 
   void dispatch();
@@ -45,7 +45,7 @@ struct Controller final : public server::Strategy::Handler, public server::Strat
   void create_order();
   void cancel_order();
 
-  // server::Strategy::Handler
+  // client::Handler
   void operator()(Event<DownloadBegin> const &) override;
   void operator()(Event<DownloadEnd> const &) override;
   void operator()(Event<Ready> const &) override;
