@@ -58,8 +58,8 @@ struct Controller final : public client::Handler, public server::Strategy, publi
 
  private:
   Settings const &settings_;
-  std::unique_ptr<io::sys::Signal> terminate_;
-  std::unique_ptr<io::sys::Signal> interrupt_;
+  std::unique_ptr<io::sys::Signal> const terminate_;
+  std::unique_ptr<io::sys::Signal> const interrupt_;
   State state_ = {};
   std::chrono::nanoseconds next_update_ = {};
   uint64_t max_order_id_ = {};
