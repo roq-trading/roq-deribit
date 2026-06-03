@@ -8,9 +8,6 @@ namespace roq {
 namespace deribit {
 namespace strategy {
 
-// Service is a base class used to initialize the environment
-// it is not required, only for your convenience
-
 struct Application final : public Service {
   using Service::Service;
 

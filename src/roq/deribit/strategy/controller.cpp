@@ -2,10 +2,6 @@
 
 #include "roq/deribit/strategy/controller.hpp"
 
-#include <fmt/format.h>
-
-#include <magic_enum/magic_enum_format.hpp>
-
 #include <cassert>
 
 #include "roq/logging.hpp"

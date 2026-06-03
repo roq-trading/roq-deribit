@@ -13,7 +13,7 @@ using namespace std::literals;
 
 namespace {
 auto const INFO = roq::Service::Info{
-    .description = "Roq's Deribit gateway / strategy testing"sv,
+    .description = "Roq's Deribit gateway / in-process strategy testing"sv,
     .package_name = ROQ_PACKAGE_NAME,
     .build_version = ROQ_VERSION,
 };
