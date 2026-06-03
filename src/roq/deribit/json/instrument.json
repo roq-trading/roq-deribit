@@ -126,6 +126,14 @@
     {
       "name": "state",
       "type": "roq/deribit/json/State"
+    },
+    {
+      "name": "base_currency_uuid",
+      "type": "std/string_view"
+    },
+    {
+      "name": "quote_currency_uuid",
+      "type": "std/string_view"
     }
   ]
 }

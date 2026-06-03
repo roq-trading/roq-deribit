@@ -66,6 +66,9 @@ void Controller::refresh(std::chrono::nanoseconds now) {
   }
   switch (state_) {
     using enum State;
+    case UNDEFINED:
+      // wait for the Ready event
+      break;
     case READY:
       (*this)(State::CREATE_ORDER);
       break;
@@ -169,7 +172,7 @@ void Controller::operator()(Event<DownloadEnd> const &event) {
 void Controller::operator()(Event<Ready> const &event) {
   auto &[message_info, ready] = event;
   log::warn("ready={}"sv, ready);
-  // assert(state_ == State::CONNECTING);
+  assert(state_ == State::UNDEFINED);
   (*this)(State::READY);
 }
 

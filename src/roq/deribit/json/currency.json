@@ -64,6 +64,10 @@
     {
       "name": "coinbase_networks",
       "comment": "array"
+    },
+    {
+      "name": "currency_uuid",
+      "type": "std/string_view"
     }
   ]
 }
