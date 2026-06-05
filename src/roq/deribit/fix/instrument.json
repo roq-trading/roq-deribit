@@ -116,6 +116,12 @@
       "name": "Text",
       "type": "std/string_view",
       "custom": true
+    },
+    {
+      "tag": 310,
+      "name": "UnderlyingSecurityType",
+      "type": "std/string_view",
+      "custom": true
     }
   ]
 }

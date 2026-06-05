@@ -134,6 +134,10 @@
     {
       "name": "quote_currency_uuid",
       "type": "std/string_view"
+    },
+    {
+      "name": "underlying_type",
+      "type": "std/string_view"
     }
   ]
 }
