@@ -37,22 +37,26 @@ auto const QUANTITY = 1.0;
 auto const PRICE = 100000.0;
 }  // namespace
 
+// === HELPERS ===
+
+namespace {
+auto create_dispatcher(auto &handler, auto &settings, auto &config, auto &context) {
+  auto helper = [](auto &dispatcher, auto &settings, auto &config, auto &context) {
+    return gateway::Controller::create(dispatcher, settings, config, context);
+  };
+  return std::make_unique<server::Strategy>(handler, settings, config, context, USER, helper);
+}
+}  // namespace
+
 // === IMPLEMENTATION ===
 
 Controller::Controller(gateway::Settings const &settings, gateway::Config const &config, io::Context &context)
-    : server::Strategy{
-          *this,
-          settings,
-          config,
-          context,
-          USER,
-          [](auto &dispatcher, auto &settings, auto &config, auto &context) { return gateway::Controller::create(dispatcher, settings, config, context); }},
-      settings_{settings}, terminate_{context.create_signal(*this, io::sys::Signal::Type::TERMINATE)},
-      interrupt_{context.create_signal(*this, io::sys::Signal::Type::INTERRUPT)} {
+    : settings_{settings}, terminate_{context.create_signal(*this, io::sys::Signal::Type::TERMINATE)},
+      interrupt_{context.create_signal(*this, io::sys::Signal::Type::INTERRUPT)}, dispatcher_{create_dispatcher(*this, settings, config, context)} {
 }
 
 void Controller::dispatch() {
-  static_cast<Strategy &>(*this).start();
+  (*dispatcher_).start();
   std::chrono::nanoseconds next_yield_ = {};
   auto ok = true;
   while (ok) {
@@ -63,7 +67,7 @@ void Controller::dispatch() {
       io::sys::Scheduler::yield();
     }
     for (size_t i = 0; ok && i < DISPATCH_THIS_MANY_BEFORE_CHECKING_CLOCK; ++i) {
-      ok = static_cast<Strategy &>(*this).dispatch();
+      ok = (*dispatcher_).dispatch();
     }
   }
 }
@@ -108,7 +112,7 @@ void Controller::refresh(std::chrono::nanoseconds now) {
       (*this)(State::DONE);
       break;
     case DONE:
-      stop();
+      (*dispatcher_).stop();
       break;
   }
 }
@@ -140,7 +144,7 @@ void Controller::create_order() {
   };
   log::warn("create_order={}"sv, create_order);
   try {
-    send(create_order);
+    (*dispatcher_).send(create_order);
   } catch (NotReady const &e) {
     log::fatal("{}"sv, e);
   }
@@ -158,7 +162,7 @@ void Controller::cancel_order() {
       .release_time_utc = {},
   };
   try {
-    send(cancel_order);
+    (*dispatcher_).send(cancel_order);
   } catch (NotReady const &e) {
     log::fatal("{}"sv, e);
   }
@@ -255,7 +259,7 @@ void Controller::operator()(Event<OrderUpdate> const &event) {
 
 void Controller::operator()(io::sys::Signal::Event const &event) {
   log::warn("*** SIGNAL: {} ***"sv, event.type);
-  static_cast<Strategy &>(*this).stop();
+  (*dispatcher_).stop();
 }
 
 }  // namespace strategy

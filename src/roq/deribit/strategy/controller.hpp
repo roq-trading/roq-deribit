@@ -2,6 +2,8 @@
 
 #pragma once
 
+#include <memory>
+
 #include "roq/io/sys/signal.hpp"
 
 #include "roq/server.hpp"
@@ -15,7 +17,7 @@ namespace roq {
 namespace deribit {
 namespace strategy {
 
-struct Controller final : public client::Handler, public server::Strategy, public io::sys::Signal::Handler {
+struct Controller final : public client::Handler, public io::sys::Signal::Handler {
   Controller(gateway::Settings const &, gateway::Config const &, io::Context &context);
 
   void dispatch();
@@ -60,6 +62,7 @@ struct Controller final : public client::Handler, public server::Strategy, publi
   Settings const &settings_;
   std::unique_ptr<io::sys::Signal> const terminate_;
   std::unique_ptr<io::sys::Signal> const interrupt_;
+  std::unique_ptr<server::Strategy> const dispatcher_;
   State state_ = {};
   std::chrono::nanoseconds next_update_ = {};
   uint64_t max_order_id_ = {};
