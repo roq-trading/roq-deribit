@@ -1,15 +1,12 @@
 set(TARGET_NAME ${PROJECT_NAME})
 
-add_subdirectory(flags)
-add_subdirectory(gateway)
-add_subdirectory(protocol/fix)
-add_subdirectory(protocol/json)
-add_subdirectory(protocol/sbe)
-add_subdirectory(tools)
-
 add_subdirectory(dump)
 add_subdirectory(filter)
+add_subdirectory(flags)
+add_subdirectory(gateway)
+add_subdirectory(protocol)
 add_subdirectory(strategy)
+add_subdirectory(tools)
 
 set(SOURCES application.cpp main.cpp)
 
