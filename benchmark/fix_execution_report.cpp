@@ -4,14 +4,14 @@
 
 #include "roq/fix/reader.hpp"
 
-#include "roq/deribit/fix/execution_report.hpp"
+#include "roq/deribit/protocol/fix/execution_report.hpp"
 
 using namespace roq;
 using namespace roq::deribit;
 
 using namespace std::literals;
 
-using ExecutionReport = deribit::fix::ExecutionReport;
+using ExecutionReport = deribit::protocol::fix::ExecutionReport;
 
 namespace {
 auto const MESSAGE =
@@ -34,7 +34,7 @@ void BM_fix_execution_report_parse_message(benchmark::State &state) {
     }
   };
   for (auto _ : state) {
-    roq::fix::Reader<roq::fix::Version::FIX_44>::dispatch(MESSAGE, parser);
+    fix::Reader<fix::Version::FIX_44>::dispatch(MESSAGE, parser);
   }
 }
 

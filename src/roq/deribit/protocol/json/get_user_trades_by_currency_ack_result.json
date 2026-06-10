@@ -1,0 +1,15 @@
+{
+  "name": "roq/deribit/protocol/json/GetUserTradesByCurrencyAckResult",
+  "type": "dictionary",
+  "values": [
+    {
+      "name": "trades",
+      "type": "roq/deribit/protocol/json/Trade",
+      "array": "std/span"
+    },
+    {
+      "name": "has_more",
+      "type": "std/bool"
+    }
+  ]
+}

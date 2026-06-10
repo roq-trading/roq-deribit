@@ -1,0 +1,12 @@
+{
+  "name": "roq/deribit/protocol/json/InstrumentType",
+  "type": "enum",
+  "values": [
+    {
+      "name": "linear"
+    },
+    {
+      "name": "reversed"
+    }
+  ]
+}

@@ -26,15 +26,15 @@
 
 #include "roq/deribit/gateway/common.hpp"
 
-#include "roq/deribit/fix/utils.hpp"
+#include "roq/deribit/protocol/fix/utils.hpp"
 
 // business (outbound)
-#include "roq/deribit/fix/new_order_single.hpp"
-#include "roq/deribit/fix/order_cancel_replace_request.hpp"
-#include "roq/deribit/fix/order_cancel_request.hpp"
-#include "roq/deribit/fix/order_mass_cancel_request.hpp"
-#include "roq/deribit/fix/order_mass_status_request.hpp"
-#include "roq/deribit/fix/request_for_positions.hpp"
+#include "roq/deribit/protocol/fix/new_order_single.hpp"
+#include "roq/deribit/protocol/fix/order_cancel_replace_request.hpp"
+#include "roq/deribit/protocol/fix/order_cancel_request.hpp"
+#include "roq/deribit/protocol/fix/order_mass_cancel_request.hpp"
+#include "roq/deribit/protocol/fix/order_mass_status_request.hpp"
+#include "roq/deribit/protocol/fix/request_for_positions.hpp"
 
 using namespace std::literals;
 
@@ -174,10 +174,10 @@ uint16_t OrderEntry::operator()(
     throw RuntimeError{"max_show_quantity not supported"sv};
   }
   auto side = map(create_order.side);
-  auto exec_inst = fix::map(create_order.execution_instructions);
+  auto exec_inst = protocol::fix::map(create_order.execution_instructions);
   auto ord_type = map(create_order.order_type);
   auto time_in_force = map(create_order.time_in_force);
-  auto new_order_single = fix::NewOrderSingle{
+  auto new_order_single = protocol::fix::NewOrderSingle{
       .cl_ord_id = request_id,
       .side = side,
       .order_qty = {create_order.quantity, ref_data.quantity.precision},
@@ -211,7 +211,7 @@ uint16_t OrderEntry::operator()(
   auto side = map(order.side);
   auto ord_type = map(order.order_type);
   // note! using deribit_label might be slower, but using orig_cl_ord_id seems error-prone
-  auto order_cancel_replace_request = fix::OrderCancelReplaceRequest{
+  auto order_cancel_replace_request = protocol::fix::OrderCancelReplaceRequest{
       .cl_ord_id = {},
       .orig_cl_ord_id = {},
       .deribit_label = order.client_order_id,
@@ -240,7 +240,7 @@ uint16_t OrderEntry::operator()(
     throw server::oms::NotReady{"not ready"sv};
   }
   // note! using deribit_label might be slower, but using orig_cl_ord_id seems error-prone
-  auto order_cancel_request = fix::OrderCancelRequest{
+  auto order_cancel_request = protocol::fix::OrderCancelRequest{
       .cl_ord_id = {},
       .orig_cl_ord_id = {},
       .deribit_label = order.client_order_id,
@@ -284,16 +284,16 @@ uint16_t OrderEntry::operator()(Event<CancelAllOrders> const &event, std::string
   auto filter = utils::create_filter(cancel_all_orders) & ~Mask{Filter::ACCOUNT};
   auto mass_cancel_request_type = [&]() {
     if (std::empty(filter)) {
-      return roq::fix::MassCancelRequestType::CANCEL_ALL_ORDERS;
+      return fix::MassCancelRequestType::CANCEL_ALL_ORDERS;
     }
     // note! no need to validate exchange
     if (!std::empty(filter & Mask{Filter::SYMBOL}) && std::empty(filter & ~Mask{Filter::EXCHANGE, Filter::SYMBOL})) {
-      return roq::fix::MassCancelRequestType::CANCEL_ORDERS_FOR_SECURITY;
+      return fix::MassCancelRequestType::CANCEL_ORDERS_FOR_SECURITY;
     }
     log::warn("DEBUG: filter={}"sv, filter);
     throw server::oms::Rejected{Origin::GATEWAY, Error::INVALID_FILTER, "filter"sv};
   }();
-  auto order_mass_cancel_request = fix::OrderMassCancelRequest{
+  auto order_mass_cancel_request = protocol::fix::OrderMassCancelRequest{
       .cl_ord_id = request_id,
       .mass_cancel_request_type = mass_cancel_request_type,
       .security_type = {},
@@ -345,9 +345,9 @@ void OrderEntry::operator()(io::net::ConnectionManager::Read const &) {
   size_t total_bytes = 0;
   while (!std::empty(buffer)) {
     TraceInfo trace_info;
-    auto bytes = roq::fix::Reader<FIX_VERSION>::dispatch(
+    auto bytes = fix::Reader<FIX_VERSION>::dispatch(
         buffer,
-        [&](roq::fix::Message const &message) {
+        [&](fix::Message const &message) {
           try {
             check(message.header);
             Trace event{trace_info, message};
@@ -409,7 +409,7 @@ void OrderEntry::send_logon() {
   auto now = clock::get_realtime<std::chrono::milliseconds>();
   auto raw_data = account_.create_raw_data(now);
   auto password = account_.create_password(raw_data);
-  auto logon = fix::Logon{
+  auto logon = protocol::fix::Logon{
       .heart_bt_int = static_cast<uint16_t>(ping_freq.count()),
       .raw_data_length = static_cast<uint32_t>(std::size(raw_data)),
       .raw_data = raw_data,
@@ -427,14 +427,14 @@ void OrderEntry::send_logon() {
 }
 
 void OrderEntry::send_logout(std::string_view const &text) {
-  auto logout = fix::Logout{
+  auto logout = protocol::fix::Logout{
       .text = text,
   };
   send(logout);
 }
 
 void OrderEntry::send_heartbeat(std::string_view const &test_req_id) {
-  auto heartbeat = fix::Heartbeat{
+  auto heartbeat = protocol::fix::Heartbeat{
       .test_req_id = test_req_id,
   };
   send(heartbeat);
@@ -444,7 +444,7 @@ void OrderEntry::send_test_request(std::chrono::nanoseconds now) {
   // request_id is current time
   encode_buffer_.clear();
   utils::charconv::to_string(std::back_inserter(encode_buffer_), now.count());
-  auto test_request = fix::TestRequest{
+  auto test_request = protocol::fix::TestRequest{
       .test_req_id = encode_buffer_,
   };
   send(test_request);
@@ -479,10 +479,10 @@ uint32_t OrderEntry::download(State state) {
 
 void OrderEntry::subscribe_positions() {
   auto request_id = shared_.next_request_id();
-  auto request_for_positions = fix::RequestForPositions{
+  auto request_for_positions = protocol::fix::RequestForPositions{
       .pos_req_id = request_id,
-      .pos_req_type = roq::fix::PosReqType::POSITIONS,
-      .subscription_request_type = roq::fix::SubscriptionRequestType::SNAPSHOT_UPDATES,
+      .pos_req_type = fix::PosReqType::POSITIONS,
+      .subscription_request_type = fix::SubscriptionRequestType::SNAPSHOT_UPDATES,
       .currency = {},
   };
   send(request_for_positions);
@@ -490,80 +490,80 @@ void OrderEntry::subscribe_positions() {
 
 void OrderEntry::download_orders() {
   auto request_id = shared_.next_request_id();
-  auto order_mass_status_request = fix::OrderMassStatusRequest{
+  auto order_mass_status_request = protocol::fix::OrderMassStatusRequest{
       .mass_status_req_id = request_id,
-      .mass_status_req_type = roq::fix::MassStatusReqType::ORDERS,
+      .mass_status_req_type = fix::MassStatusReqType::ORDERS,
   };
   send(order_mass_status_request);
 }
 
-void OrderEntry::parse(Trace<roq::fix::Message> const &event) {
+void OrderEntry::parse(Trace<fix::Message> const &event) {
   profile_.parse([&]() { parse_helper(event); });
 }
 
-void OrderEntry::parse_helper(Trace<roq::fix::Message> const &event) {
+void OrderEntry::parse_helper(Trace<fix::Message> const &event) {
   auto &trace_info = event.trace_info;
   auto &message = event.value;
   switch (message.header.msg_type) {
-    using enum roq::fix::MsgType;
+    using enum fix::MsgType;
     // session
     case HEARTBEAT: {
-      auto heartbeat = fix::Heartbeat::create(message);
+      auto heartbeat = protocol::fix::Heartbeat::create(message);
       create_trace_and_dispatch(*this, trace_info, heartbeat, message.header);
       return;
     }
     case LOGON: {
-      auto logon = fix::Logon::create(message);
+      auto logon = protocol::fix::Logon::create(message);
       create_trace_and_dispatch(*this, trace_info, logon, message.header);
       return;
     }
     case LOGOUT: {
-      auto logout = fix::Logout::create(message);
+      auto logout = protocol::fix::Logout::create(message);
       create_trace_and_dispatch(*this, trace_info, logout, message.header);
       return;
     }
     case RESEND_REQUEST: {
-      auto resend_request = fix::ResendRequest::create(message);
+      auto resend_request = protocol::fix::ResendRequest::create(message);
       create_trace_and_dispatch(*this, trace_info, resend_request, message.header);
       return;
     }
     case TEST_REQUEST: {
-      auto test_request = fix::TestRequest::create(message);
+      auto test_request = protocol::fix::TestRequest::create(message);
       create_trace_and_dispatch(*this, trace_info, test_request, message.header);
       return;
     }
     // ...
     case POSITION_REPORT: {
       profile_.position_report([&]() {
-        auto position_report = fix::PositionReport::create(message, decode_buffer_);
+        auto position_report = protocol::fix::PositionReport::create(message, decode_buffer_);
         create_trace_and_dispatch(*this, trace_info, position_report, message.header);
       });
       return;
     }
     case EXECUTION_REPORT: {
       profile_.execution_report([&]() {
-        auto execution_report = fix::ExecutionReport::create(message, decode_buffer_);
+        auto execution_report = protocol::fix::ExecutionReport::create(message, decode_buffer_);
         create_trace_and_dispatch(*this, trace_info, execution_report, message.header);
       });
       return;
     }
     case ORDER_CANCEL_REJECT: {
       profile_.order_cancel_reject([&]() {
-        auto order_cancel_reject = fix::OrderCancelReject::create(message);
+        auto order_cancel_reject = protocol::fix::OrderCancelReject::create(message);
         create_trace_and_dispatch(*this, trace_info, order_cancel_reject, message.header);
       });
       return;
     }
     case REJECT: {
       profile_.reject([&]() {
-        auto reject = fix::Reject::create(message);
+        auto reject = protocol::fix::Reject::create(message);
         create_trace_and_dispatch(*this, trace_info, reject, message.header);
       });
       return;
     }
     case ORDER_MASS_CANCEL_REPORT: {
       profile_.order_mass_cancel_report([&]() {
-        auto order_mass_cancel_report = fix::OrderMassCancelReport::create(message, decode_buffer_);
+        auto order_mass_cancel_report = protocol::fix::OrderMassCancelReport::create(message, decode_buffer_);
         create_trace_and_dispatch(*this, trace_info, order_mass_cancel_report, message.header);
       });
       return;
@@ -574,7 +574,7 @@ void OrderEntry::parse_helper(Trace<roq::fix::Message> const &event) {
   log::warn("Unexpected msg_type={}"sv, message.header.msg_type);
 }
 
-void OrderEntry::operator()(Trace<fix::Heartbeat> const &event, roq::fix::Header const &header) {
+void OrderEntry::operator()(Trace<protocol::fix::Heartbeat> const &event, fix::Header const &header) {
   auto now = clock::get_system();
   auto &[trace_info, heartbeat] = event;
   log::info<3>("event={{header={}, heartbeat={}}}"sv, header, heartbeat);
@@ -592,14 +592,14 @@ void OrderEntry::operator()(Trace<fix::Heartbeat> const &event, roq::fix::Header
   }
 }
 
-void OrderEntry::operator()(Trace<fix::Logon> const &event, roq::fix::Header const &header) {
+void OrderEntry::operator()(Trace<protocol::fix::Logon> const &event, fix::Header const &header) {
   auto &[trace_info, logon] = event;
   log::info<2>("event={{header={}, logon={}}}"sv, header, logon);
   last_logon_or_heartbeat_ = {};
   download_.begin();
 }
 
-void OrderEntry::operator()(Trace<fix::Logout> const &event, roq::fix::Header const &header) {
+void OrderEntry::operator()(Trace<protocol::fix::Logout> const &event, fix::Header const &header) {
   auto &[trace_info, logout] = event;
   log::warn("event={{header={}, logout={}}}"sv, header, logout);
   ready_ = false;
@@ -609,20 +609,20 @@ void OrderEntry::operator()(Trace<fix::Logout> const &event, roq::fix::Header co
   (*connection_manager_).close();
 }
 
-void OrderEntry::operator()(Trace<fix::ResendRequest> const &event, roq::fix::Header const &header) {
+void OrderEntry::operator()(Trace<protocol::fix::ResendRequest> const &event, fix::Header const &header) {
   auto &[trace_info, resend_request] = event;
   log::warn("event={{header={}, resend_request={}}}"sv, header, resend_request);
   log::info("closing connection"sv);
   (*connection_manager_).close();
 }
 
-void OrderEntry::operator()(Trace<fix::TestRequest> const &event, roq::fix::Header const &header) {
+void OrderEntry::operator()(Trace<protocol::fix::TestRequest> const &event, fix::Header const &header) {
   auto &[trace_info, test_request] = event;
   log::info<1>("event={{header={}, test_request={}}}"sv, header, test_request);
   send_heartbeat(test_request.test_req_id);
 }
 
-void OrderEntry::operator()(Trace<fix::PositionReport> const &event, roq::fix::Header const &header) {
+void OrderEntry::operator()(Trace<protocol::fix::PositionReport> const &event, fix::Header const &header) {
   auto &[trace_info, position_report] = event;
   log::info<2>("event={{header={}, position_report={}}}"sv, header, position_report);
   for (size_t i = 0; i < std::size(position_report.no_positions); ++i) {
@@ -668,14 +668,14 @@ namespace {
 
 RequestType compute_request_type(auto const exec_type, auto const ord_status) {
   switch (exec_type) {
-    using enum roq::fix::ExecType;
+    using enum fix::ExecType;
     case REJECTED:
       return {};  // any
     case CANCELED:
       return {};  // could be IOC or FOK
     case ORDER_STATUS:
       switch (ord_status) {
-        using enum roq::fix::OrdStatus;
+        using enum fix::OrdStatus;
         case NEW:
         case PARTIALLY_FILLED:
           return {};  // create or modify
@@ -693,14 +693,14 @@ RequestType compute_request_type(auto const exec_type, auto const ord_status) {
 
 RequestStatus compute_request_status(auto const exec_type, auto const ord_status) {
   switch (exec_type) {
-    using enum roq::fix::ExecType;
+    using enum fix::ExecType;
     case REJECTED:
       return RequestStatus::REJECTED;
     case CANCELED:
       return RequestStatus::ACCEPTED;
     case ORDER_STATUS:
       switch (ord_status) {
-        using enum roq::fix::OrdStatus;
+        using enum fix::OrdStatus;
         case NEW:
         case PARTIALLY_FILLED:
         case FILLED:
@@ -717,15 +717,15 @@ RequestStatus compute_request_status(auto const exec_type, auto const ord_status
 }
 
 auto find_liquidity_ind(auto const &fills) {
-  auto result = roq::fix::FillLiquidityInd::UNDEFINED;
+  auto result = fix::FillLiquidityInd::UNDEFINED;
   auto found = false;
   for (auto &item : fills) {
-    if (item.fill_liquidity_ind != roq::fix::FillLiquidityInd::UNDEFINED) {
+    if (item.fill_liquidity_ind != fix::FillLiquidityInd::UNDEFINED) {
       if (!found) {
         result = item.fill_liquidity_ind;
         found = true;
       } else if (item.fill_liquidity_ind != result) {
-        result = roq::fix::FillLiquidityInd::UNDEFINED;
+        result = fix::FillLiquidityInd::UNDEFINED;
         break;
       }
     }
@@ -752,12 +752,12 @@ std::pair<double, double> compute_last_traded(auto const last_traded_quantity, a
 }
 }  // namespace
 
-void OrderEntry::operator()(Trace<fix::ExecutionReport> const &event, roq::fix::Header const &header) {
+void OrderEntry::operator()(Trace<protocol::fix::ExecutionReport> const &event, fix::Header const &header) {
   auto &[trace_info, execution_report] = event;
   log::info<2>("event={{header={}, execution_report={}}}"sv, header, execution_report);
   // download begin?
   switch (execution_report.mass_status_req_type) {
-    using enum roq::fix::MassStatusReqType;
+    using enum fix::MassStatusReqType;
     case UNDEFINED:
       assert(std::empty(execution_report.mass_status_req_id));
       break;
@@ -778,7 +778,7 @@ void OrderEntry::operator()(Trace<fix::ExecutionReport> const &event, roq::fix::
   auto ord_status = execution_report.ord_status;
   // special case: partial fill can overlap cancel request (#143)
   if (!shared_.settings.misc.disable_deribit_143) {
-    if (exec_type == roq::fix::ExecType::CANCELED && ord_status == roq::fix::OrdStatus::CANCELED) {
+    if (exec_type == fix::ExecType::CANCELED && ord_status == fix::OrdStatus::CANCELED) {
       log::warn<1>("Drop execution report due to FIX compliance"sv);
       return;
     }
@@ -803,7 +803,7 @@ void OrderEntry::operator()(Trace<fix::ExecutionReport> const &event, roq::fix::
   auto last_liquidity = map(liquidity_ind);
   auto request_type = compute_request_type(exec_type, ord_status);
   auto request_status = compute_request_status(exec_type, ord_status);
-  auto error = fix::map_error(execution_report.text);
+  auto error = protocol::fix::map_error(execution_report.text);
   auto [last_traded_quantity, last_traded_price] = compute_last_traded(execution_report.last_qty, execution_report.last_px, execution_report.no_fills);
   auto update_type = [&]() {
     if (download_.state() != State::ORDERS) {
@@ -943,10 +943,10 @@ void OrderEntry::operator()(Trace<fix::ExecutionReport> const &event, roq::fix::
   download_.check_relaxed(State::ORDERS);
 }
 
-void OrderEntry::operator()(Trace<fix::OrderCancelReject> const &event, roq::fix::Header const &header) {
+void OrderEntry::operator()(Trace<protocol::fix::OrderCancelReject> const &event, fix::Header const &header) {
   auto &[trace_info, order_cancel_reject] = event;
   log::warn<1>("event={{header={}, order_cancel_reject={}}}"sv, header, order_cancel_reject);
-  auto error = fix::map_error(order_cancel_reject.text);
+  auto error = protocol::fix::map_error(order_cancel_reject.text);
   auto response = server::oms::Response{
       .request_type = {},  // modify or cancel
       .origin = Origin::EXCHANGE,
@@ -980,7 +980,7 @@ void OrderEntry::operator()(Trace<fix::OrderCancelReject> const &event, roq::fix
 namespace {
 RequestType message_type_to_request_type(auto const msg_type) {
   switch (msg_type) {
-    using enum roq::fix::MsgType;
+    using enum fix::MsgType;
     case NEW_ORDER_SINGLE:
       return RequestType::CREATE_ORDER;
     case ORDER_CANCEL_REPLACE_REQUEST:
@@ -993,7 +993,7 @@ RequestType message_type_to_request_type(auto const msg_type) {
 }
 }  // namespace
 
-void OrderEntry::operator()(Trace<fix::Reject> const &event, roq::fix::Header const &header) {
+void OrderEntry::operator()(Trace<protocol::fix::Reject> const &event, fix::Header const &header) {
   auto &[trace_info, reject] = event;
   log::warn<1>("event={{header={}, reject={}}}"sv, header, reject);
   auto request_type = message_type_to_request_type(reject.ref_msg_type);
@@ -1001,7 +1001,7 @@ void OrderEntry::operator()(Trace<fix::Reject> const &event, roq::fix::Header co
     auto iter = msg_seq_num_to_request_id_.find(reject.ref_seq_num);
     if (iter != std::end(msg_seq_num_to_request_id_)) {
       auto &request_id = (*iter).second;
-      auto error = fix::reject_to_error(reject.session_reject_reason, reject.text);
+      auto error = protocol::fix::reject_to_error(reject.session_reject_reason, reject.text);
       auto response = server::oms::Response{
           .request_type = request_type,
           .origin = Origin::EXCHANGE,
@@ -1024,7 +1024,7 @@ void OrderEntry::operator()(Trace<fix::Reject> const &event, roq::fix::Header co
   } else if (reject.session_reject_reason == "99"sv && reject.text == "connection_too_slow"sv) {
     log::warn(R"(closing connection (reason: "{}"))"sv, reject.text);
     (*connection_manager_).close();
-  } else if (reject.ref_msg_type == roq::fix::MsgType::ORDER_MASS_CANCEL_REQUEST && reject.text == "rate_limit_exceeded"sv) {
+  } else if (reject.ref_msg_type == fix::MsgType::ORDER_MASS_CANCEL_REQUEST && reject.text == "rate_limit_exceeded"sv) {
     // ???
     log::warn(R"(closing connection (reason: "{}"))"sv, reject.text);
     (*connection_manager_).close();
@@ -1035,11 +1035,11 @@ void OrderEntry::operator()(Trace<fix::Reject> const &event, roq::fix::Header co
   }
 }
 
-void OrderEntry::operator()(Trace<fix::OrderMassCancelReport> const &event, roq::fix::Header const &header) {
+void OrderEntry::operator()(Trace<protocol::fix::OrderMassCancelReport> const &event, fix::Header const &header) {
   auto &[trace_info, order_mass_cancel_report] = event;
   log::info<1>("event={{header={}, order_mass_cancel_report={}}}"sv, header, order_mass_cancel_report);
   switch (order_mass_cancel_report.mass_cancel_response) {
-    using enum roq::fix::MassCancelResponse;
+    using enum fix::MassCancelResponse;
     case CANCEL_REQUEST_REJECTED:
       log::warn(R"(*** CANCEL ALL ORDERS FAILED, REASON="{}" ***)"sv, order_mass_cancel_report.mass_cancel_reject_reason);
       break;
@@ -1048,7 +1048,7 @@ void OrderEntry::operator()(Trace<fix::OrderMassCancelReport> const &event, roq:
   }
   auto status = [&]() {
     switch (order_mass_cancel_report.mass_cancel_response) {
-      using enum roq::fix::MassCancelResponse;
+      using enum fix::MassCancelResponse;
       case CANCEL_REQUEST_REJECTED:
         return RequestStatus::REJECTED;
       default:
@@ -1086,7 +1086,7 @@ uint64_t OrderEntry::send(T const &event) {
 template <typename T>
 uint64_t OrderEntry::send(T const &event, std::chrono::nanoseconds sending_time) {
   auto helper = [&](auto &message) { log::info("{}"sv, utils::debug::fix::Message{message}); };
-  auto header = roq::fix::Header{
+  auto header = fix::Header{
       .version = FIX_VERSION,
       .msg_type = T::MSG_TYPE,
       .sender_comp_id = SENDER_COMP_ID,
@@ -1107,7 +1107,7 @@ uint64_t OrderEntry::send(T const &event, std::chrono::nanoseconds sending_time)
   return outbound_.msg_seq_num;
 }
 
-void OrderEntry::check(roq::fix::Header const &header) {
+void OrderEntry::check(fix::Header const &header) {
   auto current = header.msg_seq_num;
   auto expected = inbound_.msg_seq_num + 1;
   if (current != expected) [[unlikely]] {

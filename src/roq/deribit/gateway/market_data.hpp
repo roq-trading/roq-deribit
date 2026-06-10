@@ -23,23 +23,23 @@
 #include "roq/deribit/gateway/shared.hpp"
 
 // session
-#include "roq/deribit/fix/heartbeat.hpp"
-#include "roq/deribit/fix/logon.hpp"
-#include "roq/deribit/fix/logout.hpp"
-#include "roq/deribit/fix/resend_request.hpp"
-#include "roq/deribit/fix/test_request.hpp"
+#include "roq/deribit/protocol/fix/heartbeat.hpp"
+#include "roq/deribit/protocol/fix/logon.hpp"
+#include "roq/deribit/protocol/fix/logout.hpp"
+#include "roq/deribit/protocol/fix/resend_request.hpp"
+#include "roq/deribit/protocol/fix/test_request.hpp"
 
 // business (inbound)
-#include "roq/deribit/fix/market_data_incremental_refresh.hpp"
-#include "roq/deribit/fix/market_data_request_reject.hpp"
-#include "roq/deribit/fix/market_data_snapshot_full_refresh.hpp"
-#include "roq/deribit/fix/security_list.hpp"
-#include "roq/deribit/fix/security_status.hpp"
+#include "roq/deribit/protocol/fix/market_data_incremental_refresh.hpp"
+#include "roq/deribit/protocol/fix/market_data_request_reject.hpp"
+#include "roq/deribit/protocol/fix/market_data_snapshot_full_refresh.hpp"
+#include "roq/deribit/protocol/fix/security_list.hpp"
+#include "roq/deribit/protocol/fix/security_status.hpp"
 
 // business (outbound)
-#include "roq/deribit/fix/market_data_request.hpp"
-#include "roq/deribit/fix/security_list_request.hpp"
-#include "roq/deribit/fix/security_status_request.hpp"
+#include "roq/deribit/protocol/fix/market_data_request.hpp"
+#include "roq/deribit/protocol/fix/security_list_request.hpp"
+#include "roq/deribit/protocol/fix/security_status_request.hpp"
 
 namespace roq {
 namespace deribit {
@@ -75,18 +75,18 @@ struct MarketData final : public io::net::ConnectionManager::Handler {
 
   void subscribe(size_t start_from = 0);
 
-  void operator()(Trace<fix::Heartbeat> const &, roq::fix::Header const &);
-  void operator()(Trace<fix::Logon> const &, roq::fix::Header const &);
-  void operator()(Trace<fix::Logout> const &, roq::fix::Header const &);
-  void operator()(Trace<fix::ResendRequest> const &, roq::fix::Header const &);
-  void operator()(Trace<fix::TestRequest> const &, roq::fix::Header const &);
+  void operator()(Trace<protocol::fix::Heartbeat> const &, fix::Header const &);
+  void operator()(Trace<protocol::fix::Logon> const &, fix::Header const &);
+  void operator()(Trace<protocol::fix::Logout> const &, fix::Header const &);
+  void operator()(Trace<protocol::fix::ResendRequest> const &, fix::Header const &);
+  void operator()(Trace<protocol::fix::TestRequest> const &, fix::Header const &);
 
-  void operator()(Trace<fix::SecurityList> const &, roq::fix::Header const &);
-  void operator()(Trace<fix::SecurityStatus> const &, roq::fix::Header const &);
+  void operator()(Trace<protocol::fix::SecurityList> const &, fix::Header const &);
+  void operator()(Trace<protocol::fix::SecurityStatus> const &, fix::Header const &);
 
-  void operator()(Trace<fix::MarketDataIncrementalRefresh> const &, roq::fix::Header const &);
-  void operator()(Trace<fix::MarketDataRequestReject> const &, roq::fix::Header const &);
-  void operator()(Trace<fix::MarketDataSnapshotFullRefresh> const &, roq::fix::Header const &);
+  void operator()(Trace<protocol::fix::MarketDataIncrementalRefresh> const &, fix::Header const &);
+  void operator()(Trace<protocol::fix::MarketDataRequestReject> const &, fix::Header const &);
+  void operator()(Trace<protocol::fix::MarketDataSnapshotFullRefresh> const &, fix::Header const &);
 
  protected:
   // io::net::ConnectionManager::Handler
@@ -120,8 +120,8 @@ struct MarketData final : public io::net::ConnectionManager::Handler {
 
   void resubscribe(std::string_view const &symbol);
 
-  void parse(Trace<roq::fix::Message> const &);
-  void parse_helper(Trace<roq::fix::Message> const &);
+  void parse(Trace<fix::Message> const &);
+  void parse_helper(Trace<fix::Message> const &);
 
   // utilities
 
@@ -131,7 +131,7 @@ struct MarketData final : public io::net::ConnectionManager::Handler {
   template <typename T>
   void send(T const &event, std::chrono::nanoseconds sending_time);
 
-  void check(roq::fix::Header const &);
+  void check(fix::Header const &);
 
   Handler &handler_;
   // config

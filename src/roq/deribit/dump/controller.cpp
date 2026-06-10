@@ -12,8 +12,8 @@
 
 #include "roq/utils/pcap/reader.hpp"
 
-#include "roq/deribit/sbe/parser.hpp"
-#include "roq/deribit/sbe/utils.hpp"
+#include "roq/deribit/protocol/sbe/parser.hpp"
+#include "roq/deribit/protocol/sbe/utils.hpp"
 
 using namespace std::literals;
 
@@ -24,7 +24,7 @@ namespace dump {
 // === HELPERS ===
 
 namespace {
-struct Bridge final : public utils::pcap::Reader::Handler, public sbe::Parser::Handler {
+struct Bridge final : public utils::pcap::Reader::Handler, public protocol::sbe::Parser::Handler {
   explicit Bridge(Settings const &settings) : settings_{settings} {}
 
  protected:
@@ -41,24 +41,24 @@ struct Bridge final : public utils::pcap::Reader::Handler, public sbe::Parser::H
     }
     fmt::print("message={{timestamp={}, address={}, port={}"sv, timestamp, destination_address, destination_port);
     TraceInfo trace_info;
-    sbe::Parser::dispatch(*this, payload, trace_info);
+    protocol::sbe::Parser::dispatch(*this, payload, trace_info);
     fmt::print("}}\n"sv);
     return false;
   }
 
-  bool operator()(sbe::Frame const &) override { return true; }
+  bool operator()(protocol::sbe::Frame const &) override { return true; }
 
-  void operator()(Trace<::deribit::sbe::multicast::Instrument> const &event, sbe::Frame const &frame) override { print(event, frame); }
-  void operator()(Trace<::deribit::sbe::multicast::Book> const &event, sbe::Frame const &frame) override { print(event, frame); }
-  void operator()(Trace<::deribit::sbe::multicast::Trades> const &event, sbe::Frame const &frame) override { print(event, frame); }
-  void operator()(Trace<::deribit::sbe::multicast::Ticker> const &event, sbe::Frame const &frame) override { print(event, frame); }
-  void operator()(Trace<::deribit::sbe::multicast::Snapshot> const &event, sbe::Frame const &frame) override { print(event, frame); }
-  void operator()(Trace<::deribit::sbe::multicast::SnapshotStart> const &event, sbe::Frame const &frame) override { print(event, frame); }
-  void operator()(Trace<::deribit::sbe::multicast::SnapshotEnd> const &event, sbe::Frame const &frame) override { print(event, frame); }
-  void operator()(Trace<::deribit::sbe::multicast::ComboLegs> const &event, sbe::Frame const &frame) override { print(event, frame); }
-  void operator()(Trace<::deribit::sbe::multicast::PriceIndex> const &event, sbe::Frame const &frame) override { print(event, frame); }
-  void operator()(Trace<::deribit::sbe::multicast::Rfq> const &event, sbe::Frame const &frame) override { print(event, frame); }
-  void operator()(Trace<::deribit::sbe::multicast::InstrumentV2> const &event, sbe::Frame const &frame) override { print(event, frame); }
+  void operator()(Trace<::deribit::sbe::multicast::Instrument> const &event, protocol::sbe::Frame const &frame) override { print(event, frame); }
+  void operator()(Trace<::deribit::sbe::multicast::Book> const &event, protocol::sbe::Frame const &frame) override { print(event, frame); }
+  void operator()(Trace<::deribit::sbe::multicast::Trades> const &event, protocol::sbe::Frame const &frame) override { print(event, frame); }
+  void operator()(Trace<::deribit::sbe::multicast::Ticker> const &event, protocol::sbe::Frame const &frame) override { print(event, frame); }
+  void operator()(Trace<::deribit::sbe::multicast::Snapshot> const &event, protocol::sbe::Frame const &frame) override { print(event, frame); }
+  void operator()(Trace<::deribit::sbe::multicast::SnapshotStart> const &event, protocol::sbe::Frame const &frame) override { print(event, frame); }
+  void operator()(Trace<::deribit::sbe::multicast::SnapshotEnd> const &event, protocol::sbe::Frame const &frame) override { print(event, frame); }
+  void operator()(Trace<::deribit::sbe::multicast::ComboLegs> const &event, protocol::sbe::Frame const &frame) override { print(event, frame); }
+  void operator()(Trace<::deribit::sbe::multicast::PriceIndex> const &event, protocol::sbe::Frame const &frame) override { print(event, frame); }
+  void operator()(Trace<::deribit::sbe::multicast::Rfq> const &event, protocol::sbe::Frame const &frame) override { print(event, frame); }
+  void operator()(Trace<::deribit::sbe::multicast::InstrumentV2> const &event, protocol::sbe::Frame const &frame) override { print(event, frame); }
 
   void print(auto &event, auto &frame) {
     using value_type = std::remove_cvref_t<decltype(event)>::value_type;

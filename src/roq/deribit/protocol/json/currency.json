@@ -1,0 +1,73 @@
+{
+  "name": "roq/deribit/protocol/json/Currency",
+  "type": "dictionary",
+  "values": [
+    {
+      "name": "coin_type",
+      "type": "std/string_view"
+    },
+    {
+      "name": "currency",
+      "type": "std/string_view"
+    },
+    {
+      "name": "currency_long",
+      "type": "std/string_view"
+    },
+    {
+      "name": "disabled_deposit_address_creation",
+      "type": "std/bool"
+    },
+    {
+      "name": "fee_precision",
+      "type": "std/uint32"
+    },
+    {
+      "name": "min_confirmations",
+      "type": "std/uint32"
+    },
+    {
+      "name": "min_withdrawal_fee",
+      "type": "std/double"
+    },
+    {
+      "name": "withdrawal_fee",
+      "type": "std/double"
+    },
+    {
+      "name": "withdrawal_priorities"
+    },
+    {
+      "name": "in_cross_collateral_pool",
+      "type": "std/bool"
+    },
+    {
+      "name": "apr",
+      "type": "std/double"
+    },
+    {
+      "name": "network_fee",
+      "type": "std/double"
+    },
+    {
+      "name": "network_currency",
+      "type": "std/string_view"
+    },
+    {
+      "name": "decimals",
+      "type": "std/int32"
+    },
+    {
+      "name": "onchain_operations_precision",
+      "type": "std/int32"
+    },
+    {
+      "name": "coinbase_networks",
+      "comment": "array"
+    },
+    {
+      "name": "currency_uuid",
+      "type": "std/string_view"
+    }
+  ]
+}

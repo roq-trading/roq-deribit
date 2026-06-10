@@ -1,0 +1,15 @@
+{
+  "name": "roq/deribit/protocol/json/Direction",
+  "type": "enum",
+  "values": [
+    {
+      "name": "buy"
+    },
+    {
+      "name": "sell"
+    },
+    {
+      "name": "zero"
+    }
+  ]
+}

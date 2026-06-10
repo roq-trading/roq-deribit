@@ -6,7 +6,7 @@
 
 #include "roq/logging.hpp"
 
-#include "roq/deribit/sbe/config.hpp"
+#include "roq/deribit/protocol/sbe/config.hpp"
 
 using namespace std::literals;
 
@@ -23,7 +23,7 @@ Controller::Controller(Settings const &settings) : settings_{settings} {
 }
 
 void Controller::dispatch() {
-  sbe::Config config{settings_.multicast.config_file, settings_.multicast.channel_ids};
+  protocol::sbe::Config config{settings_.multicast.config_file, settings_.multicast.channel_ids};
   std::vector<std::string> filter;
   auto callback = [&](auto &connection) { filter.emplace_back(connection.address); };
   config.get_connections(callback);

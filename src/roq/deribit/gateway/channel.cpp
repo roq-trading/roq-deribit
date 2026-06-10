@@ -12,7 +12,7 @@ namespace gateway {
 
 // === IMPLEMENTATION ===
 
-bool Channel::operator()(sbe::Frame const &frame) {
+bool Channel::operator()(protocol::sbe::Frame const &frame) {
   auto result = true;
   if (frame.sequence_number == (previous_sequence_number_ + 1)) [[likely]] {
     previous_sequence_number_ = frame.sequence_number;
@@ -39,18 +39,18 @@ bool Channel::operator()(sbe::Frame const &frame) {
   return result;
 }
 
-void Channel::reset(sbe::Frame const &) {
+void Channel::reset(protocol::sbe::Frame const &) {
   bids.clear();
   asks.clear();
   instrument_id = {};
   ready_ = {};
 }
 
-void Channel::snapshot_start(sbe::Frame const &) {
+void Channel::snapshot_start(protocol::sbe::Frame const &) {
   ready_ = true;
 }
 
-void Channel::snapshot_end(sbe::Frame const &) {
+void Channel::snapshot_end(protocol::sbe::Frame const &) {
   ready_ = false;
 }
 

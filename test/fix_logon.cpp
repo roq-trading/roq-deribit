@@ -4,7 +4,7 @@
 
 #include "roq/fix/reader.hpp"
 
-#include "roq/deribit/fix/logon.hpp"
+#include "roq/deribit/protocol/fix/logon.hpp"
 
 using namespace roq;
 using namespace roq::deribit;
@@ -14,7 +14,7 @@ using namespace std::chrono_literals;
 
 using namespace Catch::literals;
 
-using Logon = deribit::fix::Logon;
+using Logon = deribit::protocol::fix::Logon;
 
 TEST_CASE("fix_logon_parse_message", "[fix_logon]") {
   auto const message =
@@ -26,7 +26,7 @@ TEST_CASE("fix_logon_parse_message", "[fix_logon]") {
   int results = 0;
   auto parser = [&](auto &message_2) {
     ++results;
-    CHECK(message_2.header.msg_type == roq::fix::MsgType::LOGON);
+    CHECK(message_2.header.msg_type == fix::MsgType::LOGON);
     auto result = Logon::create(message_2);
     CHECK(result.heart_bt_int == uint32_t{10});
     CHECK(result.raw_data == "1567874758168.y4/hA3i6qxm4yVL+3N7IrGcINVAFMLFhy4l7ATSehxc="sv);
@@ -35,7 +35,7 @@ TEST_CASE("fix_logon_parse_message", "[fix_logon]") {
     CHECK(result.cancel_on_disconnect == true);
     CHECK(result.use_wordsafe_tags == false);
   };
-  auto bytes = roq::fix::Reader<roq::fix::Version::FIX_44>::dispatch(message, parser);
+  auto bytes = fix::Reader<fix::Version::FIX_44>::dispatch(message, parser);
   CHECK(bytes == std::size(message));
   CHECK(results == 1);
 }
@@ -56,8 +56,8 @@ TEST_CASE("fix_logon_create_message", "[fix_logon]") {
       .deribit_app_id = {},
       .deribit_app_sig = {},
   };
-  auto header = roq::fix::Header{
-      .version = roq::fix::Version::FIX_44,
+  auto header = fix::Header{
+      .version = fix::Version::FIX_44,
       .msg_type = decltype(logon)::MSG_TYPE,
       .sender_comp_id = "ROQ_TRADING"sv,
       .target_comp_id = "DERIBITSERVER"sv,

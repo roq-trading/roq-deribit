@@ -15,11 +15,11 @@
 
 #include "roq/web/socket/client.hpp"
 
-#include "roq/deribit/json/error.hpp"
-#include "roq/deribit/json/map.hpp"
-#include "roq/deribit/json/method.hpp"
-#include "roq/deribit/json/request_type.hpp"
-#include "roq/deribit/json/utils.hpp"
+#include "roq/deribit/protocol/json/error.hpp"
+#include "roq/deribit/protocol/json/map.hpp"
+#include "roq/deribit/protocol/json/method.hpp"
+#include "roq/deribit/protocol/json/request_type.hpp"
+#include "roq/deribit/protocol/json/utils.hpp"
 
 using namespace std::literals;
 
@@ -211,7 +211,7 @@ void DropCopy::operator()(ConnectionStatus connection_status, std::string_view c
 }
 
 void DropCopy::login() {
-  constexpr json::RequestType request_type = json::RequestType::AUTH;
+  protocol::json::RequestType request_type = protocol::json::RequestType::AUTH;
   auto now = clock::get_realtime<std::chrono::milliseconds>();
   auto nonce = account_.create_nonce();
   auto [signature, timestamp] = account_.create_signature(now, nonce);
@@ -282,7 +282,7 @@ uint32_t DropCopy::download(State state) {
 }
 
 void DropCopy::subscribe_user_portfolio(std::span<std::string> const &currencies) {
-  constexpr json::RequestType request_type = json::RequestType::SUBSCRIBE_USER_PORTFOLIO;
+  protocol::json::RequestType request_type = protocol::json::RequestType::SUBSCRIBE_USER_PORTFOLIO;
   auto message = fmt::format(
       R"({{)"
       R"("method":"private/subscribe",)"
@@ -297,7 +297,7 @@ void DropCopy::subscribe_user_portfolio(std::span<std::string> const &currencies
 }
 
 void DropCopy::subscribe_user_changes() {
-  constexpr json::RequestType request_type = json::RequestType::SUBSCRIBE_USER_CHANGES;
+  protocol::json::RequestType request_type = protocol::json::RequestType::SUBSCRIBE_USER_CHANGES;
   auto message = fmt::format(
       R"({{)"
       R"("method":"private/subscribe",)"
@@ -311,7 +311,7 @@ void DropCopy::subscribe_user_changes() {
 }
 
 void DropCopy::subscribe_user_orders() {
-  constexpr json::RequestType request_type = json::RequestType::SUBSCRIBE_USER_ORDERS;
+  protocol::json::RequestType request_type = protocol::json::RequestType::SUBSCRIBE_USER_ORDERS;
   auto message = fmt::format(
       R"({{)"
       R"("method":"private/subscribe",)"
@@ -325,7 +325,7 @@ void DropCopy::subscribe_user_orders() {
 }
 
 void DropCopy::subscribe_user_trades() {
-  constexpr json::RequestType request_type = json::RequestType::SUBSCRIBE_USER_TRADES;
+  protocol::json::RequestType request_type = protocol::json::RequestType::SUBSCRIBE_USER_TRADES;
   auto message = fmt::format(
       R"({{)"
       R"("method":"private/subscribe",)"
@@ -339,7 +339,7 @@ void DropCopy::subscribe_user_trades() {
 }
 
 void DropCopy::get_account_summary(std::span<std::string> const &currencies) {
-  constexpr json::RequestType request_type = json::RequestType::GET_ACCOUNT_SUMMARY;
+  protocol::json::RequestType request_type = protocol::json::RequestType::GET_ACCOUNT_SUMMARY;
   for (auto currency : currencies) {
     auto message = fmt::format(
         R"({{)"
@@ -358,7 +358,7 @@ void DropCopy::get_account_summary(std::span<std::string> const &currencies) {
 
 // XXX TODO specify subaccount_id
 void DropCopy::get_user_trades_by_currency(std::span<std::string> const &currencies) {
-  constexpr json::RequestType request_type = json::RequestType::GET_USER_TRADES_BY_CURRENCY;
+  protocol::json::RequestType request_type = protocol::json::RequestType::GET_USER_TRADES_BY_CURRENCY;
   auto now = clock::get_realtime<std::chrono::milliseconds>();
   auto lookback = get_download_trades_lookback(shared_.settings, download_trades_is_first_);
   log::info<1>("Download trades: lookback={}"sv, lookback);
@@ -386,7 +386,7 @@ void DropCopy::parse(std::string_view const &message) {
     auto log_message = [&]() { log::warn(R"(*** PLEASE REPORT *** message="{}")"sv, message); };
     try {
       TraceInfo trace_info;
-      if (!json::Parser::dispatch(*this, message, decode_buffer_, trace_info, shared_.settings.experimental.allow_unknown_event_types)) {
+      if (!protocol::json::Parser::dispatch(*this, message, decode_buffer_, trace_info, shared_.settings.experimental.allow_unknown_event_types)) {
         log_message();
       }
     } catch (...) {
@@ -396,9 +396,9 @@ void DropCopy::parse(std::string_view const &message) {
   });
 }
 
-// json::Parser::Handler
+// protocol::json::Parser::Handler
 
-void DropCopy::operator()(Trace<json::Auth> const &event) {
+void DropCopy::operator()(Trace<protocol::json::Auth> const &event) {
   profile_.auth([&]() {
     auto &[trace_info, auth] = event;
     log::info<2>("auth={}"sv, auth);
@@ -406,34 +406,34 @@ void DropCopy::operator()(Trace<json::Auth> const &event) {
   });
 }
 
-void DropCopy::operator()(Trace<json::SubscribeAck> const &event) {
+void DropCopy::operator()(Trace<protocol::json::SubscribeAck> const &event) {
   auto &[trace_info, subscribe_ack] = event;
   if (subscribe_ack.error.code != 0) {
     log::error("subscribe_ack={}"sv, subscribe_ack);
   }
 }
 
-void DropCopy::operator()(Trace<json::PlatformState> const &) {
+void DropCopy::operator()(Trace<protocol::json::PlatformState> const &) {
   log::fatal("Unexpected"sv);
 }
 
-void DropCopy::operator()(Trace<json::InstrumentState> const &) {
+void DropCopy::operator()(Trace<protocol::json::InstrumentState> const &) {
   log::fatal("Unexpected"sv);
 }
 
-void DropCopy::operator()(Trace<json::Quote> const &) {
+void DropCopy::operator()(Trace<protocol::json::Quote> const &) {
   log::fatal("Unexpected"sv);
 }
 
-void DropCopy::operator()(Trace<json::Ticker> const &) {
+void DropCopy::operator()(Trace<protocol::json::Ticker> const &) {
   log::fatal("Unexpected"sv);
 }
 
-void DropCopy::operator()(Trace<json::ChartTrades> const &, [[maybe_unused]] std::string_view const &symbol, [[maybe_unused]] uint32_t interval) {
+void DropCopy::operator()(Trace<protocol::json::ChartTrades> const &, [[maybe_unused]] std::string_view const &symbol, [[maybe_unused]] uint32_t interval) {
   log::fatal("Unexpected"sv);
 }
 
-void DropCopy::operator()(Trace<json::UserPortfolio> const &event) {
+void DropCopy::operator()(Trace<protocol::json::UserPortfolio> const &event) {
   auto &[trace_info, user_portfolio] = event;
   log::info<2>("user_portfolio={}"sv, user_portfolio);
   auto &data = user_portfolio.params.data;
@@ -456,7 +456,7 @@ void DropCopy::operator()(Trace<json::UserPortfolio> const &event) {
 }
 
 // note! includes trades
-void DropCopy::operator()(Trace<json::UserChanges> const &event) {
+void DropCopy::operator()(Trace<protocol::json::UserChanges> const &event) {
   auto &[trace_info, user_changes] = event;
   auto &trades = user_changes.params.data.trades;
   for (size_t i = 0; i < std::size(trades); ++i) {
@@ -466,7 +466,7 @@ void DropCopy::operator()(Trace<json::UserChanges> const &event) {
   }
 }
 
-void DropCopy::operator()(Trace<json::UserTrades> const &event) {
+void DropCopy::operator()(Trace<protocol::json::UserTrades> const &event) {
   auto &[trace_info, user_trades] = event;
   log::info<1>("user_trades={}"sv, user_trades);
   auto &trades = user_trades.params.data;
@@ -478,21 +478,21 @@ void DropCopy::operator()(Trace<json::UserTrades> const &event) {
   download_trades_is_first_ = false;
 }
 
-void DropCopy::operator()(Trace<json::UserOrders> const &event) {
+void DropCopy::operator()(Trace<protocol::json::UserOrders> const &event) {
   auto &[trace_info, user_orders] = event;
   log::info<1>("user_orders={}"sv, user_orders);
   // do nothing?
 }
 
 // note! not using -- already managed by user-changes
-void DropCopy::operator()(Trace<json::GetAccountSummaryAck> const &event) {
+void DropCopy::operator()(Trace<protocol::json::GetAccountSummaryAck> const &event) {
   auto &[trace_info, get_account_summary_ack] = event;
   log::info<1>("get_account_summary_ack={}"sv, get_account_summary_ack);
   // do nothing?
 }
 
 // note! not using -- already managed by user-changes
-void DropCopy::operator()(Trace<json::GetUserTradesByCurrencyAck> const &event) {
+void DropCopy::operator()(Trace<protocol::json::GetUserTradesByCurrencyAck> const &event) {
   auto &[trace_info, get_user_trades_by_currency_ack] = event;
   log::info<1>("get_user_trades_by_currency_ack={}"sv, get_user_trades_by_currency_ack);
   // do nothing?
@@ -500,7 +500,7 @@ void DropCopy::operator()(Trace<json::GetUserTradesByCurrencyAck> const &event) 
 
 // XXX maybe drop this an aggregate by order?
 // note! trade.label might be our ClOrdID
-void DropCopy::operator()(Trace<json::Trade> const &event, bool is_download, bool is_last) {
+void DropCopy::operator()(Trace<protocol::json::Trade> const &event, bool is_download, bool is_last) {
   auto &[trace_info, trade] = event;
   log::info<1>("trade={}"sv, trade);
   auto iter = shared_.multiplier.find(trade.instrument_name);

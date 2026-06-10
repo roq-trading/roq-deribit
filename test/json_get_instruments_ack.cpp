@@ -4,7 +4,7 @@
 
 #include "roq/core/json/buffer_stack.hpp"
 
-#include "roq/deribit/json/get_instruments_ack.hpp"
+#include "roq/deribit/protocol/json/get_instruments_ack.hpp"
 
 using namespace roq;
 using namespace roq::deribit;
@@ -14,7 +14,7 @@ using namespace std::chrono_literals;
 
 using namespace Catch::literals;
 
-using value_type = json::GetInstrumentsAck;
+using value_type = protocol::json::GetInstrumentsAck;
 
 TEST_CASE("simple", "[json_get_instruments_ack]") {
   auto message = R"({)"
@@ -76,12 +76,12 @@ TEST_CASE("simple", "[json_get_instruments_ack]") {
     auto &r0 = obj.result[0];
     CHECK(r0.tick_size == 0.5_a);
     CHECK(r0.taker_commission == 0.0005_a);
-    CHECK(r0.settlement_period == json::SettlementPeriod::MONTH);
+    CHECK(r0.settlement_period == protocol::json::SettlementPeriod::MONTH);
     CHECK(r0.quote_currency == "USD"sv);
     CHECK(r0.min_trade_amount == 10.0_a);
     CHECK(r0.max_leverage == 100.0_a);
     CHECK(r0.maker_commission == -0.0002_a);
-    CHECK(r0.kind == json::Kind::FUTURE);
+    CHECK(r0.kind == protocol::json::Kind::FUTURE);
     CHECK(r0.is_active == true);
     CHECK(r0.instrument_name == "BTC-27SEP19"sv);
     CHECK(r0.expiration_timestamp == 1569571200000ms);
@@ -91,12 +91,12 @@ TEST_CASE("simple", "[json_get_instruments_ack]") {
     auto &r1 = obj.result[1];
     CHECK(r1.tick_size == 0.5_a);
     CHECK(r1.taker_commission == 0.0005_a);
-    CHECK(r1.settlement_period == json::SettlementPeriod::MONTH);
+    CHECK(r1.settlement_period == protocol::json::SettlementPeriod::MONTH);
     CHECK(r1.quote_currency == "USD"sv);
     CHECK(r1.min_trade_amount == 10.0_a);
     CHECK(r1.max_leverage == 100.0_a);
     CHECK(r1.maker_commission == -0.0002_a);
-    CHECK(r1.kind == json::Kind::FUTURE);
+    CHECK(r1.kind == protocol::json::Kind::FUTURE);
     CHECK(r1.is_active == true);
     CHECK(r1.instrument_name == "BTC-27DEC19"sv);
     CHECK(r1.expiration_timestamp == 1577433600000ms);
@@ -106,12 +106,12 @@ TEST_CASE("simple", "[json_get_instruments_ack]") {
     auto &r2 = obj.result[2];
     CHECK(r2.tick_size == 0.5_a);
     CHECK(r2.taker_commission == 0.00075_a);
-    CHECK(r2.settlement_period == json::SettlementPeriod::PERPETUAL);
+    CHECK(r2.settlement_period == protocol::json::SettlementPeriod::PERPETUAL);
     CHECK(r2.quote_currency == "USD"sv);
     CHECK(r2.min_trade_amount == 10.0_a);
     CHECK(r2.max_leverage == 100.0_a);
     CHECK(r2.maker_commission == -0.00025_a);
-    CHECK(r2.kind == json::Kind::FUTURE);
+    CHECK(r2.kind == protocol::json::Kind::FUTURE);
     CHECK(r2.is_active == true);
     CHECK(r2.instrument_name == "BTC-PERPETUAL"sv);
     CHECK(r2.expiration_timestamp == 32503734000000ms);

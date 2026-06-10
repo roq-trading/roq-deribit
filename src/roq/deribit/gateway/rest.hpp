@@ -21,9 +21,9 @@
 #include "roq/deribit/gateway/request.hpp"
 #include "roq/deribit/gateway/shared.hpp"
 
-#include "roq/deribit/json/get_chart_data_ack.hpp"
-#include "roq/deribit/json/get_currencies_ack.hpp"
-#include "roq/deribit/json/get_instruments_ack.hpp"
+#include "roq/deribit/protocol/json/get_chart_data_ack.hpp"
+#include "roq/deribit/protocol/json/get_currencies_ack.hpp"
+#include "roq/deribit/protocol/json/get_instruments_ack.hpp"
 
 namespace roq {
 namespace deribit {
@@ -77,19 +77,19 @@ struct Rest final : public web::rest::Client::Handler {
 
   void get_currencies();
   void get_currencies_ack(Trace<web::rest::Response> const &);
-  void operator()(Trace<json::GetCurrenciesAck> const &);
+  void operator()(Trace<protocol::json::GetCurrenciesAck> const &);
 
   // instruments
 
   void get_instruments();
   void get_instruments_ack(Trace<web::rest::Response> const &);
-  void operator()(Trace<json::GetInstrumentsAck> const &);
+  void operator()(Trace<protocol::json::GetInstrumentsAck> const &);
 
   // chart-data
 
   void get_chart_data(std::string_view const &symbol);
   void get_chart_data_ack(Trace<web::rest::Response> const &, std::string_view const &symbol);
-  void operator()(Trace<json::GetChartDataAck> const &, std::string_view const &symbol);
+  void operator()(Trace<protocol::json::GetChartDataAck> const &, std::string_view const &symbol);
 
   // helpers
 

@@ -25,7 +25,7 @@
 #include "roq/deribit/gateway/common.hpp"
 #include "roq/deribit/gateway/utils.hpp"
 
-#include "roq/deribit/fix/utils.hpp"
+#include "roq/deribit/protocol/fix/utils.hpp"
 
 using namespace std::literals;
 
@@ -97,7 +97,7 @@ struct create_metrics final : public utils::metrics::Factory {
 
 void validate(auto &value) {
   switch (value.md_update_action) {
-    using enum roq::fix::MDUpdateAction;
+    using enum fix::MDUpdateAction;
     case UNDEFINED:
     case UNKNOWN:
       break;
@@ -254,7 +254,7 @@ void MarketData::operator()(io::net::ConnectionManager::Read const &) {
   try {
     size_t total_bytes = 0;
     while (!std::empty(buffer)) {
-      auto bytes = roq::fix::Reader<FIX_VERSION>::dispatch(buffer, parse_message, log_message);
+      auto bytes = fix::Reader<FIX_VERSION>::dispatch(buffer, parse_message, log_message);
       if (bytes == 0) {
         break;
       }
@@ -303,7 +303,7 @@ void MarketData::send_logon() {
   auto raw_data = account_.create_raw_data(now);
   auto password = account_.create_password(raw_data);
   auto cancel_on_disconnect = shared_.settings.fix.cancel_on_disconnect;
-  auto logon = fix::Logon{
+  auto logon = protocol::fix::Logon{
       .heart_bt_int = utils::safe_cast(heart_bt_int),
       .raw_data_length = utils::safe_cast(std::size(raw_data)),
       .raw_data = raw_data,
@@ -321,14 +321,14 @@ void MarketData::send_logon() {
 }
 
 void MarketData::send_logout(std::string_view const &text) {
-  auto logout = fix::Logout{
+  auto logout = protocol::fix::Logout{
       .text = text,
   };
   send(logout);
 }
 
 void MarketData::send_heartbeat(std::string_view const &test_req_id) {
-  auto heartbeat = fix::Heartbeat{
+  auto heartbeat = protocol::fix::Heartbeat{
       .test_req_id = test_req_id,
   };
   send(heartbeat);
@@ -338,7 +338,7 @@ void MarketData::send_test_request(std::chrono::nanoseconds now) {
   // request_id is current time
   request_id_.clear();
   utils::charconv::to_string(std::back_inserter(request_id_), now.count());
-  auto test_request = fix::TestRequest{
+  auto test_request = protocol::fix::TestRequest{
       .test_req_id = request_id_,
   };
   send(test_request);
@@ -386,10 +386,10 @@ uint32_t MarketData::download(State state) {
 
 void MarketData::download_securities() {
   auto request_id = shared_.next_request_id();
-  auto security_list_request = fix::SecurityListRequest{
+  auto security_list_request = protocol::fix::SecurityListRequest{
       .security_req_id = request_id,
-      .security_list_request_type = roq::fix::SecurityListRequestType::ALL_SECURITIES,
-      .subscription_request_type = roq::fix::SubscriptionRequestType::SNAPSHOT_UPDATES,
+      .security_list_request_type = fix::SecurityListRequestType::ALL_SECURITIES,
+      .subscription_request_type = fix::SubscriptionRequestType::SNAPSHOT_UPDATES,
   };
   send(security_list_request);
 }
@@ -419,15 +419,15 @@ void MarketData::subscribe(std::span<Symbol const> const &symbols) {
   }
   log::info("Subscribe symbols=[{}]"sv, fmt::join(symbols, ","sv));
   auto market_depth = shared_.settings.fix.market_data_market_depth;
-  auto md_update_type = market_depth != 0 ? roq::fix::MDUpdateType::INCREMENTAL_REFRESH : roq::fix::MDUpdateType::FULL_REFRESH;
-  std::array<fix::MDReq, 3> md_entry_types{{
-      {.md_entry_type = roq::fix::MDEntryType::BID},
-      {.md_entry_type = roq::fix::MDEntryType::OFFER},
-      {.md_entry_type = roq::fix::MDEntryType::TRADE},
+  auto md_update_type = market_depth != 0 ? fix::MDUpdateType::INCREMENTAL_REFRESH : fix::MDUpdateType::FULL_REFRESH;
+  std::array<protocol::fix::MDReq, 3> md_entry_types{{
+      {.md_entry_type = fix::MDEntryType::BID},
+      {.md_entry_type = fix::MDEntryType::OFFER},
+      {.md_entry_type = fix::MDEntryType::TRADE},
   }};
   // deribit has acknowledged a limit on # of symbols per request
   auto max_size = shared_.settings.fix.market_data_request_max_size != 0 ? shared_.settings.fix.market_data_request_max_size : std::size(symbols);
-  std::vector<fix::InstrmtMDReq> related_sym(max_size);
+  std::vector<protocol::fix::InstrmtMDReq> related_sym(max_size);
   for (size_t offset = 0;; offset += max_size) {
     if (std::size(symbols) <= offset) {
       break;
@@ -435,14 +435,14 @@ void MarketData::subscribe(std::span<Symbol const> const &symbols) {
     auto length = std::min<size_t>(std::size(symbols) - offset, max_size);
     assert(length > 0);
     for (size_t i = 0; i < length; ++i) {
-      new (&related_sym[i]) fix::InstrmtMDReq{
+      new (&related_sym[i]) protocol::fix::InstrmtMDReq{
           .symbol = symbols[offset + i],
       };
     }
     auto request_id = shared_.next_request_id();
-    auto market_data_request = fix::MarketDataRequest{
+    auto market_data_request = protocol::fix::MarketDataRequest{
         .md_req_id = request_id,
-        .subscription_request_type = roq::fix::SubscriptionRequestType::SNAPSHOT_UPDATES,
+        .subscription_request_type = fix::SubscriptionRequestType::SNAPSHOT_UPDATES,
         .market_depth = market_depth,
         .md_update_type = md_update_type,
         .deribit_trade_amount = {},     // 0=none
@@ -457,14 +457,14 @@ void MarketData::subscribe(std::span<Symbol const> const &symbols) {
 void MarketData::unsubscribe(std::span<Symbol const> const &symbols) {
   log::info("Unsubscribe market data"sv);
   assert(!std::empty(symbols));
-  std::array<fix::MDReq, 3> md_entry_types{{
-      {.md_entry_type = roq::fix::MDEntryType::BID},
-      {.md_entry_type = roq::fix::MDEntryType::OFFER},
-      {.md_entry_type = roq::fix::MDEntryType::TRADE},
+  std::array<protocol::fix::MDReq, 3> md_entry_types{{
+      {.md_entry_type = fix::MDEntryType::BID},
+      {.md_entry_type = fix::MDEntryType::OFFER},
+      {.md_entry_type = fix::MDEntryType::TRADE},
   }};
   // deribit has acknowledged a limit on # of symbols per request
   auto max_size = shared_.settings.fix.market_data_request_max_size != 0 ? shared_.settings.fix.market_data_request_max_size : std::size(symbols);
-  std::vector<fix::InstrmtMDReq> related_sym(max_size);
+  std::vector<protocol::fix::InstrmtMDReq> related_sym(max_size);
   for (size_t offset = 0;; offset += max_size) {
     if (std::size(symbols) <= offset) {
       break;
@@ -472,14 +472,14 @@ void MarketData::unsubscribe(std::span<Symbol const> const &symbols) {
     auto length = std::min<size_t>(std::size(symbols) - offset, max_size);
     assert(length > 0);
     for (size_t i = 0; i < length; ++i) {
-      new (&related_sym[i]) fix::InstrmtMDReq{
+      new (&related_sym[i]) protocol::fix::InstrmtMDReq{
           .symbol = symbols[offset + i],
       };
     }
     auto request_id = shared_.next_request_id();
-    auto market_data_request = fix::MarketDataRequest{
+    auto market_data_request = protocol::fix::MarketDataRequest{
         .md_req_id = request_id,
-        .subscription_request_type = roq::fix::SubscriptionRequestType::UNSUBSCRIBE,
+        .subscription_request_type = fix::SubscriptionRequestType::UNSUBSCRIBE,
         .market_depth = {},
         .md_update_type = {},
         .deribit_trade_amount = {},
@@ -505,69 +505,69 @@ void MarketData::resubscribe(std::string_view const &symbol) {
   subscribe(symbols);
 }
 
-void MarketData::parse(Trace<roq::fix::Message> const &event) {
+void MarketData::parse(Trace<fix::Message> const &event) {
   profile_.parse([&]() { parse_helper(event); });
 }
 
-void MarketData::parse_helper(Trace<roq::fix::Message> const &event) {
+void MarketData::parse_helper(Trace<fix::Message> const &event) {
   auto &trace_info = event.trace_info;
   auto &message = event.value;
   switch (message.header.msg_type) {
-    using enum roq::fix::MsgType;
+    using enum fix::MsgType;
     // session
     case HEARTBEAT: {
-      auto heartbeat = fix::Heartbeat::create(message);
+      auto heartbeat = protocol::fix::Heartbeat::create(message);
       create_trace_and_dispatch(*this, trace_info, heartbeat, message.header);
       break;
     }
     case LOGON: {
-      auto logon = fix::Logon::create(message);
+      auto logon = protocol::fix::Logon::create(message);
       create_trace_and_dispatch(*this, trace_info, logon, message.header);
       break;
     }
     case LOGOUT: {
-      auto logout = fix::Logout::create(message);
+      auto logout = protocol::fix::Logout::create(message);
       create_trace_and_dispatch(*this, trace_info, logout, message.header);
       break;
     }
     case RESEND_REQUEST: {
-      auto resend_request = fix::ResendRequest::create(message);
+      auto resend_request = protocol::fix::ResendRequest::create(message);
       create_trace_and_dispatch(*this, trace_info, resend_request, message.header);
       break;
     }
     case TEST_REQUEST: {
-      auto test_request = fix::TestRequest::create(message);
+      auto test_request = protocol::fix::TestRequest::create(message);
       create_trace_and_dispatch(*this, trace_info, test_request, message.header);
       break;
     }
     // ...
     case MARKET_DATA_INCREMENTAL_REFRESH:
       profile_.market_data_incremental_refresh([&]() {
-        auto market_data_incremental_refresh = fix::MarketDataIncrementalRefresh::create(message, decode_buffer_);
+        auto market_data_incremental_refresh = protocol::fix::MarketDataIncrementalRefresh::create(message, decode_buffer_);
         create_trace_and_dispatch(*this, trace_info, market_data_incremental_refresh, message.header);
       });
       break;
     case MARKET_DATA_REQUEST_REJECT:
       profile_.market_data_request_reject([&]() {
-        auto market_data_request_reject = fix::MarketDataRequestReject::create(message);
+        auto market_data_request_reject = protocol::fix::MarketDataRequestReject::create(message);
         create_trace_and_dispatch(*this, trace_info, market_data_request_reject, message.header);
       });
       break;
     case MARKET_DATA_SNAPSHOT_FULL_REFRESH:
       profile_.market_data_snapshot_full_refresh([&]() {
-        auto market_data_snapshot_full_refresh = fix::MarketDataSnapshotFullRefresh::create(message, decode_buffer_);
+        auto market_data_snapshot_full_refresh = protocol::fix::MarketDataSnapshotFullRefresh::create(message, decode_buffer_);
         create_trace_and_dispatch(*this, trace_info, market_data_snapshot_full_refresh, message.header);
       });
       break;
     case SECURITY_LIST:
       profile_.security_list([&]() {
-        auto security_list = fix::SecurityList::create(message, decode_buffer_);
+        auto security_list = protocol::fix::SecurityList::create(message, decode_buffer_);
         create_trace_and_dispatch(*this, trace_info, security_list, message.header);
       });
       break;
     case SECURITY_STATUS:
       profile_.security_status([&]() {
-        auto security_status = fix::SecurityStatus::create(message, decode_buffer_);
+        auto security_status = protocol::fix::SecurityStatus::create(message, decode_buffer_);
         create_trace_and_dispatch(*this, trace_info, security_status, message.header);
       });
       break;
@@ -582,7 +582,7 @@ void MarketData::parse_helper(Trace<roq::fix::Message> const &event) {
   }
 }
 
-void MarketData::operator()(Trace<fix::Heartbeat> const &event, roq::fix::Header const &header) {
+void MarketData::operator()(Trace<protocol::fix::Heartbeat> const &event, fix::Header const &header) {
   auto now = clock::get_system();
   auto &[trace_info, heartbeat] = event;
   log::info<3>("event={{header={}, heartbeat={}}}"sv, header, heartbeat);
@@ -600,13 +600,13 @@ void MarketData::operator()(Trace<fix::Heartbeat> const &event, roq::fix::Header
   }
 }
 
-void MarketData::operator()(Trace<fix::Logon> const &event, roq::fix::Header const &header) {
+void MarketData::operator()(Trace<protocol::fix::Logon> const &event, fix::Header const &header) {
   auto &[trace_info, logon] = event;
   log::info<2>("event={{header={}, logon={}}}"sv, header, logon);
   download_.begin();
 }
 
-void MarketData::operator()(Trace<fix::Logout> const &event, roq::fix::Header const &header) {
+void MarketData::operator()(Trace<protocol::fix::Logout> const &event, fix::Header const &header) {
   auto &[trace_info, logout] = event;
   log::warn("event={{header={}, logout={}}}"sv, header, logout);
   (*this)(ConnectionStatus::LOGGED_OUT);
@@ -617,14 +617,14 @@ void MarketData::operator()(Trace<fix::Logout> const &event, roq::fix::Header co
   (*connection_manager_).close();
 }
 
-void MarketData::operator()(Trace<fix::ResendRequest> const &event, roq::fix::Header const &header) {
+void MarketData::operator()(Trace<protocol::fix::ResendRequest> const &event, fix::Header const &header) {
   auto &[trace_info, resend_request] = event;
   log::warn("event={{header={}, resend_request={}}}"sv, header, resend_request);
   log::info("closing connection"sv);
   (*connection_manager_).close();
 }
 
-void MarketData::operator()(Trace<fix::TestRequest> const &event, roq::fix::Header const &header) {
+void MarketData::operator()(Trace<protocol::fix::TestRequest> const &event, fix::Header const &header) {
   auto &[trace_info, test_request] = event;
   log::info<1>("event={{header={}, test_request={}}}"sv, header, test_request);
   send_heartbeat(test_request.test_req_id);
@@ -660,7 +660,7 @@ void MarketData::operator()(Trace<fix::TestRequest> const &event, roq::fix::Head
 // BTC-PERPETUAL          BTC            USD             BTC                  USD                USD(?)    (?)                   USD             BTC
 // BTC-27DEC24-62000-P    BTC            BTC             BTC                  USD                BTC       (?)                   USD             BTC
 
-void MarketData::operator()(Trace<fix::SecurityList> const &event, roq::fix::Header const &header) {
+void MarketData::operator()(Trace<protocol::fix::SecurityList> const &event, fix::Header const &header) {
   auto &[trace_info, security_list] = event;
   log::info<2>("event={{header={}, security_list={}}}"sv, header, security_list);
   (*connection_manager_).touch(trace_info.source_receive_time);
@@ -675,7 +675,7 @@ void MarketData::operator()(Trace<fix::SecurityList> const &event, roq::fix::Hea
       auto discard = shared_.discard_symbol(symbol);
       auto multiplier = compute_contracts_multiplier(item.contract_multiplier);
       if (shared_.settings.misc.use_fix_reference_data) {
-        auto security_type = fix::map_security_type(item.security_type);
+        auto security_type = protocol::fix::map_security_type(item.security_type);
         auto option_type = map(item.put_or_call);
         auto expiry_time = utils::charconv::from_chars<std::chrono::milliseconds>(item.maturity_time, utils::charconv::Format::TIME);
         auto expiry_datetime = combine(item.maturity_date, expiry_time);
@@ -737,13 +737,13 @@ void MarketData::operator()(Trace<fix::SecurityList> const &event, roq::fix::Hea
   download_.check_relaxed(State::SECURITIES);
 }
 
-void MarketData::operator()(Trace<fix::SecurityStatus> const &event, roq::fix::Header const &header) {
+void MarketData::operator()(Trace<protocol::fix::SecurityStatus> const &event, fix::Header const &header) {
   auto &[trace_info, security_status] = event;
   log::info<2>("event={{header={}, security_status={}}}"sv, header, security_status);
   // XXX should we use it or not?
 }
 
-void MarketData::operator()(Trace<fix::MarketDataIncrementalRefresh> const &event, roq::fix::Header const &header) {
+void MarketData::operator()(Trace<protocol::fix::MarketDataIncrementalRefresh> const &event, fix::Header const &header) {
   auto &trace_info = event.trace_info;
   auto &market_data_incremental_refresh = event.value;
   log::info<3>("event={{header={}, market_data_incremental_refresh={}}}"sv, header, market_data_incremental_refresh);
@@ -778,7 +778,7 @@ void MarketData::operator()(Trace<fix::MarketDataIncrementalRefresh> const &even
       exchange_time_utc = item.md_entry_date;
     }
     switch (item.md_entry_type) {
-      using enum roq::fix::MDEntryType;
+      using enum fix::MDEntryType;
       case BID:
         validate(item);
         emplace_back(mbp.bids, item);
@@ -868,7 +868,7 @@ void MarketData::operator()(Trace<fix::MarketDataIncrementalRefresh> const &even
 }
 
 void MarketData::operator()(
-    Trace<fix::MarketDataRequestReject> const &event, roq::fix::Header const &header) {  // NOLINT(readability-make-member-function-const)
+    Trace<protocol::fix::MarketDataRequestReject> const &event, fix::Header const &header) {  // NOLINT(readability-make-member-function-const)
   auto &[trace_info, market_data_request_reject] = event;
   log::warn<1>("event={{header={}, market_data_request_reject={}}}"sv, header, market_data_request_reject);
   if (shared_.settings.fix.terminate_on_market_data_request_reject) {
@@ -876,7 +876,7 @@ void MarketData::operator()(
   }
 }
 
-void MarketData::operator()(Trace<fix::MarketDataSnapshotFullRefresh> const &event, roq::fix::Header const &header) {
+void MarketData::operator()(Trace<protocol::fix::MarketDataSnapshotFullRefresh> const &event, fix::Header const &header) {
   auto &[trace_info, market_data_snapshot_full_refresh] = event;
   log::info<3>("event={{header={}, market_data_snapshot_full_refresh={}}}"sv, header, market_data_snapshot_full_refresh);
   (*connection_manager_).touch(trace_info.source_receive_time);
@@ -894,7 +894,7 @@ void MarketData::operator()(Trace<fix::MarketDataSnapshotFullRefresh> const &eve
       exchange_time_utc = item.md_entry_date;
     }
     switch (item.md_entry_type) {
-      using enum roq::fix::MDEntryType;
+      using enum fix::MDEntryType;
       case BID:
         validate(item);
         emplace_back(mbp.bids, item);
@@ -982,7 +982,7 @@ void MarketData::send(T const &event) {
 template <typename T>
 void MarketData::send(T const &event, std::chrono::nanoseconds sending_time) {
   auto helper = [&](auto &message) { log::info("{}"sv, utils::debug::fix::Message{message}); };
-  auto header = roq::fix::Header{
+  auto header = fix::Header{
       .version = FIX_VERSION,
       .msg_type = T::MSG_TYPE,
       .sender_comp_id = SENDER_COMP_ID,
@@ -1002,7 +1002,7 @@ void MarketData::send(T const &event, std::chrono::nanoseconds sending_time) {
   }
 }
 
-void MarketData::check(roq::fix::Header const &header) {
+void MarketData::check(fix::Header const &header) {
   auto current = header.msg_seq_num;
   auto expected = inbound_.msg_seq_num + 1;
   if (current != expected) [[unlikely]] {

@@ -4,14 +4,14 @@
 
 #include "roq/fix/reader.hpp"
 
-#include "roq/deribit/fix/market_data_snapshot_full_refresh.hpp"
+#include "roq/deribit/protocol/fix/market_data_snapshot_full_refresh.hpp"
 
 using namespace roq;
 using namespace roq::deribit;
 
 using namespace std::literals;
 
-using MarketDataSnapshotFullRefresh = deribit::fix::MarketDataSnapshotFullRefresh;
+using MarketDataSnapshotFullRefresh = deribit::protocol::fix::MarketDataSnapshotFullRefresh;
 
 namespace {
 auto const MESSAGE =
@@ -183,7 +183,7 @@ void BM_fix_market_data_snapshot_full_refresh_parse_message(benchmark::State &st
     }
   };
   for (auto _ : state) {
-    roq::fix::Reader<roq::fix::Version::FIX_44>::dispatch(MESSAGE, parser);
+    fix::Reader<fix::Version::FIX_44>::dispatch(MESSAGE, parser);
   }
 }
 

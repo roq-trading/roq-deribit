@@ -1,0 +1,280 @@
+{
+  "name": "roq/deribit/protocol/json/GetAccountSummaryAckResult",
+  "type": "dictionary",
+  "values": [
+    {
+      "name": "maintenance_margin",
+      "type": "std/double"
+    },
+    {
+      "name": "balance",
+      "type": "std/double"
+    },
+    {
+      "name": "currency",
+      "type": "std/string_view"
+    },
+    {
+      "name": "futures_pl",
+      "type": "std/double"
+    },
+    {
+      "name": "projected_maintenance_margin",
+      "type": "std/double"
+    },
+    {
+      "name": "mmp_enabled",
+      "type": "std/bool"
+    },
+    {
+      "name": "id",
+      "type": "std/int64"
+    },
+    {
+      "name": "limits"
+    },
+    {
+      "name": "options_delta",
+      "type": "std/double"
+    },
+    {
+      "name": "type",
+      "type": "std/string_view"
+    },
+    {
+      "name": "available_withdrawal_funds",
+      "type": "std/double"
+    },
+    {
+      "name": "spot_reserve",
+      "type": "std/double"
+    },
+    {
+      "name": "options_value",
+      "type": "std/double"
+    },
+    {
+      "name": "delta_total",
+      "type": "std/double"
+    },
+    {
+      "name": "projected_delta_total",
+      "type": "std/double"
+    },
+    {
+      "name": "additional_reserve",
+      "type": "std/double"
+    },
+    {
+      "name": "options_vega",
+      "type": "std/double"
+    },
+    {
+      "name": "system_name",
+      "type": "std/string_view"
+    },
+    {
+      "name": "username",
+      "type": "std/string_view"
+    },
+    {
+      "name": "projected_initial_margin",
+      "type": "std/double"
+    },
+    {
+      "name": "mandatory_tfa",
+      "type": "std/bool"
+    },
+    {
+      "name": "equity",
+      "type": "std/double"
+    },
+    {
+      "name": "margin_balance",
+      "type": "std/double"
+    },
+    {
+      "name": "portfolio_margining_enabled",
+      "type": "std/bool"
+    },
+    {
+      "name": "email",
+      "type": "std/string_view"
+    },
+    {
+      "name": "total_pl",
+      "type": "std/double"
+    },
+    {
+      "name": "margin_model",
+      "type": "std/string_view"
+    },
+    {
+      "name": "options_gamma_map"
+    },
+    {
+      "name": "interuser_transfers_enabled",
+      "type": "std/bool"
+    },
+    {
+      "name": "options_vega_map"
+    },
+    {
+      "name": "security_keys_enabled",
+      "type": "std/bool"
+    },
+    {
+      "name": "estimated_liquidation_ratio_map"
+    },
+    {
+      "name": "futures_session_rpl",
+      "type": "std/double"
+    },
+    {
+      "name": "locked_balance",
+      "type": "std/double"
+    },
+    {
+      "name": "options_pl",
+      "type": "std/double"
+    },
+    {
+      "name": "referrer_id",
+      "type": "std/int64"
+    },
+    {
+      "name": "options_theta",
+      "type": "std/double"
+    },
+    {
+      "name": "self_trading_extended_to_subaccounts",
+      "type": "std/bool"
+    },
+    {
+      "name": "options_gamma",
+      "type": "std/double"
+    },
+    {
+      "name": "options_session_rpl",
+      "type": "std/double"
+    },
+    {
+      "name": "options_theta_map"
+    },
+    {
+      "name": "futures_session_upl",
+      "type": "std/double"
+    },
+    {
+      "name": "estimated_liquidation_ratio",
+      "type": "std/double"
+    },
+    {
+      "name": "session_upl",
+      "type": "std/double"
+    },
+    {
+      "name": "available_funds",
+      "type": "std/double"
+    },
+    {
+      "name": "change_margin_model_api_limit"
+    },
+    {
+      "name": "cross_collateral_enabled",
+      "type": "std/bool"
+    },
+    {
+      "name": "delta_total_map"
+    },
+    {
+      "name": "options_session_upl",
+      "type": "std/double"
+    },
+    {
+      "name": "session_rpl",
+      "type": "std/double"
+    },
+    {
+      "name": "self_trading_reject_mode",
+      "type": "std/string_view"
+    },
+    {
+      "name": "block_rfq_self_match_prevention",
+      "type": "std/bool"
+    },
+    {
+      "name": "fee_balance",
+      "type": "std/double"
+    },
+    {
+      "name": "initial_margin",
+      "type": "std/double"
+    },
+    {
+      "name": "creation_timestamp",
+      "type": "std/milliseconds"
+    },
+    {
+      "name": "disable_kyc_verification",
+      "type": "std/bool"
+    },
+    {
+      "name": "receive_notifications",
+      "type": "std/bool"
+    },
+    {
+      "name": "trading_products_details"
+    },
+    {
+      "name": "deposit_address",
+      "type": "std/string_view"
+    },
+    {
+      "name": "total_delta_total_usd",
+      "type": "std/double"
+    },
+    {
+      "name": "total_equity_usd",
+      "type": "std/double"
+    },
+    {
+      "name": "total_margin_balance_usd",
+      "type": "std/double"
+    },
+    {
+      "name": "total_maintenance_margin_usd",
+      "type": "std/double"
+    },
+    {
+      "name": "total_initial_margin_usd",
+      "type": "std/double"
+    },
+    {
+      "name": "login_enabled",
+      "type": "std/bool"
+    },
+    {
+      "name": "fees"
+    },
+    {
+      "name": "fee_group",
+      "type": "std/string_view"
+    },
+    {
+      "name": "account_balance_review"
+    },
+    {
+      "name": "projected_close_out_margin",
+      "type": "std/double"
+    },
+    {
+      "name": "close_out_margin",
+      "type": "std/double"
+    },
+    {
+      "name": "is_direct_access_allowed",
+      "type": "std/bool"
+    }
+  ]
+}

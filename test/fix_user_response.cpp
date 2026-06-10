@@ -4,7 +4,7 @@
 
 #include "roq/fix/reader.hpp"
 
-#include "roq/deribit/fix/user_response.hpp"
+#include "roq/deribit/protocol/fix/user_response.hpp"
 
 using namespace roq;
 using namespace roq::deribit;
@@ -13,7 +13,7 @@ using namespace std::literals;
 
 using namespace Catch::literals;
 
-using UserResponse = deribit::fix::UserResponse;
+using UserResponse = deribit::protocol::fix::UserResponse;
 
 TEST_CASE("fix_user_response_parse_message", "[fix_user_response]") {
   auto const message =
@@ -25,11 +25,11 @@ TEST_CASE("fix_user_response_parse_message", "[fix_user_response]") {
   int results = 0;
   auto parser = [&](auto &message_2) {
     ++results;
-    CHECK(message_2.header.msg_type == roq::fix::MsgType::USER_RESPONSE);
+    CHECK(message_2.header.msg_type == fix::MsgType::USER_RESPONSE);
     auto user_response = UserResponse::create(message_2);
     CHECK(user_response.user_request_id == "123"sv);
     CHECK(user_response.username == "5MP40u9h"sv);
-    CHECK(user_response.user_status == roq::fix::UserStatus::LOGGED_IN);
+    CHECK(user_response.user_status == fix::UserStatus::LOGGED_IN);
     CHECK(user_response.currency == "BTC"sv);
     CHECK(user_response.deribit_user_equity == 10.0_a);
     CHECK(user_response.deribit_user_balance == 10.0_a);
@@ -40,7 +40,7 @@ TEST_CASE("fix_user_response_parse_message", "[fix_user_response]") {
     CHECK(user_response.deribit_user_total_pl == 0.0_a);
     CHECK(user_response.deribit_user_margin_balance == 10.0_a);
   };
-  auto bytes = roq::fix::Reader<roq::fix::Version::FIX_44>::dispatch(message, parser);
+  auto bytes = fix::Reader<fix::Version::FIX_44>::dispatch(message, parser);
   CHECK(bytes == std::size(message));
   CHECK(results == 1);
 }

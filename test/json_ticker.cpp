@@ -11,7 +11,7 @@ using namespace std::literals;
 
 using namespace Catch::literals;
 
-using value_type = json::Ticker;
+using value_type = protocol::json::Ticker;
 /*
 TEST_CASE("subscribe_ack", "[json_ticker]") {
   auto message = R"({)"
@@ -124,8 +124,8 @@ TEST_CASE("json_ticker_parse_message", "[json_ticker]") {
   for (auto [key, value] : std::get<core::json::Object>(root)) {
     if (key == "result"sv) {
       ++results;
-      json::Ticker ticker(value);
-      CHECK(ticker.state == json::State::OPEN);
+      protocol::json::Ticker ticker(value);
+      CHECK(ticker.state == protocol::json::State::OPEN);
       CHECK(ticker.settlement_price == 10053.92_a);
       CHECK(ticker.open_interest == 422565281_a);
       CHECK(ticker.min_price == 10346.94_a);

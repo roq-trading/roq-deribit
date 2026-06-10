@@ -4,14 +4,14 @@
 
 #include "roq/fix/reader.hpp"
 
-#include "roq/deribit/fix/logout.hpp"
+#include "roq/deribit/protocol/fix/logout.hpp"
 
 using namespace roq;
 using namespace roq::deribit;
 
 using namespace std::literals;
 
-using Logout = deribit::fix::Logout;
+using Logout = deribit::protocol::fix::Logout;
 
 namespace {
 auto const MESSAGE =
@@ -29,7 +29,7 @@ void BM_fix_logout_parse_message(benchmark::State &state) {
     }
   };
   for (auto _ : state) {
-    roq::fix::Reader<roq::fix::Version::FIX_44>::dispatch(MESSAGE, parser);
+    fix::Reader<fix::Version::FIX_44>::dispatch(MESSAGE, parser);
   }
 }
 

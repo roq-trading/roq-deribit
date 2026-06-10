@@ -16,7 +16,7 @@
 
 #include "roq/core/limit/rate_limiter.hpp"
 
-#include "roq/deribit/sbe/config.hpp"
+#include "roq/deribit/protocol/sbe/config.hpp"
 
 #include "roq/deribit/gateway/api.hpp"
 #include "roq/deribit/gateway/instrument.hpp"
@@ -133,7 +133,7 @@ struct Shared final {
 
   std::vector<std::byte> buffer;
 
-  sbe::Config const sbe_config;
+  protocol::sbe::Config const sbe_config;
 
   std::vector<TickSizeStep> tick_size_steps;
 

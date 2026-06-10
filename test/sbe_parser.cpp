@@ -2,9 +2,9 @@
 
 #include <catch2/catch_all.hpp>
 
-#include "roq/deribit/sbe/frame.hpp"
-#include "roq/deribit/sbe/parser.hpp"
-#include "roq/deribit/sbe/utils.hpp"
+#include "roq/deribit/protocol/sbe/frame.hpp"
+#include "roq/deribit/protocol/sbe/parser.hpp"
+#include "roq/deribit/protocol/sbe/utils.hpp"
 
 using namespace std::literals;
 
@@ -98,7 +98,7 @@ TEST_CASE("sbe_event_1", "[sbe_parser]") {
       "\x00\x00\x00\x00\x60\x54\xee\x40"     // price
       "\x00\x00\x00\x00\x00\xd0\x8b\x40"sv;  // amount
 
-  struct MyHandler : public sbe::Parser::Handler {
+  struct MyHandler : public protocol::sbe::Parser::Handler {
     void finished() const {
       CHECK(frame_count_ == 1);
       CHECK(trades_count_ == 1);
@@ -107,14 +107,14 @@ TEST_CASE("sbe_event_1", "[sbe_parser]") {
     }
 
    protected:
-    bool operator()(sbe::Frame const &frame) override {
+    bool operator()(protocol::sbe::Frame const &frame) override {
       ++frame_count_;
       CHECK(frame.channel_id == 1);
       CHECK(frame.sequence_number == 50728558);
       return true;
     }
-    void operator()(Trace<::deribit::sbe::multicast::Instrument> const &, sbe::Frame const &) override { FAIL(); }
-    void operator()(Trace<::deribit::sbe::multicast::Book> const &event, sbe::Frame const &frame) override {
+    void operator()(Trace<::deribit::sbe::multicast::Instrument> const &, protocol::sbe::Frame const &) override { FAIL(); }
+    void operator()(Trace<::deribit::sbe::multicast::Book> const &event, protocol::sbe::Frame const &frame) override {
       ++book_count_;
       CHECK(frame.channel_id == 1);
       CHECK(frame.sequence_number == 50728558);
@@ -139,7 +139,7 @@ TEST_CASE("sbe_event_1", "[sbe_parser]") {
       });
       CHECK(count == 1);
     }
-    void operator()(Trace<::deribit::sbe::multicast::Trades> const &event, sbe::Frame const &frame) override {
+    void operator()(Trace<::deribit::sbe::multicast::Trades> const &event, protocol::sbe::Frame const &frame) override {
       ++trades_count_;
       CHECK(frame.channel_id == 1);
       CHECK(frame.sequence_number == 50728558);
@@ -169,7 +169,7 @@ TEST_CASE("sbe_event_1", "[sbe_parser]") {
       });
       CHECK(count == 1);
     }
-    void operator()(Trace<::deribit::sbe::multicast::Ticker> const &event, sbe::Frame const &frame) override {
+    void operator()(Trace<::deribit::sbe::multicast::Ticker> const &event, protocol::sbe::Frame const &frame) override {
       ++ticker_count_;
       CHECK(frame.channel_id == 1);
       CHECK(frame.sequence_number == 50728558);
@@ -193,13 +193,13 @@ TEST_CASE("sbe_event_1", "[sbe_parser]") {
       CHECK(std::isnan(ticker.deliveryPrice()));
       CHECK(ticker.settlementPrice() == Catch::Approx{60618.83000000000174623});
     }
-    void operator()(Trace<::deribit::sbe::multicast::Snapshot> const &, sbe::Frame const &) override { FAIL(); }
-    void operator()(Trace<::deribit::sbe::multicast::SnapshotStart> const &, sbe::Frame const &) override { FAIL(); }
-    void operator()(Trace<::deribit::sbe::multicast::SnapshotEnd> const &, sbe::Frame const &) override { FAIL(); }
-    void operator()(Trace<::deribit::sbe::multicast::ComboLegs> const &, sbe::Frame const &) override { FAIL(); }
-    void operator()(Trace<::deribit::sbe::multicast::PriceIndex> const &, sbe::Frame const &) override { FAIL(); }
-    void operator()(Trace<::deribit::sbe::multicast::Rfq> const &, sbe::Frame const &) override { FAIL(); }
-    void operator()(Trace<::deribit::sbe::multicast::InstrumentV2> const &, sbe::Frame const &) override { FAIL(); }
+    void operator()(Trace<::deribit::sbe::multicast::Snapshot> const &, protocol::sbe::Frame const &) override { FAIL(); }
+    void operator()(Trace<::deribit::sbe::multicast::SnapshotStart> const &, protocol::sbe::Frame const &) override { FAIL(); }
+    void operator()(Trace<::deribit::sbe::multicast::SnapshotEnd> const &, protocol::sbe::Frame const &) override { FAIL(); }
+    void operator()(Trace<::deribit::sbe::multicast::ComboLegs> const &, protocol::sbe::Frame const &) override { FAIL(); }
+    void operator()(Trace<::deribit::sbe::multicast::PriceIndex> const &, protocol::sbe::Frame const &) override { FAIL(); }
+    void operator()(Trace<::deribit::sbe::multicast::Rfq> const &, protocol::sbe::Frame const &) override { FAIL(); }
+    void operator()(Trace<::deribit::sbe::multicast::InstrumentV2> const &, protocol::sbe::Frame const &) override { FAIL(); }
 
    private:
     size_t frame_count_ = {};
@@ -212,7 +212,7 @@ TEST_CASE("sbe_event_1", "[sbe_parser]") {
   std::span buffer{reinterpret_cast<std::byte const *>(std::data(message)), std::size(message)};
 
   TraceInfo trace_info;
-  auto result = sbe::Parser::dispatch(handler, buffer, trace_info);
+  auto result = protocol::sbe::Parser::dispatch(handler, buffer, trace_info);
   CHECK(result == true);
   handler.finished();
 }
@@ -399,7 +399,7 @@ TEST_CASE("sbe_snapshot_1", "[sbe_parser]") {
       "\x00\x00\x00\x00\x00\x90\x54\xee\x40\x00\x00\x00\x00\xc0\x49\xee\x40"
       "\x01\x00\x00\x00\x00\x20\x4c\xee\x40\x00\x00\x00\x00\x00\x4b\xce\x40"sv;
 
-  struct MyHandler : public sbe::Parser::Handler {
+  struct MyHandler : public protocol::sbe::Parser::Handler {
     void finished() const {
       CHECK(frame_count_ == 1);
       CHECK(instrument_count_ == 1);
@@ -409,13 +409,13 @@ TEST_CASE("sbe_snapshot_1", "[sbe_parser]") {
     }
 
    protected:
-    bool operator()(sbe::Frame const &frame) override {
+    bool operator()(protocol::sbe::Frame const &frame) override {
       ++frame_count_;
       CHECK(frame.channel_id == 101);
       CHECK(frame.sequence_number == 160178);
       return true;
     }
-    void operator()(Trace<::deribit::sbe::multicast::Instrument> const &event, sbe::Frame const &frame) override {
+    void operator()(Trace<::deribit::sbe::multicast::Instrument> const &event, protocol::sbe::Frame const &frame) override {
       ++instrument_count_;
       CHECK(frame.channel_id == 101);
       CHECK(frame.sequence_number == 160178);
@@ -445,11 +445,11 @@ TEST_CASE("sbe_snapshot_1", "[sbe_parser]") {
       CHECK(instrument.blockTradeCommission() == Catch::Approx{0.00025});
       CHECK(instrument.maxLiquidationCommission() == Catch::Approx{0.0075});
       CHECK(instrument.maxLeverage() == Catch::Approx{50.0});
-      CHECK(sbe::get_instrument_name(const_cast<value_type &>(instrument)) == "BTC-PERPETUAL"sv);
+      CHECK(protocol::sbe::get_instrument_name(const_cast<value_type &>(instrument)) == "BTC-PERPETUAL"sv);
     }
-    void operator()(Trace<::deribit::sbe::multicast::Book> const &, sbe::Frame const &) override { FAIL(); }
-    void operator()(Trace<::deribit::sbe::multicast::Trades> const &, sbe::Frame const &) override { FAIL(); }
-    void operator()(Trace<::deribit::sbe::multicast::Ticker> const &event, sbe::Frame const &frame) override {
+    void operator()(Trace<::deribit::sbe::multicast::Book> const &, protocol::sbe::Frame const &) override { FAIL(); }
+    void operator()(Trace<::deribit::sbe::multicast::Trades> const &, protocol::sbe::Frame const &) override { FAIL(); }
+    void operator()(Trace<::deribit::sbe::multicast::Ticker> const &event, protocol::sbe::Frame const &frame) override {
       ++ticker_count_;
       CHECK(frame.channel_id == 101);
       CHECK(frame.sequence_number == 160178);
@@ -473,7 +473,7 @@ TEST_CASE("sbe_snapshot_1", "[sbe_parser]") {
       CHECK(std::isnan(ticker.deliveryPrice()));
       CHECK(ticker.settlementPrice() == Catch::Approx{60618.83000000000174623});
     }
-    void operator()(Trace<::deribit::sbe::multicast::Snapshot> const &event, sbe::Frame const &frame) override {
+    void operator()(Trace<::deribit::sbe::multicast::Snapshot> const &event, protocol::sbe::Frame const &frame) override {
       ++snapshot_count_;
       CHECK(frame.channel_id == 101);
       CHECK(frame.sequence_number == 160178);
@@ -502,12 +502,12 @@ TEST_CASE("sbe_snapshot_1", "[sbe_parser]") {
       });
       CHECK(count == 54);
     }
-    void operator()(Trace<::deribit::sbe::multicast::SnapshotStart> const &, sbe::Frame const &) override { FAIL(); }
-    void operator()(Trace<::deribit::sbe::multicast::SnapshotEnd> const &, sbe::Frame const &) override { FAIL(); }
-    void operator()(Trace<::deribit::sbe::multicast::ComboLegs> const &, sbe::Frame const &) override { FAIL(); }
-    void operator()(Trace<::deribit::sbe::multicast::PriceIndex> const &, sbe::Frame const &) override { FAIL(); }
-    void operator()(Trace<::deribit::sbe::multicast::Rfq> const &, sbe::Frame const &) override { FAIL(); }
-    void operator()(Trace<::deribit::sbe::multicast::InstrumentV2> const &event, sbe::Frame const &frame) override {
+    void operator()(Trace<::deribit::sbe::multicast::SnapshotStart> const &, protocol::sbe::Frame const &) override { FAIL(); }
+    void operator()(Trace<::deribit::sbe::multicast::SnapshotEnd> const &, protocol::sbe::Frame const &) override { FAIL(); }
+    void operator()(Trace<::deribit::sbe::multicast::ComboLegs> const &, protocol::sbe::Frame const &) override { FAIL(); }
+    void operator()(Trace<::deribit::sbe::multicast::PriceIndex> const &, protocol::sbe::Frame const &) override { FAIL(); }
+    void operator()(Trace<::deribit::sbe::multicast::Rfq> const &, protocol::sbe::Frame const &) override { FAIL(); }
+    void operator()(Trace<::deribit::sbe::multicast::InstrumentV2> const &event, protocol::sbe::Frame const &frame) override {
       ++instrument_v2_count_;
       CHECK(frame.channel_id == 101);
       CHECK(frame.sequence_number == 160178);
@@ -540,7 +540,7 @@ TEST_CASE("sbe_snapshot_1", "[sbe_parser]") {
       const_cast<value_type &>(instrument).tickStepsList().forEach([&count]([[maybe_unused]] auto &item) { ++count; });
       CHECK(count == 0);
       CHECK(instrument.instrumentNameLength() == 13);
-      CHECK(sbe::get_instrument_name(const_cast<value_type &>(instrument)) == "BTC-PERPETUAL"sv);
+      CHECK(protocol::sbe::get_instrument_name(const_cast<value_type &>(instrument)) == "BTC-PERPETUAL"sv);
     }
 
    private:
@@ -555,7 +555,7 @@ TEST_CASE("sbe_snapshot_1", "[sbe_parser]") {
   std::span buffer{reinterpret_cast<std::byte const *>(std::data(message)), std::size(message)};
 
   TraceInfo trace_info;
-  auto result = sbe::Parser::dispatch(handler, buffer, trace_info);
+  auto result = protocol::sbe::Parser::dispatch(handler, buffer, trace_info);
   CHECK(result == true);
   handler.finished();
 }
@@ -718,7 +718,7 @@ TEST_CASE("sbe_snapshot_2", "[sbe_parser]") {
       "\x01\x00"
       "\x61\x68\x05\x00\x01\x01\x01\x01\x05\x01\x00\x42\x54\x43\x00\x00\x00\x00\x00\x42\x54\x43\x00\x00\x00\x00\x00\x55\x53\x44\x00\x00\x00\x00\x00\x42\x54\x43\x00\x00\x00\x00\x00\x42\x54\x43\x00\x00\x00\x00\x00\x00\x83\x62\x0f\x91\x01\x00\x00\x00\x80\xb0\xc2\x92\x01\x00\x00\x00\x00\x00\x00\x00\xd5\xeb\x40\x00\x00\x00\x00\x00\x00\xf0\x3f\x9a\x99\x99\x99\x99\x99\xb9\x3f\x2d\x43\x1c\xeb\xe2\x36\x1a\x3f\x61\x32\x55\x30\x2a\xa9\x33\x3f\x61\x32\x55\x30\x2a\xa9\x33\x3f\x61\x32\x55\x30\x2a\xa9\x33\x3f\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\x10\x00\x01\x00\x00\x00\x00\x00\x7b\x14\xae\x47\xe1\x7a\x74\x3f\xfc\xa9\xf1\xd2\x4d\x62\x40\x3f\x13\x42\x54\x43\x2d\x32\x35\x4f\x43\x54\x32\x34\x2d\x35\x37\x30\x30\x30\x2d\x43"sv;
 
-  struct MyHandler : public sbe::Parser::Handler {
+  struct MyHandler : public protocol::sbe::Parser::Handler {
     void finished() const {
       CHECK(frame_count_ == 1);
       CHECK(instrument_count_ == 2);
@@ -728,13 +728,13 @@ TEST_CASE("sbe_snapshot_2", "[sbe_parser]") {
     }
 
    protected:
-    bool operator()(sbe::Frame const &frame) override {
+    bool operator()(protocol::sbe::Frame const &frame) override {
       ++frame_count_;
       CHECK(frame.channel_id == 102);
       CHECK(frame.sequence_number == 9329202);
       return true;
     }
-    void operator()(Trace<::deribit::sbe::multicast::Instrument> const &event, sbe::Frame const &frame) override {
+    void operator()(Trace<::deribit::sbe::multicast::Instrument> const &event, protocol::sbe::Frame const &frame) override {
       CHECK(frame.channel_id == 102);
       CHECK(frame.sequence_number == 9329202);
       auto &[trace_info, instrument] = event;
@@ -765,7 +765,7 @@ TEST_CASE("sbe_snapshot_2", "[sbe_parser]") {
           CHECK(std::isnan(instrument.maxLiquidationCommission()));
           CHECK(std::isnan(instrument.maxLeverage()));
           CHECK(instrument.instrumentNameLength() == 19);
-          CHECK(sbe::get_instrument_name(const_cast<value_type &>(instrument)) == "BTC-25OCT24-47000-P"sv);
+          CHECK(protocol::sbe::get_instrument_name(const_cast<value_type &>(instrument)) == "BTC-25OCT24-47000-P"sv);
           break;
         }
         case 2: {
@@ -793,16 +793,16 @@ TEST_CASE("sbe_snapshot_2", "[sbe_parser]") {
           CHECK(std::isnan(instrument.maxLiquidationCommission()));
           CHECK(std::isnan(instrument.maxLeverage()));
           CHECK(instrument.instrumentNameLength() == 19);
-          CHECK(sbe::get_instrument_name(const_cast<value_type &>(instrument)) == "BTC-27DEC24-15000-C"sv);
+          CHECK(protocol::sbe::get_instrument_name(const_cast<value_type &>(instrument)) == "BTC-27DEC24-15000-C"sv);
           break;
         }
         default:
           FAIL();
       }
     }
-    void operator()(Trace<::deribit::sbe::multicast::Book> const &, sbe::Frame const &) override { FAIL(); }
-    void operator()(Trace<::deribit::sbe::multicast::Trades> const &, sbe::Frame const &) override { FAIL(); }
-    void operator()(Trace<::deribit::sbe::multicast::Ticker> const &event, sbe::Frame const &frame) override {
+    void operator()(Trace<::deribit::sbe::multicast::Book> const &, protocol::sbe::Frame const &) override { FAIL(); }
+    void operator()(Trace<::deribit::sbe::multicast::Trades> const &, protocol::sbe::Frame const &) override { FAIL(); }
+    void operator()(Trace<::deribit::sbe::multicast::Ticker> const &event, protocol::sbe::Frame const &frame) override {
       CHECK(frame.channel_id == 102);
       CHECK(frame.sequence_number == 9329202);
       auto &[trace_info, ticker] = event;
@@ -853,7 +853,7 @@ TEST_CASE("sbe_snapshot_2", "[sbe_parser]") {
           FAIL();
       }
     }
-    void operator()(Trace<::deribit::sbe::multicast::Snapshot> const &event, sbe::Frame const &frame) override {
+    void operator()(Trace<::deribit::sbe::multicast::Snapshot> const &event, protocol::sbe::Frame const &frame) override {
       CHECK(frame.channel_id == 102);
       CHECK(frame.sequence_number == 9329202);
       auto &[trace_info, snapshot] = event;
@@ -908,12 +908,12 @@ TEST_CASE("sbe_snapshot_2", "[sbe_parser]") {
           FAIL();
       }
     }
-    void operator()(Trace<::deribit::sbe::multicast::SnapshotStart> const &, sbe::Frame const &) override { FAIL(); }
-    void operator()(Trace<::deribit::sbe::multicast::SnapshotEnd> const &, sbe::Frame const &) override { FAIL(); }
-    void operator()(Trace<::deribit::sbe::multicast::ComboLegs> const &, sbe::Frame const &) override { FAIL(); }
-    void operator()(Trace<::deribit::sbe::multicast::PriceIndex> const &, sbe::Frame const &) override { FAIL(); }
-    void operator()(Trace<::deribit::sbe::multicast::Rfq> const &, sbe::Frame const &) override { FAIL(); }
-    void operator()(Trace<::deribit::sbe::multicast::InstrumentV2> const &event, sbe::Frame const &frame) override {
+    void operator()(Trace<::deribit::sbe::multicast::SnapshotStart> const &, protocol::sbe::Frame const &) override { FAIL(); }
+    void operator()(Trace<::deribit::sbe::multicast::SnapshotEnd> const &, protocol::sbe::Frame const &) override { FAIL(); }
+    void operator()(Trace<::deribit::sbe::multicast::ComboLegs> const &, protocol::sbe::Frame const &) override { FAIL(); }
+    void operator()(Trace<::deribit::sbe::multicast::PriceIndex> const &, protocol::sbe::Frame const &) override { FAIL(); }
+    void operator()(Trace<::deribit::sbe::multicast::Rfq> const &, protocol::sbe::Frame const &) override { FAIL(); }
+    void operator()(Trace<::deribit::sbe::multicast::InstrumentV2> const &event, protocol::sbe::Frame const &frame) override {
       CHECK(frame.channel_id == 102);
       CHECK(frame.sequence_number == 9329202);
       auto &[trace_info, instrument] = event;
@@ -954,7 +954,7 @@ TEST_CASE("sbe_snapshot_2", "[sbe_parser]") {
           });
           CHECK(count == 1);
           CHECK(instrument.instrumentNameLength() == 19);
-          CHECK(sbe::get_instrument_name(const_cast<value_type &>(instrument)) == "BTC-25OCT24-47000-P"sv);
+          CHECK(protocol::sbe::get_instrument_name(const_cast<value_type &>(instrument)) == "BTC-25OCT24-47000-P"sv);
           break;
         }
         case 2: {
@@ -992,7 +992,7 @@ TEST_CASE("sbe_snapshot_2", "[sbe_parser]") {
           });
           CHECK(count == 1);
           CHECK(instrument.instrumentNameLength() == 19);
-          CHECK(sbe::get_instrument_name(const_cast<value_type &>(instrument)) == "BTC-27DEC24-15000-C"sv);
+          CHECK(protocol::sbe::get_instrument_name(const_cast<value_type &>(instrument)) == "BTC-27DEC24-15000-C"sv);
           break;
         }
         case 3: {
@@ -1030,7 +1030,7 @@ TEST_CASE("sbe_snapshot_2", "[sbe_parser]") {
           });
           CHECK(count == 1);
           CHECK(instrument.instrumentNameLength() == 19);
-          CHECK(sbe::get_instrument_name(const_cast<value_type &>(instrument)) == "BTC-25OCT24-57000-C"sv);
+          CHECK(protocol::sbe::get_instrument_name(const_cast<value_type &>(instrument)) == "BTC-25OCT24-57000-C"sv);
           break;
         }
         default:
@@ -1050,7 +1050,7 @@ TEST_CASE("sbe_snapshot_2", "[sbe_parser]") {
   std::span buffer{reinterpret_cast<std::byte const *>(std::data(message)), std::size(message)};
 
   TraceInfo trace_info;
-  auto result = sbe::Parser::dispatch(handler, buffer, trace_info);
+  auto result = protocol::sbe::Parser::dispatch(handler, buffer, trace_info);
   CHECK(result == true);
   handler.finished();
 }

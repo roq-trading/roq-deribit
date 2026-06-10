@@ -1,0 +1,14 @@
+{
+  "name": "roq/deribit/protocol/json/TickSizeStep",
+  "type": "dictionary",
+  "values": [
+    {
+      "name": "above_price",
+      "type": "std/double"
+    },
+    {
+      "name": "tick_size",
+      "type": "std/double"
+    }
+  ]
+}

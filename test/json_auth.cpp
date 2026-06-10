@@ -11,7 +11,7 @@ using namespace std::literals;
 
 using namespace Catch::literals;
 
-using value_type = json::Auth;
+using value_type = protocol::json::Auth;
 
 TEST_CASE("simple", "[json_auth]") {
   auto message =

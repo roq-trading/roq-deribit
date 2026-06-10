@@ -29,13 +29,13 @@
 #include "roq/deribit/gateway/request.hpp"
 #include "roq/deribit/gateway/shared.hpp"
 
-#include "roq/deribit/json/parser.hpp"
+#include "roq/deribit/protocol/json/parser.hpp"
 
 namespace roq {
 namespace deribit {
 namespace gateway {
 
-struct WebSocket final : public web::socket::Client::Handler, public json::Parser::Handler {
+struct WebSocket final : public web::socket::Client::Handler, public protocol::json::Parser::Handler {
   struct Latch final {};
 
   struct Handler {
@@ -105,24 +105,24 @@ struct WebSocket final : public web::socket::Client::Handler, public json::Parse
 
   void parse(std::string_view const &message);
 
-  // json::Parser::Handler
+  // protocol::json::Parser::Handler
 
-  void operator()(Trace<json::Auth> const &) override;
-  void operator()(Trace<json::SubscribeAck> const &) override;
+  void operator()(Trace<protocol::json::Auth> const &) override;
+  void operator()(Trace<protocol::json::SubscribeAck> const &) override;
   // public:
-  void operator()(Trace<json::PlatformState> const &) override;
-  void operator()(Trace<json::InstrumentState> const &) override;
-  void operator()(Trace<json::Quote> const &) override;
-  void operator()(Trace<json::Ticker> const &) override;
-  void operator()(Trace<json::ChartTrades> const &, std::string_view const &symbol, uint32_t interval) override;
+  void operator()(Trace<protocol::json::PlatformState> const &) override;
+  void operator()(Trace<protocol::json::InstrumentState> const &) override;
+  void operator()(Trace<protocol::json::Quote> const &) override;
+  void operator()(Trace<protocol::json::Ticker> const &) override;
+  void operator()(Trace<protocol::json::ChartTrades> const &, std::string_view const &symbol, uint32_t interval) override;
   // private:
-  void operator()(Trace<json::UserPortfolio> const &) override;
-  void operator()(Trace<json::UserChanges> const &) override;
-  void operator()(Trace<json::UserOrders> const &) override;
-  void operator()(Trace<json::UserTrades> const &) override;
+  void operator()(Trace<protocol::json::UserPortfolio> const &) override;
+  void operator()(Trace<protocol::json::UserChanges> const &) override;
+  void operator()(Trace<protocol::json::UserOrders> const &) override;
+  void operator()(Trace<protocol::json::UserTrades> const &) override;
 
-  void operator()(Trace<json::GetAccountSummaryAck> const &) override;
-  void operator()(Trace<json::GetUserTradesByCurrencyAck> const &) override;
+  void operator()(Trace<protocol::json::GetAccountSummaryAck> const &) override;
+  void operator()(Trace<protocol::json::GetUserTradesByCurrencyAck> const &) override;
 
   template <typename C>
   bool get_top_of_book(std::string_view const &symbol, C callback) {

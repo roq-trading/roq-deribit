@@ -4,14 +4,14 @@
 
 #include "roq/fix/reader.hpp"
 
-#include "roq/deribit/fix/user_response.hpp"
+#include "roq/deribit/protocol/fix/user_response.hpp"
 
 using namespace roq;
 using namespace roq::deribit;
 
 using namespace std::literals;
 
-using UserResponse = deribit::fix::UserResponse;
+using UserResponse = deribit::protocol::fix::UserResponse;
 
 namespace {
 auto const MESSAGE =
@@ -31,7 +31,7 @@ void BM_fix_user_response_parse_message(benchmark::State &state) {
     }
   };
   for (auto _ : state) {
-    roq::fix::Reader<roq::fix::Version::FIX_44>::dispatch(MESSAGE, parser);
+    fix::Reader<fix::Version::FIX_44>::dispatch(MESSAGE, parser);
   }
 }
 

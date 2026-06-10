@@ -4,7 +4,7 @@
 
 #include "roq/fix/reader.hpp"
 
-#include "roq/deribit/fix/reject.hpp"
+#include "roq/deribit/protocol/fix/reject.hpp"
 
 using namespace roq;
 using namespace roq::deribit;
@@ -13,7 +13,7 @@ using namespace std::literals;
 
 using namespace Catch::literals;
 
-using Reject = deribit::fix::Reject;
+using Reject = deribit::protocol::fix::Reject;
 
 TEST_CASE("fix_reject_parse_message", "[fix_reject]") {
   auto const message =
@@ -23,13 +23,13 @@ TEST_CASE("fix_reject_parse_message", "[fix_reject]") {
   int results = 0;
   auto parser = [&](auto &message_2) {
     ++results;
-    CHECK(message_2.header.msg_type == roq::fix::MsgType::REJECT);
+    CHECK(message_2.header.msg_type == fix::MsgType::REJECT);
     auto reject = Reject::create(message_2);
     CHECK(reject.ref_seq_num == uint64_t{5});
-    CHECK(reject.ref_msg_type == roq::fix::MsgType::REQUEST_FOR_POSITIONS);
+    CHECK(reject.ref_msg_type == fix::MsgType::REQUEST_FOR_POSITIONS);
     CHECK(reject.text == "not_implemented"sv);
   };
-  auto bytes = roq::fix::Reader<roq::fix::Version::FIX_44>::dispatch(message, parser);
+  auto bytes = fix::Reader<fix::Version::FIX_44>::dispatch(message, parser);
   CHECK(bytes == std::size(message));
   CHECK(results == 1);
 }

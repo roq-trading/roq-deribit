@@ -19,7 +19,7 @@
 
 #include "roq/deribit/gateway/utils.hpp"
 
-#include "roq/deribit/json/error.hpp"
+#include "roq/deribit/protocol/json/error.hpp"
 
 using namespace std::literals;
 
@@ -82,14 +82,14 @@ struct create_metrics final : public utils::metrics::Factory {
 
 auto to_security_type(auto kind, [[maybe_unused]] auto instrument_type, auto settlement_period) -> SecurityType {
   switch (kind) {
-    using enum json::Kind::type_t;
+    using enum protocol::json::Kind::type_t;
     case UNDEFINED_INTERNAL:
     case UNKNOWN_INTERNAL:
       return {};
     case FUTURE:
       /*
       switch (instrument_type) {
-        using enum json::InstrumentType::type_t;
+        using enum protocol::json::InstrumentType::type_t;
         case UNDEFINED_INTERNAL:
         case UNKNOWN_INTERNAL:
           return SecurityType::FUTURES;
@@ -99,7 +99,7 @@ auto to_security_type(auto kind, [[maybe_unused]] auto instrument_type, auto set
       }
       */
       switch (settlement_period) {
-        using enum json::SettlementPeriod::type_t;
+        using enum protocol::json::SettlementPeriod::type_t;
         case UNDEFINED_INTERNAL:
         case UNKNOWN_INTERNAL:
           return SecurityType::FUTURES;
@@ -126,7 +126,7 @@ auto to_security_type(auto kind, [[maybe_unused]] auto instrument_type, auto set
 
 auto to_option_type(auto option_type) -> OptionType {
   switch (option_type) {
-    using enum json::OptionType::type_t;
+    using enum protocol::json::OptionType::type_t;
     case UNDEFINED_INTERNAL:
     case UNKNOWN_INTERNAL:
       return {};
@@ -286,7 +286,7 @@ void Rest::get_currencies_ack(Trace<web::rest::Response> const &event) {
       log::warn("Currencies download has FAILED"sv);
     };
     auto handle_success = [&](auto &body) {
-      json::GetCurrenciesAck currencies_ack{body, decode_buffer_};
+      protocol::json::GetCurrenciesAck currencies_ack{body, decode_buffer_};
       if (currencies_ack.error.code == 0) {
         Trace event_2{event, currencies_ack};
         (*this)(event_2);
@@ -301,7 +301,7 @@ void Rest::get_currencies_ack(Trace<web::rest::Response> const &event) {
   });
 }
 
-void Rest::operator()(Trace<json::GetCurrenciesAck> const &event) {
+void Rest::operator()(Trace<protocol::json::GetCurrenciesAck> const &event) {
   auto &[trace_info, currencies_ack] = event;
   log::info<2>("currencies_ack={}"sv, currencies_ack);
   std::vector<std::string> currencies;
@@ -350,7 +350,7 @@ void Rest::get_instruments_ack(Trace<web::rest::Response> const &event) {
       log::warn("Instruments download has FAILED"sv);
     };
     auto handle_success = [&](auto &body) {
-      json::GetInstrumentsAck instruments_ack{body, decode_buffer_};
+      protocol::json::GetInstrumentsAck instruments_ack{body, decode_buffer_};
       if (instruments_ack.error.code == 0) {
         Trace event_2{event, instruments_ack};
         (*this)(event_2);
@@ -365,7 +365,7 @@ void Rest::get_instruments_ack(Trace<web::rest::Response> const &event) {
   });
 }
 
-void Rest::operator()(Trace<json::GetInstrumentsAck> const &event) {
+void Rest::operator()(Trace<protocol::json::GetInstrumentsAck> const &event) {
   auto &[trace_info, instruments_ack] = event;
   log::info<2>("instruments_ack={}"sv, instruments_ack);
   std::vector<Symbol> symbols;
@@ -498,7 +498,7 @@ void Rest::get_chart_data_ack(Trace<web::rest::Response> const &event, std::stri
       log::warn("Chart-data download has FAILED"sv);
     };
     auto handle_success = [&](auto &body) {
-      json::GetChartDataAck chart_data_ack{body, decode_buffer_};
+      protocol::json::GetChartDataAck chart_data_ack{body, decode_buffer_};
       if (chart_data_ack.error.code == 0) {
         Trace event_2{trace_info, chart_data_ack};
         (*this)(event_2, symbol);
@@ -510,7 +510,7 @@ void Rest::get_chart_data_ack(Trace<web::rest::Response> const &event, std::stri
   });
 }
 
-void Rest::operator()(Trace<json::GetChartDataAck> const &event, std::string_view const &symbol) {
+void Rest::operator()(Trace<protocol::json::GetChartDataAck> const &event, std::string_view const &symbol) {
   auto &[trace_info, chart_data_ack] = event;
   log::info<2>(R"(chart_data_ack={}, symbol="{}")"sv, chart_data_ack, symbol);
   auto &result = chart_data_ack.result;

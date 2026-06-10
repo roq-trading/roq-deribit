@@ -14,8 +14,8 @@
 
 #include "roq/deribit/gateway/utils.hpp"
 
-#include "roq/deribit/sbe/map.hpp"
-#include "roq/deribit/sbe/utils.hpp"
+#include "roq/deribit/protocol/sbe/map.hpp"
+#include "roq/deribit/protocol/sbe/utils.hpp"
 
 using namespace std::literals;
 
@@ -115,7 +115,7 @@ void UDPSnapshot::operator()(io::net::udp::Receiver::Read const &) {
     log::info<5>("Received {} byte(s)"sv, bytes);
     std::span payload{std::data(shared_.buffer), bytes};
     log::info<5>("{}"sv, utils::debug::hex::Message{payload});
-    if (!sbe::Parser::dispatch(*this, payload, trace_info)) {
+    if (!protocol::sbe::Parser::dispatch(*this, payload, trace_info)) {
       // note! here is an option to use the re-order buffer -- but it's not A+B, so why bother?
     }
   }
@@ -125,7 +125,7 @@ void UDPSnapshot::operator()(io::net::udp::Receiver::Error const &error) {
   log::fatal("Error: what={}"sv, error.what);
 }
 
-bool UDPSnapshot::operator()(sbe::Frame const &frame) {
+bool UDPSnapshot::operator()(protocol::sbe::Frame const &frame) {
   auto result = false;
   auto callback = [&](auto &channel) {
     result = channel(frame);
@@ -137,7 +137,7 @@ bool UDPSnapshot::operator()(sbe::Frame const &frame) {
   return result;
 }
 
-void UDPSnapshot::operator()(Trace<::deribit::sbe::multicast::Instrument> const &event, sbe::Frame const &frame) {
+void UDPSnapshot::operator()(Trace<::deribit::sbe::multicast::Instrument> const &event, protocol::sbe::Frame const &frame) {
   using value_type = std::remove_cvref_t<decltype(event)>::value_type;
   auto &instrument = const_cast<value_type &>(event.value);
   log::info<2>("instrument={}, frame={}"sv, instrument, frame);
@@ -145,7 +145,7 @@ void UDPSnapshot::operator()(Trace<::deribit::sbe::multicast::Instrument> const 
   auto callback = [&]() -> Instrument {
     auto contract_size = instrument.contractSize();
     auto multiplier = compute_contracts_multiplier(contract_size);
-    auto symbol = sbe::get_instrument_name(instrument);  // note! must be **LAST***
+    auto symbol = protocol::sbe::get_instrument_name(instrument);  // note! must be **LAST***
     auto discard = shared_.discard_symbol(symbol);
     if (!discard) {
       log::debug(R"(CREATE instrument_id={}, instrument_name="{}", contract_size={}, multiplier={})"sv, instrument_id, symbol, contract_size, multiplier);
@@ -160,21 +160,21 @@ void UDPSnapshot::operator()(Trace<::deribit::sbe::multicast::Instrument> const 
   shared_.maybe_create_instrument(instrument_id, callback);
 }
 
-void UDPSnapshot::operator()(Trace<::deribit::sbe::multicast::Book> const &, sbe::Frame const &) {
+void UDPSnapshot::operator()(Trace<::deribit::sbe::multicast::Book> const &, protocol::sbe::Frame const &) {
   log::fatal("Unexpected"sv);
 }
 
-void UDPSnapshot::operator()(Trace<::deribit::sbe::multicast::Trades> const &, sbe::Frame const &) {
+void UDPSnapshot::operator()(Trace<::deribit::sbe::multicast::Trades> const &, protocol::sbe::Frame const &) {
   log::fatal("Unexpected"sv);
 }
 
-void UDPSnapshot::operator()(Trace<::deribit::sbe::multicast::Ticker> const &event, sbe::Frame const &frame) {
+void UDPSnapshot::operator()(Trace<::deribit::sbe::multicast::Ticker> const &event, protocol::sbe::Frame const &frame) {
   using value_type = std::remove_cvref_t<decltype(event)>::value_type;
   auto &ticker = const_cast<value_type &>(event.value);
   log::info<4>("ticker={}, frame={}"sv, ticker, frame);
 }
 
-void UDPSnapshot::operator()(Trace<::deribit::sbe::multicast::Snapshot> const &event, sbe::Frame const &frame) {
+void UDPSnapshot::operator()(Trace<::deribit::sbe::multicast::Snapshot> const &event, protocol::sbe::Frame const &frame) {
   auto &trace_info = event.trace_info;
   using value_type = std::remove_cvref_t<decltype(event)>::value_type;
   auto &snapshot = const_cast<value_type &>(event.value);
@@ -282,29 +282,29 @@ void UDPSnapshot::operator()(Trace<::deribit::sbe::multicast::Snapshot> const &e
   get_channel(frame, callback);
 }
 
-void UDPSnapshot::operator()(Trace<::deribit::sbe::multicast::SnapshotStart> const &, sbe::Frame const &frame) {
+void UDPSnapshot::operator()(Trace<::deribit::sbe::multicast::SnapshotStart> const &, protocol::sbe::Frame const &frame) {
   auto callback = [&](auto &channel) { channel.snapshot_start(frame); };
   get_channel(frame, callback);
 }
 
-void UDPSnapshot::operator()(Trace<::deribit::sbe::multicast::SnapshotEnd> const &, sbe::Frame const &frame) {
+void UDPSnapshot::operator()(Trace<::deribit::sbe::multicast::SnapshotEnd> const &, protocol::sbe::Frame const &frame) {
   auto callback = [&](auto &channel) { channel.snapshot_end(frame); };
   get_channel(frame, callback);
 }
 
-void UDPSnapshot::operator()(Trace<::deribit::sbe::multicast::ComboLegs> const &, sbe::Frame const &) {
+void UDPSnapshot::operator()(Trace<::deribit::sbe::multicast::ComboLegs> const &, protocol::sbe::Frame const &) {
   log::fatal("Unexpected"sv);
 }
 
-void UDPSnapshot::operator()(Trace<::deribit::sbe::multicast::PriceIndex> const &, sbe::Frame const &) {
+void UDPSnapshot::operator()(Trace<::deribit::sbe::multicast::PriceIndex> const &, protocol::sbe::Frame const &) {
   log::fatal("Unexpected"sv);
 }
 
-void UDPSnapshot::operator()(Trace<::deribit::sbe::multicast::Rfq> const &, sbe::Frame const &) {
+void UDPSnapshot::operator()(Trace<::deribit::sbe::multicast::Rfq> const &, protocol::sbe::Frame const &) {
   log::fatal("Unexpected"sv);
 }
 
-void UDPSnapshot::operator()(Trace<::deribit::sbe::multicast::InstrumentV2> const &, sbe::Frame const &) {
+void UDPSnapshot::operator()(Trace<::deribit::sbe::multicast::InstrumentV2> const &, protocol::sbe::Frame const &) {
   // XXX FIXME can't make get_instrument_name() to work...
 }
 
@@ -336,7 +336,7 @@ void UDPSnapshot::publish_stream_status(TraceInfo const &trace_info, ConnectionS
 }
 
 template <typename Callback>
-void UDPSnapshot::get_channel(sbe::Frame const &frame, Callback callback) {
+void UDPSnapshot::get_channel(protocol::sbe::Frame const &frame, Callback callback) {
   auto iter = channel_.find(frame.channel_id);
   if (iter == std::end(channel_)) {
     iter = channel_.try_emplace(frame.channel_id).first;

@@ -11,7 +11,7 @@ using namespace std::literals;
 
 using namespace Catch::literals;
 
-using value_type = json::UserTrades;
+using value_type = protocol::json::UserTrades;
 
 TEST_CASE("simple", "[json_user_trades]") {
   auto message = R"({)"

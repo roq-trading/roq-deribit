@@ -1,0 +1,12 @@
+{
+  "name": "roq/deribit/protocol/json/OptionType",
+  "type": "enum",
+  "values": [
+    {
+      "name": "call"
+    },
+    {
+      "name": "put"
+    }
+  ]
+}

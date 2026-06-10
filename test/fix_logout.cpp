@@ -4,7 +4,7 @@
 
 #include "roq/fix/reader.hpp"
 
-#include "roq/deribit/fix/logout.hpp"
+#include "roq/deribit/protocol/fix/logout.hpp"
 
 using namespace roq;
 using namespace roq::deribit;
@@ -13,7 +13,7 @@ using namespace std::literals;
 
 using namespace Catch::literals;
 
-using Logout = deribit::fix::Logout;
+using Logout = deribit::protocol::fix::Logout;
 
 TEST_CASE("fix_logout_parse_message", "[fix_logout]") {
   auto const message =
@@ -23,11 +23,11 @@ TEST_CASE("fix_logout_parse_message", "[fix_logout]") {
   int results = 0;
   auto parser = [&](auto &message_2) {
     ++results;
-    CHECK(message_2.header.msg_type == roq::fix::MsgType::LOGOUT);
+    CHECK(message_2.header.msg_type == fix::MsgType::LOGOUT);
     auto logout = Logout::create(message_2);
     CHECK(logout.text == "invalid_credentials");
   };
-  auto bytes = roq::fix::Reader<roq::fix::Version::FIX_44>::dispatch(message, parser);
+  auto bytes = fix::Reader<fix::Version::FIX_44>::dispatch(message, parser);
   CHECK(bytes == std::size(message));
   CHECK(results == 1);
 }

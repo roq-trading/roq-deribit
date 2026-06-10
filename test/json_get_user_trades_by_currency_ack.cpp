@@ -11,7 +11,7 @@ using namespace std::literals;
 
 using namespace Catch::literals;
 
-using value_type = json::GetUserTradesByCurrencyAck;
+using value_type = protocol::json::GetUserTradesByCurrencyAck;
 
 TEST_CASE("failure", "[json_get_user_trades_by_currency_ack]") {
   auto message = R"({)"

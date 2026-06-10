@@ -4,14 +4,14 @@
 
 #include "roq/fix/reader.hpp"
 
-#include "roq/deribit/fix/security_list.hpp"
+#include "roq/deribit/protocol/fix/security_list.hpp"
 
 using namespace roq;
 using namespace roq::deribit;
 
 using namespace std::literals;
 
-using SecurityList = deribit::fix::SecurityList;
+using SecurityList = deribit::protocol::fix::SecurityList;
 
 namespace {
 auto const MESSAGE =
@@ -1239,7 +1239,7 @@ void BM_fix_security_list_parse_message(benchmark::State &state) {
     }
   };
   for (auto _ : state) {
-    roq::fix::Reader<roq::fix::Version::FIX_44>::dispatch(MESSAGE, parser);
+    fix::Reader<fix::Version::FIX_44>::dispatch(MESSAGE, parser);
   }
 }
 

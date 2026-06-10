@@ -4,7 +4,7 @@
 
 #include "roq/fix/reader.hpp"
 
-#include "roq/deribit/fix/market_data_request_reject.hpp"
+#include "roq/deribit/protocol/fix/market_data_request_reject.hpp"
 
 using namespace roq;
 using namespace roq::deribit;
@@ -13,7 +13,7 @@ using namespace std::literals;
 
 using namespace Catch::literals;
 
-using MarketDataRequestReject = deribit::fix::MarketDataRequestReject;
+using MarketDataRequestReject = deribit::protocol::fix::MarketDataRequestReject;
 
 TEST_CASE("fix_market_data_request_reject_parse_message", "[fix_market_data_request_reject]") {
   auto const message =
@@ -23,13 +23,13 @@ TEST_CASE("fix_market_data_request_reject_parse_message", "[fix_market_data_requ
   int results = 0;
   auto parser = [&](auto &message_2) {
     ++results;
-    CHECK(message_2.header.msg_type == roq::fix::MsgType::MARKET_DATA_REQUEST_REJECT);
+    CHECK(message_2.header.msg_type == fix::MsgType::MARKET_DATA_REQUEST_REJECT);
     auto reject = MarketDataRequestReject::create(message_2);
     CHECK(reject.md_req_id == "123"sv);
-    CHECK(reject.md_req_rej_reason == roq::fix::MDReqRejReason::UNDEFINED);
+    CHECK(reject.md_req_rej_reason == fix::MDReqRejReason::UNDEFINED);
     CHECK(reject.text == "unknown Symbol: BTC-XXX"sv);
   };
-  auto bytes = roq::fix::Reader<roq::fix::Version::FIX_44>::dispatch(message, parser);
+  auto bytes = fix::Reader<fix::Version::FIX_44>::dispatch(message, parser);
   CHECK(bytes == std::size(message));
   CHECK(results == 1);
 }

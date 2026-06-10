@@ -1,0 +1,14 @@
+{
+  "name": "roq/deribit/protocol/json/Liquidity",
+  "type": "enum",
+  "values": [
+    {
+      "raw": "M",
+      "name": "maker"
+    },
+    {
+      "raw": "T",
+      "name": "taker"
+    }
+  ]
+}

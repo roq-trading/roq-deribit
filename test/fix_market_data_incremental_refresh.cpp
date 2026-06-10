@@ -4,7 +4,7 @@
 
 #include "roq/fix/reader.hpp"
 
-#include "roq/deribit/fix/market_data_incremental_refresh.hpp"
+#include "roq/deribit/protocol/fix/market_data_incremental_refresh.hpp"
 
 using namespace roq;
 using namespace roq::deribit;
@@ -14,7 +14,7 @@ using namespace std::chrono_literals;
 
 using namespace Catch::literals;
 
-using MarketDataIncrementalRefresh = deribit::fix::MarketDataIncrementalRefresh;
+using MarketDataIncrementalRefresh = deribit::protocol::fix::MarketDataIncrementalRefresh;
 
 TEST_CASE("fix_market_data_incremental_refresh_parse_message_1", "fix_market_data_incremental_refresh") {
   auto const message =
@@ -27,7 +27,7 @@ TEST_CASE("fix_market_data_incremental_refresh_parse_message_1", "fix_market_dat
   int results = 0;
   auto parser = [&](auto &message_2) {
     ++results;
-    CHECK(message_2.header.msg_type == roq::fix::MsgType::MARKET_DATA_INCREMENTAL_REFRESH);
+    CHECK(message_2.header.msg_type == fix::MsgType::MARKET_DATA_INCREMENTAL_REFRESH);
     auto result = MarketDataIncrementalRefresh::create(message_2, buffer);
     CHECK(result.symbol == "BTC-27SEP19"sv);
     CHECK(result.trade_volume24h == 10831047.0_a);
@@ -37,13 +37,13 @@ TEST_CASE("fix_market_data_incremental_refresh_parse_message_1", "fix_market_dat
     CHECK(std::size(result.no_md_entries) == size_t{1});
     // item 0
     auto &item_0 = result.no_md_entries[0];
-    CHECK(item_0.md_update_action == roq::fix::MDUpdateAction::NEW);
-    CHECK(item_0.md_entry_type == roq::fix::MDEntryType::OFFER);
+    CHECK(item_0.md_update_action == fix::MDUpdateAction::NEW);
+    CHECK(item_0.md_entry_type == fix::MDEntryType::OFFER);
     CHECK(item_0.md_entry_px == 10523.0_a);
     CHECK(item_0.md_entry_size == 1000.0_a);
     CHECK(item_0.md_entry_date == 1567870620896ms);
   };
-  auto bytes = roq::fix::Reader<roq::fix::Version::FIX_44>::dispatch(message, parser);
+  auto bytes = fix::Reader<fix::Version::FIX_44>::dispatch(message, parser);
   CHECK(bytes == std::size(message));
   CHECK(results == 1);
 }
@@ -70,82 +70,82 @@ TEST_CASE("fix_market_data_incremental_refresh_parse_message_2", "fix_market_dat
   int results = 0;
   auto parser = [&](auto &message_2) {
     ++results;
-    CHECK(message_2.header.msg_type == roq::fix::MsgType::MARKET_DATA_INCREMENTAL_REFRESH);
+    CHECK(message_2.header.msg_type == fix::MsgType::MARKET_DATA_INCREMENTAL_REFRESH);
     auto result = MarketDataIncrementalRefresh::create(message_2, buffer);
     CHECK(result.symbol == "BTC-27SEP19"sv);
     CHECK(std::size(result.no_md_entries) == size_t{5});
     // item 0
     auto &item_0 = result.no_md_entries[0];
-    CHECK(item_0.md_update_action == roq::fix::MDUpdateAction::NEW);
-    CHECK(item_0.md_entry_type == roq::fix::MDEntryType::TRADE);
+    CHECK(item_0.md_update_action == fix::MDUpdateAction::NEW);
+    CHECK(item_0.md_entry_type == fix::MDEntryType::TRADE);
     CHECK(item_0.md_entry_px == 10519.5_a);
     CHECK(item_0.md_entry_size == 826.0_a);
     CHECK(item_0.md_entry_date == 1567870620378ms);
     CHECK(item_0.deribit_trade_id == "18254681"sv);
-    CHECK(item_0.side == roq::fix::Side::BUY);
+    CHECK(item_0.side == fix::Side::BUY);
     CHECK(item_0.order_id == "0"sv);
     CHECK(item_0.secondary_order_id == "0"sv);
-    CHECK(item_0.ord_status == roq::fix::OrdStatus::FILLED);
+    CHECK(item_0.ord_status == fix::OrdStatus::FILLED);
     CHECK(item_0.index_price == 10445.93_a);
     CHECK(item_0.text == "2889354"sv);
     // item 1
     auto &item_1 = result.no_md_entries[1];
-    CHECK(item_1.md_update_action == roq::fix::MDUpdateAction::NEW);
-    CHECK(item_1.md_entry_type == roq::fix::MDEntryType::TRADE);
+    CHECK(item_1.md_update_action == fix::MDUpdateAction::NEW);
+    CHECK(item_1.md_entry_type == fix::MDEntryType::TRADE);
     CHECK(item_1.md_entry_px == 10520.0_a);
     CHECK(item_1.md_entry_size == 42.0_a);
     CHECK(item_1.md_entry_date == 1567870620378ms);
     CHECK(item_1.deribit_trade_id == "18254682"sv);
-    CHECK(item_1.side == roq::fix::Side::BUY);
+    CHECK(item_1.side == fix::Side::BUY);
     CHECK(item_1.order_id == "0"sv);
     CHECK(item_1.secondary_order_id == "0"sv);
-    CHECK(item_1.ord_status == roq::fix::OrdStatus::FILLED);
+    CHECK(item_1.ord_status == fix::OrdStatus::FILLED);
     CHECK(item_1.index_price == 10445.93_a);
     CHECK(item_1.text == "2889355"sv);
     // item 2
     auto &item_2 = result.no_md_entries[2];
-    CHECK(item_2.md_update_action == roq::fix::MDUpdateAction::NEW);
-    CHECK(item_2.md_entry_type == roq::fix::MDEntryType::TRADE);
+    CHECK(item_2.md_update_action == fix::MDUpdateAction::NEW);
+    CHECK(item_2.md_entry_type == fix::MDEntryType::TRADE);
     CHECK(item_2.md_entry_px == 10520.0_a);
     CHECK(item_2.md_entry_size == 42.0_a);
     CHECK(item_2.md_entry_date == 1567870620378ms);
     CHECK(item_2.deribit_trade_id == "18254683"sv);
-    CHECK(item_2.side == roq::fix::Side::BUY);
+    CHECK(item_2.side == fix::Side::BUY);
     CHECK(item_2.order_id == "0"sv);
     CHECK(item_2.secondary_order_id == "0"sv);
-    CHECK(item_2.ord_status == roq::fix::OrdStatus::FILLED);
+    CHECK(item_2.ord_status == fix::OrdStatus::FILLED);
     CHECK(item_2.index_price == 10445.93_a);
     CHECK(item_2.text == "2889356"sv);
     // item 3
     auto &item_3 = result.no_md_entries[3];
-    CHECK(item_3.md_update_action == roq::fix::MDUpdateAction::NEW);
-    CHECK(item_3.md_entry_type == roq::fix::MDEntryType::TRADE);
+    CHECK(item_3.md_update_action == fix::MDUpdateAction::NEW);
+    CHECK(item_3.md_entry_type == fix::MDEntryType::TRADE);
     CHECK(item_3.md_entry_px == 10520.0_a);
     CHECK(item_3.md_entry_size == 42.0_a);
     CHECK(item_3.md_entry_date == 1567870620378ms);
     CHECK(item_3.deribit_trade_id == "18254684"sv);
-    CHECK(item_3.side == roq::fix::Side::BUY);
+    CHECK(item_3.side == fix::Side::BUY);
     CHECK(item_3.order_id == "0"sv);
     CHECK(item_3.secondary_order_id == "0"sv);
-    CHECK(item_3.ord_status == roq::fix::OrdStatus::FILLED);
+    CHECK(item_3.ord_status == fix::OrdStatus::FILLED);
     CHECK(item_3.index_price == 10445.93_a);
     CHECK(item_3.text == "2889357"sv);
     // item 4
     auto &item_4 = result.no_md_entries[4];
-    CHECK(item_4.md_update_action == roq::fix::MDUpdateAction::NEW);
-    CHECK(item_4.md_entry_type == roq::fix::MDEntryType::TRADE);
+    CHECK(item_4.md_update_action == fix::MDUpdateAction::NEW);
+    CHECK(item_4.md_entry_type == fix::MDEntryType::TRADE);
     CHECK(item_4.md_entry_px == 10520.0_a);
     CHECK(item_4.md_entry_size == 27.0_a);
     CHECK(item_4.md_entry_date == 1567870620378ms);
     CHECK(item_4.deribit_trade_id == "18254685"sv);
-    CHECK(item_4.side == roq::fix::Side::BUY);
+    CHECK(item_4.side == fix::Side::BUY);
     CHECK(item_4.order_id == "0"sv);
     CHECK(item_4.secondary_order_id == "0"sv);
-    CHECK(item_4.ord_status == roq::fix::OrdStatus::FILLED);
+    CHECK(item_4.ord_status == fix::OrdStatus::FILLED);
     CHECK(item_4.index_price == 10445.93_a);
     CHECK(item_4.text == "2889358"sv);
   };
-  auto bytes = roq::fix::Reader<roq::fix::Version::FIX_44>::dispatch(message, parser);
+  auto bytes = fix::Reader<fix::Version::FIX_44>::dispatch(message, parser);
   CHECK(bytes == std::size(message));
   CHECK(results == 1);
 }
@@ -161,26 +161,26 @@ TEST_CASE("fix_market_data_incremental_refresh_parse_message_3", "fix_market_dat
   int results = 0;
   auto parser = [&](auto &message_2) {
     ++results;
-    CHECK(message_2.header.msg_type == roq::fix::MsgType::MARKET_DATA_INCREMENTAL_REFRESH);
+    CHECK(message_2.header.msg_type == fix::MsgType::MARKET_DATA_INCREMENTAL_REFRESH);
     auto result = MarketDataIncrementalRefresh::create(message_2, buffer);
     CHECK(result.symbol == "ETH-PERPETUAL"sv);
     CHECK(std::size(result.no_md_entries) == size_t{1});
     // item 0
     auto &item_0 = result.no_md_entries[0];
-    CHECK(item_0.md_update_action == roq::fix::MDUpdateAction::NEW);
-    CHECK(item_0.md_entry_type == roq::fix::MDEntryType::TRADE);
+    CHECK(item_0.md_update_action == fix::MDUpdateAction::NEW);
+    CHECK(item_0.md_entry_type == fix::MDEntryType::TRADE);
     CHECK(item_0.md_entry_px == 170.15_a);
     CHECK(item_0.md_entry_size == 22.0_a);
     CHECK(item_0.md_entry_date == 1569685692830ms);
     CHECK(item_0.deribit_trade_id == "ETH-1192275"sv);
-    CHECK(item_0.side == roq::fix::Side::BUY);
+    CHECK(item_0.side == fix::Side::BUY);
     CHECK(item_0.order_id == "0"sv);
     CHECK(item_0.secondary_order_id == "0"sv);
-    CHECK(item_0.ord_status == roq::fix::OrdStatus::PARTIALLY_FILLED);
+    CHECK(item_0.ord_status == fix::OrdStatus::PARTIALLY_FILLED);
     CHECK(item_0.index_price == 170.36_a);
     CHECK(item_0.text == "586940"sv);
   };
-  auto bytes = roq::fix::Reader<roq::fix::Version::FIX_44>::dispatch(message, parser);
+  auto bytes = fix::Reader<fix::Version::FIX_44>::dispatch(message, parser);
   CHECK(bytes == std::size(message));
   CHECK(results == 1);
 }

@@ -4,7 +4,7 @@
 
 #include "roq/fix/reader.hpp"
 
-#include "roq/deribit/fix/heartbeat.hpp"
+#include "roq/deribit/protocol/fix/heartbeat.hpp"
 
 using namespace roq;
 using namespace roq::deribit;
@@ -13,7 +13,7 @@ using namespace std::literals;
 
 using namespace Catch::literals;
 
-using Heartbeat = deribit::fix::Heartbeat;
+using Heartbeat = deribit::protocol::fix::Heartbeat;
 
 TEST_CASE("fix_heartbeat_parse_message", "[fix_heartbeat]") {
   auto const message =
@@ -23,11 +23,11 @@ TEST_CASE("fix_heartbeat_parse_message", "[fix_heartbeat]") {
   int results = 0;
   auto parser = [&](auto &message_2) {
     ++results;
-    CHECK(message_2.header.msg_type == roq::fix::MsgType::HEARTBEAT);
+    CHECK(message_2.header.msg_type == fix::MsgType::HEARTBEAT);
     auto heartbeat = Heartbeat::create(message_2);
     CHECK(heartbeat.test_req_id == "anybody in there?");
   };
-  auto bytes = roq::fix::Reader<roq::fix::Version::FIX_44>::dispatch(message, parser);
+  auto bytes = fix::Reader<fix::Version::FIX_44>::dispatch(message, parser);
   CHECK(bytes == std::size(message));
   CHECK(results == 1);
 }

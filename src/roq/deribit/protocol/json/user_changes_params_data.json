@@ -1,0 +1,25 @@
+{
+  "name": "roq/deribit/protocol/json/UserChangesParamsData",
+  "type": "dictionary",
+  "values": [
+    {
+      "name": "instrument_name",
+      "type": "std/string_view"
+    },
+    {
+      "name": "trades",
+      "type": "roq/deribit/protocol/json/Trade",
+      "array": "std/span"
+    },
+    {
+      "name": "positions",
+      "type": "roq/deribit/protocol/json/Position",
+      "array": "std/span"
+    },
+    {
+      "name": "orders",
+      "type": "roq/deribit/protocol/json/UserOrdersParamsData",
+      "array": "std/span"
+    }
+  ]
+}

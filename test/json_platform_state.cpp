@@ -11,7 +11,7 @@ using namespace std::literals;
 
 using namespace Catch::literals;
 
-using value_type = json::PlatformState;
+using value_type = protocol::json::PlatformState;
 /*
 TEST_CASE("subscribe_ack", "[json_platform_state]") {
   auto message = R"({)"

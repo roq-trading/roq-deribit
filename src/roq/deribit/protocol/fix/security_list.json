@@ -1,0 +1,30 @@
+{
+  "name": "roq/deribit/protocol/fix/SecurityList",
+  "type": "comp",
+  "values": [
+    {
+      "tag": 320,
+      "name": "SecurityReqId",
+      "type": "std/string_view",
+      "required": true
+    },
+    {
+      "tag": 322,
+      "name": "SecurityResponseID",
+      "type": "std/string_view",
+      "required": true
+    },
+    {
+      "tag": 560,
+      "name": "SecurityRequestResult",
+      "type": "roq/fix/SecurityRequestResult",
+      "required": true
+    },
+    {
+      "tag": 146,
+      "name": "NoRelatedSym",
+      "type": "roq/deribit/protocol/fix/Instrument",
+      "array": "std/span"
+    }
+  ]
+}

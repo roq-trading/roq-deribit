@@ -11,7 +11,7 @@ using namespace std::literals;
 
 using namespace Catch::literals;
 
-using value_type = json::Quote;
+using value_type = protocol::json::Quote;
 
 /*
 TEST_CASE("subscribe_ack", "[json_quote]") {

@@ -22,18 +22,18 @@
 #include "roq/deribit/gateway/shared.hpp"
 
 // session
-#include "roq/deribit/fix/heartbeat.hpp"
-#include "roq/deribit/fix/logon.hpp"
-#include "roq/deribit/fix/logout.hpp"
-#include "roq/deribit/fix/resend_request.hpp"
-#include "roq/deribit/fix/test_request.hpp"
+#include "roq/deribit/protocol/fix/heartbeat.hpp"
+#include "roq/deribit/protocol/fix/logon.hpp"
+#include "roq/deribit/protocol/fix/logout.hpp"
+#include "roq/deribit/protocol/fix/resend_request.hpp"
+#include "roq/deribit/protocol/fix/test_request.hpp"
 
 // business (inbound)
-#include "roq/deribit/fix/execution_report.hpp"
-#include "roq/deribit/fix/order_cancel_reject.hpp"
-#include "roq/deribit/fix/order_mass_cancel_report.hpp"
-#include "roq/deribit/fix/position_report.hpp"
-#include "roq/deribit/fix/reject.hpp"  // ... normally session level
+#include "roq/deribit/protocol/fix/execution_report.hpp"
+#include "roq/deribit/protocol/fix/order_cancel_reject.hpp"
+#include "roq/deribit/protocol/fix/order_mass_cancel_report.hpp"
+#include "roq/deribit/protocol/fix/position_report.hpp"
+#include "roq/deribit/protocol/fix/reject.hpp"  // ... normally session level
 
 namespace roq {
 namespace deribit {
@@ -75,18 +75,18 @@ struct OrderEntry final : public io::net::ConnectionManager::Handler {
 
   void operator()(metrics::Writer &) const;
 
-  void operator()(Trace<fix::Heartbeat> const &, roq::fix::Header const &);
-  void operator()(Trace<fix::Logon> const &, roq::fix::Header const &);
-  void operator()(Trace<fix::Logout> const &, roq::fix::Header const &);
-  void operator()(Trace<fix::ResendRequest> const &, roq::fix::Header const &);
-  void operator()(Trace<fix::TestRequest> const &, roq::fix::Header const &);
+  void operator()(Trace<protocol::fix::Heartbeat> const &, fix::Header const &);
+  void operator()(Trace<protocol::fix::Logon> const &, fix::Header const &);
+  void operator()(Trace<protocol::fix::Logout> const &, fix::Header const &);
+  void operator()(Trace<protocol::fix::ResendRequest> const &, fix::Header const &);
+  void operator()(Trace<protocol::fix::TestRequest> const &, fix::Header const &);
 
-  void operator()(Trace<fix::PositionReport> const &, roq::fix::Header const &);
+  void operator()(Trace<protocol::fix::PositionReport> const &, fix::Header const &);
 
-  void operator()(Trace<fix::ExecutionReport> const &, roq::fix::Header const &);
-  void operator()(Trace<fix::OrderCancelReject> const &, roq::fix::Header const &);
-  void operator()(Trace<fix::Reject> const &, roq::fix::Header const &);
-  void operator()(Trace<fix::OrderMassCancelReport> const &, roq::fix::Header const &);
+  void operator()(Trace<protocol::fix::ExecutionReport> const &, fix::Header const &);
+  void operator()(Trace<protocol::fix::OrderCancelReject> const &, fix::Header const &);
+  void operator()(Trace<protocol::fix::Reject> const &, fix::Header const &);
+  void operator()(Trace<protocol::fix::OrderMassCancelReport> const &, fix::Header const &);
 
  protected:
   void operator()(io::net::ConnectionManager::Connected const &) override;
@@ -114,8 +114,8 @@ struct OrderEntry final : public io::net::ConnectionManager::Handler {
   void subscribe_positions();
   void download_orders();
 
-  void parse(Trace<roq::fix::Message> const &);
-  void parse_helper(Trace<roq::fix::Message> const &);
+  void parse(Trace<fix::Message> const &);
+  void parse_helper(Trace<fix::Message> const &);
 
   // utilities
 
@@ -125,7 +125,7 @@ struct OrderEntry final : public io::net::ConnectionManager::Handler {
   template <typename T>
   uint64_t send(T const &event, std::chrono::nanoseconds sending_time);
 
-  void check(roq::fix::Header const &);
+  void check(fix::Header const &);
 
   Handler &handler_;
   // config

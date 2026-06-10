@@ -2,7 +2,7 @@
 
 #include <benchmark/benchmark.h>
 
-#include "roq/deribit/fix/new_order_single.hpp"
+#include "roq/deribit/protocol/fix/new_order_single.hpp"
 
 using namespace roq;
 using namespace roq::deribit;
@@ -10,7 +10,7 @@ using namespace roq::deribit;
 using namespace std::literals;
 using namespace std::chrono_literals;
 
-using NewOrderSingle = deribit::fix::NewOrderSingle;
+using NewOrderSingle = deribit::protocol::fix::NewOrderSingle;
 
 // === CONSTANTS ===
 namespace {
@@ -29,21 +29,21 @@ void BM_fix_new_order_single_create_message(benchmark::State &state) {
   for (auto _ : state) {
     auto new_order_single = NewOrderSingle{
         .cl_ord_id = REQUEST_ID,
-        .side = roq::fix::Side::BUY,
+        .side = fix::Side::BUY,
         .order_qty = {123.0, Precision::_0},
         .price = {16833.45, Precision::_2},
         .symbol = SYMBOL,
         .exec_inst = {},
-        .ord_type = roq::fix::OrdType::LIMIT,
-        .time_in_force = roq::fix::TimeInForce::GTC,
+        .ord_type = fix::OrdType::LIMIT,
+        .time_in_force = fix::TimeInForce::GTC,
         .stop_px = {},
         .deribit_label = REQUEST_ID,
         .deribit_adv_order_type = '\0',
         .deribit_mm_protection = {},
         .deribit_condition_trigger_method = {},
     };
-    auto header = roq::fix::Header{
-        .version = roq::fix::Version::FIX_44,
+    auto header = fix::Header{
+        .version = fix::Version::FIX_44,
         .msg_type = decltype(new_order_single)::MSG_TYPE,
         .sender_comp_id = SENDER_COMP_ID,
         .target_comp_id = TARGET_COMP_ID,

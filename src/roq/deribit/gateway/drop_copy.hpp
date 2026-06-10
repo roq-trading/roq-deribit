@@ -24,13 +24,13 @@
 #include "roq/deribit/gateway/account.hpp"
 #include "roq/deribit/gateway/shared.hpp"
 
-#include "roq/deribit/json/parser.hpp"
+#include "roq/deribit/protocol/json/parser.hpp"
 
 namespace roq {
 namespace deribit {
 namespace gateway {
 
-struct DropCopy final : public web::socket::Client::Handler, public json::Parser::Handler {
+struct DropCopy final : public web::socket::Client::Handler, public protocol::json::Parser::Handler {
   struct Handler {
     virtual void operator()(Trace<StreamStatus> const &) = 0;
     virtual void operator()(Trace<ExternalLatency> const &) = 0;
@@ -93,26 +93,26 @@ struct DropCopy final : public web::socket::Client::Handler, public json::Parser
   void parse(std::string_view const &message);
 
  public:
-  // json::Parser::Handler
+  // protocol::json::Parser::Handler
 
-  void operator()(Trace<json::Auth> const &) override;
-  void operator()(Trace<json::SubscribeAck> const &) override;
+  void operator()(Trace<protocol::json::Auth> const &) override;
+  void operator()(Trace<protocol::json::SubscribeAck> const &) override;
 
-  void operator()(Trace<json::PlatformState> const &) override;
-  void operator()(Trace<json::InstrumentState> const &) override;
-  void operator()(Trace<json::Quote> const &) override;
-  void operator()(Trace<json::Ticker> const &) override;
-  void operator()(Trace<json::ChartTrades> const &, std::string_view const &symbol, uint32_t interval) override;
+  void operator()(Trace<protocol::json::PlatformState> const &) override;
+  void operator()(Trace<protocol::json::InstrumentState> const &) override;
+  void operator()(Trace<protocol::json::Quote> const &) override;
+  void operator()(Trace<protocol::json::Ticker> const &) override;
+  void operator()(Trace<protocol::json::ChartTrades> const &, std::string_view const &symbol, uint32_t interval) override;
 
-  void operator()(Trace<json::UserPortfolio> const &) override;
-  void operator()(Trace<json::UserChanges> const &) override;
-  void operator()(Trace<json::UserOrders> const &) override;
-  void operator()(Trace<json::UserTrades> const &) override;
+  void operator()(Trace<protocol::json::UserPortfolio> const &) override;
+  void operator()(Trace<protocol::json::UserChanges> const &) override;
+  void operator()(Trace<protocol::json::UserOrders> const &) override;
+  void operator()(Trace<protocol::json::UserTrades> const &) override;
 
-  void operator()(Trace<json::GetAccountSummaryAck> const &) override;
-  void operator()(Trace<json::GetUserTradesByCurrencyAck> const &) override;
+  void operator()(Trace<protocol::json::GetAccountSummaryAck> const &) override;
+  void operator()(Trace<protocol::json::GetUserTradesByCurrencyAck> const &) override;
 
-  void operator()(Trace<json::Trade> const &, bool is_download, bool is_last);
+  void operator()(Trace<protocol::json::Trade> const &, bool is_download, bool is_last);
 
  private:
   Handler &handler_;

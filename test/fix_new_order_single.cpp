@@ -8,7 +8,7 @@
 
 #include "roq/fix/reader.hpp"
 
-#include "roq/deribit/fix/new_order_single.hpp"
+#include "roq/deribit/protocol/fix/new_order_single.hpp"
 
 using namespace roq;
 using namespace roq::deribit;
@@ -18,7 +18,7 @@ using namespace std::chrono_literals;
 
 using namespace Catch::literals;
 
-using NewOrderSingle = deribit::fix::NewOrderSingle;
+using NewOrderSingle = deribit::protocol::fix::NewOrderSingle;
 
 TEST_CASE("fix_new_order_single_create_message", "[fix_new_order_single]") {
   std::vector<std::byte> buffer(4096);
@@ -26,21 +26,21 @@ TEST_CASE("fix_new_order_single_create_message", "[fix_new_order_single]") {
   auto sending_time = 1568702810s;
   auto new_order_single = NewOrderSingle{
       .cl_ord_id = "roq-ord-006"sv,
-      .side = roq::fix::Side::BUY,
+      .side = fix::Side::BUY,
       .order_qty = {2.0, Precision::_1},
       .price = {0.45, Precision::_2},
       .symbol = "BTC-27SEP19"sv,
       .exec_inst = {},
-      .ord_type = roq::fix::OrdType::LIMIT,
-      .time_in_force = roq::fix::TimeInForce::GTC,
+      .ord_type = fix::OrdType::LIMIT,
+      .time_in_force = fix::TimeInForce::GTC,
       .stop_px = {},
       .deribit_label = "roq;123;345"sv,
       .deribit_adv_order_type = '\0',
       .deribit_mm_protection = {},
       .deribit_condition_trigger_method = {},
   };
-  auto header = roq::fix::Header{
-      .version = roq::fix::Version::FIX_44,
+  auto header = fix::Header{
+      .version = fix::Version::FIX_44,
       .msg_type = decltype(new_order_single)::MSG_TYPE,
       .sender_comp_id = "ROQ_TRADING"sv,
       .target_comp_id = "DERIBITSERVER"sv,

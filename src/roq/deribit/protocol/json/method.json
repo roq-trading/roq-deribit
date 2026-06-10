@@ -1,0 +1,9 @@
+{
+  "name": "roq/deribit/protocol/json/Method",
+  "type": "enum",
+  "values": [
+    {
+      "name": "subscription"
+    }
+  ]
+}

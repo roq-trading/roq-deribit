@@ -1,0 +1,34 @@
+{
+  "name": "roq/deribit/protocol/json/GetChartDataAck",
+  "type": "dictionary",
+  "values": [
+    {
+      "name": "jsonrpc",
+      "type": "std/string_view"
+    },
+    {
+      "name": "result",
+      "type": "roq/deribit/protocol/json/ChartData"
+    },
+    {
+      "name": "error",
+      "type": "roq/deribit/protocol/json/Error"
+    },
+    {
+      "name": "usIn",
+      "type": "std/microseconds"
+    },
+    {
+      "name": "usOut",
+      "type": "std/microseconds"
+    },
+    {
+      "name": "usDiff",
+      "type": "std/microseconds"
+    },
+    {
+      "name": "testnet",
+      "type": "std/bool"
+    }
+  ]
+}

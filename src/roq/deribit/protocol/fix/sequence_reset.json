@@ -1,0 +1,12 @@
+{
+  "name": "roq/deribit/protocol/fix/SequenceReset",
+  "type": "comp",
+  "values": [
+    {
+      "tag": 36,
+      "name": "NewSeqNo",
+      "type": "std/uint64",
+      "required": true
+    }
+  ]
+}

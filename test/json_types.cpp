@@ -2,7 +2,7 @@
 
 #include <catch2/catch_all.hpp>
 
-#include "roq/deribit/json/utils.hpp"
+#include "roq/deribit/protocol/json/utils.hpp"
 
 using namespace roq;
 using namespace roq::deribit;
@@ -15,19 +15,19 @@ TEST_CASE("json_double", "[json_types]") {
   {
     double result = 1.0;
     core::json::Value value = "undefined"sv;
-    json::update(result, value);
+    protocol::json::update(result, value);
     CHECK(std::isnan(result) == true);
   }
   {
     double result = 1.0;
     core::json::Value value = core::json::Null{};
-    json::update(result, value);
+    protocol::json::update(result, value);
     CHECK(std::isnan(result) == true);
   }
   {
     double result = NaN;
     core::json::Value value = 1.2;
-    json::update(result, value);
+    protocol::json::update(result, value);
     CHECK(result == 1.2_a);
   }
 }

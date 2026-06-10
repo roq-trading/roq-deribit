@@ -4,14 +4,14 @@
 
 #include "roq/fix/reader.hpp"
 
-#include "roq/deribit/fix/market_data_incremental_refresh.hpp"
+#include "roq/deribit/protocol/fix/market_data_incremental_refresh.hpp"
 
 using namespace roq;
 using namespace roq::deribit;
 
 using namespace std::literals;
 
-using MarketDataIncrementalRefresh = deribit::fix::MarketDataIncrementalRefresh;
+using MarketDataIncrementalRefresh = deribit::protocol::fix::MarketDataIncrementalRefresh;
 
 namespace {
 auto const message_1 =
@@ -49,7 +49,7 @@ void BM_fix_market_data_increment_refresh_parse_message_1(benchmark::State &stat
     }
   };
   for (auto _ : state) {
-    roq::fix::Reader<roq::fix::Version::FIX_44>::dispatch(message_1, parser);
+    fix::Reader<fix::Version::FIX_44>::dispatch(message_1, parser);
   }
 }
 
@@ -65,7 +65,7 @@ void BM_fix_market_data_increment_refresh_parse_message_2(benchmark::State &stat
     }
   };
   for (auto _ : state) {
-    roq::fix::Reader<roq::fix::Version::FIX_44>::dispatch(message_2, parser);
+    fix::Reader<fix::Version::FIX_44>::dispatch(message_2, parser);
   }
 }
 

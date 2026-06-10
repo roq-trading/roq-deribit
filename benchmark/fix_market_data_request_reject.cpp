@@ -4,14 +4,14 @@
 
 #include "roq/fix/reader.hpp"
 
-#include "roq/deribit/fix/market_data_request_reject.hpp"
+#include "roq/deribit/protocol/fix/market_data_request_reject.hpp"
 
 using namespace roq;
 using namespace roq::deribit;
 
 using namespace std::literals;
 
-using MarketDataRequestReject = deribit::fix::MarketDataRequestReject;
+using MarketDataRequestReject = deribit::protocol::fix::MarketDataRequestReject;
 
 namespace {
 auto const MESSAGE =
@@ -29,7 +29,7 @@ void BM_fix_market_data_request_reject_parse_message(benchmark::State &state) {
     }
   };
   for (auto _ : state) {
-    roq::fix::Reader<roq::fix::Version::FIX_44>::dispatch(MESSAGE, parser);
+    fix::Reader<fix::Version::FIX_44>::dispatch(MESSAGE, parser);
   }
 }
 

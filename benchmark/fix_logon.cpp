@@ -4,7 +4,7 @@
 
 #include "roq/fix/reader.hpp"
 
-#include "roq/deribit/fix/logon.hpp"
+#include "roq/deribit/protocol/fix/logon.hpp"
 
 using namespace roq;
 using namespace roq::deribit;
@@ -12,7 +12,7 @@ using namespace roq::deribit;
 using namespace std::literals;
 using namespace std::chrono_literals;
 
-using Logon = deribit::fix::Logon;
+using Logon = deribit::protocol::fix::Logon;
 
 namespace {
 auto const MESSAGE =
@@ -26,7 +26,7 @@ auto const MESSAGE =
 void BM_fix_logon_parse_message(benchmark::State &state) {
   auto parser = [&](auto &message_2) { Logon::create(message_2); };
   for (auto _ : state) {
-    roq::fix::Reader<roq::fix::Version::FIX_44>::dispatch(MESSAGE, parser);
+    fix::Reader<fix::Version::FIX_44>::dispatch(MESSAGE, parser);
   }
 }
 
@@ -49,8 +49,8 @@ void BM_fix_logon_create_message(benchmark::State &state) {
         .deribit_app_id = {},
         .deribit_app_sig = {},
     };
-    auto header = roq::fix::Header{
-        .version = roq::fix::Version::FIX_44,
+    auto header = fix::Header{
+        .version = fix::Version::FIX_44,
         .msg_type = decltype(logon)::MSG_TYPE,
         .sender_comp_id = "ROQ_TRADING"sv,
         .target_comp_id = "DERIBITSERVER"sv,

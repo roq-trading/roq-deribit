@@ -11,7 +11,7 @@ using namespace std::literals;
 
 using namespace Catch::literals;
 
-using value_type = json::SubscribeAck;
+using value_type = protocol::json::SubscribeAck;
 
 TEST_CASE("failure", "[json_subscribe_ack]") {
   auto message = R"({)"

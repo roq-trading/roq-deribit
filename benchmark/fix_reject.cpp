@@ -4,14 +4,14 @@
 
 #include "roq/fix/reader.hpp"
 
-#include "roq/deribit/fix/reject.hpp"
+#include "roq/deribit/protocol/fix/reject.hpp"
 
 using namespace roq;
 using namespace roq::deribit;
 
 using namespace std::literals;
 
-using Reject = deribit::fix::Reject;
+using Reject = deribit::protocol::fix::Reject;
 
 namespace {
 auto const MESSAGE =
@@ -29,7 +29,7 @@ void BM_fix_reject_parse_message(benchmark::State &state) {
     }
   };
   for (auto _ : state) {
-    roq::fix::Reader<roq::fix::Version::FIX_44>::dispatch(MESSAGE, parser);
+    fix::Reader<fix::Version::FIX_44>::dispatch(MESSAGE, parser);
   }
 }
 

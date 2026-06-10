@@ -11,7 +11,7 @@ using namespace std::literals;
 
 using namespace Catch::literals;
 
-using value_type = json::GetAccountSummaryAck;
+using value_type = protocol::json::GetAccountSummaryAck;
 
 TEST_CASE("failure", "[json_get_account_summary_ack]") {
   auto message = R"({)"

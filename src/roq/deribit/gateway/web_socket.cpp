@@ -18,11 +18,11 @@
 
 #include "roq/deribit/gateway/utils.hpp"
 
-#include "roq/deribit/json/error.hpp"
-#include "roq/deribit/json/map.hpp"
-#include "roq/deribit/json/method.hpp"
-#include "roq/deribit/json/request_type.hpp"
-#include "roq/deribit/json/utils.hpp"
+#include "roq/deribit/protocol/json/error.hpp"
+#include "roq/deribit/protocol/json/map.hpp"
+#include "roq/deribit/protocol/json/method.hpp"
+#include "roq/deribit/protocol/json/request_type.hpp"
+#include "roq/deribit/protocol/json/utils.hpp"
 
 using namespace std::literals;
 
@@ -218,7 +218,7 @@ void WebSocket::operator()(ConnectionStatus connection_status, std::string_view 
 }
 
 void WebSocket::login() {
-  constexpr json::RequestType request_type = json::RequestType::AUTH;
+  protocol::json::RequestType request_type = protocol::json::RequestType::AUTH;
   auto now = clock::get_realtime<std::chrono::milliseconds>();
   auto nonce = account_.create_nonce();
   auto [signature, timestamp] = account_.create_signature(now, nonce);
@@ -311,7 +311,7 @@ void WebSocket::check_instruments() {
 }
 
 void WebSocket::subscribe_platform_state() {
-  json::RequestType const request_type = json::RequestType::SUBSCRIBE_PLATFORM_STATE;
+  protocol::json::RequestType const request_type = protocol::json::RequestType::SUBSCRIBE_PLATFORM_STATE;
   auto message = fmt::format(
       R"({{)"
       R"("method":"public/subscribe",)"
@@ -325,7 +325,7 @@ void WebSocket::subscribe_platform_state() {
 }
 
 void WebSocket::subscribe_instrument_state() {
-  json::RequestType const request_type = json::RequestType::SUBSCRIBE_INSTRUMENT_STATE;
+  protocol::json::RequestType const request_type = protocol::json::RequestType::SUBSCRIBE_INSTRUMENT_STATE;
   auto message = fmt::format(
       R"({{)"
       R"("method":"public/subscribe",)"
@@ -353,7 +353,7 @@ void WebSocket::subscribe(std::span<Symbol const> const &symbols) {
 
 void WebSocket::subscribe_quote(std::span<Symbol const> const &symbols) {
   assert(!std::empty(symbols));
-  json::RequestType const request_type = json::RequestType::SUBSCRIBE_QUOTE;
+  protocol::json::RequestType const request_type = protocol::json::RequestType::SUBSCRIBE_QUOTE;
   auto message = fmt::format(
       R"({{)"
       R"("method":"public/subscribe",)"
@@ -369,7 +369,7 @@ void WebSocket::subscribe_quote(std::span<Symbol const> const &symbols) {
 
 void WebSocket::subscribe_ticker(std::span<Symbol const> const &symbols) {
   assert(!std::empty(symbols));
-  json::RequestType const request_type = json::RequestType::SUBSCRIBE_TICKER;
+  protocol::json::RequestType const request_type = protocol::json::RequestType::SUBSCRIBE_TICKER;
   auto interval = shared_.settings.ws.ticker_interval;
   auto separator = fmt::format(R"(.{}","ticker.)"sv, interval);
   auto message = fmt::format(
@@ -388,7 +388,7 @@ void WebSocket::subscribe_ticker(std::span<Symbol const> const &symbols) {
 
 void WebSocket::subscribe_chart_trades(std::span<Symbol const> const &symbols) {
   assert(!std::empty(symbols));
-  json::RequestType const request_type = json::RequestType::SUBSCRIBE_CHART_TRADES;
+  protocol::json::RequestType const request_type = protocol::json::RequestType::SUBSCRIBE_CHART_TRADES;
   auto interval = 1;  // 1 min
   auto separator = fmt::format(R"(.{}","chart.trades.)"sv, interval);
   auto message = fmt::format(
@@ -414,7 +414,7 @@ void WebSocket::parse(std::string_view const &message) {
     auto log_message = [&]() { log::warn(R"(*** PLEASE REPORT *** message="{}")"sv, message); };
     TraceInfo trace_info;
     try {
-      if (!json::Parser::dispatch(*this, message, decode_buffer_, trace_info, shared_.settings.experimental.allow_unknown_event_types)) {
+      if (!protocol::json::Parser::dispatch(*this, message, decode_buffer_, trace_info, shared_.settings.experimental.allow_unknown_event_types)) {
         log_message();
       }
     } catch (...) {
@@ -424,9 +424,9 @@ void WebSocket::parse(std::string_view const &message) {
   });
 }
 
-// json::Parser::Handler
+// protocol::json::Parser::Handler
 
-void WebSocket::operator()(Trace<json::Auth> const &event) {
+void WebSocket::operator()(Trace<protocol::json::Auth> const &event) {
   profile_.auth([&]() {
     auto &[trace_info, auth] = event;
     log::info<2>("auth={}"sv, auth);
@@ -434,27 +434,27 @@ void WebSocket::operator()(Trace<json::Auth> const &event) {
   });
 }
 
-void WebSocket::operator()(Trace<json::SubscribeAck> const &event) {
+void WebSocket::operator()(Trace<protocol::json::SubscribeAck> const &event) {
   auto &[trace_info, subscribe_ack] = event;
   if (subscribe_ack.error.code != 0) {
     log::error("subscribe_ack={}"sv, subscribe_ack);
   }
 }
 
-void WebSocket::operator()(Trace<json::PlatformState> const &) {
+void WebSocket::operator()(Trace<protocol::json::PlatformState> const &) {
   if (!master_) {
     log::fatal("Unexpected"sv);
   }
 }
 
-void WebSocket::operator()(Trace<json::InstrumentState> const &) {
+void WebSocket::operator()(Trace<protocol::json::InstrumentState> const &) {
   if (!master_) {
     log::fatal("Unexpected"sv);
   }
   // seldom updated -- also done by Ticker
 }
 
-void WebSocket::operator()(Trace<json::Quote> const &event) {
+void WebSocket::operator()(Trace<protocol::json::Quote> const &event) {
   profile_.quote([&]() {
     auto &[trace_info, quote] = event;
     log::info<3>("quote={}"sv, quote);
@@ -492,7 +492,7 @@ void WebSocket::operator()(Trace<json::Quote> const &event) {
   });
 }
 
-void WebSocket::operator()(Trace<json::Ticker> const &event) {
+void WebSocket::operator()(Trace<protocol::json::Ticker> const &event) {
   profile_.ticker([&]() {
     auto &[trace_info, ticker] = event;
     log::info<3>("ticker={}"sv, ticker);
@@ -512,32 +512,32 @@ void WebSocket::operator()(Trace<json::Ticker> const &event) {
   });
 }
 
-void WebSocket::operator()(Trace<json::ChartTrades> const &event, std::string_view const &symbol, uint32_t interval) {
+void WebSocket::operator()(Trace<protocol::json::ChartTrades> const &event, std::string_view const &symbol, uint32_t interval) {
   auto &[trace_info, chart_trades] = event;
   log::debug(R"(chart_trades={}, symbol="{}", interval={})"sv, chart_trades, symbol, interval);
 }
 
-void WebSocket::operator()(Trace<json::UserPortfolio> const &) {
+void WebSocket::operator()(Trace<protocol::json::UserPortfolio> const &) {
   log::fatal("Unexpected"sv);
 }
 
-void WebSocket::operator()(Trace<json::UserChanges> const &) {
+void WebSocket::operator()(Trace<protocol::json::UserChanges> const &) {
   log::fatal("Unexpected"sv);
 }
 
-void WebSocket::operator()(Trace<json::UserOrders> const &) {
+void WebSocket::operator()(Trace<protocol::json::UserOrders> const &) {
   log::fatal("Unexpected"sv);
 }
 
-void WebSocket::operator()(Trace<json::UserTrades> const &) {
+void WebSocket::operator()(Trace<protocol::json::UserTrades> const &) {
   log::fatal("Unexpected"sv);
 }
 
-void WebSocket::operator()(Trace<json::GetAccountSummaryAck> const &) {
+void WebSocket::operator()(Trace<protocol::json::GetAccountSummaryAck> const &) {
   log::fatal("Unexpected"sv);
 }
 
-void WebSocket::operator()(Trace<json::GetUserTradesByCurrencyAck> const &) {
+void WebSocket::operator()(Trace<protocol::json::GetUserTradesByCurrencyAck> const &) {
   log::fatal("Unexpected"sv);
 }
 

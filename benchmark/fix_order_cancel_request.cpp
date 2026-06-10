@@ -2,7 +2,7 @@
 
 #include <benchmark/benchmark.h>
 
-#include "roq/deribit/fix/order_cancel_request.hpp"
+#include "roq/deribit/protocol/fix/order_cancel_request.hpp"
 
 using namespace roq;
 using namespace roq::deribit;
@@ -10,7 +10,7 @@ using namespace roq::deribit;
 using namespace std::literals;
 using namespace std::chrono_literals;
 
-using OrderCancelRequest = deribit::fix::OrderCancelRequest;
+using OrderCancelRequest = deribit::protocol::fix::OrderCancelRequest;
 
 void BM_fix_order_cancel_request_create_message(benchmark::State &state) {
   std::vector<std::byte> buffer(4096);
@@ -24,8 +24,8 @@ void BM_fix_order_cancel_request_create_message(benchmark::State &state) {
         .symbol = "BTC-PERPETUAL"sv,
         .currency = {},
     };
-    auto header = roq::fix::Header{
-        .version = roq::fix::Version::FIX_44,
+    auto header = fix::Header{
+        .version = fix::Version::FIX_44,
         .msg_type = decltype(order_cancel_request)::MSG_TYPE,
         .sender_comp_id = "ROQ_TRADING"sv,
         .target_comp_id = "DERIBITSERVER"sv,

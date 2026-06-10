@@ -6,7 +6,7 @@
 
 #include "roq/mbp_update.hpp"
 
-#include "roq/deribit/sbe/frame.hpp"
+#include "roq/deribit/protocol/sbe/frame.hpp"
 
 namespace roq {
 namespace deribit {
@@ -20,14 +20,14 @@ struct Channel final {
 
   uint32_t previous_sequence_number() const { return previous_sequence_number_; }
 
-  bool operator()(sbe::Frame const &);
+  bool operator()(protocol::sbe::Frame const &);
 
-  void reset(sbe::Frame const &);
+  void reset(protocol::sbe::Frame const &);
 
   // snapshot
 
-  void snapshot_start(sbe::Frame const &);
-  void snapshot_end(sbe::Frame const &);
+  void snapshot_start(protocol::sbe::Frame const &);
+  void snapshot_end(protocol::sbe::Frame const &);
 
   bool ready() const { return ready_; }
 

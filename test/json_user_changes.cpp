@@ -11,7 +11,7 @@ using namespace std::literals;
 
 using namespace Catch::literals;
 
-using value_type = json::UserChanges;
+using value_type = protocol::json::UserChanges;
 
 TEST_CASE("order_open", "[json_user_changes]") {
   auto message = R"({)"
