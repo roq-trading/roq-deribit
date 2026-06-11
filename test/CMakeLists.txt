@@ -43,9 +43,9 @@ add_executable(${TARGET_NAME} ${SOURCES})
 
 target_link_libraries(
   ${TARGET_NAME}
-  PRIVATE ${PROJECT_NAME}-fix
-          ${PROJECT_NAME}-json
-          ${PROJECT_NAME}-sbe
+  PRIVATE ${PROJECT_NAME}-protocol-fix
+          ${PROJECT_NAME}-protocol-json
+          ${PROJECT_NAME}-protocol-sbe
           ${PROJECT_NAME}-tools
           roq-server::roq-server
           roq-fix::roq-fix

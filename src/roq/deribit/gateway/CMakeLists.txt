@@ -18,14 +18,15 @@ set(SOURCES
 
 add_library(${TARGET_NAME} SHARED ${SOURCES})
 
-add_dependencies(${TARGET_NAME} flags-autogen-headers autogen-fix-headers autogen-json-headers)
+add_dependencies(${TARGET_NAME} flags-autogen-headers protocol-fix-autogen-headers protocol-json-autogen-headers)
 
 target_link_libraries(
   ${TARGET_NAME}
-  PRIVATE ${PROJECT_NAME}-fix
+  PRIVATE ${PROJECT_NAME}-flags
           ${PROJECT_NAME}-flags
-          ${PROJECT_NAME}-json
-          ${PROJECT_NAME}-sbe
+          ${PROJECT_NAME}-protocol-fix
+          ${PROJECT_NAME}-protocol-json
+          ${PROJECT_NAME}-protocol-sbe
           ${PROJECT_NAME}-tools
           roq-api::roq-api
           roq-core::roq-core

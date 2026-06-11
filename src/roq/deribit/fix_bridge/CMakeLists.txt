@@ -1,21 +1,25 @@
-set(TARGET_NAME ${PROJECT_NAME}-filter)
+set(TARGET_NAME ${PROJECT_NAME}-fix-bridge)
 
 add_subdirectory(flags)
 
 set(SOURCES application.cpp controller.cpp settings.cpp main.cpp)
 
+include(RoqAutogen)
+
+roq_gitignore(OUTPUT .gitignore SOURCES ${TARGET_NAME})
+
 add_executable(${TARGET_NAME} ${SOURCES})
 
 target_link_libraries(
   ${TARGET_NAME}
-  PRIVATE ${PROJECT_NAME}-filter-flags
-          ${PROJECT_NAME}-protocol-sbe
+  PRIVATE ${PROJECT_NAME}-flags
+          ${PROJECT_NAME}-gateway
           roq-api::roq-api
           roq-core::roq-core
           roq-flags::roq-flags
-          roq-io::roq-io
           roq-logging::roq-logging
           roq-logging::roq-logging-flags
+          roq-server::roq-server
           fmt::fmt)
 
 if(ROQ_BUILD_TYPE STREQUAL "Release")

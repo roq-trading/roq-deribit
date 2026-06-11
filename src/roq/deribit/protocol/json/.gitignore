@@ -1,5 +1,5 @@
 !!! THIS FILE HAS BEEN AUTO-GENERATED !!!
-roq-deribit-json
+roq-deribit-protocol-json
 auth.hpp
 auth_result.hpp
 channel.hpp

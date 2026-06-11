@@ -1,4 +1,4 @@
-set(TARGET_NAME ${PROJECT_NAME}-sbe)
+set(TARGET_NAME ${PROJECT_NAME}-protocol-sbe)
 
 set(SOURCES config.cpp frame.cpp map.cpp parser.cpp)
 

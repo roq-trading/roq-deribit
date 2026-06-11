@@ -1,4 +1,4 @@
-set(TARGET_NAME ${PROJECT_NAME}-fix)
+set(TARGET_NAME ${PROJECT_NAME}-protocol-fix)
 
 set(SOURCES adv_order_type.cpp utils.cpp)
 
@@ -56,7 +56,7 @@ roq_autogen_hpp(
   TEMPLATE_TYPE
   "fix")
 
-add_custom_target(autogen-fix-headers ALL DEPENDS ${AUTOGEN_HEADERS})
+add_custom_target(protocol-fix-autogen-headers ALL DEPENDS ${AUTOGEN_HEADERS})
 
 roq_autogen_cpp(
   OUTPUT
@@ -72,6 +72,6 @@ roq_gitignore(OUTPUT .gitignore SOURCES ${TARGET_NAME} ${AUTOGEN_HEADERS} ${AUTO
 
 add_library(${TARGET_NAME} OBJECT ${SOURCES} ${AUTOGEN_SOURCES})
 
-add_dependencies(${TARGET_NAME} autogen-fix-headers)
+add_dependencies(${TARGET_NAME} protocol-fix-autogen-headers)
 
 target_link_libraries(${TARGET_NAME} PRIVATE roq-logging::roq-logging fmt::fmt)
