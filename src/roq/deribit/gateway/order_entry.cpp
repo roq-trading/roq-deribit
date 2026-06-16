@@ -838,6 +838,7 @@ void OrderEntry::operator()(Trace<protocol::fix::ExecutionReport> const &event, 
       .version = {},
       .request_id = {},
       .external_order_id = {},
+      .client_order_id = {},
       .quantity = execution_report.order_qty,
       .price = execution_report.price,
   };
@@ -956,6 +957,7 @@ void OrderEntry::operator()(Trace<protocol::fix::OrderCancelReject> const &event
       .version = {},
       .request_id = {},
       .external_order_id = {},
+      .client_order_id = {},
       .quantity = NaN,
       .price = NaN,
   };
@@ -1011,6 +1013,7 @@ void OrderEntry::operator()(Trace<protocol::fix::Reject> const &event, fix::Head
           .version = {},
           .request_id = request_id,
           .external_order_id = {},
+          .client_order_id = {},
           .quantity = NaN,
           .price = NaN,
       };
