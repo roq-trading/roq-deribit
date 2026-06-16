@@ -38,11 +38,6 @@ struct Shared final {
   auto discard_symbol(std::string_view const &name) const { return dispatcher.discard_symbol(name); }
 
   template <typename... Args>
-  auto find_order(Args &&...args) {
-    return dispatcher.find_order(std::forward<Args>(args)...);
-  }
-
-  template <typename... Args>
   auto update_order(Args &&...args) {
     return dispatcher.update_order(std::forward<Args>(args)...);
   }
