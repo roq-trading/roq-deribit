@@ -783,12 +783,11 @@ void OrderEntry::operator()(Trace<protocol::fix::ExecutionReport> const &event, 
       return;
     }
   }
-  auto request_or_exchange_id = [&]() {
-    // note! rejects does not send orig_cl_ord_id
-    if (std::empty(execution_report.orig_cl_ord_id)) {
-      return execution_report.order_id;
+  auto client_order_id = [&]() {
+    if (std::empty(execution_report.deribit_label)) {
+      return execution_report.orig_cl_ord_id;
     }
-    return execution_report.orig_cl_ord_id;
+    return execution_report.deribit_label;
   }();
   auto side = map(execution_report.side);
   auto order_status = map(execution_report.ord_status);
@@ -837,8 +836,8 @@ void OrderEntry::operator()(Trace<protocol::fix::ExecutionReport> const &event, 
       .text = execution_report.text,
       .version = {},
       .request_id = {},
-      .external_order_id = {},
-      .client_order_id = {},
+      .external_order_id = execution_report.order_id,
+      .client_order_id = client_order_id,
       .quantity = execution_report.order_qty,
       .price = execution_report.price,
   };
@@ -857,7 +856,7 @@ void OrderEntry::operator()(Trace<protocol::fix::ExecutionReport> const &event, 
       .update_time_utc = execution_report.transact_time,
       .external_account = {},
       .external_order_id = execution_report.order_id,
-      .client_order_id = execution_report.deribit_label,
+      .client_order_id = client_order_id,
       .order_status = order_status,
       .error = {},
       .text = {},
@@ -881,7 +880,7 @@ void OrderEntry::operator()(Trace<protocol::fix::ExecutionReport> const &event, 
   auto user_id = SOURCE_NONE;
   auto order_id = ORDER_ID_NONE;
   auto strategy_id = STRATEGY_ID_NONE;
-  if (shared_.update_order(request_or_exchange_id, stream_id_, trace_info, response, order_update, [&](auto &order) {
+  if (shared_.update_order(stream_id_, trace_info, response, order_update, [&](auto &order) {
         user_id = order.user_id;
         order_id = order.order_id;
         strategy_id = order.strategy_id;
@@ -930,7 +929,7 @@ void OrderEntry::operator()(Trace<protocol::fix::ExecutionReport> const &event, 
         .update_time_utc = execution_report.transact_time,
         .external_account = {},
         .external_order_id = execution_report.order_id,
-        .client_order_id = {},
+        .client_order_id = client_order_id,
         .fills = fills,
         .routing_id = {},
         .update_type = update_type,
@@ -938,7 +937,7 @@ void OrderEntry::operator()(Trace<protocol::fix::ExecutionReport> const &event, 
         .user = {},
         .strategy_id = strategy_id,
     };
-    create_trace_and_dispatch(handler_, trace_info, trade_update, true, user_id, execution_report.deribit_label);
+    create_trace_and_dispatch(handler_, trace_info, trade_update, true, user_id);
   }
   // download end?
   download_.check_relaxed(State::ORDERS);
@@ -948,6 +947,12 @@ void OrderEntry::operator()(Trace<protocol::fix::OrderCancelReject> const &event
   auto &[trace_info, order_cancel_reject] = event;
   log::warn<1>("event={{header={}, order_cancel_reject={}}}"sv, header, order_cancel_reject);
   auto error = protocol::fix::map_error(order_cancel_reject.text);
+  auto client_order_id = [&]() {
+    if (std::empty(order_cancel_reject.deribit_label)) {
+      return order_cancel_reject.orig_cl_ord_id;
+    }
+    return order_cancel_reject.deribit_label;
+  }();
   auto response = server::oms::Response{
       .request_type = {},  // modify or cancel
       .origin = Origin::EXCHANGE,
@@ -957,17 +962,11 @@ void OrderEntry::operator()(Trace<protocol::fix::OrderCancelReject> const &event
       .version = {},
       .request_id = {},
       .external_order_id = {},
-      .client_order_id = {},
+      .client_order_id = client_order_id,
       .quantity = NaN,
       .price = NaN,
   };
-  auto request_or_exchange_id = [&]() {
-    if (!std::empty(order_cancel_reject.deribit_label)) {
-      return order_cancel_reject.deribit_label;
-    }
-    return order_cancel_reject.orig_cl_ord_id;
-  }();
-  if (shared_.update_order(request_or_exchange_id, stream_id_, trace_info, response, [&](auto &order) {
+  if (shared_.update_order(stream_id_, trace_info, response, [&](auto &order) {
         OrderStatus status = map(order_cancel_reject.ord_status);
         if (status != order.order_status) {
           log::warn("Unexpected: order status received={}, expected={}"sv, status, order.order_status);
@@ -1017,7 +1016,7 @@ void OrderEntry::operator()(Trace<protocol::fix::Reject> const &event, fix::Head
           .quantity = NaN,
           .price = NaN,
       };
-      if (shared_.update_order(request_id, stream_id_, trace_info, response, []([[maybe_unused]] auto &order) {})) {
+      if (shared_.update_order(stream_id_, trace_info, response, []([[maybe_unused]] auto &order) {})) {
       } else {
         log::warn<1>(R"(*** NO ORDER WITH REQUEST_ID="{}" ***)"sv, request_id);
       }

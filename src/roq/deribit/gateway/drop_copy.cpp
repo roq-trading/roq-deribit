@@ -543,7 +543,7 @@ void DropCopy::operator()(Trace<protocol::json::Trade> const &event, bool is_dow
       .update_time_utc = trade.timestamp,
       .external_account = {},
       .external_order_id = trade.order_id,
-      .client_order_id = {},
+      .client_order_id = trade.label,
       .fills = {&fill, 1},
       .routing_id = {},
       .update_type = update_type,
@@ -551,7 +551,7 @@ void DropCopy::operator()(Trace<protocol::json::Trade> const &event, bool is_dow
       .user = {},
       .strategy_id = {},
   };
-  create_trace_and_dispatch(handler_, trace_info, trade_update, is_last, SOURCE_NONE, trade.label);
+  create_trace_and_dispatch(handler_, trace_info, trade_update, is_last, SOURCE_NONE);
 }
 
 }  // namespace gateway
