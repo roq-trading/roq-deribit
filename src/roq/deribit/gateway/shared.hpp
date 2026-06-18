@@ -37,11 +37,6 @@ struct Shared final {
 
   auto discard_symbol(std::string_view const &name) const { return dispatcher.discard_symbol(name); }
 
-  template <typename... Args>
-  auto update_order(Args &&...args) {
-    return dispatcher.update_order(std::forward<Args>(args)...);
-  }
-
   template <typename Callback>
   bool find_instrument(uint32_t instrument_id, Callback callback) {
     auto iter = instruments.find(instrument_id);

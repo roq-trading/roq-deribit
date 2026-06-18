@@ -880,20 +880,12 @@ void OrderEntry::operator()(Trace<protocol::fix::ExecutionReport> const &event, 
   auto user_id = SOURCE_NONE;
   auto order_id = ORDER_ID_NONE;
   auto strategy_id = STRATEGY_ID_NONE;
-  if (shared_.update_order(stream_id_, trace_info, response, order_update, [&](auto &order) {
-        user_id = order.user_id;
-        order_id = order.order_id;
-        strategy_id = order.strategy_id;
-      })) {
-  } else {
-    auto external = std::empty(execution_report.deribit_label);
-    if (external) {
-      log::warn("*** EXTERNAL ORDER ***"sv);
-    } else {
-      log::warn("*** UNKNOWN INTERNAL ORDER ***"sv);
-    }
-    log::warn("execution_report={}"sv, execution_report);
-  }
+  auto callback = [&](auto &order) {
+    user_id = order.user_id;
+    order_id = order.order_id;
+    strategy_id = order.strategy_id;
+  };
+  create_trace_and_dispatch(shared_.dispatcher, trace_info, response, order_update, stream_id_, callback);
   if (!std::empty(execution_report.no_fills)) {
     auto &fills = shared_.get_fills();
     auto ref_data = shared_.get_ref_data(shared_.settings.exchange, execution_report.symbol);
@@ -966,16 +958,13 @@ void OrderEntry::operator()(Trace<protocol::fix::OrderCancelReject> const &event
       .quantity = NaN,
       .price = NaN,
   };
-  if (shared_.update_order(stream_id_, trace_info, response, [&](auto &order) {
-        OrderStatus status = map(order_cancel_reject.ord_status);
-        if (status != order.order_status) {
-          log::warn("Unexpected: order status received={}, expected={}"sv, status, order.order_status);
-        }
-      })) {
-  } else {
-    log::warn("*** EXTERNAL ORDER ***"sv);
-    log::warn("order_cancel_reject={}"sv, order_cancel_reject);
-  }
+  auto callback = [&](auto &order) {
+    OrderStatus status = map(order_cancel_reject.ord_status);
+    if (status != order.order_status) {
+      log::warn("Unexpected: order status received={}, expected={}"sv, status, order.order_status);
+    }
+  };
+  create_trace_and_dispatch(shared_.dispatcher, trace_info, response, stream_id_, callback);
 }
 
 namespace {
@@ -1016,10 +1005,7 @@ void OrderEntry::operator()(Trace<protocol::fix::Reject> const &event, fix::Head
           .quantity = NaN,
           .price = NaN,
       };
-      if (shared_.update_order(stream_id_, trace_info, response, []([[maybe_unused]] auto &order) {})) {
-      } else {
-        log::warn<1>(R"(*** NO ORDER WITH REQUEST_ID="{}" ***)"sv, request_id);
-      }
+      create_trace_and_dispatch(shared_.dispatcher, trace_info, response, stream_id_);
     } else {
       log::warn<1>(R"(*** NO REQUEST FOR MSG_SEQ_NUM="{}" ***)"sv, reject.ref_seq_num);
     }
