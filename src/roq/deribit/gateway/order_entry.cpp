@@ -278,8 +278,7 @@ uint16_t OrderEntry::operator()(Event<CancelAllOrders> const &event, std::string
         .strategy_id = cancel_all_orders.strategy_id,
     };
     TraceInfo trace_info{event};
-    Trace event_2{trace_info, cancel_all_orders_ack};
-    shared_(event_2);
+    create_trace_and_dispatch(shared_.dispatcher, trace_info, cancel_all_orders_ack);
   };
   auto filter = utils::create_filter(cancel_all_orders) & ~Mask{Filter::ACCOUNT};
   auto mass_cancel_request_type = [&]() {
@@ -401,7 +400,7 @@ void OrderEntry::operator()(ConnectionStatus connection_status, std::string_view
       .proxy = {},
   };
   log::info("stream_status={}"sv, stream_status);
-  create_trace_and_dispatch(handler_, trace_info, stream_status);
+  create_trace_and_dispatch(shared_.dispatcher, trace_info, stream_status);
 }
 
 void OrderEntry::send_logon() {
@@ -587,7 +586,7 @@ void OrderEntry::operator()(Trace<protocol::fix::Heartbeat> const &event, fix::H
         .account = account_.name,
         .latency = latency,
     };
-    create_trace_and_dispatch(handler_, trace_info, external_latency);
+    create_trace_and_dispatch(shared_.dispatcher, trace_info, external_latency);
     latency_.ping.update(latency);
   }
 }
@@ -644,7 +643,7 @@ void OrderEntry::operator()(Trace<protocol::fix::PositionReport> const &event, f
         .exchange_time_utc = {},
         .sending_time_utc = {},
     };
-    create_trace_and_dispatch(handler_, trace_info, position_update, is_last);
+    create_trace_and_dispatch(shared_.dispatcher, trace_info, position_update, is_last);
   }
   download_.check_relaxed(State::POSITIONS);
 }
@@ -888,7 +887,7 @@ void OrderEntry::operator()(Trace<protocol::fix::ExecutionReport> const &event, 
   create_trace_and_dispatch(shared_.dispatcher, trace_info, response, order_update, stream_id_, callback);
   if (!std::empty(execution_report.no_fills)) {
     auto &fills = shared_.get_fills();
-    auto ref_data = shared_.get_ref_data(shared_.settings.exchange, execution_report.symbol);
+    auto ref_data = shared_.dispatcher.get_ref_data(shared_.settings.exchange, execution_report.symbol);
     for (auto &item : execution_report.no_fills) {
       auto liquidity = map(item.fill_liquidity_ind);
       auto profit_loss_amount = utils::compute_profit_loss_amount(side, item.fill_qty, item.fill_px, ref_data.multiplier);
@@ -929,7 +928,7 @@ void OrderEntry::operator()(Trace<protocol::fix::ExecutionReport> const &event, 
         .user = {},
         .strategy_id = strategy_id,
     };
-    create_trace_and_dispatch(handler_, trace_info, trade_update, true, user_id);
+    create_trace_and_dispatch(shared_.dispatcher, trace_info, trade_update, true, user_id);
   }
   // download end?
   download_.check_relaxed(State::ORDERS);
@@ -1061,8 +1060,7 @@ void OrderEntry::operator()(Trace<protocol::fix::OrderMassCancelReport> const &e
       .user = {},
       .strategy_id = {},
   };
-  Trace event_2{trace_info, cancel_all_orders_ack};
-  shared_(event_2);
+  create_trace_and_dispatch(shared_.dispatcher, trace_info, cancel_all_orders_ack);
 }
 
 template <typename T>

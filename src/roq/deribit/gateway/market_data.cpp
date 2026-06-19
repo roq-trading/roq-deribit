@@ -294,7 +294,7 @@ void MarketData::operator()(ConnectionStatus connection_status, std::string_view
       .proxy = {},
   };
   log::info<1>("stream_status={}"sv, stream_status);
-  create_trace_and_dispatch(handler_, trace_info, stream_status);
+  create_trace_and_dispatch(shared_.dispatcher, trace_info, stream_status);
 }
 
 void MarketData::send_logon() {
@@ -595,7 +595,7 @@ void MarketData::operator()(Trace<protocol::fix::Heartbeat> const &event, fix::H
         .account = {},
         .latency = latency,
     };
-    create_trace_and_dispatch(handler_, trace_info, external_latency);
+    create_trace_and_dispatch(shared_.dispatcher, trace_info, external_latency);
     latency_.ping.update(latency);
   }
 }
@@ -672,7 +672,7 @@ void MarketData::operator()(Trace<protocol::fix::SecurityList> const &event, fix
     for (auto &item : security_list.no_related_sym) {
       log::info<2>("item={}"sv, item);
       auto &symbol = item.symbol;
-      auto discard = shared_.discard_symbol(symbol);
+      auto discard = shared_.dispatcher.discard_symbol(symbol);
       auto multiplier = compute_contracts_multiplier(item.contract_multiplier);
       if (shared_.settings.misc.use_fix_reference_data) {
         auto security_type = protocol::fix::map_security_type(item.security_type);
@@ -714,7 +714,7 @@ void MarketData::operator()(Trace<protocol::fix::SecurityList> const &event, fix
             .sending_time_utc = {},
             .discard = discard,
         };
-        create_trace_and_dispatch(handler_, trace_info, reference_data, true);
+        create_trace_and_dispatch(shared_.dispatcher, trace_info, reference_data, true);
       }
       shared_.multiplier[symbol] = multiplier;
       if (discard) {
@@ -833,7 +833,7 @@ void MarketData::operator()(Trace<protocol::fix::MarketDataIncrementalRefresh> c
       };
       auto is_last = std::empty(statistics) && std::empty(trades);
       try {
-        create_trace_and_dispatch(handler_, trace_info, market_by_price_update, is_last);
+        create_trace_and_dispatch(shared_.dispatcher, trace_info, market_by_price_update, is_last, shared_.final_bids, shared_.final_asks);
       } catch (BadState &) {
         resubscribe(symbol);
       }
@@ -850,7 +850,7 @@ void MarketData::operator()(Trace<protocol::fix::MarketDataIncrementalRefresh> c
         .sending_time_utc = header.sending_time,
     };
     auto is_last = std::empty(statistics);
-    create_trace_and_dispatch(handler_, trace_info, trade_summary, is_last);
+    create_trace_and_dispatch(shared_.dispatcher, trace_info, trade_summary, is_last);
   }
   if (!std::empty(statistics)) {
     auto statistics_update = StatisticsUpdate{
@@ -863,7 +863,7 @@ void MarketData::operator()(Trace<protocol::fix::MarketDataIncrementalRefresh> c
         .exchange_sequence = {},
         .sending_time_utc = header.sending_time,
     };
-    create_trace_and_dispatch(handler_, trace_info, statistics_update, true);
+    create_trace_and_dispatch(shared_.dispatcher, trace_info, statistics_update, true);
   }
 }
 
@@ -947,7 +947,7 @@ void MarketData::operator()(Trace<protocol::fix::MarketDataSnapshotFullRefresh> 
         .checksum = {},
     };
     try {
-      create_trace_and_dispatch(handler_, trace_info, market_by_price_update, is_last);
+      create_trace_and_dispatch(shared_.dispatcher, trace_info, market_by_price_update, is_last, shared_.final_bids, shared_.final_asks);
     } catch (BadState &) {
       log::warn("market_by_price_update={}"sv, market_by_price_update);
       auto &bids = market_by_price_update.bids;
@@ -967,7 +967,7 @@ void MarketData::operator()(Trace<protocol::fix::MarketDataSnapshotFullRefresh> 
         .exchange_sequence = {},
         .sending_time_utc = header.sending_time,
     };
-    create_trace_and_dispatch(handler_, trace_info, statistics_update, true);
+    create_trace_and_dispatch(shared_.dispatcher, trace_info, statistics_update, true);
   }
 }
 

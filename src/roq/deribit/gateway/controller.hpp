@@ -83,25 +83,16 @@ struct Controller final : public server::Handler,
 
   void operator()(metrics::Writer &) const override;
 
-  // streams
-
-  void operator()(Trace<StreamStatus> const &) override;
-  void operator()(Trace<ExternalLatency> const &) override;
-  void operator()(Trace<ReferenceData> const &, bool is_last) override;
-  void operator()(Trace<MarketStatus> const &, bool is_last) override;
-  void operator()(Trace<TopOfBook> const &, bool is_last) override;
-  void operator()(Trace<MarketByPriceUpdate> const &, bool is_last) override;
-  void operator()(Trace<TradeSummary> const &, bool is_last) override;
-  void operator()(Trace<StatisticsUpdate> const &, bool is_last) override;
-  void operator()(Trace<TimeSeriesUpdate> const &, bool is_last) override;
-  void operator()(Trace<TradeUpdate> const &, bool is_last, uint8_t user_id) override;
-  void operator()(Trace<PositionUpdate> const &, bool is_last) override;
-  void operator()(Trace<FundsUpdate> const &, bool is_last) override;
+  // Rest::Handler
 
   void operator()(Rest::CurrenciesUpdate &) override;
   void operator()(Rest::SymbolsUpdate &) override;
 
+  // WebSocket::Handler
+
   void operator()(WebSocket::Latch const &) override;
+
+  // MarketData::Handler
 
   void operator()(MarketData::SymbolsUpdate &) override;
 
@@ -141,8 +132,6 @@ struct Controller final : public server::Handler,
   std::vector<std::unique_ptr<MarketData>> market_data_;
   std::unique_ptr<UDPSnapshot> udp_snapshot_;
   std::unique_ptr<UDPEvents> udp_events_;
-  // cache
-  std::vector<MBPUpdate> bids_, asks_;
 };
 
 }  // namespace gateway

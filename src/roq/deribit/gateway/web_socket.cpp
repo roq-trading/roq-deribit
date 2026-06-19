@@ -183,7 +183,7 @@ void WebSocket::operator()(web::socket::Client::Latency const &latency) {
       .account = {},
       .latency = latency.sample,
   };
-  create_trace_and_dispatch(handler_, trace_info, external_latency);
+  create_trace_and_dispatch(shared_.dispatcher, trace_info, external_latency);
   latency_.ping.update(latency.sample);
 }
 
@@ -214,7 +214,7 @@ void WebSocket::operator()(ConnectionStatus connection_status, std::string_view 
       .proxy = (*connection_).get_proxy(),
   };
   log::info("stream_status={}"sv, stream_status);
-  create_trace_and_dispatch(handler_, trace_info, stream_status);
+  create_trace_and_dispatch(shared_.dispatcher, trace_info, stream_status);
 }
 
 void WebSocket::login() {
@@ -482,7 +482,7 @@ void WebSocket::operator()(Trace<protocol::json::Quote> const &event) {
             };
             if (!utils::is_equal(layer, top_of_book.layer)) {
               layer = top_of_book.layer;
-              create_trace_and_dispatch(handler_, trace_info, top_of_book, true);
+              create_trace_and_dispatch(shared_.dispatcher, trace_info, top_of_book, true);
             }
           })) {
       } else {
@@ -507,7 +507,7 @@ void WebSocket::operator()(Trace<protocol::json::Ticker> const &event) {
           .symbol = data.instrument_name,
           .trading_status = trading_status,
       };
-      create_trace_and_dispatch(handler_, trace_info, market_status, true);
+      create_trace_and_dispatch(shared_.dispatcher, trace_info, market_status, true);
     }
   });
 }

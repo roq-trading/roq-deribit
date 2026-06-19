@@ -35,8 +35,6 @@ struct Shared final {
 
   std::string_view next_request_id();
 
-  auto discard_symbol(std::string_view const &name) const { return dispatcher.discard_symbol(name); }
-
   template <typename Callback>
   bool find_instrument(uint32_t instrument_id, Callback callback) {
     auto iter = instruments.find(instrument_id);
@@ -61,15 +59,16 @@ struct Shared final {
     assert(res.second);
   }
 
-  template <typename... Args>
-  auto operator()(Args &&...args) {
-    return dispatcher(std::forward<Args>(args)...);
-  }
+  server::Dispatcher &dispatcher;
 
-  template <typename... Args>
-  auto get_ref_data(Args &&...args) {
-    return dispatcher.get_ref_data(std::forward<Args>(args)...);
-  }
+  Settings const &settings;
+  API const api;
+
+  core::limit::RateLimiter rate_limiter;
+
+  core::Symbols symbols;
+  utils::unordered_set<std::string> all_currencies;
+  utils::unordered_set<std::string> all_symbols;
 
  private:
   std::vector<Fill> fills;
@@ -93,6 +92,8 @@ struct Shared final {
 
   auto &get_mbp() { return mbp.clear(); }
 
+  std::vector<MBPUpdate> final_bids, final_asks;
+
   auto &get_trades() {
     trades.clear();
     return trades;
@@ -105,20 +106,12 @@ struct Shared final {
 
   utils::unordered_map<std::string, double> multiplier;
 
-  API const api;
-  server::Dispatcher &dispatcher;
-  Settings const &settings;
-
  private:
   uint32_t request_id_ = 0;
   std::string request_id_encode_buffer_;
   bool const multicast_;
 
  public:
-  core::limit::RateLimiter rate_limiter;
-  utils::unordered_set<std::string> all_currencies;
-  utils::unordered_set<std::string> all_symbols;
-  core::Symbols symbols;
   utils::unordered_map<uint32_t, Instrument> instruments;
 
   std::vector<std::byte> buffer;

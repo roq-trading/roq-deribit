@@ -23,10 +23,7 @@ namespace deribit {
 namespace gateway {
 
 struct UDPSnapshot final : public io::net::udp::Receiver::Handler, public protocol::sbe::Parser::Handler {
-  struct Handler {
-    virtual void operator()(Trace<StreamStatus> const &) = 0;
-    virtual void operator()(Trace<MarketByPriceUpdate> const &, bool is_last) = 0;
-  };
+  struct Handler {};
 
   UDPSnapshot(Handler &, io::Context &, uint16_t stream_id, Shared &);
 

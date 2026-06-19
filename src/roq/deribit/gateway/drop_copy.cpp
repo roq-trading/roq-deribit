@@ -176,7 +176,7 @@ void DropCopy::operator()(web::socket::Client::Latency const &latency) {
       .account = account_.name,
       .latency = latency.sample,
   };
-  create_trace_and_dispatch(handler_, trace_info, external_latency);
+  create_trace_and_dispatch(shared_.dispatcher, trace_info, external_latency);
   latency_.ping.update(latency.sample);
 }
 
@@ -207,7 +207,7 @@ void DropCopy::operator()(ConnectionStatus connection_status, std::string_view c
       .proxy = (*connection_).get_proxy(),
   };
   log::info("stream_status={}"sv, stream_status);
-  create_trace_and_dispatch(handler_, trace_info, stream_status);
+  create_trace_and_dispatch(shared_.dispatcher, trace_info, stream_status);
 }
 
 void DropCopy::login() {
@@ -452,7 +452,7 @@ void DropCopy::operator()(Trace<protocol::json::UserPortfolio> const &event) {
       .exchange_time_utc = data.creation_timestamp,
       .sending_time_utc = {},
   };
-  create_trace_and_dispatch(handler_, event.trace_info, funds_update, true);
+  create_trace_and_dispatch(shared_.dispatcher, event.trace_info, funds_update, true);
 }
 
 // note! includes trades
@@ -511,7 +511,7 @@ void DropCopy::operator()(Trace<protocol::json::Trade> const &event, bool is_dow
   auto multiplier = iter == std::end(shared_.multiplier) ? 1.0 : (*iter).second;  // XXX not good
   auto quantity = trade.amount * multiplier;
   auto side = map(trade.direction).template get<Side>();
-  auto ref_data = shared_.get_ref_data(shared_.settings.exchange, trade.instrument_name);
+  auto ref_data = shared_.dispatcher.get_ref_data(shared_.settings.exchange, trade.instrument_name);
   auto profit_loss_amount = utils::compute_profit_loss_amount(side, quantity, trade.price, ref_data.multiplier);
   log::debug("multiplier: cached={}, ref_data={}"sv, multiplier, ref_data.multiplier);
   auto fill = Fill{
@@ -551,7 +551,7 @@ void DropCopy::operator()(Trace<protocol::json::Trade> const &event, bool is_dow
       .user = {},
       .strategy_id = {},
   };
-  create_trace_and_dispatch(handler_, trace_info, trade_update, is_last, SOURCE_NONE);
+  create_trace_and_dispatch(shared_.dispatcher, trace_info, trade_update, is_last, SOURCE_NONE);
 }
 
 }  // namespace gateway

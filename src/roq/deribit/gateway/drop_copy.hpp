@@ -31,13 +31,7 @@ namespace deribit {
 namespace gateway {
 
 struct DropCopy final : public web::socket::Client::Handler, public protocol::json::Parser::Handler {
-  struct Handler {
-    virtual void operator()(Trace<StreamStatus> const &) = 0;
-    virtual void operator()(Trace<ExternalLatency> const &) = 0;
-    virtual void operator()(Trace<TradeUpdate> const &, bool is_last, uint8_t user_id) = 0;
-    virtual void operator()(Trace<FundsUpdate> const &, bool is_last) = 0;
-    virtual void operator()(Trace<PositionUpdate> const &, bool is_last) = 0;
-  };
+  struct Handler {};
 
   DropCopy(Handler &, io::Context &, uint16_t stream_id, Account &, Shared &);
 

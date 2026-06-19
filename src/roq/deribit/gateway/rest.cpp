@@ -212,7 +212,7 @@ void Rest::operator()(ConnectionStatus connection_status, std::string_view const
       .proxy = (*connection_).get_proxy(),
   };
   log::info("stream_status={}"sv, stream_status);
-  create_trace_and_dispatch(handler_, trace_info, stream_status);
+  create_trace_and_dispatch(shared_.dispatcher, trace_info, stream_status);
 }
 
 // web::rest::Client::Handler
@@ -237,7 +237,7 @@ void Rest::operator()(Trace<web::rest::Client::Latency> const &event) {
       .account = {},
       .latency = latency.sample,
   };
-  create_trace_and_dispatch(handler_, trace_info, external_latency);
+  create_trace_and_dispatch(shared_.dispatcher, trace_info, external_latency);
   latency_.ping.update(latency.sample);
 }
 
@@ -372,7 +372,7 @@ void Rest::operator()(Trace<protocol::json::GetInstrumentsAck> const &event) {
   for (auto &item : instruments_ack.result) {
     auto &symbol = item.instrument_name;
     assert(!std::empty(symbol));
-    auto discard = shared_.discard_symbol(symbol);
+    auto discard = shared_.dispatcher.discard_symbol(symbol);
     // needed by multicast
     auto multiplier = compute_contracts_multiplier(item.contract_size);
     auto callback = [&]() -> Instrument {
@@ -439,7 +439,7 @@ void Rest::operator()(Trace<protocol::json::GetInstrumentsAck> const &event) {
           .sending_time_utc = {},
           .discard = discard,
       };
-      create_trace_and_dispatch(handler_, trace_info, reference_data, true);
+      create_trace_and_dispatch(shared_.dispatcher, trace_info, reference_data, true);
     }
     // cache multiplier so Quote (amount) can be converted to TopOfBook (lots)
     // note! the multiplier is only cached on startup!
@@ -546,7 +546,7 @@ void Rest::operator()(Trace<protocol::json::GetChartDataAck> const &event, std::
       .update_type = UpdateType::SNAPSHOT,
       .exchange_time_utc = {},  // XXX FIXME
   };
-  create_trace_and_dispatch(handler_, trace_info, time_series_update, true);
+  create_trace_and_dispatch(shared_.dispatcher, trace_info, time_series_update, true);
 }
 
 // helpers

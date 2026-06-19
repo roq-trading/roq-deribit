@@ -51,13 +51,6 @@ struct MarketData final : public io::net::ConnectionManager::Handler {
   };
 
   struct Handler {
-    virtual void operator()(Trace<StreamStatus> const &) = 0;
-    virtual void operator()(Trace<ExternalLatency> const &) = 0;
-    virtual void operator()(Trace<ReferenceData> const &, bool is_last) = 0;
-    virtual void operator()(Trace<MarketByPriceUpdate> const &, bool is_last) = 0;
-    virtual void operator()(Trace<TradeSummary> const &, bool is_last) = 0;
-    virtual void operator()(Trace<StatisticsUpdate> const &, bool is_last) = 0;
-    // cross-communication
     virtual void operator()(SymbolsUpdate &) = 0;
   };
 

@@ -146,7 +146,7 @@ void UDPSnapshot::operator()(Trace<::deribit::sbe::multicast::Instrument> const 
     auto contract_size = instrument.contractSize();
     auto multiplier = compute_contracts_multiplier(contract_size);
     auto symbol = protocol::sbe::get_instrument_name(instrument);  // note! must be **LAST***
-    auto discard = shared_.discard_symbol(symbol);
+    auto discard = shared_.dispatcher.discard_symbol(symbol);
     if (!discard) {
       log::debug(R"(CREATE instrument_id={}, instrument_name="{}", contract_size={}, multiplier={})"sv, instrument_id, symbol, contract_size, multiplier);
     }
@@ -253,8 +253,7 @@ void UDPSnapshot::operator()(Trace<::deribit::sbe::multicast::Snapshot> const &e
             auto include = true;
             instrument.mbp_sequencer.apply(market_by_price, exchange_sequence, include);
           };
-          Trace event{trace_info, market_by_price_update};
-          shared_(event, true, apply_updates);
+          create_trace_and_dispatch(shared_.dispatcher, trace_info, market_by_price_update, true, apply_updates);
         };
         auto request_snapshot = [&](auto retries) {
           log::info(
@@ -332,7 +331,7 @@ void UDPSnapshot::publish_stream_status(TraceInfo const &trace_info, ConnectionS
       .proxy = {},
   };
   log::info("stream_status={}"sv, stream_status);
-  create_trace_and_dispatch(handler_, trace_info, stream_status);
+  create_trace_and_dispatch(shared_.dispatcher, trace_info, stream_status);
 }
 
 template <typename Callback>
