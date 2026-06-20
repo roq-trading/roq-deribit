@@ -37,11 +37,14 @@ struct UDPSnapshot final : public io::net::udp::Receiver::Handler, public protoc
 
  protected:
   // io::net::udp::Receiver::Handler
+
   void operator()(io::net::udp::Receiver::Read const &) override;
   void operator()(io::net::udp::Receiver::Error const &) override;
 
   // protocol::sbe::Parser::Handler
+
   bool operator()(protocol::sbe::Frame const &) override;
+
   void operator()(Trace<::deribit::sbe::multicast::Instrument> const &, protocol::sbe::Frame const &) override;
   void operator()(Trace<::deribit::sbe::multicast::Book> const &, protocol::sbe::Frame const &) override;
   void operator()(Trace<::deribit::sbe::multicast::Trades> const &, protocol::sbe::Frame const &) override;
@@ -54,7 +57,7 @@ struct UDPSnapshot final : public io::net::udp::Receiver::Handler, public protoc
   void operator()(Trace<::deribit::sbe::multicast::Rfq> const &, protocol::sbe::Frame const &) override;
   void operator()(Trace<::deribit::sbe::multicast::InstrumentV2> const &, protocol::sbe::Frame const &) override;
 
-  // utils
+  // helpers
 
   void publish_stream_status(TraceInfo const &, ConnectionStatus, std::string_view const &reason = {});
 

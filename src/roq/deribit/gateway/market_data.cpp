@@ -2,14 +2,9 @@
 
 #include "roq/deribit/gateway/market_data.hpp"
 
-#include <algorithm>
-#include <utility>
-
 #include "roq/mask.hpp"
 
-#include "roq/utils/compare.hpp"
 #include "roq/utils/safe_cast.hpp"
-#include "roq/utils/update.hpp"
 
 #include "roq/utils/charconv/from_chars.hpp"
 #include "roq/utils/charconv/to_string.hpp"
@@ -510,65 +505,68 @@ void MarketData::parse(Trace<fix::Message> const &event) {
 }
 
 void MarketData::parse_helper(Trace<fix::Message> const &event) {
-  auto &trace_info = event.trace_info;
-  auto &message = event.value;
+  auto &[trace_info, message] = event;
+  auto helper = [&](auto &value, auto &header) {
+    Trace event_2{trace_info, value};
+    (*this)(event_2, header);
+  };
   switch (message.header.msg_type) {
     using enum fix::MsgType;
     // session
     case HEARTBEAT: {
-      auto heartbeat = protocol::fix::Heartbeat::create(message);
-      create_trace_and_dispatch(*this, trace_info, heartbeat, message.header);
+      auto value = protocol::fix::Heartbeat::create(message);
+      helper(value, message.header);
       break;
     }
     case LOGON: {
-      auto logon = protocol::fix::Logon::create(message);
-      create_trace_and_dispatch(*this, trace_info, logon, message.header);
+      auto value = protocol::fix::Logon::create(message);
+      helper(value, message.header);
       break;
     }
     case LOGOUT: {
-      auto logout = protocol::fix::Logout::create(message);
-      create_trace_and_dispatch(*this, trace_info, logout, message.header);
+      auto value = protocol::fix::Logout::create(message);
+      helper(value, message.header);
       break;
     }
     case RESEND_REQUEST: {
-      auto resend_request = protocol::fix::ResendRequest::create(message);
-      create_trace_and_dispatch(*this, trace_info, resend_request, message.header);
+      auto value = protocol::fix::ResendRequest::create(message);
+      helper(value, message.header);
       break;
     }
     case TEST_REQUEST: {
-      auto test_request = protocol::fix::TestRequest::create(message);
-      create_trace_and_dispatch(*this, trace_info, test_request, message.header);
+      auto value = protocol::fix::TestRequest::create(message);
+      helper(value, message.header);
       break;
     }
     // ...
     case MARKET_DATA_INCREMENTAL_REFRESH:
       profile_.market_data_incremental_refresh([&]() {
-        auto market_data_incremental_refresh = protocol::fix::MarketDataIncrementalRefresh::create(message, decode_buffer_);
-        create_trace_and_dispatch(*this, trace_info, market_data_incremental_refresh, message.header);
+        auto value = protocol::fix::MarketDataIncrementalRefresh::create(message, decode_buffer_);
+        helper(value, message.header);
       });
       break;
     case MARKET_DATA_REQUEST_REJECT:
       profile_.market_data_request_reject([&]() {
-        auto market_data_request_reject = protocol::fix::MarketDataRequestReject::create(message);
-        create_trace_and_dispatch(*this, trace_info, market_data_request_reject, message.header);
+        auto value = protocol::fix::MarketDataRequestReject::create(message);
+        helper(value, message.header);
       });
       break;
     case MARKET_DATA_SNAPSHOT_FULL_REFRESH:
       profile_.market_data_snapshot_full_refresh([&]() {
-        auto market_data_snapshot_full_refresh = protocol::fix::MarketDataSnapshotFullRefresh::create(message, decode_buffer_);
-        create_trace_and_dispatch(*this, trace_info, market_data_snapshot_full_refresh, message.header);
+        auto value = protocol::fix::MarketDataSnapshotFullRefresh::create(message, decode_buffer_);
+        helper(value, message.header);
       });
       break;
     case SECURITY_LIST:
       profile_.security_list([&]() {
-        auto security_list = protocol::fix::SecurityList::create(message, decode_buffer_);
-        create_trace_and_dispatch(*this, trace_info, security_list, message.header);
+        auto value = protocol::fix::SecurityList::create(message, decode_buffer_);
+        helper(value, message.header);
       });
       break;
     case SECURITY_STATUS:
       profile_.security_status([&]() {
-        auto security_status = protocol::fix::SecurityStatus::create(message, decode_buffer_);
-        create_trace_and_dispatch(*this, trace_info, security_status, message.header);
+        auto value = protocol::fix::SecurityStatus::create(message, decode_buffer_);
+        helper(value, message.header);
       });
       break;
     // weird
@@ -744,8 +742,7 @@ void MarketData::operator()(Trace<protocol::fix::SecurityStatus> const &event, f
 }
 
 void MarketData::operator()(Trace<protocol::fix::MarketDataIncrementalRefresh> const &event, fix::Header const &header) {
-  auto &trace_info = event.trace_info;
-  auto &market_data_incremental_refresh = event.value;
+  auto &[trace_info, market_data_incremental_refresh] = event;
   log::info<3>("event={{header={}, market_data_incremental_refresh={}}}"sv, header, market_data_incremental_refresh);
   (*connection_manager_).touch(trace_info.source_receive_time);
   auto symbol = market_data_incremental_refresh.symbol;

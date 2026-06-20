@@ -5,15 +5,10 @@
 #include "roq/mask.hpp"
 
 #include "roq/utils/common.hpp"
-#include "roq/utils/compare.hpp"
-#include "roq/utils/safe_cast.hpp"
-#include "roq/utils/update.hpp"
 
 #include "roq/utils/exceptions/unhandled.hpp"
 
 #include "roq/utils/metrics/factory.hpp"
-
-#include "roq/web/socket/client.hpp"
 
 #include "roq/deribit/protocol/json/error.hpp"
 #include "roq/deribit/protocol/json/map.hpp"
@@ -462,7 +457,8 @@ void DropCopy::operator()(Trace<protocol::json::UserChanges> const &event) {
   for (size_t i = 0; i < std::size(trades); ++i) {
     auto &trade = trades[i];
     auto is_last = i == (std::size(trades) - 1);
-    create_trace_and_dispatch(*this, event.trace_info, std::as_const(trade), false, is_last);
+    Trace event_2{trace_info, trade};
+    (*this)(event_2, false, is_last);
   }
 }
 
@@ -473,7 +469,8 @@ void DropCopy::operator()(Trace<protocol::json::UserTrades> const &event) {
   for (size_t i = 0; i < std::size(trades); ++i) {
     auto &trade = trades[i];
     auto is_last = i == (std::size(trades) - 1);
-    create_trace_and_dispatch(*this, event.trace_info, std::as_const(trade), true, is_last);
+    Trace event_2{trace_info, trade};
+    (*this)(event_2, true, is_last);
   }
   download_trades_is_first_ = false;
 }

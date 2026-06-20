@@ -2,16 +2,12 @@
 
 #include "roq/deribit/gateway/order_entry.hpp"
 
-#include <algorithm>
-#include <utility>
-
 #include "roq/mask.hpp"
 
 #include "roq/server/oms/exceptions.hpp"
 
 #include "roq/utils/common.hpp"
-#include "roq/utils/safe_cast.hpp"
-#include "roq/utils/update.hpp"
+#include "roq/utils/compare.hpp"
 
 #include "roq/utils/charconv/from_chars.hpp"
 #include "roq/utils/charconv/to_string.hpp"
@@ -501,69 +497,72 @@ void OrderEntry::parse(Trace<fix::Message> const &event) {
 }
 
 void OrderEntry::parse_helper(Trace<fix::Message> const &event) {
-  auto &trace_info = event.trace_info;
-  auto &message = event.value;
+  auto &[trace_info, message] = event;
+  auto helper = [&](auto &value, auto &header) {
+    Trace event_2{trace_info, value};
+    (*this)(event_2, header);
+  };
   switch (message.header.msg_type) {
     using enum fix::MsgType;
     // session
     case HEARTBEAT: {
-      auto heartbeat = protocol::fix::Heartbeat::create(message);
-      create_trace_and_dispatch(*this, trace_info, heartbeat, message.header);
+      auto value = protocol::fix::Heartbeat::create(message);
+      helper(value, message.header);
       return;
     }
     case LOGON: {
-      auto logon = protocol::fix::Logon::create(message);
-      create_trace_and_dispatch(*this, trace_info, logon, message.header);
+      auto value = protocol::fix::Logon::create(message);
+      helper(value, message.header);
       return;
     }
     case LOGOUT: {
-      auto logout = protocol::fix::Logout::create(message);
-      create_trace_and_dispatch(*this, trace_info, logout, message.header);
+      auto value = protocol::fix::Logout::create(message);
+      helper(value, message.header);
       return;
     }
     case RESEND_REQUEST: {
-      auto resend_request = protocol::fix::ResendRequest::create(message);
-      create_trace_and_dispatch(*this, trace_info, resend_request, message.header);
+      auto value = protocol::fix::ResendRequest::create(message);
+      helper(value, message.header);
       return;
     }
     case TEST_REQUEST: {
-      auto test_request = protocol::fix::TestRequest::create(message);
-      create_trace_and_dispatch(*this, trace_info, test_request, message.header);
+      auto value = protocol::fix::TestRequest::create(message);
+      helper(value, message.header);
       return;
     }
     // ...
     case POSITION_REPORT: {
       profile_.position_report([&]() {
-        auto position_report = protocol::fix::PositionReport::create(message, decode_buffer_);
-        create_trace_and_dispatch(*this, trace_info, position_report, message.header);
+        auto value = protocol::fix::PositionReport::create(message, decode_buffer_);
+        helper(value, message.header);
       });
       return;
     }
     case EXECUTION_REPORT: {
       profile_.execution_report([&]() {
-        auto execution_report = protocol::fix::ExecutionReport::create(message, decode_buffer_);
-        create_trace_and_dispatch(*this, trace_info, execution_report, message.header);
+        auto value = protocol::fix::ExecutionReport::create(message, decode_buffer_);
+        helper(value, message.header);
       });
       return;
     }
     case ORDER_CANCEL_REJECT: {
       profile_.order_cancel_reject([&]() {
-        auto order_cancel_reject = protocol::fix::OrderCancelReject::create(message);
-        create_trace_and_dispatch(*this, trace_info, order_cancel_reject, message.header);
+        auto value = protocol::fix::OrderCancelReject::create(message);
+        helper(value, message.header);
       });
       return;
     }
     case REJECT: {
       profile_.reject([&]() {
-        auto reject = protocol::fix::Reject::create(message);
-        create_trace_and_dispatch(*this, trace_info, reject, message.header);
+        auto value = protocol::fix::Reject::create(message);
+        helper(value, message.header);
       });
       return;
     }
     case ORDER_MASS_CANCEL_REPORT: {
       profile_.order_mass_cancel_report([&]() {
-        auto order_mass_cancel_report = protocol::fix::OrderMassCancelReport::create(message, decode_buffer_);
-        create_trace_and_dispatch(*this, trace_info, order_mass_cancel_report, message.header);
+        auto value = protocol::fix::OrderMassCancelReport::create(message, decode_buffer_);
+        helper(value, message.header);
       });
       return;
     }

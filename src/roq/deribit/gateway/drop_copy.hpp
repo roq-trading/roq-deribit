@@ -4,7 +4,6 @@
 
 #include <memory>
 #include <string>
-#include <string_view>
 #include <vector>
 
 #include "roq/utils/metrics/counter.hpp"
@@ -58,7 +57,8 @@ struct DropCopy final : public web::socket::Client::Handler, public protocol::js
   void operator()(web::socket::Client::Text const &) override;
   void operator()(web::socket::Client::Binary const &) override;
 
- private:
+  // helpers
+
   void operator()(ConnectionStatus, std::string_view const &reason = {});
 
   void login();
@@ -86,7 +86,6 @@ struct DropCopy final : public web::socket::Client::Handler, public protocol::js
 
   void parse(std::string_view const &message);
 
- public:
   // protocol::json::Parser::Handler
 
   void operator()(Trace<protocol::json::Auth> const &) override;

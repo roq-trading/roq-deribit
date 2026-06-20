@@ -2,18 +2,11 @@
 
 #include "roq/deribit/gateway/rest.hpp"
 
-#include <algorithm>
-#include <utility>
-
 #include "roq/logging.hpp"
 
 #include "roq/mask.hpp"
 
-#include "roq/core/json/array_parser.hpp"
-#include "roq/core/json/parser.hpp"
-
 #include "roq/utils/safe_cast.hpp"
-#include "roq/utils/update.hpp"
 
 #include "roq/utils/metrics/factory.hpp"
 

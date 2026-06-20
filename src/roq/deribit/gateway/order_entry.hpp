@@ -11,6 +11,7 @@
 #include "roq/utils/metrics/profile.hpp"
 
 #include "roq/io/context.hpp"
+
 #include "roq/io/net/connection_factory.hpp"
 #include "roq/io/net/connection_manager.hpp"
 
@@ -46,8 +47,6 @@ struct OrderEntry final : public io::net::ConnectionManager::Handler {
 
   OrderEntry(OrderEntry const &) = delete;
 
-  bool ready() const { return connection_status_ == ConnectionStatus::READY; }
-
   void operator()(Event<Start> const &);
   void operator()(Event<Stop> const &);
   void operator()(Event<Timer> const &);
@@ -70,6 +69,9 @@ struct OrderEntry final : public io::net::ConnectionManager::Handler {
 
   void operator()(metrics::Writer &) const;
 
+ protected:
+  // helpers
+
   void operator()(Trace<protocol::fix::Heartbeat> const &, fix::Header const &);
   void operator()(Trace<protocol::fix::Logon> const &, fix::Header const &);
   void operator()(Trace<protocol::fix::Logout> const &, fix::Header const &);
@@ -83,13 +85,17 @@ struct OrderEntry final : public io::net::ConnectionManager::Handler {
   void operator()(Trace<protocol::fix::Reject> const &, fix::Header const &);
   void operator()(Trace<protocol::fix::OrderMassCancelReport> const &, fix::Header const &);
 
- protected:
+  // io::net::ConnectionManager::Handler
+
   void operator()(io::net::ConnectionManager::Connected const &) override;
   void operator()(io::net::ConnectionManager::Disconnected const &) override;
   void operator()(io::net::ConnectionManager::Read const &) override;
   void operator()(io::net::ConnectionManager::Write const &) override;
 
- private:
+  // helpers
+
+  bool ready() const { return connection_status_ == ConnectionStatus::READY; }
+
   void operator()(ConnectionStatus, std::string_view const &reason = {});
 
   void send_logon();
@@ -112,8 +118,6 @@ struct OrderEntry final : public io::net::ConnectionManager::Handler {
   void parse(Trace<fix::Message> const &);
   void parse_helper(Trace<fix::Message> const &);
 
-  // utilities
-
   template <typename T>
   uint64_t send(T const &event);
 
@@ -122,6 +126,7 @@ struct OrderEntry final : public io::net::ConnectionManager::Handler {
 
   void check(fix::Header const &);
 
+ private:
   Handler &handler_;
   // config
   uint16_t const stream_id_;
