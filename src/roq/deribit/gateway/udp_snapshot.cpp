@@ -173,16 +173,16 @@ void UDPSnapshot::operator()(Trace<::deribit::sbe::multicast::Ticker> const &eve
 }
 
 void UDPSnapshot::operator()(Trace<::deribit::sbe::multicast::Snapshot> const &event, protocol::sbe::Frame const &frame) {
-  auto &trace_info = event.trace_info;
+  auto &[trace_info, snapshot] = event;
   using value_type = std::remove_cvref_t<decltype(event)>::value_type;
-  auto &snapshot = const_cast<value_type &>(event.value);
-  log::info<4>("snapshot={}, frame={}"sv, snapshot, frame);
+  auto &snapshot_2 = const_cast<value_type &>(snapshot);
+  log::info<4>("snapshot={}, frame={}"sv, snapshot_2, frame);
   if (!publish_market_by_price_) {
     return;
   }
-  auto instrument_id = snapshot.instrumentId();
-  auto change_id = snapshot.changeId();
-  auto is_last = snapshot.isLastInBook();
+  auto instrument_id = snapshot_2.instrumentId();
+  auto change_id = snapshot_2.changeId();
+  auto is_last = snapshot_2.isLastInBook();
   auto callback = [&](auto &channel) {
     auto callback_2 = [&](auto &instrument) {
       // XXX FIXME there is a race if udp_events resets in the middle of receiving snapshot
@@ -211,8 +211,8 @@ void UDPSnapshot::operator()(Trace<::deribit::sbe::multicast::Snapshot> const &e
               break;
           }
         };
-        snapshot.sbeRewind();
-        snapshot.levelsList().forEach(append_level);
+        snapshot_2.sbeRewind();
+        snapshot_2.levelsList().forEach(append_level);
       }
       if (!is_last) {
         if (!channel.instrument_id) {
@@ -232,7 +232,7 @@ void UDPSnapshot::operator()(Trace<::deribit::sbe::multicast::Snapshot> const &e
               exchange_sequence,
               retries,
               std::chrono::duration_cast<std::chrono::milliseconds>(delay));
-          std::chrono::milliseconds timestamp{snapshot.timestampMs()};
+          std::chrono::milliseconds timestamp{snapshot_2.timestampMs()};
           auto market_by_price_update = MarketByPriceUpdate{
               .stream_id = stream_id_,
               .exchange = shared_.settings.exchange,

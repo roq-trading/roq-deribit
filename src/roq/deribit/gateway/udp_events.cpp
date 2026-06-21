@@ -205,20 +205,20 @@ void UDPEvents::operator()(Trace<::deribit::sbe::multicast::Instrument> const &e
 
 // note! it may take a while before the instrument gets created (depends on the snapshot channel)
 void UDPEvents::operator()(Trace<::deribit::sbe::multicast::Book> const &event, protocol::sbe::Frame const &frame) {
-  auto &trace_info = event.trace_info;
+  auto &[trace_info, book] = event;
   using value_type = std::remove_cvref_t<decltype(event)>::value_type;
-  auto &book = const_cast<value_type &>(event.value);
-  log::info<4>("book={}, frame={}"sv, book, frame);
+  auto &book_2 = const_cast<value_type &>(book);
+  log::info<4>("book={}, frame={}"sv, book_2, frame);
   if (!publish_market_by_price_) {
     return;
   }
-  auto instrument_id = book.instrumentId();
-  auto prev_change_id = book.prevChangeId();
-  auto change_id = book.changeId();
-  auto is_last = book.isLast();
+  auto instrument_id = book_2.instrumentId();
+  auto prev_change_id = book_2.prevChangeId();
+  auto change_id = book_2.changeId();
+  auto is_last = book_2.isLast();
   auto callback = [&](auto &channel) {
     auto callback_2 = [&](auto &instrument) {
-      std::chrono::milliseconds timestamp{book.timestampMs()};
+      std::chrono::milliseconds timestamp{book_2.timestampMs()};
       auto append_change = [&](auto &item) {
         auto price = item.price();
         auto quantity = item.amount() * instrument.multiplier;
@@ -243,8 +243,8 @@ void UDPEvents::operator()(Trace<::deribit::sbe::multicast::Book> const &event, 
             break;
         }
       };
-      book.sbeRewind();
-      book.changesList().forEach(append_change);
+      book_2.sbeRewind();
+      book_2.changesList().forEach(append_change);
       if (!is_last) {
         if (!channel.instrument_id) {
           channel.instrument_id = instrument_id;
@@ -329,17 +329,17 @@ void UDPEvents::operator()(Trace<::deribit::sbe::multicast::Book> const &event, 
 }
 
 void UDPEvents::operator()(Trace<::deribit::sbe::multicast::Trades> const &event, protocol::sbe::Frame const &frame) {
-  auto &trace_info = event.trace_info;
+  auto &[trace_info, trades] = event;
   using value_type = std::remove_cvref_t<decltype(event)>::value_type;
-  auto &trades = const_cast<value_type &>(event.value);
-  log::info<4>("trades={}, frame={}"sv, trades, frame);
+  auto &trades_2 = const_cast<value_type &>(trades);
+  log::info<4>("trades={}, frame={}"sv, trades_2, frame);
   if (!publish_trade_summary_) {
     return;
   }
-  auto instrument_id = trades.instrumentId();
+  auto instrument_id = trades_2.instrumentId();
   auto callback = [&](auto &instrument) {
     std::chrono::milliseconds exchange_time_utc = {};
-    auto &trades_2 = shared_.get_trades();
+    auto &trades_3 = shared_.get_trades();
     auto append_trade = [&](auto &item) {
       std::chrono::milliseconds timestamp{item.timestampMs()};
       exchange_time_utc = std::max(exchange_time_utc, timestamp);
@@ -354,15 +354,15 @@ void UDPEvents::operator()(Trace<::deribit::sbe::multicast::Trades> const &event
           .maker_order_id = {},
       };
       utils::charconv::to_string(std::back_inserter(trade.trade_id), item.tradeId());
-      trades_2.emplace_back(trade);  // XXX FIXME std::move
+      trades_3.emplace_back(trade);  // XXX FIXME std::move
     };
-    trades.sbeRewind();
-    trades.tradesList().forEach(append_trade);
+    trades_2.sbeRewind();
+    trades_2.tradesList().forEach(append_trade);
     auto trade_summary = TradeSummary{
         .stream_id = stream_id_,
         .exchange = shared_.settings.exchange,
         .symbol = instrument.symbol,
-        .trades = trades_2,
+        .trades = trades_3,
         .exchange_time_utc = exchange_time_utc,
         .exchange_sequence = {},
         .sending_time_utc = {},
@@ -380,20 +380,20 @@ void UDPEvents::operator()(Trace<::deribit::sbe::multicast::Trades> const &event
 }
 
 void UDPEvents::operator()(Trace<::deribit::sbe::multicast::Ticker> const &event, protocol::sbe::Frame const &frame) {
-  auto &trace_info = event.trace_info;
+  auto &[trace_info, ticker] = event;
   using value_type = std::remove_cvref_t<decltype(event)>::value_type;
-  auto &ticker = const_cast<value_type &>(event.value);
-  log::info<4>("ticker={}, frame={}"sv, ticker, frame);
+  auto &ticker_2 = const_cast<value_type &>(ticker);
+  log::info<4>("ticker={}, frame={}"sv, ticker_2, frame);
   if (!publish_top_of_book_) {
     return;
   }
-  auto instrument_id = ticker.instrumentId();
+  auto instrument_id = ticker_2.instrumentId();
   auto callback = [&](auto &instrument) {
-    auto bid_price = ticker.bestBidPrice();
-    auto bid_quantity = ticker.bestBidAmount() * instrument.multiplier;
-    auto ask_price = ticker.bestAskPrice();
-    auto ask_quantity = ticker.bestAskAmount() * instrument.multiplier;
-    std::chrono::milliseconds timestamp{ticker.timestampMs()};
+    auto bid_price = ticker_2.bestBidPrice();
+    auto bid_quantity = ticker_2.bestBidAmount() * instrument.multiplier;
+    auto ask_price = ticker_2.bestAskPrice();
+    auto ask_quantity = ticker_2.bestAskAmount() * instrument.multiplier;
+    std::chrono::milliseconds timestamp{ticker_2.timestampMs()};
     auto top_of_book = TopOfBook{
         .stream_id = stream_id_,
         .exchange = shared_.settings.exchange,

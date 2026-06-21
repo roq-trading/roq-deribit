@@ -127,7 +127,7 @@ struct OrderEntry final : public io::net::ConnectionManager::Handler {
   void check(fix::Header const &);
 
  private:
-  Handler &handler_;
+  [[maybe_unused]] Handler &handler_;
   // config
   uint16_t const stream_id_;
   std::string const name_;

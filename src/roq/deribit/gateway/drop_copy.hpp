@@ -108,7 +108,7 @@ struct DropCopy final : public web::socket::Client::Handler, public protocol::js
   void operator()(Trace<protocol::json::Trade> const &, bool is_download, bool is_last);
 
  private:
-  Handler &handler_;
+  [[maybe_unused]] Handler &handler_;
   // config
   uint16_t const stream_id_;
   std::string const name_;
