@@ -29,6 +29,7 @@ size_t const DISPATCH_THIS_MANY_BEFORE_CHECKING_CLOCK = 1000;
 auto const WAIT_THIS_LONG_BEFORE_NEXT_STATE_CHANGE = 3s;
 
 // XXX FIXME TODO from flags
+auto const BRIDGE = "fix"sv;
 auto const USER = "trader"sv;
 auto const ACCOUNT = "A1"sv;
 auto const EXCHANGE = "deribit"sv;
@@ -44,7 +45,7 @@ auto create_dispatcher(auto &handler, auto &settings, auto &config, auto &contex
   auto helper = [](auto &dispatcher, auto &settings, auto &config, auto &context) {
     return gateway::Controller::create(dispatcher, settings, config, context);
   };
-  return std::make_unique<server::Strategy>(handler, settings, config, context, USER, helper);
+  return std::make_unique<server::Strategy>(handler, settings, config, context, BRIDGE, USER, helper);
 }
 }  // namespace
 
