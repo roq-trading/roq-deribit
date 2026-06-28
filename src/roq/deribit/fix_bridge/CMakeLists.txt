@@ -1,8 +1,6 @@
 set(TARGET_NAME ${PROJECT_NAME}-fix-bridge)
 
-add_subdirectory(flags)
-
-set(SOURCES application.cpp controller.cpp settings.cpp main.cpp)
+set(SOURCES application.cpp settings.cpp main.cpp)
 
 include(RoqAutogen)
 
@@ -15,11 +13,12 @@ target_link_libraries(
   PRIVATE ${PROJECT_NAME}-flags
           ${PROJECT_NAME}-gateway
           roq-api::roq-api
-          roq-core::roq-core
+          roq-fix::roq-fix
           roq-flags::roq-flags
           roq-logging::roq-logging
           roq-logging::roq-logging-flags
           roq-server::roq-server
+          roq-server::roq-server-fix-bridge-flags
           fmt::fmt)
 
 if(ROQ_BUILD_TYPE STREQUAL "Release")

@@ -4,9 +4,12 @@
 
 #include "roq/logging.hpp"
 
-#include "roq/deribit/gateway/config.hpp"
+#include "roq/server/fix_bridge/controller.hpp"
 
-#include "roq/deribit/fix_bridge/controller.hpp"
+#include "roq/deribit/gateway/controller.hpp"
+
+#include "roq/deribit/fix_bridge/config.hpp"
+#include "roq/deribit/fix_bridge/settings.hpp"
 
 using namespace std::literals;
 
@@ -18,10 +21,10 @@ namespace fix_bridge {
 
 int Application::main(args::Parser const &args) {
   Settings settings{args};
-  gateway::Config config{settings};
+  Config config{settings};
   log::warn("config={}"sv, config);
   auto context = server::create_io_context(settings);
-  Controller{settings, config, *context}.dispatch();
+  server::fix_bridge::Controller2<gateway::Controller>{settings, config, *context, "trader"sv}.dispatch();
   return EXIT_SUCCESS;
 }
 

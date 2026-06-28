@@ -2,18 +2,26 @@
 
 #include "roq/deribit/fix_bridge/settings.hpp"
 
+#include "roq/server/fix_bridge/flags/settings.hpp"
+
 using namespace std::literals;
 
 namespace roq {
 namespace deribit {
 namespace fix_bridge {
 
+// === HELPERS ===
+
+namespace {
+auto create_fix_bridge(auto &parser) {
+  return server::fix_bridge::flags::Settings{parser};
+}
+}  // namespace
+
 // === IMPLEMENTATION ===
 
-/*
-Settings::Settings(args::Parser const &) : flags::Flags{flags::Flags::create()} {
+Settings::Settings(args::Parser const &parser) : flags::Settings{parser}, fix_bridge{create_fix_bridge(parser)} {
 }
-*/
 
 }  // namespace fix_bridge
 }  // namespace deribit

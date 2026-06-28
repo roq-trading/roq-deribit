@@ -3,6 +3,7 @@
 #include "roq/api.hpp"
 
 #include "roq/flags/args.hpp"
+
 #include "roq/logging/flags/settings.hpp"
 
 #include "roq/deribit/fix_bridge/application.hpp"
@@ -13,9 +14,12 @@ using namespace std::literals;
 
 namespace {
 auto const INFO = roq::Service::Info{
-    .description = "Roq's Deribit gateway / fix-bridge"sv,
+    .description = "Roq's Deribit gateway (FIX interface)"sv,
     .package_name = ROQ_PACKAGE_NAME,
-    .build_version = ROQ_VERSION,
+    .build_version = ROQ_BUILD_VERSION,
+    .build_number = ROQ_BUILD_NUMBER,
+    .build_type = ROQ_BUILD_TYPE,
+    .git_hash = ROQ_GIT_DESCRIBE_HASH,
 };
 }  // namespace
 
