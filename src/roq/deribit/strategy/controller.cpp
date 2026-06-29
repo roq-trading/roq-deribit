@@ -44,7 +44,7 @@ auto create_dispatcher(auto &handler, auto &settings, auto &config, auto &contex
   auto helper = [](auto &dispatcher, auto &settings, auto &config, auto &context) {
     return gateway::Controller::create(dispatcher, settings, config, context);
   };
-  return std::make_unique<server::Strategy>(handler, settings, config, context, std::string_view{}, USER, helper);
+  return std::make_unique<server::Strategy>(handler, settings, config, context, USER, helper);
 }
 }  // namespace
 
