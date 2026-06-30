@@ -14,6 +14,8 @@
 
 #include "roq/web/socket/client.hpp"
 
+#include "roq/core/timer_queue.hpp"
+
 #include "roq/core/json/buffer_stack.hpp"
 
 #include "roq/core/download.hpp"
@@ -107,6 +109,10 @@ struct DropCopy final : public web::socket::Client::Handler, public protocol::js
 
   void operator()(Trace<protocol::json::Trade> const &, bool is_download, bool is_last);
 
+  // helpers
+
+  void check_subscribe_queue(std::chrono::nanoseconds now);
+
  private:
   [[maybe_unused]] Handler &handler_;
   // config
@@ -137,6 +143,8 @@ struct DropCopy final : public web::socket::Client::Handler, public protocol::js
   core::Download<State> download_;
   bool can_download_ = false;
   bool download_trades_is_first_ = true;
+  //
+  core::TimerQueue<std::string> subscribe_queue_;
 };
 
 }  // namespace gateway

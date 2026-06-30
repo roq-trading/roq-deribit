@@ -108,7 +108,11 @@ void DropCopy::operator()(Event<Stop> const &) {
 }
 
 void DropCopy::operator()(Event<Timer> const &event) {
-  (*connection_).refresh(event.value.now);
+  auto now = event.value.now;
+  (*connection_).refresh(now);
+  if ((*connection_).ready()) {
+    check_subscribe_queue(now);
+  }
 }
 
 void DropCopy::operator()(metrics::Writer &writer) const {
@@ -154,6 +158,7 @@ void DropCopy::operator()(web::socket::Client::Disconnected const &) {
   ready_ = false;
   (*this)(ConnectionStatus::DISCONNECTED);
   download_.reset();
+  subscribe_queue_.clear();
 }
 
 void DropCopy::operator()(web::socket::Client::Ready const &) {
@@ -288,7 +293,7 @@ void DropCopy::subscribe_user_portfolio(std::span<std::string> const &currencies
       R"(}})"sv,
       fmt::join(currencies, R"(","user.portfolio.)"sv),
       request_type.as_raw_text());
-  (*connection_).send_text(message);
+  subscribe_queue_.emplace_back(message);
 }
 
 void DropCopy::subscribe_user_changes() {
@@ -302,7 +307,7 @@ void DropCopy::subscribe_user_changes() {
       R"("id":"{}")"
       R"(}})"sv,
       request_type.as_raw_text());
-  (*connection_).send_text(message);
+  subscribe_queue_.emplace_back(message);
 }
 
 void DropCopy::subscribe_user_orders() {
@@ -316,7 +321,7 @@ void DropCopy::subscribe_user_orders() {
       R"("id":"{}")"
       R"(}})"sv,
       request_type.as_raw_text());
-  (*connection_).send_text(message);
+  subscribe_queue_.emplace_back(message);
 }
 
 void DropCopy::subscribe_user_trades() {
@@ -330,7 +335,7 @@ void DropCopy::subscribe_user_trades() {
       R"("id":"{}")"
       R"(}})"sv,
       request_type.as_raw_text());
-  (*connection_).send_text(message);
+  subscribe_queue_.emplace_back(message);
 }
 
 void DropCopy::get_account_summary(std::span<std::string> const &currencies) {
@@ -347,7 +352,7 @@ void DropCopy::get_account_summary(std::span<std::string> const &currencies) {
         R"(}})"sv,
         currency,
         request_type.as_raw_text());
-    (*connection_).send_text(message);
+    subscribe_queue_.emplace_back(message);
   }
 }
 
@@ -371,7 +376,7 @@ void DropCopy::get_user_trades_by_currency(std::span<std::string> const &currenc
         currency,
         start_timestamp.count(),
         request_type.as_raw_text());
-    (*connection_).send_text(message);
+    subscribe_queue_.emplace_back(message);
   }
 }
 
@@ -549,6 +554,12 @@ void DropCopy::operator()(Trace<protocol::json::Trade> const &event, bool is_dow
       .strategy_id = {},
   };
   create_trace_and_dispatch(shared_.dispatcher, trace_info, trade_update, is_last, SOURCE_NONE);
+}
+
+void DropCopy::check_subscribe_queue(std::chrono::nanoseconds now) {
+  auto can_request = [&](auto now) { return shared_.rate_limiter.can_request(now); };
+  auto request = [&](auto &message) { (*connection_).send_text(message); };
+  subscribe_queue_.dispatch(can_request, request, now);
 }
 
 }  // namespace gateway

@@ -4,6 +4,10 @@ All notable changes will be documented in this file.
 
 ## Head
 
+### Changed
+
+* Throttle drop-copy (WS) subscriptions (#613)
+
 ### Removed
 
 * BREAKING CHANGE: Remove default URIs (#611)
