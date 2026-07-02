@@ -138,6 +138,10 @@
     {
       "name": "underlying_type",
       "type": "std/string_view"
+    },
+    {
+      "name": "is_csr_routed",
+      "type": "std/bool"
     }
   ]
 }
