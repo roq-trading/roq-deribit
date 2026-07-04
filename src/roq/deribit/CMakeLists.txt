@@ -9,6 +9,7 @@ add_subdirectory(gateway)
 add_subdirectory(dump)
 add_subdirectory(filter)
 add_subdirectory(fix_bridge)
+add_subdirectory(proto_bridge)
 add_subdirectory(strategy)
 
 set(SOURCES application.cpp main.cpp)
