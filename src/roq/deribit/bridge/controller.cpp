@@ -1,6 +1,6 @@
 /* Copyright (c) 2017-2026, Hans Erik Thrane */
 
-#include "roq/deribit/proto_bridge/controller.hpp"
+#include "roq/deribit/bridge/controller.hpp"
 
 #include <cassert>
 
@@ -18,7 +18,7 @@ using namespace std::literals;
 
 namespace roq {
 namespace deribit {
-namespace proto_bridge {
+namespace bridge {
 
 // === CONSTANTS ===
 
@@ -263,6 +263,6 @@ void Controller::operator()(io::sys::Signal::Event const &event) {
   (*dispatcher_).stop();
 }
 
-}  // namespace proto_bridge
+}  // namespace bridge
 }  // namespace deribit
 }  // namespace roq

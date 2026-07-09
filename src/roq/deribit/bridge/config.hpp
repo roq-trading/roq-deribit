@@ -6,10 +6,10 @@
 
 namespace roq {
 namespace deribit {
-namespace proto_bridge {
+namespace bridge {
 
 using Config = gateway::Config;
 
-}  // namespace proto_bridge
+}  // namespace bridge
 }  // namespace deribit
 }  // namespace roq

@@ -11,11 +11,11 @@
 #include "roq/deribit/gateway/config.hpp"
 #include "roq/deribit/gateway/settings.hpp"
 
-#include "roq/deribit/proto_bridge/settings.hpp"
+#include "roq/deribit/bridge/settings.hpp"
 
 namespace roq {
 namespace deribit {
-namespace proto_bridge {
+namespace bridge {
 
 struct Controller final : public client::Handler, public io::sys::Signal::Handler {
   Controller(gateway::Settings const &, gateway::Config const &, io::Context &context);
@@ -69,6 +69,6 @@ struct Controller final : public client::Handler, public io::sys::Signal::Handle
   uint64_t order_id_ = {};
 };
 
-}  // namespace proto_bridge
+}  // namespace bridge
 }  // namespace deribit
 }  // namespace roq
