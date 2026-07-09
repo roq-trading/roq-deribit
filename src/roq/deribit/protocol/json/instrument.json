@@ -142,6 +142,10 @@
     {
       "name": "is_csr_routed",
       "type": "std/bool"
+    },
+    {
+      "name": "is_csr",
+      "type": "std/bool"
     }
   ]
 }
