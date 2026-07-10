@@ -89,6 +89,10 @@
     {
       "name": "interest_value",
       "type": "std/double"
+    },
+    {
+      "name": "user_id",
+      "type": "std/int32"
     }
   ]
 }

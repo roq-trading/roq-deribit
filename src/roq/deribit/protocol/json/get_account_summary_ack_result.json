@@ -275,6 +275,10 @@
     {
       "name": "is_direct_access_allowed",
       "type": "std/bool"
+    },
+    {
+      "name": "user_origin",
+      "type": "std/string_view"
     }
   ]
 }
