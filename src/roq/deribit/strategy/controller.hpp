@@ -17,7 +17,7 @@ namespace roq {
 namespace deribit {
 namespace strategy {
 
-struct Controller final : public client::Handler, public io::sys::Signal::Handler {
+struct Controller final : public server::Handler2, public io::sys::Signal::Handler {
   Controller(gateway::Settings const &, gateway::Config const &, io::Context &context);
 
   void dispatch();
@@ -41,21 +41,35 @@ struct Controller final : public client::Handler, public io::sys::Signal::Handle
   void create_order();
   void cancel_order();
 
-  // client::Handler
-  void operator()(Event<DownloadBegin> const &) override;
-  void operator()(Event<DownloadEnd> const &) override;
-  void operator()(Event<Ready> const &) override;
-  void operator()(Event<GatewaySettings> const &) override;
-  void operator()(Event<StreamStatus> const &) override;
-  void operator()(Event<GatewayStatus> const &) override;
-  void operator()(Event<ReferenceData> const &) override;
-  void operator()(Event<MarketStatus> const &) override;
-  void operator()(Event<TopOfBook> const &) override;
-  void operator()(Event<MarketByPriceUpdate> const &) override;
-  void operator()(Event<OrderAck> const &) override;
-  void operator()(Event<OrderUpdate> const &) override;
+  // server::Handler2
+
+  void operator()(Trace<Control> const &, uint64_t opaque, bool is_last, uint8_t user_id) override;
+  void operator()(Trace<DownloadBegin> const &, uint64_t opaque, bool is_last, uint8_t user_id) override;
+  void operator()(Trace<DownloadEnd> const &, uint64_t opaque, bool is_last, uint8_t user_id) override;
+  void operator()(Trace<Ready> const &, uint64_t opaque, bool is_last, uint8_t user_id) override;
+  void operator()(Trace<GatewaySettings> const &, uint64_t opaque, bool is_last, uint8_t user_id) override;
+  void operator()(Trace<StreamStatus> const &, uint64_t opaque, bool is_last, uint8_t user_id) override;
+  void operator()(Trace<GatewayStatus> const &, uint64_t opaque, bool is_last, uint8_t user_id) override;
+  void operator()(Trace<ExternalLatency> const &, uint64_t opaque, bool is_last, uint8_t user_id) override;
+  void operator()(Trace<RateLimitsUpdate> const &, uint64_t opaque, bool is_last, uint8_t user_id) override;
+  void operator()(Trace<RateLimitTrigger> const &, uint64_t opaque, bool is_last, uint8_t user_id) override;
+  void operator()(Trace<ReferenceData> const &, uint64_t opaque, bool is_last, uint8_t user_id) override;
+  void operator()(Trace<MarketStatus> const &, uint64_t opaque, bool is_last, uint8_t user_id) override;
+  void operator()(Trace<TopOfBook> const &, uint64_t opaque, bool is_last, uint8_t user_id) override;
+  void operator()(Trace<MarketByPriceUpdate> const &, uint64_t opaque, bool is_last, uint8_t user_id) override;
+  void operator()(Trace<MarketByOrderUpdate> const &, uint64_t opaque, bool is_last, uint8_t user_id) override;
+  void operator()(Trace<TradeSummary> const &, uint64_t opaque, bool is_last, uint8_t user_id) override;
+  void operator()(Trace<StatisticsUpdate> const &, uint64_t opaque, bool is_last, uint8_t user_id) override;
+  void operator()(Trace<TimeSeriesUpdate> const &, uint64_t opaque, bool is_last, uint8_t user_id) override;
+  void operator()(Trace<CancelAllOrdersAck> const &, uint64_t opaque, bool is_last, uint8_t user_id) override;
+  void operator()(Trace<OrderAck> const &, uint64_t opaque, bool is_last, uint8_t user_id) override;
+  void operator()(Trace<OrderUpdate> const &, uint64_t opaque, bool is_last, uint8_t user_id) override;
+  void operator()(Trace<TradeUpdate> const &, uint64_t opaque, bool is_last, uint8_t user_id) override;
+  void operator()(Trace<PositionUpdate> const &, uint64_t opaque, bool is_last, uint8_t user_id) override;
+  void operator()(Trace<FundsUpdate> const &, uint64_t opaque, bool is_last, uint8_t user_id) override;
 
   // io::sys::Signal::Handler
+
   void operator()(io::sys::Signal::Event const &) override;
 
  private:

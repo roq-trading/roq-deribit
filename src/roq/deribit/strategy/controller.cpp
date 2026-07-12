@@ -167,14 +167,17 @@ void Controller::cancel_order() {
   }
 }
 
-// server::Strategy::Handler
+// server::Handler2
 
-void Controller::operator()(Event<DownloadBegin> const &event) {
+void Controller::operator()(Trace<Control> const &, uint64_t opaque, bool is_last, uint8_t user_id) {
+}
+
+void Controller::operator()(Trace<DownloadBegin> const &event, uint64_t opaque, bool is_last, uint8_t user_id) {
   auto &[message_info, download_begin] = event;
   log::warn("download_begin={}"sv, download_begin);
 }
 
-void Controller::operator()(Event<DownloadEnd> const &event) {
+void Controller::operator()(Trace<DownloadEnd> const &event, uint64_t opaque, bool is_last, uint8_t user_id) {
   auto &[message_info, download_end] = event;
   log::warn("download_end={}"sv, download_end);
   auto max_order_id = download_end.max_order_id;
@@ -184,41 +187,65 @@ void Controller::operator()(Event<DownloadEnd> const &event) {
   }
 }
 
-void Controller::operator()(Event<Ready> const &event) {
+void Controller::operator()(Trace<Ready> const &event, uint64_t opaque, bool is_last, uint8_t user_id) {
   auto &[message_info, ready] = event;
   log::warn("ready={}"sv, ready);
   assert(state_ == State::UNDEFINED);
   (*this)(State::READY);
 }
 
-void Controller::operator()(Event<GatewaySettings> const &event) {
+void Controller::operator()(Trace<GatewaySettings> const &event, uint64_t opaque, bool is_last, uint8_t user_id) {
   auto &[message_info, gateway_settings] = event;
   log::warn("gateway_settings={}"sv, gateway_settings);
 }
 
-void Controller::operator()(Event<StreamStatus> const &) {
+void Controller::operator()(Trace<StreamStatus> const &, uint64_t opaque, bool is_last, uint8_t user_id) {
 }
 
-void Controller::operator()(Event<GatewayStatus> const &) {
+void Controller::operator()(Trace<GatewayStatus> const &, uint64_t opaque, bool is_last, uint8_t user_id) {
 }
 
-void Controller::operator()(Event<ReferenceData> const &) {
+void Controller::operator()(Trace<ExternalLatency> const &, uint64_t opaque, bool is_last, uint8_t user_id) {
 }
 
-void Controller::operator()(Event<MarketStatus> const &) {
+void Controller::operator()(Trace<RateLimitsUpdate> const &, uint64_t opaque, bool is_last, uint8_t user_id) {
 }
 
-void Controller::operator()(Event<TopOfBook> const &event) {
+void Controller::operator()(Trace<RateLimitTrigger> const &, uint64_t opaque, bool is_last, uint8_t user_id) {
+}
+
+void Controller::operator()(Trace<ReferenceData> const &, uint64_t opaque, bool is_last, uint8_t user_id) {
+}
+
+void Controller::operator()(Trace<MarketStatus> const &, uint64_t opaque, bool is_last, uint8_t user_id) {
+}
+
+void Controller::operator()(Trace<TopOfBook> const &event, uint64_t opaque, bool is_last, uint8_t user_id) {
   auto &[message_info, top_of_book] = event;
   // log::warn("top_of_book={}"sv, top_of_book);
 }
 
-void Controller::operator()(Event<MarketByPriceUpdate> const &event) {
+void Controller::operator()(Trace<MarketByPriceUpdate> const &event, uint64_t opaque, bool is_last, uint8_t user_id) {
   auto &[message_info, market_by_price_update] = event;
   // log::warn("market_by_price_update={}"sv, market_by_price_update);
 }
 
-void Controller::operator()(Event<OrderAck> const &event) {
+void Controller::operator()(Trace<MarketByOrderUpdate> const &, uint64_t opaque, bool is_last, uint8_t user_id) {
+}
+
+void Controller::operator()(Trace<TradeSummary> const &, uint64_t opaque, bool is_last, uint8_t user_id) {
+}
+
+void Controller::operator()(Trace<StatisticsUpdate> const &, uint64_t opaque, bool is_last, uint8_t user_id) {
+}
+
+void Controller::operator()(Trace<TimeSeriesUpdate> const &, uint64_t opaque, bool is_last, uint8_t user_id) {
+}
+
+void Controller::operator()(Trace<CancelAllOrdersAck> const &, uint64_t opaque, bool is_last, uint8_t user_id) {
+}
+
+void Controller::operator()(Trace<OrderAck> const &event, uint64_t opaque, bool is_last, uint8_t user_id) {
   auto &[message_info, order_ack] = event;
   log::warn("order_ack={}"sv, order_ack);
   // waiting?
@@ -249,9 +276,18 @@ void Controller::operator()(Event<OrderAck> const &event) {
   }
 }
 
-void Controller::operator()(Event<OrderUpdate> const &event) {
+void Controller::operator()(Trace<OrderUpdate> const &event, uint64_t opaque, bool is_last, uint8_t user_id) {
   auto &[message_info, order_update] = event;
   log::warn("order_update={}"sv, order_update);
+}
+
+void Controller::operator()(Trace<TradeUpdate> const &, uint64_t opaque, bool is_last, uint8_t user_id) {
+}
+
+void Controller::operator()(Trace<PositionUpdate> const &, uint64_t opaque, bool is_last, uint8_t user_id) {
+}
+
+void Controller::operator()(Trace<FundsUpdate> const &, uint64_t opaque, bool is_last, uint8_t user_id) {
 }
 
 // io::sys::Signal::Handler
