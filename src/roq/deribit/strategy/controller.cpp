@@ -169,6 +169,9 @@ void Controller::cancel_order() {
 
 // server::Handler2
 
+void Controller::operator()(Trace<HandshakeAck> const &, uint64_t opaque, bool is_last, uint8_t user_id) {
+}
+
 void Controller::operator()(Trace<Control> const &, uint64_t opaque, bool is_last, uint8_t user_id) {
 }
 

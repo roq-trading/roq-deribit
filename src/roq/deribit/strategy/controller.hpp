@@ -43,6 +43,7 @@ struct Controller final : public server::Handler2, public io::sys::Signal::Handl
 
   // server::Handler2
 
+  void operator()(Trace<HandshakeAck> const &, uint64_t opaque, bool is_last, uint8_t user_id) override;
   void operator()(Trace<Control> const &, uint64_t opaque, bool is_last, uint8_t user_id) override;
   void operator()(Trace<DownloadBegin> const &, uint64_t opaque, bool is_last, uint8_t user_id) override;
   void operator()(Trace<DownloadEnd> const &, uint64_t opaque, bool is_last, uint8_t user_id) override;
