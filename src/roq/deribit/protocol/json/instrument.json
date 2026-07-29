@@ -146,6 +146,10 @@
     {
       "name": "is_csr",
       "type": "std/bool"
+    },
+    {
+      "name": "lot_size",
+      "type": "std/double"
     }
   ]
 }
