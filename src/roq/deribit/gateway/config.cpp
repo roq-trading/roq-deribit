@@ -46,6 +46,9 @@ auto const OMS_CANCEL_ALL_ORDERS = Mask{
 namespace {
 auto create_gateway_settings(auto &settings) -> GatewaySettings {
   return {
+      .api = {},
+      .instance = {},
+      .is_uat = {},
       .supports = SUPPORTS,
       .mbp_max_depth = {},
       .mbp_tick_size_multiplier = MBP_TICK_SIZE_MULTIPLIER,

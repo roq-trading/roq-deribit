@@ -150,6 +150,14 @@
     {
       "name": "lot_size",
       "type": "std/double"
+    },
+    {
+      "name": "index_id",
+      "type": "std/int32"
+    },
+    {
+      "name": "product_group",
+      "type": "std/string_view"
     }
   ]
 }
