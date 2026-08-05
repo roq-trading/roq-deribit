@@ -117,6 +117,14 @@
     {
       "name": "original_order_type",
       "type": "std/string_view"
+    },
+    {
+      "name": "starbase_last_update_timestamp",
+      "type": "std/nanoseconds"
+    },
+    {
+      "name": "starbase_order_id",
+      "type": "std/uint64"
     }
   ]
 }
