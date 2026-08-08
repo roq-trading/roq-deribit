@@ -158,6 +158,10 @@
     {
       "name": "product_group",
       "type": "std/string_view"
+    },
+    {
+      "name": "is_cbe_routed",
+      "type": "std/bool"
     }
   ]
 }
