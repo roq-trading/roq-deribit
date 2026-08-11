@@ -280,6 +280,10 @@
     {
       "name": "close_out_margin",
       "type": "std/double"
+    },
+    {
+      "name": "available_subaccount_transfer_funds",
+      "type": "std/double"
     }
   ]
 }

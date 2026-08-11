@@ -279,6 +279,10 @@
     {
       "name": "user_origin",
       "type": "std/string_view"
+    },
+    {
+      "name": "available_subaccount_transfer_funds",
+      "type": "std/double"
     }
   ]
 }
