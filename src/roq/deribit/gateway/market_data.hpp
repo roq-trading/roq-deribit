@@ -27,6 +27,7 @@
 #include "roq/deribit/protocol/fix/heartbeat.hpp"
 #include "roq/deribit/protocol/fix/logon.hpp"
 #include "roq/deribit/protocol/fix/logout.hpp"
+#include "roq/deribit/protocol/fix/reject.hpp"
 #include "roq/deribit/protocol/fix/resend_request.hpp"
 #include "roq/deribit/protocol/fix/test_request.hpp"
 
@@ -75,6 +76,7 @@ struct MarketData final : public io::net::ConnectionManager::Handler {
   void operator()(Trace<protocol::fix::Logout> const &, fix::Header const &);
   void operator()(Trace<protocol::fix::ResendRequest> const &, fix::Header const &);
   void operator()(Trace<protocol::fix::TestRequest> const &, fix::Header const &);
+  void operator()(Trace<protocol::fix::Reject> const &, fix::Header const &);
 
   void operator()(Trace<protocol::fix::SecurityList> const &, fix::Header const &);
   void operator()(Trace<protocol::fix::SecurityStatus> const &, fix::Header const &);

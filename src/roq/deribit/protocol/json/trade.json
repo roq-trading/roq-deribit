@@ -124,6 +124,18 @@
     {
       "name": "user_id",
       "type": "std/uint32"
+    },
+    {
+      "name": "starbase_match_id",
+      "type": "std/uint64"
+    },
+    {
+      "name": "starbase_order_id",
+      "type": "std/uint64"
+    },
+    {
+      "name": "starbase_timestamp",
+      "type": "std/nanoseconds"
     }
   ]
 }

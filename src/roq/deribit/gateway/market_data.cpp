@@ -538,6 +538,11 @@ void MarketData::parse_helper(Trace<fix::Message> const &event) {
       helper(value, message.header);
       break;
     }
+    case REJECT: {
+      auto value = protocol::fix::Reject::create(message);
+      helper(value, message.header);
+      break;
+    }
     // ...
     case MARKET_DATA_INCREMENTAL_REFRESH:
       profile_.market_data_incremental_refresh([&]() {
@@ -626,6 +631,12 @@ void MarketData::operator()(Trace<protocol::fix::TestRequest> const &event, fix:
   auto &[trace_info, test_request] = event;
   log::info<1>("event={{header={}, test_request={}}}"sv, header, test_request);
   send_heartbeat(test_request.test_req_id);
+}
+
+void MarketData::operator()(Trace<protocol::fix::Reject> const &event, fix::Header const &header) {
+  auto now = clock::get_system();
+  auto &[trace_info, reject] = event;
+  log::warn("event={{header={}, reject={}}}"sv, header, reject);
 }
 
 // Roq: (seems wrong, sometimes)
