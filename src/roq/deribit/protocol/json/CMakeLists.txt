@@ -6,6 +6,7 @@ include(RoqAutogen)
 
 set(AUTOGEN_SCHEMAS
     auth.json
+    auth_error.json
     auth_result.json
     channel.json
     chart_data.json

@@ -1,6 +1,7 @@
 !!! THIS FILE HAS BEEN AUTO-GENERATED !!!
 roq-deribit-protocol-json
 auth.hpp
+auth_error.hpp
 auth_result.hpp
 channel.hpp
 chart_data.hpp
@@ -65,6 +66,7 @@ user_portfolio_params.hpp
 user_trades.hpp
 user_trades_params.hpp
 auth.cpp
+auth_error.cpp
 auth_result.cpp
 channel.cpp
 chart_data.cpp

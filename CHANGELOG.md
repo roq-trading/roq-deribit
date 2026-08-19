@@ -4,6 +4,10 @@ All notable changes will be documented in this file.
 
 ## Head
 
+### Fixed
+
+* Failed to parse error information from the auth response (#623)
+
 ## 1.1.7 &ndash; 2026-08-08
 
 ## 1.1.6 &ndash; 2026-07-08

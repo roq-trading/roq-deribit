@@ -402,7 +402,12 @@ void DropCopy::operator()(Trace<protocol::json::Auth> const &event) {
   profile_.auth([&]() {
     auto &[trace_info, auth] = event;
     log::info<2>("auth={}"sv, auth);
-    download_.begin();
+    if (auth.error.code) {
+      log::error("auth={}"sv, auth);
+      (*connection_).close();
+    } else {
+      download_.begin();
+    }
   });
 }
 
