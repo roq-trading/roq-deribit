@@ -4,6 +4,10 @@ All notable changes will be documented in this file.
 
 ## Head
 
+### Changed
+
+* Exchange logon policy (experimental) (#625)
+
 ### Fixed
 
 * Failed to parse error information from the auth response (#623)
