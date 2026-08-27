@@ -169,18 +169,20 @@ void Controller::cancel_order() {
 
 // server::Handler2
 
-void Controller::operator()(Trace<HandshakeAck> const &, uint64_t opaque, bool is_last, uint8_t user_id) {
+void Controller::operator()(Trace<HandshakeAck> const &, [[maybe_unused]] uint64_t opaque, [[maybe_unused]] bool is_last, [[maybe_unused]] uint8_t user_id) {
 }
 
-void Controller::operator()(Trace<Control> const &, uint64_t opaque, bool is_last, uint8_t user_id) {
+void Controller::operator()(Trace<Control> const &, [[maybe_unused]] uint64_t opaque, [[maybe_unused]] bool is_last, [[maybe_unused]] uint8_t user_id) {
 }
 
-void Controller::operator()(Trace<DownloadBegin> const &event, uint64_t opaque, bool is_last, uint8_t user_id) {
+void Controller::operator()(
+    Trace<DownloadBegin> const &event, [[maybe_unused]] uint64_t opaque, [[maybe_unused]] bool is_last, [[maybe_unused]] uint8_t user_id) {
   auto &[message_info, download_begin] = event;
   log::warn("download_begin={}"sv, download_begin);
 }
 
-void Controller::operator()(Trace<DownloadEnd> const &event, uint64_t opaque, bool is_last, uint8_t user_id) {
+void Controller::operator()(
+    Trace<DownloadEnd> const &event, [[maybe_unused]] uint64_t opaque, [[maybe_unused]] bool is_last, [[maybe_unused]] uint8_t user_id) {
   auto &[message_info, download_end] = event;
   log::warn("download_end={}"sv, download_end);
   auto max_order_id = download_end.max_order_id;
@@ -190,65 +192,69 @@ void Controller::operator()(Trace<DownloadEnd> const &event, uint64_t opaque, bo
   }
 }
 
-void Controller::operator()(Trace<Ready> const &event, uint64_t opaque, bool is_last, uint8_t user_id) {
+void Controller::operator()(Trace<Ready> const &event, [[maybe_unused]] uint64_t opaque, [[maybe_unused]] bool is_last, [[maybe_unused]] uint8_t user_id) {
   auto &[message_info, ready] = event;
   log::warn("ready={}"sv, ready);
   assert(state_ == State::UNDEFINED);
   (*this)(State::READY);
 }
 
-void Controller::operator()(Trace<GatewaySettings> const &event, uint64_t opaque, bool is_last, uint8_t user_id) {
+void Controller::operator()(
+    Trace<GatewaySettings> const &event, [[maybe_unused]] uint64_t opaque, [[maybe_unused]] bool is_last, [[maybe_unused]] uint8_t user_id) {
   auto &[message_info, gateway_settings] = event;
   log::warn("gateway_settings={}"sv, gateway_settings);
 }
 
-void Controller::operator()(Trace<StreamStatus> const &, uint64_t opaque, bool is_last, uint8_t user_id) {
+void Controller::operator()(Trace<StreamStatus> const &, [[maybe_unused]] uint64_t opaque, [[maybe_unused]] bool is_last, [[maybe_unused]] uint8_t user_id) {
 }
 
-void Controller::operator()(Trace<GatewayStatus> const &, uint64_t opaque, bool is_last, uint8_t user_id) {
+void Controller::operator()(Trace<GatewayStatus> const &, [[maybe_unused]] uint64_t opaque, [[maybe_unused]] bool is_last, [[maybe_unused]] uint8_t user_id) {
 }
 
-void Controller::operator()(Trace<ExternalLatency> const &, uint64_t opaque, bool is_last, uint8_t user_id) {
+void Controller::operator()(Trace<ExternalLatency> const &, [[maybe_unused]] uint64_t opaque, [[maybe_unused]] bool is_last, [[maybe_unused]] uint8_t user_id) {
 }
 
-void Controller::operator()(Trace<RateLimitsUpdate> const &, uint64_t opaque, bool is_last, uint8_t user_id) {
+void Controller::operator()(
+    Trace<RateLimitsUpdate> const &, [[maybe_unused]] uint64_t opaque, [[maybe_unused]] bool is_last, [[maybe_unused]] uint8_t user_id) {
 }
 
-void Controller::operator()(Trace<RateLimitTrigger> const &, uint64_t opaque, bool is_last, uint8_t user_id) {
+void Controller::operator()(
+    Trace<RateLimitTrigger> const &, [[maybe_unused]] uint64_t opaque, [[maybe_unused]] bool is_last, [[maybe_unused]] uint8_t user_id) {
 }
 
-void Controller::operator()(Trace<ReferenceData> const &, uint64_t opaque, bool is_last, uint8_t user_id) {
+void Controller::operator()(Trace<ReferenceData> const &, [[maybe_unused]] uint64_t opaque, [[maybe_unused]] bool is_last, [[maybe_unused]] uint8_t user_id) {
 }
 
-void Controller::operator()(Trace<MarketStatus> const &, uint64_t opaque, bool is_last, uint8_t user_id) {
+void Controller::operator()(Trace<MarketStatus> const &, [[maybe_unused]] uint64_t opaque, [[maybe_unused]] bool is_last, [[maybe_unused]] uint8_t user_id) {
 }
 
-void Controller::operator()(Trace<TopOfBook> const &event, uint64_t opaque, bool is_last, uint8_t user_id) {
-  auto &[message_info, top_of_book] = event;
-  // log::warn("top_of_book={}"sv, top_of_book);
+void Controller::operator()(Trace<TopOfBook> const &, [[maybe_unused]] uint64_t opaque, [[maybe_unused]] bool is_last, [[maybe_unused]] uint8_t user_id) {
 }
 
-void Controller::operator()(Trace<MarketByPriceUpdate> const &event, uint64_t opaque, bool is_last, uint8_t user_id) {
-  auto &[message_info, market_by_price_update] = event;
-  // log::warn("market_by_price_update={}"sv, market_by_price_update);
+void Controller::operator()(
+    Trace<MarketByPriceUpdate> const &, [[maybe_unused]] uint64_t opaque, [[maybe_unused]] bool is_last, [[maybe_unused]] uint8_t user_id) {
 }
 
-void Controller::operator()(Trace<MarketByOrderUpdate> const &, uint64_t opaque, bool is_last, uint8_t user_id) {
+void Controller::operator()(
+    Trace<MarketByOrderUpdate> const &, [[maybe_unused]] uint64_t opaque, [[maybe_unused]] bool is_last, [[maybe_unused]] uint8_t user_id) {
 }
 
-void Controller::operator()(Trace<TradeSummary> const &, uint64_t opaque, bool is_last, uint8_t user_id) {
+void Controller::operator()(Trace<TradeSummary> const &, [[maybe_unused]] uint64_t opaque, [[maybe_unused]] bool is_last, [[maybe_unused]] uint8_t user_id) {
 }
 
-void Controller::operator()(Trace<StatisticsUpdate> const &, uint64_t opaque, bool is_last, uint8_t user_id) {
+void Controller::operator()(
+    Trace<StatisticsUpdate> const &, [[maybe_unused]] uint64_t opaque, [[maybe_unused]] bool is_last, [[maybe_unused]] uint8_t user_id) {
 }
 
-void Controller::operator()(Trace<TimeSeriesUpdate> const &, uint64_t opaque, bool is_last, uint8_t user_id) {
+void Controller::operator()(
+    Trace<TimeSeriesUpdate> const &, [[maybe_unused]] uint64_t opaque, [[maybe_unused]] bool is_last, [[maybe_unused]] uint8_t user_id) {
 }
 
-void Controller::operator()(Trace<CancelAllOrdersAck> const &, uint64_t opaque, bool is_last, uint8_t user_id) {
+void Controller::operator()(
+    Trace<CancelAllOrdersAck> const &, [[maybe_unused]] uint64_t opaque, [[maybe_unused]] bool is_last, [[maybe_unused]] uint8_t user_id) {
 }
 
-void Controller::operator()(Trace<OrderAck> const &event, uint64_t opaque, bool is_last, uint8_t user_id) {
+void Controller::operator()(Trace<OrderAck> const &event, [[maybe_unused]] uint64_t opaque, [[maybe_unused]] bool is_last, [[maybe_unused]] uint8_t user_id) {
   auto &[message_info, order_ack] = event;
   log::warn("order_ack={}"sv, order_ack);
   // waiting?
@@ -279,18 +285,19 @@ void Controller::operator()(Trace<OrderAck> const &event, uint64_t opaque, bool 
   }
 }
 
-void Controller::operator()(Trace<OrderUpdate> const &event, uint64_t opaque, bool is_last, uint8_t user_id) {
+void Controller::operator()(
+    Trace<OrderUpdate> const &event, [[maybe_unused]] uint64_t opaque, [[maybe_unused]] bool is_last, [[maybe_unused]] uint8_t user_id) {
   auto &[message_info, order_update] = event;
   log::warn("order_update={}"sv, order_update);
 }
 
-void Controller::operator()(Trace<TradeUpdate> const &, uint64_t opaque, bool is_last, uint8_t user_id) {
+void Controller::operator()(Trace<TradeUpdate> const &, [[maybe_unused]] uint64_t opaque, [[maybe_unused]] bool is_last, [[maybe_unused]] uint8_t user_id) {
 }
 
-void Controller::operator()(Trace<PositionUpdate> const &, uint64_t opaque, bool is_last, uint8_t user_id) {
+void Controller::operator()(Trace<PositionUpdate> const &, [[maybe_unused]] uint64_t opaque, [[maybe_unused]] bool is_last, [[maybe_unused]] uint8_t user_id) {
 }
 
-void Controller::operator()(Trace<FundsUpdate> const &, uint64_t opaque, bool is_last, uint8_t user_id) {
+void Controller::operator()(Trace<FundsUpdate> const &, [[maybe_unused]] uint64_t opaque, [[maybe_unused]] bool is_last, [[maybe_unused]] uint8_t user_id) {
 }
 
 // io::sys::Signal::Handler
