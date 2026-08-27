@@ -74,7 +74,6 @@ struct Controller final : public server::Handler2, public io::sys::Signal::Handl
   void operator()(io::sys::Signal::Event const &) override;
 
  private:
-  Settings const &settings_;
   std::unique_ptr<io::sys::Signal> const terminate_;
   std::unique_ptr<io::sys::Signal> const interrupt_;
   std::unique_ptr<server::Strategy> const dispatcher_;

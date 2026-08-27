@@ -50,8 +50,8 @@ auto create_dispatcher(auto &handler, auto &settings, auto &config, auto &contex
 // === IMPLEMENTATION ===
 
 Controller::Controller(gateway::Settings const &settings, gateway::Config const &config, io::Context &context)
-    : settings_{settings}, terminate_{context.create_signal(*this, io::sys::Signal::Type::TERMINATE)},
-      interrupt_{context.create_signal(*this, io::sys::Signal::Type::INTERRUPT)}, dispatcher_{create_dispatcher(*this, settings, config, context)} {
+    : terminate_{context.create_signal(*this, io::sys::Signal::Type::TERMINATE)}, interrupt_{context.create_signal(*this, io::sys::Signal::Type::INTERRUPT)},
+      dispatcher_{create_dispatcher(*this, settings, config, context)} {
 }
 
 void Controller::dispatch() {

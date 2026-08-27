@@ -634,7 +634,6 @@ void MarketData::operator()(Trace<protocol::fix::TestRequest> const &event, fix:
 }
 
 void MarketData::operator()(Trace<protocol::fix::Reject> const &event, fix::Header const &header) {
-  auto now = clock::get_system();
   auto &[trace_info, reject] = event;
   log::warn("event={{header={}, reject={}}}"sv, header, reject);
 }
