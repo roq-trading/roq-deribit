@@ -27,6 +27,9 @@
       "name": "maintenance",
       "type": "std/bool",
       "comment": "undoc"
+    },
+    {
+      "name": "reasons"
     }
   ]
 }
