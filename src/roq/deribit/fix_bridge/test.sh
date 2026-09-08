@@ -34,5 +34,6 @@ $PREFIX "./roq-deribit-fix-bridge" \
   --flagfile "$FLAGFILE" \
   --cache_dir "$HOME/var/lib/roq/cache" \
   --event_log_dir "$HOME/var/lib/roq/data" \
-  --client_listen_address "tcp://localhost:1234" \
+  --client_listen_address "$HOME/run/deribit.sock" \
+  --fix_bridge_comp_id "$NAME" \
   $@
