@@ -43,14 +43,19 @@ Error map_error(std::string_view const &value) {
           return Error::UNDEFINED;
         }
         break;
-      case 's':
-        if (value == "success"sv) {
-          return Error::UNDEFINED;
+      case 'n':
+        if (value == "not_found"sv) {
+          return Error::TOO_LATE_TO_MODIFY_OR_CANCEL;
         }
         break;
       case 'r':
         if (value == "rejected: order is closed"sv) {
           return Error::TOO_LATE_TO_MODIFY_OR_CANCEL;
+        }
+        break;
+      case 's':
+        if (value == "success"sv) {
+          return Error::UNDEFINED;
         }
         break;
     }
