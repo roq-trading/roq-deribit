@@ -52,6 +52,9 @@ Error map_error(std::string_view const &value) {
         if (value == "rejected: order is closed"sv) {
           return Error::TOO_LATE_TO_MODIFY_OR_CANCEL;
         }
+        if (value == "rejected: settlement_in_progress"sv) {
+          return Error::SETTLEMENT_IN_PROGRESS;
+        }
         break;
       case 's':
         if (value == "success"sv) {
