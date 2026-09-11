@@ -2,6 +2,8 @@
 
 #include "roq/deribit/protocol/fix/utils.hpp"
 
+#include "roq/utils/hash/fnv.hpp"
+
 using namespace std::literals;
 
 namespace roq {
@@ -9,58 +11,43 @@ namespace deribit {
 namespace protocol {
 namespace fix {
 
+// === CONSTANTS ===
+
+namespace {}
+
+// === IMPLEMENTATION ===
+
 SecurityType map_security_type(std::string_view const &value) {
-  if (std::size(value) == 3) {
-    switch (std::data(value)[0]) {
-      case 'F':
-        if (value == "FUT"sv) {
-          return SecurityType::FUTURES;
-        }
-        break;
-      case 'O':
-        if (value == "OPT"sv) {
-          return SecurityType::OPTION;
-        }
-        break;
+  if (!std::empty(value)) {
+    auto key = utils::hash::FNV::compute(value);
+    switch (key) {
+      case utils::hash::FNV::compute("FUT"sv):
+        return SecurityType::FUTURES;
+      case utils::hash::FNV::compute("OPT"sv):
+        return SecurityType::OPTION;
+      case utils::hash::FNV::compute("FXSPOT"sv):
+        return SecurityType::SPOT;
     }
-  }
-  if (value == "FXSPOT"sv) {
-    return SecurityType::SPOT;
   }
   return SecurityType::UNDEFINED;
 }
 
 Error map_error(std::string_view const &value) {
-  if (std::size(value) > 0) {
-    switch (std::data(value)[0]) {
-      case 'a':
-        if (value == "already_cancelled"sv) {
-          return Error::TOO_LATE_TO_MODIFY_OR_CANCEL;
-        }
-        break;
-      case 'c':
-        if (value == "canceled"sv) {
-          return Error::UNDEFINED;
-        }
-        break;
-      case 'n':
-        if (value == "not_found"sv) {
-          return Error::TOO_LATE_TO_MODIFY_OR_CANCEL;
-        }
-        break;
-      case 'r':
-        if (value == "rejected: order is closed"sv) {
-          return Error::TOO_LATE_TO_MODIFY_OR_CANCEL;
-        }
-        if (value == "rejected: settlement_in_progress"sv) {
-          return Error::SETTLEMENT_IN_PROGRESS;
-        }
-        break;
-      case 's':
-        if (value == "success"sv) {
-          return Error::UNDEFINED;
-        }
-        break;
+  if (!std::empty(value)) {
+    auto key = utils::hash::FNV::compute(value);
+    switch (key) {
+      case utils::hash::FNV::compute("already_cancelled"sv):
+        return Error::TOO_LATE_TO_MODIFY_OR_CANCEL;
+      case utils::hash::FNV::compute("canceled"sv):
+        return Error::UNDEFINED;
+      case utils::hash::FNV::compute("not_found"sv):
+        return Error::TOO_LATE_TO_MODIFY_OR_CANCEL;
+      case utils::hash::FNV::compute("rejected: order is closed"sv):
+        return Error::TOO_LATE_TO_MODIFY_OR_CANCEL;
+      case utils::hash::FNV::compute("rejected: settlement_in_progress"sv):
+        return Error::SETTLEMENT_IN_PROGRESS;
+      case utils::hash::FNV::compute("success"sv):
+        return Error::UNDEFINED;
     }
   }
   return Error::UNKNOWN;
