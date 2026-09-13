@@ -441,10 +441,12 @@ void WebSocket::operator()(Trace<protocol::json::SubscribeAck> const &event) {
   }
 }
 
-void WebSocket::operator()(Trace<protocol::json::PlatformState> const &) {
+void WebSocket::operator()(Trace<protocol::json::PlatformState> const &event) {
   if (!master_) {
     log::fatal("Unexpected"sv);
   }
+  auto &[trace_info, platform_state] = event;
+  log::warn("platform_state={}"sv, platform_state);
 }
 
 void WebSocket::operator()(Trace<protocol::json::InstrumentState> const &) {
