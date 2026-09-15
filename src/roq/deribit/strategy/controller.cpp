@@ -228,6 +228,10 @@ void Controller::operator()(Trace<ReferenceData> const &, [[maybe_unused]] uint6
 void Controller::operator()(Trace<MarketStatus> const &, [[maybe_unused]] uint64_t opaque, [[maybe_unused]] bool is_last, [[maybe_unused]] uint8_t user_id) {
 }
 
+void Controller::operator()(
+    Trace<MarketSegmentStatus> const &, [[maybe_unused]] uint64_t opaque, [[maybe_unused]] bool is_last, [[maybe_unused]] uint8_t user_id) {
+}
+
 void Controller::operator()(Trace<TopOfBook> const &, [[maybe_unused]] uint64_t opaque, [[maybe_unused]] bool is_last, [[maybe_unused]] uint8_t user_id) {
 }
 

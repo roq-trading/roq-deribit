@@ -56,6 +56,7 @@ struct Controller final : public server::Handler2, public io::sys::Signal::Handl
   void operator()(Trace<RateLimitTrigger> const &, uint64_t opaque, bool is_last, uint8_t user_id) override;
   void operator()(Trace<ReferenceData> const &, uint64_t opaque, bool is_last, uint8_t user_id) override;
   void operator()(Trace<MarketStatus> const &, uint64_t opaque, bool is_last, uint8_t user_id) override;
+  void operator()(Trace<MarketSegmentStatus> const &, uint64_t opaque, bool is_last, uint8_t user_id) override;
   void operator()(Trace<TopOfBook> const &, uint64_t opaque, bool is_last, uint8_t user_id) override;
   void operator()(Trace<MarketByPriceUpdate> const &, uint64_t opaque, bool is_last, uint8_t user_id) override;
   void operator()(Trace<MarketByOrderUpdate> const &, uint64_t opaque, bool is_last, uint8_t user_id) override;

@@ -695,6 +695,7 @@ void MarketData::operator()(Trace<protocol::fix::SecurityList> const &event, fix
             .description = item.security_desc,
             .security_type = security_type,
             .external_security_id = {},
+            .market_segment = {},
             .cfi_code = {},
             .base_currency = item.settl_currency,
             .quote_currency = item.currency,
