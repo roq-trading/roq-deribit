@@ -446,7 +446,25 @@ void WebSocket::operator()(Trace<protocol::json::PlatformState> const &event) {
     log::fatal("Unexpected"sv);
   }
   auto &[trace_info, platform_state] = event;
+  log::info<3>("platform_state={}"sv, platform_state);
   log::warn("platform_state={}"sv, platform_state);
+  auto trading_status = [&]() {
+    if (platform_state.params.data.locked || platform_state.params.data.maintenance) {
+      return TradingStatus::CLOSE;
+    }
+    return TradingStatus::OPEN;
+  }();
+  auto market_segment_status = MarketSegmentStatus{
+      .stream_id = stream_id_,
+      .exchange = shared_.settings.exchange,
+      .market_segment = platform_state.params.data.price_index,
+      .trading_status = trading_status,
+      .exchange_time_utc = {},
+      .exchange_sequence = {},
+      .sending_time_utc = {},
+  };
+  log::warn("market_segment_status={}"sv, market_segment_status);
+  create_trace_and_dispatch(shared_.dispatcher, trace_info, market_segment_status, true);
 }
 
 void WebSocket::operator()(Trace<protocol::json::InstrumentState> const &) {

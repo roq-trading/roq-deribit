@@ -405,7 +405,7 @@ void Rest::operator()(Trace<protocol::json::GetInstrumentsAck> const &event) {
           .description = {},
           .security_type = security_type,
           .external_security_id = {},
-          .market_segment = {},
+          .market_segment = item.price_index,
           .cfi_code = {},
           .base_currency = item.base_currency,
           .quote_currency = item.quote_currency,
