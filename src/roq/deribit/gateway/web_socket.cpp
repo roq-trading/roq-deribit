@@ -447,7 +447,6 @@ void WebSocket::operator()(Trace<protocol::json::PlatformState> const &event) {
   }
   auto &[trace_info, platform_state] = event;
   log::info<3>("platform_state={}"sv, platform_state);
-  log::warn("platform_state={}"sv, platform_state);
   auto trading_status = [&]() {
     if (platform_state.params.data.locked || platform_state.params.data.maintenance) {
       return TradingStatus::CLOSE;
