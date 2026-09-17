@@ -132,6 +132,7 @@ void Controller::create_order() {
       .order_type = OrderType::LIMIT,
       .time_in_force = TimeInForce::GTC,
       .execution_instructions = {},
+      .execution_destination = {},
       .request_template = {},
       .quantity = QUANTITY,  // settings_.quantity,
       .price = PRICE,        // settings_.price,
