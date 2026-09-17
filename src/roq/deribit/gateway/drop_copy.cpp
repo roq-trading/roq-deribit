@@ -441,7 +441,6 @@ void DropCopy::operator()(Trace<protocol::json::PlatformState> const &event) {
       .exchange_sequence = {},
       .sending_time_utc = {},
   };
-  log::warn("market_segment_status={}"sv, market_segment_status);
   create_trace_and_dispatch(shared_.dispatcher, trace_info, market_segment_status, true);
 }
 
