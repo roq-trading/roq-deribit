@@ -41,7 +41,7 @@ auto create_name(auto stream_id, auto const &account) {
   return fmt::format("{}:{}:{}"sv, stream_id, NAME, account);
 }
 
-auto create_connection(auto &handler, auto &settings, auto &context) {
+auto create_connection(auto &handler, auto &settings, auto &context, auto &shared) {
   auto uri = settings.ws.uri;
   auto config = web::socket::Client::Config{
       // connection
@@ -63,7 +63,7 @@ auto create_connection(auto &handler, auto &settings, auto &context) {
       .decode_buffer_size = settings.misc.decode_buffer_size,
       .encode_buffer_size = settings.misc.encode_buffer_size,
   };
-  return web::socket::Client::create(handler, context, config, []() { return std::string(); });
+  return web::socket::Client::create(handler, context, config, shared.rate_limit, []() { return std::string(); });
 }
 
 struct create_metrics final : public utils::metrics::Factory {
@@ -83,8 +83,8 @@ auto get_download_trades_lookback(auto const &settings, auto download_trades_is_
 // === IMPLEMENTATION ===
 
 DropCopy::DropCopy(Handler &handler, io::Context &context, uint16_t stream_id, Account &account, Shared &shared)
-    : handler_{handler}, stream_id_{stream_id}, name_{create_name(stream_id_, account.name)}, connection_{create_connection(*this, shared.settings, context)},
-      decode_buffer_{shared.settings.misc.decode_buffer_size, MAX_DECODE_BUFFER_DEPTH},
+    : handler_{handler}, stream_id_{stream_id}, name_{create_name(stream_id_, account.name)},
+      connection_{create_connection(*this, shared.settings, context, shared)}, decode_buffer_{shared.settings.misc.decode_buffer_size, MAX_DECODE_BUFFER_DEPTH},
       counter_{
           .disconnect = create_metrics(shared.settings, name_, "disconnect"sv),
       },

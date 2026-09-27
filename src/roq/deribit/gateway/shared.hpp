@@ -22,6 +22,8 @@
 #include "roq/deribit/gateway/instrument.hpp"
 #include "roq/deribit/gateway/settings.hpp"
 
+#include "roq/deribit/tools/rate_limit.hpp"
+
 namespace roq {
 namespace deribit {
 namespace gateway {
@@ -63,6 +65,8 @@ struct Shared final {
 
   Settings const &settings;
   API const api;
+
+  tools::RateLimit rate_limit;
 
   core::limit::RateLimiter rate_limiter;
 

@@ -284,6 +284,10 @@
     {
       "name": "available_subaccount_transfer_funds",
       "type": "std/double"
+    },
+    {
+      "name": "available_spot_reserve",
+      "type": "std/double"
     }
   ]
 }
