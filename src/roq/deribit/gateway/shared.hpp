@@ -22,7 +22,7 @@
 #include "roq/deribit/gateway/instrument.hpp"
 #include "roq/deribit/gateway/settings.hpp"
 
-#include "roq/deribit/tools/rate_limit.hpp"
+#include "roq/deribit/tools/throttle.hpp"
 
 namespace roq {
 namespace deribit {
@@ -66,7 +66,7 @@ struct Shared final {
   Settings const &settings;
   API const api;
 
-  tools::RateLimit rate_limit;
+  tools::Throttle throttle;
 
   core::limit::RateLimiter rate_limiter;
 

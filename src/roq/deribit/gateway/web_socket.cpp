@@ -82,7 +82,7 @@ auto create_connection(auto &handler, auto &settings, auto &context, auto &share
       .decode_buffer_size = settings.misc.decode_buffer_size,
       .encode_buffer_size = settings.misc.encode_buffer_size,
   };
-  return web::socket::Client::create(handler, context, config, shared.rate_limit, []() { return std::string(); });
+  return web::socket::Client::create(handler, context, config, shared.throttle, []() { return std::string(); });
 }
 
 struct create_metrics final : public utils::metrics::Factory {
@@ -155,11 +155,11 @@ void WebSocket::subscribe(size_t start_from) {
 
 // web::socket::Client::Handler
 
-void WebSocket::operator()(web::socket::Client::Connected const &) {
+void WebSocket::operator()(Trace<web::socket::Connected> const &) {
   // note! wait for upgrade
 }
 
-void WebSocket::operator()(web::socket::Client::Disconnected const &) {
+void WebSocket::operator()(Trace<web::socket::Disconnected> const &) {
   ++counter_.disconnect;
   ready_ = false;
   (*this)(ConnectionStatus::DISCONNECTED);
@@ -168,16 +168,16 @@ void WebSocket::operator()(web::socket::Client::Disconnected const &) {
   request_.request_instruments = {};
 }
 
-void WebSocket::operator()(web::socket::Client::Ready const &) {
+void WebSocket::operator()(Trace<web::socket::Ready> const &) {
   login();
   (*this)(ConnectionStatus::LOGIN_SENT);
 }
 
-void WebSocket::operator()(web::socket::Client::Close const &) {
+void WebSocket::operator()(Trace<web::socket::Close> const &) {
 }
 
-void WebSocket::operator()(web::socket::Client::Latency const &latency) {
-  TraceInfo trace_info;
+void WebSocket::operator()(Trace<web::socket::Latency> const &event) {
+  auto &[trace_info, latency] = event;
   auto external_latency = ExternalLatency{
       .stream_id = stream_id_,
       .account = {},
@@ -187,11 +187,12 @@ void WebSocket::operator()(web::socket::Client::Latency const &latency) {
   latency_.ping.update(latency.sample);
 }
 
-void WebSocket::operator()(web::socket::Client::Text const &text) {
+void WebSocket::operator()(Trace<web::socket::Text> const &event) {
+  auto &[trace_info, text] = event;
   parse(text.payload);
 }
 
-void WebSocket::operator()(web::socket::Client::Binary const &) {
+void WebSocket::operator()(Trace<web::socket::Binary> const &) {
   log::fatal("Unexpected"sv);
 }
 
