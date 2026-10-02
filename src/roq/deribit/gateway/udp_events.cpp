@@ -346,6 +346,8 @@ void UDPEvents::operator()(Trace<::deribit::sbe::multicast::Trades> const &event
       auto price = item.price();
       auto quantity = item.amount() * instrument.multiplier;
       auto trade = Trade{
+          .trade_conditions = {},
+          .trade_type = {},
           .side = map(item.direction()),
           .price = price,
           .quantity = quantity,

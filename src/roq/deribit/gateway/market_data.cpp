@@ -133,6 +133,8 @@ void emplace_back(T &result, auto &value) {
     result.emplace_back(std::move(mbp_update));
   } else if constexpr (std::is_same_v<value_type, Trade>) {
     auto trade = Trade{
+        .trade_conditions = {},
+        .trade_type = {},
         .side = map(value.side),
         .price = value.md_entry_px,
         .quantity = value.md_entry_size,
