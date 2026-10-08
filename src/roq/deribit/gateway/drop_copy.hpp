@@ -18,9 +18,11 @@
 
 #include "roq/core/json/buffer_stack.hpp"
 
-#include "roq/core/download.hpp"
+#include "roq/core/download_2.hpp"
 
 #include "roq/server.hpp"
+
+#include "roq/server/stream.hpp"
 
 #include "roq/deribit/gateway/account.hpp"
 #include "roq/deribit/gateway/shared.hpp"
@@ -31,22 +33,31 @@ namespace roq {
 namespace deribit {
 namespace gateway {
 
-struct DropCopy final : public web::socket::Client::Handler, public protocol::json::Parser::Handler {
+struct DropCopy final : public Base<DropCopy>, public server::Stream, public web::socket::Client::Handler, public protocol::json::Parser::Handler {
   struct Handler {};
 
   DropCopy(Handler &, io::Context &, uint16_t stream_id, Account &, Shared &);
 
-  DropCopy(DropCopy const &) = delete;
-
-  void operator()(Event<Start> const &);
-  void operator()(Event<Stop> const &);
-  void operator()(Event<Timer> const &);
-
-  void operator()(metrics::Writer &) const;
-
   void update_subscriptions(std::span<std::string> const &currencies);
 
   void download();
+
+  // protected:
+  friend base_type;
+
+  // server::Stream
+
+  uint16_t stream_id() const override { return stream_id_; }
+
+  bool ready() const override { return ready_; }
+
+  void operator()(Event<Start> const &) override;
+  void operator()(Event<Stop> const &) override;
+  void operator()(Event<Timer> const &) override;
+
+  void operator()(metrics::Writer &) const override;
+
+  void operator()(Trace<ConnectionStatus> const &, std::string_view const &reason = {}) override;
 
  protected:
   // web::socket::Client::Handler
@@ -59,11 +70,7 @@ struct DropCopy final : public web::socket::Client::Handler, public protocol::js
   void operator()(Trace<web::socket::Text> const &) override;
   void operator()(Trace<web::socket::Binary> const &) override;
 
-  // helpers
-
-  void operator()(ConnectionStatus, std::string_view const &reason = {});
-
-  void login();
+  // core::Download
 
   enum class State {
     UNDEFINED = 0,
@@ -76,17 +83,7 @@ struct DropCopy final : public web::socket::Client::Handler, public protocol::js
     DONE,
   };
 
-  uint32_t download(State);
-
-  void subscribe_user_portfolio(std::span<std::string> const &currencies);
-  void subscribe_user_changes();
-  void subscribe_user_orders();
-  void subscribe_user_trades();
-
-  void get_account_summary(std::span<std::string> const &currencies);
-  void get_user_trades_by_currency(std::span<std::string> const &currencies);
-
-  void parse(std::string_view const &message);
+  int32_t download(Trace<State> const &);
 
   // protocol::json::Parser::Handler
 
@@ -112,6 +109,18 @@ struct DropCopy final : public web::socket::Client::Handler, public protocol::js
   // helpers
 
   void check_subscribe_queue(std::chrono::nanoseconds now);
+
+  void login();
+
+  void subscribe_user_portfolio(std::span<std::string> const &currencies);
+  void subscribe_user_changes();
+  void subscribe_user_orders();
+  void subscribe_user_trades();
+
+  void get_account_summary(std::span<std::string> const &currencies);
+  void get_user_trades_by_currency(std::span<std::string> const &currencies);
+
+  void parse(std::string_view const &message);
 
  private:
   [[maybe_unused]] Handler &handler_;
@@ -140,7 +149,7 @@ struct DropCopy final : public web::socket::Client::Handler, public protocol::js
   // state
   bool ready_ = false;
   ConnectionStatus connection_status_ = {};
-  core::Download<State> download_;
+  core::Download2<State> download_;
   bool can_download_ = false;
   bool download_trades_is_first_ = true;
   //

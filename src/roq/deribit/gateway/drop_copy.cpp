@@ -96,8 +96,35 @@ DropCopy::DropCopy(Handler &handler, io::Context &context, uint16_t stream_id, A
           .ping = create_metrics(shared.settings, name_, "ping"sv),
           .heartbeat = create_metrics(shared.settings, name_, "heartbeat"sv),
       },
-      account_{account}, shared_{shared}, download_{shared.settings.ws.request_timeout, [this](auto state) { return download(state); }} {
+      account_{account}, shared_{shared}, download_{shared.settings.ws.request_timeout, [this](auto &event) { return download(event); }} {
 }
+
+// XXX
+
+void DropCopy::update_subscriptions(std::span<std::string> const &currencies) {
+  for (auto &currency : currencies) {
+    currencies_.emplace_back(currency);
+  }
+  if (ready_ && can_download_) {
+    subscribe_user_portfolio(currencies);
+    get_account_summary(currencies);
+    get_user_trades_by_currency(currencies);
+  }
+}
+
+void DropCopy::download() {
+  if (can_download_) {
+    return;
+  }
+  can_download_ = true;
+  if (ready_) {
+    subscribe_user_portfolio(currencies_);
+    get_account_summary(currencies_);
+    get_user_trades_by_currency(currencies_);
+  }
+}
+
+// server::Stream
 
 void DropCopy::operator()(Event<Start> const &) {
   (*connection_).start();
@@ -124,27 +151,26 @@ void DropCopy::operator()(metrics::Writer &writer) const {
       .write(latency_.heartbeat, metrics::Type::LATENCY);
 }
 
-void DropCopy::update_subscriptions(std::span<std::string> const &currencies) {
-  for (auto &currency : currencies) {
-    currencies_.emplace_back(currency);
-  }
-  if (ready_ && can_download_) {
-    subscribe_user_portfolio(currencies);
-    get_account_summary(currencies);
-    get_user_trades_by_currency(currencies);
-  }
-}
-
-void DropCopy::download() {
-  if (can_download_) {
-    return;
-  }
-  can_download_ = true;
-  if (ready_) {
-    subscribe_user_portfolio(currencies_);
-    get_account_summary(currencies_);
-    get_user_trades_by_currency(currencies_);
-  }
+void DropCopy::operator()(Trace<ConnectionStatus> const &event, std::string_view const &reason) {
+  auto &[trace_info, connection_status] = event;
+  connection_status_ = connection_status;
+  auto stream_status = StreamStatus{
+      .stream_id = stream_id_,
+      .account = account_.name,
+      .supports = SUPPORTS,
+      .transport = Transport::TCP,
+      .protocol = Protocol::WS,
+      .encoding = {Encoding::JSON},
+      .priority = Priority::PRIMARY,
+      .connection_status = connection_status_,
+      .reason = reason,
+      .interface = (*connection_).get_interface(),
+      .authority = (*connection_).get_current_authority(),
+      .path = (*connection_).get_current_path(),
+      .proxy = (*connection_).get_proxy(),
+  };
+  log::info("stream_status={}"sv, stream_status);
+  create_trace_and_dispatch(shared_.dispatcher, trace_info, stream_status);
 }
 
 // web::socket::Client::Parser::Handler
@@ -153,20 +179,24 @@ void DropCopy::operator()(Trace<web::socket::Connected> const &) {
   // note! wait for upgrade
 }
 
-void DropCopy::operator()(Trace<web::socket::Disconnected> const &) {
+void DropCopy::operator()(Trace<web::socket::Disconnected> const &event) {
+  auto &[trace_info, disconnected] = event;
   ++counter_.disconnect;
   ready_ = false;
-  (*this)(ConnectionStatus::DISCONNECTED);
+  create_trace_and_dispatch_2(trace_info, ConnectionStatus::DISCONNECTED);
   download_.reset();
   subscribe_queue_.clear();
 }
 
-void DropCopy::operator()(Trace<web::socket::Ready> const &) {
+void DropCopy::operator()(Trace<web::socket::Ready> const &event) {
+  auto &[trace_info, ready] = event;
   login();
-  (*this)(ConnectionStatus::LOGIN_SENT);
+  create_trace_and_dispatch_2(trace_info, ConnectionStatus::LOGIN_SENT);
 }
 
-void DropCopy::operator()(Trace<web::socket::Close> const &) {
+void DropCopy::operator()(Trace<web::socket::Close> const &event) {
+  auto &[trace_info, close] = event;
+  log::warn("close={}"sv, close);
 }
 
 void DropCopy::operator()(Trace<web::socket::Latency> const &event) {
@@ -189,212 +219,52 @@ void DropCopy::operator()(Trace<web::socket::Binary> const &) {
   log::fatal("Unexpected"sv);
 }
 
-void DropCopy::operator()(ConnectionStatus connection_status, std::string_view const &reason) {
-  connection_status_ = connection_status;
-  TraceInfo trace_info;
-  auto stream_status = StreamStatus{
-      .stream_id = stream_id_,
-      .account = account_.name,
-      .supports = SUPPORTS,
-      .transport = Transport::TCP,
-      .protocol = Protocol::WS,
-      .encoding = {Encoding::JSON},
-      .priority = Priority::PRIMARY,
-      .connection_status = connection_status_,
-      .reason = reason,
-      .interface = (*connection_).get_interface(),
-      .authority = (*connection_).get_current_authority(),
-      .path = (*connection_).get_current_path(),
-      .proxy = (*connection_).get_proxy(),
-  };
-  log::info("stream_status={}"sv, stream_status);
-  create_trace_and_dispatch(shared_.dispatcher, trace_info, stream_status);
-}
+// core::Download
 
-void DropCopy::login() {
-  protocol::json::RequestType request_type = protocol::json::RequestType::AUTH;
-  auto now = clock::get_realtime<std::chrono::milliseconds>();
-  auto nonce = account_.create_nonce();
-  auto [signature, timestamp] = account_.create_signature(now, nonce);
-  auto message = fmt::format(
-      R"({{)"
-      R"("method":"public/auth",)"
-      R"("params":{{)"
-      R"("grant_type":"client_signature",)"
-      R"("client_id":"{}",)"
-      R"("timestamp":"{}",)"
-      R"("nonce":"{}",)"
-      R"("data":"",)"
-      R"("signature":"{}")"
-      R"(}},)"
-      R"("id":"{}")"
-      R"(}})"sv,
-      account_.key,
-      timestamp.count(),
-      nonce,
-      signature,
-      request_type.as_raw_text());
-  (*connection_).send_text(message);
-}
-
-uint32_t DropCopy::download(State state) {
+int32_t DropCopy::download(Trace<State> const &event) {
+  auto &[trace_info, state] = event;
   switch (state) {
     using enum State;
     case UNDEFINED:
       break;
     case SUBSCRIBE_USER_PORTFOLIO:
       if (can_download_) {
-        (*this)(ConnectionStatus::DOWNLOADING, "subscribe-user-portfolio"sv);
+        create_trace_and_dispatch_2(trace_info, ConnectionStatus::DOWNLOADING, "subscribe-user-portfolio"sv);
         subscribe_user_portfolio(currencies_);
       }
       return 0;
     case SUBSCRIBE_USER_CHANGES:
-      (*this)(ConnectionStatus::DOWNLOADING, "subscribe-user-changes"sv);
+      create_trace_and_dispatch_2(trace_info, ConnectionStatus::DOWNLOADING, "subscribe-user-changes"sv);
       subscribe_user_changes();
       return 0;
     case SUBSCRIBE_USER_ORDERS:
-      (*this)(ConnectionStatus::DOWNLOADING, "subscribe-user-orders"sv);
+      create_trace_and_dispatch_2(trace_info, ConnectionStatus::DOWNLOADING, "subscribe-user-orders"sv);
       subscribe_user_orders();
       return 0;
     case SUBSCRIBE_USER_TRADES:
-      (*this)(ConnectionStatus::DOWNLOADING, "subscribe-user-trades"sv);
+      create_trace_and_dispatch_2(trace_info, ConnectionStatus::DOWNLOADING, "subscribe-user-trades"sv);
       subscribe_user_trades();
       return 0;
     case GET_ACCOUNT_SUMMARY:
       if (can_download_) {
-        (*this)(ConnectionStatus::DOWNLOADING, "account-summary"sv);
+        create_trace_and_dispatch_2(trace_info, ConnectionStatus::DOWNLOADING, "account-summary"sv);
         get_account_summary(currencies_);
       }
       return 0;
     case GET_USER_TRADES_BY_CURRENCY:
       if (can_download_) {
-        (*this)(ConnectionStatus::DOWNLOADING, "user-trades-by-currency"sv);
+        create_trace_and_dispatch_2(trace_info, ConnectionStatus::DOWNLOADING, "user-trades-by-currency"sv);
         get_user_trades_by_currency(currencies_);
       }
       return 0;
     case DONE:
-      (*this)(ConnectionStatus::READY);
+      create_trace_and_dispatch_2(trace_info, ConnectionStatus::READY);
       assert(!ready_);
       ready_ = true;
       return 0;
   }
   assert(false);
   return 0;
-}
-
-void DropCopy::subscribe_user_portfolio(std::span<std::string> const &currencies) {
-  protocol::json::RequestType request_type = protocol::json::RequestType::SUBSCRIBE_USER_PORTFOLIO;
-  auto message = fmt::format(
-      R"({{)"
-      R"("method":"private/subscribe",)"
-      R"("params":{{)"
-      R"("channels":["user.portfolio.{}"])"
-      R"(}},)"
-      R"("id":"{}")"
-      R"(}})"sv,
-      fmt::join(currencies, R"(","user.portfolio.)"sv),
-      request_type.as_raw_text());
-  subscribe_queue_.emplace_back(message);
-}
-
-void DropCopy::subscribe_user_changes() {
-  protocol::json::RequestType request_type = protocol::json::RequestType::SUBSCRIBE_USER_CHANGES;
-  auto message = fmt::format(
-      R"({{)"
-      R"("method":"private/subscribe",)"
-      R"("params":{{)"
-      R"("channels":["user.changes.any.any.raw"])"
-      R"(}},)"
-      R"("id":"{}")"
-      R"(}})"sv,
-      request_type.as_raw_text());
-  subscribe_queue_.emplace_back(message);
-}
-
-void DropCopy::subscribe_user_orders() {
-  protocol::json::RequestType request_type = protocol::json::RequestType::SUBSCRIBE_USER_ORDERS;
-  auto message = fmt::format(
-      R"({{)"
-      R"("method":"private/subscribe",)"
-      R"("params":{{)"
-      R"("channels":["user.orders.any.any.raw"])"
-      R"(}},)"
-      R"("id":"{}")"
-      R"(}})"sv,
-      request_type.as_raw_text());
-  subscribe_queue_.emplace_back(message);
-}
-
-void DropCopy::subscribe_user_trades() {
-  protocol::json::RequestType request_type = protocol::json::RequestType::SUBSCRIBE_USER_TRADES;
-  auto message = fmt::format(
-      R"({{)"
-      R"("method":"private/subscribe",)"
-      R"("params":{{)"
-      R"("channels":["user.trades.any.any.raw"])"
-      R"(}},)"
-      R"("id":"{}")"
-      R"(}})"sv,
-      request_type.as_raw_text());
-  subscribe_queue_.emplace_back(message);
-}
-
-void DropCopy::get_account_summary(std::span<std::string> const &currencies) {
-  protocol::json::RequestType request_type = protocol::json::RequestType::GET_ACCOUNT_SUMMARY;
-  for (auto currency : currencies) {
-    auto message = fmt::format(
-        R"({{)"
-        R"("method":"private/get_account_summary",)"
-        R"("params":{{)"
-        R"("currency":"{}",)"
-        R"("extended":true)"
-        R"(}},)"
-        R"("id":"{}")"
-        R"(}})"sv,
-        currency,
-        request_type.as_raw_text());
-    subscribe_queue_.emplace_back(message);
-  }
-}
-
-// XXX TODO specify subaccount_id
-void DropCopy::get_user_trades_by_currency(std::span<std::string> const &currencies) {
-  protocol::json::RequestType request_type = protocol::json::RequestType::GET_USER_TRADES_BY_CURRENCY;
-  auto now = clock::get_realtime<std::chrono::milliseconds>();
-  auto lookback = get_download_trades_lookback(shared_.settings, download_trades_is_first_);
-  log::info<1>("Download trades: lookback={}"sv, lookback);
-  auto start_timestamp = std::chrono::duration_cast<std::chrono::milliseconds>(now - lookback);
-  for (auto currency : currencies) {
-    auto message = fmt::format(
-        R"({{)"
-        R"("method":"private/get_user_trades_by_currency",)"
-        R"("params":{{)"
-        R"("currency":"{}",)"
-        R"("start_timestamp":{})"
-        R"(}},)"
-        R"("id":"{}")"
-        R"(}})"sv,
-        currency,
-        start_timestamp.count(),
-        request_type.as_raw_text());
-    subscribe_queue_.emplace_back(message);
-  }
-}
-
-void DropCopy::parse(std::string_view const &message) {
-  profile_.parse([&]() {
-    // log::debug("{}"sv, message);
-    auto log_message = [&]() { log::warn(R"(*** PLEASE REPORT *** message="{}")"sv, message); };
-    try {
-      TraceInfo trace_info;
-      if (!protocol::json::Parser::dispatch(*this, message, decode_buffer_, trace_info, shared_.settings.experimental.allow_unknown_event_types)) {
-        log_message();
-      }
-    } catch (...) {
-      log_message();
-      utils::exceptions::Unhandled::terminate();
-    }
-  });
 }
 
 // protocol::json::Parser::Handler
@@ -412,7 +282,7 @@ void DropCopy::operator()(Trace<protocol::json::Auth> const &event) {
         log::fatal("[{}] auth={}"sv, account_.name, auth);
       }
     } else {
-      download_.begin();
+      download_.begin(trace_info);
     }
   });
 }
@@ -584,10 +454,153 @@ void DropCopy::operator()(Trace<protocol::json::Trade> const &event, bool is_dow
   create_trace_and_dispatch(shared_.dispatcher, trace_info, trade_update, is_last, SOURCE_NONE);
 }
 
+// helpers
+
+void DropCopy::subscribe_user_portfolio(std::span<std::string> const &currencies) {
+  protocol::json::RequestType request_type = protocol::json::RequestType::SUBSCRIBE_USER_PORTFOLIO;
+  auto message = fmt::format(
+      R"({{)"
+      R"("method":"private/subscribe",)"
+      R"("params":{{)"
+      R"("channels":["user.portfolio.{}"])"
+      R"(}},)"
+      R"("id":"{}")"
+      R"(}})"sv,
+      fmt::join(currencies, R"(","user.portfolio.)"sv),
+      request_type.as_raw_text());
+  subscribe_queue_.emplace_back(message);
+}
+
+void DropCopy::subscribe_user_changes() {
+  protocol::json::RequestType request_type = protocol::json::RequestType::SUBSCRIBE_USER_CHANGES;
+  auto message = fmt::format(
+      R"({{)"
+      R"("method":"private/subscribe",)"
+      R"("params":{{)"
+      R"("channels":["user.changes.any.any.raw"])"
+      R"(}},)"
+      R"("id":"{}")"
+      R"(}})"sv,
+      request_type.as_raw_text());
+  subscribe_queue_.emplace_back(message);
+}
+
+void DropCopy::subscribe_user_orders() {
+  protocol::json::RequestType request_type = protocol::json::RequestType::SUBSCRIBE_USER_ORDERS;
+  auto message = fmt::format(
+      R"({{)"
+      R"("method":"private/subscribe",)"
+      R"("params":{{)"
+      R"("channels":["user.orders.any.any.raw"])"
+      R"(}},)"
+      R"("id":"{}")"
+      R"(}})"sv,
+      request_type.as_raw_text());
+  subscribe_queue_.emplace_back(message);
+}
+
+void DropCopy::subscribe_user_trades() {
+  protocol::json::RequestType request_type = protocol::json::RequestType::SUBSCRIBE_USER_TRADES;
+  auto message = fmt::format(
+      R"({{)"
+      R"("method":"private/subscribe",)"
+      R"("params":{{)"
+      R"("channels":["user.trades.any.any.raw"])"
+      R"(}},)"
+      R"("id":"{}")"
+      R"(}})"sv,
+      request_type.as_raw_text());
+  subscribe_queue_.emplace_back(message);
+}
+
+void DropCopy::get_account_summary(std::span<std::string> const &currencies) {
+  protocol::json::RequestType request_type = protocol::json::RequestType::GET_ACCOUNT_SUMMARY;
+  for (auto currency : currencies) {
+    auto message = fmt::format(
+        R"({{)"
+        R"("method":"private/get_account_summary",)"
+        R"("params":{{)"
+        R"("currency":"{}",)"
+        R"("extended":true)"
+        R"(}},)"
+        R"("id":"{}")"
+        R"(}})"sv,
+        currency,
+        request_type.as_raw_text());
+    subscribe_queue_.emplace_back(message);
+  }
+}
+
+// XXX TODO specify subaccount_id
+void DropCopy::get_user_trades_by_currency(std::span<std::string> const &currencies) {
+  protocol::json::RequestType request_type = protocol::json::RequestType::GET_USER_TRADES_BY_CURRENCY;
+  auto now = clock::get_realtime<std::chrono::milliseconds>();
+  auto lookback = get_download_trades_lookback(shared_.settings, download_trades_is_first_);
+  log::info<1>("Download trades: lookback={}"sv, lookback);
+  auto start_timestamp = std::chrono::duration_cast<std::chrono::milliseconds>(now - lookback);
+  for (auto currency : currencies) {
+    auto message = fmt::format(
+        R"({{)"
+        R"("method":"private/get_user_trades_by_currency",)"
+        R"("params":{{)"
+        R"("currency":"{}",)"
+        R"("start_timestamp":{})"
+        R"(}},)"
+        R"("id":"{}")"
+        R"(}})"sv,
+        currency,
+        start_timestamp.count(),
+        request_type.as_raw_text());
+    subscribe_queue_.emplace_back(message);
+  }
+}
+
+void DropCopy::parse(std::string_view const &message) {
+  profile_.parse([&]() {
+    // log::debug("{}"sv, message);
+    auto log_message = [&]() { log::warn(R"(*** PLEASE REPORT *** message="{}")"sv, message); };
+    try {
+      TraceInfo trace_info;
+      if (!protocol::json::Parser::dispatch(*this, message, decode_buffer_, trace_info, shared_.settings.experimental.allow_unknown_event_types)) {
+        log_message();
+      }
+    } catch (...) {
+      log_message();
+      utils::exceptions::Unhandled::terminate();
+    }
+  });
+}
+
 void DropCopy::check_subscribe_queue(std::chrono::nanoseconds now) {
   auto can_request = [&](auto now) { return shared_.rate_limiter.can_request(now); };
   auto request = [&](auto &message) { (*connection_).send_text(message); };
   subscribe_queue_.dispatch(can_request, request, now);
+}
+
+void DropCopy::login() {
+  protocol::json::RequestType request_type = protocol::json::RequestType::AUTH;
+  auto now = clock::get_realtime<std::chrono::milliseconds>();
+  auto nonce = account_.create_nonce();
+  auto [signature, timestamp] = account_.create_signature(now, nonce);
+  auto message = fmt::format(
+      R"({{)"
+      R"("method":"public/auth",)"
+      R"("params":{{)"
+      R"("grant_type":"client_signature",)"
+      R"("client_id":"{}",)"
+      R"("timestamp":"{}",)"
+      R"("nonce":"{}",)"
+      R"("data":"",)"
+      R"("signature":"{}")"
+      R"(}},)"
+      R"("id":"{}")"
+      R"(}})"sv,
+      account_.key,
+      timestamp.count(),
+      nonce,
+      signature,
+      request_type.as_raw_text());
+  (*connection_).send_text(message);
 }
 
 }  // namespace gateway

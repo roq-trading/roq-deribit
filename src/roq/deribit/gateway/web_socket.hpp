@@ -20,10 +20,12 @@
 
 #include "roq/core/json/buffer_stack.hpp"
 
-#include "roq/core/download.hpp"
+#include "roq/core/download_2.hpp"
 #include "roq/core/timer_queue.hpp"
 
 #include "roq/server.hpp"
+
+#include "roq/server/stream.hpp"
 
 #include "roq/deribit/gateway/account.hpp"
 #include "roq/deribit/gateway/request.hpp"
@@ -35,7 +37,7 @@ namespace roq {
 namespace deribit {
 namespace gateway {
 
-struct WebSocket final : public web::socket::Client::Handler, public protocol::json::Parser::Handler {
+struct WebSocket final : public Base<WebSocket>, public server::MarketDataStream, public web::socket::Client::Handler, public protocol::json::Parser::Handler {
   struct Latch final {};
 
   struct Handler {
@@ -44,17 +46,26 @@ struct WebSocket final : public web::socket::Client::Handler, public protocol::j
 
   WebSocket(Handler &, io::Context &, uint16_t stream_id, Account &, Shared &, Request &, size_t index, bool master);
 
-  WebSocket(WebSocket const &) = delete;
+  // protected:
+  friend base_type;
 
-  bool ready() const { return ready_; }
+  // server::Stream
 
-  void operator()(Event<Start> const &);
-  void operator()(Event<Stop> const &);
-  void operator()(Event<Timer> const &);
+  uint16_t stream_id() const override { return stream_id_; }
 
-  void operator()(metrics::Writer &) const;
+  bool ready() const override { return ready_; }
 
-  void subscribe(size_t start_from = 0);
+  void operator()(Event<Start> const &) override;
+  void operator()(Event<Stop> const &) override;
+  void operator()(Event<Timer> const &) override;
+
+  void operator()(metrics::Writer &) const override;
+
+  void operator()(Trace<ConnectionStatus> const &, std::string_view const &reason = {}) override;
+
+  // server::MarketDataStream
+
+  void subscribe(size_t start_from = 0) override;
 
  protected:
   // web::socket::Client::Handler
@@ -67,10 +78,7 @@ struct WebSocket final : public web::socket::Client::Handler, public protocol::j
   void operator()(Trace<web::socket::Text> const &) override;
   void operator()(Trace<web::socket::Binary> const &) override;
 
- private:
-  void operator()(ConnectionStatus, std::string_view const &reason = {});
-
-  void login();
+  // core::Download
 
   enum class State {
     UNDEFINED = 0,
@@ -80,24 +88,7 @@ struct WebSocket final : public web::socket::Client::Handler, public protocol::j
     DONE,
   };
 
-  uint32_t download(State);
-
-  void download_currencies();
-  void check_currencies();
-
-  void download_instruments();
-  void check_instruments();
-
-  void subscribe_platform_state();
-  void subscribe_instrument_state();
-
-  void subscribe(std::span<Symbol const> const &symbols);
-
-  void subscribe_quote(std::span<Symbol const> const &symbols);
-  void subscribe_ticker(std::span<Symbol const> const &symbols);
-  void subscribe_chart_trades(std::span<Symbol const> const &symbols);
-
-  void parse(std::string_view const &message);
+  int32_t download(Trace<State> const &);
 
   // protocol::json::Parser::Handler
 
@@ -118,6 +109,33 @@ struct WebSocket final : public web::socket::Client::Handler, public protocol::j
   void operator()(Trace<protocol::json::GetAccountSummaryAck> const &) override;
   void operator()(Trace<protocol::json::GetUserTradesByCurrencyAck> const &) override;
 
+  // currencies
+
+  void download_currencies();
+  void check_currencies();
+
+  // instruments
+
+  void download_instruments();
+  void check_instruments();
+
+  // platform-state
+
+  void subscribe_platform_state();
+  void subscribe_instrument_state();
+
+  void login();
+
+  // subscribe
+
+  void subscribe(std::span<Symbol const> const &symbols);
+
+  void subscribe_quote(std::span<Symbol const> const &symbols);
+  void subscribe_ticker(std::span<Symbol const> const &symbols);
+  void subscribe_chart_trades(std::span<Symbol const> const &symbols);
+
+  void parse(std::string_view const &message);
+
   template <typename C>
   bool get_top_of_book(std::string_view const &symbol, C callback) {
     auto iter = top_of_book_.find(symbol);
@@ -134,6 +152,7 @@ struct WebSocket final : public web::socket::Client::Handler, public protocol::j
 
   void check_subscribe_queue(std::chrono::nanoseconds now);
 
+ private:
   Handler &handler_;
   // config
   uint16_t const stream_id_;
@@ -165,7 +184,7 @@ struct WebSocket final : public web::socket::Client::Handler, public protocol::j
   // state
   bool ready_ = false;
   ConnectionStatus connection_status_ = {};
-  core::Download<State> download_;
+  core::Download2<State> download_;
   // queue
   core::TimerQueue<std::string> subscribe_queue_;
   //

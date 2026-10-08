@@ -108,8 +108,10 @@ OrderEntry::OrderEntry(Handler &handler, io::Context &context, uint16_t stream_i
       latency_{
           .ping = create_metrics(shared.settings, name_, "ping"sv),
       },
-      account_{account}, shared_{shared}, download_{shared.settings.fix.request_timeout, [this](auto state) { return download(state); }} {
+      account_{account}, shared_{shared}, download_{shared.settings.fix.request_timeout, [this](auto &event) { return download(event); }} {
 }
+
+// server::Stream
 
 void OrderEntry::operator()(Event<Start> const &) {
   (*connection_manager_).start();
@@ -120,42 +122,78 @@ void OrderEntry::operator()(Event<Stop> const &) {
 }
 
 void OrderEntry::operator()(Event<Timer> const &event) {
-  if (!(*connection_manager_).refresh(event.value.now)) {
+  auto &[trace_info, timer] = event;
+  if (!(*connection_manager_).refresh(timer.now)) {
     return;
   }
   if (last_logon_or_heartbeat_.count() != 0 && shared_.settings.fix.request_timeout.count() != 0 &&
-      (event.value.now - last_logon_or_heartbeat_) > shared_.settings.fix.request_timeout) {
+      (timer.now - last_logon_or_heartbeat_) > shared_.settings.fix.request_timeout) {
     log::warn("*** DETECTED TIMEOUT ***"sv);
-    log::info("DEBUG: now={}, last_logon_or_heartbeat={}"sv, event.value.now, last_logon_or_heartbeat_);
+    log::info("DEBUG: now={}, last_logon_or_heartbeat={}"sv, timer.now, last_logon_or_heartbeat_);
     log::info("closing connection"sv);
     (*connection_manager_).close();
   } else {
     if (ready_) {
-      if (test_disconnect_time_.count() != 0 && test_disconnect_time_ < event.value.now) [[unlikely]] {
+      if (test_disconnect_time_.count() != 0 && test_disconnect_time_ < timer.now) [[unlikely]] {
         if (shared_.settings.fix.test_order_disconnect.count() != 0) {
           log::warn("*** TEST: DISCONNECT ***"sv);
           log::info("closing connection"sv);
           (*connection_manager_).close();
         }
       } else {
-        if (next_heartbeat_ <= event.value.now) {
+        if (next_heartbeat_ <= timer.now) {
           assert(shared_.settings.fix.ping_freq.count() > 0);
-          next_heartbeat_ = event.value.now + shared_.settings.fix.ping_freq;
+          next_heartbeat_ = timer.now + shared_.settings.fix.ping_freq;
           send_test_request(clock::get_system());
         }
       }
     } else {
-      if (test_logon_time_.count() != 0 && test_logon_time_ < event.value.now) {
+      if (test_logon_time_.count() != 0 && test_logon_time_ < timer.now) {
         if (shared_.settings.fix.test_order_logon.count() != 0) {
           log::warn("*** TEST: LOGON ***"sv);
         }
         test_logon_time_ = {};
         send_logon();
-        (*this)(ConnectionStatus::LOGIN_SENT);
+        create_trace_and_dispatch_2(trace_info, ConnectionStatus::LOGIN_SENT);
       }
     }
   }
 }
+
+void OrderEntry::operator()(metrics::Writer &writer) const {
+  writer  //
+      .write(counter_.disconnect, metrics::Type::COUNTER)
+      .write(profile_.parse, metrics::Type::PROFILE)
+      .write(profile_.execution_report, metrics::Type::PROFILE)
+      .write(profile_.order_cancel_reject, metrics::Type::PROFILE)
+      .write(profile_.reject, metrics::Type::PROFILE)
+      .write(profile_.order_mass_cancel_report, metrics::Type::PROFILE)
+      .write(latency_.ping, metrics::Type::LATENCY);
+}
+
+void OrderEntry::operator()(Trace<ConnectionStatus> const &event, std::string_view const &reason) {
+  auto &[trace_info, connection_status] = event;
+  connection_status_ = connection_status;
+  auto stream_status = StreamStatus{
+      .stream_id = stream_id_,
+      .account = account_.name,
+      .supports = SUPPORTS,
+      .transport = Transport::TCP,
+      .protocol = Protocol::FIX,
+      .encoding = {Encoding::FIX},
+      .priority = Priority::PRIMARY,
+      .connection_status = connection_status_,
+      .reason = reason,
+      .interface = (*connection_factory_).get_interface(),
+      .authority = (*connection_factory_).get_current_authority(),
+      .path = (*connection_factory_).get_current_path(),
+      .proxy = {},
+  };
+  log::info("stream_status={}"sv, stream_status);
+  create_trace_and_dispatch(shared_.dispatcher, trace_info, stream_status);
+}
+
+// server::OrderActionStream
 
 uint16_t OrderEntry::operator()(
     Event<CreateOrder> const &event, server::oms::Order const &, server::oms::RefData const &ref_data, std::string_view const &request_id) {
@@ -301,16 +339,7 @@ uint16_t OrderEntry::operator()(Event<CancelAllOrders> const &event, std::string
   return stream_id_;
 }
 
-void OrderEntry::operator()(metrics::Writer &writer) const {
-  writer  //
-      .write(counter_.disconnect, metrics::Type::COUNTER)
-      .write(profile_.parse, metrics::Type::PROFILE)
-      .write(profile_.execution_report, metrics::Type::PROFILE)
-      .write(profile_.order_cancel_reject, metrics::Type::PROFILE)
-      .write(profile_.reject, metrics::Type::PROFILE)
-      .write(profile_.order_mass_cancel_report, metrics::Type::PROFILE)
-      .write(latency_.ping, metrics::Type::LATENCY);
-}
+// io::net::ConnectionManager::Handler
 
 void OrderEntry::operator()(io::net::ConnectionManager::Connected const &) {
   assert(test_logon_time_.count() == 0);
@@ -327,7 +356,8 @@ void OrderEntry::operator()(io::net::ConnectionManager::Disconnected const &) {
   inbound_ = {};
   ready_ = false;
   next_heartbeat_ = {};
-  (*this)(ConnectionStatus::DISCONNECTED);
+  TraceInfo trace_info;  // XXX FIXME TODO
+  create_trace_and_dispatch_2(trace_info, ConnectionStatus::DISCONNECTED);
   download_.reset();
   last_logon_or_heartbeat_ = {};
   // test
@@ -377,199 +407,31 @@ void OrderEntry::operator()(io::net::ConnectionManager::Read const &) {
 void OrderEntry::operator()(io::net::ConnectionManager::Write const &) {
 }
 
-void OrderEntry::operator()(ConnectionStatus connection_status, std::string_view const &reason) {
-  connection_status_ = connection_status;
-  TraceInfo trace_info;
-  auto stream_status = StreamStatus{
-      .stream_id = stream_id_,
-      .account = account_.name,
-      .supports = SUPPORTS,
-      .transport = Transport::TCP,
-      .protocol = Protocol::FIX,
-      .encoding = {Encoding::FIX},
-      .priority = Priority::PRIMARY,
-      .connection_status = connection_status_,
-      .reason = reason,
-      .interface = (*connection_factory_).get_interface(),
-      .authority = (*connection_factory_).get_current_authority(),
-      .path = (*connection_factory_).get_current_path(),
-      .proxy = {},
-  };
-  log::info("stream_status={}"sv, stream_status);
-  create_trace_and_dispatch(shared_.dispatcher, trace_info, stream_status);
-}
+// core::Download
 
-void OrderEntry::send_logon() {
-  auto ping_freq = std::chrono::duration_cast<std::chrono::seconds>(shared_.settings.fix.ping_freq);
-  auto now = clock::get_realtime<std::chrono::milliseconds>();
-  auto raw_data = account_.create_raw_data(now);
-  auto password = account_.create_password(raw_data);
-  auto logon = protocol::fix::Logon{
-      .heart_bt_int = static_cast<uint16_t>(ping_freq.count()),
-      .raw_data_length = static_cast<uint32_t>(std::size(raw_data)),
-      .raw_data = raw_data,
-      .username = account_.key,
-      .password = password,
-      .use_wordsafe_tags = false,
-      .cancel_on_disconnect = shared_.settings.fix.cancel_on_disconnect,
-      .deribit_app_id = {},
-      .deribit_app_sig = {},
-      .deribit_sequential = false,
-      .unsubscribe_execution_reports = false,
-  };
-  send(logon);
-  last_logon_or_heartbeat_ = clock::get_system();
-}
-
-void OrderEntry::send_logout(std::string_view const &text) {
-  auto logout = protocol::fix::Logout{
-      .text = text,
-  };
-  send(logout);
-}
-
-void OrderEntry::send_heartbeat(std::string_view const &test_req_id) {
-  auto heartbeat = protocol::fix::Heartbeat{
-      .test_req_id = test_req_id,
-  };
-  send(heartbeat);
-}
-
-void OrderEntry::send_test_request(std::chrono::nanoseconds now) {
-  // request_id is current time
-  encode_buffer_.clear();
-  utils::charconv::to_string(std::back_inserter(encode_buffer_), now.count());
-  auto test_request = protocol::fix::TestRequest{
-      .test_req_id = encode_buffer_,
-  };
-  send(test_request);
-  if (last_logon_or_heartbeat_.count() == 0) {
-    last_logon_or_heartbeat_ = now;
-  }
-}
-
-uint32_t OrderEntry::download(State state) {
+int32_t OrderEntry::download(Trace<State> const &event) {
+  auto &[trace_info, state] = event;
   switch (state) {
     using enum State;
     case UNDEFINED:
       assert(false);
       break;
     case POSITIONS:
-      (*this)(ConnectionStatus::DOWNLOADING, "positions"sv);
+      create_trace_and_dispatch_2(trace_info, ConnectionStatus::DOWNLOADING, "positions"sv);
       subscribe_positions();
       return 1;
     case ORDERS:
       download_orders();
-      (*this)(ConnectionStatus::DOWNLOADING, "orders"sv);
+      create_trace_and_dispatch_2(trace_info, ConnectionStatus::DOWNLOADING, "orders"sv);
       return 1;  // note! first report includes the true number of reports
     case DONE:
-      (*this)(ConnectionStatus::READY);
+      create_trace_and_dispatch_2(trace_info, ConnectionStatus::READY);
       assert(!ready_);
       ready_ = true;
       return 0;
   }
   assert(false);
   return 0;
-}
-
-void OrderEntry::subscribe_positions() {
-  auto request_id = shared_.next_request_id();
-  auto request_for_positions = protocol::fix::RequestForPositions{
-      .pos_req_id = request_id,
-      .pos_req_type = fix::PosReqType::POSITIONS,
-      .subscription_request_type = fix::SubscriptionRequestType::SNAPSHOT_UPDATES,
-      .currency = {},
-  };
-  send(request_for_positions);
-}
-
-void OrderEntry::download_orders() {
-  auto request_id = shared_.next_request_id();
-  auto order_mass_status_request = protocol::fix::OrderMassStatusRequest{
-      .mass_status_req_id = request_id,
-      .mass_status_req_type = fix::MassStatusReqType::ORDERS,
-  };
-  send(order_mass_status_request);
-}
-
-void OrderEntry::parse(Trace<fix::Message> const &event) {
-  profile_.parse([&]() { parse_helper(event); });
-}
-
-void OrderEntry::parse_helper(Trace<fix::Message> const &event) {
-  auto &[trace_info, message] = event;
-  auto helper = [&](auto &value, auto &header) {
-    Trace event_2{trace_info, value};
-    (*this)(event_2, header);
-  };
-  switch (message.header.msg_type) {
-    using enum fix::MsgType;
-    // session
-    case HEARTBEAT: {
-      auto value = protocol::fix::Heartbeat::create(message);
-      helper(value, message.header);
-      return;
-    }
-    case LOGON: {
-      auto value = protocol::fix::Logon::create(message);
-      helper(value, message.header);
-      return;
-    }
-    case LOGOUT: {
-      auto value = protocol::fix::Logout::create(message);
-      helper(value, message.header);
-      return;
-    }
-    case RESEND_REQUEST: {
-      auto value = protocol::fix::ResendRequest::create(message);
-      helper(value, message.header);
-      return;
-    }
-    case TEST_REQUEST: {
-      auto value = protocol::fix::TestRequest::create(message);
-      helper(value, message.header);
-      return;
-    }
-    // ...
-    case POSITION_REPORT: {
-      profile_.position_report([&]() {
-        auto value = protocol::fix::PositionReport::create(message, decode_buffer_);
-        helper(value, message.header);
-      });
-      return;
-    }
-    case EXECUTION_REPORT: {
-      profile_.execution_report([&]() {
-        auto value = protocol::fix::ExecutionReport::create(message, decode_buffer_);
-        helper(value, message.header);
-      });
-      return;
-    }
-    case ORDER_CANCEL_REJECT: {
-      profile_.order_cancel_reject([&]() {
-        auto value = protocol::fix::OrderCancelReject::create(message);
-        helper(value, message.header);
-      });
-      return;
-    }
-    case REJECT: {
-      profile_.reject([&]() {
-        auto value = protocol::fix::Reject::create(message);
-        helper(value, message.header);
-      });
-      return;
-    }
-    case ORDER_MASS_CANCEL_REPORT: {
-      profile_.order_mass_cancel_report([&]() {
-        auto value = protocol::fix::OrderMassCancelReport::create(message, decode_buffer_);
-        helper(value, message.header);
-      });
-      return;
-    }
-    default:
-      break;
-  }
-  log::warn("Unexpected msg_type={}"sv, message.header.msg_type);
 }
 
 void OrderEntry::operator()(Trace<protocol::fix::Heartbeat> const &event, fix::Header const &header) {
@@ -594,7 +456,7 @@ void OrderEntry::operator()(Trace<protocol::fix::Logon> const &event, fix::Heade
   auto &[trace_info, logon] = event;
   log::info<2>("event={{header={}, logon={}}}"sv, header, logon);
   last_logon_or_heartbeat_ = {};
-  download_.begin();
+  download_.begin(trace_info);
 }
 
 void OrderEntry::operator()(Trace<protocol::fix::Logout> const &event, fix::Header const &header) {
@@ -644,7 +506,7 @@ void OrderEntry::operator()(Trace<protocol::fix::PositionReport> const &event, f
     };
     create_trace_and_dispatch(shared_.dispatcher, trace_info, position_update, is_last);
   }
-  download_.check_relaxed(State::POSITIONS);
+  download_.check_relaxed(trace_info, State::POSITIONS);
 }
 
 namespace {
@@ -762,7 +624,7 @@ void OrderEntry::operator()(Trace<protocol::fix::ExecutionReport> const &event, 
     case ORDERS: {
       auto count = execution_report.tot_num_reports;
       log::info<1>(R"(Downloading {} execution reports (request_id="{}")"sv, count, execution_report.mass_status_req_id);
-      download_.update(State::ORDERS, count);
+      download_.update(trace_info, State::ORDERS, count);
       return;  // this is not an ordinary execution report
     }
     default:
@@ -931,7 +793,7 @@ void OrderEntry::operator()(Trace<protocol::fix::ExecutionReport> const &event, 
     create_trace_and_dispatch(shared_.dispatcher, trace_info, trade_update, true, user_id);
   }
   // download end?
-  download_.check_relaxed(State::ORDERS);
+  download_.check_relaxed(trace_info, State::ORDERS);
 }
 
 void OrderEntry::operator()(Trace<protocol::fix::OrderCancelReject> const &event, fix::Header const &header) {
@@ -1018,7 +880,7 @@ void OrderEntry::operator()(Trace<protocol::fix::Reject> const &event, fix::Head
   } else {
     log::fatal("Unexpected: reject={}"sv, reject);
     // log::warn("Unexpected: reject={}"sv, reject);
-    // download_.check_relaxed(State::ORDERS);
+    // download_.check_relaxed(trace_info,State::ORDERS);
   }
 }
 
@@ -1061,6 +923,157 @@ void OrderEntry::operator()(Trace<protocol::fix::OrderMassCancelReport> const &e
       .strategy_id = {},
   };
   create_trace_and_dispatch(shared_.dispatcher, trace_info, cancel_all_orders_ack);
+}
+
+// helpers
+
+void OrderEntry::send_logon() {
+  auto ping_freq = std::chrono::duration_cast<std::chrono::seconds>(shared_.settings.fix.ping_freq);
+  auto now = clock::get_realtime<std::chrono::milliseconds>();
+  auto raw_data = account_.create_raw_data(now);
+  auto password = account_.create_password(raw_data);
+  auto logon = protocol::fix::Logon{
+      .heart_bt_int = static_cast<uint16_t>(ping_freq.count()),
+      .raw_data_length = static_cast<uint32_t>(std::size(raw_data)),
+      .raw_data = raw_data,
+      .username = account_.key,
+      .password = password,
+      .use_wordsafe_tags = false,
+      .cancel_on_disconnect = shared_.settings.fix.cancel_on_disconnect,
+      .deribit_app_id = {},
+      .deribit_app_sig = {},
+      .deribit_sequential = false,
+      .unsubscribe_execution_reports = false,
+  };
+  send(logon);
+  last_logon_or_heartbeat_ = clock::get_system();
+}
+
+void OrderEntry::send_logout(std::string_view const &text) {
+  auto logout = protocol::fix::Logout{
+      .text = text,
+  };
+  send(logout);
+}
+
+void OrderEntry::send_heartbeat(std::string_view const &test_req_id) {
+  auto heartbeat = protocol::fix::Heartbeat{
+      .test_req_id = test_req_id,
+  };
+  send(heartbeat);
+}
+
+void OrderEntry::send_test_request(std::chrono::nanoseconds now) {
+  // request_id is current time
+  encode_buffer_.clear();
+  utils::charconv::to_string(std::back_inserter(encode_buffer_), now.count());
+  auto test_request = protocol::fix::TestRequest{
+      .test_req_id = encode_buffer_,
+  };
+  send(test_request);
+  if (last_logon_or_heartbeat_.count() == 0) {
+    last_logon_or_heartbeat_ = now;
+  }
+}
+
+void OrderEntry::subscribe_positions() {
+  auto request_id = shared_.next_request_id();
+  auto request_for_positions = protocol::fix::RequestForPositions{
+      .pos_req_id = request_id,
+      .pos_req_type = fix::PosReqType::POSITIONS,
+      .subscription_request_type = fix::SubscriptionRequestType::SNAPSHOT_UPDATES,
+      .currency = {},
+  };
+  send(request_for_positions);
+}
+
+void OrderEntry::download_orders() {
+  auto request_id = shared_.next_request_id();
+  auto order_mass_status_request = protocol::fix::OrderMassStatusRequest{
+      .mass_status_req_id = request_id,
+      .mass_status_req_type = fix::MassStatusReqType::ORDERS,
+  };
+  send(order_mass_status_request);
+}
+
+void OrderEntry::parse(Trace<fix::Message> const &event) {
+  profile_.parse([&]() { parse_helper(event); });
+}
+
+void OrderEntry::parse_helper(Trace<fix::Message> const &event) {
+  auto &[trace_info, message] = event;
+  auto helper = [&](auto &value, auto &header) {
+    Trace event_2{trace_info, value};
+    (*this)(event_2, header);
+  };
+  switch (message.header.msg_type) {
+    using enum fix::MsgType;
+    // session
+    case HEARTBEAT: {
+      auto value = protocol::fix::Heartbeat::create(message);
+      helper(value, message.header);
+      return;
+    }
+    case LOGON: {
+      auto value = protocol::fix::Logon::create(message);
+      helper(value, message.header);
+      return;
+    }
+    case LOGOUT: {
+      auto value = protocol::fix::Logout::create(message);
+      helper(value, message.header);
+      return;
+    }
+    case RESEND_REQUEST: {
+      auto value = protocol::fix::ResendRequest::create(message);
+      helper(value, message.header);
+      return;
+    }
+    case TEST_REQUEST: {
+      auto value = protocol::fix::TestRequest::create(message);
+      helper(value, message.header);
+      return;
+    }
+    // ...
+    case POSITION_REPORT: {
+      profile_.position_report([&]() {
+        auto value = protocol::fix::PositionReport::create(message, decode_buffer_);
+        helper(value, message.header);
+      });
+      return;
+    }
+    case EXECUTION_REPORT: {
+      profile_.execution_report([&]() {
+        auto value = protocol::fix::ExecutionReport::create(message, decode_buffer_);
+        helper(value, message.header);
+      });
+      return;
+    }
+    case ORDER_CANCEL_REJECT: {
+      profile_.order_cancel_reject([&]() {
+        auto value = protocol::fix::OrderCancelReject::create(message);
+        helper(value, message.header);
+      });
+      return;
+    }
+    case REJECT: {
+      profile_.reject([&]() {
+        auto value = protocol::fix::Reject::create(message);
+        helper(value, message.header);
+      });
+      return;
+    }
+    case ORDER_MASS_CANCEL_REPORT: {
+      profile_.order_mass_cancel_report([&]() {
+        auto value = protocol::fix::OrderMassCancelReport::create(message, decode_buffer_);
+        helper(value, message.header);
+      });
+      return;
+    }
+    default:
+      break;
+  }
+  log::warn("Unexpected msg_type={}"sv, message.header.msg_type);
 }
 
 template <typename T>

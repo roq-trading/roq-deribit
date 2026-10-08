@@ -108,7 +108,7 @@ struct Controller final : public server::Handler,
 
   Account &get_account(std::string_view const &account);
 
-  OrderEntry &get_order_entry(std::string_view const &account);
+  server::OrderActionStream &get_order_entry(std::string_view const &account);
 
  private:
   server::Dispatcher &dispatcher_;

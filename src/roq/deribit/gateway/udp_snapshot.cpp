@@ -85,10 +85,12 @@ UDPSnapshot::UDPSnapshot(Handler &handler, io::Context &context, uint16_t stream
   log::info("publish_market_by_price={}"sv, publish_market_by_price_);
 }
 
-void UDPSnapshot::operator()(Event<Start> const &) {
-  TraceInfo trace_info;
+// server::Stream
+
+void UDPSnapshot::operator()(Event<Start> const &event) {
+  auto &[trace_info, start] = event;
   last_update_time_ = trace_info.source_receive_time;
-  publish_stream_status(trace_info, ConnectionStatus::CONNECTING);
+  create_trace_and_dispatch_2(trace_info, ConnectionStatus::CONNECTING);
 }
 
 void UDPSnapshot::operator()(Event<Stop> const &) {
@@ -101,10 +103,40 @@ void UDPSnapshot::operator()(Event<Timer> const &event) {
   }
 }
 
+void UDPSnapshot::operator()(metrics::Writer &writer) const {
+  writer  //
+      .write(counter_.disconnect, metrics::Type::COUNTER)
+      .write(profile_.parse, metrics::Type::PROFILE);
+}
+
+void UDPSnapshot::operator()(Trace<ConnectionStatus> const &event, std::string_view const &reason) {
+  auto &[trace_info, connection_status] = event;
+  connection_status_ = connection_status;
+  auto stream_status = StreamStatus{
+      .stream_id = stream_id_,
+      .account = {},
+      .supports = supports_,
+      .transport = Transport::UDP,
+      .protocol = Protocol::SBE,
+      .encoding = {Encoding::SBE},
+      .priority = Priority::PRIMARY,
+      .connection_status = connection_status_,
+      .reason = reason,
+      .interface = {},
+      .authority = {},
+      .path = {},
+      .proxy = {},
+  };
+  log::info("stream_status={}"sv, stream_status);
+  create_trace_and_dispatch(shared_.dispatcher, trace_info, stream_status);
+}
+
+// io::net::udp::Receiver::Handler
+
 void UDPSnapshot::operator()(io::net::udp::Receiver::Read const &) {
-  TraceInfo trace_info;
+  TraceInfo trace_info;  // XXX FIXME TODO
   last_update_time_ = trace_info.source_receive_time;
-  publish_stream_status(trace_info, ConnectionStatus::READY);  // first message will publish
+  create_trace_and_dispatch_2(trace_info, ConnectionStatus::READY);  // first message will publish
   while (true) {
     auto bytes = (*receiver_).recv(shared_.buffer);
     if (bytes == 0) {
@@ -122,6 +154,8 @@ void UDPSnapshot::operator()(io::net::udp::Receiver::Read const &) {
 void UDPSnapshot::operator()(io::net::udp::Receiver::Error const &error) {
   log::fatal("Error: what={}"sv, error.what);
 }
+
+// protocol::sbe::Parser::Handler
 
 bool UDPSnapshot::operator()(protocol::sbe::Frame const &frame) {
   auto result = false;
@@ -305,32 +339,7 @@ void UDPSnapshot::operator()(Trace<::deribit::sbe::multicast::InstrumentV2> cons
   // XXX FIXME can't make get_instrument_name() to work...
 }
 
-void UDPSnapshot::operator()(metrics::Writer &writer) const {
-  writer  //
-      .write(counter_.disconnect, metrics::Type::COUNTER)
-      .write(profile_.parse, metrics::Type::PROFILE);
-}
-
-void UDPSnapshot::publish_stream_status(TraceInfo const &trace_info, ConnectionStatus connection_status, std::string_view const &reason) {
-  connection_status_ = connection_status;
-  auto stream_status = StreamStatus{
-      .stream_id = stream_id_,
-      .account = {},
-      .supports = supports_,
-      .transport = Transport::UDP,
-      .protocol = Protocol::SBE,
-      .encoding = {Encoding::SBE},
-      .priority = Priority::PRIMARY,
-      .connection_status = connection_status_,
-      .reason = reason,
-      .interface = {},
-      .authority = {},
-      .path = {},
-      .proxy = {},
-  };
-  log::info("stream_status={}"sv, stream_status);
-  create_trace_and_dispatch(shared_.dispatcher, trace_info, stream_status);
-}
+// helpers
 
 template <typename Callback>
 void UDPSnapshot::get_channel(protocol::sbe::Frame const &frame, Callback callback) {

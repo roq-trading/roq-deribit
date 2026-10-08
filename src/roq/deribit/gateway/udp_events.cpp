@@ -130,9 +130,11 @@ UDPEvents::UDPEvents(Handler &handler, io::Context &context, uint16_t stream_id,
   log::info("publish_trade_summary={}"sv, publish_trade_summary_);
 }
 
-void UDPEvents::operator()(Event<Start> const &) {
-  TraceInfo trace_info;
-  publish_stream_status(trace_info, ConnectionStatus::CONNECTING);
+// server::Stream
+
+void UDPEvents::operator()(Event<Start> const &event) {
+  auto &[trace_info, start] = event;
+  create_trace_and_dispatch_2(trace_info, ConnectionStatus::CONNECTING);
   last_update_time_ = trace_info.source_receive_time;
 }
 
@@ -146,10 +148,40 @@ void UDPEvents::operator()(Event<Timer> const &event) {
   }
 }
 
+void UDPEvents::operator()(metrics::Writer &writer) const {
+  writer  //
+      .write(counter_.disconnect, metrics::Type::COUNTER)
+      .write(profile_.parse, metrics::Type::PROFILE);
+}
+
+void UDPEvents::operator()(Trace<ConnectionStatus> const &event, std::string_view const &reason) {
+  auto &[trace_info, connection_status] = event;
+  connection_status_ = connection_status;
+  auto stream_status = StreamStatus{
+      .stream_id = stream_id_,
+      .account = {},
+      .supports = supports_,
+      .transport = Transport::UDP,
+      .protocol = Protocol::SBE,
+      .encoding = {Encoding::SBE},
+      .priority = Priority::PRIMARY,
+      .connection_status = connection_status_,
+      .reason = reason,
+      .interface = {},
+      .authority = {},
+      .path = {},
+      .proxy = {},
+  };
+  log::info("stream_status={}"sv, stream_status);
+  create_trace_and_dispatch(shared_.dispatcher, trace_info, stream_status);
+}
+
+// io::net::udp::Receiver::Handler
+
 void UDPEvents::operator()(io::net::udp::Receiver::Read const &) {
-  TraceInfo trace_info;
+  TraceInfo trace_info;  // XXX FIXME TODO
   last_update_time_ = trace_info.source_receive_time;
-  publish_stream_status(trace_info, ConnectionStatus::READY);  // first message will publish
+  create_trace_and_dispatch_2(trace_info, ConnectionStatus::READY);  // first message will publish
   while (true) {
     auto bytes = (*receiver_).recv(shared_.buffer);
     if (bytes == 0) {
@@ -167,6 +199,8 @@ void UDPEvents::operator()(io::net::udp::Receiver::Read const &) {
 void UDPEvents::operator()(io::net::udp::Receiver::Error const &error) {
   log::fatal("Error: what={}"sv, error.what);
 }
+
+// protocol::sbe::Parser::Handler
 
 bool UDPEvents::operator()(protocol::sbe::Frame const &frame) {
   auto result = false;
@@ -451,32 +485,7 @@ void UDPEvents::operator()(Trace<::deribit::sbe::multicast::InstrumentV2> const 
   // XXX FIXME can't make get_instrument_name() to work...
 }
 
-void UDPEvents::operator()(metrics::Writer &writer) const {
-  writer  //
-      .write(counter_.disconnect, metrics::Type::COUNTER)
-      .write(profile_.parse, metrics::Type::PROFILE);
-}
-
-void UDPEvents::publish_stream_status(TraceInfo const &trace_info, ConnectionStatus connection_status, std::string_view const &reason) {
-  connection_status_ = connection_status;
-  auto stream_status = StreamStatus{
-      .stream_id = stream_id_,
-      .account = {},
-      .supports = supports_,
-      .transport = Transport::UDP,
-      .protocol = Protocol::SBE,
-      .encoding = {Encoding::SBE},
-      .priority = Priority::PRIMARY,
-      .connection_status = connection_status_,
-      .reason = reason,
-      .interface = {},
-      .authority = {},
-      .path = {},
-      .proxy = {},
-  };
-  log::info("stream_status={}"sv, stream_status);
-  create_trace_and_dispatch(shared_.dispatcher, trace_info, stream_status);
-}
+// helpers
 
 template <typename Callback>
 void UDPEvents::get_channel(protocol::sbe::Frame const &frame, Callback callback) {

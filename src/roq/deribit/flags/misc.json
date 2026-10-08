@@ -13,7 +13,7 @@
       "name": "decode_buffer_size",
       "type": "std/uint32",
       "required": true,
-      "default": 16777216,
+      "default": 134217728,
       "description": "Decode buffer size"
     },
     {

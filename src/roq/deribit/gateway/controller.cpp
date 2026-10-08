@@ -324,7 +324,7 @@ Account &Controller::get_account(std::string_view const &account) {
   return *(*iter).second;
 }
 
-OrderEntry &Controller::get_order_entry(std::string_view const &account) {
+server::OrderActionStream &Controller::get_order_entry(std::string_view const &account) {
   auto iter = order_entry_.find(account);
   if (iter == std::end(order_entry_)) [[unlikely]] {
     throw RuntimeError{R"(Unknown account="{}")"sv, account};

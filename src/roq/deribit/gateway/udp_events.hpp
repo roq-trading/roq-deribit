@@ -13,6 +13,8 @@
 
 #include "roq/server.hpp"
 
+#include "roq/server/stream.hpp"
+
 #include "roq/deribit/gateway/channel.hpp"
 #include "roq/deribit/gateway/shared.hpp"
 
@@ -22,18 +24,27 @@ namespace roq {
 namespace deribit {
 namespace gateway {
 
-struct UDPEvents final : public io::net::udp::Receiver::Handler, public protocol::sbe::Parser::Handler {
+struct UDPEvents final : public Base<UDPEvents>, public server::Stream, public io::net::udp::Receiver::Handler, public protocol::sbe::Parser::Handler {
   struct Handler {};
 
   UDPEvents(Handler &, io::Context &, uint16_t stream_id, Shared &);
 
-  UDPEvents(UDPEvents const &) = delete;
+  // protected:
+  friend base_type;
 
-  void operator()(Event<Start> const &);
-  void operator()(Event<Stop> const &);
-  void operator()(Event<Timer> const &);
+  // server::Stream
 
-  void operator()(metrics::Writer &) const;
+  uint16_t stream_id() const override { return stream_id_; }
+
+  bool ready() const override { return connection_status_ == ConnectionStatus::READY; }
+
+  void operator()(Event<Start> const &) override;
+  void operator()(Event<Stop> const &) override;
+  void operator()(Event<Timer> const &) override;
+
+  void operator()(metrics::Writer &) const override;
+
+  void operator()(Trace<ConnectionStatus> const &, std::string_view const &reason = {}) override;
 
  protected:
   // io::net::udp::Receiver::Handler
@@ -58,8 +69,6 @@ struct UDPEvents final : public io::net::udp::Receiver::Handler, public protocol
   void operator()(Trace<::deribit::sbe::multicast::InstrumentV2> const &, protocol::sbe::Frame const &) override;
 
   // helpers
-
-  void publish_stream_status(TraceInfo const &, ConnectionStatus, std::string_view const &reason = {});
 
   template <typename Callback>
   void get_channel(protocol::sbe::Frame const &, Callback);

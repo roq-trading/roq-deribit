@@ -172,8 +172,10 @@ MarketData::MarketData(Handler &handler, io::Context &context, uint16_t stream_i
       latency_{
           .ping = create_metrics(shared.settings, name_, "ping"sv),
       },
-      account_{account}, shared_{shared}, download_{fix_request_timeout_, [this](auto state) { return download(state); }} {
+      account_{account}, shared_{shared}, download_{fix_request_timeout_, [this](auto &event) { return download(event); }} {
 }
+
+// server::Stream
 
 void MarketData::operator()(Event<Start> const &) {
   (*connection_manager_).start();
@@ -210,11 +212,53 @@ void MarketData::operator()(Event<Timer> const &event) {
   }
 }
 
+void MarketData::operator()(metrics::Writer &writer) const {
+  writer  //
+      .write(counter_.disconnect, metrics::Type::COUNTER)
+      .write(profile_.parse, metrics::Type::PROFILE)
+      .write(profile_.security_list, metrics::Type::PROFILE)
+      .write(profile_.security_status, metrics::Type::PROFILE)
+      .write(profile_.market_data_incremental_refresh, metrics::Type::PROFILE)
+      .write(profile_.market_data_request_reject, metrics::Type::PROFILE)
+      .write(profile_.market_data_snapshot_full_refresh, metrics::Type::PROFILE)
+      .write(profile_.market_data_request, metrics::Type::PROFILE)
+      .write(latency_.ping, metrics::Type::LATENCY);
+}
+
+void MarketData::subscribe(size_t start_from) {
+  if (ready()) {
+    subscribe(shared_.symbols.get_slice(index_, start_from));
+  }
+}
+
+void MarketData::operator()(Trace<ConnectionStatus> const &event, std::string_view const &reason) {
+  auto &[trace_info, connection_status] = event;
+  connection_status_ = connection_status;
+  auto stream_status = StreamStatus{
+      .stream_id = stream_id_,
+      .account = {},
+      .supports = supports_,
+      .transport = Transport::TCP,
+      .protocol = Protocol::FIX,
+      .encoding = {Encoding::FIX},
+      .priority = Priority::PRIMARY,
+      .connection_status = connection_status_,
+      .reason = reason,
+      .interface = (*connection_factory_).get_interface(),
+      .authority = (*connection_factory_).get_current_authority(),
+      .path = (*connection_factory_).get_current_path(),
+      .proxy = {},
+  };
+  log::info<1>("stream_status={}"sv, stream_status);
+  create_trace_and_dispatch(shared_.dispatcher, trace_info, stream_status);
+}
+
 // io::net::ConnectionManager::Handler
 
 void MarketData::operator()(io::net::ConnectionManager::Connected const &) {
   send_logon();
-  (*this)(ConnectionStatus::LOGIN_SENT);
+  TraceInfo trace_info;  // XXX FIXME TODO
+  create_trace_and_dispatch_2(trace_info, ConnectionStatus::LOGIN_SENT);
 }
 
 void MarketData::operator()(io::net::ConnectionManager::Disconnected const &) {
@@ -223,14 +267,15 @@ void MarketData::operator()(io::net::ConnectionManager::Disconnected const &) {
   inbound_ = {};
   ready_ = false;
   next_heartbeat_ = {};
-  (*this)(ConnectionStatus::DISCONNECTED);
+  TraceInfo trace_info;  // XXX FIXME TODO
+  create_trace_and_dispatch_2(trace_info, ConnectionStatus::DISCONNECTED);
   download_.reset();
   // test
   test_disconnect_time_ = {};
 }
 
 void MarketData::operator()(io::net::ConnectionManager::Read const &) {
-  TraceInfo trace_info;
+  TraceInfo trace_info;  // XXX FIXME TODO
   auto parse_message = [&](auto &message) {
     check(message.header);
     Trace event{trace_info, message};
@@ -272,79 +317,8 @@ void MarketData::operator()(io::net::ConnectionManager::Read const &) {
 void MarketData::operator()(io::net::ConnectionManager::Write const &) {
 }
 
-void MarketData::operator()(ConnectionStatus connection_status, std::string_view const &reason) {
-  connection_status_ = connection_status;
-  TraceInfo trace_info;
-  auto stream_status = StreamStatus{
-      .stream_id = stream_id_,
-      .account = {},
-      .supports = supports_,
-      .transport = Transport::TCP,
-      .protocol = Protocol::FIX,
-      .encoding = {Encoding::FIX},
-      .priority = Priority::PRIMARY,
-      .connection_status = connection_status_,
-      .reason = reason,
-      .interface = (*connection_factory_).get_interface(),
-      .authority = (*connection_factory_).get_current_authority(),
-      .path = (*connection_factory_).get_current_path(),
-      .proxy = {},
-  };
-  log::info<1>("stream_status={}"sv, stream_status);
-  create_trace_and_dispatch(shared_.dispatcher, trace_info, stream_status);
-}
-
-void MarketData::send_logon() {
-  auto heart_bt_int = std::chrono::duration_cast<std::chrono::seconds>(fix_ping_freq_).count();
-  auto now = clock::get_realtime<std::chrono::milliseconds>();
-  auto raw_data = account_.create_raw_data(now);
-  auto password = account_.create_password(raw_data);
-  auto cancel_on_disconnect = shared_.settings.fix.cancel_on_disconnect;
-  auto logon = protocol::fix::Logon{
-      .heart_bt_int = utils::safe_cast(heart_bt_int),
-      .raw_data_length = utils::safe_cast(std::size(raw_data)),
-      .raw_data = raw_data,
-      .username = account_.key,
-      .password = password,
-      .use_wordsafe_tags = false,
-      .cancel_on_disconnect = cancel_on_disconnect,
-      .deribit_app_id = {},
-      .deribit_app_sig = {},
-      .deribit_sequential = false,
-      .unsubscribe_execution_reports = true,
-  };
-  send(logon);
-  last_logon_or_heartbeat_ = clock::get_system();
-}
-
-void MarketData::send_logout(std::string_view const &text) {
-  auto logout = protocol::fix::Logout{
-      .text = text,
-  };
-  send(logout);
-}
-
-void MarketData::send_heartbeat(std::string_view const &test_req_id) {
-  auto heartbeat = protocol::fix::Heartbeat{
-      .test_req_id = test_req_id,
-  };
-  send(heartbeat);
-}
-
-void MarketData::send_test_request(std::chrono::nanoseconds now) {
-  // request_id is current time
-  request_id_.clear();
-  utils::charconv::to_string(std::back_inserter(request_id_), now.count());
-  auto test_request = protocol::fix::TestRequest{
-      .test_req_id = request_id_,
-  };
-  send(test_request);
-  if (last_logon_or_heartbeat_.count() == 0) {
-    last_logon_or_heartbeat_ = now;
-  }
-}
-
-uint32_t MarketData::download(State state) {
+int32_t MarketData::download(Trace<State> const &event) {
+  auto &[trace_info, state] = event;
   switch (state) {
     using enum State;
     case UNDEFINED:
@@ -352,7 +326,7 @@ uint32_t MarketData::download(State state) {
       break;
     case SECURITIES:
       if (master_) {
-        (*this)(ConnectionStatus::DOWNLOADING, "securities"sv);
+        create_trace_and_dispatch_2(trace_info, ConnectionStatus::DOWNLOADING, "securities"sv);
         download_securities();
         return 1;
       } else {
@@ -364,7 +338,7 @@ uint32_t MarketData::download(State state) {
       subscribe();
       return 0;
     case DONE: {
-      (*this)(ConnectionStatus::READY);
+      create_trace_and_dispatch_2(trace_info, ConnectionStatus::READY);
       // test
       auto now = clock::get_system();
       if (shared_.settings.fix.test_market_data_disconnect.count() != 0) {
@@ -379,212 +353,6 @@ uint32_t MarketData::download(State state) {
   }
   assert(false);
   return 0;
-}
-
-void MarketData::download_securities() {
-  auto request_id = shared_.next_request_id();
-  auto security_list_request = protocol::fix::SecurityListRequest{
-      .security_req_id = request_id,
-      .security_list_request_type = fix::SecurityListRequestType::ALL_SECURITIES,
-      .subscription_request_type = fix::SubscriptionRequestType::SNAPSHOT_UPDATES,
-  };
-  send(security_list_request);
-}
-
-void MarketData::operator()(metrics::Writer &writer) const {
-  writer  //
-      .write(counter_.disconnect, metrics::Type::COUNTER)
-      .write(profile_.parse, metrics::Type::PROFILE)
-      .write(profile_.security_list, metrics::Type::PROFILE)
-      .write(profile_.security_status, metrics::Type::PROFILE)
-      .write(profile_.market_data_incremental_refresh, metrics::Type::PROFILE)
-      .write(profile_.market_data_request_reject, metrics::Type::PROFILE)
-      .write(profile_.market_data_snapshot_full_refresh, metrics::Type::PROFILE)
-      .write(profile_.market_data_request, metrics::Type::PROFILE)
-      .write(latency_.ping, metrics::Type::LATENCY);
-}
-
-void MarketData::subscribe(size_t start_from) {
-  if (ready()) {
-    subscribe(shared_.symbols.get_slice(index_, start_from));
-  }
-}
-
-void MarketData::subscribe(std::span<Symbol const> const &symbols) {
-  if (std::empty(symbols)) {
-    return;
-  }
-  log::info("Subscribe symbols=[{}]"sv, fmt::join(symbols, ","sv));
-  auto market_depth = shared_.settings.fix.market_data_market_depth;
-  auto md_update_type = market_depth != 0 ? fix::MDUpdateType::INCREMENTAL_REFRESH : fix::MDUpdateType::FULL_REFRESH;
-  std::array<protocol::fix::MDReq, 3> md_entry_types{{
-      {.md_entry_type = fix::MDEntryType::BID},
-      {.md_entry_type = fix::MDEntryType::OFFER},
-      {.md_entry_type = fix::MDEntryType::TRADE},
-  }};
-  // deribit has acknowledged a limit on # of symbols per request
-  auto max_size = shared_.settings.fix.market_data_request_max_size != 0 ? shared_.settings.fix.market_data_request_max_size : std::size(symbols);
-  std::vector<protocol::fix::InstrmtMDReq> related_sym(max_size);
-  for (size_t offset = 0;; offset += max_size) {
-    if (std::size(symbols) <= offset) {
-      break;
-    }
-    auto length = std::min<size_t>(std::size(symbols) - offset, max_size);
-    assert(length > 0);
-    for (size_t i = 0; i < length; ++i) {
-      new (&related_sym[i]) protocol::fix::InstrmtMDReq{
-          .symbol = symbols[offset + i],
-      };
-    }
-    auto request_id = shared_.next_request_id();
-    auto market_data_request = protocol::fix::MarketDataRequest{
-        .md_req_id = request_id,
-        .subscription_request_type = fix::SubscriptionRequestType::SNAPSHOT_UPDATES,
-        .market_depth = market_depth,
-        .md_update_type = md_update_type,
-        .deribit_trade_amount = {},     // 0=none
-        .deribit_since_timestamp = {},  // 0=none
-        .no_md_entry_types = md_entry_types,
-        .no_related_sym = {std::data(related_sym), length},
-    };
-    send(market_data_request);
-  }
-}
-
-void MarketData::unsubscribe(std::span<Symbol const> const &symbols) {
-  log::info("Unsubscribe market data"sv);
-  assert(!std::empty(symbols));
-  std::array<protocol::fix::MDReq, 3> md_entry_types{{
-      {.md_entry_type = fix::MDEntryType::BID},
-      {.md_entry_type = fix::MDEntryType::OFFER},
-      {.md_entry_type = fix::MDEntryType::TRADE},
-  }};
-  // deribit has acknowledged a limit on # of symbols per request
-  auto max_size = shared_.settings.fix.market_data_request_max_size != 0 ? shared_.settings.fix.market_data_request_max_size : std::size(symbols);
-  std::vector<protocol::fix::InstrmtMDReq> related_sym(max_size);
-  for (size_t offset = 0;; offset += max_size) {
-    if (std::size(symbols) <= offset) {
-      break;
-    }
-    auto length = std::min<size_t>(std::size(symbols) - offset, max_size);
-    assert(length > 0);
-    for (size_t i = 0; i < length; ++i) {
-      new (&related_sym[i]) protocol::fix::InstrmtMDReq{
-          .symbol = symbols[offset + i],
-      };
-    }
-    auto request_id = shared_.next_request_id();
-    auto market_data_request = protocol::fix::MarketDataRequest{
-        .md_req_id = request_id,
-        .subscription_request_type = fix::SubscriptionRequestType::UNSUBSCRIBE,
-        .market_depth = {},
-        .md_update_type = {},
-        .deribit_trade_amount = {},
-        .deribit_since_timestamp = {},
-        .no_md_entry_types = md_entry_types,
-        .no_related_sym = {std::data(related_sym), length},
-    };
-    send(market_data_request);
-  }
-}
-
-void MarketData::resubscribe(std::string_view const &symbol) {
-  log::debug(R"(*** RESUBSCRIBE *** (symbol="{}"))"sv, symbol);
-  log::warn<1>(R"(*** RESUBSCRIBE *** (symbol="{}"))"sv, symbol);
-  if (latch_.find(symbol) != std::end(latch_)) {
-    return;
-  }
-  log::info<1>(R"(Latch symbol="{}")"sv, symbol);
-  latch_.emplace(symbol);
-  Symbol tmp{symbol};  // copy
-  std::span symbols{&tmp, 1};
-  unsubscribe(symbols);
-  subscribe(symbols);
-}
-
-void MarketData::parse(Trace<fix::Message> const &event) {
-  profile_.parse([&]() { parse_helper(event); });
-}
-
-void MarketData::parse_helper(Trace<fix::Message> const &event) {
-  auto &[trace_info, message] = event;
-  auto helper = [&](auto &value, auto &header) {
-    Trace event_2{trace_info, value};
-    (*this)(event_2, header);
-  };
-  switch (message.header.msg_type) {
-    using enum fix::MsgType;
-    // session
-    case HEARTBEAT: {
-      auto value = protocol::fix::Heartbeat::create(message);
-      helper(value, message.header);
-      break;
-    }
-    case LOGON: {
-      auto value = protocol::fix::Logon::create(message);
-      helper(value, message.header);
-      break;
-    }
-    case LOGOUT: {
-      auto value = protocol::fix::Logout::create(message);
-      helper(value, message.header);
-      break;
-    }
-    case RESEND_REQUEST: {
-      auto value = protocol::fix::ResendRequest::create(message);
-      helper(value, message.header);
-      break;
-    }
-    case TEST_REQUEST: {
-      auto value = protocol::fix::TestRequest::create(message);
-      helper(value, message.header);
-      break;
-    }
-    case REJECT: {
-      auto value = protocol::fix::Reject::create(message);
-      helper(value, message.header);
-      break;
-    }
-    // ...
-    case MARKET_DATA_INCREMENTAL_REFRESH:
-      profile_.market_data_incremental_refresh([&]() {
-        auto value = protocol::fix::MarketDataIncrementalRefresh::create(message, decode_buffer_);
-        helper(value, message.header);
-      });
-      break;
-    case MARKET_DATA_REQUEST_REJECT:
-      profile_.market_data_request_reject([&]() {
-        auto value = protocol::fix::MarketDataRequestReject::create(message);
-        helper(value, message.header);
-      });
-      break;
-    case MARKET_DATA_SNAPSHOT_FULL_REFRESH:
-      profile_.market_data_snapshot_full_refresh([&]() {
-        auto value = protocol::fix::MarketDataSnapshotFullRefresh::create(message, decode_buffer_);
-        helper(value, message.header);
-      });
-      break;
-    case SECURITY_LIST:
-      profile_.security_list([&]() {
-        auto value = protocol::fix::SecurityList::create(message, decode_buffer_);
-        helper(value, message.header);
-      });
-      break;
-    case SECURITY_STATUS:
-      profile_.security_status([&]() {
-        auto value = protocol::fix::SecurityStatus::create(message, decode_buffer_);
-        helper(value, message.header);
-      });
-      break;
-    // weird
-    case MARKET_DATA_REQUEST:
-      profile_.market_data_request([&]() {
-        // XXX HANS why do we get this message?
-      });
-      break;
-    default:
-      log::warn("Unexpected msg_type={}"sv, message.header.msg_type);
-  }
 }
 
 void MarketData::operator()(Trace<protocol::fix::Heartbeat> const &event, fix::Header const &header) {
@@ -608,13 +376,13 @@ void MarketData::operator()(Trace<protocol::fix::Heartbeat> const &event, fix::H
 void MarketData::operator()(Trace<protocol::fix::Logon> const &event, fix::Header const &header) {
   auto &[trace_info, logon] = event;
   log::info<2>("event={{header={}, logon={}}}"sv, header, logon);
-  download_.begin();
+  download_.begin(trace_info);
 }
 
 void MarketData::operator()(Trace<protocol::fix::Logout> const &event, fix::Header const &header) {
   auto &[trace_info, logout] = event;
   log::warn("event={{header={}, logout={}}}"sv, header, logout);
-  (*this)(ConnectionStatus::LOGGED_OUT);
+  create_trace_and_dispatch_2(trace_info, ConnectionStatus::LOGGED_OUT);
   ready_ = false;
   // note! mandated, must send a logout response
   send_logout(LOGOUT_RESPONSE);
@@ -745,7 +513,7 @@ void MarketData::operator()(Trace<protocol::fix::SecurityList> const &event, fix
       handler_(symbols_update);
     }
   }
-  download_.check_relaxed(State::SECURITIES);
+  download_.check_relaxed(trace_info, State::SECURITIES);
 }
 
 void MarketData::operator()(Trace<protocol::fix::SecurityStatus> const &event, fix::Header const &header) {
@@ -978,6 +746,245 @@ void MarketData::operator()(Trace<protocol::fix::MarketDataSnapshotFullRefresh> 
         .sending_time_utc = header.sending_time,
     };
     create_trace_and_dispatch(shared_.dispatcher, trace_info, statistics_update, true);
+  }
+}
+
+//
+
+void MarketData::send_logon() {
+  auto heart_bt_int = std::chrono::duration_cast<std::chrono::seconds>(fix_ping_freq_).count();
+  auto now = clock::get_realtime<std::chrono::milliseconds>();
+  auto raw_data = account_.create_raw_data(now);
+  auto password = account_.create_password(raw_data);
+  auto cancel_on_disconnect = shared_.settings.fix.cancel_on_disconnect;
+  auto logon = protocol::fix::Logon{
+      .heart_bt_int = utils::safe_cast(heart_bt_int),
+      .raw_data_length = utils::safe_cast(std::size(raw_data)),
+      .raw_data = raw_data,
+      .username = account_.key,
+      .password = password,
+      .use_wordsafe_tags = false,
+      .cancel_on_disconnect = cancel_on_disconnect,
+      .deribit_app_id = {},
+      .deribit_app_sig = {},
+      .deribit_sequential = false,
+      .unsubscribe_execution_reports = true,
+  };
+  send(logon);
+  last_logon_or_heartbeat_ = clock::get_system();
+}
+
+void MarketData::send_logout(std::string_view const &text) {
+  auto logout = protocol::fix::Logout{
+      .text = text,
+  };
+  send(logout);
+}
+
+void MarketData::send_heartbeat(std::string_view const &test_req_id) {
+  auto heartbeat = protocol::fix::Heartbeat{
+      .test_req_id = test_req_id,
+  };
+  send(heartbeat);
+}
+
+void MarketData::send_test_request(std::chrono::nanoseconds now) {
+  // request_id is current time
+  request_id_.clear();
+  utils::charconv::to_string(std::back_inserter(request_id_), now.count());
+  auto test_request = protocol::fix::TestRequest{
+      .test_req_id = request_id_,
+  };
+  send(test_request);
+  if (last_logon_or_heartbeat_.count() == 0) {
+    last_logon_or_heartbeat_ = now;
+  }
+}
+
+void MarketData::download_securities() {
+  auto request_id = shared_.next_request_id();
+  auto security_list_request = protocol::fix::SecurityListRequest{
+      .security_req_id = request_id,
+      .security_list_request_type = fix::SecurityListRequestType::ALL_SECURITIES,
+      .subscription_request_type = fix::SubscriptionRequestType::SNAPSHOT_UPDATES,
+  };
+  send(security_list_request);
+}
+
+void MarketData::subscribe(std::span<Symbol const> const &symbols) {
+  if (std::empty(symbols)) {
+    return;
+  }
+  log::info("Subscribe symbols=[{}]"sv, fmt::join(symbols, ","sv));
+  auto market_depth = shared_.settings.fix.market_data_market_depth;
+  auto md_update_type = market_depth != 0 ? fix::MDUpdateType::INCREMENTAL_REFRESH : fix::MDUpdateType::FULL_REFRESH;
+  std::array<protocol::fix::MDReq, 3> md_entry_types{{
+      {.md_entry_type = fix::MDEntryType::BID},
+      {.md_entry_type = fix::MDEntryType::OFFER},
+      {.md_entry_type = fix::MDEntryType::TRADE},
+  }};
+  // deribit has acknowledged a limit on # of symbols per request
+  auto max_size = shared_.settings.fix.market_data_request_max_size != 0 ? shared_.settings.fix.market_data_request_max_size : std::size(symbols);
+  std::vector<protocol::fix::InstrmtMDReq> related_sym(max_size);
+  for (size_t offset = 0;; offset += max_size) {
+    if (std::size(symbols) <= offset) {
+      break;
+    }
+    auto length = std::min<size_t>(std::size(symbols) - offset, max_size);
+    assert(length > 0);
+    for (size_t i = 0; i < length; ++i) {
+      new (&related_sym[i]) protocol::fix::InstrmtMDReq{
+          .symbol = symbols[offset + i],
+      };
+    }
+    auto request_id = shared_.next_request_id();
+    auto market_data_request = protocol::fix::MarketDataRequest{
+        .md_req_id = request_id,
+        .subscription_request_type = fix::SubscriptionRequestType::SNAPSHOT_UPDATES,
+        .market_depth = market_depth,
+        .md_update_type = md_update_type,
+        .deribit_trade_amount = {},     // 0=none
+        .deribit_since_timestamp = {},  // 0=none
+        .no_md_entry_types = md_entry_types,
+        .no_related_sym = {std::data(related_sym), length},
+    };
+    send(market_data_request);
+  }
+}
+
+void MarketData::unsubscribe(std::span<Symbol const> const &symbols) {
+  log::info("Unsubscribe market data"sv);
+  assert(!std::empty(symbols));
+  std::array<protocol::fix::MDReq, 3> md_entry_types{{
+      {.md_entry_type = fix::MDEntryType::BID},
+      {.md_entry_type = fix::MDEntryType::OFFER},
+      {.md_entry_type = fix::MDEntryType::TRADE},
+  }};
+  // deribit has acknowledged a limit on # of symbols per request
+  auto max_size = shared_.settings.fix.market_data_request_max_size != 0 ? shared_.settings.fix.market_data_request_max_size : std::size(symbols);
+  std::vector<protocol::fix::InstrmtMDReq> related_sym(max_size);
+  for (size_t offset = 0;; offset += max_size) {
+    if (std::size(symbols) <= offset) {
+      break;
+    }
+    auto length = std::min<size_t>(std::size(symbols) - offset, max_size);
+    assert(length > 0);
+    for (size_t i = 0; i < length; ++i) {
+      new (&related_sym[i]) protocol::fix::InstrmtMDReq{
+          .symbol = symbols[offset + i],
+      };
+    }
+    auto request_id = shared_.next_request_id();
+    auto market_data_request = protocol::fix::MarketDataRequest{
+        .md_req_id = request_id,
+        .subscription_request_type = fix::SubscriptionRequestType::UNSUBSCRIBE,
+        .market_depth = {},
+        .md_update_type = {},
+        .deribit_trade_amount = {},
+        .deribit_since_timestamp = {},
+        .no_md_entry_types = md_entry_types,
+        .no_related_sym = {std::data(related_sym), length},
+    };
+    send(market_data_request);
+  }
+}
+
+void MarketData::resubscribe(std::string_view const &symbol) {
+  log::debug(R"(*** RESUBSCRIBE *** (symbol="{}"))"sv, symbol);
+  log::warn<1>(R"(*** RESUBSCRIBE *** (symbol="{}"))"sv, symbol);
+  if (latch_.find(symbol) != std::end(latch_)) {
+    return;
+  }
+  log::info<1>(R"(Latch symbol="{}")"sv, symbol);
+  latch_.emplace(symbol);
+  Symbol tmp{symbol};  // copy
+  std::span symbols{&tmp, 1};
+  unsubscribe(symbols);
+  subscribe(symbols);
+}
+
+void MarketData::parse(Trace<fix::Message> const &event) {
+  profile_.parse([&]() { parse_helper(event); });
+}
+
+void MarketData::parse_helper(Trace<fix::Message> const &event) {
+  auto &[trace_info, message] = event;
+  auto helper = [&](auto &value, auto &header) {
+    Trace event_2{trace_info, value};
+    (*this)(event_2, header);
+  };
+  switch (message.header.msg_type) {
+    using enum fix::MsgType;
+    // session
+    case HEARTBEAT: {
+      auto value = protocol::fix::Heartbeat::create(message);
+      helper(value, message.header);
+      break;
+    }
+    case LOGON: {
+      auto value = protocol::fix::Logon::create(message);
+      helper(value, message.header);
+      break;
+    }
+    case LOGOUT: {
+      auto value = protocol::fix::Logout::create(message);
+      helper(value, message.header);
+      break;
+    }
+    case RESEND_REQUEST: {
+      auto value = protocol::fix::ResendRequest::create(message);
+      helper(value, message.header);
+      break;
+    }
+    case TEST_REQUEST: {
+      auto value = protocol::fix::TestRequest::create(message);
+      helper(value, message.header);
+      break;
+    }
+    case REJECT: {
+      auto value = protocol::fix::Reject::create(message);
+      helper(value, message.header);
+      break;
+    }
+    // ...
+    case MARKET_DATA_INCREMENTAL_REFRESH:
+      profile_.market_data_incremental_refresh([&]() {
+        auto value = protocol::fix::MarketDataIncrementalRefresh::create(message, decode_buffer_);
+        helper(value, message.header);
+      });
+      break;
+    case MARKET_DATA_REQUEST_REJECT:
+      profile_.market_data_request_reject([&]() {
+        auto value = protocol::fix::MarketDataRequestReject::create(message);
+        helper(value, message.header);
+      });
+      break;
+    case MARKET_DATA_SNAPSHOT_FULL_REFRESH:
+      profile_.market_data_snapshot_full_refresh([&]() {
+        auto value = protocol::fix::MarketDataSnapshotFullRefresh::create(message, decode_buffer_);
+        helper(value, message.header);
+      });
+      break;
+    case SECURITY_LIST:
+      profile_.security_list([&]() {
+        auto value = protocol::fix::SecurityList::create(message, decode_buffer_);
+        helper(value, message.header);
+      });
+      break;
+    case SECURITY_STATUS:
+      profile_.security_status([&]() {
+        auto value = protocol::fix::SecurityStatus::create(message, decode_buffer_);
+        helper(value, message.header);
+      });
+      break;
+    // weird
+    case MARKET_DATA_REQUEST:
+      profile_.market_data_request([&]() {
+        // XXX HANS why do we get this message?
+      });
+      break;
+    default:
+      log::warn("Unexpected msg_type={}"sv, message.header.msg_type);
   }
 }
 

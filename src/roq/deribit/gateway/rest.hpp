@@ -15,6 +15,10 @@
 
 #include "roq/core/json/buffer_stack.hpp"
 
+#include "roq/server.hpp"
+
+#include "roq/server/stream.hpp"
+
 #include "roq/deribit/gateway/request.hpp"
 #include "roq/deribit/gateway/shared.hpp"
 
@@ -26,7 +30,7 @@ namespace roq {
 namespace deribit {
 namespace gateway {
 
-struct Rest final : public web::rest::Client::Handler {
+struct Rest final : public Base<Rest>, public server::Stream, public web::rest::Client::Handler {
   struct CurrenciesUpdate final {
     std::vector<std::string> &currencies;
   };
@@ -42,13 +46,22 @@ struct Rest final : public web::rest::Client::Handler {
 
   Rest(Handler &, io::Context &context, uint16_t stream_id, Shared &, Request &);
 
-  Rest(Rest const &) = delete;
+  // protected:
+  friend base_type;
 
-  void operator()(Event<Start> const &);
-  void operator()(Event<Stop> const &);
-  void operator()(Event<Timer> const &);
+  // server::Stream
 
-  void operator()(metrics::Writer &) const;
+  uint16_t stream_id() const override { return stream_id_; }
+
+  bool ready() const override { return connection_status_ == ConnectionStatus::READY; }
+
+  void operator()(Event<Start> const &) override;
+  void operator()(Event<Stop> const &) override;
+  void operator()(Event<Timer> const &) override;
+
+  void operator()(metrics::Writer &) const override;
+
+  void operator()(Trace<ConnectionStatus> const &, std::string_view const &reason = {}) override;
 
  protected:
   // web::rest::Client::Handler
@@ -56,16 +69,6 @@ struct Rest final : public web::rest::Client::Handler {
   void operator()(Trace<web::rest::Connected> const &) override;
   void operator()(Trace<web::rest::Disconnected> const &) override;
   void operator()(Trace<web::rest::Latency> const &) override;
-
-  // helpers
-
-  void operator()(ConnectionStatus, std::string_view const &reason = {});
-
-  bool ready() const { return connection_status_ == ConnectionStatus::READY; }
-
-  bool downloading() const { return downloading_currencies_ || downloading_instruments_; }
-
-  void check_download();
 
   // currencies
 
@@ -90,6 +93,12 @@ struct Rest final : public web::rest::Client::Handler {
   void check_request_queue(std::chrono::nanoseconds now);
 
   void process_response(Trace<web::rest::Response> const &, auto error_handler, auto success_handler);
+
+  // helpers
+
+  bool downloading() const { return downloading_currencies_ || downloading_instruments_; }
+
+  void check_download();
 
  private:
   Handler &handler_;

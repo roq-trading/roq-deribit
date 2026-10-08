@@ -112,8 +112,10 @@ WebSocket::WebSocket(Handler &handler, io::Context &context, uint16_t stream_id,
           .ping = create_metrics(shared.settings, name_, "ping"sv),
           .heartbeat = create_metrics(shared.settings, name_, "heartbeat"sv),
       },
-      account_{account}, shared_{shared}, download_{shared.settings.ws.request_timeout, [this](auto state) { return download(state); }}, request_{request} {
+      account_{account}, shared_{shared}, download_{shared.settings.ws.request_timeout, [this](auto &event) { return download(event); }}, request_{request} {
 }
+
+// server::Stream
 
 void WebSocket::operator()(Event<Start> const &) {
   (*connection_).start();
@@ -147,6 +149,30 @@ void WebSocket::operator()(metrics::Writer &writer) const {
       .write(latency_.heartbeat, metrics::Type::LATENCY);
 }
 
+void WebSocket::operator()(Trace<ConnectionStatus> const &event, std::string_view const &reason) {
+  auto &[trace_info, connection_status] = event;
+  connection_status_ = connection_status;
+  auto stream_status = StreamStatus{
+      .stream_id = stream_id_,
+      .account = {},
+      .supports = supports_,
+      .transport = Transport::TCP,
+      .protocol = Protocol::WS,
+      .encoding = {Encoding::JSON},
+      .priority = Priority::PRIMARY,
+      .connection_status = connection_status_,
+      .reason = reason,
+      .interface = (*connection_).get_interface(),
+      .authority = (*connection_).get_current_authority(),
+      .path = (*connection_).get_current_path(),
+      .proxy = (*connection_).get_proxy(),
+  };
+  log::info("stream_status={}"sv, stream_status);
+  create_trace_and_dispatch(shared_.dispatcher, trace_info, stream_status);
+}
+
+// server::MarketDataStream
+
 void WebSocket::subscribe(size_t start_from) {
   if (ready()) {
     subscribe(shared_.symbols.get_slice(index_, start_from));
@@ -159,21 +185,25 @@ void WebSocket::operator()(Trace<web::socket::Connected> const &) {
   // note! wait for upgrade
 }
 
-void WebSocket::operator()(Trace<web::socket::Disconnected> const &) {
+void WebSocket::operator()(Trace<web::socket::Disconnected> const &event) {
+  auto &[trace_info, disconnected] = event;
   ++counter_.disconnect;
   ready_ = false;
-  (*this)(ConnectionStatus::DISCONNECTED);
+  create_trace_and_dispatch_2(trace_info, ConnectionStatus::DISCONNECTED);
   download_.reset();
   subscribe_queue_.clear();
   request_.request_instruments = {};
 }
 
-void WebSocket::operator()(Trace<web::socket::Ready> const &) {
+void WebSocket::operator()(Trace<web::socket::Ready> const &event) {
+  auto &[trace_info, ready] = event;
   login();
-  (*this)(ConnectionStatus::LOGIN_SENT);
+  create_trace_and_dispatch_2(trace_info, ConnectionStatus::LOGIN_SENT);
 }
 
-void WebSocket::operator()(Trace<web::socket::Close> const &) {
+void WebSocket::operator()(Trace<web::socket::Close> const &event) {
+  auto &[trace_info, close] = event;
+  log::warn("close={}"sv, close);
 }
 
 void WebSocket::operator()(Trace<web::socket::Latency> const &event) {
@@ -196,55 +226,10 @@ void WebSocket::operator()(Trace<web::socket::Binary> const &) {
   log::fatal("Unexpected"sv);
 }
 
-void WebSocket::operator()(ConnectionStatus connection_status, std::string_view const &reason) {
-  connection_status_ = connection_status;
-  TraceInfo trace_info;
-  auto stream_status = StreamStatus{
-      .stream_id = stream_id_,
-      .account = {},
-      .supports = supports_,
-      .transport = Transport::TCP,
-      .protocol = Protocol::WS,
-      .encoding = {Encoding::JSON},
-      .priority = Priority::PRIMARY,
-      .connection_status = connection_status_,
-      .reason = reason,
-      .interface = (*connection_).get_interface(),
-      .authority = (*connection_).get_current_authority(),
-      .path = (*connection_).get_current_path(),
-      .proxy = (*connection_).get_proxy(),
-  };
-  log::info("stream_status={}"sv, stream_status);
-  create_trace_and_dispatch(shared_.dispatcher, trace_info, stream_status);
-}
+// core::Download
 
-void WebSocket::login() {
-  protocol::json::RequestType request_type = protocol::json::RequestType::AUTH;
-  auto now = clock::get_realtime<std::chrono::milliseconds>();
-  auto nonce = account_.create_nonce();
-  auto [signature, timestamp] = account_.create_signature(now, nonce);
-  auto message = fmt::format(
-      R"({{)"
-      R"("method":"public/auth",)"
-      R"("params":{{)"
-      R"("grant_type":"client_signature",)"
-      R"("client_id":"{}",)"
-      R"("timestamp":"{}",)"
-      R"("nonce":"{}",)"
-      R"("data":"",)"
-      R"("signature":"{}")"
-      R"(}},)"
-      R"("id":"{}")"
-      R"(}})"sv,
-      account_.key,
-      timestamp.count(),
-      nonce,
-      signature,
-      request_type.as_raw_text());
-  (*connection_).send_text(message);
-}
-
-uint32_t WebSocket::download(State state) {
+int32_t WebSocket::download(Trace<State> const &event) {
+  auto &[trace_info, state] = event;
   switch (state) {
     using enum State;
     case UNDEFINED:
@@ -253,21 +238,21 @@ uint32_t WebSocket::download(State state) {
       if (!master_) {
         return 0;
       }
-      (*this)(ConnectionStatus::DOWNLOADING, "currencies"sv);
+      create_trace_and_dispatch_2(trace_info, ConnectionStatus::DOWNLOADING, "currencies"sv);
       download_currencies();
       return 1;
     case INSTRUMENTS: {
       if (!master_) {
         return 0;
       }
-      (*this)(ConnectionStatus::DOWNLOADING, "instruments"sv);
+      create_trace_and_dispatch_2(trace_info, ConnectionStatus::DOWNLOADING, "instruments"sv);
       download_instruments();
       return 1;
     }
     case SUBSCRIBE:
       assert(!ready_);
       ready_ = true;
-      (*this)(ConnectionStatus::DOWNLOADING, "subscribe"sv);
+      create_trace_and_dispatch_2(trace_info, ConnectionStatus::DOWNLOADING, "subscribe"sv);
       if (master_) {
         subscribe_platform_state();
         subscribe_instrument_state();
@@ -276,153 +261,11 @@ uint32_t WebSocket::download(State state) {
       return 0;
     case DONE:
       handler_(Latch{});
-      (*this)(ConnectionStatus::READY);
+      create_trace_and_dispatch_2(trace_info, ConnectionStatus::READY);
       return 0;
   }
   assert(false);
   return 0;
-}
-
-void WebSocket::download_currencies() {
-  request_.request_currencies = clock::get_system();
-}
-
-void WebSocket::check_currencies() {
-  if (download_.state() != State::CURRENCIES) {
-    return;
-  }
-  if (request_.request_currencies < request_.respond_currencies) {
-    log::info("Currencies download has completed!"sv);
-    download_.check(State::CURRENCIES);
-  }
-}
-
-void WebSocket::download_instruments() {
-  request_.request_instruments = clock::get_system();
-}
-
-void WebSocket::check_instruments() {
-  if (download_.state() != State::INSTRUMENTS) {
-    return;
-  }
-  if (request_.request_instruments < request_.respond_instruments) {
-    log::info("Instruments download has completed!"sv);
-    download_.check(State::INSTRUMENTS);
-  }
-}
-
-void WebSocket::subscribe_platform_state() {
-  protocol::json::RequestType const request_type = protocol::json::RequestType::SUBSCRIBE_PLATFORM_STATE;
-  auto message = fmt::format(
-      R"({{)"
-      R"("method":"public/subscribe",)"
-      R"("params":{{)"
-      R"("channels":["platform_state"])"
-      R"(}},)"
-      R"("id":"{}")"
-      R"(}})"sv,
-      request_type.as_raw_text());
-  subscribe_queue_.emplace_back(message);
-}
-
-void WebSocket::subscribe_instrument_state() {
-  protocol::json::RequestType const request_type = protocol::json::RequestType::SUBSCRIBE_INSTRUMENT_STATE;
-  auto message = fmt::format(
-      R"({{)"
-      R"("method":"public/subscribe",)"
-      R"("params":{{)"
-      R"("channels":["instrument.state.any.any"])"
-      R"(}},)"
-      R"("id":"{}")"
-      R"(}})"sv,
-      request_type.as_raw_text());
-  subscribe_queue_.emplace_back(message);
-}
-
-void WebSocket::subscribe(std::span<Symbol const> const &symbols) {
-  if (std::empty(symbols)) {
-    return;
-  }
-  if (!shared_.settings.ws.disable_quote) {
-    subscribe_quote(symbols);
-  }
-  subscribe_ticker(symbols);
-  if (shared_.settings.download.time_series_lookback.count()) {
-    subscribe_chart_trades(symbols);
-  }
-}
-
-void WebSocket::subscribe_quote(std::span<Symbol const> const &symbols) {
-  assert(!std::empty(symbols));
-  protocol::json::RequestType const request_type = protocol::json::RequestType::SUBSCRIBE_QUOTE;
-  auto message = fmt::format(
-      R"({{)"
-      R"("method":"public/subscribe",)"
-      R"("params":{{)"
-      R"("channels":["quote.{}"])"
-      R"(}},)"
-      R"("id":"{}")"
-      R"(}})"sv,
-      fmt::join(symbols, R"(","quote.)"sv),
-      request_type.as_raw_text());
-  subscribe_queue_.emplace_back(message);
-}
-
-void WebSocket::subscribe_ticker(std::span<Symbol const> const &symbols) {
-  assert(!std::empty(symbols));
-  protocol::json::RequestType const request_type = protocol::json::RequestType::SUBSCRIBE_TICKER;
-  auto interval = shared_.settings.ws.ticker_interval;
-  auto separator = fmt::format(R"(.{}","ticker.)"sv, interval);
-  auto message = fmt::format(
-      R"({{)"
-      R"("method":"public/subscribe",)"
-      R"("params":{{)"
-      R"("channels":["ticker.{}.{}"])"
-      R"(}},)"
-      R"("id":"{}")"
-      R"(}})"sv,
-      fmt::join(symbols, separator),
-      interval,
-      request_type.as_raw_text());
-  subscribe_queue_.emplace_back(message);
-}
-
-void WebSocket::subscribe_chart_trades(std::span<Symbol const> const &symbols) {
-  assert(!std::empty(symbols));
-  protocol::json::RequestType const request_type = protocol::json::RequestType::SUBSCRIBE_CHART_TRADES;
-  auto interval = 1;  // 1 min
-  auto separator = fmt::format(R"(.{}","chart.trades.)"sv, interval);
-  auto message = fmt::format(
-      R"({{)"
-      R"("method":"public/subscribe",)"
-      R"("params":{{)"
-      R"("channels":["chart.trades.{}.{}"])"
-      R"(}},)"
-      R"("id":"{}")"
-      R"(}})"sv,
-      fmt::join(symbols, separator),
-      interval,
-      request_type.as_raw_text());
-  subscribe_queue_.emplace_back(message);
-  for (auto &symbol : symbols) {
-    shared_.time_series_request_queue.emplace_back(symbol);
-  }
-}
-
-void WebSocket::parse(std::string_view const &message) {
-  profile_.parse([&]() {
-    // log::debug("{}"sv, message);
-    auto log_message = [&]() { log::warn(R"(*** PLEASE REPORT *** message="{}")"sv, message); };
-    TraceInfo trace_info;
-    try {
-      if (!protocol::json::Parser::dispatch(*this, message, decode_buffer_, trace_info, shared_.settings.experimental.allow_unknown_event_types)) {
-        log_message();
-      }
-    } catch (...) {
-      log_message();
-      utils::exceptions::Unhandled::terminate();
-    }
-  });
 }
 
 // protocol::json::Parser::Handler
@@ -431,7 +274,7 @@ void WebSocket::operator()(Trace<protocol::json::Auth> const &event) {
   profile_.auth([&]() {
     auto &[trace_info, auth] = event;
     log::info<2>("auth={}"sv, auth);
-    download_.begin();
+    download_.begin(trace_info);
   });
 }
 
@@ -558,6 +401,184 @@ void WebSocket::operator()(Trace<protocol::json::GetAccountSummaryAck> const &) 
 
 void WebSocket::operator()(Trace<protocol::json::GetUserTradesByCurrencyAck> const &) {
   log::fatal("Unexpected"sv);
+}
+
+// currencies
+
+void WebSocket::download_currencies() {
+  request_.request_currencies = clock::get_system();
+}
+
+void WebSocket::check_currencies() {
+  if (download_.state() != State::CURRENCIES) {
+    return;
+  }
+  if (request_.request_currencies < request_.respond_currencies) {
+    log::info("Currencies download has completed!"sv);
+    TraceInfo trace_info;  // XXX FIXME TODO
+    download_.check(trace_info, State::CURRENCIES);
+  }
+}
+
+// instruments
+
+void WebSocket::download_instruments() {
+  request_.request_instruments = clock::get_system();
+}
+
+void WebSocket::check_instruments() {
+  if (download_.state() != State::INSTRUMENTS) {
+    return;
+  }
+  if (request_.request_instruments < request_.respond_instruments) {
+    log::info("Instruments download has completed!"sv);
+    TraceInfo trace_info;  // XXX FIXME TODO
+    download_.check(trace_info, State::INSTRUMENTS);
+  }
+}
+
+// platform-state
+
+void WebSocket::subscribe_platform_state() {
+  protocol::json::RequestType const request_type = protocol::json::RequestType::SUBSCRIBE_PLATFORM_STATE;
+  auto message = fmt::format(
+      R"({{)"
+      R"("method":"public/subscribe",)"
+      R"("params":{{)"
+      R"("channels":["platform_state"])"
+      R"(}},)"
+      R"("id":"{}")"
+      R"(}})"sv,
+      request_type.as_raw_text());
+  subscribe_queue_.emplace_back(message);
+}
+
+void WebSocket::subscribe_instrument_state() {
+  protocol::json::RequestType const request_type = protocol::json::RequestType::SUBSCRIBE_INSTRUMENT_STATE;
+  auto message = fmt::format(
+      R"({{)"
+      R"("method":"public/subscribe",)"
+      R"("params":{{)"
+      R"("channels":["instrument.state.any.any"])"
+      R"(}},)"
+      R"("id":"{}")"
+      R"(}})"sv,
+      request_type.as_raw_text());
+  subscribe_queue_.emplace_back(message);
+}
+
+// helpers
+
+void WebSocket::login() {
+  protocol::json::RequestType request_type = protocol::json::RequestType::AUTH;
+  auto now = clock::get_realtime<std::chrono::milliseconds>();
+  auto nonce = account_.create_nonce();
+  auto [signature, timestamp] = account_.create_signature(now, nonce);
+  auto message = fmt::format(
+      R"({{)"
+      R"("method":"public/auth",)"
+      R"("params":{{)"
+      R"("grant_type":"client_signature",)"
+      R"("client_id":"{}",)"
+      R"("timestamp":"{}",)"
+      R"("nonce":"{}",)"
+      R"("data":"",)"
+      R"("signature":"{}")"
+      R"(}},)"
+      R"("id":"{}")"
+      R"(}})"sv,
+      account_.key,
+      timestamp.count(),
+      nonce,
+      signature,
+      request_type.as_raw_text());
+  (*connection_).send_text(message);
+}
+
+void WebSocket::subscribe(std::span<Symbol const> const &symbols) {
+  if (std::empty(symbols)) {
+    return;
+  }
+  if (!shared_.settings.ws.disable_quote) {
+    subscribe_quote(symbols);
+  }
+  subscribe_ticker(symbols);
+  if (shared_.settings.download.time_series_lookback.count()) {
+    subscribe_chart_trades(symbols);
+  }
+}
+
+void WebSocket::subscribe_quote(std::span<Symbol const> const &symbols) {
+  assert(!std::empty(symbols));
+  protocol::json::RequestType const request_type = protocol::json::RequestType::SUBSCRIBE_QUOTE;
+  auto message = fmt::format(
+      R"({{)"
+      R"("method":"public/subscribe",)"
+      R"("params":{{)"
+      R"("channels":["quote.{}"])"
+      R"(}},)"
+      R"("id":"{}")"
+      R"(}})"sv,
+      fmt::join(symbols, R"(","quote.)"sv),
+      request_type.as_raw_text());
+  subscribe_queue_.emplace_back(message);
+}
+
+void WebSocket::subscribe_ticker(std::span<Symbol const> const &symbols) {
+  assert(!std::empty(symbols));
+  protocol::json::RequestType const request_type = protocol::json::RequestType::SUBSCRIBE_TICKER;
+  auto interval = shared_.settings.ws.ticker_interval;
+  auto separator = fmt::format(R"(.{}","ticker.)"sv, interval);
+  auto message = fmt::format(
+      R"({{)"
+      R"("method":"public/subscribe",)"
+      R"("params":{{)"
+      R"("channels":["ticker.{}.{}"])"
+      R"(}},)"
+      R"("id":"{}")"
+      R"(}})"sv,
+      fmt::join(symbols, separator),
+      interval,
+      request_type.as_raw_text());
+  subscribe_queue_.emplace_back(message);
+}
+
+void WebSocket::subscribe_chart_trades(std::span<Symbol const> const &symbols) {
+  assert(!std::empty(symbols));
+  protocol::json::RequestType const request_type = protocol::json::RequestType::SUBSCRIBE_CHART_TRADES;
+  auto interval = 1;  // 1 min
+  auto separator = fmt::format(R"(.{}","chart.trades.)"sv, interval);
+  auto message = fmt::format(
+      R"({{)"
+      R"("method":"public/subscribe",)"
+      R"("params":{{)"
+      R"("channels":["chart.trades.{}.{}"])"
+      R"(}},)"
+      R"("id":"{}")"
+      R"(}})"sv,
+      fmt::join(symbols, separator),
+      interval,
+      request_type.as_raw_text());
+  subscribe_queue_.emplace_back(message);
+  for (auto &symbol : symbols) {
+    shared_.time_series_request_queue.emplace_back(symbol);
+  }
+}
+
+void WebSocket::parse(std::string_view const &message) {
+  profile_.parse([&]() {
+    // log::debug("{}"sv, message);
+    auto log_message = [&]() { log::warn(R"(*** PLEASE REPORT *** message="{}")"sv, message); };
+    TraceInfo trace_info;
+    try {
+      if (!protocol::json::Parser::dispatch(*this, message, decode_buffer_, trace_info, shared_.settings.experimental.allow_unknown_event_types)) {
+        log_message();
+      }
+    } catch (...) {
+      log_message();
+      utils::exceptions::Unhandled::terminate();
+    }
+  });
 }
 
 // request

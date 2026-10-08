@@ -154,6 +154,8 @@ Rest::Rest(Handler &handler, io::Context &context, uint16_t stream_id, Shared &s
       shared_{shared}, request_{request} {
 }
 
+// server::Stream
+
 void Rest::operator()(Event<Start> const &) {
   (*connection_).start();
 }
@@ -186,9 +188,9 @@ void Rest::operator()(metrics::Writer &writer) const {
       .write(latency_.ping, metrics::Type::LATENCY);
 }
 
-void Rest::operator()(ConnectionStatus connection_status, std::string_view const &reason) {
+void Rest::operator()(Trace<ConnectionStatus> const &event, std::string_view const &reason) {
+  auto &[trace_info, connection_status] = event;
   connection_status_ = connection_status;
-  TraceInfo trace_info;
   auto stream_status = StreamStatus{
       .stream_id = stream_id_,
       .account = {},
@@ -210,15 +212,17 @@ void Rest::operator()(ConnectionStatus connection_status, std::string_view const
 
 // web::rest::Client::Handler
 
-void Rest::operator()(Trace<web::rest::Connected> const &) {
+void Rest::operator()(Trace<web::rest::Connected> const &event) {
+  auto &[trace_info, connected] = event;
   assert(!downloading());
-  (*this)(ConnectionStatus::READY);
+  create_trace_and_dispatch_2(trace_info, ConnectionStatus::READY);
   check_download();
 }
 
-void Rest::operator()(Trace<web::rest::Disconnected> const &) {
+void Rest::operator()(Trace<web::rest::Disconnected> const &event) {
+  auto &[trace_info, disconnected] = event;
   ++counter_.disconnect;
-  (*this)(ConnectionStatus::DISCONNECTED);
+  create_trace_and_dispatch_2(trace_info, ConnectionStatus::DISCONNECTED);
   downloading_currencies_ = false;
   downloading_instruments_ = false;
 }
@@ -232,20 +236,6 @@ void Rest::operator()(Trace<web::rest::Latency> const &event) {
   };
   create_trace_and_dispatch(shared_.dispatcher, trace_info, external_latency);
   latency_.ping.update(latency.sample);
-}
-
-void Rest::check_download() {
-  if (!ready()) {
-    return;
-  }
-  if (!downloading() && request_.respond_currencies < request_.request_currencies) {
-    get_currencies();
-    downloading_currencies_ = true;
-  }
-  if (!downloading() && request_.respond_instruments < request_.request_instruments) {
-    get_instruments();
-    downloading_instruments_ = true;
-  }
 }
 
 // currencies
@@ -549,6 +539,20 @@ void Rest::check_request_queue(std::chrono::nanoseconds now) {
   auto can_request = [&](auto now) { return shared_.rate_limiter.can_request(now); };
   auto request = [&](auto &symbol) { get_chart_data(symbol); };
   shared_.time_series_request_queue.dispatch(can_request, request, now);
+}
+
+void Rest::check_download() {
+  if (!ready()) {
+    return;
+  }
+  if (!downloading() && request_.respond_currencies < request_.request_currencies) {
+    get_currencies();
+    downloading_currencies_ = true;
+  }
+  if (!downloading() && request_.respond_instruments < request_.request_instruments) {
+    get_instruments();
+    downloading_instruments_ = true;
+  }
 }
 
 void Rest::process_response(Trace<web::rest::Response> const &event, auto error_handler, auto success_handler) {

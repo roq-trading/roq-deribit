@@ -16,9 +16,11 @@
 #include "roq/io/net/connection_factory.hpp"
 #include "roq/io/net/connection_manager.hpp"
 
-#include "roq/core/download.hpp"
+#include "roq/core/download_2.hpp"
 
 #include "roq/server.hpp"
+
+#include "roq/server/stream.hpp"
 
 #include "roq/deribit/gateway/account.hpp"
 #include "roq/deribit/gateway/shared.hpp"
@@ -47,7 +49,7 @@ namespace roq {
 namespace deribit {
 namespace gateway {
 
-struct MarketData final : public io::net::ConnectionManager::Handler {
+struct MarketData final : public Base<MarketData>, public server::MarketDataStream, public io::net::ConnectionManager::Handler {
   struct SymbolsUpdate final {
     std::vector<Symbol> &symbols;
   };
@@ -58,18 +60,47 @@ struct MarketData final : public io::net::ConnectionManager::Handler {
 
   MarketData(Handler &, io::Context &, uint16_t stream_id, Account &, Shared &, size_t index, bool master);
 
-  MarketData(MarketData const &) = delete;
+  // protected:
+  friend base_type;
 
-  void operator()(Event<Start> const &);
-  void operator()(Event<Stop> const &);
-  void operator()(Event<Timer> const &);
+  // server::Stream
 
-  void operator()(metrics::Writer &) const;
+  uint16_t stream_id() const override { return stream_id_; }
 
-  void subscribe(size_t start_from = 0);
+  bool ready() const override { return ready_; }
+
+  void operator()(Event<Start> const &) override;
+  void operator()(Event<Stop> const &) override;
+  void operator()(Event<Timer> const &) override;
+
+  void operator()(metrics::Writer &) const override;
+
+  void operator()(Trace<ConnectionStatus> const &, std::string_view const &reason = {}) override;
+
+  // server::MarketDataStream
+
+  void subscribe(size_t start_from = 0) override;
 
  protected:
-  // helpers
+  // io::net::ConnectionManager::Handler
+
+  void operator()(io::net::ConnectionManager::Connected const &) override;
+  void operator()(io::net::ConnectionManager::Disconnected const &) override;
+  void operator()(io::net::ConnectionManager::Read const &) override;
+  void operator()(io::net::ConnectionManager::Write const &) override;
+
+  // core::Download
+
+  enum class State {
+    UNDEFINED = 0,
+    SECURITIES,
+    SUBSCRIBE,
+    DONE,
+  };
+
+  int32_t download(Trace<State> const &);
+
+  // protocol::fix::*
 
   void operator()(Trace<protocol::fix::Heartbeat> const &, fix::Header const &);
   void operator()(Trace<protocol::fix::Logon> const &, fix::Header const &);
@@ -85,32 +116,7 @@ struct MarketData final : public io::net::ConnectionManager::Handler {
   void operator()(Trace<protocol::fix::MarketDataRequestReject> const &, fix::Header const &);
   void operator()(Trace<protocol::fix::MarketDataSnapshotFullRefresh> const &, fix::Header const &);
 
-  // io::net::ConnectionManager::Handler
-
-  void operator()(io::net::ConnectionManager::Connected const &) override;
-  void operator()(io::net::ConnectionManager::Disconnected const &) override;
-  void operator()(io::net::ConnectionManager::Read const &) override;
-  void operator()(io::net::ConnectionManager::Write const &) override;
-
   // helpers
-
-  bool ready() const { return ready_; }
-
-  void operator()(ConnectionStatus, std::string_view const &reason = {});
-
-  void send_logon();
-  void send_logout(std::string_view const &text);
-  void send_heartbeat(std::string_view const &test_req_id);
-  void send_test_request(std::chrono::nanoseconds now);
-
-  enum class State {
-    UNDEFINED = 0,
-    SECURITIES,
-    SUBSCRIBE,
-    DONE,
-  };
-
-  uint32_t download(State);
 
   void download_securities();
 
@@ -121,6 +127,11 @@ struct MarketData final : public io::net::ConnectionManager::Handler {
 
   void parse(Trace<fix::Message> const &);
   void parse_helper(Trace<fix::Message> const &);
+
+  void send_logon();
+  void send_logout(std::string_view const &text);
+  void send_heartbeat(std::string_view const &test_req_id);
+  void send_test_request(std::chrono::nanoseconds now);
 
   template <typename T>
   void send(T const &event);
@@ -178,7 +189,7 @@ struct MarketData final : public io::net::ConnectionManager::Handler {
   bool ready_ = false;
   std::chrono::nanoseconds next_heartbeat_ = {};
   ConnectionStatus connection_status_ = {};
-  core::Download<State> download_;
+  core::Download2<State> download_;
   std::chrono::nanoseconds last_logon_or_heartbeat_ = {};
   utils::unordered_set<std::string> latch_;
   // EXPERIMENTAL
