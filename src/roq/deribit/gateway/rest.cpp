@@ -253,12 +253,8 @@ void Rest::get_currencies() {
         .body = {},
         .quality_of_service = {},
     };
-    auto callback = [this]([[maybe_unused]] auto &request_id, auto &response) {
-      TraceInfo trace_info;
-      Trace event{trace_info, response};
-      get_currencies_ack(event);
-    };
-    (*connection_)("currencies"sv, request, callback);
+    auto callback = [this](auto &event, [[maybe_unused]] auto &request_id) { get_currencies_ack(event); };
+    (*connection_)(request, callback, "currencies"sv);
   });
 }
 
@@ -317,12 +313,8 @@ void Rest::get_instruments() {
         .body = {},
         .quality_of_service = {},
     };
-    auto callback = [this]([[maybe_unused]] auto &request_id, auto &response) {
-      TraceInfo trace_info;
-      Trace event{trace_info, response};
-      get_instruments_ack(event);
-    };
-    (*connection_)("instruments"sv, request, callback);
+    auto callback = [this](auto &event, [[maybe_unused]] auto &request_id) { get_instruments_ack(event); };
+    (*connection_)(request, callback, "instruments"sv);
   });
 }
 
@@ -465,12 +457,8 @@ void Rest::get_chart_data(std::string_view const &symbol) {
         .body = {},
         .quality_of_service = {},
     };
-    auto callback = [this, symbol = std::string{symbol}]([[maybe_unused]] auto &request_id, auto &response) {
-      TraceInfo trace_info;
-      Trace event{trace_info, response};
-      get_chart_data_ack(event, symbol);
-    };
-    (*connection_)("chart-data"sv, request, callback);
+    auto callback = [this, symbol = std::string{symbol}](auto &event, [[maybe_unused]] auto &request_id) { get_chart_data_ack(event, symbol); };
+    (*connection_)(request, callback, "chart-data"sv);
   });
 }
 
