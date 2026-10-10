@@ -113,15 +113,15 @@ OrderEntry::OrderEntry(Handler &handler, io::Context &context, uint16_t stream_i
 
 // server::Stream
 
-void OrderEntry::operator()(Event<Start> const &) {
+void OrderEntry::operator()(Trace<Start> const &) {
   (*connection_manager_).start();
 }
 
-void OrderEntry::operator()(Event<Stop> const &) {
+void OrderEntry::operator()(Trace<Stop> const &) {
   (*connection_manager_).stop();
 }
 
-void OrderEntry::operator()(Event<Timer> const &event) {
+void OrderEntry::operator()(Trace<Timer> const &event) {
   auto &[trace_info, timer] = event;
   if (!(*connection_manager_).refresh(timer.now)) {
     return;
@@ -241,7 +241,7 @@ uint16_t OrderEntry::operator()(
   if (!ready()) [[unlikely]] {
     throw server::oms::NotReady{"not ready"sv};
   }
-  auto &modify_order = event.value;
+  auto &[message_info, modify_order] = event;
   auto side = map(order.side);
   auto ord_type = map(order.order_type);
   // note! using deribit_label might be slower, but using orig_cl_ord_id seems error-prone

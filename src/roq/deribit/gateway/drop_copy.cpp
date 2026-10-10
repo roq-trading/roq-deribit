@@ -126,19 +126,19 @@ void DropCopy::download() {
 
 // server::Stream
 
-void DropCopy::operator()(Event<Start> const &) {
+void DropCopy::operator()(Trace<Start> const &) {
   (*connection_).start();
 }
 
-void DropCopy::operator()(Event<Stop> const &) {
+void DropCopy::operator()(Trace<Stop> const &) {
   (*connection_).stop();
 }
 
-void DropCopy::operator()(Event<Timer> const &event) {
-  auto now = event.value.now;
-  (*connection_).refresh(now);
+void DropCopy::operator()(Trace<Timer> const &event) {
+  auto &[trace_info, timer] = event;
+  (*connection_).refresh(timer.now);
   if ((*connection_).ready()) {
-    check_subscribe_queue(now);
+    check_subscribe_queue(timer.now);
   }
 }
 

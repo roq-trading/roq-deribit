@@ -132,17 +132,18 @@ UDPEvents::UDPEvents(Handler &handler, io::Context &context, uint16_t stream_id,
 
 // server::Stream
 
-void UDPEvents::operator()(Event<Start> const &event) {
+void UDPEvents::operator()(Trace<Start> const &event) {
   auto &[trace_info, start] = event;
   create_trace_and_dispatch_2(trace_info, ConnectionStatus::CONNECTING);
   last_update_time_ = trace_info.source_receive_time;
 }
 
-void UDPEvents::operator()(Event<Stop> const &) {
+void UDPEvents::operator()(Trace<Stop> const &) {
 }
 
-void UDPEvents::operator()(Event<Timer> const &event) {
-  if (last_update_time_.count() != 0 && (last_update_time_ + shared_.settings.multicast.timeout) < event.value.now) {
+void UDPEvents::operator()(Trace<Timer> const &event) {
+  auto &[trace_info, timer] = event;
+  if (last_update_time_.count() != 0 && (last_update_time_ + shared_.settings.multicast.timeout) < timer.now) {
     log::warn("*** DETECTED TIMEOUT ***"sv);
     last_update_time_ = {};
   }

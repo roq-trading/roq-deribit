@@ -117,19 +117,19 @@ WebSocket::WebSocket(Handler &handler, io::Context &context, uint16_t stream_id,
 
 // server::Stream
 
-void WebSocket::operator()(Event<Start> const &) {
+void WebSocket::operator()(Trace<Start> const &) {
   (*connection_).start();
 }
 
-void WebSocket::operator()(Event<Stop> const &) {
+void WebSocket::operator()(Trace<Stop> const &) {
   (*connection_).stop();
 }
 
-void WebSocket::operator()(Event<Timer> const &event) {
-  auto now = event.value.now;
-  (*connection_).refresh(now);
+void WebSocket::operator()(Trace<Timer> const &event) {
+  auto &[trace_info, timer] = event;
+  (*connection_).refresh(timer.now);
   if ((*connection_).ready()) {
-    check_subscribe_queue(now);
+    check_subscribe_queue(timer.now);
   }
   check_currencies();
   check_instruments();

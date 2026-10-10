@@ -177,34 +177,35 @@ MarketData::MarketData(Handler &handler, io::Context &context, uint16_t stream_i
 
 // server::Stream
 
-void MarketData::operator()(Event<Start> const &) {
+void MarketData::operator()(Trace<Start> const &) {
   (*connection_manager_).start();
 }
 
-void MarketData::operator()(Event<Stop> const &) {
+void MarketData::operator()(Trace<Stop> const &) {
   (*connection_manager_).stop();
 }
 
-void MarketData::operator()(Event<Timer> const &event) {
-  if (!(*connection_manager_).refresh(event.value.now)) {
+void MarketData::operator()(Trace<Timer> const &event) {
+  auto &[trace_info, timer] = event;
+  if (!(*connection_manager_).refresh(timer.now)) {
     return;
   }
-  if (last_logon_or_heartbeat_.count() != 0 && fix_request_timeout_.count() != 0 && (event.value.now - last_logon_or_heartbeat_) > fix_request_timeout_) {
+  if (last_logon_or_heartbeat_.count() != 0 && fix_request_timeout_.count() != 0 && (timer.now - last_logon_or_heartbeat_) > fix_request_timeout_) {
     log::warn("*** DETECTED TIMEOUT ***"sv);
     log::info("closing connection"sv);
     (*connection_manager_).close();
   } else {
     if (connection_status_ == ConnectionStatus::READY) {
-      if (test_disconnect_time_.count() != 0 && test_disconnect_time_ < event.value.now) [[unlikely]] {
+      if (test_disconnect_time_.count() != 0 && test_disconnect_time_ < timer.now) [[unlikely]] {
         if (shared_.settings.fix.test_market_data_disconnect.count() != 0) {
           log::warn("*** TEST: DISCONNECT (stream_id={}) ***"sv, stream_id_);
           log::info("closing connection"sv);
           (*connection_manager_).close();
         }
       } else {
-        if (next_heartbeat_ <= event.value.now) {
+        if (next_heartbeat_ <= timer.now) {
           assert(fix_ping_freq_.count() > 0);
-          next_heartbeat_ = event.value.now + fix_ping_freq_;
+          next_heartbeat_ = timer.now + fix_ping_freq_;
           send_test_request(clock::get_system());
         }
       }

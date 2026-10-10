@@ -87,17 +87,18 @@ UDPSnapshot::UDPSnapshot(Handler &handler, io::Context &context, uint16_t stream
 
 // server::Stream
 
-void UDPSnapshot::operator()(Event<Start> const &event) {
+void UDPSnapshot::operator()(Trace<Start> const &event) {
   auto &[trace_info, start] = event;
   last_update_time_ = trace_info.source_receive_time;
   create_trace_and_dispatch_2(trace_info, ConnectionStatus::CONNECTING);
 }
 
-void UDPSnapshot::operator()(Event<Stop> const &) {
+void UDPSnapshot::operator()(Trace<Stop> const &) {
 }
 
-void UDPSnapshot::operator()(Event<Timer> const &event) {
-  if (last_update_time_.count() != 0 && (last_update_time_ + shared_.settings.multicast.timeout) < event.value.now) {
+void UDPSnapshot::operator()(Trace<Timer> const &event) {
+  auto &[trace_info, timer] = event;
+  if (last_update_time_.count() != 0 && (last_update_time_ + shared_.settings.multicast.timeout) < timer.now) {
     log::warn("*** DETECTED TIMEOUT ***"sv);
     last_update_time_ = {};
   }
