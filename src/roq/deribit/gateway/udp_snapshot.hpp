@@ -49,8 +49,8 @@ struct UDPSnapshot final : public Base<UDPSnapshot>, public server::Stream, publ
  protected:
   // io::net::udp::Receiver::Handler
 
-  void operator()(io::net::udp::Receiver::Read const &) override;
-  void operator()(io::net::udp::Receiver::Error const &) override;
+  void operator()(Trace<io::net::udp::Receiver::Read> const &) override;
+  void operator()(Trace<io::net::udp::Receiver::Error> const &) override;
 
   // protocol::sbe::Parser::Handler
 

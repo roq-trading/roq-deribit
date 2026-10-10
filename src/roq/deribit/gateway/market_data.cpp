@@ -255,31 +255,31 @@ void MarketData::operator()(Trace<ConnectionStatus> const &event, std::string_vi
 
 // io::net::ConnectionManager::Handler
 
-void MarketData::operator()(io::net::ConnectionManager::Connected const &) {
+void MarketData::operator()(Trace<io::net::ConnectionManager::Connected> const &event) {
+  auto &[trace_info, connected] = event;
   send_logon();
-  TraceInfo trace_info;  // XXX FIXME TODO
   create_trace_and_dispatch_2(trace_info, ConnectionStatus::LOGIN_SENT);
 }
 
-void MarketData::operator()(io::net::ConnectionManager::Disconnected const &) {
+void MarketData::operator()(Trace<io::net::ConnectionManager::Disconnected> const &event) {
+  auto &[trace_info, disconnected] = event;
   ++counter_.disconnect;
   outbound_ = {};
   inbound_ = {};
   ready_ = false;
   next_heartbeat_ = {};
-  TraceInfo trace_info;  // XXX FIXME TODO
   create_trace_and_dispatch_2(trace_info, ConnectionStatus::DISCONNECTED);
   download_.reset();
   // test
   test_disconnect_time_ = {};
 }
 
-void MarketData::operator()(io::net::ConnectionManager::Read const &) {
-  TraceInfo trace_info;  // XXX FIXME TODO
+void MarketData::operator()(Trace<io::net::ConnectionManager::Read> const &event) {
+  auto &[trace_info, read] = event;
   auto parse_message = [&](auto &message) {
     check(message.header);
-    Trace event{trace_info, message};
-    parse(event);
+    Trace event_2{trace_info, message};
+    parse(event_2);
   };
   auto log_message = [this](auto &message) {
     if (fix_debug_) [[unlikely]] {
@@ -314,7 +314,7 @@ void MarketData::operator()(io::net::ConnectionManager::Read const &) {
   }
 }
 
-void MarketData::operator()(io::net::ConnectionManager::Write const &) {
+void MarketData::operator()(Trace<io::net::ConnectionManager::Write> const &) {
 }
 
 int32_t MarketData::download(Trace<State> const &event) {

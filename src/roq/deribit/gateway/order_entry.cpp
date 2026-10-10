@@ -341,22 +341,22 @@ uint16_t OrderEntry::operator()(Event<CancelAllOrders> const &event, std::string
 
 // io::net::ConnectionManager::Handler
 
-void OrderEntry::operator()(io::net::ConnectionManager::Connected const &) {
+void OrderEntry::operator()(Trace<io::net::ConnectionManager::Connected> const &event) {
   assert(test_logon_time_.count() == 0);
-  auto now = clock::get_system();
-  test_logon_time_ = now + shared_.settings.fix.test_order_logon;
+  auto &[trace_info, connected] = event;
+  test_logon_time_ = trace_info.origin_create_time + shared_.settings.fix.test_order_logon;
   if (shared_.settings.fix.test_order_disconnect.count() != 0) {
-    test_disconnect_time_ = now + shared_.settings.fix.test_order_disconnect;
+    test_disconnect_time_ = trace_info.origin_create_time + shared_.settings.fix.test_order_disconnect;
   }
 }
 
-void OrderEntry::operator()(io::net::ConnectionManager::Disconnected const &) {
+void OrderEntry::operator()(Trace<io::net::ConnectionManager::Disconnected> const &event) {
+  auto &[trace_info, disconnected] = event;
   ++counter_.disconnect;
   outbound_ = {};
   inbound_ = {};
   ready_ = false;
   next_heartbeat_ = {};
-  TraceInfo trace_info;  // XXX FIXME TODO
   create_trace_and_dispatch_2(trace_info, ConnectionStatus::DISCONNECTED);
   download_.reset();
   last_logon_or_heartbeat_ = {};
@@ -365,18 +365,18 @@ void OrderEntry::operator()(io::net::ConnectionManager::Disconnected const &) {
   test_disconnect_time_ = {};
 }
 
-void OrderEntry::operator()(io::net::ConnectionManager::Read const &) {
+void OrderEntry::operator()(Trace<io::net::ConnectionManager::Read> const &event) {
+  auto &[trace_info, read] = event;
   auto buffer = (*connection_manager_).buffer();
   size_t total_bytes = 0;
   while (!std::empty(buffer)) {
-    TraceInfo trace_info;
     auto bytes = fix::Reader<FIX_VERSION>::dispatch(
         buffer,
         [&](fix::Message const &message) {
           try {
             check(message.header);
-            Trace event{trace_info, message};
-            parse(event);
+            Trace event_2{trace_info, message};
+            parse(event_2);
           } catch (std::exception &) {
             log::warn("{}"sv, utils::debug::fix::Message{buffer});
 #ifndef NDEBUG
@@ -404,7 +404,7 @@ void OrderEntry::operator()(io::net::ConnectionManager::Read const &) {
   (*connection_manager_).drain(total_bytes);
 }
 
-void OrderEntry::operator()(io::net::ConnectionManager::Write const &) {
+void OrderEntry::operator()(Trace<io::net::ConnectionManager::Write> const &) {
 }
 
 // core::Download

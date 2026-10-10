@@ -133,8 +133,8 @@ void UDPSnapshot::operator()(Trace<ConnectionStatus> const &event, std::string_v
 
 // io::net::udp::Receiver::Handler
 
-void UDPSnapshot::operator()(io::net::udp::Receiver::Read const &) {
-  TraceInfo trace_info;  // XXX FIXME TODO
+void UDPSnapshot::operator()(Trace<io::net::udp::Receiver::Read> const &event) {
+  auto &[trace_info, read] = event;
   last_update_time_ = trace_info.source_receive_time;
   create_trace_and_dispatch_2(trace_info, ConnectionStatus::READY);  // first message will publish
   while (true) {
@@ -151,7 +151,8 @@ void UDPSnapshot::operator()(io::net::udp::Receiver::Read const &) {
   }
 }
 
-void UDPSnapshot::operator()(io::net::udp::Receiver::Error const &error) {
+void UDPSnapshot::operator()(Trace<io::net::udp::Receiver::Error> const &event) {
+  auto &[trace_info, error] = event;
   log::fatal("Error: what={}"sv, error.what);
 }
 

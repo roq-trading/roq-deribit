@@ -84,10 +84,10 @@ struct MarketData final : public Base<MarketData>, public server::MarketDataStre
  protected:
   // io::net::ConnectionManager::Handler
 
-  void operator()(io::net::ConnectionManager::Connected const &) override;
-  void operator()(io::net::ConnectionManager::Disconnected const &) override;
-  void operator()(io::net::ConnectionManager::Read const &) override;
-  void operator()(io::net::ConnectionManager::Write const &) override;
+  void operator()(Trace<io::net::ConnectionManager::Connected> const &) override;
+  void operator()(Trace<io::net::ConnectionManager::Disconnected> const &) override;
+  void operator()(Trace<io::net::ConnectionManager::Read> const &) override;
+  void operator()(Trace<io::net::ConnectionManager::Write> const &) override;
 
   // core::Download
 

@@ -49,8 +49,8 @@ struct UDPEvents final : public Base<UDPEvents>, public server::Stream, public i
  protected:
   // io::net::udp::Receiver::Handler
 
-  void operator()(io::net::udp::Receiver::Read const &) override;
-  void operator()(io::net::udp::Receiver::Error const &) override;
+  void operator()(Trace<io::net::udp::Receiver::Read> const &) override;
+  void operator()(Trace<io::net::udp::Receiver::Error> const &) override;
 
   // protocol::sbe::Parser::Handler
 
