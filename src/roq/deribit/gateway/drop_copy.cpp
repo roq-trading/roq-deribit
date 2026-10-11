@@ -101,7 +101,7 @@ DropCopy::DropCopy(Handler &handler, io::Context &context, uint16_t stream_id, A
 
 // XXX
 
-void DropCopy::update_subscriptions(std::span<std::string> const &currencies) {
+void DropCopy::update_subscriptions(std::span<std::string const> const &currencies) {
   for (auto &currency : currencies) {
     currencies_.emplace_back(currency);
   }
@@ -212,7 +212,7 @@ void DropCopy::operator()(Trace<web::socket::Latency> const &event) {
 
 void DropCopy::operator()(Trace<web::socket::Text> const &event) {
   auto &[trace_info, text] = event;
-  parse(text.payload);
+  parse(trace_info, text.payload);
 }
 
 void DropCopy::operator()(Trace<web::socket::Binary> const &) {
@@ -350,7 +350,7 @@ void DropCopy::operator()(Trace<protocol::json::UserPortfolio> const &event) {
       .exchange_time_utc = data.creation_timestamp,
       .sending_time_utc = {},
   };
-  create_trace_and_dispatch(shared_.dispatcher, event.trace_info, funds_update, true);
+  create_trace_and_dispatch(shared_.dispatcher, trace_info, funds_update, true);
 }
 
 // note! includes trades
@@ -456,7 +456,7 @@ void DropCopy::operator()(Trace<protocol::json::Trade> const &event, bool is_dow
 
 // helpers
 
-void DropCopy::subscribe_user_portfolio(std::span<std::string> const &currencies) {
+void DropCopy::subscribe_user_portfolio(std::span<std::string const> const &currencies) {
   protocol::json::RequestType request_type = protocol::json::RequestType::SUBSCRIBE_USER_PORTFOLIO;
   auto message = fmt::format(
       R"({{)"
@@ -513,7 +513,7 @@ void DropCopy::subscribe_user_trades() {
   subscribe_queue_.emplace_back(message);
 }
 
-void DropCopy::get_account_summary(std::span<std::string> const &currencies) {
+void DropCopy::get_account_summary(std::span<std::string const> const &currencies) {
   protocol::json::RequestType request_type = protocol::json::RequestType::GET_ACCOUNT_SUMMARY;
   for (auto currency : currencies) {
     auto message = fmt::format(
@@ -532,7 +532,7 @@ void DropCopy::get_account_summary(std::span<std::string> const &currencies) {
 }
 
 // XXX TODO specify subaccount_id
-void DropCopy::get_user_trades_by_currency(std::span<std::string> const &currencies) {
+void DropCopy::get_user_trades_by_currency(std::span<std::string const> const &currencies) {
   protocol::json::RequestType request_type = protocol::json::RequestType::GET_USER_TRADES_BY_CURRENCY;
   auto now = clock::get_realtime<std::chrono::milliseconds>();
   auto lookback = get_download_trades_lookback(shared_.settings, download_trades_is_first_);
@@ -555,12 +555,10 @@ void DropCopy::get_user_trades_by_currency(std::span<std::string> const &currenc
   }
 }
 
-void DropCopy::parse(std::string_view const &message) {
+void DropCopy::parse(TraceInfo const &trace_info, std::string_view const &message) {
   profile_.parse([&]() {
-    // log::debug("{}"sv, message);
     auto log_message = [&]() { log::warn(R"(*** PLEASE REPORT *** message="{}")"sv, message); };
     try {
-      TraceInfo trace_info;
       if (!protocol::json::Parser::dispatch(*this, message, decode_buffer_, trace_info, shared_.settings.experimental.allow_unknown_event_types)) {
         log_message();
       }

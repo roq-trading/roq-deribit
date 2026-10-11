@@ -38,7 +38,7 @@ struct DropCopy final : public Base<DropCopy>, public server::Stream, public web
 
   DropCopy(Handler &, io::Context &, uint16_t stream_id, Account &, Shared &);
 
-  void update_subscriptions(std::span<std::string> const &currencies);
+  void update_subscriptions(std::span<std::string const> const &currencies);
 
   void download();
 
@@ -112,15 +112,15 @@ struct DropCopy final : public Base<DropCopy>, public server::Stream, public web
 
   void login();
 
-  void subscribe_user_portfolio(std::span<std::string> const &currencies);
+  void subscribe_user_portfolio(std::span<std::string const> const &currencies);
   void subscribe_user_changes();
   void subscribe_user_orders();
   void subscribe_user_trades();
 
-  void get_account_summary(std::span<std::string> const &currencies);
-  void get_user_trades_by_currency(std::span<std::string> const &currencies);
+  void get_account_summary(std::span<std::string const> const &currencies);
+  void get_user_trades_by_currency(std::span<std::string const> const &currencies);
 
-  void parse(std::string_view const &message);
+  void parse(TraceInfo const &, std::string_view const &message);
 
  private:
   [[maybe_unused]] Handler &handler_;

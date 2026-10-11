@@ -32,7 +32,8 @@ namespace roq {
 namespace deribit {
 namespace gateway {
 
-struct Controller final : public server::Handler,
+struct Controller final : public Base<Controller>,
+                          public server::Handler,
                           public Rest::Handler,
                           public OrderEntry::Handler,
                           public DropCopy::Handler,
@@ -49,6 +50,8 @@ struct Controller final : public server::Handler,
   Controller(Controller const &) = delete;
 
  protected:
+  friend base_type;
+
   // server::Handler
 
   void operator()(Trace<Start> const &) override;
@@ -84,22 +87,18 @@ struct Controller final : public server::Handler,
 
   void operator()(metrics::Writer &) const override;
 
-  // Rest::Handler
+  // Rest::Handler + MarketData::Handler
 
-  void operator()(Rest::CurrenciesUpdate &) override;
-  void operator()(Rest::SymbolsUpdate &) override;
+  void operator()(Trace<CurrenciesUpdate> const &) override;
+  void operator()(Trace<SymbolsUpdate> const &) override;
 
   // WebSocket::Handler
 
   void operator()(WebSocket::Latch const &) override;
 
-  // MarketData::Handler
-
-  void operator()(MarketData::SymbolsUpdate &) override;
-
   // helpers
 
-  void ensure_symbol_slices(size_t size);
+  void ensure_symbol_slices(TraceInfo const &, size_t size);
 
   template <typename... Args>
   void dispatch(Args &&...);

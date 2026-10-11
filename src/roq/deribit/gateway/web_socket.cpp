@@ -131,8 +131,8 @@ void WebSocket::operator()(Trace<Timer> const &event) {
   if ((*connection_).ready()) {
     check_subscribe_queue(timer.now);
   }
-  check_currencies();
-  check_instruments();
+  check_currencies(trace_info);
+  check_instruments(trace_info);
 }
 
 void WebSocket::operator()(metrics::Writer &writer) const {
@@ -219,7 +219,7 @@ void WebSocket::operator()(Trace<web::socket::Latency> const &event) {
 
 void WebSocket::operator()(Trace<web::socket::Text> const &event) {
   auto &[trace_info, text] = event;
-  parse(text.payload);
+  parse(trace_info, text.payload);
 }
 
 void WebSocket::operator()(Trace<web::socket::Binary> const &) {
@@ -409,13 +409,12 @@ void WebSocket::download_currencies() {
   request_.request_currencies = clock::get_system();
 }
 
-void WebSocket::check_currencies() {
+void WebSocket::check_currencies(TraceInfo const &trace_info) {
   if (download_.state() != State::CURRENCIES) {
     return;
   }
   if (request_.request_currencies < request_.respond_currencies) {
     log::info("Currencies download has completed!"sv);
-    TraceInfo trace_info;  // XXX FIXME TODO
     download_.check(trace_info, State::CURRENCIES);
   }
 }
@@ -426,13 +425,12 @@ void WebSocket::download_instruments() {
   request_.request_instruments = clock::get_system();
 }
 
-void WebSocket::check_instruments() {
+void WebSocket::check_instruments(TraceInfo const &trace_info) {
   if (download_.state() != State::INSTRUMENTS) {
     return;
   }
   if (request_.request_instruments < request_.respond_instruments) {
     log::info("Instruments download has completed!"sv);
-    TraceInfo trace_info;  // XXX FIXME TODO
     download_.check(trace_info, State::INSTRUMENTS);
   }
 }
@@ -565,11 +563,9 @@ void WebSocket::subscribe_chart_trades(std::span<Symbol const> const &symbols) {
   }
 }
 
-void WebSocket::parse(std::string_view const &message) {
+void WebSocket::parse(TraceInfo const &trace_info, std::string_view const &message) {
   profile_.parse([&]() {
-    // log::debug("{}"sv, message);
     auto log_message = [&]() { log::warn(R"(*** PLEASE REPORT *** message="{}")"sv, message); };
-    TraceInfo trace_info;
     try {
       if (!protocol::json::Parser::dispatch(*this, message, decode_buffer_, trace_info, shared_.settings.experimental.allow_unknown_event_types)) {
         log_message();

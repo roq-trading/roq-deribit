@@ -112,12 +112,12 @@ struct WebSocket final : public Base<WebSocket>, public server::MarketDataStream
   // currencies
 
   void download_currencies();
-  void check_currencies();
+  void check_currencies(TraceInfo const &);
 
   // instruments
 
   void download_instruments();
-  void check_instruments();
+  void check_instruments(TraceInfo const &);
 
   // platform-state
 
@@ -134,7 +134,7 @@ struct WebSocket final : public Base<WebSocket>, public server::MarketDataStream
   void subscribe_ticker(std::span<Symbol const> const &symbols);
   void subscribe_chart_trades(std::span<Symbol const> const &symbols);
 
-  void parse(std::string_view const &message);
+  void parse(TraceInfo const &, std::string_view const &message);
 
   template <typename C>
   bool get_top_of_book(std::string_view const &symbol, C callback) {

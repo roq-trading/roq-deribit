@@ -24,6 +24,7 @@
 
 #include "roq/deribit/gateway/account.hpp"
 #include "roq/deribit/gateway/shared.hpp"
+#include "roq/deribit/gateway/symbols_update.hpp"
 
 // session
 #include "roq/deribit/protocol/fix/heartbeat.hpp"
@@ -50,12 +51,8 @@ namespace deribit {
 namespace gateway {
 
 struct MarketData final : public Base<MarketData>, public server::MarketDataStream, public io::net::ConnectionManager::Handler {
-  struct SymbolsUpdate final {
-    std::vector<Symbol> &symbols;
-  };
-
   struct Handler {
-    virtual void operator()(SymbolsUpdate &) = 0;
+    virtual void operator()(Trace<SymbolsUpdate> const &) = 0;
   };
 
   MarketData(Handler &, io::Context &, uint16_t stream_id, Account &, Shared &, size_t index, bool master);

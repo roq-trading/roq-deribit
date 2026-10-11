@@ -294,7 +294,7 @@ void Rest::operator()(Trace<protocol::json::GetCurrenciesAck> const &event) {
     auto currencies_update = CurrenciesUpdate{
         .currencies = currencies,
     };
-    handler_(currencies_update);
+    create_trace_and_dispatch(handler_, trace_info, currencies_update);
   }
 }
 
@@ -429,7 +429,7 @@ void Rest::operator()(Trace<protocol::json::GetInstrumentsAck> const &event) {
     auto symbols_update = SymbolsUpdate{
         .symbols = symbols,
     };
-    handler_(symbols_update);
+    create_trace_and_dispatch(handler_, trace_info, symbols_update);
   }
 }
 
