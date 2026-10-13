@@ -12,8 +12,8 @@
 #include "roq/utils/container.hpp"
 
 #include "roq/core/symbols.hpp"
-#include "roq/core/timer_queue.hpp"
 
+#include "roq/core/limit/queue.hpp"
 #include "roq/core/limit/rate_limiter.hpp"
 
 #include "roq/deribit/protocol/sbe/config.hpp"
@@ -70,6 +70,8 @@ struct Shared final {
 
   core::limit::RateLimiter rate_limiter;
 
+  core::limit::Queue<std::string> time_series_request_queue;
+
   core::Symbols symbols;
   utils::unordered_set<std::string> all_currencies;
   utils::unordered_set<std::string> all_symbols;
@@ -123,8 +125,6 @@ struct Shared final {
   protocol::sbe::Config const sbe_config;
 
   std::vector<TickSizeStep> tick_size_steps;
-
-  core::TimerQueue<std::string> time_series_request_queue;
 
   std::vector<Bar> bars;
 };

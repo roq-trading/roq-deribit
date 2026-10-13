@@ -21,13 +21,15 @@
 #include "roq/core/json/buffer_stack.hpp"
 
 #include "roq/core/download_2.hpp"
-#include "roq/core/timer_queue.hpp"
+
+#include "roq/core/limit/queue.hpp"
 
 #include "roq/server.hpp"
 
 #include "roq/server/stream.hpp"
 
 #include "roq/deribit/gateway/account.hpp"
+#include "roq/deribit/gateway/latch.hpp"
 #include "roq/deribit/gateway/request.hpp"
 #include "roq/deribit/gateway/shared.hpp"
 
@@ -38,10 +40,8 @@ namespace deribit {
 namespace gateway {
 
 struct WebSocket final : public Base<WebSocket>, public server::MarketDataStream, public web::socket::Client::Handler, public protocol::json::Parser::Handler {
-  struct Latch final {};
-
   struct Handler {
-    virtual void operator()(Latch const &) = 0;
+    virtual void operator()(Trace<Latch> const &) = 0;
   };
 
   WebSocket(Handler &, io::Context &, uint16_t stream_id, Account &, Shared &, Request &, size_t index, bool master);
@@ -111,12 +111,12 @@ struct WebSocket final : public Base<WebSocket>, public server::MarketDataStream
 
   // currencies
 
-  void download_currencies();
+  void download_currencies(TraceInfo const &);
   void check_currencies(TraceInfo const &);
 
   // instruments
 
-  void download_instruments();
+  void download_instruments(TraceInfo const &);
   void check_instruments(TraceInfo const &);
 
   // platform-state
@@ -124,7 +124,7 @@ struct WebSocket final : public Base<WebSocket>, public server::MarketDataStream
   void subscribe_platform_state();
   void subscribe_instrument_state();
 
-  void login();
+  void login(TraceInfo const &);
 
   // subscribe
 
@@ -150,7 +150,7 @@ struct WebSocket final : public Base<WebSocket>, public server::MarketDataStream
     return true;
   }
 
-  void check_subscribe_queue(std::chrono::nanoseconds now);
+  void check_subscribe_queue(TraceInfo const &);
 
  private:
   Handler &handler_;
@@ -186,7 +186,7 @@ struct WebSocket final : public Base<WebSocket>, public server::MarketDataStream
   ConnectionStatus connection_status_ = {};
   core::Download2<State> download_;
   // queue
-  core::TimerQueue<std::string> subscribe_queue_;
+  core::limit::Queue<std::string> subscribe_queue_;
   //
   Request &request_;
 };

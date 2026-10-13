@@ -78,13 +78,13 @@ struct Rest final : public Base<Rest>, public server::Stream, public web::rest::
 
   // chart-data
 
-  void get_chart_data(std::string_view const &symbol);
+  void get_chart_data(TraceInfo const &, std::string_view const &symbol);
   void get_chart_data_ack(Trace<web::rest::Response> const &, std::string_view const &symbol);
   void operator()(Trace<protocol::json::GetChartDataAck> const &, std::string_view const &symbol);
 
   // helpers
 
-  void check_request_queue(std::chrono::nanoseconds now);
+  void check_request_queue(TraceInfo const &);
 
   void process_response(Trace<web::rest::Response> const &, auto error_handler, auto success_handler);
 

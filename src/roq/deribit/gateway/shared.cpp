@@ -45,8 +45,9 @@ auto create_sbe_config(auto &settings) {
 
 Shared::Shared(server::Dispatcher &dispatcher, Settings const &settings)
     : dispatcher{dispatcher}, settings{settings}, api{API::create(settings)}, throttle{settings},
-      rate_limiter{settings.request.limit, settings.request.limit_interval}, symbols{settings.fix.market_data_max_subscriptions_per_stream},
-      multicast_{get_multicast(settings)}, buffer(BUFFER_SIZE), sbe_config{create_sbe_config<decltype(sbe_config)>(settings)} {
+      rate_limiter{settings.request.limit, settings.request.limit_interval}, time_series_request_queue{rate_limiter},
+      symbols{settings.fix.market_data_max_subscriptions_per_stream}, multicast_{get_multicast(settings)}, buffer(BUFFER_SIZE),
+      sbe_config{create_sbe_config<decltype(sbe_config)>(settings)} {
 }
 
 std::string_view Shared::next_request_id() {

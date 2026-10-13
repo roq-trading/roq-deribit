@@ -4,6 +4,8 @@
 
 #include "roq/logging.hpp"
 
+#include "roq/utils/safe_cast.hpp"
+
 using namespace std::literals;
 
 namespace roq {
@@ -35,12 +37,12 @@ auto create_crypto(auto &config, auto &name) {
 Account::Account(Config const &config, std::string_view const &name) : name{name}, key{create_key(config, name)}, crypto_{create_crypto(config, name)} {
 }
 
-std::string Account::create_nonce() {
-  return crypto_.create_nonce();
+std::pair<std::string, std::chrono::milliseconds> Account::create_signature(TraceInfo const &trace_info, std::string_view const &nonce) {
+  return crypto_.create_signature(utils::safe_cast(trace_info.origin_create_time_utc), nonce);
 }
 
-std::string Account::create_password(std::string_view const &raw_data) {
-  return crypto_.create_password(raw_data);
+std::string Account::create_raw_data(TraceInfo const &trace_info) {
+  return crypto_.create_raw_data(utils::safe_cast(trace_info.origin_create_time_utc));
 }
 
 }  // namespace gateway

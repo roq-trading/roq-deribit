@@ -112,7 +112,8 @@ WebSocket::WebSocket(Handler &handler, io::Context &context, uint16_t stream_id,
           .ping = create_metrics(shared.settings, name_, "ping"sv),
           .heartbeat = create_metrics(shared.settings, name_, "heartbeat"sv),
       },
-      account_{account}, shared_{shared}, download_{shared.settings.ws.request_timeout, [this](auto &event) { return download(event); }}, request_{request} {
+      account_{account}, shared_{shared}, download_{shared.settings.ws.request_timeout, [this](auto &event) { return download(event); }},
+      subscribe_queue_{shared_.rate_limiter}, request_{request} {
 }
 
 // server::Stream
@@ -129,7 +130,7 @@ void WebSocket::operator()(Trace<Timer> const &event) {
   auto &[trace_info, timer] = event;
   (*connection_).refresh(timer.now);
   if ((*connection_).ready()) {
-    check_subscribe_queue(timer.now);
+    check_subscribe_queue(trace_info);
   }
   check_currencies(trace_info);
   check_instruments(trace_info);
@@ -197,7 +198,7 @@ void WebSocket::operator()(Trace<web::socket::Disconnected> const &event) {
 
 void WebSocket::operator()(Trace<web::socket::Ready> const &event) {
   auto &[trace_info, ready] = event;
-  login();
+  login(trace_info);
   create_trace_and_dispatch_2(trace_info, ConnectionStatus::LOGIN_SENT);
 }
 
@@ -239,14 +240,14 @@ int32_t WebSocket::download(Trace<State> const &event) {
         return 0;
       }
       create_trace_and_dispatch_2(trace_info, ConnectionStatus::DOWNLOADING, "currencies"sv);
-      download_currencies();
+      download_currencies(trace_info);
       return 1;
     case INSTRUMENTS: {
       if (!master_) {
         return 0;
       }
       create_trace_and_dispatch_2(trace_info, ConnectionStatus::DOWNLOADING, "instruments"sv);
-      download_instruments();
+      download_instruments(trace_info);
       return 1;
     }
     case SUBSCRIBE:
@@ -259,10 +260,12 @@ int32_t WebSocket::download(Trace<State> const &event) {
       }
       subscribe();
       return 0;
-    case DONE:
-      handler_(Latch{});
+    case DONE: {
+      Latch latch;
+      create_trace_and_dispatch(handler_, trace_info, latch);
       create_trace_and_dispatch_2(trace_info, ConnectionStatus::READY);
       return 0;
+    }
   }
   assert(false);
   return 0;
@@ -405,8 +408,8 @@ void WebSocket::operator()(Trace<protocol::json::GetUserTradesByCurrencyAck> con
 
 // currencies
 
-void WebSocket::download_currencies() {
-  request_.request_currencies = clock::get_system();
+void WebSocket::download_currencies(TraceInfo const &trace_info) {
+  request_.request_currencies = trace_info.origin_create_time;
 }
 
 void WebSocket::check_currencies(TraceInfo const &trace_info) {
@@ -421,8 +424,8 @@ void WebSocket::check_currencies(TraceInfo const &trace_info) {
 
 // instruments
 
-void WebSocket::download_instruments() {
-  request_.request_instruments = clock::get_system();
+void WebSocket::download_instruments(TraceInfo const &trace_info) {
+  request_.request_instruments = trace_info.origin_create_time;
 }
 
 void WebSocket::check_instruments(TraceInfo const &trace_info) {
@@ -467,11 +470,10 @@ void WebSocket::subscribe_instrument_state() {
 
 // helpers
 
-void WebSocket::login() {
+void WebSocket::login(TraceInfo const &trace_info) {
   protocol::json::RequestType request_type = protocol::json::RequestType::AUTH;
-  auto now = clock::get_realtime<std::chrono::milliseconds>();
   auto nonce = account_.create_nonce();
-  auto [signature, timestamp] = account_.create_signature(now, nonce);
+  auto [signature, timestamp] = account_.create_signature(trace_info, nonce);
   auto message = fmt::format(
       R"({{)"
       R"("method":"public/auth",)"
@@ -579,8 +581,9 @@ void WebSocket::parse(TraceInfo const &trace_info, std::string_view const &messa
 
 // request
 
-void WebSocket::check_subscribe_queue(std::chrono::nanoseconds now) {
-  subscribe_queue_.dispatch([&](auto now) { return shared_.rate_limiter.can_request(now); }, [&](auto &message) { (*connection_).send_text(message); }, now);
+void WebSocket::check_subscribe_queue(TraceInfo const &trace_info) {
+  auto callback = [&]([[maybe_unused]] auto &trace_info, auto &message) { (*connection_).send_text(message); };
+  subscribe_queue_.dispatch(trace_info, callback);
 }
 
 }  // namespace gateway

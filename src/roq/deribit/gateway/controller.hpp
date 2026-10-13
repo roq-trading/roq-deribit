@@ -94,7 +94,7 @@ struct Controller final : public Base<Controller>,
 
   // WebSocket::Handler
 
-  void operator()(WebSocket::Latch const &) override;
+  void operator()(Trace<Latch> const &) override;
 
   // helpers
 

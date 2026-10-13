@@ -118,10 +118,10 @@ struct OrderEntry final : public Base<OrderEntry>, public server::OrderActionStr
 
   // helpers
 
-  void send_logon();
+  void send_logon(TraceInfo const &);
   void send_logout(std::string_view const &text);
   void send_heartbeat(std::string_view const &test_req_id);
-  void send_test_request(std::chrono::nanoseconds now);
+  void send_test_request(TraceInfo const &);
 
   void subscribe_positions();
   void download_orders();

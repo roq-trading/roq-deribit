@@ -206,7 +206,7 @@ void MarketData::operator()(Trace<Timer> const &event) {
         if (next_heartbeat_ <= timer.now) {
           assert(fix_ping_freq_.count() > 0);
           next_heartbeat_ = timer.now + fix_ping_freq_;
-          send_test_request(clock::get_system());
+          send_test_request(trace_info);
         }
       }
     }
@@ -258,7 +258,7 @@ void MarketData::operator()(Trace<ConnectionStatus> const &event, std::string_vi
 
 void MarketData::operator()(Trace<io::net::ConnectionManager::Connected> const &event) {
   auto &[trace_info, connected] = event;
-  send_logon();
+  send_logon(trace_info);
   create_trace_and_dispatch_2(trace_info, ConnectionStatus::LOGIN_SENT);
 }
 
@@ -341,9 +341,8 @@ int32_t MarketData::download(Trace<State> const &event) {
     case DONE: {
       create_trace_and_dispatch_2(trace_info, ConnectionStatus::READY);
       // test
-      auto now = clock::get_system();
       if (shared_.settings.fix.test_market_data_disconnect.count() != 0) {
-        test_disconnect_time_ = now + shared_.settings.fix.test_market_data_disconnect;
+        test_disconnect_time_ = trace_info.origin_create_time + shared_.settings.fix.test_market_data_disconnect;
         log::warn(
             "*** TEST: DISCONNECT IN {} (stream_id={}) ***"sv,
             std::chrono::duration_cast<std::chrono::seconds>(shared_.settings.fix.test_market_data_disconnect),
@@ -357,13 +356,12 @@ int32_t MarketData::download(Trace<State> const &event) {
 }
 
 void MarketData::operator()(Trace<protocol::fix::Heartbeat> const &event, fix::Header const &header) {
-  auto now = clock::get_system();
   auto &[trace_info, heartbeat] = event;
   log::info<3>("event={{header={}, heartbeat={}}}"sv, header, heartbeat);
   last_logon_or_heartbeat_ = {};
   if (!std::empty(heartbeat.test_req_id)) {
     auto send_time = std::chrono::nanoseconds{utils::charconv::from_chars<uint64_t>(heartbeat.test_req_id)};
-    auto latency = (now - send_time) / 2;  // 1-way
+    auto latency = (trace_info.origin_create_time - send_time) / 2;  // 1-way
     auto external_latency = ExternalLatency{
         .stream_id = stream_id_,
         .account = {},
@@ -752,10 +750,9 @@ void MarketData::operator()(Trace<protocol::fix::MarketDataSnapshotFullRefresh> 
 
 //
 
-void MarketData::send_logon() {
+void MarketData::send_logon(TraceInfo const &trace_info) {
   auto heart_bt_int = std::chrono::duration_cast<std::chrono::seconds>(fix_ping_freq_).count();
-  auto now = clock::get_realtime<std::chrono::milliseconds>();
-  auto raw_data = account_.create_raw_data(now);
+  auto raw_data = account_.create_raw_data(trace_info);
   auto password = account_.create_password(raw_data);
   auto cancel_on_disconnect = shared_.settings.fix.cancel_on_disconnect;
   auto logon = protocol::fix::Logon{
@@ -772,7 +769,7 @@ void MarketData::send_logon() {
       .unsubscribe_execution_reports = true,
   };
   send(logon);
-  last_logon_or_heartbeat_ = clock::get_system();
+  last_logon_or_heartbeat_ = trace_info.origin_create_time;
 }
 
 void MarketData::send_logout(std::string_view const &text) {
@@ -789,16 +786,16 @@ void MarketData::send_heartbeat(std::string_view const &test_req_id) {
   send(heartbeat);
 }
 
-void MarketData::send_test_request(std::chrono::nanoseconds now) {
+void MarketData::send_test_request(TraceInfo const &trace_info) {
   // request_id is current time
   request_id_.clear();
-  utils::charconv::to_string(std::back_inserter(request_id_), now.count());
+  utils::charconv::to_string(std::back_inserter(request_id_), trace_info.origin_create_time.count());
   auto test_request = protocol::fix::TestRequest{
       .test_req_id = request_id_,
   };
   send(test_request);
   if (last_logon_or_heartbeat_.count() == 0) {
-    last_logon_or_heartbeat_ = now;
+    last_logon_or_heartbeat_ = trace_info.origin_create_time;
   }
 }
 

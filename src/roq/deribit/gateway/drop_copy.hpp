@@ -14,17 +14,19 @@
 
 #include "roq/web/socket/client.hpp"
 
-#include "roq/core/timer_queue.hpp"
-
 #include "roq/core/json/buffer_stack.hpp"
 
 #include "roq/core/download_2.hpp"
+
+#include "roq/core/limit/queue.hpp"
 
 #include "roq/server.hpp"
 
 #include "roq/server/stream.hpp"
 
 #include "roq/deribit/gateway/account.hpp"
+#include "roq/deribit/gateway/currencies_update.hpp"
+#include "roq/deribit/gateway/latch.hpp"
 #include "roq/deribit/gateway/shared.hpp"
 
 #include "roq/deribit/protocol/json/parser.hpp"
@@ -38,9 +40,9 @@ struct DropCopy final : public Base<DropCopy>, public server::Stream, public web
 
   DropCopy(Handler &, io::Context &, uint16_t stream_id, Account &, Shared &);
 
-  void update_subscriptions(std::span<std::string const> const &currencies);
+  void operator()(Trace<CurrenciesUpdate> const &);
 
-  void download();
+  void operator()(Trace<Latch> const &);
 
   // protected:
   friend base_type;
@@ -108,9 +110,9 @@ struct DropCopy final : public Base<DropCopy>, public server::Stream, public web
 
   // helpers
 
-  void check_subscribe_queue(std::chrono::nanoseconds now);
+  void check_subscribe_queue(TraceInfo const &);
 
-  void login();
+  void login(TraceInfo const &);
 
   void subscribe_user_portfolio(std::span<std::string const> const &currencies);
   void subscribe_user_changes();
@@ -118,7 +120,7 @@ struct DropCopy final : public Base<DropCopy>, public server::Stream, public web
   void subscribe_user_trades();
 
   void get_account_summary(std::span<std::string const> const &currencies);
-  void get_user_trades_by_currency(std::span<std::string const> const &currencies);
+  void get_user_trades_by_currency(TraceInfo const &, std::span<std::string const> const &currencies);
 
   void parse(TraceInfo const &, std::string_view const &message);
 
@@ -153,7 +155,7 @@ struct DropCopy final : public Base<DropCopy>, public server::Stream, public web
   bool can_download_ = false;
   bool download_trades_is_first_ = true;
   //
-  core::TimerQueue<std::string> subscribe_queue_;
+  core::limit::Queue<std::string> subscribe_queue_;
 };
 
 }  // namespace gateway

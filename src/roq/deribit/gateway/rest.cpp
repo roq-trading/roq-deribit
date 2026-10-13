@@ -169,7 +169,7 @@ void Rest::operator()(Trace<Timer> const &event) {
   (*connection_).refresh(timer.now);
   check_download();
   if (ready()) {
-    check_request_queue(timer.now);
+    check_request_queue(trace_info);
   }
 }
 
@@ -260,6 +260,7 @@ void Rest::get_currencies() {
 
 void Rest::get_currencies_ack(Trace<web::rest::Response> const &event) {
   profile_.currencies_ack([&]() {
+    auto &[trace_info, response] = event;
     auto handle_error = [&](auto origin, auto status, auto error, auto const &text) {
       log::warn(R"(origin={}, error={}, status={}, text="{}")"sv, origin, error, status, text);
       log::warn("Currencies download has FAILED"sv);
@@ -275,7 +276,7 @@ void Rest::get_currencies_ack(Trace<web::rest::Response> const &event) {
       log::info("Currencies download has COMPLETED"sv);
     };
     process_response(event, handle_error, handle_success);
-    request_.respond_currencies = clock::get_system();
+    request_.respond_currencies = trace_info.origin_create_time;
     downloading_currencies_ = false;
   });
 }
@@ -320,6 +321,7 @@ void Rest::get_instruments() {
 
 void Rest::get_instruments_ack(Trace<web::rest::Response> const &event) {
   profile_.instruments_ack([&]() {
+    auto &[trace_info, response] = event;
     auto handle_error = [&](auto origin, auto status, auto error, auto const &text) {
       log::warn(R"(origin={}, error={}, status={}, text="{}")"sv, origin, error, status, text);
       log::warn("Instruments download has FAILED"sv);
@@ -335,7 +337,7 @@ void Rest::get_instruments_ack(Trace<web::rest::Response> const &event) {
       log::info("Instruments download has COMPLETED"sv);
     };
     process_response(event, handle_error, handle_success);
-    request_.respond_instruments = clock::get_system();
+    request_.respond_instruments = trace_info.origin_create_time;
     downloading_instruments_ = false;
   });
 }
@@ -435,9 +437,9 @@ void Rest::operator()(Trace<protocol::json::GetInstrumentsAck> const &event) {
 
 // chart-data
 
-void Rest::get_chart_data(std::string_view const &symbol) {
+void Rest::get_chart_data(TraceInfo const &trace_info, std::string_view const &symbol) {
   profile_.chart_data([&]() {
-    auto end_time = clock::get_realtime<std::chrono::milliseconds>();
+    auto end_time = std::chrono::duration_cast<std::chrono::milliseconds>(trace_info.origin_create_time_utc);
     auto start_time = end_time - shared_.settings.time_series.lookback;
     auto query = fmt::format(
         "?instrument_name={}"
@@ -523,10 +525,9 @@ void Rest::operator()(Trace<protocol::json::GetChartDataAck> const &event, std::
 
 // helpers
 
-void Rest::check_request_queue(std::chrono::nanoseconds now) {
-  auto can_request = [&](auto now) { return shared_.rate_limiter.can_request(now); };
-  auto request = [&](auto &symbol) { get_chart_data(symbol); };
-  shared_.time_series_request_queue.dispatch(can_request, request, now);
+void Rest::check_request_queue(TraceInfo const &trace_info) {
+  auto callback = [&](auto &trace_info, auto &symbol) { get_chart_data(trace_info, symbol); };
+  shared_.time_series_request_queue.dispatch(trace_info, callback);
 }
 
 void Rest::check_download() {

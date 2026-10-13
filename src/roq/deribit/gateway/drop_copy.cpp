@@ -96,23 +96,24 @@ DropCopy::DropCopy(Handler &handler, io::Context &context, uint16_t stream_id, A
           .ping = create_metrics(shared.settings, name_, "ping"sv),
           .heartbeat = create_metrics(shared.settings, name_, "heartbeat"sv),
       },
-      account_{account}, shared_{shared}, download_{shared.settings.ws.request_timeout, [this](auto &event) { return download(event); }} {
+      account_{account}, shared_{shared}, download_{shared.settings.ws.request_timeout, [this](auto &event) { return download(event); }},
+      subscribe_queue_{shared_.rate_limiter} {
 }
 
-// XXX
-
-void DropCopy::update_subscriptions(std::span<std::string const> const &currencies) {
-  for (auto &currency : currencies) {
+void DropCopy::operator()(Trace<CurrenciesUpdate> const &event) {
+  auto &[trace_info, currencies_update] = event;
+  for (auto &currency : currencies_update.currencies) {
     currencies_.emplace_back(currency);
   }
   if (ready_ && can_download_) {
-    subscribe_user_portfolio(currencies);
-    get_account_summary(currencies);
-    get_user_trades_by_currency(currencies);
+    subscribe_user_portfolio(currencies_update.currencies);
+    get_account_summary(currencies_update.currencies);
+    get_user_trades_by_currency(trace_info, currencies_update.currencies);
   }
 }
 
-void DropCopy::download() {
+void DropCopy::operator()(Trace<Latch> const &event) {
+  auto &[trace_info, latch] = event;
   if (can_download_) {
     return;
   }
@@ -120,7 +121,7 @@ void DropCopy::download() {
   if (ready_) {
     subscribe_user_portfolio(currencies_);
     get_account_summary(currencies_);
-    get_user_trades_by_currency(currencies_);
+    get_user_trades_by_currency(trace_info, currencies_);
   }
 }
 
@@ -138,7 +139,7 @@ void DropCopy::operator()(Trace<Timer> const &event) {
   auto &[trace_info, timer] = event;
   (*connection_).refresh(timer.now);
   if ((*connection_).ready()) {
-    check_subscribe_queue(timer.now);
+    check_subscribe_queue(trace_info);
   }
 }
 
@@ -190,7 +191,7 @@ void DropCopy::operator()(Trace<web::socket::Disconnected> const &event) {
 
 void DropCopy::operator()(Trace<web::socket::Ready> const &event) {
   auto &[trace_info, ready] = event;
-  login();
+  login(trace_info);
   create_trace_and_dispatch_2(trace_info, ConnectionStatus::LOGIN_SENT);
 }
 
@@ -254,7 +255,7 @@ int32_t DropCopy::download(Trace<State> const &event) {
     case GET_USER_TRADES_BY_CURRENCY:
       if (can_download_) {
         create_trace_and_dispatch_2(trace_info, ConnectionStatus::DOWNLOADING, "user-trades-by-currency"sv);
-        get_user_trades_by_currency(currencies_);
+        get_user_trades_by_currency(trace_info, currencies_);
       }
       return 0;
     case DONE:
@@ -532,12 +533,11 @@ void DropCopy::get_account_summary(std::span<std::string const> const &currencie
 }
 
 // XXX TODO specify subaccount_id
-void DropCopy::get_user_trades_by_currency(std::span<std::string const> const &currencies) {
+void DropCopy::get_user_trades_by_currency(TraceInfo const &trace_info, std::span<std::string const> const &currencies) {
   protocol::json::RequestType request_type = protocol::json::RequestType::GET_USER_TRADES_BY_CURRENCY;
-  auto now = clock::get_realtime<std::chrono::milliseconds>();
   auto lookback = get_download_trades_lookback(shared_.settings, download_trades_is_first_);
   log::info<1>("Download trades: lookback={}"sv, lookback);
-  auto start_timestamp = std::chrono::duration_cast<std::chrono::milliseconds>(now - lookback);
+  auto start_timestamp = std::chrono::duration_cast<std::chrono::milliseconds>(trace_info.origin_create_time_utc - lookback);
   for (auto currency : currencies) {
     auto message = fmt::format(
         R"({{)"
@@ -569,17 +569,15 @@ void DropCopy::parse(TraceInfo const &trace_info, std::string_view const &messag
   });
 }
 
-void DropCopy::check_subscribe_queue(std::chrono::nanoseconds now) {
-  auto can_request = [&](auto now) { return shared_.rate_limiter.can_request(now); };
-  auto request = [&](auto &message) { (*connection_).send_text(message); };
-  subscribe_queue_.dispatch(can_request, request, now);
+void DropCopy::check_subscribe_queue(TraceInfo const &trace_info) {
+  auto callback = [&]([[maybe_unused]] auto &trace_info, auto &message) { (*connection_).send_text(message); };
+  subscribe_queue_.dispatch(trace_info, callback);
 }
 
-void DropCopy::login() {
+void DropCopy::login(TraceInfo const &trace_info) {
   protocol::json::RequestType request_type = protocol::json::RequestType::AUTH;
-  auto now = clock::get_realtime<std::chrono::milliseconds>();
   auto nonce = account_.create_nonce();
-  auto [signature, timestamp] = account_.create_signature(now, nonce);
+  auto [signature, timestamp] = account_.create_signature(trace_info, nonce);
   auto message = fmt::format(
       R"({{)"
       R"("method":"public/auth",)"

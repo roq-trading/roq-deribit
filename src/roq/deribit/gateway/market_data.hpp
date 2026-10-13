@@ -125,10 +125,10 @@ struct MarketData final : public Base<MarketData>, public server::MarketDataStre
   void parse(Trace<fix::Message> const &);
   void parse_helper(Trace<fix::Message> const &);
 
-  void send_logon();
+  void send_logon(TraceInfo const &);
   void send_logout(std::string_view const &text);
   void send_heartbeat(std::string_view const &test_req_id);
-  void send_test_request(std::chrono::nanoseconds now);
+  void send_test_request(TraceInfo const &);
 
   template <typename T>
   void send(T const &event);

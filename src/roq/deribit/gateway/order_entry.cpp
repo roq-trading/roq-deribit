@@ -144,7 +144,7 @@ void OrderEntry::operator()(Trace<Timer> const &event) {
         if (next_heartbeat_ <= timer.now) {
           assert(shared_.settings.fix.ping_freq.count() > 0);
           next_heartbeat_ = timer.now + shared_.settings.fix.ping_freq;
-          send_test_request(clock::get_system());
+          send_test_request(trace_info);
         }
       }
     } else {
@@ -153,7 +153,7 @@ void OrderEntry::operator()(Trace<Timer> const &event) {
           log::warn("*** TEST: LOGON ***"sv);
         }
         test_logon_time_ = {};
-        send_logon();
+        send_logon(trace_info);
         create_trace_and_dispatch_2(trace_info, ConnectionStatus::LOGIN_SENT);
       }
     }
@@ -435,13 +435,12 @@ int32_t OrderEntry::download(Trace<State> const &event) {
 }
 
 void OrderEntry::operator()(Trace<protocol::fix::Heartbeat> const &event, fix::Header const &header) {
-  auto now = clock::get_system();
   auto &[trace_info, heartbeat] = event;
   log::info<3>("event={{header={}, heartbeat={}}}"sv, header, heartbeat);
   last_logon_or_heartbeat_ = {};
   if (!std::empty(heartbeat.test_req_id)) {
     auto send_time = std::chrono::nanoseconds{utils::charconv::from_chars<uint64_t>(heartbeat.test_req_id)};
-    auto latency = (now - send_time) / 2;  // 1-way
+    auto latency = (trace_info.origin_create_time - send_time) / 2;  // 1-way
     auto external_latency = ExternalLatency{
         .stream_id = stream_id_,
         .account = account_.name,
@@ -927,10 +926,9 @@ void OrderEntry::operator()(Trace<protocol::fix::OrderMassCancelReport> const &e
 
 // helpers
 
-void OrderEntry::send_logon() {
+void OrderEntry::send_logon(TraceInfo const &trace_info) {
   auto ping_freq = std::chrono::duration_cast<std::chrono::seconds>(shared_.settings.fix.ping_freq);
-  auto now = clock::get_realtime<std::chrono::milliseconds>();
-  auto raw_data = account_.create_raw_data(now);
+  auto raw_data = account_.create_raw_data(trace_info);
   auto password = account_.create_password(raw_data);
   auto logon = protocol::fix::Logon{
       .heart_bt_int = static_cast<uint16_t>(ping_freq.count()),
@@ -946,7 +944,7 @@ void OrderEntry::send_logon() {
       .unsubscribe_execution_reports = false,
   };
   send(logon);
-  last_logon_or_heartbeat_ = clock::get_system();
+  last_logon_or_heartbeat_ = trace_info.origin_create_time;
 }
 
 void OrderEntry::send_logout(std::string_view const &text) {
@@ -963,16 +961,16 @@ void OrderEntry::send_heartbeat(std::string_view const &test_req_id) {
   send(heartbeat);
 }
 
-void OrderEntry::send_test_request(std::chrono::nanoseconds now) {
+void OrderEntry::send_test_request(TraceInfo const &trace_info) {
   // request_id is current time
   encode_buffer_.clear();
-  utils::charconv::to_string(std::back_inserter(encode_buffer_), now.count());
+  utils::charconv::to_string(std::back_inserter(encode_buffer_), trace_info.origin_create_time.count());
   auto test_request = protocol::fix::TestRequest{
       .test_req_id = encode_buffer_,
   };
   send(test_request);
   if (last_logon_or_heartbeat_.count() == 0) {
-    last_logon_or_heartbeat_ = now;
+    last_logon_or_heartbeat_ = trace_info.origin_create_time;
   }
 }
 

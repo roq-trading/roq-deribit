@@ -226,10 +226,8 @@ void Controller::operator()(metrics::Writer &writer) const {
 // Rest::Handler + MarketData::Handler
 
 void Controller::operator()(Trace<CurrenciesUpdate> const &event) {
-  auto &[trace_info, currencies_update] = event;
-  auto &currencies = currencies_update.currencies;
   for (auto &[_, iter] : drop_copy_) {
-    (*iter).update_subscriptions(currencies);
+    (*iter)(event);
   }
 }
 
@@ -247,9 +245,9 @@ void Controller::operator()(Trace<SymbolsUpdate> const &event) {
 
 // WebSocket::Handler
 
-void Controller::operator()(WebSocket::Latch const &) {
+void Controller::operator()(Trace<Latch> const &event) {
   for (auto &[_, item] : drop_copy_) {
-    (*item).download();
+    (*item)(event);
   }
 }
 
