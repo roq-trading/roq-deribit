@@ -193,7 +193,6 @@ void WebSocket::operator()(Trace<web::socket::Disconnected> const &event) {
   create_trace_and_dispatch_2(trace_info, ConnectionStatus::DISCONNECTED);
   download_.reset();
   subscribe_queue_.clear();
-  request_.request_instruments = {};
 }
 
 void WebSocket::operator()(Trace<web::socket::Ready> const &event) {
@@ -409,15 +408,14 @@ void WebSocket::operator()(Trace<protocol::json::GetUserTradesByCurrencyAck> con
 // currencies
 
 void WebSocket::download_currencies(TraceInfo const &trace_info) {
-  request_.request_currencies = trace_info.origin_create_time;
+  request_.currencies.request(trace_info);
 }
 
 void WebSocket::check_currencies(TraceInfo const &trace_info) {
   if (download_.state() != State::CURRENCIES) {
     return;
   }
-  if (request_.request_currencies < request_.respond_currencies) {
-    log::info("Currencies download has completed!"sv);
+  if (request_.currencies.has_response()) {
     download_.check(trace_info, State::CURRENCIES);
   }
 }
@@ -425,15 +423,14 @@ void WebSocket::check_currencies(TraceInfo const &trace_info) {
 // instruments
 
 void WebSocket::download_instruments(TraceInfo const &trace_info) {
-  request_.request_instruments = trace_info.origin_create_time;
+  request_.instruments.request(trace_info);
 }
 
 void WebSocket::check_instruments(TraceInfo const &trace_info) {
   if (download_.state() != State::INSTRUMENTS) {
     return;
   }
-  if (request_.request_instruments < request_.respond_instruments) {
-    log::info("Instruments download has completed!"sv);
+  if (request_.instruments.has_response()) {
     download_.check(trace_info, State::INSTRUMENTS);
   }
 }

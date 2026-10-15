@@ -166,10 +166,13 @@ void Rest::operator()(Trace<Stop> const &) {
 
 void Rest::operator()(Trace<Timer> const &event) {
   auto &[trace_info, timer] = event;
-  (*connection_).refresh(timer.now);
-  check_download();
-  if (ready()) {
-    check_request_queue(trace_info);
+  if ((*connection_).refresh(timer.now)) {
+    if (ready()) {
+      check_download(trace_info);
+      if (ready()) {
+        check_request_queue(trace_info);
+      }
+    }
   }
 }
 
@@ -216,15 +219,13 @@ void Rest::operator()(Trace<web::rest::Connected> const &event) {
   auto &[trace_info, connected] = event;
   assert(!downloading());
   create_trace_and_dispatch_2(trace_info, ConnectionStatus::READY);
-  check_download();
+  check_download(trace_info);
 }
 
 void Rest::operator()(Trace<web::rest::Disconnected> const &event) {
   auto &[trace_info, disconnected] = event;
   ++counter_.disconnect;
   create_trace_and_dispatch_2(trace_info, ConnectionStatus::DISCONNECTED);
-  downloading_currencies_ = false;
-  downloading_instruments_ = false;
 }
 
 void Rest::operator()(Trace<web::rest::Latency> const &event) {
@@ -276,8 +277,7 @@ void Rest::get_currencies_ack(Trace<web::rest::Response> const &event) {
       log::info("Currencies download has COMPLETED"sv);
     };
     process_response(event, handle_error, handle_success);
-    request_.respond_currencies = trace_info.origin_create_time;
-    downloading_currencies_ = false;
+    request_.currencies.commit(trace_info);
   });
 }
 
@@ -337,8 +337,7 @@ void Rest::get_instruments_ack(Trace<web::rest::Response> const &event) {
       log::info("Instruments download has COMPLETED"sv);
     };
     process_response(event, handle_error, handle_success);
-    request_.respond_instruments = trace_info.origin_create_time;
-    downloading_instruments_ = false;
+    request_.instruments.commit(trace_info);
   });
 }
 
@@ -530,18 +529,9 @@ void Rest::check_request_queue(TraceInfo const &trace_info) {
   shared_.time_series_request_queue.dispatch(trace_info, callback);
 }
 
-void Rest::check_download() {
-  if (!ready()) {
-    return;
-  }
-  if (!downloading() && request_.respond_currencies < request_.request_currencies) {
-    get_currencies();
-    downloading_currencies_ = true;
-  }
-  if (!downloading() && request_.respond_instruments < request_.request_instruments) {
-    get_instruments();
-    downloading_instruments_ = true;
-  }
+void Rest::check_download(TraceInfo const &trace_info) {
+  request_.currencies.check_pending(trace_info, [this]([[maybe_unused]] auto &trace_info) { get_currencies(); });
+  request_.instruments.check_pending(trace_info, [this]([[maybe_unused]] auto &trace_info) { get_instruments(); });
 }
 
 void Rest::process_response(Trace<web::rest::Response> const &event, auto error_handler, auto success_handler) {

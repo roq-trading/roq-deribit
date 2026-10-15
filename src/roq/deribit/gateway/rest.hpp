@@ -88,11 +88,7 @@ struct Rest final : public Base<Rest>, public server::Stream, public web::rest::
 
   void process_response(Trace<web::rest::Response> const &, auto error_handler, auto success_handler);
 
-  // helpers
-
-  bool downloading() const { return downloading_currencies_ || downloading_instruments_; }
-
-  void check_download();
+  void check_download(TraceInfo const &);
 
  private:
   Handler &handler_;
@@ -123,8 +119,6 @@ struct Rest final : public Base<Rest>, public server::Stream, public web::rest::
   ConnectionStatus connection_status_ = {};
   //
   Request &request_;
-  bool downloading_currencies_ = {};
-  bool downloading_instruments_ = {};
 };
 
 }  // namespace gateway

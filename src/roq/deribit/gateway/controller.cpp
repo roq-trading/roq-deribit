@@ -103,7 +103,7 @@ uint8_t Controller::parse_api(Settings const &) {
 
 Controller::Controller(server::Dispatcher &dispatcher, Settings const &settings, Config const &config, io::Context &context)
     : dispatcher_{dispatcher}, master_account_{create_master_account(config)}, accounts_{create_accounts<decltype(accounts_)>(config)}, context_{context},
-      shared_{dispatcher_, settings}, rest_{*this, context_, ++stream_id_, shared_, request_},
+      shared_{dispatcher_, settings}, request_{shared_}, rest_{*this, context_, ++stream_id_, shared_, request_},
       order_entry_{create_order_entry<decltype(order_entry_)>(*this, context_, stream_id_, accounts_, shared_)},
       drop_copy_{create_drop_copy<decltype(drop_copy_)>(*this, context_, stream_id_, accounts_, shared_)},
       web_socket_{create_web_socket<decltype(web_socket_)>(*this, context_, stream_id_, get_account(master_account_), shared_, request_)},
