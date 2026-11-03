@@ -287,6 +287,10 @@
     {
       "name": "available_spot_reserve",
       "type": "std/double"
+    },
+    {
+      "name": "self_trading_extended_across_members",
+      "type": "std/bool"
     }
   ]
 }

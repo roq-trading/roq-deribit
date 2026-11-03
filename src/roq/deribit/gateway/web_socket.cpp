@@ -128,12 +128,13 @@ void WebSocket::operator()(Trace<Stop> const &) {
 
 void WebSocket::operator()(Trace<Timer> const &event) {
   auto &[trace_info, timer] = event;
-  (*connection_).refresh(timer.now);
-  if ((*connection_).ready()) {
-    check_subscribe_queue(trace_info);
+  if ((*connection_).refresh(timer.now)) {
+    if (ready()) {
+      check_subscribe_queue(trace_info);
+    }
+    check_currencies(trace_info);
+    check_instruments(trace_info);
   }
-  check_currencies(trace_info);
-  check_instruments(trace_info);
 }
 
 void WebSocket::operator()(metrics::Writer &writer) const {
@@ -230,6 +231,7 @@ void WebSocket::operator()(Trace<web::socket::Binary> const &) {
 
 int32_t WebSocket::download(Trace<State> const &event) {
   auto &[trace_info, state] = event;
+  auto publish_downloading = [&]() { create_trace_and_dispatch_2(trace_info, ConnectionStatus::DOWNLOADING, magic_enum::enum_name(state)); };
   switch (state) {
     using enum State;
     case UNDEFINED:
@@ -238,21 +240,21 @@ int32_t WebSocket::download(Trace<State> const &event) {
       if (!master_) {
         return 0;
       }
-      create_trace_and_dispatch_2(trace_info, ConnectionStatus::DOWNLOADING, "currencies"sv);
+      publish_downloading();
       download_currencies(trace_info);
       return 1;
     case INSTRUMENTS: {
       if (!master_) {
         return 0;
       }
-      create_trace_and_dispatch_2(trace_info, ConnectionStatus::DOWNLOADING, "instruments"sv);
+      publish_downloading();
       download_instruments(trace_info);
       return 1;
     }
     case SUBSCRIBE:
       assert(!ready_);
       ready_ = true;
-      create_trace_and_dispatch_2(trace_info, ConnectionStatus::DOWNLOADING, "subscribe"sv);
+      publish_downloading();
       if (master_) {
         subscribe_platform_state();
         subscribe_instrument_state();

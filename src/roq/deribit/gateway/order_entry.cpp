@@ -44,13 +44,13 @@ namespace {
 auto const NAME = "om"sv;
 
 auto const SUPPORTS = Mask{
+    SupportType::POSITION,
     SupportType::CREATE_ORDER,
     SupportType::MODIFY_ORDER,
     SupportType::CANCEL_ORDER,
     SupportType::ORDER_ACK,
     SupportType::ORDER,
     SupportType::TRADE,
-    SupportType::POSITION,
 };
 
 auto const LOGOUT_RESPONSE = "LOGOUT"sv;
@@ -123,38 +123,37 @@ void OrderEntry::operator()(Trace<Stop> const &) {
 
 void OrderEntry::operator()(Trace<Timer> const &event) {
   auto &[trace_info, timer] = event;
-  if (!(*connection_manager_).refresh(timer.now)) {
-    return;
-  }
-  if (last_logon_or_heartbeat_.count() != 0 && shared_.settings.fix.request_timeout.count() != 0 &&
-      (timer.now - last_logon_or_heartbeat_) > shared_.settings.fix.request_timeout) {
-    log::warn("*** DETECTED TIMEOUT ***"sv);
-    log::info("DEBUG: now={}, last_logon_or_heartbeat={}"sv, timer.now, last_logon_or_heartbeat_);
-    log::info("closing connection"sv);
-    (*connection_manager_).close();
-  } else {
-    if (ready_) {
-      if (test_disconnect_time_.count() != 0 && test_disconnect_time_ < timer.now) [[unlikely]] {
-        if (shared_.settings.fix.test_order_disconnect.count() != 0) {
-          log::warn("*** TEST: DISCONNECT ***"sv);
-          log::info("closing connection"sv);
-          (*connection_manager_).close();
+  if ((*connection_manager_).refresh(timer.now)) {
+    if (last_logon_or_heartbeat_.count() != 0 && shared_.settings.fix.request_timeout.count() != 0 &&
+        (timer.now - last_logon_or_heartbeat_) > shared_.settings.fix.request_timeout) {
+      log::warn("*** DETECTED TIMEOUT ***"sv);
+      log::info("DEBUG: now={}, last_logon_or_heartbeat={}"sv, timer.now, last_logon_or_heartbeat_);
+      log::info("closing connection"sv);
+      (*connection_manager_).close();
+    } else {
+      if (ready_) {
+        if (test_disconnect_time_.count() != 0 && test_disconnect_time_ < timer.now) [[unlikely]] {
+          if (shared_.settings.fix.test_order_disconnect.count() != 0) {
+            log::warn("*** TEST: DISCONNECT ***"sv);
+            log::info("closing connection"sv);
+            (*connection_manager_).close();
+          }
+        } else {
+          if (next_heartbeat_ <= timer.now) {
+            assert(shared_.settings.fix.ping_freq.count() > 0);
+            next_heartbeat_ = timer.now + shared_.settings.fix.ping_freq;
+            send_test_request(trace_info);
+          }
         }
       } else {
-        if (next_heartbeat_ <= timer.now) {
-          assert(shared_.settings.fix.ping_freq.count() > 0);
-          next_heartbeat_ = timer.now + shared_.settings.fix.ping_freq;
-          send_test_request(trace_info);
+        if (test_logon_time_.count() != 0 && test_logon_time_ < timer.now) {
+          if (shared_.settings.fix.test_order_logon.count() != 0) {
+            log::warn("*** TEST: LOGON ***"sv);
+          }
+          test_logon_time_ = {};
+          send_logon(trace_info);
+          create_trace_and_dispatch_2(trace_info, ConnectionStatus::LOGIN_SENT);
         }
-      }
-    } else {
-      if (test_logon_time_.count() != 0 && test_logon_time_ < timer.now) {
-        if (shared_.settings.fix.test_order_logon.count() != 0) {
-          log::warn("*** TEST: LOGON ***"sv);
-        }
-        test_logon_time_ = {};
-        send_logon(trace_info);
-        create_trace_and_dispatch_2(trace_info, ConnectionStatus::LOGIN_SENT);
       }
     }
   }
@@ -411,18 +410,19 @@ void OrderEntry::operator()(Trace<io::net::ConnectionManager::Write> const &) {
 
 int32_t OrderEntry::download(Trace<State> const &event) {
   auto &[trace_info, state] = event;
+  auto publish_downloading = [&]() { create_trace_and_dispatch_2(trace_info, ConnectionStatus::DOWNLOADING, magic_enum::enum_name(state)); };
   switch (state) {
     using enum State;
     case UNDEFINED:
       assert(false);
       break;
     case POSITIONS:
-      create_trace_and_dispatch_2(trace_info, ConnectionStatus::DOWNLOADING, "positions"sv);
+      publish_downloading();
       subscribe_positions();
       return 1;
     case ORDERS:
+      publish_downloading();
       download_orders();
-      create_trace_and_dispatch_2(trace_info, ConnectionStatus::DOWNLOADING, "orders"sv);
       return 1;  // note! first report includes the true number of reports
     case DONE:
       create_trace_and_dispatch_2(trace_info, ConnectionStatus::READY);

@@ -187,26 +187,25 @@ void MarketData::operator()(Trace<Stop> const &) {
 
 void MarketData::operator()(Trace<Timer> const &event) {
   auto &[trace_info, timer] = event;
-  if (!(*connection_manager_).refresh(timer.now)) {
-    return;
-  }
-  if (last_logon_or_heartbeat_.count() != 0 && fix_request_timeout_.count() != 0 && (timer.now - last_logon_or_heartbeat_) > fix_request_timeout_) {
-    log::warn("*** DETECTED TIMEOUT ***"sv);
-    log::info("closing connection"sv);
-    (*connection_manager_).close();
-  } else {
-    if (connection_status_ == ConnectionStatus::READY) {
-      if (test_disconnect_time_.count() != 0 && test_disconnect_time_ < timer.now) [[unlikely]] {
-        if (shared_.settings.fix.test_market_data_disconnect.count() != 0) {
-          log::warn("*** TEST: DISCONNECT (stream_id={}) ***"sv, stream_id_);
-          log::info("closing connection"sv);
-          (*connection_manager_).close();
-        }
-      } else {
-        if (next_heartbeat_ <= timer.now) {
-          assert(fix_ping_freq_.count() > 0);
-          next_heartbeat_ = timer.now + fix_ping_freq_;
-          send_test_request(trace_info);
+  if ((*connection_manager_).refresh(timer.now)) {
+    if (last_logon_or_heartbeat_.count() != 0 && fix_request_timeout_.count() != 0 && (timer.now - last_logon_or_heartbeat_) > fix_request_timeout_) {
+      log::warn("*** DETECTED TIMEOUT ***"sv);
+      log::info("closing connection"sv);
+      (*connection_manager_).close();
+    } else {
+      if (connection_status_ == ConnectionStatus::READY) {
+        if (test_disconnect_time_.count() != 0 && test_disconnect_time_ < timer.now) [[unlikely]] {
+          if (shared_.settings.fix.test_market_data_disconnect.count() != 0) {
+            log::warn("*** TEST: DISCONNECT (stream_id={}) ***"sv, stream_id_);
+            log::info("closing connection"sv);
+            (*connection_manager_).close();
+          }
+        } else {
+          if (next_heartbeat_ <= timer.now) {
+            assert(fix_ping_freq_.count() > 0);
+            next_heartbeat_ = timer.now + fix_ping_freq_;
+            send_test_request(trace_info);
+          }
         }
       }
     }
@@ -320,6 +319,7 @@ void MarketData::operator()(Trace<io::net::ConnectionManager::Write> const &) {
 
 int32_t MarketData::download(Trace<State> const &event) {
   auto &[trace_info, state] = event;
+  auto publish_downloading = [&]() { create_trace_and_dispatch_2(trace_info, ConnectionStatus::DOWNLOADING, magic_enum::enum_name(state)); };
   switch (state) {
     using enum State;
     case UNDEFINED:
@@ -327,7 +327,7 @@ int32_t MarketData::download(Trace<State> const &event) {
       break;
     case SECURITIES:
       if (master_) {
-        create_trace_and_dispatch_2(trace_info, ConnectionStatus::DOWNLOADING, "securities"sv);
+        publish_downloading();
         download_securities();
         return 1;
       } else {

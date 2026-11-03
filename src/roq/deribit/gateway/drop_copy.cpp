@@ -137,9 +137,10 @@ void DropCopy::operator()(Trace<Stop> const &) {
 
 void DropCopy::operator()(Trace<Timer> const &event) {
   auto &[trace_info, timer] = event;
-  (*connection_).refresh(timer.now);
-  if ((*connection_).ready()) {
-    check_subscribe_queue(trace_info);
+  if ((*connection_).refresh(timer.now)) {
+    if (ready()) {
+      check_subscribe_queue(trace_info);
+    }
   }
 }
 
@@ -224,37 +225,38 @@ void DropCopy::operator()(Trace<web::socket::Binary> const &) {
 
 int32_t DropCopy::download(Trace<State> const &event) {
   auto &[trace_info, state] = event;
+  auto publish_downloading = [&]() { create_trace_and_dispatch_2(trace_info, ConnectionStatus::DOWNLOADING, magic_enum::enum_name(state)); };
   switch (state) {
     using enum State;
     case UNDEFINED:
       break;
     case SUBSCRIBE_USER_PORTFOLIO:
       if (can_download_) {
-        create_trace_and_dispatch_2(trace_info, ConnectionStatus::DOWNLOADING, "subscribe-user-portfolio"sv);
+        publish_downloading();
         subscribe_user_portfolio(currencies_);
       }
       return 0;
     case SUBSCRIBE_USER_CHANGES:
-      create_trace_and_dispatch_2(trace_info, ConnectionStatus::DOWNLOADING, "subscribe-user-changes"sv);
+      publish_downloading();
       subscribe_user_changes();
       return 0;
     case SUBSCRIBE_USER_ORDERS:
-      create_trace_and_dispatch_2(trace_info, ConnectionStatus::DOWNLOADING, "subscribe-user-orders"sv);
+      publish_downloading();
       subscribe_user_orders();
       return 0;
     case SUBSCRIBE_USER_TRADES:
-      create_trace_and_dispatch_2(trace_info, ConnectionStatus::DOWNLOADING, "subscribe-user-trades"sv);
+      publish_downloading();
       subscribe_user_trades();
       return 0;
     case GET_ACCOUNT_SUMMARY:
       if (can_download_) {
-        create_trace_and_dispatch_2(trace_info, ConnectionStatus::DOWNLOADING, "account-summary"sv);
+        publish_downloading();
         get_account_summary(currencies_);
       }
       return 0;
     case GET_USER_TRADES_BY_CURRENCY:
       if (can_download_) {
-        create_trace_and_dispatch_2(trace_info, ConnectionStatus::DOWNLOADING, "user-trades-by-currency"sv);
+        publish_downloading();
         get_user_trades_by_currency(trace_info, currencies_);
       }
       return 0;

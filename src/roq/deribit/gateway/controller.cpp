@@ -29,7 +29,7 @@ R create_accounts(auto &config) {
   result_type result;
   for (auto &[_, account] : config.accounts) {
     auto obj = std::make_unique<Account>(config, account.name);
-    result.try_emplace(static_cast<std::string_view>(account.name), std::move(obj));
+    result.try_emplace(account.name, std::move(obj));
   }
   return result;
 }
@@ -41,7 +41,7 @@ R create_order_entry(auto &gateway, auto &context, auto &stream_id, auto &accoun
   for (auto &[_, item] : accounts) {
     auto &account = *item;
     auto obj = std::make_unique<OrderEntry>(gateway, context, ++stream_id, account, shared);
-    result.try_emplace(static_cast<std::string_view>(account.name), std::move(obj));
+    result.try_emplace(account.name, std::move(obj));
   }
   return result;
 }
@@ -53,7 +53,7 @@ R create_drop_copy(auto &gateway, auto &context, auto &stream_id, auto &accounts
   for (auto &[_, item] : accounts) {
     auto &account = *item;
     auto obj = std::make_unique<DropCopy>(gateway, context, ++stream_id, account, shared);
-    result.try_emplace(static_cast<std::string_view>(account.name), std::move(obj));
+    result.try_emplace(account.name, std::move(obj));
   }
   return result;
 }
@@ -259,20 +259,22 @@ void Controller::ensure_symbol_slices(TraceInfo const &trace_info, size_t size) 
     auto stream_id = ++stream_id_;
     auto index = std::size(market_data_);
     log::info("Create MarketData(stream_id={}, index={})"sv, stream_id, index);
-    auto market_data = std::make_unique<MarketData>(*this, context_, stream_id, get_account(master_account_), shared_, index, false);
+    auto &account = get_account(master_account_);
+    auto obj = std::make_unique<MarketData>(*this, context_, stream_id, account, shared_, index, false);
     Start start;
-    create_trace_and_dispatch(*market_data, trace_info, start);
-    market_data_.emplace_back(std::move(market_data));
+    create_trace_and_dispatch(*obj, trace_info, start);
+    market_data_.emplace_back(std::move(obj));
   }
   // web socket
   while (std::size(web_socket_) < size) {
     auto stream_id = ++stream_id_;
     auto index = std::size(web_socket_);
     log::info("Create WebSocket (stream_id={}, index={})"sv, stream_id, index);
-    auto web_socket = std::make_unique<WebSocket>(*this, context_, stream_id, get_account(master_account_), shared_, request_, index, false);
+    auto &account = get_account(master_account_);
+    auto obj = std::make_unique<WebSocket>(*this, context_, stream_id, account, shared_, request_, index, false);
     Start start;
-    create_trace_and_dispatch(*web_socket, trace_info, start);
-    web_socket_.emplace_back(std::move(web_socket));
+    create_trace_and_dispatch(*obj, trace_info, start);
+    web_socket_.emplace_back(std::move(obj));
   }
 }
 
