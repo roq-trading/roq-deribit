@@ -72,7 +72,7 @@ struct Controller final : public server::Handler2, public io::sys::Signal::Handl
 
   // io::sys::Signal::Handler
 
-  void operator()(io::sys::Signal::Event const &) override;
+  void operator()(Trace<io::sys::Signal::Event> const &) override;
 
  private:
   std::unique_ptr<io::sys::Signal> const terminate_;

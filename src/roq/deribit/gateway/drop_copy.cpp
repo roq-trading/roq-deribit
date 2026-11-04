@@ -137,7 +137,7 @@ void DropCopy::operator()(Trace<Stop> const &) {
 
 void DropCopy::operator()(Trace<Timer> const &event) {
   auto &[trace_info, timer] = event;
-  if ((*connection_).refresh(timer.now)) {
+  if ((*connection_).refresh(trace_info)) {
     if (ready()) {
       check_subscribe_queue(trace_info);
     }

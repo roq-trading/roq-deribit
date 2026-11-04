@@ -307,8 +307,9 @@ void Controller::operator()(Trace<FundsUpdate> const &, [[maybe_unused]] uint64_
 
 // io::sys::Signal::Handler
 
-void Controller::operator()(io::sys::Signal::Event const &event) {
-  log::warn("*** SIGNAL: {} ***"sv, event.type);
+void Controller::operator()(Trace<io::sys::Signal::Event> const &event) {
+  auto &[trace_info, signal] = event;
+  log::warn("*** SIGNAL: {} ***"sv, signal.type);
   (*dispatcher_).stop();
 }
 

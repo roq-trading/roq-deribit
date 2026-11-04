@@ -187,7 +187,7 @@ void MarketData::operator()(Trace<Stop> const &) {
 
 void MarketData::operator()(Trace<Timer> const &event) {
   auto &[trace_info, timer] = event;
-  if ((*connection_manager_).refresh(timer.now)) {
+  if ((*connection_manager_).refresh(trace_info)) {
     if (last_logon_or_heartbeat_.count() != 0 && fix_request_timeout_.count() != 0 && (timer.now - last_logon_or_heartbeat_) > fix_request_timeout_) {
       log::warn("*** DETECTED TIMEOUT ***"sv);
       log::info("closing connection"sv);

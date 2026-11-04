@@ -123,7 +123,7 @@ void OrderEntry::operator()(Trace<Stop> const &) {
 
 void OrderEntry::operator()(Trace<Timer> const &event) {
   auto &[trace_info, timer] = event;
-  if ((*connection_manager_).refresh(timer.now)) {
+  if ((*connection_manager_).refresh(trace_info)) {
     if (last_logon_or_heartbeat_.count() != 0 && shared_.settings.fix.request_timeout.count() != 0 &&
         (timer.now - last_logon_or_heartbeat_) > shared_.settings.fix.request_timeout) {
       log::warn("*** DETECTED TIMEOUT ***"sv);
