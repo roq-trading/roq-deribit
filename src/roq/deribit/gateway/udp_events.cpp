@@ -169,9 +169,10 @@ void UDPEvents::operator()(Trace<ConnectionStatus> const &event, std::string_vie
       .connection_status = connection_status_,
       .reason = reason,
       .interface = {},
+      .proxy = {},
+      .peer = {},
       .authority = {},
       .path = {},
-      .proxy = {},
   };
   log::info("stream_status={}"sv, stream_status);
   create_trace_and_dispatch(shared_.dispatcher, trace_info, stream_status);

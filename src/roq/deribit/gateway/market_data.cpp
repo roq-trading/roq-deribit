@@ -245,9 +245,10 @@ void MarketData::operator()(Trace<ConnectionStatus> const &event, std::string_vi
       .connection_status = connection_status_,
       .reason = reason,
       .interface = (*connection_factory_).get_interface(),
+      .proxy = {},
+      .peer = {},
       .authority = (*connection_factory_).get_current_authority(),
       .path = (*connection_factory_).get_current_path(),
-      .proxy = {},
   };
   log::info<1>("stream_status={}"sv, stream_status);
   create_trace_and_dispatch(shared_.dispatcher, trace_info, stream_status);
