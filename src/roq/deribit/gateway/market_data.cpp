@@ -755,7 +755,7 @@ void MarketData::send_logon(TraceInfo const &trace_info) {
   auto heart_bt_int = std::chrono::duration_cast<std::chrono::seconds>(fix_ping_freq_).count();
   auto raw_data = account_.create_raw_data(trace_info);
   auto password = account_.create_password(raw_data);
-  auto cancel_on_disconnect = shared_.settings.fix.cancel_on_disconnect;
+  auto cancel_on_disconnect = !shared_.settings.app.disable_cancel_on_disconnect;
   auto logon = protocol::fix::Logon{
       .heart_bt_int = utils::safe_cast(heart_bt_int),
       .raw_data_length = utils::safe_cast(std::size(raw_data)),

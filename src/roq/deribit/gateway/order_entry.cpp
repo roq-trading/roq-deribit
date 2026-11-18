@@ -946,6 +946,7 @@ void OrderEntry::send_logon(TraceInfo const &trace_info) {
   auto ping_freq = std::chrono::duration_cast<std::chrono::seconds>(shared_.settings.fix.ping_freq);
   auto raw_data = account_.create_raw_data(trace_info);
   auto password = account_.create_password(raw_data);
+  auto cancel_on_disconnect = !shared_.settings.app.disable_cancel_on_disconnect;
   auto logon = protocol::fix::Logon{
       .heart_bt_int = static_cast<uint16_t>(ping_freq.count()),
       .raw_data_length = static_cast<uint32_t>(std::size(raw_data)),
@@ -953,7 +954,7 @@ void OrderEntry::send_logon(TraceInfo const &trace_info) {
       .username = account_.key,
       .password = password,
       .use_wordsafe_tags = false,
-      .cancel_on_disconnect = shared_.settings.fix.cancel_on_disconnect,
+      .cancel_on_disconnect = cancel_on_disconnect,
       .deribit_app_id = {},
       .deribit_app_sig = {},
       .deribit_sequential = false,

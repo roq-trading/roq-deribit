@@ -5,7 +5,6 @@ set(SOURCES settings.cpp)
 set(AUTOGEN_SCHEMAS
     fix.json
     flags.json
-    mbp.json
     misc.json
     multicast.json
     request.json

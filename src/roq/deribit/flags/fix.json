@@ -24,12 +24,6 @@
       "description": "Request timeout"
     },
     {
-      "name": "cancel_on_disconnect",
-      "type": "std/bool",
-      "default": true,
-      "description": "Auto-cancel orders on disconnect?"
-    },
-    {
       "name": "market_data_max_subscriptions_per_stream",
       "type": "std/uint32",
       "required": true,

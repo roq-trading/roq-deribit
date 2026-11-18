@@ -112,9 +112,6 @@ Controller::Controller(server::Dispatcher &dispatcher, Settings const &settings,
   if (std::empty(master_account_) && !settings.misc.disable_master_account_check) {
     log::fatal("A master account is always required (due to FIX logon)"sv);
   }
-  if (!settings.fix.cancel_on_disconnect) {
-    log::warn("Orders will *NOT* be cancelled on disconnect"sv);
-  }
 }
 
 // server::Handler

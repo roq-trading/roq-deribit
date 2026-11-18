@@ -174,10 +174,6 @@ Flags
 
    .. include:: flags/multicast.rstinc
 
-.. tab:: MBP
-
-   .. include:: flags/mbp.rstinc
-
 .. tab:: Request
 
    .. include:: flags/request.rstinc
