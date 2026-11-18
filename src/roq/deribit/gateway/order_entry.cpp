@@ -195,12 +195,24 @@ void OrderEntry::operator()(Trace<ConnectionStatus> const &event, std::string_vi
 
 // server::OrderActionStream
 
+void OrderEntry::operator()(Trace<server::oms::OrderActionBatchBegin> const &) {
+  throw server::oms::NotSupported{"not supported"sv};
+}
+
+void OrderEntry::operator()(Trace<server::oms::OrderActionBatchCommit> const &) {
+  throw server::oms::NotSupported{"not supported"sv};
+}
+
+void OrderEntry::operator()(Trace<server::oms::OrderActionBatchRollback> const &) {
+  throw server::oms::NotSupported{"not supported"sv};
+}
+
 uint16_t OrderEntry::operator()(
-    Event<CreateOrder> const &event, server::oms::Order const &, server::oms::RefData const &ref_data, std::string_view const &request_id) {
+    Trace<CreateOrder> const &event, server::oms::Order const &, server::oms::RefData const &ref_data, std::string_view const &request_id) {
   if (!ready()) [[unlikely]] {
     throw server::oms::NotReady{"not ready"sv};
   }
-  auto &[message_info, create_order] = event;
+  auto &[trace_info, create_order] = event;
   if (std::isfinite(create_order.stop_price)) [[unlikely]] {
     throw RuntimeError{"stop_price not supported"sv};
   }
@@ -233,7 +245,7 @@ uint16_t OrderEntry::operator()(
 }
 
 uint16_t OrderEntry::operator()(
-    Event<ModifyOrder> const &event,
+    Trace<ModifyOrder> const &event,
     server::oms::Order const &order,
     server::oms::RefData const &ref_data,
     std::string_view const &request_id,
@@ -241,7 +253,7 @@ uint16_t OrderEntry::operator()(
   if (!ready()) [[unlikely]] {
     throw server::oms::NotReady{"not ready"sv};
   }
-  auto &[message_info, modify_order] = event;
+  auto &[trace_info, modify_order] = event;
   auto side = map(order.side);
   auto ord_type = map(order.order_type);
   // note! using deribit_label might be slower, but using orig_cl_ord_id seems error-prone
@@ -265,7 +277,7 @@ uint16_t OrderEntry::operator()(
 }
 
 uint16_t OrderEntry::operator()(
-    Event<CancelOrder> const &,
+    Trace<CancelOrder> const &,
     server::oms::Order const &order,
     server::oms::RefData const &,
     std::string_view const &request_id,
@@ -287,11 +299,11 @@ uint16_t OrderEntry::operator()(
   return stream_id_;
 }
 
-uint16_t OrderEntry::operator()(Event<CancelAllOrders> const &event, std::string_view const &request_id) {
+uint16_t OrderEntry::operator()(Trace<CancelAllOrders> const &event, std::string_view const &request_id) {
   if (!ready()) [[unlikely]] {
     throw server::oms::NotReady{"not ready"sv};
   }
-  auto &[message_info, cancel_all_orders] = event;
+  auto &[trace_info, cancel_all_orders] = event;
   auto send_ack = [&]() {
     auto cancel_all_orders_ack = CancelAllOrdersAck{
         .stream_id = stream_id_,
@@ -311,7 +323,6 @@ uint16_t OrderEntry::operator()(Event<CancelAllOrders> const &event, std::string
         .user = {},
         .strategy_id = cancel_all_orders.strategy_id,
     };
-    TraceInfo trace_info{event};
     create_trace_and_dispatch(shared_.dispatcher, trace_info, cancel_all_orders_ack);
   };
   auto filter = utils::create_filter(cancel_all_orders) & ~Mask{Filter::ACCOUNT};
