@@ -152,7 +152,7 @@ void OrderEntry::operator()(Trace<Timer> const &event) {
           }
           test_logon_time_ = {};
           send_logon(trace_info);
-          create_trace_and_dispatch_2(trace_info, ConnectionStatus::LOGIN_SENT);
+          create_trace_and_dispatch_2(trace_info, ConnectionStatus::AUTHENTICATING);
         }
       }
     }

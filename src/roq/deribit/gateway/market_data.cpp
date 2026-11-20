@@ -259,7 +259,7 @@ void MarketData::operator()(Trace<ConnectionStatus> const &event, std::string_vi
 void MarketData::operator()(Trace<io::net::ConnectionManager::Connected> const &event) {
   auto &[trace_info, connected] = event;
   send_logon(trace_info);
-  create_trace_and_dispatch_2(trace_info, ConnectionStatus::LOGIN_SENT);
+  create_trace_and_dispatch_2(trace_info, ConnectionStatus::AUTHENTICATING);
 }
 
 void MarketData::operator()(Trace<io::net::ConnectionManager::Disconnected> const &event) {
