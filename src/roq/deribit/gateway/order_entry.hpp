@@ -143,46 +143,39 @@ struct OrderEntry final : public Base<OrderEntry>, public server::OrderActionStr
 
  private:
   [[maybe_unused]] Handler &handler_;
-  // config
+  //
   uint16_t const stream_id_;
   std::string const name_;
-  // connection
   std::unique_ptr<io::net::ConnectionFactory> const connection_factory_;
   std::unique_ptr<io::net::ConnectionManager> const connection_manager_;
-  // buffers
+  //
   std::vector<std::byte> decode_buffer_;
   std::vector<std::byte> encode_buffer_2_;
   std::string encode_buffer_;
-  // metrics
   struct {
     utils::metrics::Counter disconnect;
   } counter_;
   struct {
-    utils::metrics::Profile parse, position_report, execution_report, order_cancel_reject, reject, order_mass_cancel_report;
+    utils::metrics::Profile parse,  //
+        position_report, execution_report, order_cancel_reject, reject, order_mass_cancel_report;
   } profile_;
   struct {
     utils::metrics::Latency ping;
   } latency_;
-  // state
   struct {
     uint64_t msg_seq_num = {};
   } outbound_;
   struct {
     uint64_t msg_seq_num = {};
   } inbound_;
-  // account
   Account &account_;
-  // cache
   Shared &shared_;
-  // state
   ConnectionStatus connection_status_ = {};
-
-  // state
   bool ready_ = false;
   std::chrono::nanoseconds next_heartbeat_ = {};
   core::Download2<State> download_;
   std::chrono::nanoseconds last_logon_or_heartbeat_ = {};
-  // EXPERIMENTAL
+  //
   utils::unordered_map<uint64_t, RequestId> msg_seq_num_to_request_id_;
   std::chrono::nanoseconds test_disconnect_time_ = {};
   std::chrono::nanoseconds test_logon_time_ = {};

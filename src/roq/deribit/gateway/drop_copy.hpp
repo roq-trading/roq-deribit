@@ -126,14 +126,12 @@ struct DropCopy final : public Base<DropCopy>, public server::Stream, public web
 
  private:
   [[maybe_unused]] Handler &handler_;
-  // config
+  //
   uint16_t const stream_id_;
   std::string const name_;
-  // web socket
   std::unique_ptr<web::socket::Client> const connection_;
-  // buffers
+  //
   core::json::BufferStack decode_buffer_;
-  // metrics
   struct {
     utils::metrics::Counter disconnect;
   } counter_;
@@ -143,18 +141,14 @@ struct DropCopy final : public Base<DropCopy>, public server::Stream, public web
   struct {
     utils::metrics::Latency ping, heartbeat;
   } latency_;
-  // account
   Account &account_;
-  // cache
   Shared &shared_;
   std::vector<std::string> currencies_;
-  // state
   bool ready_ = false;
   ConnectionStatus connection_status_ = {};
   core::Download2<State> download_;
   bool can_download_ = false;
   bool download_trades_is_first_ = true;
-  //
   core::limit::Queue<std::string> subscribe_queue_;
 };
 

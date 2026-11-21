@@ -140,7 +140,7 @@ struct MarketData final : public Base<MarketData>, public server::MarketDataStre
 
  private:
   Handler &handler_;
-  // config
+  //
   uint16_t const stream_id_;
   std::string const name_;
   size_t const index_;
@@ -148,48 +148,41 @@ struct MarketData final : public Base<MarketData>, public server::MarketDataStre
   bool const publish_market_by_price_;
   bool const publish_trade_summary_;
   Mask<SupportType> const supports_;
-  // flags
   std::string const exchange_;
   bool const fix_debug_;
   std::chrono::nanoseconds const fix_request_timeout_;
   std::chrono::nanoseconds const fix_ping_freq_;
-  // connection
   std::unique_ptr<io::net::ConnectionFactory> const connection_factory_;
   std::unique_ptr<io::net::ConnectionManager> const connection_manager_;
-  // buffers
+  //
   std::vector<std::byte> encode_buffer_;
   std::vector<std::byte> decode_buffer_;
   std::string request_id_;
-  // metrics
   struct {
     utils::metrics::Counter disconnect;
   } counter_;
   struct {
-    utils::metrics::Profile parse, security_list, security_status, market_data_incremental_refresh, market_data_request_reject,
-        market_data_snapshot_full_refresh, market_data_request;
+    utils::metrics::Profile parse,  //
+        security_list, security_status, market_data_incremental_refresh, market_data_request_reject, market_data_snapshot_full_refresh, market_data_request;
   } profile_;
   struct {
     utils::metrics::Latency ping;
   } latency_;
-  // state
   struct {
     uint64_t msg_seq_num = {};
   } outbound_;
   struct {
     uint64_t msg_seq_num = {};
   } inbound_;
-  // account
   Account &account_;
-  // cache
   Shared &shared_;
-  // state
   bool ready_ = false;
   std::chrono::nanoseconds next_heartbeat_ = {};
   ConnectionStatus connection_status_ = {};
   core::Download2<State> download_;
   std::chrono::nanoseconds last_logon_or_heartbeat_ = {};
   utils::unordered_set<std::string> latch_;
-  // EXPERIMENTAL
+  //
   std::chrono::nanoseconds test_disconnect_time_ = {};
 };
 

@@ -75,25 +75,22 @@ struct UDPSnapshot final : public Base<UDPSnapshot>, public server::Stream, publ
 
  private:
   [[maybe_unused]] Handler &handler_;
-  // config
+  //
   uint16_t const stream_id_;
   std::string const name_;
   bool const publish_market_by_price_;
   Mask<SupportType> const supports_;
-  // receiver
   std::unique_ptr<io::net::udp::Receiver> const receiver_;
-  // metrics
+  //
   struct {
     utils::metrics::Counter disconnect;
   } counter_;
   struct {
     utils::metrics::Profile parse;
   } profile_;
-  // cache
   Shared &shared_;
   ConnectionStatus connection_status_ = {};
   utils::unordered_map<uint16_t, Channel> channel_;
-  // state
   std::chrono::nanoseconds last_update_time_ = {};
 };
 

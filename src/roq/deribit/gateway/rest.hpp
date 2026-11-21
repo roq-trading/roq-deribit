@@ -92,20 +92,17 @@ struct Rest final : public Base<Rest>, public server::Stream, public web::rest::
 
  private:
   Handler &handler_;
-  // config
+  //
   uint16_t const stream_id_;
   std::string const name_;
-  // connection
   std::unique_ptr<web::rest::Client> const connection_;
-  // buffers
+  //
   core::json::BufferStack decode_buffer_;
-  // metrics
   struct {
     utils::metrics::Counter disconnect;
   } counter_;
   struct {
-    utils::metrics::Profile  //
-        currencies,
+    utils::metrics::Profile currencies,
         currencies_ack,                //
         instruments, instruments_ack,  //
         chart_data, chart_data_ack;
@@ -113,11 +110,8 @@ struct Rest final : public Base<Rest>, public server::Stream, public web::rest::
   struct {
     utils::metrics::Latency ping;
   } latency_;
-  // cache
   Shared &shared_;
-  // state
   ConnectionStatus connection_status_ = {};
-  //
   Request &request_;
 };
 

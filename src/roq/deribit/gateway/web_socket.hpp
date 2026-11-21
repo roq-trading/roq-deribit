@@ -154,18 +154,16 @@ struct WebSocket final : public Base<WebSocket>, public server::MarketDataStream
 
  private:
   Handler &handler_;
-  // config
+  //
   uint16_t const stream_id_;
   std::string const name_;
   size_t const index_;
   bool const master_;
   bool const publish_top_of_book_;
   Mask<SupportType> const supports_;
-  // web socket
   std::unique_ptr<web::socket::Client> const connection_;
-  // buffers
+  //
   core::json::BufferStack decode_buffer_;
-  // metrics
   struct {
     utils::metrics::Counter disconnect;
   } counter_;
@@ -175,19 +173,14 @@ struct WebSocket final : public Base<WebSocket>, public server::MarketDataStream
   struct {
     utils::metrics::Latency ping, heartbeat;
   } latency_;
-  // account
   Account &account_;
-  // cache
   Shared &shared_;
   utils::unordered_map<std::string, std::pair<roq::Layer, double>> top_of_book_;
   utils::unordered_map<std::string, TradingStatus> trading_status_;
-  // state
   bool ready_ = false;
   ConnectionStatus connection_status_ = {};
   core::Download2<State> download_;
-  // queue
   core::limit::Queue<std::string> subscribe_queue_;
-  //
   Request &request_;
 };
 
