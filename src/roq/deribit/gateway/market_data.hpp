@@ -57,7 +57,7 @@ struct MarketData final : public Base<MarketData>, public server::MarketDataStre
 
   MarketData(Handler &, io::Context &, uint16_t stream_id, Account &, Shared &, size_t index, bool master);
 
-  // protected:
+ protected:
   friend base_type;
 
   // server::Stream
@@ -78,7 +78,6 @@ struct MarketData final : public Base<MarketData>, public server::MarketDataStre
 
   void subscribe(size_t start_from = 0) override;
 
- protected:
   // io::net::ConnectionManager::Handler
 
   void operator()(Trace<io::net::ConnectionManager::Connected> const &) override;

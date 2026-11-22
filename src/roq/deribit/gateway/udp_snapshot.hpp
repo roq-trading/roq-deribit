@@ -29,7 +29,7 @@ struct UDPSnapshot final : public Base<UDPSnapshot>, public server::Stream, publ
 
   UDPSnapshot(Handler &, io::Context &, uint16_t stream_id, Shared &);
 
-  // protected:
+ protected:
   friend base_type;
 
   // server::Stream
@@ -46,7 +46,6 @@ struct UDPSnapshot final : public Base<UDPSnapshot>, public server::Stream, publ
 
   void operator()(Trace<ConnectionStatus> const &, std::string_view const &reason = {}) override;
 
- protected:
   // io::net::udp::Receiver::Handler
 
   void operator()(Trace<io::net::udp::Receiver::Read> const &) override;

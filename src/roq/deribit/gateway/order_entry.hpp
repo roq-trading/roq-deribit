@@ -47,7 +47,7 @@ struct OrderEntry final : public Base<OrderEntry>, public server::OrderActionStr
 
   OrderEntry(Handler &, io::Context &, uint16_t stream_id, Account &, Shared &);
 
-  // protected:
+ protected:
   friend base_type;
 
   // server::Stream
@@ -86,7 +86,6 @@ struct OrderEntry final : public Base<OrderEntry>, public server::OrderActionStr
 
   uint16_t operator()(Trace<CancelAllOrders> const &, std::string_view const &request_id) override;
 
- protected:
   // io::net::ConnectionManager::Handler
 
   void operator()(Trace<io::net::ConnectionManager::Connected> const &) override;
