@@ -113,17 +113,17 @@ OrderEntry::OrderEntry(Handler &handler, io::Context &context, uint16_t stream_i
 
 // server::Stream
 
-void OrderEntry::operator()(Trace<Start> const &) {
-  (*connection_manager_).start();
+void OrderEntry::operator()(Trace<Start> const &event) {
+  (*connection_manager_)(event);
 }
 
-void OrderEntry::operator()(Trace<Stop> const &) {
-  (*connection_manager_).stop();
+void OrderEntry::operator()(Trace<Stop> const &event) {
+  (*connection_manager_)(event);
 }
 
 void OrderEntry::operator()(Trace<Timer> const &event) {
   auto &[trace_info, timer] = event;
-  if ((*connection_manager_).refresh(trace_info)) {
+  if ((*connection_manager_)(event)) {
     if (last_logon_or_heartbeat_.count() != 0 && shared_.settings.fix.request_timeout.count() != 0 &&
         (timer.now - last_logon_or_heartbeat_) > shared_.settings.fix.request_timeout) {
       log::warn("*** DETECTED TIMEOUT ***"sv);
@@ -208,7 +208,7 @@ void OrderEntry::operator()(Trace<server::oms::OrderActionBatchRollback> const &
   throw server::oms::NotSupported{"not supported"sv};
 }
 
-uint16_t OrderEntry::operator()(
+void OrderEntry::operator()(
     Trace<CreateOrder> const &event, server::oms::Order const &, server::oms::RefData const &ref_data, std::string_view const &request_id) {
   if (!ready()) [[unlikely]] {
     throw server::oms::NotReady{"not ready"sv};
@@ -242,10 +242,9 @@ uint16_t OrderEntry::operator()(
   auto msg_seq_num = send(new_order_single);
   // XXX HANS EXPERIMENTAL -- it's a leak / currently no way to clean up
   msg_seq_num_to_request_id_.emplace(msg_seq_num, request_id);
-  return stream_id();
 }
 
-uint16_t OrderEntry::operator()(
+void OrderEntry::operator()(
     Trace<ModifyOrder> const &event,
     server::oms::Order const &order,
     server::oms::RefData const &ref_data,
@@ -274,10 +273,9 @@ uint16_t OrderEntry::operator()(
   auto msg_seq_num = send(order_cancel_replace_request);
   // XXX HANS EXPERIMENTAL -- it's a leak / currently no way to clean up
   msg_seq_num_to_request_id_.emplace(msg_seq_num, request_id);
-  return stream_id();
 }
 
-uint16_t OrderEntry::operator()(
+void OrderEntry::operator()(
     Trace<CancelOrder> const &,
     server::oms::Order const &order,
     server::oms::RefData const &,
@@ -297,10 +295,9 @@ uint16_t OrderEntry::operator()(
   auto msg_seq_num = send(order_cancel_request);
   // XXX HANS EXPERIMENTAL -- it's a leak / currently no way to clean up
   msg_seq_num_to_request_id_.emplace(msg_seq_num, request_id);
-  return stream_id();
 }
 
-uint16_t OrderEntry::operator()(Trace<CancelAllOrders> const &event, std::string_view const &request_id) {
+void OrderEntry::operator()(Trace<CancelAllOrders> const &event, std::string_view const &request_id) {
   if (!ready()) [[unlikely]] {
     throw server::oms::NotReady{"not ready"sv};
   }
@@ -348,7 +345,6 @@ uint16_t OrderEntry::operator()(Trace<CancelAllOrders> const &event, std::string
   log::warn("DEBUG: order_mass_cancel_request={}"sv, order_mass_cancel_request);
   send(order_mass_cancel_request);
   send_ack();
-  return stream_id();
 }
 
 // io::net::ConnectionManager::Handler

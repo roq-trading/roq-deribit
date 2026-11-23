@@ -177,17 +177,17 @@ MarketData::MarketData(Handler &handler, io::Context &context, uint16_t stream_i
 
 // server::Stream
 
-void MarketData::operator()(Trace<Start> const &) {
-  (*connection_manager_).start();
+void MarketData::operator()(Trace<Start> const &event) {
+  (*connection_manager_)(event);
 }
 
-void MarketData::operator()(Trace<Stop> const &) {
-  (*connection_manager_).stop();
+void MarketData::operator()(Trace<Stop> const &event) {
+  (*connection_manager_)(event);
 }
 
 void MarketData::operator()(Trace<Timer> const &event) {
   auto &[trace_info, timer] = event;
-  if ((*connection_manager_).refresh(trace_info)) {
+  if ((*connection_manager_)(event)) {
     if (last_logon_or_heartbeat_.count() != 0 && fix_request_timeout_.count() != 0 && (timer.now - last_logon_or_heartbeat_) > fix_request_timeout_) {
       log::warn("*** DETECTED TIMEOUT ***"sv);
       log::info("closing connection"sv);
