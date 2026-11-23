@@ -73,7 +73,7 @@ struct create_metrics final : public utils::metrics::Factory {
 // === IMPLEMENTATION ===
 
 UDPSnapshot::UDPSnapshot(Handler &handler, io::Context &context, uint16_t stream_id, Shared &shared)
-    : handler_{handler}, stream_id_{stream_id}, name_{create_name(stream_id_)}, publish_market_by_price_{publish_market_by_price(shared.settings)},
+    : server::Stream{stream_id}, handler_{handler}, name_{create_name(stream_id)}, publish_market_by_price_{publish_market_by_price(shared.settings)},
       supports_{get_supports(publish_market_by_price_)}, receiver_{create_receiver(*this, shared.settings, context, shared)},
       counter_{
           .disconnect = create_metrics(shared.settings, name_, "disconnect"sv),
@@ -90,7 +90,7 @@ UDPSnapshot::UDPSnapshot(Handler &handler, io::Context &context, uint16_t stream
 void UDPSnapshot::operator()(Trace<Start> const &event) {
   auto &[trace_info, start] = event;
   last_update_time_ = trace_info.source_receive_time;
-  create_trace_and_dispatch_2(trace_info, ConnectionStatus::CONNECTING);
+  publish(trace_info, ConnectionStatus::CONNECTING);
 }
 
 void UDPSnapshot::operator()(Trace<Stop> const &) {
@@ -112,25 +112,26 @@ void UDPSnapshot::operator()(metrics::Writer &writer) const {
 
 void UDPSnapshot::operator()(Trace<ConnectionStatus> const &event, std::string_view const &reason) {
   auto &[trace_info, connection_status] = event;
-  connection_status_ = connection_status;
-  auto stream_status = StreamStatus{
-      .stream_id = stream_id_,
-      .account = {},
-      .supports = supports_,
-      .transport = Transport::UDP,
-      .protocol = Protocol::SBE,
-      .encoding = {Encoding::SBE},
-      .priority = Priority::PRIMARY,
-      .connection_status = connection_status_,
-      .reason = reason,
-      .interface = {},
-      .proxy = {},
-      .peer = {},
-      .authority = {},
-      .path = {},
-  };
-  log::info("stream_status={}"sv, stream_status);
-  create_trace_and_dispatch(shared_.dispatcher, trace_info, stream_status);
+  if (update(connection_status, reason)) {
+    auto stream_status = StreamStatus{
+        .stream_id = stream_id(),
+        .account = {},
+        .supports = supports_,
+        .transport = Transport::UDP,
+        .protocol = Protocol::SBE,
+        .encoding = {Encoding::SBE},
+        .priority = Priority::PRIMARY,
+        .connection_status = connection_status,
+        .reason = reason,
+        .interface = {},
+        .proxy = {},
+        .peer = {},
+        .authority = {},
+        .path = {},
+    };
+    log::info("stream_status={}"sv, stream_status);
+    create_trace_and_dispatch(shared_.dispatcher, trace_info, stream_status);
+  }
 }
 
 // io::net::udp::Receiver::Handler
@@ -271,7 +272,7 @@ void UDPSnapshot::operator()(Trace<::deribit::sbe::multicast::Snapshot> const &e
               std::chrono::duration_cast<std::chrono::milliseconds>(delay));
           std::chrono::milliseconds timestamp{snapshot_2.timestampMs()};
           auto market_by_price_update = MarketByPriceUpdate{
-              .stream_id = stream_id_,
+              .stream_id = stream_id(),
               .exchange = shared_.settings.exchange,
               .symbol = instrument.symbol,
               .bids = bids,

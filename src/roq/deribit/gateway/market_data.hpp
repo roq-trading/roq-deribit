@@ -62,10 +62,6 @@ struct MarketData final : public Base<MarketData>, public server::MarketDataStre
 
   // server::Stream
 
-  uint16_t stream_id() const override { return stream_id_; }
-
-  bool ready() const override { return ready_; }
-
   void operator()(Trace<Start> const &) override;
   void operator()(Trace<Stop> const &) override;
   void operator()(Trace<Timer> const &) override;
@@ -140,7 +136,6 @@ struct MarketData final : public Base<MarketData>, public server::MarketDataStre
  private:
   Handler &handler_;
   //
-  uint16_t const stream_id_;
   std::string const name_;
   size_t const index_;
   bool const master_;
@@ -175,9 +170,7 @@ struct MarketData final : public Base<MarketData>, public server::MarketDataStre
   } inbound_;
   Account &account_;
   Shared &shared_;
-  bool ready_ = false;
   std::chrono::nanoseconds next_heartbeat_ = {};
-  ConnectionStatus connection_status_ = {};
   core::Download2<State> download_;
   std::chrono::nanoseconds last_logon_or_heartbeat_ = {};
   utils::unordered_set<std::string> latch_;

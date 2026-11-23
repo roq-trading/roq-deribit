@@ -49,10 +49,6 @@ struct DropCopy final : public Base<DropCopy>, public server::Stream, public web
 
   // server::Stream
 
-  uint16_t stream_id() const override { return stream_id_; }
-
-  bool ready() const override { return ready_; }
-
   void operator()(Trace<Start> const &) override;
   void operator()(Trace<Stop> const &) override;
   void operator()(Trace<Timer> const &) override;
@@ -126,7 +122,6 @@ struct DropCopy final : public Base<DropCopy>, public server::Stream, public web
  private:
   [[maybe_unused]] Handler &handler_;
   //
-  uint16_t const stream_id_;
   std::string const name_;
   std::unique_ptr<web::socket::Client> const connection_;
   //
@@ -143,8 +138,6 @@ struct DropCopy final : public Base<DropCopy>, public server::Stream, public web
   Account &account_;
   Shared &shared_;
   std::vector<std::string> currencies_;
-  bool ready_ = false;
-  ConnectionStatus connection_status_ = {};
   core::Download2<State> download_;
   bool can_download_ = false;
   bool download_trades_is_first_ = true;

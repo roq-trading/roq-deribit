@@ -45,10 +45,6 @@ struct Rest final : public Base<Rest>, public server::Stream, public web::rest::
 
   // server::Stream
 
-  uint16_t stream_id() const override { return stream_id_; }
-
-  bool ready() const override { return connection_status_ == ConnectionStatus::READY; }
-
   void operator()(Trace<Start> const &) override;
   void operator()(Trace<Stop> const &) override;
   void operator()(Trace<Timer> const &) override;
@@ -92,7 +88,6 @@ struct Rest final : public Base<Rest>, public server::Stream, public web::rest::
  private:
   Handler &handler_;
   //
-  uint16_t const stream_id_;
   std::string const name_;
   std::unique_ptr<web::rest::Client> const connection_;
   //
@@ -110,7 +105,6 @@ struct Rest final : public Base<Rest>, public server::Stream, public web::rest::
     utils::metrics::Latency ping;
   } latency_;
   Shared &shared_;
-  ConnectionStatus connection_status_ = {};
   Request &request_;
 };
 

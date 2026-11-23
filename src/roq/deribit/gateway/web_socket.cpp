@@ -93,7 +93,7 @@ struct create_metrics final : public utils::metrics::Factory {
 // === IMPLEMENTATION ===
 
 WebSocket::WebSocket(Handler &handler, io::Context &context, uint16_t stream_id, Account &account, Shared &shared, Request &request, size_t index, bool master)
-    : handler_{handler}, stream_id_{stream_id}, name_{create_name(stream_id_)}, index_{index}, master_{master},
+    : server::MarketDataStream{stream_id}, handler_{handler}, name_{create_name(stream_id)}, index_{index}, master_{master},
       publish_top_of_book_{publish_top_of_book(shared)}, supports_{get_supports(master_, publish_top_of_book_)},
       connection_{create_connection(*this, shared.settings, context, shared)}, decode_buffer_{shared.settings.misc.decode_buffer_size, MAX_DECODE_BUFFER_DEPTH},
       counter_{
@@ -153,25 +153,26 @@ void WebSocket::operator()(metrics::Writer &writer) const {
 
 void WebSocket::operator()(Trace<ConnectionStatus> const &event, std::string_view const &reason) {
   auto &[trace_info, connection_status] = event;
-  connection_status_ = connection_status;
-  auto stream_status = StreamStatus{
-      .stream_id = stream_id_,
-      .account = {},
-      .supports = supports_,
-      .transport = Transport::TCP,
-      .protocol = Protocol::WS,
-      .encoding = {Encoding::JSON},
-      .priority = Priority::PRIMARY,
-      .connection_status = connection_status_,
-      .reason = reason,
-      .interface = (*connection_).get_interface(),
-      .proxy = (*connection_).get_proxy(),
-      .peer = (*connection_).get_current_peer(),
-      .authority = (*connection_).get_current_authority(),
-      .path = (*connection_).get_current_path(),
-  };
-  log::info("stream_status={}"sv, stream_status);
-  create_trace_and_dispatch(shared_.dispatcher, trace_info, stream_status);
+  if (update(connection_status, reason)) {
+    auto stream_status = StreamStatus{
+        .stream_id = stream_id(),
+        .account = {},
+        .supports = supports_,
+        .transport = Transport::TCP,
+        .protocol = Protocol::WS,
+        .encoding = {Encoding::JSON},
+        .priority = Priority::PRIMARY,
+        .connection_status = connection_status,
+        .reason = reason,
+        .interface = (*connection_).get_interface(),
+        .proxy = (*connection_).get_proxy(),
+        .peer = (*connection_).get_current_peer(),
+        .authority = (*connection_).get_current_authority(),
+        .path = (*connection_).get_current_path(),
+    };
+    log::info("stream_status={}"sv, stream_status);
+    create_trace_and_dispatch(shared_.dispatcher, trace_info, stream_status);
+  }
 }
 
 // server::MarketDataStream
@@ -191,8 +192,7 @@ void WebSocket::operator()(Trace<web::socket::Connected> const &) {
 void WebSocket::operator()(Trace<web::socket::Disconnected> const &event) {
   auto &[trace_info, disconnected] = event;
   ++counter_.disconnect;
-  ready_ = false;
-  create_trace_and_dispatch_2(trace_info, ConnectionStatus::DISCONNECTED);
+  publish(trace_info, ConnectionStatus::DISCONNECTED);
   download_.reset();
   subscribe_queue_.clear();
 }
@@ -200,7 +200,7 @@ void WebSocket::operator()(Trace<web::socket::Disconnected> const &event) {
 void WebSocket::operator()(Trace<web::socket::Ready> const &event) {
   auto &[trace_info, ready] = event;
   login(trace_info);
-  create_trace_and_dispatch_2(trace_info, ConnectionStatus::AUTHENTICATING);
+  publish(trace_info, ConnectionStatus::AUTHENTICATING);
 }
 
 void WebSocket::operator()(Trace<web::socket::Close> const &event) {
@@ -211,7 +211,7 @@ void WebSocket::operator()(Trace<web::socket::Close> const &event) {
 void WebSocket::operator()(Trace<web::socket::Latency> const &event) {
   auto &[trace_info, latency] = event;
   auto external_latency = ExternalLatency{
-      .stream_id = stream_id_,
+      .stream_id = stream_id(),
       .account = {},
       .latency = latency.sample,
   };
@@ -232,7 +232,6 @@ void WebSocket::operator()(Trace<web::socket::Binary> const &) {
 
 int32_t WebSocket::download(Trace<State> const &event) {
   auto &[trace_info, state] = event;
-  auto publish_downloading = [&]() { create_trace_and_dispatch_2(trace_info, ConnectionStatus::DOWNLOADING, magic_enum::enum_name(state)); };
   switch (state) {
     using enum State;
     case UNDEFINED:
@@ -241,21 +240,19 @@ int32_t WebSocket::download(Trace<State> const &event) {
       if (!master_) {
         return 0;
       }
-      publish_downloading();
+      publish(trace_info, ConnectionStatus::DOWNLOADING, state);
       download_currencies(trace_info);
       return 1;
     case INSTRUMENTS: {
       if (!master_) {
         return 0;
       }
-      publish_downloading();
+      publish(trace_info, ConnectionStatus::DOWNLOADING, state);
       download_instruments(trace_info);
       return 1;
     }
     case SUBSCRIBE:
-      assert(!ready_);
-      ready_ = true;
-      publish_downloading();
+      publish(trace_info, ConnectionStatus::DOWNLOADING, state);
       if (master_) {
         subscribe_platform_state();
         subscribe_instrument_state();
@@ -265,7 +262,7 @@ int32_t WebSocket::download(Trace<State> const &event) {
     case DONE: {
       Latch latch;
       create_trace_and_dispatch(handler_, trace_info, latch);
-      create_trace_and_dispatch_2(trace_info, ConnectionStatus::READY);
+      publish(trace_info, ConnectionStatus::READY);
       return 0;
     }
   }
@@ -303,7 +300,7 @@ void WebSocket::operator()(Trace<protocol::json::PlatformState> const &event) {
     return TradingStatus::OPEN;
   }();
   auto market_segment_status = MarketSegmentStatus{
-      .stream_id = stream_id_,
+      .stream_id = stream_id(),
       .exchange = shared_.settings.exchange,
       .market_segment = platform_state.params.data.price_index,
       .trading_status = trading_status,
@@ -333,7 +330,7 @@ void WebSocket::operator()(Trace<protocol::json::Quote> const &event) {
             auto bid_quantity = multiplier * data.best_bid_amount;
             auto ask_quantity = multiplier * data.best_ask_amount;
             auto top_of_book = TopOfBook{
-                .stream_id = stream_id_,
+                .stream_id = stream_id(),
                 .exchange = shared_.settings.exchange,
                 .symbol = data.instrument_name,
                 .layer{
@@ -369,7 +366,7 @@ void WebSocket::operator()(Trace<protocol::json::Ticker> const &event) {
     auto &item = trading_status_[data.instrument_name];
     if (trading_status != TradingStatus{} && utils::update(item, trading_status)) {
       auto market_status = MarketStatus{
-          .stream_id = stream_id_,
+          .stream_id = stream_id(),
           .exchange = shared_.settings.exchange,
           .symbol = data.instrument_name,
           .trading_status = trading_status,

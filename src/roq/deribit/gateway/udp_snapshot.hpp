@@ -34,10 +34,6 @@ struct UDPSnapshot final : public Base<UDPSnapshot>, public server::Stream, publ
 
   // server::Stream
 
-  uint16_t stream_id() const override { return stream_id_; }
-
-  bool ready() const override { return connection_status_ == ConnectionStatus::READY; }
-
   void operator()(Trace<Start> const &) override;
   void operator()(Trace<Stop> const &) override;
   void operator()(Trace<Timer> const &) override;
@@ -75,7 +71,6 @@ struct UDPSnapshot final : public Base<UDPSnapshot>, public server::Stream, publ
  private:
   [[maybe_unused]] Handler &handler_;
   //
-  uint16_t const stream_id_;
   std::string const name_;
   bool const publish_market_by_price_;
   Mask<SupportType> const supports_;
@@ -88,7 +83,6 @@ struct UDPSnapshot final : public Base<UDPSnapshot>, public server::Stream, publ
     utils::metrics::Profile parse;
   } profile_;
   Shared &shared_;
-  ConnectionStatus connection_status_ = {};
   utils::unordered_map<uint16_t, Channel> channel_;
   std::chrono::nanoseconds last_update_time_ = {};
 };

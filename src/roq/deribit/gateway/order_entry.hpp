@@ -52,10 +52,6 @@ struct OrderEntry final : public Base<OrderEntry>, public server::OrderActionStr
 
   // server::Stream
 
-  uint16_t stream_id() const override { return stream_id_; }
-
-  bool ready() const override { return connection_status_ == ConnectionStatus::READY; }
-
   void operator()(Trace<Start> const &) override;
   void operator()(Trace<Stop> const &) override;
   void operator()(Trace<Timer> const &) override;
@@ -143,7 +139,6 @@ struct OrderEntry final : public Base<OrderEntry>, public server::OrderActionStr
  private:
   [[maybe_unused]] Handler &handler_;
   //
-  uint16_t const stream_id_;
   std::string const name_;
   std::unique_ptr<io::net::ConnectionFactory> const connection_factory_;
   std::unique_ptr<io::net::ConnectionManager> const connection_manager_;
@@ -169,7 +164,6 @@ struct OrderEntry final : public Base<OrderEntry>, public server::OrderActionStr
   } inbound_;
   Account &account_;
   Shared &shared_;
-  ConnectionStatus connection_status_ = {};
   bool ready_ = false;
   std::chrono::nanoseconds next_heartbeat_ = {};
   core::Download2<State> download_;

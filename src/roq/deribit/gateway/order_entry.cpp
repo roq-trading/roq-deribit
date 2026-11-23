@@ -90,7 +90,7 @@ struct create_metrics final : public utils::metrics::Factory {
 // === IMPLEMENTATION ===
 
 OrderEntry::OrderEntry(Handler &handler, io::Context &context, uint16_t stream_id, Account &account, Shared &shared)
-    : handler_{handler}, stream_id_{stream_id}, name_{create_name(stream_id_, account.name)},
+    : server::OrderActionStream{stream_id}, handler_{handler}, name_{create_name(stream_id, account.name)},
       connection_factory_{create_connection_factory(shared.settings, context)},
       connection_manager_{create_connection_manager(*this, shared.settings, *connection_factory_)}, decode_buffer_(shared.settings.misc.decode_buffer_size),
       encode_buffer_2_(shared.settings.misc.encode_buffer_size),
@@ -152,7 +152,7 @@ void OrderEntry::operator()(Trace<Timer> const &event) {
           }
           test_logon_time_ = {};
           send_logon(trace_info);
-          create_trace_and_dispatch_2(trace_info, ConnectionStatus::AUTHENTICATING);
+          publish(trace_info, ConnectionStatus::AUTHENTICATING);
         }
       }
     }
@@ -172,25 +172,26 @@ void OrderEntry::operator()(metrics::Writer &writer) const {
 
 void OrderEntry::operator()(Trace<ConnectionStatus> const &event, std::string_view const &reason) {
   auto &[trace_info, connection_status] = event;
-  connection_status_ = connection_status;
-  auto stream_status = StreamStatus{
-      .stream_id = stream_id_,
-      .account = account_.name,
-      .supports = SUPPORTS,
-      .transport = Transport::TCP,
-      .protocol = Protocol::FIX,
-      .encoding = {Encoding::FIX},
-      .priority = Priority::PRIMARY,
-      .connection_status = connection_status_,
-      .reason = reason,
-      .interface = (*connection_factory_).get_interface(),
-      .proxy = {},
-      .peer = {},
-      .authority = (*connection_factory_).get_current_authority(),
-      .path = (*connection_factory_).get_current_path(),
-  };
-  log::info("stream_status={}"sv, stream_status);
-  create_trace_and_dispatch(shared_.dispatcher, trace_info, stream_status);
+  if (update(connection_status, reason)) {
+    auto stream_status = StreamStatus{
+        .stream_id = stream_id(),
+        .account = account_.name,
+        .supports = SUPPORTS,
+        .transport = Transport::TCP,
+        .protocol = Protocol::FIX,
+        .encoding = {Encoding::FIX},
+        .priority = Priority::PRIMARY,
+        .connection_status = connection_status,
+        .reason = reason,
+        .interface = (*connection_factory_).get_interface(),
+        .proxy = {},
+        .peer = {},
+        .authority = (*connection_factory_).get_current_authority(),
+        .path = (*connection_factory_).get_current_path(),
+    };
+    log::info("stream_status={}"sv, stream_status);
+    create_trace_and_dispatch(shared_.dispatcher, trace_info, stream_status);
+  }
 }
 
 // server::OrderActionStream
@@ -241,7 +242,7 @@ uint16_t OrderEntry::operator()(
   auto msg_seq_num = send(new_order_single);
   // XXX HANS EXPERIMENTAL -- it's a leak / currently no way to clean up
   msg_seq_num_to_request_id_.emplace(msg_seq_num, request_id);
-  return stream_id_;
+  return stream_id();
 }
 
 uint16_t OrderEntry::operator()(
@@ -273,7 +274,7 @@ uint16_t OrderEntry::operator()(
   auto msg_seq_num = send(order_cancel_replace_request);
   // XXX HANS EXPERIMENTAL -- it's a leak / currently no way to clean up
   msg_seq_num_to_request_id_.emplace(msg_seq_num, request_id);
-  return stream_id_;
+  return stream_id();
 }
 
 uint16_t OrderEntry::operator()(
@@ -296,7 +297,7 @@ uint16_t OrderEntry::operator()(
   auto msg_seq_num = send(order_cancel_request);
   // XXX HANS EXPERIMENTAL -- it's a leak / currently no way to clean up
   msg_seq_num_to_request_id_.emplace(msg_seq_num, request_id);
-  return stream_id_;
+  return stream_id();
 }
 
 uint16_t OrderEntry::operator()(Trace<CancelAllOrders> const &event, std::string_view const &request_id) {
@@ -306,7 +307,7 @@ uint16_t OrderEntry::operator()(Trace<CancelAllOrders> const &event, std::string
   auto &[trace_info, cancel_all_orders] = event;
   auto send_ack = [&]() {
     auto cancel_all_orders_ack = CancelAllOrdersAck{
-        .stream_id = stream_id_,
+        .stream_id = stream_id(),
         .account = account_.name,
         .order_id = cancel_all_orders.order_id,
         .exchange = cancel_all_orders.exchange,
@@ -347,7 +348,7 @@ uint16_t OrderEntry::operator()(Trace<CancelAllOrders> const &event, std::string
   log::warn("DEBUG: order_mass_cancel_request={}"sv, order_mass_cancel_request);
   send(order_mass_cancel_request);
   send_ack();
-  return stream_id_;
+  return stream_id();
 }
 
 // io::net::ConnectionManager::Handler
@@ -368,7 +369,7 @@ void OrderEntry::operator()(Trace<io::net::ConnectionManager::Disconnected> cons
   inbound_ = {};
   ready_ = false;
   next_heartbeat_ = {};
-  create_trace_and_dispatch_2(trace_info, ConnectionStatus::DISCONNECTED);
+  publish(trace_info, ConnectionStatus::DISCONNECTED);
   download_.reset();
   last_logon_or_heartbeat_ = {};
   // test
@@ -422,22 +423,21 @@ void OrderEntry::operator()(Trace<io::net::ConnectionManager::Write> const &) {
 
 int32_t OrderEntry::download(Trace<State> const &event) {
   auto &[trace_info, state] = event;
-  auto publish_downloading = [&]() { create_trace_and_dispatch_2(trace_info, ConnectionStatus::DOWNLOADING, magic_enum::enum_name(state)); };
   switch (state) {
     using enum State;
     case UNDEFINED:
       assert(false);
       break;
     case POSITIONS:
-      publish_downloading();
+      publish(trace_info, ConnectionStatus::DOWNLOADING, state);
       subscribe_positions();
       return 1;
     case ORDERS:
-      publish_downloading();
+      publish(trace_info, ConnectionStatus::DOWNLOADING, state);
       download_orders();
       return 1;  // note! first report includes the true number of reports
     case DONE:
-      create_trace_and_dispatch_2(trace_info, ConnectionStatus::READY);
+      publish(trace_info, ConnectionStatus::READY);
       assert(!ready_);
       ready_ = true;
       return 0;
@@ -454,7 +454,7 @@ void OrderEntry::operator()(Trace<protocol::fix::Heartbeat> const &event, fix::H
     auto send_time = std::chrono::nanoseconds{utils::charconv::from_chars<uint64_t>(heartbeat.test_req_id)};
     auto latency = (trace_info.origin_create_time - send_time) / 2;  // 1-way
     auto external_latency = ExternalLatency{
-        .stream_id = stream_id_,
+        .stream_id = stream_id(),
         .account = account_.name,
         .latency = latency,
     };
@@ -503,7 +503,7 @@ void OrderEntry::operator()(Trace<protocol::fix::PositionReport> const &event, f
     auto long_quantity = std::max(0.0, position_qty.long_qty);
     auto short_quantity = std::max(0.0, position_qty.short_qty);
     auto position_update = PositionUpdate{
-        .stream_id = stream_id_,
+        .stream_id = stream_id(),
         .account = account_.name,
         .exchange = shared_.settings.exchange,
         .symbol = position_qty.symbol,
@@ -759,7 +759,7 @@ void OrderEntry::operator()(Trace<protocol::fix::ExecutionReport> const &event, 
     order_id = order.order_id;
     strategy_id = order.strategy_id;
   };
-  create_trace_and_dispatch(shared_.dispatcher, trace_info, response, order_update, stream_id_, callback);
+  create_trace_and_dispatch(shared_.dispatcher, trace_info, response, order_update, stream_id(), callback);
   if (!std::empty(execution_report.no_fills)) {
     auto &fills = shared_.get_fills();
     auto ref_data = shared_.dispatcher.get_ref_data(shared_.settings.exchange, execution_report.symbol);
@@ -783,7 +783,7 @@ void OrderEntry::operator()(Trace<protocol::fix::ExecutionReport> const &event, 
     }
     assert(!std::empty(fills));
     auto trade_update = TradeUpdate{
-        .stream_id = stream_id_,
+        .stream_id = stream_id(),
         .account = account_.name,
         .order_id = order_id,
         .exchange = shared_.settings.exchange,
@@ -839,7 +839,7 @@ void OrderEntry::operator()(Trace<protocol::fix::OrderCancelReject> const &event
       log::warn("Unexpected: order status received={}, expected={}"sv, status, order.order_status);
     }
   };
-  create_trace_and_dispatch(shared_.dispatcher, trace_info, response, stream_id_, callback);
+  create_trace_and_dispatch(shared_.dispatcher, trace_info, response, stream_id(), callback);
 }
 
 namespace {
@@ -881,7 +881,7 @@ void OrderEntry::operator()(Trace<protocol::fix::Reject> const &event, fix::Head
           .quantity = NaN,
           .price = NaN,
       };
-      create_trace_and_dispatch(shared_.dispatcher, trace_info, response, stream_id_);
+      create_trace_and_dispatch(shared_.dispatcher, trace_info, response, stream_id());
     } else {
       log::warn<1>(R"(*** NO REQUEST FOR MSG_SEQ_NUM="{}" ***)"sv, reject.ref_seq_num);
     }
@@ -920,7 +920,7 @@ void OrderEntry::operator()(Trace<protocol::fix::OrderMassCancelReport> const &e
     }
   }();
   auto cancel_all_orders_ack = CancelAllOrdersAck{
-      .stream_id = stream_id_,
+      .stream_id = stream_id(),
       .account = account_.name,
       .order_id = {},
       .exchange = {},

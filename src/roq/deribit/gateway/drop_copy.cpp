@@ -83,7 +83,7 @@ auto get_download_trades_lookback(auto const &settings, auto download_trades_is_
 // === IMPLEMENTATION ===
 
 DropCopy::DropCopy(Handler &handler, io::Context &context, uint16_t stream_id, Account &account, Shared &shared)
-    : handler_{handler}, stream_id_{stream_id}, name_{create_name(stream_id_, account.name)},
+    : server::Stream{stream_id}, handler_{handler}, name_{create_name(stream_id, account.name)},
       connection_{create_connection(*this, shared.settings, context, shared)}, decode_buffer_{shared.settings.misc.decode_buffer_size, MAX_DECODE_BUFFER_DEPTH},
       counter_{
           .disconnect = create_metrics(shared.settings, name_, "disconnect"sv),
@@ -105,7 +105,7 @@ void DropCopy::operator()(Trace<CurrenciesUpdate> const &event) {
   for (auto &currency : currencies_update.currencies) {
     currencies_.emplace_back(currency);
   }
-  if (ready_ && can_download_) {
+  if (ready() && can_download_) {
     subscribe_user_portfolio(currencies_update.currencies);
     get_account_summary(currencies_update.currencies);
     get_user_trades_by_currency(trace_info, currencies_update.currencies);
@@ -118,7 +118,7 @@ void DropCopy::operator()(Trace<Latch> const &event) {
     return;
   }
   can_download_ = true;
-  if (ready_) {
+  if (ready()) {
     subscribe_user_portfolio(currencies_);
     get_account_summary(currencies_);
     get_user_trades_by_currency(trace_info, currencies_);
@@ -155,25 +155,26 @@ void DropCopy::operator()(metrics::Writer &writer) const {
 
 void DropCopy::operator()(Trace<ConnectionStatus> const &event, std::string_view const &reason) {
   auto &[trace_info, connection_status] = event;
-  connection_status_ = connection_status;
-  auto stream_status = StreamStatus{
-      .stream_id = stream_id_,
-      .account = account_.name,
-      .supports = SUPPORTS,
-      .transport = Transport::TCP,
-      .protocol = Protocol::WS,
-      .encoding = {Encoding::JSON},
-      .priority = Priority::PRIMARY,
-      .connection_status = connection_status_,
-      .reason = reason,
-      .interface = (*connection_).get_interface(),
-      .proxy = (*connection_).get_proxy(),
-      .peer = (*connection_).get_current_peer(),
-      .authority = (*connection_).get_current_authority(),
-      .path = (*connection_).get_current_path(),
-  };
-  log::info("stream_status={}"sv, stream_status);
-  create_trace_and_dispatch(shared_.dispatcher, trace_info, stream_status);
+  if (update(connection_status, reason)) {
+    auto stream_status = StreamStatus{
+        .stream_id = stream_id(),
+        .account = account_.name,
+        .supports = SUPPORTS,
+        .transport = Transport::TCP,
+        .protocol = Protocol::WS,
+        .encoding = {Encoding::JSON},
+        .priority = Priority::PRIMARY,
+        .connection_status = connection_status,
+        .reason = reason,
+        .interface = (*connection_).get_interface(),
+        .proxy = (*connection_).get_proxy(),
+        .peer = (*connection_).get_current_peer(),
+        .authority = (*connection_).get_current_authority(),
+        .path = (*connection_).get_current_path(),
+    };
+    log::info("stream_status={}"sv, stream_status);
+    create_trace_and_dispatch(shared_.dispatcher, trace_info, stream_status);
+  }
 }
 
 // web::socket::Client::Parser::Handler
@@ -185,8 +186,7 @@ void DropCopy::operator()(Trace<web::socket::Connected> const &) {
 void DropCopy::operator()(Trace<web::socket::Disconnected> const &event) {
   auto &[trace_info, disconnected] = event;
   ++counter_.disconnect;
-  ready_ = false;
-  create_trace_and_dispatch_2(trace_info, ConnectionStatus::DISCONNECTED);
+  publish(trace_info, ConnectionStatus::DISCONNECTED);
   download_.reset();
   subscribe_queue_.clear();
 }
@@ -194,7 +194,7 @@ void DropCopy::operator()(Trace<web::socket::Disconnected> const &event) {
 void DropCopy::operator()(Trace<web::socket::Ready> const &event) {
   auto &[trace_info, ready] = event;
   login(trace_info);
-  create_trace_and_dispatch_2(trace_info, ConnectionStatus::AUTHENTICATING);
+  publish(trace_info, ConnectionStatus::AUTHENTICATING);
 }
 
 void DropCopy::operator()(Trace<web::socket::Close> const &event) {
@@ -205,7 +205,7 @@ void DropCopy::operator()(Trace<web::socket::Close> const &event) {
 void DropCopy::operator()(Trace<web::socket::Latency> const &event) {
   auto &[trace_info, latency] = event;
   auto external_latency = ExternalLatency{
-      .stream_id = stream_id_,
+      .stream_id = stream_id(),
       .account = account_.name,
       .latency = latency.sample,
   };
@@ -226,45 +226,42 @@ void DropCopy::operator()(Trace<web::socket::Binary> const &) {
 
 int32_t DropCopy::download(Trace<State> const &event) {
   auto &[trace_info, state] = event;
-  auto publish_downloading = [&]() { create_trace_and_dispatch_2(trace_info, ConnectionStatus::DOWNLOADING, magic_enum::enum_name(state)); };
   switch (state) {
     using enum State;
     case UNDEFINED:
       break;
     case SUBSCRIBE_USER_PORTFOLIO:
       if (can_download_) {
-        publish_downloading();
+        publish(trace_info, ConnectionStatus::DOWNLOADING, state);
         subscribe_user_portfolio(currencies_);
       }
       return 0;
     case SUBSCRIBE_USER_CHANGES:
-      publish_downloading();
+      publish(trace_info, ConnectionStatus::DOWNLOADING, state);
       subscribe_user_changes();
       return 0;
     case SUBSCRIBE_USER_ORDERS:
-      publish_downloading();
+      publish(trace_info, ConnectionStatus::DOWNLOADING, state);
       subscribe_user_orders();
       return 0;
     case SUBSCRIBE_USER_TRADES:
-      publish_downloading();
+      publish(trace_info, ConnectionStatus::DOWNLOADING, state);
       subscribe_user_trades();
       return 0;
     case GET_ACCOUNT_SUMMARY:
       if (can_download_) {
-        publish_downloading();
+        publish(trace_info, ConnectionStatus::DOWNLOADING, state);
         get_account_summary(currencies_);
       }
       return 0;
     case GET_USER_TRADES_BY_CURRENCY:
       if (can_download_) {
-        publish_downloading();
+        publish(trace_info, ConnectionStatus::DOWNLOADING, state);
         get_user_trades_by_currency(trace_info, currencies_);
       }
       return 0;
     case DONE:
-      create_trace_and_dispatch_2(trace_info, ConnectionStatus::READY);
-      assert(!ready_);
-      ready_ = true;
+      publish(trace_info, ConnectionStatus::READY);
       return 0;
   }
   assert(false);
@@ -308,7 +305,7 @@ void DropCopy::operator()(Trace<protocol::json::PlatformState> const &event) {
     return TradingStatus::OPEN;
   }();
   auto market_segment_status = MarketSegmentStatus{
-      .stream_id = stream_id_,
+      .stream_id = stream_id(),
       .exchange = shared_.settings.exchange,
       .market_segment = platform_state.params.data.price_index,
       .trading_status = trading_status,
@@ -341,7 +338,7 @@ void DropCopy::operator()(Trace<protocol::json::UserPortfolio> const &event) {
   auto &data = user_portfolio.params.data;
   auto margin_mode = data.cross_collateral_enabled ? MarginMode::CROSS : MarginMode::ISOLATED;
   auto funds_update = FundsUpdate{
-      .stream_id = stream_id_,
+      .stream_id = stream_id(),
       .account = account_.name,
       .currency = data.currency,
       .margin_mode = margin_mode,
@@ -435,7 +432,7 @@ void DropCopy::operator()(Trace<protocol::json::Trade> const &event, bool is_dow
   log::debug("fill={}"sv, fill);
   auto update_type = is_download ? UpdateType::SNAPSHOT : UpdateType::INCREMENTAL;
   auto trade_update = TradeUpdate{
-      .stream_id = stream_id_,
+      .stream_id = stream_id(),
       .account = account_.name,
       .order_id = {},
       .exchange = shared_.settings.exchange,

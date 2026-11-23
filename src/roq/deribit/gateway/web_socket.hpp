@@ -51,10 +51,6 @@ struct WebSocket final : public Base<WebSocket>, public server::MarketDataStream
 
   // server::Stream
 
-  uint16_t stream_id() const override { return stream_id_; }
-
-  bool ready() const override { return ready_; }
-
   void operator()(Trace<Start> const &) override;
   void operator()(Trace<Stop> const &) override;
   void operator()(Trace<Timer> const &) override;
@@ -154,7 +150,6 @@ struct WebSocket final : public Base<WebSocket>, public server::MarketDataStream
  private:
   Handler &handler_;
   //
-  uint16_t const stream_id_;
   std::string const name_;
   size_t const index_;
   bool const master_;
@@ -176,8 +171,6 @@ struct WebSocket final : public Base<WebSocket>, public server::MarketDataStream
   Shared &shared_;
   utils::unordered_map<std::string, std::pair<roq::Layer, double>> top_of_book_;
   utils::unordered_map<std::string, TradingStatus> trading_status_;
-  bool ready_ = false;
-  ConnectionStatus connection_status_ = {};
   core::Download2<State> download_;
   core::limit::Queue<std::string> subscribe_queue_;
   Request &request_;

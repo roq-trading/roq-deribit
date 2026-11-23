@@ -34,10 +34,6 @@ struct UDPEvents final : public Base<UDPEvents>, public server::Stream, public i
 
   // server::Stream
 
-  uint16_t stream_id() const override { return stream_id_; }
-
-  bool ready() const override { return connection_status_ == ConnectionStatus::READY; }
-
   void operator()(Trace<Start> const &) override;
   void operator()(Trace<Stop> const &) override;
   void operator()(Trace<Timer> const &) override;
@@ -75,7 +71,6 @@ struct UDPEvents final : public Base<UDPEvents>, public server::Stream, public i
  private:
   [[maybe_unused]] Handler &handler_;
   //
-  uint16_t const stream_id_;
   std::string const name_;
   bool const publish_top_of_book_;
   bool const publish_market_by_price_;
@@ -90,7 +85,6 @@ struct UDPEvents final : public Base<UDPEvents>, public server::Stream, public i
     utils::metrics::Profile parse;
   } profile_;
   Shared &shared_;
-  ConnectionStatus connection_status_ = {};
   utils::unordered_map<uint32_t, uint32_t> last_ticker_;
   utils::unordered_map<uint32_t, uint32_t> last_trades_;
   utils::unordered_map<uint16_t, Channel> channel_;
