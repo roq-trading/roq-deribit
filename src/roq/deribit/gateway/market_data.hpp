@@ -141,7 +141,6 @@ struct MarketData final : public Base<MarketData>, public server::MarketDataStre
   bool const master_;
   bool const publish_market_by_price_;
   bool const publish_trade_summary_;
-  Mask<SupportType> const supports_;
   std::string const exchange_;
   bool const fix_debug_;
   std::chrono::nanoseconds const fix_request_timeout_;

@@ -150,10 +150,10 @@ void emplace_back(T &result, auto &value) {
 // === IMPLEMENTATION ===
 
 MarketData::MarketData(Handler &handler, io::Context &context, uint16_t stream_id, Account &account, Shared &shared, size_t index, bool master)
-    : server::MarketDataStream{stream_id}, handler_{handler}, name_{create_name(stream_id)}, index_{index}, master_{master},
-      publish_market_by_price_{publish_market_by_price(shared)}, publish_trade_summary_{publish_trade_summary(shared)},
-      supports_{get_supports(master_, publish_market_by_price_, publish_trade_summary_)}, exchange_{shared.settings.exchange},
-      fix_debug_{shared.settings.fix.debug}, fix_request_timeout_{shared.settings.fix.request_timeout}, fix_ping_freq_{shared.settings.fix.ping_freq},
+    : server::MarketDataStream{stream_id, {}, get_supports(master, publish_market_by_price(shared), publish_trade_summary(shared))}, handler_{handler},
+      name_{create_name(stream_id)}, index_{index}, master_{master}, publish_market_by_price_{publish_market_by_price(shared)},
+      publish_trade_summary_{publish_trade_summary(shared)}, exchange_{shared.settings.exchange}, fix_debug_{shared.settings.fix.debug},
+      fix_request_timeout_{shared.settings.fix.request_timeout}, fix_ping_freq_{shared.settings.fix.ping_freq},
       connection_factory_{create_connection_factory(shared.settings, context)},
       connection_manager_{create_connection_manager(*this, shared.settings, *connection_factory_)}, encode_buffer_(shared.settings.misc.encode_buffer_size),
       decode_buffer_(shared.settings.misc.decode_buffer_size),
@@ -196,7 +196,7 @@ void MarketData::operator()(Trace<Timer> const &event) {
       if (ready()) {
         if (test_disconnect_time_.count() != 0 && test_disconnect_time_ < timer.now) [[unlikely]] {
           if (shared_.settings.fix.test_market_data_disconnect.count() != 0) {
-            log::warn("*** TEST: DISCONNECT (stream_id={}) ***"sv, stream_id());
+            log::warn("*** TEST: DISCONNECT (stream_id={}) ***"sv, stream_id);
             log::info("closing connection"sv);
             (*connection_manager_).close();
           }
@@ -235,9 +235,9 @@ void MarketData::operator()(Trace<ConnectionStatus> const &event, std::string_vi
   auto &[trace_info, connection_status] = event;
   if (update(connection_status, reason)) {
     auto stream_status = StreamStatus{
-        .stream_id = stream_id(),
-        .account = {},
-        .supports = supports_,
+        .stream_id = stream_id,
+        .account = account,
+        .supports = supports,
         .transport = Transport::TCP,
         .protocol = Protocol::FIX,
         .encoding = {Encoding::FIX},
@@ -344,7 +344,7 @@ int32_t MarketData::download(Trace<State> const &event) {
         log::warn(
             "*** TEST: DISCONNECT IN {} (stream_id={}) ***"sv,
             std::chrono::duration_cast<std::chrono::seconds>(shared_.settings.fix.test_market_data_disconnect),
-            stream_id());
+            stream_id);
       }
       return 0;
     }
@@ -361,7 +361,7 @@ void MarketData::operator()(Trace<protocol::fix::Heartbeat> const &event, fix::H
     auto send_time = std::chrono::nanoseconds{utils::charconv::from_chars<uint64_t>(heartbeat.test_req_id)};
     auto latency = (trace_info.origin_create_time - send_time) / 2;  // 1-way
     auto external_latency = ExternalLatency{
-        .stream_id = stream_id(),
+        .stream_id = stream_id,
         .account = {},
         .latency = latency,
     };
@@ -455,7 +455,7 @@ void MarketData::operator()(Trace<protocol::fix::SecurityList> const &event, fix
         auto expiry_datetime = combine(item.maturity_date, expiry_time);
         auto expiry_datetime_utc = expiry_datetime;
         auto reference_data = ReferenceData{
-            .stream_id = stream_id(),
+            .stream_id = stream_id,
             .exchange = exchange_,
             .symbol = symbol,
             .description = item.security_desc,
@@ -592,7 +592,7 @@ void MarketData::operator()(Trace<protocol::fix::MarketDataIncrementalRefresh> c
   if (!(std::empty(mbp.bids) && std::empty(mbp.asks)) && publish_market_by_price_) {
     if (latch_.find(symbol) == std::end(latch_)) {
       auto market_by_price_update = MarketByPriceUpdate{
-          .stream_id = stream_id(),
+          .stream_id = stream_id,
           .exchange = exchange_,
           .symbol = symbol,
           .bids = mbp.bids,
@@ -615,7 +615,7 @@ void MarketData::operator()(Trace<protocol::fix::MarketDataIncrementalRefresh> c
   }
   if (!std::empty(trades) && publish_trade_summary_) {
     auto trade_summary = TradeSummary{
-        .stream_id = stream_id(),
+        .stream_id = stream_id,
         .exchange = exchange_,
         .symbol = symbol,
         .trades = trades,
@@ -628,7 +628,7 @@ void MarketData::operator()(Trace<protocol::fix::MarketDataIncrementalRefresh> c
   }
   if (!std::empty(statistics)) {
     auto statistics_update = StatisticsUpdate{
-        .stream_id = stream_id(),
+        .stream_id = stream_id,
         .exchange = exchange_,
         .symbol = market_data_incremental_refresh.symbol,
         .statistics = statistics,
@@ -707,7 +707,7 @@ void MarketData::operator()(Trace<protocol::fix::MarketDataSnapshotFullRefresh> 
   if (!(std::empty(mbp.bids) && std::empty(mbp.asks)) && publish_market_by_price_) {
     auto is_last = std::empty(statistics);
     auto market_by_price_update = MarketByPriceUpdate{
-        .stream_id = stream_id(),
+        .stream_id = stream_id,
         .exchange = exchange_,
         .symbol = symbol,
         .bids = mbp.bids,
@@ -732,7 +732,7 @@ void MarketData::operator()(Trace<protocol::fix::MarketDataSnapshotFullRefresh> 
   }
   if (!std::empty(statistics)) {
     auto statistics_update = StatisticsUpdate{
-        .stream_id = stream_id(),
+        .stream_id = stream_id,
         .exchange = exchange_,
         .symbol = symbol,
         .statistics = statistics,

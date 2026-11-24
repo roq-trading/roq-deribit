@@ -83,7 +83,7 @@ auto get_download_trades_lookback(auto const &settings, auto download_trades_is_
 // === IMPLEMENTATION ===
 
 DropCopy::DropCopy(Handler &handler, io::Context &context, uint16_t stream_id, Account &account, Shared &shared)
-    : server::Stream{stream_id}, handler_{handler}, name_{create_name(stream_id, account.name)},
+    : server::Stream{stream_id, account.name, SUPPORTS}, handler_{handler}, name_{create_name(stream_id, account.name)},
       connection_{create_connection(*this, shared.settings, context, shared)}, decode_buffer_{shared.settings.misc.decode_buffer_size, MAX_DECODE_BUFFER_DEPTH},
       counter_{
           .disconnect = create_metrics(shared.settings, name_, "disconnect"sv),
@@ -157,9 +157,9 @@ void DropCopy::operator()(Trace<ConnectionStatus> const &event, std::string_view
   auto &[trace_info, connection_status] = event;
   if (update(connection_status, reason)) {
     auto stream_status = StreamStatus{
-        .stream_id = stream_id(),
-        .account = account_.name,
-        .supports = SUPPORTS,
+        .stream_id = stream_id,
+        .account = account,
+        .supports = supports,
         .transport = Transport::TCP,
         .protocol = Protocol::WS,
         .encoding = {Encoding::JSON},
@@ -205,7 +205,7 @@ void DropCopy::operator()(Trace<web::socket::Close> const &event) {
 void DropCopy::operator()(Trace<web::socket::Latency> const &event) {
   auto &[trace_info, latency] = event;
   auto external_latency = ExternalLatency{
-      .stream_id = stream_id(),
+      .stream_id = stream_id,
       .account = account_.name,
       .latency = latency.sample,
   };
@@ -305,7 +305,7 @@ void DropCopy::operator()(Trace<protocol::json::PlatformState> const &event) {
     return TradingStatus::OPEN;
   }();
   auto market_segment_status = MarketSegmentStatus{
-      .stream_id = stream_id(),
+      .stream_id = stream_id,
       .exchange = shared_.settings.exchange,
       .market_segment = platform_state.params.data.price_index,
       .trading_status = trading_status,
@@ -338,7 +338,7 @@ void DropCopy::operator()(Trace<protocol::json::UserPortfolio> const &event) {
   auto &data = user_portfolio.params.data;
   auto margin_mode = data.cross_collateral_enabled ? MarginMode::CROSS : MarginMode::ISOLATED;
   auto funds_update = FundsUpdate{
-      .stream_id = stream_id(),
+      .stream_id = stream_id,
       .account = account_.name,
       .currency = data.currency,
       .margin_mode = margin_mode,
@@ -432,7 +432,7 @@ void DropCopy::operator()(Trace<protocol::json::Trade> const &event, bool is_dow
   log::debug("fill={}"sv, fill);
   auto update_type = is_download ? UpdateType::SNAPSHOT : UpdateType::INCREMENTAL;
   auto trade_update = TradeUpdate{
-      .stream_id = stream_id(),
+      .stream_id = stream_id,
       .account = account_.name,
       .order_id = {},
       .exchange = shared_.settings.exchange,

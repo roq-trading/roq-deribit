@@ -73,8 +73,8 @@ struct create_metrics final : public utils::metrics::Factory {
 // === IMPLEMENTATION ===
 
 UDPSnapshot::UDPSnapshot(Handler &handler, io::Context &context, uint16_t stream_id, Shared &shared)
-    : server::Stream{stream_id}, handler_{handler}, name_{create_name(stream_id)}, publish_market_by_price_{publish_market_by_price(shared.settings)},
-      supports_{get_supports(publish_market_by_price_)}, receiver_{create_receiver(*this, shared.settings, context, shared)},
+    : server::Stream{stream_id, {}, get_supports(publish_market_by_price(shared.settings))}, handler_{handler}, name_{create_name(stream_id)},
+      publish_market_by_price_{publish_market_by_price(shared.settings)}, receiver_{create_receiver(*this, shared.settings, context, shared)},
       counter_{
           .disconnect = create_metrics(shared.settings, name_, "disconnect"sv),
       },
@@ -114,9 +114,9 @@ void UDPSnapshot::operator()(Trace<ConnectionStatus> const &event, std::string_v
   auto &[trace_info, connection_status] = event;
   if (update(connection_status, reason)) {
     auto stream_status = StreamStatus{
-        .stream_id = stream_id(),
-        .account = {},
-        .supports = supports_,
+        .stream_id = stream_id,
+        .account = account,
+        .supports = supports,
         .transport = Transport::UDP,
         .protocol = Protocol::SBE,
         .encoding = {Encoding::SBE},
@@ -272,7 +272,7 @@ void UDPSnapshot::operator()(Trace<::deribit::sbe::multicast::Snapshot> const &e
               std::chrono::duration_cast<std::chrono::milliseconds>(delay));
           std::chrono::milliseconds timestamp{snapshot_2.timestampMs()};
           auto market_by_price_update = MarketByPriceUpdate{
-              .stream_id = stream_id(),
+              .stream_id = stream_id,
               .exchange = shared_.settings.exchange,
               .symbol = instrument.symbol,
               .bids = bids,

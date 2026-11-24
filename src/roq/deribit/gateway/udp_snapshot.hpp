@@ -73,7 +73,6 @@ struct UDPSnapshot final : public Base<UDPSnapshot>, public server::Stream, publ
   //
   std::string const name_;
   bool const publish_market_by_price_;
-  Mask<SupportType> const supports_;
   std::unique_ptr<io::net::udp::Receiver> const receiver_;
   //
   struct {

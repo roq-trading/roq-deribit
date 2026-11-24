@@ -93,8 +93,8 @@ struct create_metrics final : public utils::metrics::Factory {
 // === IMPLEMENTATION ===
 
 WebSocket::WebSocket(Handler &handler, io::Context &context, uint16_t stream_id, Account &account, Shared &shared, Request &request, size_t index, bool master)
-    : server::MarketDataStream{stream_id}, handler_{handler}, name_{create_name(stream_id)}, index_{index}, master_{master},
-      publish_top_of_book_{publish_top_of_book(shared)}, supports_{get_supports(master_, publish_top_of_book_)},
+    : server::MarketDataStream{stream_id, {}, get_supports(master, publish_top_of_book(shared))}, handler_{handler}, name_{create_name(stream_id)},
+      index_{index}, master_{master}, publish_top_of_book_{publish_top_of_book(shared)},
       connection_{create_connection(*this, shared.settings, context, shared)}, decode_buffer_{shared.settings.misc.decode_buffer_size, MAX_DECODE_BUFFER_DEPTH},
       counter_{
           .disconnect = create_metrics(shared.settings, name_, "disconnect"sv),
@@ -155,9 +155,9 @@ void WebSocket::operator()(Trace<ConnectionStatus> const &event, std::string_vie
   auto &[trace_info, connection_status] = event;
   if (update(connection_status, reason)) {
     auto stream_status = StreamStatus{
-        .stream_id = stream_id(),
-        .account = {},
-        .supports = supports_,
+        .stream_id = stream_id,
+        .account = account,
+        .supports = supports,
         .transport = Transport::TCP,
         .protocol = Protocol::WS,
         .encoding = {Encoding::JSON},
@@ -211,7 +211,7 @@ void WebSocket::operator()(Trace<web::socket::Close> const &event) {
 void WebSocket::operator()(Trace<web::socket::Latency> const &event) {
   auto &[trace_info, latency] = event;
   auto external_latency = ExternalLatency{
-      .stream_id = stream_id(),
+      .stream_id = stream_id,
       .account = {},
       .latency = latency.sample,
   };
@@ -300,7 +300,7 @@ void WebSocket::operator()(Trace<protocol::json::PlatformState> const &event) {
     return TradingStatus::OPEN;
   }();
   auto market_segment_status = MarketSegmentStatus{
-      .stream_id = stream_id(),
+      .stream_id = stream_id,
       .exchange = shared_.settings.exchange,
       .market_segment = platform_state.params.data.price_index,
       .trading_status = trading_status,
@@ -330,7 +330,7 @@ void WebSocket::operator()(Trace<protocol::json::Quote> const &event) {
             auto bid_quantity = multiplier * data.best_bid_amount;
             auto ask_quantity = multiplier * data.best_ask_amount;
             auto top_of_book = TopOfBook{
-                .stream_id = stream_id(),
+                .stream_id = stream_id,
                 .exchange = shared_.settings.exchange,
                 .symbol = data.instrument_name,
                 .layer{
@@ -366,7 +366,7 @@ void WebSocket::operator()(Trace<protocol::json::Ticker> const &event) {
     auto &item = trading_status_[data.instrument_name];
     if (trading_status != TradingStatus{} && utils::update(item, trading_status)) {
       auto market_status = MarketStatus{
-          .stream_id = stream_id(),
+          .stream_id = stream_id,
           .exchange = shared_.settings.exchange,
           .symbol = data.instrument_name,
           .trading_status = trading_status,

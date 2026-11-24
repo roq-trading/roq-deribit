@@ -154,7 +154,6 @@ struct WebSocket final : public Base<WebSocket>, public server::MarketDataStream
   size_t const index_;
   bool const master_;
   bool const publish_top_of_book_;
-  Mask<SupportType> const supports_;
   std::unique_ptr<web::socket::Client> const connection_;
   //
   core::json::BufferStack decode_buffer_;

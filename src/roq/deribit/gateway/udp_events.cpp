@@ -114,9 +114,10 @@ bool test_sequence(auto &cache, auto instrument_id, auto sequence_number) {
 // === IMPLEMENTATION ===
 
 UDPEvents::UDPEvents(Handler &handler, io::Context &context, uint16_t stream_id, Shared &shared)
-    : server::Stream{stream_id}, handler_{handler}, name_{create_name(stream_id)}, publish_top_of_book_{publish_top_of_book(shared.settings)},
+    : server::Stream{
+          stream_id, {}, get_supports(publish_top_of_book(shared.settings), publish_market_by_price(shared.settings), publish_trade_summary(shared.settings))},
+      handler_{handler}, name_{create_name(stream_id)}, publish_top_of_book_{publish_top_of_book(shared.settings)},
       publish_market_by_price_{publish_market_by_price(shared.settings)}, publish_trade_summary_{publish_trade_summary(shared.settings)},
-      supports_{get_supports(publish_top_of_book_, publish_market_by_price_, publish_trade_summary_)},
       receiver_{create_receiver(*this, shared.settings, context, shared)},
       counter_{
           .disconnect = create_metrics(shared.settings, name_, "disconnect"sv),
@@ -159,9 +160,9 @@ void UDPEvents::operator()(Trace<ConnectionStatus> const &event, std::string_vie
   auto &[trace_info, connection_status] = event;
   if (update(connection_status, reason)) {
     auto stream_status = StreamStatus{
-        .stream_id = stream_id(),
-        .account = {},
-        .supports = supports_,
+        .stream_id = stream_id,
+        .account = account,
+        .supports = supports,
         .transport = Transport::UDP,
         .protocol = Protocol::SBE,
         .encoding = {Encoding::SBE},
@@ -294,7 +295,7 @@ void UDPEvents::operator()(Trace<::deribit::sbe::multicast::Book> const &event, 
       try {
         auto create_update = [&](auto &bids, auto &asks, auto update_type, auto exchange_sequence) -> MarketByPriceUpdate {
           return {
-              .stream_id = stream_id(),
+              .stream_id = stream_id,
               .exchange = shared_.settings.exchange,
               .symbol = instrument.symbol,
               .bids = bids,
@@ -399,7 +400,7 @@ void UDPEvents::operator()(Trace<::deribit::sbe::multicast::Trades> const &event
     trades_2.sbeRewind();
     trades_2.tradesList().forEach(append_trade);
     auto trade_summary = TradeSummary{
-        .stream_id = stream_id(),
+        .stream_id = stream_id,
         .exchange = shared_.settings.exchange,
         .symbol = instrument.symbol,
         .trades = trades_3,
@@ -435,7 +436,7 @@ void UDPEvents::operator()(Trace<::deribit::sbe::multicast::Ticker> const &event
     auto ask_quantity = ticker_2.bestAskAmount() * instrument.multiplier;
     std::chrono::milliseconds timestamp{ticker_2.timestampMs()};
     auto top_of_book = TopOfBook{
-        .stream_id = stream_id(),
+        .stream_id = stream_id,
         .exchange = shared_.settings.exchange,
         .symbol = instrument.symbol,
         .layer{
