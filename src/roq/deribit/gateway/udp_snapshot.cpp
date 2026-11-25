@@ -87,6 +87,12 @@ UDPSnapshot::UDPSnapshot(Handler &handler, io::Context &context, uint16_t stream
 
 // server::Stream
 
+void UDPSnapshot::operator()(metrics::Writer &writer) const {
+  writer  //
+      .write(counter_.disconnect, metrics::Type::COUNTER)
+      .write(profile_.parse, metrics::Type::PROFILE);
+}
+
 void UDPSnapshot::operator()(Trace<Start> const &event) {
   auto &[trace_info, start] = event;
   last_update_time_ = trace_info.source_receive_time;
@@ -102,12 +108,6 @@ void UDPSnapshot::operator()(Trace<Timer> const &event) {
     log::warn("*** DETECTED TIMEOUT ***"sv);
     last_update_time_ = {};
   }
-}
-
-void UDPSnapshot::operator()(metrics::Writer &writer) const {
-  writer  //
-      .write(counter_.disconnect, metrics::Type::COUNTER)
-      .write(profile_.parse, metrics::Type::PROFILE);
 }
 
 void UDPSnapshot::operator()(Trace<ConnectionStatus> const &event, std::string_view const &reason) {
@@ -139,7 +139,7 @@ void UDPSnapshot::operator()(Trace<ConnectionStatus> const &event, std::string_v
 void UDPSnapshot::operator()(Trace<io::net::udp::Receiver::Read> const &event) {
   auto &[trace_info, read] = event;
   last_update_time_ = trace_info.source_receive_time;
-  create_trace_and_dispatch_2(trace_info, ConnectionStatus::READY);  // first message will publish
+  publish(trace_info, ConnectionStatus::READY);  // first message will publish
   while (true) {
     auto bytes = (*receiver_).recv(shared_.buffer);
     if (bytes == 0) {

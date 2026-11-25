@@ -113,6 +113,17 @@ OrderEntry::OrderEntry(Handler &handler, io::Context &context, uint16_t stream_i
 
 // server::Stream
 
+void OrderEntry::operator()(metrics::Writer &writer) const {
+  writer  //
+      .write(counter_.disconnect, metrics::Type::COUNTER)
+      .write(profile_.parse, metrics::Type::PROFILE)
+      .write(profile_.execution_report, metrics::Type::PROFILE)
+      .write(profile_.order_cancel_reject, metrics::Type::PROFILE)
+      .write(profile_.reject, metrics::Type::PROFILE)
+      .write(profile_.order_mass_cancel_report, metrics::Type::PROFILE)
+      .write(latency_.ping, metrics::Type::LATENCY);
+}
+
 void OrderEntry::operator()(Trace<Start> const &event) {
   (*connection_manager_)(event);
 }
@@ -157,17 +168,6 @@ void OrderEntry::operator()(Trace<Timer> const &event) {
       }
     }
   }
-}
-
-void OrderEntry::operator()(metrics::Writer &writer) const {
-  writer  //
-      .write(counter_.disconnect, metrics::Type::COUNTER)
-      .write(profile_.parse, metrics::Type::PROFILE)
-      .write(profile_.execution_report, metrics::Type::PROFILE)
-      .write(profile_.order_cancel_reject, metrics::Type::PROFILE)
-      .write(profile_.reject, metrics::Type::PROFILE)
-      .write(profile_.order_mass_cancel_report, metrics::Type::PROFILE)
-      .write(latency_.ping, metrics::Type::LATENCY);
 }
 
 void OrderEntry::operator()(Trace<ConnectionStatus> const &event, std::string_view const &reason) {

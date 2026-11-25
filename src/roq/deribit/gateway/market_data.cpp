@@ -177,6 +177,19 @@ MarketData::MarketData(Handler &handler, io::Context &context, uint16_t stream_i
 
 // server::Stream
 
+void MarketData::operator()(metrics::Writer &writer) const {
+  writer  //
+      .write(counter_.disconnect, metrics::Type::COUNTER)
+      .write(profile_.parse, metrics::Type::PROFILE)
+      .write(profile_.security_list, metrics::Type::PROFILE)
+      .write(profile_.security_status, metrics::Type::PROFILE)
+      .write(profile_.market_data_incremental_refresh, metrics::Type::PROFILE)
+      .write(profile_.market_data_request_reject, metrics::Type::PROFILE)
+      .write(profile_.market_data_snapshot_full_refresh, metrics::Type::PROFILE)
+      .write(profile_.market_data_request, metrics::Type::PROFILE)
+      .write(latency_.ping, metrics::Type::LATENCY);
+}
+
 void MarketData::operator()(Trace<Start> const &event) {
   (*connection_manager_)(event);
 }
@@ -210,19 +223,6 @@ void MarketData::operator()(Trace<Timer> const &event) {
       }
     }
   }
-}
-
-void MarketData::operator()(metrics::Writer &writer) const {
-  writer  //
-      .write(counter_.disconnect, metrics::Type::COUNTER)
-      .write(profile_.parse, metrics::Type::PROFILE)
-      .write(profile_.security_list, metrics::Type::PROFILE)
-      .write(profile_.security_status, metrics::Type::PROFILE)
-      .write(profile_.market_data_incremental_refresh, metrics::Type::PROFILE)
-      .write(profile_.market_data_request_reject, metrics::Type::PROFILE)
-      .write(profile_.market_data_snapshot_full_refresh, metrics::Type::PROFILE)
-      .write(profile_.market_data_request, metrics::Type::PROFILE)
-      .write(latency_.ping, metrics::Type::LATENCY);
 }
 
 void MarketData::subscribe(size_t start_from) {

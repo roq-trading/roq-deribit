@@ -118,6 +118,20 @@ WebSocket::WebSocket(Handler &handler, io::Context &context, uint16_t stream_id,
 
 // server::Stream
 
+void WebSocket::operator()(metrics::Writer &writer) const {
+  writer  //
+      .write(counter_.disconnect, metrics::Type::COUNTER)
+      .write(profile_.parse, metrics::Type::PROFILE)
+      .write(profile_.auth, metrics::Type::PROFILE)
+      .write(profile_.currencies, metrics::Type::PROFILE)
+      .write(profile_.instruments, metrics::Type::PROFILE)
+      .write(profile_.quote, metrics::Type::PROFILE)
+      .write(profile_.ticker, metrics::Type::PROFILE)
+      .write(profile_.chart_trades, metrics::Type::PROFILE)
+      .write(latency_.ping, metrics::Type::LATENCY)
+      .write(latency_.heartbeat, metrics::Type::LATENCY);
+}
+
 void WebSocket::operator()(Trace<Start> const &event) {
   (*connection_)(event);
 }
@@ -135,20 +149,6 @@ void WebSocket::operator()(Trace<Timer> const &event) {
     check_currencies(trace_info);
     check_instruments(trace_info);
   }
-}
-
-void WebSocket::operator()(metrics::Writer &writer) const {
-  writer  //
-      .write(counter_.disconnect, metrics::Type::COUNTER)
-      .write(profile_.parse, metrics::Type::PROFILE)
-      .write(profile_.auth, metrics::Type::PROFILE)
-      .write(profile_.currencies, metrics::Type::PROFILE)
-      .write(profile_.instruments, metrics::Type::PROFILE)
-      .write(profile_.quote, metrics::Type::PROFILE)
-      .write(profile_.ticker, metrics::Type::PROFILE)
-      .write(profile_.chart_trades, metrics::Type::PROFILE)
-      .write(latency_.ping, metrics::Type::LATENCY)
-      .write(latency_.heartbeat, metrics::Type::LATENCY);
 }
 
 void WebSocket::operator()(Trace<ConnectionStatus> const &event, std::string_view const &reason) {

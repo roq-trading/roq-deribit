@@ -133,6 +133,12 @@ UDPEvents::UDPEvents(Handler &handler, io::Context &context, uint16_t stream_id,
 
 // server::Stream
 
+void UDPEvents::operator()(metrics::Writer &writer) const {
+  writer  //
+      .write(counter_.disconnect, metrics::Type::COUNTER)
+      .write(profile_.parse, metrics::Type::PROFILE);
+}
+
 void UDPEvents::operator()(Trace<Start> const &event) {
   auto &[trace_info, start] = event;
   publish(trace_info, ConnectionStatus::CONNECTING);
@@ -148,12 +154,6 @@ void UDPEvents::operator()(Trace<Timer> const &event) {
     log::warn("*** DETECTED TIMEOUT ***"sv);
     last_update_time_ = {};
   }
-}
-
-void UDPEvents::operator()(metrics::Writer &writer) const {
-  writer  //
-      .write(counter_.disconnect, metrics::Type::COUNTER)
-      .write(profile_.parse, metrics::Type::PROFILE);
 }
 
 void UDPEvents::operator()(Trace<ConnectionStatus> const &event, std::string_view const &reason) {

@@ -127,6 +127,15 @@ void DropCopy::operator()(Trace<Latch> const &event) {
 
 // server::Stream
 
+void DropCopy::operator()(metrics::Writer &writer) const {
+  writer  //
+      .write(counter_.disconnect, metrics::Type::COUNTER)
+      .write(profile_.parse, metrics::Type::PROFILE)
+      .write(profile_.auth, metrics::Type::PROFILE)
+      .write(latency_.ping, metrics::Type::LATENCY)
+      .write(latency_.heartbeat, metrics::Type::LATENCY);
+}
+
 void DropCopy::operator()(Trace<Start> const &event) {
   (*connection_)(event);
 }
@@ -142,15 +151,6 @@ void DropCopy::operator()(Trace<Timer> const &event) {
       check_subscribe_queue(trace_info);
     }
   }
-}
-
-void DropCopy::operator()(metrics::Writer &writer) const {
-  writer  //
-      .write(counter_.disconnect, metrics::Type::COUNTER)
-      .write(profile_.parse, metrics::Type::PROFILE)
-      .write(profile_.auth, metrics::Type::PROFILE)
-      .write(latency_.ping, metrics::Type::LATENCY)
-      .write(latency_.heartbeat, metrics::Type::LATENCY);
 }
 
 void DropCopy::operator()(Trace<ConnectionStatus> const &event, std::string_view const &reason) {

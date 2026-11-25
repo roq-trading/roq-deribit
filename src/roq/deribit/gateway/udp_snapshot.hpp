@@ -34,13 +34,13 @@ struct UDPSnapshot final : public Base<UDPSnapshot>, public server::Stream, publ
 
   // server::Stream
 
+  void operator()(metrics::Writer &) const override;
+
   void operator()(Trace<Start> const &) override;
   void operator()(Trace<Stop> const &) override;
   void operator()(Trace<Timer> const &) override;
 
-  void operator()(metrics::Writer &) const override;
-
-  void operator()(Trace<ConnectionStatus> const &, std::string_view const &reason = {}) override;
+  void operator()(Trace<ConnectionStatus> const &, std::string_view const &reason) override;
 
   // io::net::udp::Receiver::Handler
 
