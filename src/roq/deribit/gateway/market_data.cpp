@@ -334,7 +334,7 @@ int32_t MarketData::download(Trace<State> const &event) {
         return 0;
       }
     case SUBSCRIBE:
-      subscribe();
+      subscribe(shared_.symbols.get_slice(index_));
       return 0;
     case DONE: {
       publish(trace_info, ConnectionStatus::READY);

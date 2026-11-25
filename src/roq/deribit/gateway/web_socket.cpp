@@ -257,7 +257,7 @@ int32_t WebSocket::download(Trace<State> const &event) {
         subscribe_platform_state();
         subscribe_instrument_state();
       }
-      subscribe();
+      subscribe(shared_.symbols.get_slice(index_));
       return 0;
     case DONE: {
       Latch latch;
