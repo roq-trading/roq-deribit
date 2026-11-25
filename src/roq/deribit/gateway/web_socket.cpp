@@ -70,7 +70,7 @@ auto create_connection(auto &handler, auto &settings, auto &context, auto &share
       .validate_certificate = settings.net.tls_validate_certificate,
       // connection manager
       .connection_timeout = settings.net.connection_timeout,
-      .disconnect_on_idle_timeout = settings.net.disconnect_on_idle_timeout,
+      .disconnect_on_idle_timeout = {},  // settings.net.disconnect_on_idle_timeout,
       .always_reconnect = true,
       // proxy
       .proxy = {},

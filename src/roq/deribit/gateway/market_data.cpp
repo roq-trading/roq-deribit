@@ -78,7 +78,7 @@ auto create_connection_factory(auto &settings, auto &context) {
 auto create_connection_manager(auto &handler, auto &settings, auto &connection_factory) {
   auto config = io::net::ConnectionManager::Config{
       .connection_timeout = settings.net.connection_timeout,
-      .disconnect_on_idle_timeout = settings.net.disconnect_on_idle_timeout,
+      .disconnect_on_idle_timeout = {},  // settings.net.disconnect_on_idle_timeout,
       .always_reconnect = true,
   };
   return io::net::ConnectionManager::create(handler, connection_factory, config);
