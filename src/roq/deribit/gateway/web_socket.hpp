@@ -77,9 +77,13 @@ struct WebSocket final : public Base<WebSocket>, public server::MarketDataStream
 
   enum class State {
     UNDEFINED = 0,
-    CURRENCIES,
-    INSTRUMENTS,
-    SUBSCRIBE,
+    GET_CURRENCIES,
+    GET_INSTRUMENTS,
+    SUBSCRIBE_PLATFORM_STATE,
+    SUBSCRIBE_INSTRUMENT_STATE,
+    SUBSCRIBE_QUOTE,
+    SUBSCRIBE_TICKER,
+    SUBSCRIBE_CHART_TRADES,
     DONE,
   };
 
@@ -89,13 +93,17 @@ struct WebSocket final : public Base<WebSocket>, public server::MarketDataStream
 
   void operator()(Trace<protocol::json::Auth> const &) override;
   void operator()(Trace<protocol::json::SubscribeAck> const &) override;
-  // public:
+
+  // - public
+
   void operator()(Trace<protocol::json::PlatformState> const &) override;
   void operator()(Trace<protocol::json::InstrumentState> const &) override;
   void operator()(Trace<protocol::json::Quote> const &) override;
   void operator()(Trace<protocol::json::Ticker> const &) override;
   void operator()(Trace<protocol::json::ChartTrades> const &, std::string_view const &symbol, uint32_t interval) override;
-  // private:
+
+  // - private
+
   void operator()(Trace<protocol::json::UserPortfolio> const &) override;
   void operator()(Trace<protocol::json::UserChanges> const &) override;
   void operator()(Trace<protocol::json::UserOrders> const &) override;
@@ -104,48 +112,27 @@ struct WebSocket final : public Base<WebSocket>, public server::MarketDataStream
   void operator()(Trace<protocol::json::GetAccountSummaryAck> const &) override;
   void operator()(Trace<protocol::json::GetUserTradesByCurrencyAck> const &) override;
 
-  // currencies
+  // helpers
 
-  void download_currencies(TraceInfo const &);
-  void check_currencies(TraceInfo const &);
-
-  // instruments
-
-  void download_instruments(TraceInfo const &);
-  void check_instruments(TraceInfo const &);
-
-  // platform-state
+  void send_login(TraceInfo const &);
 
   void subscribe_platform_state();
   void subscribe_instrument_state();
 
-  void login(TraceInfo const &);
-
-  // subscribe
-
   void subscribe(std::span<Symbol const> const &symbols);
 
-  void subscribe_quote(std::span<Symbol const> const &symbols);
-  void subscribe_ticker(std::span<Symbol const> const &symbols);
-  void subscribe_chart_trades(std::span<Symbol const> const &symbols);
+  bool subscribe_quote(std::span<Symbol const> const &symbols);
+  bool subscribe_ticker(std::span<Symbol const> const &symbols);
+  bool subscribe_chart_trades(std::span<Symbol const> const &symbols);
 
   void parse(TraceInfo const &, std::string_view const &message);
 
-  template <typename C>
-  bool get_top_of_book(std::string_view const &symbol, C callback) {
-    auto iter = top_of_book_.find(symbol);
-    if (iter == std::end(top_of_book_)) {
-      auto iter_2 = shared_.multiplier.find(symbol);
-      if (iter_2 == std::end(shared_.multiplier)) {
-        return false;
-      }
-      iter = top_of_book_.emplace(symbol, std::make_pair(roq::Layer{}, (*iter_2).second)).first;
-    }
-    callback((*iter).second.first, (*iter).second.second);
-    return true;
-  }
-
   void check_subscribe_queue(TraceInfo const &);
+
+  void check_request_queue(TraceInfo const &);
+
+  template <typename Callback>
+  bool get_top_of_book(std::string_view const &symbol, Callback);
 
  private:
   Handler &handler_;
@@ -171,8 +158,8 @@ struct WebSocket final : public Base<WebSocket>, public server::MarketDataStream
   utils::unordered_map<std::string, std::pair<roq::Layer, double>> top_of_book_;
   utils::unordered_map<std::string, TradingStatus> trading_status_;
   core::Download2<State> download_;
-  core::limit::Queue<std::string> subscribe_queue_;
   Request &request_;
+  core::limit::Queue<std::string> subscribe_queue_;
 };
 
 }  // namespace gateway

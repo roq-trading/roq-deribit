@@ -105,9 +105,7 @@ struct DropCopy final : public Base<DropCopy>, public server::Stream, public web
 
   // helpers
 
-  void check_subscribe_queue(TraceInfo const &);
-
-  void login(TraceInfo const &);
+  void send_login(TraceInfo const &);
 
   void subscribe_user_portfolio(std::span<std::string const> const &currencies);
   void subscribe_user_changes();
@@ -118,6 +116,8 @@ struct DropCopy final : public Base<DropCopy>, public server::Stream, public web
   void get_user_trades_by_currency(TraceInfo const &, std::span<std::string const> const &currencies);
 
   void parse(TraceInfo const &, std::string_view const &message);
+
+  void check_subscribe_queue(TraceInfo const &);
 
  private:
   [[maybe_unused]] Handler &handler_;

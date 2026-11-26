@@ -148,8 +148,8 @@ void DropCopy::operator()(Trace<Timer> const &event) {
   auto &[trace_info, timer] = event;
   if ((*connection_)(event)) {
     if (ready()) {
-      check_subscribe_queue(trace_info);
     }
+    check_subscribe_queue(trace_info);
   }
 }
 
@@ -193,7 +193,7 @@ void DropCopy::operator()(Trace<web::socket::Disconnected> const &event) {
 
 void DropCopy::operator()(Trace<web::socket::Ready> const &event) {
   auto &[trace_info, ready] = event;
-  login(trace_info);
+  send_login(trace_info);
   publish(trace_info, ConnectionStatus::AUTHENTICATING);
 }
 
@@ -234,30 +234,33 @@ int32_t DropCopy::download(Trace<State> const &event) {
       if (can_download_) {
         publish(trace_info, ConnectionStatus::DOWNLOADING, state);
         subscribe_user_portfolio(currencies_);
+        return 1;
       }
       return 0;
     case SUBSCRIBE_USER_CHANGES:
       publish(trace_info, ConnectionStatus::DOWNLOADING, state);
       subscribe_user_changes();
-      return 0;
+      return 1;
     case SUBSCRIBE_USER_ORDERS:
       publish(trace_info, ConnectionStatus::DOWNLOADING, state);
       subscribe_user_orders();
-      return 0;
+      return 1;
     case SUBSCRIBE_USER_TRADES:
       publish(trace_info, ConnectionStatus::DOWNLOADING, state);
       subscribe_user_trades();
-      return 0;
+      return 1;
     case GET_ACCOUNT_SUMMARY:
       if (can_download_) {
         publish(trace_info, ConnectionStatus::DOWNLOADING, state);
         get_account_summary(currencies_);
+        return 1;
       }
       return 0;
     case GET_USER_TRADES_BY_CURRENCY:
       if (can_download_) {
         publish(trace_info, ConnectionStatus::DOWNLOADING, state);
         get_user_trades_by_currency(trace_info, currencies_);
+        return 1;
       }
       return 0;
     case DONE:
@@ -292,6 +295,45 @@ void DropCopy::operator()(Trace<protocol::json::SubscribeAck> const &event) {
   auto &[trace_info, subscribe_ack] = event;
   if (subscribe_ack.error.code != 0) {
     log::error("subscribe_ack={}"sv, subscribe_ack);
+  } else {
+    protocol::json::RequestType request_type{subscribe_ack.id};
+    switch (request_type) {
+      using enum protocol::json::RequestType::type_t;
+      case UNDEFINED_INTERNAL:
+        break;
+      case UNKNOWN_INTERNAL:
+        break;
+      case AUTH:
+        break;
+      case SUBSCRIBE_PLATFORM_STATE:
+        break;
+      case SUBSCRIBE_INSTRUMENT_STATE:
+        break;
+      case SUBSCRIBE_QUOTE:
+        break;
+      case SUBSCRIBE_TICKER:
+        break;
+      case SUBSCRIBE_CHART_TRADES:
+        break;
+      case SUBSCRIBE_USER_PORTFOLIO:
+        download_.check_relaxed(trace_info, State::SUBSCRIBE_USER_PORTFOLIO);
+        break;
+      case SUBSCRIBE_USER_CHANGES:
+        download_.check_relaxed(trace_info, State::SUBSCRIBE_USER_CHANGES);
+        break;
+      case SUBSCRIBE_USER_ORDERS:
+        download_.check_relaxed(trace_info, State::SUBSCRIBE_USER_ORDERS);
+        break;
+      case SUBSCRIBE_USER_TRADES:
+        download_.check_relaxed(trace_info, State::SUBSCRIBE_USER_TRADES);
+        break;
+      case GET_ACCOUNT_SUMMARY:
+        download_.check_relaxed(trace_info, State::GET_ACCOUNT_SUMMARY);
+        break;
+      case GET_USER_TRADES_BY_CURRENCY:
+        download_.check_relaxed(trace_info, State::GET_USER_TRADES_BY_CURRENCY);
+        break;
+    }
   }
 }
 
@@ -457,6 +499,31 @@ void DropCopy::operator()(Trace<protocol::json::Trade> const &event, bool is_dow
 
 // helpers
 
+void DropCopy::send_login(TraceInfo const &trace_info) {
+  protocol::json::RequestType request_type = protocol::json::RequestType::AUTH;
+  auto nonce = account_.create_nonce();
+  auto [signature, timestamp] = account_.create_signature(trace_info, nonce);
+  auto message = fmt::format(
+      R"({{)"
+      R"("method":"public/auth",)"
+      R"("params":{{)"
+      R"("grant_type":"client_signature",)"
+      R"("client_id":"{}",)"
+      R"("timestamp":"{}",)"
+      R"("nonce":"{}",)"
+      R"("data":"",)"
+      R"("signature":"{}")"
+      R"(}},)"
+      R"("id":"{}")"
+      R"(}})"sv,
+      account_.key,
+      timestamp.count(),
+      nonce,
+      signature,
+      request_type.as_raw_text());
+  (*connection_).send_text(message);
+}
+
 void DropCopy::subscribe_user_portfolio(std::span<std::string const> const &currencies) {
   protocol::json::RequestType request_type = protocol::json::RequestType::SUBSCRIBE_USER_PORTFOLIO;
   auto message = fmt::format(
@@ -572,31 +639,6 @@ void DropCopy::parse(TraceInfo const &trace_info, std::string_view const &messag
 void DropCopy::check_subscribe_queue(TraceInfo const &trace_info) {
   auto callback = [&]([[maybe_unused]] auto &trace_info, auto &message) { (*connection_).send_text(message); };
   subscribe_queue_.dispatch(trace_info, callback);
-}
-
-void DropCopy::login(TraceInfo const &trace_info) {
-  protocol::json::RequestType request_type = protocol::json::RequestType::AUTH;
-  auto nonce = account_.create_nonce();
-  auto [signature, timestamp] = account_.create_signature(trace_info, nonce);
-  auto message = fmt::format(
-      R"({{)"
-      R"("method":"public/auth",)"
-      R"("params":{{)"
-      R"("grant_type":"client_signature",)"
-      R"("client_id":"{}",)"
-      R"("timestamp":"{}",)"
-      R"("nonce":"{}",)"
-      R"("data":"",)"
-      R"("signature":"{}")"
-      R"(}},)"
-      R"("id":"{}")"
-      R"(}})"sv,
-      account_.key,
-      timestamp.count(),
-      nonce,
-      signature,
-      request_type.as_raw_text());
-  (*connection_).send_text(message);
 }
 
 }  // namespace gateway

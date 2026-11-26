@@ -93,8 +93,8 @@ struct OrderEntry final : public Base<OrderEntry>, public server::OrderActionStr
 
   enum class State {
     UNDEFINED = 0,
-    POSITIONS,
-    ORDERS,
+    GET_POSITIONS,
+    GET_ORDERS,
     DONE,
   };
 

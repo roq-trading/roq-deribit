@@ -75,10 +75,16 @@ auto create_connection_factory(auto &settings, auto &context) {
   return io::net::ConnectionFactory::create(context, config);
 }
 
-auto create_connection_manager(auto &handler, auto &settings, auto &connection_factory) {
+auto create_connection_manager(auto &handler, auto &settings, auto &connection_factory, auto master) {
+  auto disconnect_on_idle_timeout = [&]() -> std::chrono::nanoseconds {
+    if (master) {
+      return {};  // XXX FIXME TODO what if there are no symbols ???
+    }
+    return settings.net.disconnect_on_idle_timeout;
+  }();
   auto config = io::net::ConnectionManager::Config{
       .connection_timeout = settings.net.connection_timeout,
-      .disconnect_on_idle_timeout = {},  // settings.net.disconnect_on_idle_timeout,
+      .disconnect_on_idle_timeout = disconnect_on_idle_timeout,
       .always_reconnect = true,
   };
   return io::net::ConnectionManager::create(handler, connection_factory, config);
@@ -155,8 +161,8 @@ MarketData::MarketData(Handler &handler, io::Context &context, uint16_t stream_i
       publish_trade_summary_{publish_trade_summary(shared)}, exchange_{shared.settings.exchange}, fix_debug_{shared.settings.fix.debug},
       fix_request_timeout_{shared.settings.fix.request_timeout}, fix_ping_freq_{shared.settings.fix.ping_freq},
       connection_factory_{create_connection_factory(shared.settings, context)},
-      connection_manager_{create_connection_manager(*this, shared.settings, *connection_factory_)}, encode_buffer_(shared.settings.misc.encode_buffer_size),
-      decode_buffer_(shared.settings.misc.decode_buffer_size),
+      connection_manager_{create_connection_manager(*this, shared.settings, *connection_factory_, master)},
+      encode_buffer_(shared.settings.misc.encode_buffer_size), decode_buffer_(shared.settings.misc.decode_buffer_size),
       counter_{
           .disconnect = create_metrics(shared.settings, name_, "disconnect"sv),
       },
@@ -325,18 +331,17 @@ int32_t MarketData::download(Trace<State> const &event) {
     case UNDEFINED:
       assert(false);
       break;
-    case SECURITIES:
+    case GET_SECURITIES:
       if (master_) {
         publish(trace_info, ConnectionStatus::DOWNLOADING, state);
         download_securities();
         return 1;
-      } else {
-        return 0;
       }
+      return 0;
     case SUBSCRIBE:
       subscribe(shared_.symbols.get_slice(index_));
       return 0;
-    case DONE: {
+    case DONE:
       publish(trace_info, ConnectionStatus::READY);
       // test
       if (shared_.settings.fix.test_market_data_disconnect.count() != 0) {
@@ -347,7 +352,6 @@ int32_t MarketData::download(Trace<State> const &event) {
             stream_id);
       }
       return 0;
-    }
   }
   assert(false);
   return 0;
@@ -509,7 +513,7 @@ void MarketData::operator()(Trace<protocol::fix::SecurityList> const &event, fix
       create_trace_and_dispatch(handler_, trace_info, symbols_update);
     }
   }
-  download_.check_relaxed(trace_info, State::SECURITIES);
+  download_.check_relaxed(trace_info, State::GET_SECURITIES);
 }
 
 void MarketData::operator()(Trace<protocol::fix::SecurityStatus> const &event, fix::Header const &header) {

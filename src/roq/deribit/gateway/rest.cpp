@@ -219,7 +219,6 @@ void Rest::operator()(Trace<ConnectionStatus> const &event, std::string_view con
 
 void Rest::operator()(Trace<web::rest::Connected> const &event) {
   auto &[trace_info, connected] = event;
-  assert(!downloading());
   publish(trace_info, ConnectionStatus::READY);
   check_download(trace_info);
 }

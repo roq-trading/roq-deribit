@@ -424,11 +424,11 @@ int32_t OrderEntry::download(Trace<State> const &event) {
     case UNDEFINED:
       assert(false);
       break;
-    case POSITIONS:
+    case GET_POSITIONS:
       publish(trace_info, ConnectionStatus::DOWNLOADING, state);
       subscribe_positions();
       return 1;
-    case ORDERS:
+    case GET_ORDERS:
       publish(trace_info, ConnectionStatus::DOWNLOADING, state);
       download_orders();
       return 1;  // note! first report includes the true number of reports
@@ -513,7 +513,7 @@ void OrderEntry::operator()(Trace<protocol::fix::PositionReport> const &event, f
     };
     create_trace_and_dispatch(shared_.dispatcher, trace_info, position_update, is_last);
   }
-  download_.check_relaxed(trace_info, State::POSITIONS);
+  download_.check_relaxed(trace_info, State::GET_POSITIONS);
 }
 
 namespace {
@@ -631,7 +631,7 @@ void OrderEntry::operator()(Trace<protocol::fix::ExecutionReport> const &event, 
     case ORDERS: {
       auto count = execution_report.tot_num_reports;
       log::info<1>(R"(Downloading {} execution reports (request_id="{}")"sv, count, execution_report.mass_status_req_id);
-      download_.update(trace_info, State::ORDERS, count);
+      download_.update(trace_info, State::GET_ORDERS, count);
       return;  // this is not an ordinary execution report
     }
     default:
@@ -672,7 +672,7 @@ void OrderEntry::operator()(Trace<protocol::fix::ExecutionReport> const &event, 
   auto error = protocol::fix::map_error(execution_report.text);
   auto [last_traded_quantity, last_traded_price] = compute_last_traded(execution_report.last_qty, execution_report.last_px, execution_report.no_fills);
   auto update_type = [&]() {
-    if (download_.state() != State::ORDERS) {
+    if (download_.state() != State::GET_ORDERS) {
       return UpdateType::INCREMENTAL;
     }
     return UpdateType::SNAPSHOT;
@@ -802,7 +802,7 @@ void OrderEntry::operator()(Trace<protocol::fix::ExecutionReport> const &event, 
     create_trace_and_dispatch(shared_.dispatcher, trace_info, trade_update, true, user_id);
   }
   // download end?
-  download_.check_relaxed(trace_info, State::ORDERS);
+  download_.check_relaxed(trace_info, State::GET_ORDERS);
 }
 
 void OrderEntry::operator()(Trace<protocol::fix::OrderCancelReject> const &event, fix::Header const &header) {
@@ -891,7 +891,7 @@ void OrderEntry::operator()(Trace<protocol::fix::Reject> const &event, fix::Head
   } else {
     log::fatal("Unexpected: reject={}"sv, reject);
     // log::warn("Unexpected: reject={}"sv, reject);
-    // download_.check_relaxed(trace_info,State::ORDERS);
+    // download_.check_relaxed(trace_info, State::GET_ORDERS);
   }
 }
 

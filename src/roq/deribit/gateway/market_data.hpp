@@ -85,7 +85,7 @@ struct MarketData final : public Base<MarketData>, public server::MarketDataStre
 
   enum class State {
     UNDEFINED = 0,
-    SECURITIES,
+    GET_SECURITIES,
     SUBSCRIBE,
     DONE,
   };
