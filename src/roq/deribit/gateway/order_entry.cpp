@@ -185,7 +185,7 @@ void OrderEntry::operator()(Trace<ConnectionStatus> const &event, std::string_vi
         .reason = reason,
         .interface = (*connection_factory_).get_interface(),
         .proxy = {},
-        .peer = {},
+        .peer = (*connection_manager_).get_current_peer(),
         .authority = (*connection_factory_).get_current_authority(),
         .path = (*connection_factory_).get_current_path(),
     };
