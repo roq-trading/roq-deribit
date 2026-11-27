@@ -451,7 +451,7 @@ void OrderEntry::operator()(Trace<protocol::fix::Heartbeat> const &event, fix::H
     auto latency = (trace_info.origin_create_time - send_time) / 2;  // 1-way
     auto external_latency = ExternalLatency{
         .stream_id = stream_id,
-        .account = account_.name,
+        .account = account,
         .latency = latency,
     };
     create_trace_and_dispatch(shared_.dispatcher, trace_info, external_latency);
